@@ -15,23 +15,30 @@
     'required': false
   },
   {
-    'name': 'disabled',
-    'description': '<p>When <code>true</code>, prevents the user from interacting with the item.</p>\n',
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, tabbing from last item will focus first tabbable\nand shift+tab from first item will focus last tababble.</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'false'
   },
   {
-    'name': 'textValue',
-    'description': '<p>Optional text used for typeahead purposes. By default the typeahead behavior will use the <code>.textContent</code> of the item. &lt;br&gt;\nUse this when the content is complex, or you have non-textual content inside.</p>\n',
-    'type': 'string',
-    'required': false
+    'name': 'trapped',
+    'description': '<p>When <code>true</code>, focus cannot escape the focus scope via keyboard,\npointer, or a programmatic focus.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 
 <EmitsTable :data="[
   {
-    'name': 'select',
-    'description': '<p>Event handler called when the user selects an item (via mouse or keyboard). &lt;br&gt;\nCalling <code>event.preventDefault</code> in this handler will prevent the menu from closing when selecting that item.</p>\n',
+    'name': 'mountAutoFocus',
+    'description': '<p>Event handler called when auto-focusing on mount.\nCan be prevented.</p>\n',
+    'type': '[event: Event]'
+  },
+  {
+    'name': 'unmountAutoFocus',
+    'description': '<p>Event handler called when auto-focusing on unmount.\nCan be prevented.</p>\n',
     'type': '[event: Event]'
   }
 ]" />
