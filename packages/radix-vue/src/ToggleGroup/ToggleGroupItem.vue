@@ -2,7 +2,7 @@
 import type { ToggleProps } from '@/Toggle'
 import { useForwardExpose } from '@/shared'
 
-export interface ToggleGroupItemProps extends ToggleProps {
+export interface ToggleGroupItemProps extends Omit<ToggleProps, 'pressed' | 'defaultValue'> {
   /**
    * A string value for the toggle group item. All items within a toggle group should use a unique value.
    */
