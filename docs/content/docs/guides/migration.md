@@ -44,7 +44,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Combobox
 
-- [Remove `filter-function` props](https://github.com/unovue/reka-ui/commit/ee8a3f2366a5c27c2bf1cc0a1ecbb0fea559a9f7) - `Combobox` has been refactored and improve to support better custom filtering. Read more.
+- [Remove `filter-function` props](https://github.com/unovue/reka-ui/commit/ee8a3f2366a5c27c2bf1cc0a1ecbb0fea559a9f7) - `Combobox` has been refactored and improved to support better custom filtering. Read more.
 
   ```vue
   <template>
@@ -79,7 +79,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
   </template>
   ```
 
-- [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously `VisuallyHidden` were position at the root node, causing style scoped to not be applied.
+- [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously `VisuallyHidden` were positioned at the root node, causing style scoped to not be applied.
 
 ### Pagination
 
@@ -115,7 +115,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Select
 
-- [`SelectValue` no longer render teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - Previous implmenentation of `SelectValue` will render the selected `SelectItem` via teleporting fragment. This causes SSR flickering, and it is unnecessarily computation.
+- [`SelectValue` no longer render teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - Previous implementation of `SelectValue` will render the selected `SelectItem` via teleporting fragment. This causes SSR flickering, and it is unnecessarily computation.
 
   ```vue
   <template>
