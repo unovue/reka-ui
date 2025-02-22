@@ -98,7 +98,7 @@ An **uncontrolled** component manages its own state internally, without requirin
 
 ## Common Mistakes & Fixes
 
-### 1. Forgetting `@update:checked`
+### 1. Forgetting `@update:modelValue`
 
 ```vue
 <!-- ❌ Incorrect: -->
