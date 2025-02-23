@@ -79,7 +79,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
   </template>
   ```
 
-- [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously `VisuallyHidden` were positioned at the root node, causing style scoped to not be applied.
+- [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously, `VisuallyHidden` were positioned at the root node, causing style scoped to not be applied.
 
 ### Pagination
 
