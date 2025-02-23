@@ -9,16 +9,37 @@ import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue
 
 import { nanoid } from 'nanoid/non-secure'
 
+interface UseBodyScrollLockState {
+  scroll?: boolean
+  pointerEvents?: boolean
+}
+
 const useBodyLockStackCount = createSharedComposable(() => {
-  const map = ref<Map<string, boolean>>(new Map())
+  const map = ref<Map<string, boolean | UseBodyScrollLockState>>(new Map())
   const initialOverflow = ref<string | undefined>()
 
-  const locked = computed(() => {
+  const locked = computed<UseBodyScrollLockState>(() => {
+    let scroll: boolean | undefined
+    let pointerEvents: boolean | undefined
+
     for (const value of map.value.values()) {
-      if (value)
-        return true
+      if (!value)
+        continue
+
+      if (value === true) {
+        scroll = true
+        pointerEvents = true
+      }
+      else {
+        scroll = scroll || value.scroll
+        pointerEvents = pointerEvents || value.pointerEvents
+      }
+
+      if (scroll && pointerEvents)
+        return { scroll, pointerEvents }
     }
-    return false
+
+    return { scroll, pointerEvents }
   })
 
   const context = injectConfigProviderContext({
@@ -30,7 +51,6 @@ const useBodyLockStackCount = createSharedComposable(() => {
   const resetBodyStyle = () => {
     document.body.style.paddingRight = ''
     document.body.style.marginRight = ''
-    document.body.style.pointerEvents = ''
     document.body.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
     isIOS && stopTouchMoveListener?.()
@@ -42,8 +62,19 @@ const useBodyLockStackCount = createSharedComposable(() => {
     if (!isClient)
       return
 
-    if (!val) {
-      if (oldVal)
+    if (!val.pointerEvents) {
+      if (oldVal?.pointerEvents)
+        document.body.style.pointerEvents = ''
+    }
+    else {
+      // let dismissibleLayer set previous pointerEvent first
+      nextTick(() => {
+        document.body.style.pointerEvents = 'none'
+      })
+    }
+
+    if (!val.scroll) {
+      if (oldVal?.scroll)
         resetBodyStyle()
       return
     }
@@ -79,9 +110,7 @@ const useBodyLockStackCount = createSharedComposable(() => {
       )
     }
 
-    // let dismissibleLayer set previous pointerEvent first
     nextTick(() => {
-      document.body.style.pointerEvents = 'none'
       document.body.style.overflow = 'hidden'
     })
   }, { immediate: true, flush: 'sync' })
@@ -89,7 +118,7 @@ const useBodyLockStackCount = createSharedComposable(() => {
   return map
 })
 
-export function useBodyScrollLock(initialState?: boolean | undefined) {
+export function useBodyScrollLock(initialState?: boolean | UseBodyScrollLockState | undefined) {
   const id = nanoid(6)
   const map = useBodyLockStackCount()
 
