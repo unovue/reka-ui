@@ -72,14 +72,28 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 - [Rename controlled state to `v-model`](https://github.com/unovue/reka-ui/commit/87aa5ba6016fa7a98f02ea43062212906b2633a0) - Replace `v-model:checked`, `v-model:pressed` with more familiar API for form component.
 
-  ```vue
-  <template>
-    <CheckboxRoot v-model:checked="value" /> <!-- [!code --] -->
-    <CheckboxRoot v-model="value" /> <!-- [!code ++] -->
-  </template>
-  ```
+```vue
+<template>
+  <CheckboxRoot v-model:checked="value" /> <!-- [!code --] -->
+  <CheckboxRoot v-model="value" /> <!-- [!code ++] -->
+</template>
+```
 
 - [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously, `VisuallyHidden` were positioned at the root node, causing style scoped to not be applied.
+
+### Menu CheckboxItem
+
+- Similar to the changes in form component, the API for binding `CheckboxItem` has been changed from `v-model:checked` to `v-model`.
+
+```vue
+<template>
+  <DropdownMenuCheckboxItem v-model:checked="value" /> <!-- [!code --] -->
+  <DropdownMenuCheckboxItem v-model="value" /> <!-- [!code ++] -->
+
+  <DropdownMenuCheckboxItem checked /> <!-- [!code --] -->
+  <DropdownMenuCheckboxItem :model-value="true" /> <!-- [!code ++] -->
+</template>
+```
 
 ### Pagination
 
