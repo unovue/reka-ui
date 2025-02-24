@@ -138,3 +138,38 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
     </SelectValue>
   </template>
   ```
+
+### Presence
+
+To have better supports for SSR content, we also modify the logic around the usage of `forceMount` for component that utilize Presence:
+
+- `Accordion`
+- `Collapsible`
+- `Tabs`
+- `NavigationMenu`
+
+[`forceMount` will now render the component](https://github.com/unovue/reka-ui/commit/6f7f29abe79ac6c3ace117a398b6f7613ab6d2bc) eventhough the state is inactive. You are now required to handle the visibility logic of the component manually.
+
+```vue
+<template>
+  <TabsRoot
+    v-slot="{ modelValue }"
+    default-value="tab1"
+  >
+    <TabsContent
+      value="tab1"
+      force-mount
+      :hidden="modelValue !== 'tab1'"
+    >
+      …
+    </TabsContent>
+    <TabsContent
+      value="tab2"
+      force-mount
+      :hidden="modelValue !== 'tab2'"
+    >
+      …
+    </TabsContent>
+  </TabsRoot>
+</template>
+```
