@@ -27,7 +27,7 @@ body:
         Developement/Production OS: Windows 10 19043.1110
         Node version: 16.0.0
         Package manager: pnpm@8.6.0
-        Radix Vue version: 1.0.0
+        Reka UI version: 2.0.0
         Vue version: 3.0.0
         Nuxt version: 3.0.0
         Nuxt mode: universal
