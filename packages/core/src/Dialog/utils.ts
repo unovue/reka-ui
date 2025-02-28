@@ -24,7 +24,7 @@ export function useWarning({
 
 If you want to hide the \`${titleName}\`, you can wrap it with our VisuallyHidden component.
 
-For more information, see https://www.reka.com/components/${componentLink}`
+For more information, see https://www.reka-ui.com/docs/components/${componentLink}`
 
   const DESCRIPTION_MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby="undefined"\` for ${contentName}.`
 
