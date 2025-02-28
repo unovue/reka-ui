@@ -37,14 +37,14 @@ rootContext.contentId ||= useId(undefined, 'reka-popover-content')
   <Presence :present="forceMount || rootContext.open.value">
     <PopoverContentModal
       v-if="rootContext.modal.value"
-      v-bind="forwarded"
+      v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
     >
       <slot />
     </PopoverContentModal>
     <PopoverContentNonModal
       v-else
-      v-bind="forwarded"
+      v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
     >
       <slot />
