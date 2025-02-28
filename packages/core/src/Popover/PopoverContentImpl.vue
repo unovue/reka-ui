@@ -66,7 +66,7 @@ useFocusGuards()
       @dismiss="rootContext.onOpenChange(false)"
     >
       <PopperContent
-        v-bind="forwarded"
+        v-bind="{ ...forwarded, ...$attrs }"
         :id="rootContext.contentId"
         :ref="forwardRef"
         :data-state="rootContext.open.value ? 'open' : 'closed'"
