@@ -148,7 +148,7 @@
   },
   {
     'name': 'pointerDownOutside',
-    'description': '<p>Event handler called when the a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
+    'description': '<p>Event handler called when a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
     'type': '[event: PointerDownOutsideEvent]'
   }
 ]" />
