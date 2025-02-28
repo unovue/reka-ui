@@ -13,3 +13,6 @@ export {
   default as RadioGroupIndicator,
   type RadioGroupIndicatorProps,
 } from './RadioGroupIndicator.vue'
+export {
+  type SelectEvent as RadioGroupItemSelectEvent,
+} from './utils'
