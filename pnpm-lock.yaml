@@ -143,7 +143,7 @@ importers:
         version: 4.3.0(vue@3.5.13(typescript@5.4.2))
       '@intlify/unplugin-vue-i18n':
         specifier: ^6.0.3
-        version: 6.0.3(@vue/compiler-dom@3.5.13)(eslint@9.19.0(jiti@2.4.2))(rollup@4.31.0)(typescript@5.4.2)(vue-i18n@11.1.1(vue@3.5.13(typescript@5.4.2)))(vue@3.5.13(typescript@5.4.2))
+        version: 6.0.3(@vue/compiler-dom@3.5.13)(eslint@9.21.0(jiti@2.4.2))(rollup@4.31.0)(typescript@5.4.2)(vue-i18n@11.1.1(vue@3.5.13(typescript@5.4.2)))(vue@3.5.13(typescript@5.4.2))
       '@lunariajs/core':
         specifier: ^0.1.1
         version: 0.1.1
@@ -7862,9 +7862,9 @@ snapshots:
 
   '@intlify/shared@11.1.1': {}
 
-  '@intlify/unplugin-vue-i18n@6.0.3(@vue/compiler-dom@3.5.13)(eslint@9.19.0(jiti@2.4.2))(rollup@4.31.0)(typescript@5.4.2)(vue-i18n@11.1.1(vue@3.5.13(typescript@5.4.2)))(vue@3.5.13(typescript@5.4.2))':
+  '@intlify/unplugin-vue-i18n@6.0.3(@vue/compiler-dom@3.5.13)(eslint@9.21.0(jiti@2.4.2))(rollup@4.31.0)(typescript@5.4.2)(vue-i18n@11.1.1(vue@3.5.13(typescript@5.4.2)))(vue@3.5.13(typescript@5.4.2))':
     dependencies:
-      '@eslint-community/eslint-utils': 4.4.0(eslint@9.19.0(jiti@2.4.2))
+      '@eslint-community/eslint-utils': 4.4.0(eslint@9.21.0(jiti@2.4.2))
       '@intlify/bundle-utils': 10.0.0(vue-i18n@11.1.1(vue@3.5.13(typescript@5.4.2)))
       '@intlify/shared': 11.1.1
       '@intlify/vue-i18n-extensions': 8.0.0(@intlify/shared@11.1.1)(@vue/compiler-dom@3.5.13)(vue-i18n@11.1.1(vue@3.5.13(typescript@5.4.2)))(vue@3.5.13(typescript@5.4.2))
