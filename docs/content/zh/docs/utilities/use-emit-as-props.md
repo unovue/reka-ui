@@ -1,19 +1,19 @@
 ---
 title: useEmitAsProps
-description: Convert emits into object similar to props
+description: 将 emits 转换为类似于 props 的对象
 ---
 
 # useEmitAsProps
 
 <Description>
-Convert emits into object similar to props
+将 emits 转换为类似于 props 的对象
 </Description>
 
-When you are building a wrapper for a component, one of the biggest painpoint is to forward all the emitted events from components.
+当你为组件构建包装器时，最大的痛点之一是转发组件发出的所有事件。
 
-By using this composables, it will convert the `emits` you've declared into an object of handlers that is acceptable by Vue component.
+通过使用这个组合式函数，它会将你声明的 `emits` 转换为 Vue 组件可以接受的处理程序对象。
 
-## Usage
+## 用法
 
 ```vue
 <script setup lang="ts">

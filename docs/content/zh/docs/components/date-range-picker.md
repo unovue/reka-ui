@@ -1,51 +1,51 @@
 ---
-title: Date Range Picker
-description: Facilitates the selection of date ranges through an input and calendar-based interface.
+title: 日期范围选择器
+description: 通过输入和基于日历的界面进行日期范围的选择。
 name: date-range-picker
 ---
 
-# Date Range Picker
+# 日期范围选择器
 
 <Badge>Alpha</Badge>
 
 <Description>
-Facilitates the selection of date ranges through an input and calendar-based interface.
+通过输入和基于日历的界面进行日期范围的选择。
 </Description>
 
 <ComponentPreview name="DateRangePicker" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation',
-    'Can be controlled or uncontrolled',
-    'Focus is fully managed',
-    'Localization support',
-    'Accessible by default',
-    'Supports both date and date-time formats'
+    '全键盘导航',
+    '可以是受控的或非受控的',
+    '焦点完全可控',
+    '本地化支持',
+    '默认无障碍',
+    '支持日期格式和日期时间格式'
   ]"
 />
 
-## Preface
+## 前言
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
+该组件依赖于 [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) 包，这个包解决了在 JavaScript 中处理日期和时间时出现的许多问题。
 
-We highly recommend reading through the documentation for the package to get a solid feel for how it works, and you'll need to install it in your project to use the date-related components.
+我们强烈建议通读该包的文档，以便深入了解它的工作原理，并且你需要在你的项目中安装它才能使用与日期相关的组件。
 
-## Installation
+## 安装
 
-Install the date package.
+安装日期包。
 
 <InstallationTabs value="@internationalized/date" />
 
-Install the component from your command line.
+从命令行安装此组件
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -114,300 +114,300 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a date picker
+包含日期范围选择器的所有部分
 
-<!-- @include: @/meta/DateRangePickerRoot.md -->
+<!-- @include: @/zh/meta/DateRangePickerRoot.md -->
 
 ### Field
 
-Contains the date picker date field segments and trigger
+包含日期范围选择器日期范围字段区段和触发器
 
-<!-- @include: @/meta/DateRangePickerField.md -->
+<!-- @include: @/zh/meta/DateRangePickerField.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-invalid]',
-      values: 'Present when invalid',
+      values: '不合法时存在',
     }
   ]"
 />
 
 ### Input
 
-Contains the date picker date field segments
+包含日期范围选择器日期范围字段区段
 
-<!-- @include: @/meta/DateRangePickerInput.md -->
+<!-- @include: @/zh/meta/DateRangePickerInput.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-invalid]',
-      values: 'Present when invalid',
+      values: '不合法时存在',
     },
     {
       attribute: '[data-placeholder]',
-      values: 'Present when no value is set',
+      values: '没有设置值时存在',
     }
   ]"
 />
 
 ### Trigger
 
-The button that toggles the popover. By default, the `DateRangePickerContent` will position itself against the trigger.
+切换弹出面板的按钮。默认情况下，`DateRangePickerContent` 将自身定位在触发器上。
 
-<!-- @include: @/meta/DateRangePickerTrigger.md -->
+<!-- @include: @/zh/meta/DateRangePickerTrigger.md -->
 
 ### Content
 
-The component that pops out when the popover is open.
+弹出面板打开时弹出的组件。
 
-<!-- @include: @/meta/DateRangePickerContent.md -->
+<!-- @include: @/zh/meta/DateRangePickerContent.md -->
 
 ### Arrow
 
-An optional arrow element to render alongside the popover. This can be used to help visually link the anchor with the `DateRangePickerContent`. Must be rendered inside `DateRangePickerContent`.
+与弹出面板一起呈现的可选箭头元素。这可用于帮助视觉上将锚点与 `DateRangePickerContent` 链接。必须在 `DateRangePickerContent` 中。
 
-<!-- @include: @/meta/DateRangePickerArrow.md -->
+<!-- @include: @/zh/meta/DateRangePickerArrow.md -->
 
 ### Close
 
-The button that closes an open date picker.
+关闭打开的日期范围选择器的按钮。
 
-<!-- @include: @/meta/DateRangePickerClose.md -->
+<!-- @include: @/zh/meta/DateRangePickerClose.md -->
 
 ### Anchor
 
-An optional element to position the `DateRangePickerContent` against. If this part is not used, the content will position alongside the `DateRangePickerTrigger`.
+用于定位 `DateRangePickerContent` 的可选元素。如果不使用此部分，内容将与 `DateRangePickerTrigger` 一起定位。
 
-<!-- @include: @/meta/DateRangePickerAnchor.md -->
+<!-- @include: @/zh/meta/DateRangePickerAnchor.md -->
 
 ### Calendar
 
-Contains all the parts of a calendar
+包含日历的所有部分
 
-<!-- @include: @/meta/DateRangePickerCalendar.md -->
+<!-- @include: @/zh/meta/DateRangePickerCalendar.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-invalid]',
-      values: 'Present when invalid',
+      values: '不合法时存在',
     }
   ]"
 />
 
 ### Header
 
-Contains the navigation buttons and the heading segments.
+包含导航按钮和标题段。
 
-<!-- @include: @/meta/DateRangePickerHeader.md -->
+<!-- @include: @/zh/meta/DateRangePickerHeader.md -->
 
 ### Prev Button
 
-Calendar navigation button. It navigates the calendar one month/year/decade in the past based on the current calendar view.
+日历导航按钮。它根据当前日历视图导航前一个月/年/十年的日历。
 
-<!-- @include: @/meta/DateRangePickerPrev.md -->
+<!-- @include: @/zh/meta/DateRangePickerPrev.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Next Button
 
-Calendar navigation button. It navigates the calendar one month/year/decade in the future based on the current calendar view.
+日历导航按钮。它根据当前日历视图导航后一个月/年/十年的日历。
 
-<!-- @include: @/meta/DateRangePickerNext.md -->
+<!-- @include: @/zh/meta/DateRangePickerNext.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Heading
 
-Heading for displaying the current month and year
+显示当前月份和年份的标题。
 
-<!-- @include: @/meta/DateRangePickerHeading.md -->
+<!-- @include: @/zh/meta/DateRangePickerHeading.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Grid
 
-Container for wrapping the calendar grid.
+用于包裹日历网格的容器。
 
-<!-- @include: @/meta/DateRangePickerGrid.md -->
+<!-- @include: @/zh/meta/DateRangePickerGrid.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Grid Head
 
-Container for wrapping the grid head.
+用于包裹网格头的容器。
 
-<!-- @include: @/meta/DateRangePickerGridHead.md -->
+<!-- @include: @/zh/meta/DateRangePickerGridHead.md -->
 
 ### Grid Body
 
-Container for wrapping the grid body.
+用于包裹网格体的容器。
 
-<!-- @include: @/meta/DateRangePickerGridBody.md -->
+<!-- @include: @/zh/meta/DateRangePickerGridBody.md -->
 
 ### Grid Row
 
-Container for wrapping the grid row.
+用于包裹网格行的容器。
 
-<!-- @include: @/meta/DateRangePickerGridRow.md -->
+<!-- @include: @/zh/meta/DateRangePickerGridRow.md -->
 
 ### Head Cell
 
-Container for wrapping the head cell. Used for displaying the week days.
+用于包裹表头单元格的容器。用于显示星期几。
 
-<!-- @include: @/meta/DateRangePickerHeadCell.md -->
+<!-- @include: @/zh/meta/DateRangePickerHeadCell.md -->
 
 ### Cell
 
-Container for wrapping the calendar cells.
+用于包裹日历单元格的容器。
 
-<!-- @include: @/meta/DateRangePickerCell.md -->
+<!-- @include: @/zh/meta/DateRangePickerCell.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Cell Trigger
 
-Interactable container for displaying the cell dates. Clicking it selects the date.
+用于显示单元格日期的可交互容器。点击它可选择日期。
 
-<!-- @include: @/meta/DateRangePickerCellTrigger.md -->
+<!-- @include: @/zh/meta/DateRangePickerCellTrigger.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-selected]',
-      values: 'Present when selected',
+      values: '选中时存在',
     },
     {
       attribute: '[data-value]',
-      values: 'The ISO string value of the date.',
+      values: '日期的 ISO 字符串值。',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-unavailable]',
-      values: 'Present when unavailable',
+      values: '不可用状态时存在',
     },
     {
       attribute: '[data-today]',
-      values: 'Present when today',
+      values: '今天时存在',
     },
     {
       attribute: '[data-outside-view]',
-      values: 'Present when the date is outside the current month it is displayed in.',
+      values: '如果日期在其显示所在的当前月份之外，则会出现。',
     },
     {
       attribute: '[data-outside-visible-view]',
-      values: 'Present when the date is outside the months that are visible on the calendar.',
+      values: '当日期在日历上可见的月份之外时出现。',
     },
     {
       attribute: '[data-selection-start]',
-      values: 'Present when the date is the start of the selection.',
+      values: '当日期是选择的开始时存在。',
     },
     {
       attribute: '[data-selection-end]',
-      values: 'Present when the date is the end of the selection.',
+      values: '当日期是选择的结尾时存在。',
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when the date is highlighted by the user as they select a range.',
+      values: '当用户在选择范围时突出显示日期时存在。',
     },
     {
       attribute: '[data-highlighted-start]',
-      values: 'Present when the date is the start of the range that is highlighted by the user.',
+      values: '当日期是用户突出显示的范围的开始时存在。',
     },
     {
       attribute: '[data-highlighted-end]',
-      values: 'Present when the date is the end of the range that is highlighted by the user.',
+      values: '当日期是用户突出显示的范围的结尾时存在。',
     },
     {
       attribute: '[data-focused]',
-      values: 'Present when focused',
+      values: '聚焦时存在',
     }
   ]"
 />
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: 'When focus moves onto the date field, focuses the first segment.'
+      description: '当焦点移动到日期字段时，聚焦第一段。'
     },
     {
       keys: ['Space'],
       description:`
       <span>
-          When the focus is on either <Code>DateRangePickerNext</Code> or <Code>DateRangePickerPrev</Code>, it navigates the calendar. Otherwise, it selects the date. If the focus is on <Code>DateRangePickerTrigger</Code>, it opens/closes the popover.
+          当焦点在<Code>DateRangePickerNext</Code>或<Code>DateRangePickerPrev</Code>上时，它会导航日历。否则，它会选择日期。如果焦点在<Code>DateRangePickerTrigger</Code>上，它会打开/关闭弹出面板。
       </span>
     ` ,
     },
@@ -415,7 +415,7 @@ Interactable container for displaying the cell dates. Clicking it selects the da
       keys: ['Enter'],
       description:`
       <span>
-          When the focus is on either <Code>DateRangePickerNext</Code> or <Code>DateRangePickerPrev</Code>, it navigates the calendar. Otherwise, it selects the date. If the focus is on <Code>DateRangePickerTrigger</Code>, it opens/closes the popover.
+          当焦点在<Code>DateRangePickerNext</Code>或<Code>DateRangePickerPrev</Code>上时，它会导航日历。否则，它会选择日期。如果焦点在<Code>DateRangePickerTrigger</Code>上，它会打开/关闭弹出面板。
       </span>
     ` ,
     },
@@ -423,26 +423,26 @@ Interactable container for displaying the cell dates. Clicking it selects the da
       keys: ['ArrowLeft', 'ArrowRight'],
       description:
       `
-         Navigates between the date field segments. If the focus is on the <Code>DateRangePickerCalendar</Code>, it navigates between the dates.
+         在日期字段区段之间导航。如果焦点在<Code>DateRangePickerCalendar</Code>上，它会在日期之间导航。
       `
     },
     {
       keys: ['ArrowUp', 'ArrowDown'],
-      description: 'Increments/changes the value of the segment. If the focus is on the <Code>DateRangePickerCalendar</Code>, it navigates between the dates.'
+      description: '增加/更改区段的值。如果焦点在<Code>DateRangePickerCalendar</Code>上，它会在日期之间导航。'
     },
     {
       keys: ['0-9'],
       description: `
-          When the focus is on a numeric <Code>DateRangePickerInput</Code>, it types in the number and focuses the next segment if the next input would result in an invalid value.
+          当焦点在数字<Code>DateRangePickerInput</Code>上时，如果下一个输入将导致无效值，则输入该数字并聚焦下一个段。
       `
     },
     {
       keys: ['Backspace'],
-      description: 'Deletes a digit from the focused numeric segments.'
+      description: '从聚焦的数字区段中删除一个数字。'
     },
     {
       keys: ['A', 'P'],
-      description: 'When the focus is on the day period, it sets it to AM or PM.'
+      description: '当焦点在白天时，它会将其设置为上午或下午。'
     }
   ]"
 />

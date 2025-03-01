@@ -1,7 +1,7 @@
 ---
 
 title: Tree
-description: A tree view widget displays a hierarchical list of items that can be expanded or collapsed to show or hide their child items, such as in a file system navigator.
+description: 树视图显示项目的分层列表，这些项目可以展开或折叠以显示或隐藏其子项目，例如在文件系统导航器中。
 name: tree
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
 ---
@@ -11,33 +11,33 @@ aria: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
 <Badge>Alpha</Badge>
 
 <Description>
-A tree view widget displays a hierarchical list of items that can be expanded or collapsed to show or hide their child items, such as in a file system navigator.
+树视图显示项目的分层列表，这些项目可以展开或折叠以显示或隐藏其子项目，例如在文件系统导航器中。
 </Description>
 
 <ComponentPreview name="Tree" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Supports Right to Left direction.',
-    'Supports multiple selection.',
-    'Different selection behavior.',
+    '可以是受控的或非受控的',
+    '焦点完全可控',
+    '全键盘导航',
+    '支持从右到左的方向（RTL）',
+    '支持多选',
+    '不同的选择行为',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -56,19 +56,19 @@ import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a tree.
+包含树的所有部分。
 
-<!-- @include: @/meta/TreeRoot.md -->
+<!-- @include: @/zh/meta/TreeRoot.md -->
 
 ### Item
 
-The item component.
+项组件。
 
-<!-- @include: @/meta/TreeItem.md -->
+<!-- @include: @/zh/meta/TreeItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -82,22 +82,22 @@ The item component.
     },
     {
       attribute: '[data-selected]',
-      values: 'Present when selected',
+      values: '选中时存在',
     },
   ]"
 />
 
 ### Virtualizer
 
-Virtual container to achieve list virtualization.
+虚拟容器，实现列表虚拟化。
 
-<!-- @include: @/meta/TreeVirtualizer.md -->
+<!-- @include: @/zh/meta/TreeVirtualizer.md -->
 
-## Examples
+## 示例
 
-### Selecting multiple items
+### 选择多个项
 
-The `Tree` component allows you to select multiple items. You can enable this by providing an array of values instead of a single value.
+`Tree` 组件允许您选择多个项目。您可以通过提供值数组而不是单个值并设置 `multiple="true"` 来启用此功能。
 
 ```vue line=12,16
 <script setup lang="ts">
@@ -124,9 +124,9 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
-### Virtual List
+### 虚拟列表
 
-Rendering a long list of item can slow down the app, thus using virtualization would significantly improve the performance.
+渲染一长串项目可能会降低应用程序的速度，因此使用虚拟化将显著提高性能。
 
 ```vue line=9-16
 <script setup lang="ts">
@@ -149,11 +149,11 @@ import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
 </template>
 ```
 
-### With Checkbox
+### 带复选框
 
-Some `Tree` component might want to show `toggled/indeterminate` checkbox. We can change the behavior of the `Tree` component by using a few props and `preventDefault` event.
+某些 `Tree` 组件可能希望显示 `toggled/indeterminate` 复选框。我们可以通过使用一些 props 和 `preventDefault` 事件来改变 `Tree` 组件的行为。
 
-We set `propagateSelect` to `true` because we want the parent checkbox to select/deselect it's descendants. Then, we add a checkbox that triggers `select` event.
+我们将 `propagateSelect` 设置为 `true`，因为我们希望父复选框选择/取消选择它的后代。然后，我们添加一个触发 `select` 事件的复选框。
 
 ```vue line=10-11,17-25,29-33
 <script setup lang="ts">
@@ -214,11 +214,11 @@ import { TreeItem, TreeRoot } from 'reka-ui'
 </template>
 ```
 
-### Nested Tree Node
+### 嵌套树节点
 
-The default example shows flatten tree items and nodes, this enables [Virtualization](/docs/components/tree.html#virtual-list) and custom feature such as Drag & Drop easier. However, you can also build it to have nested DOM node.
+默认示例显示了扁平化的树项目和节点，这使得[虚拟化](/zh/docs/components/tree.html#virtual-list)和自定义功能（如拖放）更容易。但是，您也可以将其构建为具有嵌套的 DOM 节点。
 
-In `Tree.vue`,
+在 `Tree.vue` 中，
 
 ```vue
 <script setup lang="ts">
@@ -260,7 +260,7 @@ withDefaults(defineProps<{
 </template>
 ```
 
-In `CustomTree.vue`
+在 `CustomTree.vue` 中，
 
 ```vue
 <template>
@@ -273,13 +273,13 @@ In `CustomTree.vue`
 </template>
 ```
 
-### Custom children schema
+### 自定义子架构
 
-By default, `<TreeRoot />` expects you to provide the list of node's children by passing a list of `children` for every node. You can override that by providing the `getChildren` prop.
+默认情况下，`<TreeRoot />` 希望您通过为每个节点传递 `children` 项列表来提供节点的子项列表。您可以通过提供 `getChildren` 属性来覆盖它。
 
 <Callout type="info">
 
-If the node doesn't have any children, `getChildren` should return `undefined` instead of an empty array.
+如果节点没有任何子节点，`getChildren` 应返回 `undefined` 而不是空数组。
 
 </Callout>
 
@@ -312,47 +312,47 @@ interface DirectoryNode {
 </template>
 ```
 
-### Draggable/Sortable Tree
+### 可拖动/可排序树
 
-For more complex draggable `Tree` component, in this example we will be using [pragmatic-drag-and-drop](https://github.com/atlassian/pragmatic-drag-and-drop), as the core package for handling dnd.
+对于更复杂的可拖动 `Tree` 组件，在这个例子中，我们将使用 [pragmatic-drag-and-drop](https://github.com/atlassian/pragmatic-drag-and-drop) 作为处理 dnd 的核心包。
 
-[Stackblitz Demo](https://stackblitz.com/edit/github-8f3fzs?file=src%2FTreeDND.vue)
+[Stackblitz 演示](https://stackblitz.com/edit/github-8f3fzs?file=src%2FTreeDND.vue)
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Tree WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/).
+遵循 [Tree WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Enter'],
-      description: 'When highlight on <code>TreeItem</code>, selects the focused item.',
+      description: '在<code>TreeItem</code>上高亮显示时，选择聚焦的项目。',
     },
     {
       keys: ['ArrowDown'],
-      description: 'When focus is on <code>TreeItem</code>, moves focus to the next item.',
+      description: '当焦点位于 <code>TreeItem</code> 上时，将焦点移至下一项。',
     },
     {
       keys: ['ArrowUp'],
-      description: 'When focus is on <code>TreeItem</code>, moves focus to the previous item.',
+      description: '当焦点位于<code>TreeItem</code>上时，将焦点移动到上一项。',
     },
     {
       keys: ['ArrowRight'],
-      description: 'When focus is on a closed <code>TreeItem</code> (node), it opens the node without moving focus. When on an open node, it moves focus to the first child node. When on an end node, it does nothing.',
+      description: '当焦点位于已关闭的<code>TreeItem</code>（节点）上时，它会在不移动焦点的情况下打开该节点。在打开的节点上时，它会将焦点移动到第一个子节点。当位于终端节点上时，它不执行任何动作。',
     },
     {
       keys: ['ArrowLeft'],
-      description: 'When focus is on an open <code>TreeItem</code> (node), closes the node. When focus is on a child node that is also either an end node or a closed node, moves focus to its parent node. When focus is on a root node that is also either an end node or a closed node, does nothing.',
+      description: '当焦点位于打开的 <code>TreeItem</code>（节点）上时，关闭该节点。当焦点位于同时是结束节点或闭合节点的子节点上时，将焦点移动到其父节点。当焦点位于根节点上时，该根节点也是结束节点或闭合节点，则不执行任何动作。',
     },
     {
       keys: ['Home', 'PageUp'],
-      description: '<span>Moves focus first <code>TreeItem</code></span>',
+      description: '<span>将焦点移动到第一个 <code>TreeItem</code></span>',
     },
     {
       keys: ['End', 'PageDown'],
-      description: '<span>Moves focus last <code>TreeItem</code></span>',
+      description: '<span>将焦点移动到最后一个 <code>TreeItem</code></span>',
     },
   ]"
 />

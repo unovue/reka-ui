@@ -1,38 +1,38 @@
 ---
 
-title: Styling
-description: Reka UI are unstyled—and compatible with any styling solution—giving you complete control over styling.
+title: 设置样式
+description: Reka UI 是无样式的，并且与任何样式解决方案兼容，让您可以完全控制样式。
 ---
 
-# Styling
+# 设置样式
 
 <Description>
-Reka UI are unstyled and compatible with any styling solution giving you complete control over styling.
+Reka UI 是无样式的，并且与任何样式解决方案兼容，让您可以完全控制样式。
 </Description>
 
-## Styling overview
+## 样式概述
 
-### Functional styles
+### 功能样式
 
-You are in control of all aspects of styling, including functional styles. For example, by default, a [Dialog Overlay](../components/dialog) won't cover the entire viewport. You're responsible for adding those styles, plus any presentation styles.
+您可以控制样式的所有方面，包括功能样式。例如，默认情况下，[Dialog Overlay](../components/dialog)不会覆盖整个视区。您负责添加这些样式以及任何演示样式。
 
-### Classes
+### 类
 
-All components accept `class` attributes, just like normal component. This class will be passed through to the DOM element. You can use it in CSS as expected.
+所有组件都接受 `class` 属性，就像普通组件一样。这个类将被传递给 DOM 元素。您可以按预期在 CSS 中使用它。
 
-#### Teleported elements
+#### 传送元素
 
-Some elements, such as modals or popovers, are teleported to the `body`. When using scoped style to apply CSS, you will need to use [deep selectors](https://vuejs.org/api/sfc-css-features.html#deep-selectors) to target them.
+某些元素（如 modal 或 popover）被传送到 `body` 中。使用范围样式应用 CSS 时，您需要使用[深度选择器](https://cn.vuejs.org/api/sfc-css-features.html#deep-selectors)来定位它们。
 
-### Data attributes
+### Data attributes 数据属性
 
-When components are stateful, their state will be exposed in a `data-state` attribute. For example, when an [Accordion Item](../components/accordion) is opened, it includes a `data-state="open"` attribute.
+当组件是有状态的时，它们的状态将在 `data-state` 属性中公开。例如，当打开[Accordion Item 折叠项](../components/accordion)时，它包括一个 `data-state="open"` 属性。
 
-## Styling with CSS
+## 使用 CSS 设置样式
 
-### Styling a part
+### 设置部件样式
 
-You can style a component part by targeting the `class` that you provide.
+您可以通过定位您提供的 `class` 来设置组件部件的样式。
 
 ```vue{7}
 <script setup lang="ts">
@@ -53,9 +53,9 @@ import { AccordionRoot, AccordionItem, ... } from "reka-ui";
 </style>
 ```
 
-### Styling a state
+### 设置状态的样式
 
-You can style a component state by targeting its `data-state` attribute.
+您可以通过指定组件 `data-state` 属性来设置组件状态的样式。
 
 ```css
 .AccordionItem {
@@ -67,9 +67,9 @@ You can style a component state by targeting its `data-state` attribute.
 }
 ```
 
-### Scoped style
+### 作用域（scoped）样式
 
-You can style a component using scoped style. Be wary of teleported elements, as they require the use of [deep selectors](https://vuejs.org/api/sfc-css-features.html#deep-selectors) to be targeted.
+您可以使用作用域样式设置组件的样式。注意传送元素，因为它们需要使用[深度选择器](https://cn.vuejs.org/api/sfc-css-features.html#deep-selectors)才能成为目标。
 
 ```vue{7}
 <script setup lang="ts">
@@ -98,13 +98,13 @@ import { DropdownMenuRoot, DropdownMenuItem, ... } from "reka-ui";
 </style>
 ```
 
-## Styling with Tailwind CSS
+## 使用 Tailwind CSS 设置样式
 
-The examples below are using [Tailwind CSS](https://tailwindcss.com/), but you can use any library of your choice.
+下面的示例使用的是 [Tailwind CSS](https://tailwindcss.com/)，但你可以使用你选择的任何库。
 
-### Styling a part
+### 设置部件样式
 
-You can style a component part by targeting the `class`.
+您可以通过指定 `class` 来设置组件部件的样式。
 
 ```vue{7}
 <script setup lang="ts">
@@ -119,9 +119,9 @@ import { AccordionRoot, AccordionItem, ... } from "reka-ui";
 </template>
 ```
 
-### Styling a state
+### 设置状态的样式
 
-With Tailwind CSS's powerful variant selector, you can style a component state by targeting its `data-state` attribute.
+使用 Tailwind CSS 强大的变体选择器，您可以通过定位组件 `data-state` 属性来设置组件状态的样式。
 
 ```vue{10}
 <script setup lang="ts">
@@ -142,9 +142,9 @@ import { AccordionRoot, AccordionItem, ... } from "reka-ui";
 </template>
 ```
 
-## Extending a primitive
+## 扩展 primitive
 
-Extending a primitive is done the same way you extend any Vue component.
+扩展 primitive 的方式与扩展任何 Vue 组件的方式相同。
 
 ```vue[CustomAccordion.vue]
 <script setup lang="ts">
@@ -162,8 +162,8 @@ defineProps<Props>();
 </template>
 ```
 
-## Summary
+## 总结
 
-Reka UI were designed to encapsulate accessibility concerns and other complex functionalities, while ensuring you retain complete control over styling.
+Reka UI 旨在封装辅助功能问题和其他复杂功能，同时确保您保留对样式的完全控制。
 
-For convenience, stateful components include a `data-state` attribute.
+为方便起见，有状态组件包括 `data-state` 属性。

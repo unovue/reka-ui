@@ -1,15 +1,16 @@
 ---
 title: useForwardPropsEmits
-description: Combinations for useForwardProps & useEmitAsProps
+description: 结合 useForwardProps 和 useEmitAsProps
+
 ---
 
 # useForwardPropsEmits
 
 <Description>
-Combinations for useForwardProps & useEmitAsProps
+结合 useForwardProps 和 useEmitAsProps
 </Description>
 
-This composable is just a wrapper for [useForwardProps](/docs/utilities/use-forward-props) & [useEmitAsProps](/docs/utilities/use-emit-as-props.html) composables. Doing so it returns only 1 object that is designed to be use with `v-bind` directly.
+此组合式函数只是 [useForwardProps](/zh/docs/utilities/use-forward-props) 和 [useEmitAsProps](/zh/docs/utilities/use-emit-as-props.html) 组合式函数的包装器。这样做，它只返回 1 个被设计为直接与 `v-bind` 一起使用的对象。
 
 ## Usage
 

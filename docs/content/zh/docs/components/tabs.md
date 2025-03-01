@@ -1,39 +1,39 @@
 ---
 
-title: Tabs
-description: A set of layered sections of content—known as tab panels—that are displayed one at a time.
+title: 选项卡
+description: 一组分层的内容部分（称为选项卡面板），一次显示一个。
 name: tabs
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/tabpanel
 ---
 
-# Tabs
+# 选项卡
 
 <Description>
-A set of layered sections of content—known as tab panels—that are displayed one at a time.
+一组分层的内容部分（称为选项卡面板），一次显示一个。
 </Description>
 
 <ComponentPreview name="Tabs" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Supports horizontal/vertical orientation.',
-    'Supports automatic/manual activation.',
-    'Full keyboard navigation.',
+    '可以是受控的或非受控的',
+    '支持水平/垂直方向',
+    '支持自动/手动激活',
+    '全键盘导航',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -51,13 +51,13 @@ import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'rek
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the tabs component parts.
+包含所有选项卡组件部件。
 
-<!-- @include: @/meta/TabsRoot.md -->
+<!-- @include: @/zh/meta/TabsRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -70,9 +70,9 @@ Contains all the tabs component parts.
 
 ### List
 
-Contains the triggers that are aligned along the edge of the active content.
+包含沿激活内容边缘对齐的触发器。
 
-<!-- @include: @/meta/TabsList.md -->
+<!-- @include: @/zh/meta/TabsList.md -->
 
 <DataAttributesTable
   :data="[
@@ -85,9 +85,9 @@ Contains the triggers that are aligned along the edge of the active content.
 
 ### Trigger
 
-The button that activates its associated content.
+用于激活其关联内容的按钮。
 
-<!-- @include: @/meta/TabsTrigger.md -->
+<!-- @include: @/zh/meta/TabsTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -97,7 +97,7 @@ The button that activates its associated content.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -108,30 +108,30 @@ The button that activates its associated content.
 
 ### Indicator
 
-The indicator that highlights the current active tab.
+突出显示当前活动选项卡的指示器。
 
-<!-- @include: @/meta/TabsIndicator.md -->
+<!-- @include: @/zh/meta/TabsIndicator.md -->
 
 <CssVariablesTable
   :data="[
     {
       cssVariable: '--reka-tabs-indicator-size',
-      description: 'The size of the indicator.',
+      description: '指示器的大小。',
     },
     {
       cssVariable: '--reka-tabs-indicator-position',
-      description: 'The position of the indicator',
+      description: '指示器的位置',
     },
   ]"
 />
 
 ### Content
 
-Contains the content associated with each trigger.
+包含与每个触发器关联的内容。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/TabsContent.md -->
+<!-- @include: @/zh/meta/TabsContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -146,11 +146,11 @@ Contains the content associated with each trigger.
   ]"
 />
 
-## Examples
+## 示例
 
-### Vertical
+### 纵向
 
-You can create vertical tabs by using the `orientation` prop.
+你可以使用 `orientation` 属性创建垂直选项卡。
 
 ```vue line=6
 <script setup>
@@ -186,41 +186,41 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Tabs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabpanel).
+遵循[选项卡 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/tabpanel)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: '<span> When focus moves onto the tabs, focuses the active trigger. When a trigger is focused, moves focus to the active content.</span>',
+      description: '<span>当焦点移动到选项卡上时，将焦点放在活动触发器上。当触发器获得焦点时，将焦点移动到活动内容。</span>',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> Moves focus to the next trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移动到下一个触发器，并激活其关联的内容。</span>',
     },
     {
       keys: ['ArrowRight'],
-      description: '<span> Moves focus to the next trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移动到下一个触发器，并激活其关联的内容。</span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> Moves focus to the previous trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移动到上一个触发器，并激活其关联的内容。</span>',
     },
     {
       keys: ['ArrowLeft'],
-      description: '<span> Moves focus to the previous trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移动到上一个触发器，并激活其关联的内容。</span>',
     },
     {
       keys: ['Home'],
-      description: '<span> Moves focus to the first trigger and activates its associated content.</span>',
+      description: '<span>将焦点移动到第一个触发器并激活其关联的内容。</span>',
     },
     {
       keys: ['End'],
-      description: '<span> Moves focus to the last trigger and activates its associated content.</span>',
+      description: '<span>将焦点移至最后一个触发器并激活其关联的内容。</span>',
     },
   ]"
 />

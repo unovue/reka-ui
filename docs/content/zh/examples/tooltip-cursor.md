@@ -1,14 +1,14 @@
 ---
-title: Tooltip Cursor
+title: 光标提示
 tags:
-  - Tooltip
+  - 工具提示
 ---
 
-# Tooltip Cursor
+# 光标提示
 
 <Description>
 
-Render a Tooltip that follows the cursor when hovering over the target element.
+当鼠标悬停在目标元素上时，呈现一个跟随光标的[工具提示](/zh/docs/components/tooltip)。
 
 </Description>
 
@@ -18,6 +18,6 @@ Render a Tooltip that follows the cursor when hovering over the target element.
 
 <ExampleSection>
 
-### Tooltip Cursor
+### 光标提示
 
 </ExampleSection>

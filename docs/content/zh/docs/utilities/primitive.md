@@ -1,17 +1,17 @@
 ---
 title: Primitive
-description: Compose Radix's functionality onto alternative element types or your own Vue components.
+description: 将 Reka 的功能组合到替代元素类型或你自己的 Vue 组件上。
 ---
 
 # Primitive
 
 <Description>
-Compose Radix's functionality onto alternative element types or your own Vue components.
+将 Reka 的功能组合到替代元素类型或你自己的 Vue 组件上。
 </Description>
 
-When you are building a component, in some cases you might want to allow user to compose some functionalities onto the underlying element, or alternative element. This is where `Primitive` comes in handy as it expose this capability to the user.
+当你构建一个组件时，在某些情况下，你可能希望允许用户将一些功能组合到底层元素或替代元素上。这就是 `Primitive` 派上用场的地方，因为它向用户暴露了此功能。
 
-## API Reference
+## API 参考
 
 <PropsTable
   :data="[
@@ -20,23 +20,23 @@ When you are building a component, in some cases you might want to allow user to
       required: false,
       type: 'string | Component',
       default: 'div',
-      description: '<p>The element or component the current element should render as. Can be overwrite by <Code>asChild</Code></p>',
+      description: '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>',
     },
     {
       name: 'asChild',
       required: false,
       type: 'boolean',
       default: 'false',
-      description: '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.<br><br>Read our <a href=&quot;/guides/composition&quot;>Composition</a> guide for more details.</p>',
+      description: '<p>更改作为子元素传递的元素的默认渲染元素，合并它们的 props 和行为。<br><br>阅读我们的<a href=&quot;../guides/composition&quot;>合成</a>指南了解更多详情。</p>',
     }
   ]"
 />
 
-## Usage
+## 用法
 
-### Changing `as` value
+### 更改 `as` 值
 
-If you want to change the default element or component being render, you can set the default `as` when defining the props.
+如果你想改变正在渲染的默认元素或组件，你可以在定义 props 时设置默认 `as`。
 
 ```vue
 <script setup lang="ts">
@@ -55,6 +55,7 @@ const props = withDefaults(defineProps<PrimitiveProps>(), {
 </template>
 ```
 
-### Render `asChild`
+### 渲染 `asChild`
 
-Change the default rendered element for the one passed as a child, merging their props and behavior.<br><br>Read our <a href="/docs/guides/composition">Composition</a> guide for more details.
+更改作为子元素传递的元素的默认渲染元素，合并它们的 props 和行为。<br><br>
+阅读我们的[合成](../guides/composition)指南了解更多详情。

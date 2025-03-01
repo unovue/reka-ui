@@ -1,14 +1,14 @@
 ---
-title: Circular Progress
+title: 圆形进度条
 tags:
-  - Progress
+  - 进度
 ---
 
-# Circular Progress
+# 圆形进度条
 
 <Description>
 
-Rendering progress bar as a Circular Progress.
+用 [进度](/zh/docs/components/progress) 渲染圆形进度条.
 
 </Description>
 
@@ -18,6 +18,6 @@ Rendering progress bar as a Circular Progress.
 
 <ExampleSection>
 
-### Circular Progress
+### 圆形进度条
 
 </ExampleSection>

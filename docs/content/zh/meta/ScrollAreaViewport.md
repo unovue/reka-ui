@@ -1,22 +1,20 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'nonce',
-    'description': '<p>Will add <code>nonce</code> attribute to the style tag which can be used by Content Security Policy. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code>.</p>\n',
+    'description': '<p>将 <code>nonce</code>属性添加到可供内容安全策略使用的样式标签中。<br/>如果省略，则从 <code>ConfigProvider</code>全局继承。</p>\n',
     'type': 'string',
     'required': false
   }

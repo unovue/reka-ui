@@ -1,26 +1,26 @@
 ---
-title: Server side rendering
-description: Reka UI can be rendered on the server.
+title: 服务器端渲染
+description: Reka UI 可以在服务器上渲染。
 ---
 
-# Server side rendering
+# 服务器端渲染
 
 <Description>
-Reka UI can be rendered on the server.
+Reka UI 可以在服务器上渲染。
 </Description>
 
-## Overview
+## 概述
 
-Server side rendering or `SSR`, is a technique used to render components to HTML on the server, as opposed to rendering them only on the client.
+服务器端渲染或 `SSR` 是一种用于在服务器上将组件渲染为 HTML 的技术，而不是仅在客户端上渲染它们。
 
-Static rendering is another similar approach. Instead it pre-renders pages to HTML at build time rather than on each request.
+静态渲染是另一种类似的方法。相反，它在构建时将页面预渲染为 HTML，而不是在每个请求时。
 
-You should be able to use all of our primitives with both approaches, for example with [Nuxt.js](https://nuxt.com/).
+您应该能够将我们所有的 primitives 与两种方法一起使用，例如使用 [Nuxt.js](https://nuxt.com/)。
 
-## Nuxt Hydration issue (Vue < 3.5)
+## Nuxt 水合问题 （View < 3.5）
 
-Reka UI offers a [Nuxt module](/docs/overview/installation.html#nuxt-modules) that supports auto importing components. However, if you are using Vue < 3.5, minor hydration issues might arise because as of vue <= 3.4 there is [currently no way](https://github.com/vuejs/rfcs/discussions/557) to ensure consistent DOM element `id` between the client and server renders. This is something that Reka UI relies on.
+Reka UI 提供了一个支持自动导入组件的 [Nuxt 模块](/zh/docs/overview/installation.html#nuxt-modules)。但是，如果你使用的是 Vue < 3.5，可能会出现轻微的激活问题，因为从 vue <= 3.4 [目前无法](https://github.com/vuejs/rfcs/discussions/557)确保客户端和服务器渲染之间的 DOM 元素 id 一致。这是 Reka UI 所依赖的。
 
-As a temporary workaround, we expose a way to allow Nuxt (with version > `3.10`) inject it's `useId` implementation to `reka-ui`.
+作为临时解决方法，我们公开了一种方法，允许 Nuxt（版本 > 3.10）将其 `useId` 实现注入 `reka-ui`。
 
-To provide a custom `useId` implementation, please follow this [guide](/docs/utilities/config-provider.html#hydration-issue-vue-3-5).
+要提供自定义 `useId` 实现，请遵循本[指南](/zh/docs/utilities/config-provider.html#hydration-issue-vue-3-5)。

@@ -1,15 +1,13 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
-    'description': '<p>The open state of the submenu when it is initially rendered. Use when you do not need to control its open state.</p>\n',
+    'description': '<p>子菜单初始渲染时的打开状态。当您不需要控制其打开状态时使用。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the menu. Can be used as <code>v-model:open</code>.</p>\n',
+    'description': '<p>菜单的受控打开状态。可用作<code>v-model:open</code>。</p>\n',
     'type': 'boolean',
     'required': false
   }
@@ -18,7 +16,7 @@
 <EmitsTable :data="[
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state of the submenu changes.</p>\n',
+    'description': '<p>子菜单的打开状态更改时调用的事件处理程序。</p>\n',
     'type': '[payload: boolean]'
   }
 ]" />
@@ -26,7 +24,7 @@
 <SlotsTable :data="[
   {
     'name': 'open',
-    'description': '<p>Current open state</p>\n',
+    'description': '<p>当前打开状态</p>\n',
     'type': 'boolean'
   }
 ]" />

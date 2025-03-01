@@ -1,36 +1,36 @@
 ---
 
-title: Progress
-description: Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
+title: 进度
+description: 显示一个指示器，展示任务的完成进度，通常显示为进度条。
 name: progress
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/meter
 ---
 
-# Progress
+# 进度
 
 <Description>
-Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
+显示一个指示器，展示任务的完成进度，通常显示为进度条。
 </Description>
 
 <ComponentPreview name="Progress" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Provides context for assistive technology to read the progress of a task.',
+    '为辅助技术提供上下文以读取任务的进度',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-### Anatomy
+### 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -44,17 +44,17 @@ import { ProgressIndicator, ProgressRoot } from 'reka-ui'
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [`progressbar` role requirements](https://www.w3.org/WAI/ARIA/apg/patterns/meter).
+遵循 [progressbar 角色要求](https://www.w3.org/WAI/ARIA/apg/patterns/meter)。
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all of the progress parts.
+包含所有进度部件。
 
-<!-- @include: @/meta/ProgressRoot.md -->
+<!-- @include: @/zh/meta/ProgressRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -64,7 +64,7 @@ Contains all of the progress parts.
     },
     {
       attribute: '[data-value]',
-      values: 'The current value',
+      values: 'The 当前值',
     },
     {
       attribute: '[data-max]',
@@ -75,9 +75,9 @@ Contains all of the progress parts.
 
 ### Indicator
 
-Used to show the progress visually. It also makes progress accessible to assistive technologies.
+用于直观地显示进度。它还使辅助技术能够取得进度值。
 
-<!-- @include: @/meta/ProgressIndicator.md -->
+<!-- @include: @/zh/meta/ProgressIndicator.md -->
 
 <DataAttributesTable
   :data="[
@@ -87,7 +87,7 @@ Used to show the progress visually. It also makes progress accessible to assisti
     },
     {
       attribute: '[data-value]',
-      values: 'The current value',
+      values: 'The 当前值',
     },
     {
       attribute: '[data-max]',

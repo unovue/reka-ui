@@ -1,47 +1,45 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'li\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'defaultOpen',
-    'description': '<p>The open state of the dialog when it is initially rendered. Use when you do not need to control its open state.</p>\n',
+    'description': '<p>对话框最初呈现时的打开状态。在不需要控制其打开状态时使用。</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
   },
   {
     'name': 'duration',
-    'description': '<p>Time in milliseconds that toast should remain visible for. Overrides value\ngiven to <code>ToastProvider</code>.</p>\n',
+    'description': '<p>Toast 应保持可见的时间（以毫秒为单位）。覆盖<code>ToastProvider</code>的值。</p>\n',
     'type': 'number',
     'required': false
   },
   {
     'name': 'forceMount',
-    'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
+    'description': '<p>用于在需要更多控制时强制挂载。\n使用Vue动画库控制动画时很有用。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the dialog. Can be bind as <code>v-model:open</code>.</p>\n',
+    'description': '<p>受控打开状态。可以绑定为<code>v-model:open</code>。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'type',
-    'description': '<p>Control the sensitivity of the toast for accessibility purposes.</p>\n<p>For toasts that are the result of a user action, choose <code>foreground</code>. Toasts generated from background tasks should use <code>background</code>.</p>\n',
+    'description': '<p>控制 Toast 的敏感性以实现可访问性。</p>\n<p>对于作为用户操作结果的Toast，选择<code>foreground</code>。从后台任务生成的 Toast 应使用<code>background</code>。</p>\n',
     'type': '\'foreground\' | \'background\'',
     'required': false,
     'default': '\'foreground\''
@@ -51,17 +49,17 @@
 <EmitsTable :data="[
   {
     'name': 'escapeKeyDown',
-    'description': '<p>Event handler called when the escape key is down. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
+    'description': '<p>Escape 键按下时调用的事件处理程序。可以通过调用<code>event.prventDefault</code>来阻止它。</p>\n',
     'type': '[event: KeyboardEvent]'
   },
   {
     'name': 'pause',
-    'description': '<p>Event handler called when the dismiss timer is paused. This occurs when the pointer is moved over the viewport, the viewport is focused or when the window is blurred.</p>\n',
+    'description': '<p>当关闭计时器暂停时调用事件处理程序。当指针在视口上移动、视口聚焦或窗口失焦时，就会触发。</p>\n',
     'type': '[]'
   },
   {
     'name': 'resume',
-    'description': '<p>Event handler called when the dismiss timer is resumed. This occurs when the pointer is moved away from the viewport, the viewport is blurred or when the window is focused.</p>\n',
+    'description': '<p>当关闭计时器恢复时调用事件处理程序。当指针从视口移开、视口模糊或窗口聚焦时，就会触发。</p>\n',
     'type': '[]'
   },
   {
@@ -71,22 +69,22 @@
   },
   {
     'name': 'swipeEnd',
-    'description': '<p>Event handler called at the end of a swipe interaction. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
+    'description': '<p>在滑动交互结束时调用的事件处理程序。可以通过调用<code>event.prevntDefault</code>来阻止。</p>\n',
     'type': '[event: SwipeEvent]'
   },
   {
     'name': 'swipeMove',
-    'description': '<p>Event handler called during a swipe interaction. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
+    'description': '<p>在滑动交互期间调用的事件处理程序。</p>\n',
     'type': '[event: SwipeEvent]'
   },
   {
     'name': 'swipeStart',
-    'description': '<p>Event handler called when starting a swipe interaction. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
+    'description': '<p>在滑动交互开始时调用的事件处理程序。 可以通过调用<code>event.preventDefault</code>来阻止。</p>\n',
     'type': '[event: SwipeEvent]'
   },
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state changes</p>\n',
+    'description': '<p>打开状态更改时调用的事件处理程序</p>\n',
     'type': '[value: boolean]'
   }
 ]" />
@@ -94,7 +92,7 @@
 <SlotsTable :data="[
   {
     'name': 'open',
-    'description': '<p>Current open state</p>\n',
+    'description': '<p>当前打开状态</p>\n',
     'type': 'boolean'
   },
   {

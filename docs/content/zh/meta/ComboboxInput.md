@@ -1,40 +1,38 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'input\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'autoFocus',
-    'description': '<p>Focus on element when mounted.</p>\n',
+    'description': '<p>挂载时聚焦于元素。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'disabled',
-    'description': '<p>When <code>true</code>, prevents the user from interacting with item</p>\n',
+    'description': '<p>当<code>true</code>时，阻止用户与item交互</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'displayValue',
-    'description': '<p>The display value of input for selected item. Does not work with <code>multiple</code>.</p>\n',
+    'description': '<p>所选项目的输入的显示值。不适用于<code>multiple</code></p>\n',
     'type': '((val: any) => string)',
     'required': false
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the filter. Can be binded with with v-model.</p>\n',
+    'description': '<p>筛选器的受控值。可以与 v-model 绑定。</p>\n',
     'type': 'string',
     'required': false
   }
@@ -43,7 +41,7 @@
 <EmitsTable :data="[
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
+    'description': '<p>值更改时调用的事件处理程序。</p>\n',
     'type': '[string]'
   }
 ]" />

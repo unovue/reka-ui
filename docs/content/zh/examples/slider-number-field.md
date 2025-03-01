@@ -1,15 +1,15 @@
 ---
-title: Slider with Number Field
+title: 带数字字段的滑块
 tags:
-  - Slider
-  - NumberField
+  - 滑块
+  - 数字字段
 ---
 
-# Slider with Number Field
+# 带数字字段的滑块
 
 <Description>
 
-Render a Slider with a Number Field that shows and interact with the values of the Slider.
+使用可交互的[数字字段](/zh/docs/components/number-field)显示[滑块](/zh/docs/components/slider)数值。
 
 </Description>
 
@@ -19,6 +19,6 @@ Render a Slider with a Number Field that shows and interact with the values of t
 
 <ExampleSection>
 
-### Slider with Number Field
+### 带数字字段的滑块
 
 </ExampleSection>

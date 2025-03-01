@@ -1,36 +1,36 @@
 ---
-title: Editable
-description: Displays an input field used for editing a single line of text, rendering as static text on load.
+title: 可编辑框
+description: 显示用于编辑单行文本的输入字段，在加载时呈现为静态文本。当触发编辑交互时，它会转换为文本输入字段。
 name: editable
 ---
 
-# Editable
+# 可编辑框
 
 <Description>
-Displays an input field used for editing a single line of text, rendering as static text on load. It transforms into a text input field when the edit interaction is triggered.
+显示用于编辑单行文本的输入字段，在加载时呈现为静态文本。当触发编辑交互时，它会转换为文本输入字段。
 </Description>
 
 <ComponentPreview name="Editable" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation',
-    'Can be controlled or uncontrolled',
-    'Focus is fully managed'
+    '全键盘导航',
+    '可以是受控的或非受控的',
+    '焦点完全可控'
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -58,98 +58,97 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of an editable component.
+包含可编辑组件的所有部分。
 
-<!-- @include: @/meta/EditableRoot.md -->
+<!-- @include: @/zh/meta/EditableRoot.md -->
 
 ### Area
 
-Contains the text parts of an editable component.
+包含可编辑组件的文本部分。
 
-<!-- @include: @/meta/EditableArea.md -->
+<!-- @include: @/zh/meta/EditableArea.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-placeholder-shown]',
-      values: 'Present when preview is shown',
+      values: '显示预览时存在',
     },
     {
       attribute: '[data-empty]',
-      values: 'Present when the input is empty',
+      values: '当输入为空时存在',
     },
     {
       attribute: '[data-focus]',
-      values: 'Present when the editable field is focused. To be deprecated in favor of [data-focused]',
+      values: '当可编辑字段获得焦点时显示。将被弃用，取而代之的是[data-focused]',
     },
     {
       attribute: '[data-focused]',
-      values: 'Present when the editable field is focused',
+      values: '聚焦可编辑字段时显示',
     }
   ]"
 />
 
 ### Input
 
-Contains the input of an editable component.
+包含可编辑组件的输入。
 
-<!-- @include: @/meta/EditableInput.md -->
+<!-- @include: @/zh/meta/EditableInput.md -->
 
 <DataAttributesTable
 :data="[
   {
     attribute: '[data-readonly]',
-    values: 'Present when readonly',
+    values: '只读时存在',
   },
   {
     attribute: '[data-disabled]',
-    values: 'Present when disabled',
+    values: '禁用时存在',
   }
 ]"
 />
 
 ### Preview
 
-Contains the preview of the editable component.
+包含可编辑组件的预览。
 
-<!-- @include: @/meta/EditablePreview.md -->
+<!-- @include: @/zh/meta/EditablePreview.md -->
 
 ### Edit Trigger
 
-Contains the edit trigger of the editable component.
+包含可编辑组件的编辑触发器。
 
-<!-- @include: @/meta/EditableEditTrigger.md -->
+<!-- @include: @/zh/meta/EditableEditTrigger.md -->
 
 ### Submit Trigger
 
-Contains the submit trigger of the editable component.
+包含可编辑组件的提交触发器。
 
-<!-- @include: @/meta/EditableSubmitTrigger.md -->
+<!-- @include: @/zh/meta/EditableSubmitTrigger.md -->
 
 ### Cancel Trigger
 
-Contains the cancel trigger of the editable component.
+包含可编辑组件的取消触发器。
 
-<!-- @include: @/meta/EditableCancelTrigger.md -->
+<!-- @include: @/zh/meta/EditableCancelTrigger.md -->
 
-## Examples
+## 示例
 
-### Change only on submit
+### 仅在提交时更改
 
-By default the component will submit when `blur` event triggers. We can modify the `submit-mode` prop to alter this behavior.
-In this case, we want to submit only when user click on `EditableSubmitTrigger`, so we change the submit mode to `none`.
+默认情况下，组件将在 `blur` 事件触发时提交。我们可以修改 `submit-mode` 属性来改变这种行为。在这种情况下，我们只想在用户点击 `EditableSubmitTrigger` 时提交，因此我们将提交模式更改为 `none`。
 
 ```vue line=2,8
 <template>
@@ -165,21 +164,21 @@ In this case, we want to submit only when user click on `EditableSubmitTrigger`,
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: `<span>When focus moves onto the editable field, switches into the editable mode if the <Code>activation-mode</Code> is set to focus.</span>`
+      description: `<span>当焦点移动到可编辑字段时，如果<Code>activation-mode</Code>设置为<Code>focus</Code>，则切换到可编辑模式。</span>`
     },
     {
       keys: ['Enter'],
       description:`
       <span>
-          If the <Code>submit-mode</Code> is set to <Code>enter</Code> or <Code>both</Code>, it submits the changes.
+          如果<Code>submit-mode</Code>设置为<Code>enter</Code>或<Code>both</Code>，提交更改。
       </span>
     ` ,
     },
@@ -187,7 +186,7 @@ In this case, we want to submit only when user click on `EditableSubmitTrigger`,
       keys: ['Escape'],
       description:
       `
-        When the focus is on the editable field, it cancels the changes.
+        当焦点在可编辑字段上时，它会取消更改。
       `
     }
   ]"

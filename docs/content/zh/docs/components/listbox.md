@@ -1,41 +1,41 @@
 ---
 
-title: Listbox
-description: A control that allows the user to toggle between checked and not checked.
+title: 列表框
+description: 允许用户在选中和未选中之间切换的控件。
 name: listbox
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/listbox
 ---
 
-# Listbox
+# 列表框
 
 <Description>
-A control that allows the user to toggle between checked and not checked.
+允许用户在选中和未选中之间切换的控件。
 </Description>
 
 <ComponentPreview name="Listbox" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Supports items, labels, groups of items.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Supports Right to Left direction.',
-    'Different selection behavior.',
+    '可以是受控的或非受控的',
+    '支持项、标签、项组',
+    '焦点完全可控',
+    '全键盘导航',
+    '支持从右到左的方向（RTL）',
+    '不同的选择行为',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -70,49 +70,49 @@ import { ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, Listbox
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a listbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
+包含列表框的所有部分。在 `form` 中使用时，`input` 也会渲染，以确保事件正确传播。
 
-<!-- @include: @/meta/ListboxRoot.md -->
+<!-- @include: @/zh/meta/ListboxRoot.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Filter
 
-Input element to perform filtering.
+用于执行筛选的输入元素。
 
-<!-- @include: @/meta/ListboxFilter.md -->
+<!-- @include: @/zh/meta/ListboxFilter.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Content
 
-Contains all the listbox group and items.
+包含所有列表框组和项。
 
-<!-- @include: @/meta/ListboxContent.md -->
+<!-- @include: @/zh/meta/ListboxContent.md -->
 
 ### Item
 
-The item component.
+项组件。
 
-<!-- @include: @/meta/ListboxItem.md -->
+<!-- @include: @/zh/meta/ListboxItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -122,44 +122,44 @@ The item component.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### ItemIndicator
 
-Renders when the item is selected. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+在项选中时渲染。您可以直接设置此元素的样式，也可以将其用作包装器以将图标放入其中，或两者兼而有之。
 
-<!-- @include: @/meta/ListboxItemIndicator.md -->
+<!-- @include: @/zh/meta/ListboxItemIndicator.md -->
 
 ### Group
 
-Used to group multiple items. use in conjunction with `ListboxGroupLabel` to ensure good accessibility via automatic labelling.
+用于对多个项进行分组。与 `ListboxGroupLabel` 结合使用，通过自动标记确保良好的可访问性。
 
-<!-- @include: @/meta/ListboxGroup.md -->
+<!-- @include: @/zh/meta/ListboxGroup.md -->
 
 ### GroupLabel
 
-Used to render the label of a group. It won't be focusable using arrow keys.
+用于呈现组的标签。无法使用箭头键聚焦。
 
-<!-- @include: @/meta/ListboxGroupLabel.md -->
+<!-- @include: @/zh/meta/ListboxGroupLabel.md -->
 
 ### Virtualizer
 
-Virtual container to achieve list virtualization.
+虚拟容器，实现列表虚拟化。
 
-<!-- @include: @/meta/ListboxVirtualizer.md -->
+<!-- @include: @/zh/meta/ListboxVirtualizer.md -->
 
-## Examples
+## 示例
 
-### Binding objects as values
+### 将对象绑定为值
 
-Unlike native HTML form controls which only allow you to provide strings as values, `reka-ui` supports binding complex objects as well.
+与仅允许您提供字符串作为值的原生 HTML 表单控件不同，`reka-ui` 还支持绑定复杂对象。
 
 ```vue line=12,16,21
 <script setup lang="ts">
@@ -192,9 +192,9 @@ const selectedPeople = ref(people[0])
 </template>
 ```
 
-### Selecting multiple values
+### 选择多个值
 
-The `Listbox` component allows you to select multiple values. You can enable this by providing an array of values instead of a single value.
+`Listbox` 组件允许您选择多个值。您可以通过提供值数组而不是单个值来启用此功能。
 
 ```vue line=12,18
 <script setup lang="ts">
@@ -221,7 +221,7 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
-### Custom filtering
+### 自定义筛选
 
 ```vue line=13,15-16,21,24
 <script setup lang="ts">
@@ -258,9 +258,9 @@ const filteredPeople = computed(() => people.filter(p => startsWith(p.name, sear
 </template>
 ```
 
-### Virtual List
+### 虚拟列表
 
-Rendering a long list of item can slow down the app, thus using virtualization would significantly improve the performance.
+渲染一长串项目可能会降低应用程序的速度，因此使用虚拟化将显著提高性能。
 
 ```vue line=19-23,24
 <script setup lang="ts">
@@ -295,37 +295,37 @@ const people = [
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
+遵循[列表框WAI-ARIA设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Enter'],
-      description: '<span>When highlight on <code>ListboxItem</code>, selects the focused item. </span>',
+      description: '<span>在<code>ListboxItem</code>上突出显示时，选择聚焦项。 </span>',
     },
     {
       keys: ['ArrowDown'],
-      description: 'When focus is on <code>ListboxItem</code>, moves focus to the next item. </span>',
+      description: '当焦点在<code>ListboxItem</code>上时, 将焦点移动到下一项。 </span>',
     },
     {
       keys: ['ArrowUp'],
-      description: 'When focus is on <code>ListboxItem</code>, moves focus to the previous item. </span>',
+      description: '当焦点在<code>ListboxItem</code>上时, 将焦点移动到前一项。 </span>',
     },
     {
       keys: ['Home'],
-      description: '<span>Moves focus and highlight to the first item.</span>',
+      description: '<span>将焦点和突出显示移动到第一项。</span>',
     },
     {
       keys: ['End'],
-      description: '<span>Moves focus and highlight to the last item.</span>',
+      description: '<span>将焦点和突出显示移动到最后一项。</span>',
     },
     {
       keys: ['Ctrl/Cmd + A'],
-      description: '<span>Select all the items.</span>',
+      description: '<span>选择所有项。</span>',
     }
   ]"
 />

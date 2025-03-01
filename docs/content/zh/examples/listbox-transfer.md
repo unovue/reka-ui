@@ -1,14 +1,14 @@
 ---
-title: Listbox Transfer
+title: 穿梭框
 tags:
-  - Listbox
+  - 列表框
 ---
 
-# Listbox Transfer
+# 穿梭框
 
 <Description>
 
-Render a Transfer component with Listbox.
+使用 [列表框](/zh/docs/components/listbox) 渲染穿梭框组件。
 
 </Description>
 
@@ -18,6 +18,6 @@ Render a Transfer component with Listbox.
 
 <ExampleSection>
 
-### Listbox Transfer
+### 穿梭框
 
 </ExampleSection>

@@ -1,46 +1,46 @@
 ---
 
-title: Dropdown Menu
-description: Displays a menu to the user—such as a set of actions or functions—triggered by a button.
+title:  下拉菜单
+description: 通过按钮触发向用户显示菜单，例如一组操作或功能。
 name: dropdown-menu
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/menubutton
 ---
 
-# DropdownMenu
+# 下拉菜单
 
 <Description>
-Displays a menu to the user—such as a set of actions or functions—triggered by a button.
+通过按钮触发向用户显示菜单，例如一组操作或功能。
 </Description>
 
 <ComponentPreview name="DropdownMenu" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Supports submenus with configurable reading direction.',
-    'Supports items, labels, groups of items.',
-    'Supports checkable items (single or multiple) with optional indeterminate state.',
-    'Supports modal and non-modal modes.',
-    'Customize side, alignment, offsets, collision handling.',
-    'Optionally render a pointing arrow.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Typeahead support.',
-    'Dismissing and layering behavior is highly customizable.',
+    '可以是受控的或非受控的',
+    '支持具有可配置阅读方向的子菜单',
+    '支持项、标签、项组',
+    '支持具有可选不确定状态的可勾选项目（单个或多个）',
+    '支持模态和非模态模式',
+    '自定义边、对齐方式、偏移量、冲突处理',
+    '可选渲染指向箭头',
+    '焦点完全可控',
+    '全键盘导航',
+    '自动补全支持',
+    '取消和分层行为是高度可定制的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -102,19 +102,19 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a dropdown menu.
+包含下拉框的所有部分。
 
-<!-- @include: @/meta/DropdownMenuRoot.md -->
+<!-- @include: @/zh/meta/DropdownMenuRoot.md -->
 
 ### Trigger
 
-The button that toggles the dropdown menu. By default, the `DropdownMenuContent` will position itself against the trigger.
+切换下拉框的按钮。默认情况下，`DropdownMenuContent` 将自身定位在触发器上。
 
-<!-- @include: @/meta/DropdownMenuTrigger.md -->
+<!-- @include: @/zh/meta/DropdownMenuTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -124,22 +124,22 @@ The button that toggles the dropdown menu. By default, the `DropdownMenuContent`
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body`。
 
-<!-- @include: @/meta/DropdownMenuPortal.md -->
+<!-- @include: @/zh/meta/DropdownMenuPortal.md -->
 
 ### Content
 
-The component that pops out when the dropdown menu is open.
+下拉框打开时弹出的组件。
 
-<!-- @include: @/meta/DropdownMenuContent.md -->
+<!-- @include: @/zh/meta/DropdownMenuContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -166,38 +166,38 @@ The component that pops out when the dropdown menu is open.
   :data="[
     {
       cssVariable: '--reka-dropdown-menu-content-transform-origin',
-      description: 'The <Code>transform-origin</Code> computed from the content and arrow positions/offsets'
+      description: '根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>'
     },
     {
       cssVariable: '--reka-dropdown-menu-content-available-width',
-      description: 'The remaining width between the trigger and the boundary edge'
+      description: '触发器和边界边缘之间的剩余宽度'
     },
     {
       cssVariable: '--reka-dropdown-menu-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge'
+      description: '触发器和边界边缘之间的剩余高度'
     },
     {
       cssVariable: '--reka-dropdown-menu-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-dropdown-menu-trigger-height',
-      description: 'The height of the trigger',
+      description: '扳机的高度',
     },
   ]"
 />
 
 ### Arrow
 
-An optional arrow element to render alongside the dropdown menu. This can be used to help visually link the trigger with the `DropdownMenuContent`. Must be rendered inside `DropdownMenuContent`.
+与下拉框一起呈现的可选箭头元素。这可用于帮助将触发器与 `DropdownMenuContent` 视觉上链接起来。必须在  `DropdownMenuContent` 中。
 
-<!-- @include: @/meta/DropdownMenuArrow.md -->
+<!-- @include: @/zh/meta/DropdownMenuArrow.md -->
 
 ### Item
 
-The component that contains the dropdown menu items.
+包含下拉框项的组件。
 
-<!-- @include: @/meta/DropdownMenuItem.md -->
+<!-- @include: @/zh/meta/DropdownMenuItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -207,32 +207,32 @@ The component that contains the dropdown menu items.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Group
 
-Used to group multiple `DropdownMenuItem`s.
+用于对多个 `DropdownMenuItem` 进行分组。
 
-<!-- @include: @/meta/DropdownMenuGroup.md -->
+<!-- @include: @/zh/meta/DropdownMenuGroup.md -->
 
 ### Label
 
-Used to render a label. It won't be focusable using arrow keys.
+用于渲染标签。无法使用箭头键聚焦。
 
-<!-- @include: @/meta/DropdownMenuLabel.md -->
+<!-- @include: @/zh/meta/DropdownMenuLabel.md -->
 
 ### CheckboxItem
 
-An item that can be controlled and rendered like a checkbox.
+一个可以像复选框一样受控和渲染的项。
 
-<!-- @include: @/meta/DropdownMenuCheckboxItem.md -->
+<!-- @include: @/zh/meta/DropdownMenuCheckboxItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -242,26 +242,26 @@ An item that can be controlled and rendered like a checkbox.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### RadioGroup
 
-Used to group multiple `DropdownMenuRadioItem`s.
+用于对多个 `DropdownMenuRadioItem` 进行分组。
 
-<!-- @include: @/meta/DropdownMenuRadioGroup.md -->
+<!-- @include: @/zh/meta/DropdownMenuRadioGroup.md -->
 
 ### RadioItem
 
-An item that can be controlled and rendered like a radio.
+一个可以像单选框一样受控和渲染的项。
 
-<!-- @include: @/meta/DropdownMenuRadioItem.md -->
+<!-- @include: @/zh/meta/DropdownMenuRadioItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -271,20 +271,20 @@ An item that can be controlled and rendered like a radio.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### ItemIndicator
 
-Renders when the parent `DropdownMenuCheckboxItem` or `DropdownMenuRadioItem` is checked. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+选中父 `DropdownMenuCheckboxItem` 或 `DropdownMenuRadioItem` 时呈现。您可以直接设置此元素的样式，也可以将其用作包装器来放入图标，或者两者兼而有之。
 
-<!-- @include: @/meta/DropdownMenuItemIndicator.md -->
+<!-- @include: @/zh/meta/DropdownMenuItemIndicator.md -->
 
 <DataAttributesTable
   :data="[
@@ -297,21 +297,21 @@ Renders when the parent `DropdownMenuCheckboxItem` or `DropdownMenuRadioItem` is
 
 ### Separator
 
-Used to visually separate items in the dropdown menu.
+用于在下拉框中视觉上分隔项。
 
-<!-- @include: @/meta/DropdownMenuSeparator.md -->
+<!-- @include: @/zh/meta/DropdownMenuSeparator.md -->
 
 ### Sub
 
-Contains all the parts of a submenu.
+包含子菜单的所有部分。
 
-<!-- @include: @/meta/DropdownMenuSub.md -->
+<!-- @include: @/zh/meta/DropdownMenuSub.md -->
 
 ### SubTrigger
 
-An item that opens a submenu. Must be rendered inside `DropdownMenuSub`.
+打开子菜单的项。必须在 `DropdownMenuSub` 中。
 
-<!-- @include: @/meta/DropdownMenuSubTrigger.md -->
+<!-- @include: @/zh/meta/DropdownMenuSubTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -321,11 +321,11 @@ An item that opens a submenu. Must be rendered inside `DropdownMenuSub`.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
@@ -334,34 +334,34 @@ An item that opens a submenu. Must be rendered inside `DropdownMenuSub`.
   :data="[
     {
       cssVariable: '--reka-dropdown-menu-content-transform-origin',
-      description: 'The <Code>transform-origin</Code> computed from the content and arrow positions/offsets',
+      description: '根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>',
     },
     {
       cssVariable: '--reka-dropdown-menu-content-available-width',
       description: `
-        The remaining width between the trigger and the boundary edge
+        触发器和边界边缘之间的剩余宽度
       `,
     },
     {
       cssVariable: '--reka-dropdown-menu-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余高度',
     },
     {
       cssVariable: '--reka-dropdown-menu-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-dropdown-menu-trigger-height',
-      description: 'The height of the trigger'
+      description: '扳机的高度'
     },
   ]"
 />
 
 ### SubContent
 
-The component that pops out when a submenu is open. Must be rendered inside `DropdownMenuSub`.
+打开子菜单时弹出的组件。 必须在 `DropdownMenuSub` 中。
 
-<!-- @include: @/meta/DropdownMenuSubContent.md -->
+<!-- @include: @/zh/meta/DropdownMenuSubContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -384,11 +384,11 @@ The component that pops out when a submenu is open. Must be rendered inside `Dro
   ]"
 />
 
-## Examples
+## 示例
 
-### With submenus
+### 子菜单
 
-You can create submenus by using `DropdownMenuSub` in combination with its parts.
+您可以通过结合使用 `DropdownMenuSub` 及其部分来创建子菜单。
 
 ```vue line=9-11,24-33
 <script setup lang="ts">
@@ -432,9 +432,9 @@ import {
 </template>
 ```
 
-### With disabled items
+### 禁用项
 
-You can add special styles to disabled items via the `data-disabled` attribute.
+您可以通过 `data-disabled` 属性向禁用的项添加特殊样式。
 
 ```vue line=16
 <script setup lang="ts">
@@ -474,9 +474,9 @@ import {
 }
 ```
 
-### With separators
+### 分割线
 
-Use the `Separator` part to add a separator between items.
+使用 `Separator` 部件在项之间添加分割线。
 
 ```vue line=7 ,18,20
 <script setup lang="ts">
@@ -506,9 +506,9 @@ import {
 </template>
 ```
 
-### With labels
+### 标签
 
-Use the `Label` part to help label a section.
+使用 `Label` 部分来帮助标记。
 
 ```vue line=5,17
 <script setup lang="ts">
@@ -537,9 +537,9 @@ import {
 </template>
 ```
 
-### With checkbox items
+### 复选框项
 
-Use the `CheckboxItem` part to add an item that can be checked.
+使用 `CheckboxItem` 部件添加可选中的项目。
 
 ```vue line=5 ,26-31
 <script setup lang="ts">
@@ -579,9 +579,9 @@ const checked = ref(false)
 </template>
 ```
 
-### With radio items
+### 单选项
 
-Use the `RadioGroup` and `RadioItem` parts to add an item that can be checked amongst others.
+使用 `RadioGroup` 和 `RadioItem` 部件添加可选中的项。
 
 ```vue line=8-9,22-41
 <script setup lang="ts">
@@ -631,9 +631,9 @@ const color = ref(false)
 </template>
 ```
 
-### With complex items
+### 复杂项
 
-You can add extra decorative elements in the `Item` parts, such as images.
+您可以在 `Item` 部件中添加额外的装饰元素，例如图像。
 
 ```vue line=17,21
 <script setup lang="ts">
@@ -665,11 +665,11 @@ import {
 </template>
 ```
 
-### Constrain the content/sub-content size
+### 限制内容/子内容大小
 
-You may want to constrain the width of the content (or sub-content) so that it matches the trigger (or sub-trigger) width. You may also want to constrain its height to not exceed the viewport.
+您可能希望限制内容（或子内容）的宽度，使其与触发器（或子触发器）的宽度匹配。您可能还希望将其高度限制为不超过视口。
 
-We expose several CSS custom properties such as `--reka-dropdown-menu-trigger-width` and `--reka-dropdown-menu-content-available-height` to support this. Use them to constrain the content dimensions.
+我们暴露了几个 CSS 自定义属性，例如 `--reka-dropdown-menu-trigger-width` 和 `--reka-dropdown-menu-content-available-height` 来支持这一点。使用它们来限制内容维度。
 
 ```vue line=9
 <script setup lang="ts">
@@ -699,9 +699,9 @@ import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenu
 }
 ```
 
-### Origin-aware animations
+### 原点感知（Origin-aware）动画
 
-We expose a CSS custom property `--reka-dropdown-menu-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
+我们暴露了一个 CSS 自定义属性 `--reka-dropdown-menu-content-transform-origin`。使用它可以根据 `side`、`sideOffset`、`align`、`alignOffset` 和任何碰撞从其计算的原点对内容进行动画处理。
 
 ```vue line=9
 <script setup lang="ts">
@@ -739,9 +739,9 @@ import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenu
 }
 ```
 
-### Collision-aware animations
+### 碰撞感知（Collision-aware）动画
 
-We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
+我们暴露 `data-side` 和 `data-align` 属性。它们的值将在运行时更改以反映碰撞。使用它们创建碰撞和方向感知动画。
 
 ```vue line=9
 <script setup lang="ts">
@@ -796,11 +796,11 @@ import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenu
 }
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubutton) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex) to manage focus movement among menu items.
+遵循[菜单按钮 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/menubutton)并使用[浮动 tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex)来管理菜单项之间的焦点移动。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
@@ -808,10 +808,9 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       keys: ['Space'],
       description: `
         <span>
-          When focus is on <Code>DropdownMenuTrigger</Code>, opens the dropdown
-          menu and focuses the first item.
-          <br />
-          When focus is on an item, activates the focused item.
+          当焦点在<Code>DropdownMenuTrigger</Code>时，打开下拉菜单并聚焦第一项。
+          <br/>
+          当焦点在项上时，激活焦点项。
         </span>
       `,
     },
@@ -819,10 +818,9 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       keys: ['Enter'],
       description: `
         <span>
-          When focus is on <Code>DropdownMenuTrigger</Code>, opens the dropdown
-          menu and focuses the first item.
-          <br />
-          When focus is on an item, activates the focused item.
+          当焦点在<Code>DropdownMenuTrigger</Code>时，打开下拉菜单并聚焦第一项。
+          <br/>
+          当焦点在项上时，激活焦点项。
         </span>
       `,
     },
@@ -830,25 +828,23 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       keys: ['ArrowDown'],
       description: `
         <span>
-          When focus is on <Code>DropdownMenuTrigger</Code>, opens the dropdown
-          menu.
+          当焦点在<Code>DropdownMenuTrigger</Code>时，打开下拉菜单。
           <br />
-          When focus is on an item, moves focus to the next item.
+          当焦点在项上时，将焦点移动到下一项。
         </span>
       `,
     },
     {
       keys: ['ArrowUp'],
       description: `
-        <span>When focus is on an item, moves focus to the previous item.</span>
+        <span>当焦点在项上时，将焦点移动到前一项。</span>
       `,
     },
     {
       keys: ['ArrowRight', 'ArrowLeft'],
       description: `
         <span>
-          When focus is on <Code>DropdownMenuSubTrigger</Code>, opens or closes
-          the submenu depending on reading direction.
+          当焦点在<Code>DropdownMenuSubTrigger</Code>时，根据阅读方向打开或关闭子菜单。
         </span>
       `,
     },
@@ -856,23 +852,22 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       keys: ['Esc'],
       description: `
         <span>
-          Closes the dropdown menu and moves focus to{' '}
-          <Code>DropdownMenuTrigger</Code>.
+          关闭下拉菜单并将焦点移动到<Code>DropdownMenuTrigger</Code>.
         </span>
       `,
     },
   ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-### Abstract the arrow and item indicators
+### 抽象化箭头和项指示符
 
-This example abstracts the `DropdownMenuArrow` and `DropdownMenuItemIndicator` parts. It also wraps implementation details for `CheckboxItem` and `RadioItem`.
+此示例抽象化了 `DropdownMenuArrow` 和 `DropdownMenuItemIndicator` 部件。它还包装了 `CheckboxItem` 和 `RadioItem` 的实现细节。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -908,7 +903,7 @@ import {
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```ts
 // your-dropdown-menu.ts

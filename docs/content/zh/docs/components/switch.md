@@ -1,34 +1,34 @@
 ---
 
-title: Switch
-description: A control that allows the user to toggle between checked and not checked.
+title: 开关
+description: 允许用户在开和关之间切换的控件。
 name: switch
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/switch
 ---
 
-# Switch
+# 开关
 
 <Description>
-A control that allows the user to toggle between checked and not checked.
+允许用户在开和关之间切换的控件。
 </Description>
 
 <ComponentPreview name="Switch" />
 
-## Features
+## 特性
 
 <Highlights
-  :features="['Full keyboard navigation.', 'Can be controlled or uncontrolled.']"
+  :features="['全键盘导航', '可以是受控的或非受控的']"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -42,13 +42,13 @@ import { SwitchRoot, SwitchThumb } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a switch. An `input` will also render when used within a `form` to ensure events propagate correctly.
+包含开关的所有部分。在 `form` 中使用时，`input` 也会渲染，以确保事件正确传播。
 
-<!-- @include: @/meta/SwitchRoot.md -->
+<!-- @include: @/zh/meta/SwitchRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -58,16 +58,16 @@ Contains all the parts of a switch. An `input` will also render when used within
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Thumb
 
-The thumb that is used to visually indicate whether the switch is on or off.
+用于视觉上指示开关是打开还是关闭的滑钮。
 
-<!-- @include: @/meta/SwitchThumb.md -->
+<!-- @include: @/zh/meta/SwitchThumb.md -->
 
 <DataAttributesTable
   :data="[
@@ -77,26 +77,26 @@ The thumb that is used to visually indicate whether the switch is on or off.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
-## Accessibility
+## 无障碍
 
-Adheres to the [`switch` role requirements](https://www.w3.org/WAI/ARIA/apg/patterns/switch).
+遵循 [`switch` 角色要求](https://www.w3.org/WAI/ARIA/apg/patterns/switch)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: 'Toggles the component\'s state.',
+      description: '切换组件的状态。',
     },
     {
       keys: ['Enter'],
-      description: 'Toggles the component\'s state.',
+      description: '切换组件的状态。',
     },
   ]"
 />

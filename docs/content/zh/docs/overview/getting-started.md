@@ -1,29 +1,28 @@
 ---
 
-title: Getting started
-description: A quick tutorial to get you up and running with Reka UI.
-name: popover
+title: 开始
+description: 帮助您快速上手 Reka UI。
 ---
 
-# Getting started
+# 开始
 
 <Description>
-A quick tutorial to get you up and running with Reka UI.
+帮助您快速上手 Reka UI。
 </Description>
 
-## Implementing a Popover
+## 实现 Popover
 
-In this quick tutorial, we will install and style the [Popover](../components/popover) component.
+在这个快速教程中，我们将安装 [Popover](../components/popover) 组件并设置其样式。
 
-### 1. Install the library
+### 1. 安装库
 
-Install the component from your command line.
+从命令行安装此组件
 
 <InstallationTabs value="reka-ui" />
 
-### 2. Import the parts
+### 2. 导入部件
 
-Import and structure the parts.
+导入并搭建部件。
 
 ```vue twoslash
 <!-- Popover.vue -->
@@ -45,9 +44,9 @@ import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot,
 </template>
 ```
 
-### 3. Add your styles
+### 3. 添加样式
 
-Add styles where desired.
+在需要的地方添加样式。
 
 ```vue
 <template>
@@ -84,23 +83,23 @@ Add styles where desired.
 </style>
 ```
 
-### Demo
+### 演示
 
-Here's a complete demo.
+这是一个完整的演示。
 
 <ComponentPreview name="Popover" />
 
-## Summary
+## 总结
 
-The steps above outline briefly what's involved in using a Reka UI in your application.
+上述步骤简要概述了在应用程序中使用 Reka UI 所涉及的内容。
 
-These components are low-level enough to give you control over how you want to wrap them. You're free to introduce your own high-level API to better suit the needs of your team and product.
+这些组件足够低级，可让您控制如何包装它们。您可以自由引入自己的高级 API，以更好地满足您的团队和产品的需求。
 
-In a few simple steps, we've implemented a fully accessible Popover component, without having to worry about many of its complexities.
+通过几个简单的步骤，我们已经实现了一个完全可访问的 Popover 组件，而不必担心它的许多复杂性。
 
-- Adheres to [WAI-ARIA](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) design pattern.
-- Can be controlled or uncontrolled.
-- Customize side, alignment, offsets, collision handling.
-- Optionally render a pointing arrow.
-- Focus is fully managed and customizable.
-- Dismissing and layering behavior is highly customizable.
+- 遵循 [WAI-ARIA](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) 设计模式
+- 可以是受控的或非受控的。
+- 自定义边、对齐方式、偏移量、冲突处理。
+- （可选）呈现指向箭头。
+- 焦点完全可控和可定制的。
+- 取消和分层行为是高度可定制的。

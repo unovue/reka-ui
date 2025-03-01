@@ -1,41 +1,41 @@
 ---
 
-title: Popover
-description: Displays rich content in a portal, triggered by a button.
+title: 弹出面板
+description: 在传送处显示由按钮触发的丰富内容。
 name: popover
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
 ---
 
-# Popover
+# 弹出面板
 
 <Description>
-Displays rich content in a portal, triggered by a button.
+在传送处显示由按钮触发的丰富内容。
 </Description>
 
 <ComponentPreview name="Popover" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Customize side, alignment, offsets, collision handling.',
-    'Optionally render a pointing arrow.',
-    'Focus is fully managed and customizable.',
-    'Supports modal and non-modal modes.',
-    'Dismissing and layering behavior is highly customizable.',
+    '可以是受控的或非受控的',
+    '自定义边、对齐方式、偏移量、冲突处理',
+    '（可选）呈现指向箭头',
+    '焦点完全可控和可定制',
+    '支持模态和非模态模式',
+    '取消和分层行为是高度可定制的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -56,19 +56,19 @@ import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPorta
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a popover.
+包含弹出面板的所有部分。
 
-<!-- @include: @/meta/PopoverRoot.md -->
+<!-- @include: @/zh/meta/PopoverRoot.md -->
 
 ### Trigger
 
-The button that toggles the popover. By default, the `PopoverContent` will position itself against the trigger.
+用于切换弹出框的按钮。默认情况下，`PopoverContent` 会将自身定位在触发器上。
 
-<!-- @include: @/meta/PopoverTrigger.md -->
+<!-- @include: @/zh/meta/PopoverTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -81,23 +81,23 @@ The button that toggles the popover. By default, the `PopoverContent` will posit
 
 ### Anchor
 
-An optional element to position the `PopoverContent` against. If this part is not used, the content will position alongside the <code>PopoverTrigger</code>.
+用于定位 `PopoverContent` 的可选元素。如果未使用此部分，则内容将位于 `PopoverTrigger` 旁边。
 
-<!-- @include: @/meta/PopoverAnchor.md -->
+<!-- @include: @/zh/meta/PopoverAnchor.md -->
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/PopoverPortal.md -->
+<!-- @include: @/zh/meta/PopoverPortal.md -->
 
 ### Content
 
-The component that pops out when the popover is open.
+弹出面板打开时弹出的组件。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/PopoverContent.md -->
+<!-- @include: @/zh/meta/PopoverContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -120,46 +120,46 @@ The component that pops out when the popover is open.
   :data="[
     {
       cssVariable: '--reka-popover-content-transform-origin',
-      description: ' The <code>transform-origin</code> computed from the content and arrow positions/offsets',
+      description: ' 根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>',
     },
     {
       cssVariable: '--reka-popover-content-available-width',
-      description: 'The remaining width between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余宽度',
     },
     {
       cssVariable: '--reka-popover-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余高度',
     },
     {
       cssVariable: '--reka-popover-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-popover-trigger-height',
-      description: 'The height of the trigger',
+      description: '扳机的高度',
     },
   ]"
 />
 
 ### Arrow
 
-An optional arrow element to render alongside the popover. This can be used to help visually link the anchor with the `PopoverContent`. Must be rendered inside `PopoverContent`.
+一个可选的箭头元素，与弹出面板一起呈现。这可用于帮助直观地将锚点与 `PopoverContent` 链接。必须在 `PopoverContent` 中。
 
-<!-- @include: @/meta/PopoverArrow.md -->
+<!-- @include: @/zh/meta/PopoverArrow.md -->
 
 ### Close
 
-The button that closes an open popover.
+关闭打开的弹出面板的按钮。
 
-<!-- @include: @/meta/PopoverClose.md -->
+<!-- @include: @/zh/meta/PopoverClose.md -->
 
-## Examples
+## 示例
 
-### Constrain the content size
+### 限制内容的大小
 
-You may want to constrain the width of the content so that it matches the trigger width. You may also want to constrain its height to not exceed the viewport.
+您可能希望限制内容的宽度，使其与触发器宽度匹配。您可能还希望将其高度限制为不超过视口。
 
-We expose several CSS custom properties such as `--reka-popover-trigger-width` and `--reka-popover-content-available-height` to support this. Use them to constrain the content dimensions.
+我们暴露了几个 CSS 自定义属性，例如 `--reka-popover-trigger-width` 和 `--reka-popover-content-available-height` 来支持这一点。使用它们来限制内容维度。
 
 ```vue line=10
 // index.vue
@@ -190,9 +190,9 @@ import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot,
 }
 ```
 
-### Origin-aware animations
+### 原点感知（Origin-aware）动画
 
-We expose a CSS custom property `--reka-popover-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
+我们暴露了一个 CSS 自定义属性 `--reka-popover-content-transform-origin`。使用它可以根据 `side`、`sideOffset`、`align`、`alignOffset` 和任何碰撞从其计算的原点对内容进行动画处理。
 
 ```vue line=l10
 // index.vue
@@ -231,9 +231,9 @@ import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot,
 }
 ```
 
-### Collision-aware animations
+### 碰撞感知（Collision-aware）动画
 
-We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
+我们暴露 `data-side` 和 `data-align` 属性。它们的值将在运行时更改以反映碰撞。使用它们创建碰撞和方向感知动画。
 
 ```vue line=10
 // index.vue
@@ -289,9 +289,9 @@ import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot,
 }
 ```
 
-### With custom anchor
+### 自定义锚点
 
-You can anchor the content to another element if you do not want to use the trigger as the anchor.
+如果您不想将触发器用作锚点，则可以将内容锚定到另一个元素。
 
 ```vue line=8-12
 // index.vue
@@ -322,46 +322,46 @@ import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPorta
 }
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+遵循[对话框 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: 'Opens/closes the popover.',
+      description: '打开/关闭弹出面板。',
     },
     {
       keys: ['Enter'],
-      description: 'Opens/closes the popover.',
+      description: '打开/关闭弹出面板。',
     },
     {
       keys: ['Tab'],
-      description: 'Moves focus to the next focusable element',
+      description: '将焦点移动到下一个可聚焦元素',
     },
     {
       keys: ['Shift + Tab'],
-      description: 'Moves focus to the previous focusable element',
+      description: '将焦点移动到上一个可聚焦元素',
     },
     {
       keys: ['Esc'],
-      description: '<span> Closes the popover and moves focus to <code>PopoverTrigger</code>.</span>',
+      description: '<span>关闭弹出面板并将焦点移动到<code>PopoverTrigger</code></span>',
     },
   ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-#### Abstract the arrow and set default configuration
+#### 抽象化箭头并设置默认配置
 
-This example abstracts the `PopoverArrow` part and sets a default `sideOffset` configuration.
+此示例抽象化了 `PopoverArrow` 部件并设置了默认的 `sideOffset` 配置。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -376,7 +376,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './your-popover'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```ts
 // your-popover.ts

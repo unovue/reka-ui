@@ -1,39 +1,39 @@
 ---
 
-title: Toggle Group
-description: A set of two-state buttons that can be toggled on or off.
+title: 切换按钮组
+description: 一组可以打开或关闭的双状态按钮。
 name: toggle-group
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/button
 ---
 
-# ToggleGroup
+# 切换按钮组
 
 <Description>
-A set of two-state buttons that can be toggled on or off.
+一组可以打开或关闭的双状态按钮。
 </Description>
 
 <ComponentPreview name="ToggleGroup" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation.',
-    'Supports horizontal/vertical orientation.',
-    'Support single and multiple pressed buttons.',
-    'Can be controlled or uncontrolled.',
+    '全键盘导航',
+    '支持水平/垂直方向',
+    '支持单按和多按按钮',
+    '可以是受控的或非受控的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup>
@@ -47,13 +47,13 @@ import { ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a toggle group.
+包含切换按钮组的所有部分。
 
-<!-- @include: @/meta/ToggleGroupRoot.md -->
+<!-- @include: @/zh/meta/ToggleGroupRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -66,9 +66,9 @@ Contains all the parts of a toggle group.
 
 ### Item
 
-An item in the group.
+组中的项。
 
-<!-- @include: @/meta/ToggleGroupItem.md -->
+<!-- @include: @/zh/meta/ToggleGroupItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -78,7 +78,7 @@ An item in the group.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -87,11 +87,11 @@ An item in the group.
   ]"
 />
 
-## Examples
+## 示例
 
-### Ensuring there is always a value
+### 确保始终有值
 
-You can control the component to ensure a value.
+您可以受控组件以确保有值。
 
 ```vue line=5,10-13
 <script setup>
@@ -121,50 +121,50 @@ const value = ref('left')
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) to manage focus movement among items.
+使用[浮动 tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) 管理项之间的焦点移动。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
       description:
-        'Moves focus to either the pressed item or the first item in the group.',
+        '将焦点移动到按下的项目或组中的第一项。',
     },
     {
       keys: ['Space'],
-      description: 'Activates/deactivates the item.',
+      description: '激活/停用项目。',
     },
     {
       keys: ['Enter'],
-      description: 'Activates/deactivates the item.',
+      description: '激活/停用项目。',
     },
     {
       keys: ['ArrowDown'],
-      description: 'Moves focus to the next item in the group.',
+      description: '将焦点移动到组中的下一项。',
     },
     {
       keys: ['ArrowRight'],
-      description: 'Moves focus to the next item in the group.',
+      description: '将焦点移动到组中的下一项。',
     },
     {
       keys: ['ArrowUp'],
-      description: 'Moves focus to the previous item in the group.',
+      description: '将焦点移动到组中的上一项。',
     },
     {
       keys: ['ArrowLeft'],
-      description: 'Moves focus to the previous item in the group.',
+      description: '将焦点移动到组中的上一项。',
     },
     {
       keys: ['Home'],
-      description: 'Moves focus to the first item.',
+      description: '将焦点移至第一项。',
     },
     {
       keys: ['End'],
-      description: 'Moves focus to the last item.',
+      description: '将焦点移至最后一项。',
     },
   ]"
 />

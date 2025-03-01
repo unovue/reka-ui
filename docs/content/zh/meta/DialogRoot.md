@@ -1,23 +1,21 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
-    'description': '<p>The open state of the dialog when it is initially rendered. Use when you do not need to control its open state.</p>\n',
+    'description': '<p>对话框最初呈现时的打开状态。在不需要控制其打开状态时使用。</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
   },
   {
     'name': 'modal',
-    'description': '<p>The modality of the dialog When set to <code>true</code>, &lt;br&gt;\ninteraction with outside elements will be disabled and only dialog content will be visible to screen readers.</p>\n',
+    'description': '<p>对话框的模式。当设置为<code>true</code>时，与外部元素的交互将被禁用，并且只有对话框内容对屏幕阅读器可见。</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the dialog. Can be binded as <code>v-model:open</code>.</p>\n',
+    'description': '<p>对话框的受控打开状态。可以绑定为 <code>v-model:open</code>。</p>\n',
     'type': 'boolean',
     'required': false
   }
@@ -26,7 +24,7 @@
 <EmitsTable :data="[
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state of the dialog changes.</p>\n',
+    'description': '<p>对话框的打开状态更改时调用的事件处理程序。</p>\n',
     'type': '[value: boolean]'
   }
 ]" />
@@ -34,7 +32,7 @@
 <SlotsTable :data="[
   {
     'name': 'open',
-    'description': '<p>Current open state</p>\n',
+    'description': '<p>当前打开状态</p>\n',
     'type': 'boolean'
   }
 ]" />

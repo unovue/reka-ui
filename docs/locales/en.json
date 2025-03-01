@@ -39,5 +39,19 @@
   "join-the-community": "Join the community",
   "join-thne-community-and-get-involved": "{0} and get involved!",
   "search-documentation": "Search documentation",
-  "show-related-results-based-on-search-term": "Show related results based on search term"
+  "show-related-results-based-on-search-term": "Show related results based on search term",
+  "data-attribute": "Data Attribute",
+  "value": "Value",
+  "css-variable": "CSS Variable",
+  "description": "Description",
+  "emit": "Emit",
+  "payload": "Payload",
+  "key": "Key",
+  "methods": "Methods",
+  "type": "Type",
+  "prop": "Prop",
+  "default": "Default",
+  "slots-default": "Slots (default)",
+  "open-on-codesandbox": "Open on CodeSandbox",
+  "open-name-in-codesandbox": "Open {0} in CodeSandbox"
 }

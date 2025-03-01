@@ -1,8 +1,8 @@
-# Installation
+# 安装
 
-A quick tutorial to walk through installing the packages, as well as the supported plugins.
+一个快速教程，用于演示安装软件包以及支持的插件。
 
-## Installing the package
+## 安装包
 
 <a href="https://www.npmjs.com/package/reka-ui" target="__blank"><img alt="NPM Downloads" src="https://img.shields.io/npm/dm/reka-ui?flat&colorA=002438&colorB=41c399"></a>
 
@@ -10,9 +10,9 @@ A quick tutorial to walk through installing the packages, as well as the support
 
 ## Nuxt modules
 
-Reka UI offers Nuxt modules support.
+Reka UI 提供 Nuxt 模块支持。
 
-In `nuxt.config.ts`, simply add `reka-ui/nuxt` into the modules, and it will auto-imports all the components for you.
+在 `nuxt.config.ts` 中，只需将 `reka-ui/nuxt` 添加到模块中，它就会自动为你导入所有组件。
 
 ```ts
 export default defineNuxtConfig({
@@ -22,9 +22,9 @@ export default defineNuxtConfig({
 
 ## unplugin-vue-components
 
-Reka UI also has resolver for the popular [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components).
+Reka UI 也有流行的 [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components) 的解析器。
 
-In `vite.config.ts`, import `reka-ui/resolver`, and configure as such and it will auto-imports all the components from Reka UI.
+在 `vite.config.ts` 中，导入 `reka-ui/resolver`，并按此进行配置，它将自动从 Reka UI 导入所有组件。
 
 ```ts{2,10  }
 import Components from 'unplugin-vue-components/vite'

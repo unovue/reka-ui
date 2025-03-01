@@ -1,15 +1,15 @@
 ---
-title: Inline Combobox on Textarea
+title: 组合框文本域
 tags:
-  - Combobox
+  - 组合框
   - Textarea
 ---
 
-# Inline Combobox on Textarea
+# 组合框文本域
 
 <Description>
 
-Rendering [Combobox](/docs/components/combobox) as a textarea element to create an accessible multiline textboxt. Inserting specific characters triggers a popup with dynamic suggestions.
+将 [Combobox](/zh/docs/components/combobox) 渲染为文本域元素以创建无障碍的多行文本框。插入特定字符会触发带有动态建议的弹出面板。
 
 </Description>
 
@@ -19,6 +19,6 @@ Rendering [Combobox](/docs/components/combobox) as a textarea element to create 
 
 <ExampleSection>
 
-### Combobox
+### 组合框
 
 </ExampleSection>

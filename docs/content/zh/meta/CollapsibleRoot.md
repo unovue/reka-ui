@@ -1,41 +1,39 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'defaultOpen',
-    'description': '<p>The open state of the collapsible when it is initially rendered. &lt;br&gt; Use when you do not need to control its open state.</p>\n',
+    'description': '<p>折叠面板初始渲染时的打开状态。<br/>在不需要控制其打开状态时使用。</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
   },
   {
     'name': 'disabled',
-    'description': '<p>When <code>true</code>, prevents the user from interacting with the collapsible.</p>\n',
+    'description': '<p>当<code>true</code>时，阻止用户与折叠面板的交互。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the collapsible. Can be binded with <code>v-model</code>.</p>\n',
+    'description': '<p>折叠面板的受控打开状态。可以与<code>v-model</code>绑定。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'unmountOnHide',
-    'description': '<p>When <code>true</code>, the element will be unmounted on closed state.</p>\n',
+    'description': '<p>如果<code>true</code>，则元素将在 closed 状态下卸载。</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
@@ -45,7 +43,7 @@
 <EmitsTable :data="[
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state of the collapsible changes.</p>\n',
+    'description': '<p>当折叠面板的打开状态发生变化时调用事件处理程序。</p>\n',
     'type': '[value: boolean]'
   }
 ]" />
@@ -53,7 +51,7 @@
 <SlotsTable :data="[
   {
     'name': 'open',
-    'description': '<p>Current open state</p>\n',
+    'description': '<p>当前打开状态</p>\n',
     'type': 'boolean'
   }
 ]" />

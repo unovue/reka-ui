@@ -1,23 +1,22 @@
 ---
 
-title: Composition
-description: Use the `asChild` prop to compose Radix's functionality onto alternative element types or your own Vue components.
+title: 组合
+description: 使用 `asChild` 属性将 Reka 的功能组合到替代元素类型或你自己的 Vue 组件上。
 ---
 
-# Composition
+# 组合
 
 <Description>
-Use the `asChild` prop to compose Radix's functionality onto alternative
-element types or your own Vue components.
+使用 `asChild` 属性将 Reka 的功能组合到替代元素类型或你自己的 Vue 组件上。
 </Description>
 
-All Reka UI parts that render a DOM element accept an `asChild` prop. When `asChild` is set to `true`, Reka UI will not render a default DOM element, instead passing the props and behavior required to make it functional to the first child of the slots.
+所有渲染 DOM 元素的 Reka UI 部件都接受 `asChild` 属性。当 `asChild` 设置为 `true` 时，Reka UI 将不会渲染默认的 DOM 元素，而是将使其正常运行所需的 props 和行为传递给插槽的第一个子元素。
 
-## Changing the element type
+## 更改元素类型
 
-In the majority of cases you shouldn’t need to modify the element type as Radix has been designed to provide the most appropriate defaults. However, there are cases where it is helpful to do so.
+在大多数情况下，您不需要修改元素类型，因为 Reka 旨在提供最合适的默认值。但是，在某些情况下，这样做会有所帮助。
 
-A good example is with `TooltipTrigger`. By default this part is rendered as a `button`, though you may want to add a tooltip to a link (`a` tag) as well. Let's see how you can achieve this using `asChild`:
+`TooltipTrigger` 就是一个很好的示例。默认情况下，此部分呈现为 `button`，但你可能还希望向链接（`a` 标签）添加工具提示。让我们看看如何使用 `asChild` 来实现这一点：
 
 ```vue{7}
 <script setup lang="ts">
@@ -34,19 +33,17 @@ import { TooltipRoot, TooltipTrigger, TooltipPortal } from "reka-ui";
 </template>
 ```
 
-> If you do decide to change the underlying element type, it is your responsibility to ensure it remains accessible and functional. In the case of `TooltipTrigger` for example, it must be a focusable element that can respond to pointer and keyboard events. If you were to switch it to a `div`, it would no longer be accessible.
+> 如果您决定更改基础元素类型，则您有责任确保其保持可访问性和功能。例如，在 `TooltipTrigger` 的情况下，它必须是可以响应指针和键盘事件的可聚焦元素。如果您将其切换到 `div`，则将丢失无障碍特性。
 
-In reality, you will rarely modify the underlying DOM element like we've seen above. Instead it's more common to use your own Vue components. This is especially true for most `Trigger` parts, as you usually want to compose the functionality with the custom buttons and links in your design system.
+实际上，您很少会像上面看到的那样修改底层 DOM 元素。相反，使用你自己的 Vue 组件更常见。对于大多数 `Trigger` 部件来说尤其如此，因为您通常希望使用设计系统中的自定义按钮和链接来组合功能。
 
-## Composing with your own Vue components
+## 使用你自己的 Vue 组件进行组合
 
-This works exactly the same as above, you pass `asChild` to the part and then wrap your own component with it.
-However, there are a few gotchas to be aware of.
+这与上面的工作原理完全相同，您将 `asChild` 传递给该部分，然后用它来包装您自己的组件。但是，有一些问题需要注意。
 
-## Composing multiple primitives
+## 组合多个 Primitives
 
-`asChild` can be used as deeply as you need to. This means it is a great way to compose multiple primitive's behavior together.
-Here is an example of how you can compose `TooltipTrigger` and `DialogTrigger` together with your own button:
+`asChild` 可以根据需要深入使用。这意味着它是将多个 primitive 的行为组合在一起的好方法。下面是如何将 `TooltipTrigger` 和 `DialogTrigger` 与你自己的按钮组合在一起的示例：
 
 ```vue{9,10}
 <script setup lang="ts">

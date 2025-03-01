@@ -52,7 +52,7 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   /** When `true`, prevents the user from interacting with listbox */
   disabled?: boolean
   /**
-   * How multiple selection should behave in the collection.
+   * 多个选择在集合中的行为方式。
    * @defaultValue 'toggle'
    */
   selectionBehavior?: 'toggle' | 'replace'
@@ -69,7 +69,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when container is being focused. Can be prevented. */
   'entryFocus': [event: CustomEvent]
-  /** Event handler called when the mouse leave the container */
+  /** 鼠标离开容器时调用的事件处理程序 */
   'leave': [event: Event]
 }
 </script>

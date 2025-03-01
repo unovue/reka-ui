@@ -1,35 +1,35 @@
 ---
-title: Pagination
-description: Displays data in paged format and provides navigation between pages.
-name: pagination
+title: 分页
+description: 以分页格式显示数据，并提供页面之间的导航。
+name: 分页
 ---
 
-# Pagination
+# 分页
 
 <Description>
-Displays data in paged format and provides navigation between pages.
+以分页格式显示数据，并提供页面之间的导航。
 </Description>
 
 <ComponentPreview name="Pagination" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Enable quick access to first, or last page',
-    'Enable to show edges constantly, or not',
+    '可对第一页或最后一页快速访问',
+    '可持续显示边缘，或不显示边缘',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-### Anatomy
+### 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -61,25 +61,25 @@ import { PaginationEllipsis, PaginationFirst, PaginationLast, PaginationList, Pa
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all of the paginations parts.
+包含所有分页部件。
 
-<!-- @include: @/meta/PaginationRoot.md -->
+<!-- @include: @/zh/meta/PaginationRoot.md -->
 
 ### List
 
-Used to show the list of pages. It also makes pagination accessible to assistive technologies.
+用于显示页面列表。它还使辅助技术可以访问分页。
 
-<!-- @include: @/meta/PaginationList.md -->
+<!-- @include: @/zh/meta/PaginationList.md -->
 
 ### Item
 
-Used to render the button that changes the current page.
+用于呈现更改当前页面的按钮。
 
-<!-- @include: @/meta/PaginationItem.md -->
+<!-- @include: @/zh/meta/PaginationItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -96,9 +96,9 @@ Used to render the button that changes the current page.
 
 ### Ellipsis
 
-Placeholder element when the list is long, and only a small amount of `siblingCount` was set and `showEdges` was set to `true`.
+占位元素，当列表很长，并且只设置了少量的 `siblingCount` 并且 `showEdges` 设置为 `true` 时。
 
-<!-- @include: @/meta/PaginationEllipsis.md -->
+<!-- @include: @/zh/meta/PaginationEllipsis.md -->
 
 <DataAttributesTable
   :data="[
@@ -111,33 +111,33 @@ Placeholder element when the list is long, and only a small amount of `siblingCo
 
 ### First
 
-Triggers that set the page value to 1
+将页面值设置为 1 的触发器
 
-<!-- @include: @/meta/PaginationFirst.md -->
+<!-- @include: @/zh/meta/PaginationFirst.md -->
 
 ### Prev
 
-Triggers that set the page value to the previous page
+将页面值设置为上一页的触发器
 
-<!-- @include: @/meta/PaginationPrev.md -->
+<!-- @include: @/zh/meta/PaginationPrev.md -->
 
 ### Next
 
-Triggers that set the page value to the next page
+将页面值设置为下一页的触发器
 
-<!-- @include: @/meta/PaginationNext.md -->
+<!-- @include: @/zh/meta/PaginationNext.md -->
 
 ### Last
 
-Triggers that set the page value to the last page
+将页面值设置为最后一页的触发器
 
-<!-- @include: @/meta/PaginationLast.md -->
+<!-- @include: @/zh/meta/PaginationLast.md -->
 
-## Examples
+## 示例
 
-### With ellipsis
+### 省略
 
-You can add `PaginationEllipsis` as a visual cue for more previous and after items.
+您可以添加 `PaginationEllipsis` 作为更多前一项或后一项的视觉提示。
 
 ```vue line=10-12
 <script setup lang="ts">
@@ -165,9 +165,9 @@ import { PaginationEllipsis, PaginationList, PaginationListItem, PaginationRoot 
 </template>
 ```
 
-### With first/last button
+### 第一页和最后一页按钮
 
-You can add `PaginationFirst` to allow user to navigate to first page, or `PaginationLast` to navigate to last page.
+您可以添加 `PaginationFirst` 以允许用户导航到第一页，或添加 `PaginationLast` 以导航到最后一页。
 
 ```vue line=8,10
 <script setup lang="ts">
@@ -185,9 +185,9 @@ import { PaginationFirst, PaginationLast, PaginationList, PaginationListItem, Pa
 </template>
 ```
 
-### Control page programmatically
+### 以程序方式控制页面
 
-You can control the current page by passing it a reactive value.
+您可以通过向当前页面传递一个响应值来控制当前页面。
 
 ```vue line=6,10,11
 <script setup lang="ts">
@@ -212,20 +212,20 @@ const currentPage = ref(1)
   :data="[
     {
       keys: ['Tab'],
-      description: 'Moves focus to the next focusable element.',
+      description: '将焦点移动到下一个可聚焦元素。',
     },
     {
       keys: ['Space'],
       description: `
         <span>
-          When focus is on a any trigger, trigger selected page or arrow navigation
+          当焦点位于任何触发器上时，触发所选页面或箭头导航
         </span>`
     },
     {
       keys: ['Enter'],
       description:  `
         <span>
-          When focus is on a any trigger, trigger selected page or arrow navigation
+          当焦点位于任何触发器上时，触发所选页面或箭头导航
         </span>`
     },
   ]"

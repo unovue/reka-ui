@@ -1,34 +1,34 @@
 ---
 
-title: Toggle
-description: A two-state button that can be either on or off.
+title: 切换按钮
+description: 一个可以打开或关闭的双状态按钮。
 name: toggle
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/button
 ---
 
-# Toggle
+# 切换按钮
 
 <Description>
-A two-state button that can be either on or off.
+一个可以打开或关闭的双状态按钮。
 </Description>
 
 <ComponentPreview name="Toggle" />
 
-## Features
+## 特性
 
 <Highlights
-  :features="['Full keyboard navigation.', 'Can be controlled or uncontrolled.']"
+  :features="['全键盘导航', '可以是受控的或非受控的']"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup>
@@ -40,13 +40,13 @@ import { Toggle } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-The toggle.
+切换按钮。
 
-<!-- @include: @/meta/Toggle.md -->
+<!-- @include: @/zh/meta/Toggle.md -->
 
 <DataAttributesTable
   :data="[
@@ -56,24 +56,24 @@ The toggle.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: 'Activates/deactivates the toggle.',
+      description: '激活/停用切换。',
     },
     {
       keys: ['Enter'],
-      description: 'Activates/deactivates the toggle.',
+      description: '激活/停用切换。',
     },
   ]"
 />

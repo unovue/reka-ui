@@ -1,45 +1,44 @@
 ---
 
-title: Menubar
-description: A visually persistent menu common in desktop applications that provides quick
-  access to a consistent set of commands.
+title: 菜单栏
+description: 桌面应用程序中常见的视觉持久菜单，用于快速访问一组一致的命令。
 name: menubar
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/menu/
 ---
 
-# Menubar
+# 菜单栏
 
 <Description>
-A visually persistent menu common in desktop applications that provides quick access to a consistent set of commands.
+桌面应用程序中常见的视觉持久菜单，用于快速访问一组一致的命令。
 </Description>
 
 <ComponentPreview name="Menubar" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Supports submenus with configurable reading direction.',
-    'Supports items, labels, groups of items.',
-    'Supports checkable items (single or multiple).',
-    'Customize side, alignment, offsets, collision handling.',
-    'Optionally render a pointing arrow.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Typeahead support.',
+    '可以是受控的或非受控的',
+    '支持具有可配置读取方向的子菜单',
+    '支持项、标签、项组',
+    '支持可勾选项（单个或多个）',
+    '自定义边、对齐方式、偏移量、冲突处理',
+    '（可选）呈现指向箭头',
+    '焦点完全可控',
+    '全键盘导航',
+    '自动补全支持',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -102,25 +101,25 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a menubar
+包含菜单栏的所有部分
 
-<!-- @include: @/meta/MenubarRoot.md -->
+<!-- @include: @/zh/meta/MenubarRoot.md -->
 
 ### Menu
 
-A top level menu item, contains a trigger with content combination.
+顶级菜单项，包含具有内容组合的触发器。
 
-<!-- @include: @/meta/MenubarMenu.md -->
+<!-- @include: @/zh/meta/MenubarMenu.md -->
 
 ### Trigger
 
-The button that toggles the content. By default, the `MenubarContent` will position itself against the trigger.
+用于切换内容的按钮。默认情况下，`MenubarContent` 会将自身定位在触发器上。
 
-<!-- @include: @/meta/MenubarTrigger.md -->
+<!-- @include: @/zh/meta/MenubarTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -130,26 +129,26 @@ The button that toggles the content. By default, the `MenubarContent` will posit
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/MenubarPortal.md -->
+<!-- @include: @/zh/meta/MenubarPortal.md -->
 
 ### Content
 
-The component that pops out when a menu is open.
+打开菜单时弹出的组件。
 
-<!-- @include: @/meta/MenubarContent.md -->
+<!-- @include: @/zh/meta/MenubarContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -173,74 +172,74 @@ The component that pops out when a menu is open.
     {
       cssVariable: '--reka-menubar-content-transform-origin',
       description: `
-        The <Code>transform-origin</Code> computed from the content and arrow positions/offsets
+        根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>
       `,
     },
     {
       cssVariable: '--reka-menubar-content-available-width',
       description: `
-        The remaining width between the trigger and the boundary edge
+        触发器和边界边缘之间的剩余宽度
       `,
     },
     {
       cssVariable: '--reka-menubar-content-available-height',
       description: `
-        The remaining height between the trigger and the boundary edge
+        触发器和边界边缘之间的剩余高度
       `,
     },
     {
       cssVariable: '--reka-menubar-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-menubar-trigger-height',
-      description: 'The height of the trigger',
+      description: '扳机的高度',
     },
   ]"
 />
 
 ### Arrow
 
-An optional arrow element to render alongside a menubar menu. This can be used to help visually link the trigger with the `MenubarContent`. Must be rendered inside `MenubarContent`.
+一个可选的箭头元素，与菜单栏菜单一起渲染。这可用于帮助视觉上将触发器与 `MenubarContent` 链接起来。必须在 `MenubarContent` 中。
 
-<!-- @include: @/meta/MenubarArrow.md -->
+<!-- @include: @/zh/meta/MenubarArrow.md -->
 
 ### Item
 
-The component that contains the menubar items.
+包含菜单栏项的组件。
 
-<!-- @include: @/meta/MenubarItem.md -->
+<!-- @include: @/zh/meta/MenubarItem.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Group
 
-Used to group multiple `MenubarItem`s.
+用于对多个 `MenubarItem` 进行分组。
 
-<!-- @include: @/meta/MenubarGroup.md -->
+<!-- @include: @/zh/meta/MenubarGroup.md -->
 
 ### Label
 
-Used to render a label. It won't be focusable using arrow keys.
+用于渲染标签。无法使用箭头键聚焦。
 
-<!-- @include: @/meta/MenubarLabel.md -->
+<!-- @include: @/zh/meta/MenubarLabel.md -->
 
 ### CheckboxItem
 
-An item that can be controlled and rendered like a checkbox.
+一个可以像复选框一样受控和渲染的项。
 
-<!-- @include: @/meta/MenubarCheckboxItem.md -->
+<!-- @include: @/zh/meta/MenubarCheckboxItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -250,26 +249,26 @@ An item that can be controlled and rendered like a checkbox.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### RadioGroup
 
-Used to group multiple `MenubarRadioItem`s.
+用于对多个 `MenubarRadioItem` 进行分组。
 
-<!-- @include: @/meta/MenubarRadioGroup.md -->
+<!-- @include: @/zh/meta/MenubarRadioGroup.md -->
 
 ### RadioItem
 
-An item that can be controlled and rendered like a radio.
+一个可以像单选框一样受控和渲染的项。
 
-<!-- @include: @/meta/MenubarRadioItem.md -->
+<!-- @include: @/zh/meta/MenubarRadioItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -279,20 +278,20 @@ An item that can be controlled and rendered like a radio.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### ItemIndicator
 
-Renders when the parent `MenubarCheckboxItem` or `MenubarRadioItem` is checked. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+在选中父 `MenubarCheckboxItem` 或 `MenubarRadioItem` 时渲染。您可以直接设置此元素的样式，也可以将其用作包装器以将图标放入其中，或两者兼而有之。
 
-<!-- @include: @/meta/MenubarItemIndicator.md -->
+<!-- @include: @/zh/meta/MenubarItemIndicator.md -->
 
 <DataAttributesTable
   :data="[
@@ -305,21 +304,21 @@ Renders when the parent `MenubarCheckboxItem` or `MenubarRadioItem` is checked. 
 
 ### Separator
 
-Used to visually separate items in a menubar menu.
+用于视觉上分隔菜单栏菜单中的项。
 
-<!-- @include: @/meta/MenubarSeparator.md -->
+<!-- @include: @/zh/meta/MenubarSeparator.md -->
 
 ### Sub
 
-Contains all the parts of a submenu.
+包含子菜单的所有部分。
 
-<!-- @include: @/meta/MenubarSub.md -->
+<!-- @include: @/zh/meta/MenubarSub.md -->
 
 ### SubTrigger
 
-An item that opens a submenu. Must be rendered inside `MenubarSub`.
+打开子菜单的项。必须在 `MenubarSub` 中。
 
-<!-- @include: @/meta/MenubarSubTrigger.md -->
+<!-- @include: @/zh/meta/MenubarSubTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -329,20 +328,20 @@ An item that opens a submenu. Must be rendered inside `MenubarSub`.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### SubContent
 
-The component that pops out when a submenu is open. Must be rendered inside `MenubarSub`.
+打开子菜单时弹出的组件。 必须在 `MenubarSub` 中。
 
-<!-- @include: @/meta/MenubarSubContent.md -->
+<!-- @include: @/zh/meta/MenubarSubContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -370,37 +369,37 @@ The component that pops out when a submenu is open. Must be rendered inside `Men
     {
       cssVariable: '--reka-menubar-content-transform-origin',
       description: `
-        The <Code>transform-origin</Code> computed from the content and arrow positions/offsets
+        根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>
       `,
     },
     {
       cssVariable: '--reka-menubar-content-available-width',
       description: `
-        The remaining width between the trigger and the boundary edge
+        触发器和边界边缘之间的剩余宽度
       `,
     },
     {
       cssVariable: '--reka-menubar-content-available-height',
       description: `
-        The remaining height between the trigger and the boundary edge
+        触发器和边界边缘之间的剩余高度
       `,
     },
     {
       cssVariable: '--reka-menubar-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-menubar-trigger-height',
-      description: 'The height of the trigger',
+      description: '扳机的高度',
     },
   ]"
 />
 
-## Examples
+## 示例
 
-### With submenus
+### 子菜单
 
-You can create submenus by using `MenubarSub` in combination with its parts.
+您可以通过将 `MenubarSub` 与其部件结合使用来创建子菜单。
 
 ```vue line=9-11,25-34
 <script setup lang="ts">
@@ -446,9 +445,9 @@ import {
 </template>
 ```
 
-### With disabled items
+### 禁用项
 
-You can add special styles to disabled items via the `data-disabled` attribute.
+您可以通过 `data-disabled` 属性向禁用的项添加特殊样式。
 
 ```vue line=11
 <script setup lang="ts">
@@ -484,9 +483,9 @@ import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, M
 }
 ```
 
-### With separators
+### 分割线
 
-Use the `Separator` part to add a separator between items.
+使用 `Separator` 部件在项之间添加分割线。
 
 ```vue line=8,20,22
 <script setup lang="ts">
@@ -519,9 +518,9 @@ import {
 </template>
 ```
 
-### With labels
+### 标签
 
-Use the `Label` part to help label a section.
+使用 `Label` 部分来帮助标记。
 
 ```vue line=5,19
 <script setup lang="ts">
@@ -553,9 +552,9 @@ import {
 </template>
 ```
 
-### With checkbox items
+### 复选框项
 
-Use the `CheckboxItem` part to add an item that can be checked.
+使用 `CheckboxItem` 部件添加可选中的项目。
 
 ```vue line=3,27-32
 <script setup lang="ts">
@@ -597,9 +596,9 @@ const checked = ref(true)
 </template>
 ```
 
-### With radio items
+### 单选项
 
-Use the `RadioGroup` and `RadioItem` parts to add an item that can be checked amongst others.
+使用 `RadioGroup` 和 `RadioItem` 部件添加可选中的项。
 
 ```vue line=9-10,26-39
 <script setup lang="ts">
@@ -648,9 +647,9 @@ const color = ref('blue')
 </template>
 ```
 
-### With complex items
+### 复杂项
 
-You can add extra decorative elements in the `Item` parts, such as images.
+您可以在 `Item` 部件中添加额外的装饰元素，例如图像。
 
 ```vue line=12,16
 <script setup lang="ts">
@@ -678,11 +677,11 @@ import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, M
 </template>
 ```
 
-### Constrain the content/sub-content size
+### 限制内容/子内容大小
 
-You may want to constrain the width of the content (or sub-content) so that it matches the trigger (or sub-trigger) width. You may also want to constrain its height to not exceed the viewport.
+您可能希望限制内容（或子内容）的宽度，使其与触发器（或子触发器）的宽度匹配。您可能还希望将其高度限制为不超过视口。
 
-We expose several CSS custom properties such as `--reka-menubar-trigger-width` and `--reka-menubar-content-available-height` to support this. Use them to constrain the content dimensions.
+我们暴露了几个 CSS 自定义属性，例如 `--reka-menubar-trigger-width` 和 `--reka-menubar-content-available-height` 来支持这一点。使用它们来限制内容维度。
 
 ```vue line=10
 <script setup lang="ts">
@@ -715,9 +714,9 @@ import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, M
 }
 ```
 
-### Origin-aware animations
+### 原点感知（Origin-aware）动画
 
-We expose a CSS custom property `--reka-menubar-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
+我们暴露了一个 CSS 自定义属性 `--reka-menubar-content-transform-origin`。使用它可以根据 `side`、`sideOffset`、`align`、`alignOffset` 和任何碰撞从其计算的原点对内容进行动画处理。
 
 ```vue line=10
 <script setup lang="ts">
@@ -757,9 +756,9 @@ import { MenubarContent, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger
 }
 ```
 
-### Collision-aware animations
+### 碰撞感知（Collision-aware）动画
 
-We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
+我们暴露 `data-side` 和 `data-align` 属性。它们的值将在运行时更改以反映碰撞。使用它们创建碰撞和方向感知动画。
 
 ```vue line=10
 <script setup lang="ts">
@@ -816,20 +815,20 @@ import { MenubarContent, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger
 }
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubutton) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex) to manage focus movement among menu items.
+遵循[菜单按钮 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/menubutton)并使用[浮动 tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex)来管理菜单项之间的焦点移动。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
       description: `
-        When focus is on <Code>MenubarTrigger</Code>, opens the menubar and focuses the first item.
+        当焦点位于<Code>MenubarTrigger</Code>时，打开菜单栏并聚焦第一项。
         <br />
-        When focus is on an item, activates the focused item.
+        当焦点位于某项上时，激活焦点项。
       `,
     },
     {
@@ -837,7 +836,7 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       description: `
         When focus is on <Code>MenubarTrigger</Code>, opens the associated menu.
         <br />
-        When focus is on an item, activates the focused item.
+        当焦点位于某项上时，激活焦点项。
       `,
     },
     {
@@ -845,23 +844,23 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
       description: `
         When focus is on <Code>MenubarTrigger</Code>, opens the associated menu.
         <br />
-        When focus is on an item, moves focus to the next item.
+        当焦点位于某项上时，将焦点移动到下一项。
       `,
     },
     {
       keys: ['ArrowUp'],
-      description: `When focus is on an item, moves focus to the previous item.`,
+      description: `当焦点位于某项上时，将焦点移动到前一项。`,
     },
     {
       keys: ['ArrowRight', 'ArrowLeft'],
       description: `
-        When focus is on a <Code>MenubarTrigger</Code>, moves focus to the next or previous item. <br /> When focus is on a <Code>MenubarSubTrigger</Code>, opens or closes the submenu depending on reading direction. <br /> When focus is within a <Code>MenubarContent</Code>, opens the next menu in the menubar
+        当焦点在<Code>MenubarTrigger</Code>上时，将焦点移动到下一个或上一个项。<br/>当焦点在<Code>MenubarSubTrigger</Code>上时，根据阅读方向打开或关闭子菜单。<br/>当焦点在<Code>MenubarContent</Code>内时，打开菜单栏中的下一个菜单
       `,
     },
     {
       keys: ['Esc'],
       description: `
-        Closes the currently open menu and moves focus to its <Code>MenubarTrigger</Code>.
+        关闭当前打开的菜单并将焦点移动到其<Code>MenubarTrigger</Code>。
       `,
     },
   ]"

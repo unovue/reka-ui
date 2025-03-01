@@ -1,50 +1,51 @@
 ---
-title: Virtualization
-description: Learn how to efficiently render large datasets with Reka UI, powered by `@tanstack/virtual`.
+title: 虚拟化
+description: 了解如何使用由 `@tanstack/virtual` 提供支持的 Reka UI 高效渲染大型数据集。
 ---
 
-# Virtualization
+# 虚拟化
 
 <Description>
 
-Learn how to efficiently render large datasets with Reka UI, powered by `@tanstack/virtual`.
+了解如何使用由 `@tanstack/virtual` 提供支持的 Reka UI 高效渲染大型数据集。
 
 </Description>
 
-<Callout type="info" title="What is Virtualization?">
+<Callout type="info" title="什么是虚拟化？">
 
-Virtualization is a technique used to efficiently render large lists or tree structures by only rendering the items currently visible in the viewport. This approach significantly improves performance and reduces memory usage, especially when dealing with thousands of items.
+虚拟化是一种技术，用于通过仅呈现视区中当前可见的项目来有效地呈现大型列表或树结构。这种方法可以显著提高性能并减少内存使用量，尤其是在处理数千个项目时。
 
 </Callout>
 
-## Benefits of Using Virtualization
+## 使用虚拟化的好处
 
 <Highlights
   :features="[
-    'Improved Performance: Render thousands of items without lag',
-    'Reduced Memory Usage: Only mount DOM nodes for visible items',
-    'Better User Experience: Fast initial load times and responsive interactions',
+    '改进性能：无延迟地渲染数千个项目',
+    '减少内存使用量：仅为可见项目挂载 DOM 节点',
+    '更好的用户体验： 快速的初始加载时间和响应式交互',
   ]"
 />
 
-## Customization Options
+## 自定义选项
 
-All virtualizer ([Combobox](/docs/components/combobox#virtualizer), [Listbox](/docs/components/listbox#virtualizer), and [Tree](/docs/components/tree#virtualizer)) components offer the following props and customization:
+All virtualizer () components offer the following props and customization:
+所有虚拟化器（[Combobox](/zh/docs/components/combobox#virtualizer)、[Listbox](/zh/docs/components/listbox#virtualizer)，和[Tree](/zh/docs/components/tree#virtualizer)）组件都提供以下 prop 和自定义：
 
-- Custom item rendering: Flexibility to render complex item structures
-- `estimateSize`: Set estimate item heights for static or dynamic item
-- `overscan`: Control the number of items rendered outside the visible area
-- `textContent`: Text content for each item to achieve type-ahead feature
+- 自定义项渲染：灵活地渲染复杂的项结构
+- `estimateSize`: 设置静态或动态项目的估算项目高度
+- `overscan`: 控制在可见区域之外渲染的项目数
+- `textContent`: 每个项目的文本内容，实现提前输入（type-ahead）功能
 
-## Usage
+## 用法
 
-Here's a few important note to make sure virtualization works!
+以下是确保虚拟化正常工作的一些重要说明！
 
-1. A fixed height/max-height wrapping `<Virtualizer />`.
-2. Consistent item height, and set the `estimateSize` props appropriately.
-3. Set `textContent` props to make sure type-ahead acceessibility.
+1. 固定高度/最大高度换行 `<Virtualizer />`。
+2. 保持一致的项目高度，并适当设置 `estimateSize` 属性。
+3. 设置 `textContent` 属性以确保提前输入的可访问性。
 
-## Example
+## 示例
 
 ```vue
 <script setup>
@@ -77,11 +78,11 @@ const items = [
 </template>
 ```
 
-## Common issue
+## 常见问题
 
-### Virtualization is not working
+### 虚拟化无法正常工作
 
-Do ensure that `<Virtualizer>`'s parent element has a defined height!
+请确保 `<Virtualizer>` 的父元素具有定义的高度！
 
 ```vue line=6
 <template>

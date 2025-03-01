@@ -1,23 +1,23 @@
 ---
-title: Focus Scope
-description:  Manages focus within a component boundary with support for trapping and looping focus navigation.
+title: Focus Scope 聚焦作用域
+description:  通过支持捕获和循环焦点导航来管理组件边界内的焦点。
 ---
 
-# Focus Scope
+# Focus Scope 聚焦作用域
 
 <Description>
- Manages focus within a component boundary with support for trapping and looping focus navigation.
+通过支持捕获和循环焦点导航来管理组件边界内的焦点。
 </Description>
 
-Focus Scope provides enhanced control over keyboard focus management within component boundaries. It can trap focus within its container and optionally loop focus navigation, making it ideal for modal interfaces and other interactive components that need to manage focus states.
+Focus Scope 增强了对组件边界内键盘焦点管理的控制。它可以将焦点捕获在其容器中，并可选择循环焦点导航，使其成为需要管理焦点状态的模态界面和其他交互式组件的理想选择。
 
-## API Reference
+## API 参考
 
-<!-- @include: @/meta/FocusScope.md -->
+<!-- @include: @/zh/meta/FocusScope.md -->
 
-## Example
+## 示例
 
-Basic usage with focus trapping
+焦点捕获的基本用法
 
 ```vue line=2
 <template>
@@ -31,9 +31,9 @@ Basic usage with focus trapping
 </template>
 ```
 
-### With Focus Looping
+### 焦点循环
 
-Enable both trapping and looping for complete focus management:
+启用捕获和循环以实现完整的焦点管理：
 
 ```vue line=2
 <template>
@@ -47,7 +47,7 @@ Enable both trapping and looping for complete focus management:
 </template>
 ```
 
-### Handling Focus Event
+### 处理聚焦事件
 
 ```vue line=2-5
 <script setup>
@@ -73,6 +73,6 @@ function handleMountFocus(event) {
 
 <Callout type="warning">
 
-When using trapped mode, ensure there is always at least one focusable element within the scope to prevent focus from being trapped in an inaccessible state.
+使用捕获模式时，请确保范围内始终至少有一个可聚焦元素，以防止焦点被困在无法访问的状态。
 
 </Callout>

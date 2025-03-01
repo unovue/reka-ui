@@ -26,13 +26,13 @@ const props = defineProps<PropsTableProps>()
     <ProseThead>
       <ProseTr>
         <ProseTh class="w-1/6">
-          <span>Prop</span>
+          <span>{{ $t('prop') }}</span>
         </ProseTh>
         <ProseTh class="w-1/6">
-          <span>Default</span>
+          <span>{{ $t('default') }}</span>
         </ProseTh>
         <ProseTh class="w-2/3">
-          <span>Type</span>
+          <span>{{ $t('type') }}</span>
         </ProseTh>
       </ProseTr>
     </ProseThead>

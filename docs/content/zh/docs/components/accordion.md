@@ -1,40 +1,39 @@
 ---
-title: Accordion
-description: A vertically stacked set of interactive headings that each reveal an associated section of content.
+title: 手风琴面板
+description: 一组垂直堆叠的交互式标题，每个标题显示一个相关的内容部分。
 name: accordion
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/accordion
 ---
 
-# Accordion
+# 手风琴面板
 
 <Description>
-A vertically stacked set of interactive headings that each reveal an
-associated section of content.
+一组垂直堆叠的交互式标题，每个标题显示一个相关的内容部分。
 </Description>
 
 <ComponentPreview name="Accordion" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation.',
-    'Supports horizontal/vertical orientation.',
-    'Supports Right to Left direction.',
-    'Can expand one or multiple items.',
-    'Can be controlled or uncontrolled.'
+    '全键盘导航',
+    '支持水平/垂直方向',
+    '支持从右到左的方向（RTL）',
+    '可以展开一个或多个项。',
+    '可以是受控的或非受控的'
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -53,13 +52,13 @@ import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, Accord
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of an Accordion
+包含手风琴面板的所有部分
 
-<!-- @include: @/meta/AccordionRoot.md -->
+<!-- @include: @/zh/meta/AccordionRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -71,9 +70,9 @@ Contains all the parts of an Accordion
 
 ### Item
 
-Contains all the parts of a collapsible section.
+包含可折叠部分的所有部分。
 
-<!-- @include: @/meta/AccordionItem.md -->
+<!-- @include: @/zh/meta/AccordionItem.md -->
 
 <DataAttributesTable :data="[
     {
@@ -82,7 +81,7 @@ Contains all the parts of a collapsible section.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -91,9 +90,9 @@ Contains all the parts of a collapsible section.
 
 ### Header
 
-Wraps an `AccordionTrigger`. Use the `asChild` prop to update it to the appropriate heading level for your page.
+包一个 `AccordionTrigger`。使用 `asChild` 属性将其更新到您页面的适当标题级别。
 
-<!-- @include: @/meta/AccordionHeader.md -->
+<!-- @include: @/zh/meta/AccordionHeader.md -->
 
 <DataAttributesTable :data="[
     {
@@ -102,7 +101,7 @@ Wraps an `AccordionTrigger`. Use the `asChild` prop to update it to the appropri
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -111,9 +110,9 @@ Wraps an `AccordionTrigger`. Use the `asChild` prop to update it to the appropri
 
 ### Trigger
 
-Toggles the collapsed state of its associated item. It should be nested inside of an `AccordionHeader`.
+切换与其关联项的折叠状态。它应嵌套在一个 `AccordionHeader` 内部。
 
-<!-- @include: @/meta/AccordionTrigger.md -->
+<!-- @include: @/zh/meta/AccordionTrigger.md -->
 
 <DataAttributesTable :data="[
     {
@@ -122,7 +121,7 @@ Toggles the collapsed state of its associated item. It should be nested inside o
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -131,9 +130,9 @@ Toggles the collapsed state of its associated item. It should be nested inside o
 
 ### Content
 
-Contains the collapsible content for an item.
+包含一个 Item 的可折叠内容。
 
-<!-- @include: @/meta/AccordionContent.md -->
+<!-- @include: @/zh/meta/AccordionContent.md -->
 
 <DataAttributesTable :data="[
     {
@@ -142,7 +141,7 @@ Contains the collapsible content for an item.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -160,11 +159,11 @@ Contains the collapsible content for an item.
     }]"
 />
 
-## Examples
+## 示例
 
-### Expanded by default
+### 默认展开
 
-Use the `defaultValue` prop to define the open item by default.
+使用 `defaultValue` 属性来定义默认打开的项。
 
 ```vue line=2
 <template>
@@ -182,9 +181,9 @@ Use the `defaultValue` prop to define the open item by default.
 </template>
 ```
 
-### Allow collapsing all items
+### 允许折叠所有项
 
-Use the `collapsible` prop to allow all items to close.
+使用 `collapsible` 属性允许所有项关闭。
 
 ```vue line=2
 <template>
@@ -202,9 +201,9 @@ Use the `collapsible` prop to allow all items to close.
 </template>
 ```
 
-### Multiple items open at the same time
+### 多个项同时打开
 
-Set the `type` prop to `multiple` to enable opening multiple items at once.
+将 `type` 属性设置为 `multiple` 以启用一次打开多个项。
 
 ```vue line=2
 <template>
@@ -219,9 +218,9 @@ Set the `type` prop to `multiple` to enable opening multiple items at once.
 </template>
 ```
 
-### Rotated icon when open
+### 打开时旋转图标
 
-You can add extra decorative elements, such as chevrons, and rotate it when the item is open.
+您可以添加额外的装饰元素，例如箭头，并在物品打开时旋转它。
 
 ```vue line=14
 // index.vue
@@ -259,9 +258,9 @@ import './styles.css'
 }
 ```
 
-### Horizontal orientation
+### 横向
 
-Use the `orientation` prop to create a horizontal Accordion
+使用 `orientation` 属性创建横向手风琴面板
 
 ```vue line=2
 <template>
@@ -276,9 +275,9 @@ Use the `orientation` prop to create a horizontal Accordion
 </template>
 ```
 
-### Animating content size
+### 内容大小动画
 
-Use the `--reka-accordion-content-width` and/or `--reka-accordion-content-height` CSS variables to animate the size of the content when it opens/closes:
+使用 `--reka-accordion-content-width` 和/或 `--reka-accordion-content-height` CSS变量来设置内容打开/关闭时的动画大小：
 
 ```vue line=11
 // index.vue
@@ -330,11 +329,11 @@ import './styles.css'
 }
 ```
 
-### Render content even when closed
+### 即使关闭也能渲染内容
 
-By default hidden content will be removed, use `:unmountOnHide="false"` to keep the content always available.
+默认情况下，隐藏的内容将被删除，使用 `:unmountOnHide="false"` 以保持内容始终可用。
 
-This will also allow browser to search the hidden text, and open the accordion.
+这也将允许浏览器搜索隐藏的文本，并打开手风琴面板。
 
 ```vue line=2
 <template>
@@ -349,50 +348,50 @@ This will also allow browser to search the hidden text, and open the accordion.
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Accordion WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion).
+遵循[手风琴面板 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/accordion)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable :data="[
     {
       keys: ['Space'],
-      description: 'When focus is on an <code>AccordionTrigger</code> of a collapsed section, expands the section.',
+      description: '当焦点在折叠部分的<code>AccordionTrigger</code>上时，展开该部分。',
     },
     {
       keys: ['Enter'],
-      description: 'When focus is on an <code>AccordionTrigger</code> of a collapsed section, expands the section.',
+      description: '当焦点在折叠部分的<code>AccordionTrigger</code>上时，展开该部分。',
     },
     {
       keys: ['Tab'],
-      description: 'Moves focus to the next focusable element.',
+      description: '将焦点移动到下一个可聚焦元素。',
     },
     {
       keys: ['Shift + Tab'],
-      description: 'Moves focus to the previous focusable element.',
+      description: '将焦点移动到上一个可聚焦元素。',
     },
     {
       keys: ['ArrowDown'],
-      description: 'Moves focus to the next <code>AccordionTrigger</code> when <code>orientation</code> is <code>vertical</code>.',
+      description: '当<code>orientation</code>是<code>vertical</code>时，将焦点移动到下一个<code>AccordionTrigger</code>。',
     },
     {
       keys: ['ArrowUp'],
-      description: 'Moves focus to the previous <code>AccordionTrigger</code> when <code>orientation</code> is <code>vertical</code>.',
+      description: '当<code>orientation</code>为<code>vertical</code>时，将焦点移动到上一个<code>AccordionTrigger</code>。',
     },
     {
       keys: ['ArrowRight'],
-      description: 'Moves focus to the next <code>AccordionTrigger</code> when <code>orientation</code> is <code>horizontal</code>.',
+      description: '当<code>orientation</code>为<code>horizontal</code>时，将焦点移动到下一个<code>AccordionTrigger</code>。',
     },
     {
       keys: ['ArrowLeft'],
-      description: 'Moves focus to the previous <code>AccordionTrigger</code> when <code>orientation</code> is <code>horizontal</code>.',
+      description: '当<code>orientation</code>为<code>horizontal</code>时，将焦点移动到上一个<code>AccordionTrigger</code>。',
     },
     {
       keys: ['Home'],
-      description: 'When focus is on an <code>AccordionTrigger</code>, moves focus to the start <code>AccordionTrigger</code>.',
+      description: '当焦点在<code>AccordionTrigger</code>上时，将焦点移动到起始<code>AccordionTrigger</code>。',
     },
     {
       keys: ['End'],
-      description: 'When focus is on an <code>AccordionTrigger</code>, moves focus to the last <code>AccordionTrigger</code>.',
+      description: '当焦点在<code>AccordionTrigger</code>上时，将焦点移动到最后一个<code>AccordionTrigger</code>。',
     }]" />

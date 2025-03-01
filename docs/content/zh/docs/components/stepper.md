@@ -1,37 +1,37 @@
 ---
-title: Stepper
-description: A set of steps that are used to indicate progress through a multi-step process.
+title: 步骤
+description: 一组步骤，用于指示多步骤流程的进度。
 name: stepper
 ---
 
-# Stepper
+# 步骤
 
 <Description>
-A set of steps that are used to indicate progress through a multi-step process.
+一组步骤，用于指示多步骤流程的进度。
 </Description>
 
 <ComponentPreview name="Stepper" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Supports horizontal/vertical orientation.',
-    'Supports linear/non-linear activation.',
-    'Full keyboard navigation.',
+    '可以是受控的或非受控的',
+    '支持水平/垂直方向',
+    '支持线性/非线性激活',
+    '全键盘导航',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -53,13 +53,13 @@ import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, Stepper
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the stepper component parts.
+包含所有步进组件的部件。
 
-<!-- @include: @/meta/StepperRoot.md -->
+<!-- @include: @/zh/meta/StepperRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -76,9 +76,9 @@ Contains all the stepper component parts.
 
 ### Item
 
-The step item component.
+步骤项组件。
 
-<!-- @include: @/meta/StepperItem.md -->
+<!-- @include: @/zh/meta/StepperItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -88,7 +88,7 @@ The step item component.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -99,9 +99,9 @@ The step item component.
 
 ### Trigger
 
-The trigger that toggles the step.
+用于切换步骤的触发器。
 
-<!-- @include: @/meta/StepperTrigger.md -->
+<!-- @include: @/zh/meta/StepperTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -111,7 +111,7 @@ The trigger that toggles the step.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -122,31 +122,31 @@ The trigger that toggles the step.
 
 ### Indicator
 
-The indicator for the step.
+步骤的指示器。
 
-<!-- @include: @/meta/StepperIndicator.md -->
+<!-- @include: @/zh/meta/StepperIndicator.md -->
 
 ### Title
 
-An accessible title to be announced when the stepper trigger is focused.
+在步进器触发器聚焦时宣布的辅助标题。
 
-If you want to hide the title, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`.
+如果您想隐藏标题，请将其包装在我们的视觉隐藏实用组件，如 `<VisuallyHidden asChild>`。
 
-<!-- @include: @/meta/StepperTitle.md -->
+<!-- @include: @/zh/meta/StepperTitle.md -->
 
 ### Description
 
-An optional accessible description to be announced when the stepper trigger is focused.
+当步进触发器聚焦时宣布的可选可访问描述。
 
-If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part and pass `aria-describedby="undefined"` to `StepperTrigger`.
+如果你想隐藏描述，请将其包装在我们的 `VisuallyHidden` 实用组件，像这样 `<VisuallyHidden asChild>`。如果要完全删除描述，请删除此部分并将 `aria-describedby="undefined"` 传递给 `StepperTrigger`。
 
-<!-- @include: @/meta/StepperItem.md -->
+<!-- @include: @/zh/meta/StepperItem.md -->
 
-## Examples
+## 示例
 
-### Vertical
+### 垂直
 
-You can create vertical steps by using the `orientation` prop.
+你可以使用 `orientation` 属性创建垂直步长。
 
 ```vue line=8
 <script setup>
@@ -174,35 +174,35 @@ import { StepperDescription, StepperIndicator, StepperItem, StepperList, Stepper
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: '<span> When focus moves onto the steps, focuses the first step .</span>',
+      description: '<span>当焦点移动到步骤上时，将焦点放在第一步。</span>',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> Moves focus to the next step depending on <Code>orientation</Code>.</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移至下一步。</span>',
     },
     {
       keys: ['ArrowRight'],
-      description: '<span> Moves focus to the next step depending on <Code>orientation</Code> .</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移至下一步。</span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> Moves focus to the previous step depending on <Code>orientation</Code> .</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移至上一步。</span>',
     },
     {
       keys: ['ArrowLeft'],
-      description: '<span> Moves focus to the previous step depending on <Code>orientation</Code> .</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移至上一步。</span>',
     },
     {
     keys: ['Enter', 'Space'],
-    description: '<span>Selects the focused step.</span>',
+    description: '<span>选择聚焦的步骤。</span>',
     },
   ]"
 />

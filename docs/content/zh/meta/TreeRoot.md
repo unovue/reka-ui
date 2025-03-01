@@ -1,89 +1,87 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'ul\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'defaultExpanded',
-    'description': '<p>The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree</p>\n',
+    'description': '<p>初始渲染时展开树的值。不需要控制展开树的状态时使用</p>\n',
     'type': 'string[]',
     'required': false
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The value of the tree when initially rendered. Use when you do not need to control the state of the tree</p>\n',
+    'description': '<p>最初渲染时树的值。不需要控制树的状态时使用</p>\n',
     'type': 'Record<string, any> | Record<string, any>[]',
     'required': false
   },
   {
     'name': 'dir',
-    'description': '<p>The reading direction of the listbox when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
+    'description': '<p>列表框的读取方向（如果适用）。<br/>如果省略，则从 <code>ConfigProvider</code>全局继承或采用 LTR（从左到右）读取模式。</p>\n',
     'type': '\'ltr\' | \'rtl\'',
     'required': false
   },
   {
     'name': 'disabled',
-    'description': '<p>When <code>true</code>, prevents the user from interacting with tree</p>\n',
+    'description': '<p>当<code>true</code>时，阻止用户与树交互</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'expanded',
-    'description': '<p>The controlled value of the expanded item. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>展开项的受控值。可以与<code>v-model</code>绑定。</p>\n',
     'type': 'string[]',
     'required': false
   },
   {
     'name': 'getChildren',
-    'description': '<p>This function is passed the index of each item and should return a list of children for that item</p>\n',
+    'description': '<p>此函数传递每个项的索引，并应返回该项的子列表</p>\n',
     'type': '((val: Record<string, any>) => Record<string, any>[])',
     'required': false,
     'default': 'val.children'
   },
   {
     'name': 'getKey',
-    'description': '<p>This function is passed the index of each item and should return a unique key for that item</p>\n',
+    'description': '<p>此函数传递每个项的索引，并应返回该项的唯一键</p>\n',
     'type': '(val: Record<string, any>) => string',
     'required': true
   },
   {
     'name': 'items',
-    'description': '<p>List of items</p>\n',
+    'description': '<p>项列表</p>\n',
     'type': 'Record<string, any>[]',
     'required': false
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the tree. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>树的受控值。可以与<code>v-model</code>绑定。</p>\n',
     'type': 'Record<string, any> | Record<string, any>[]',
     'required': false
   },
   {
     'name': 'multiple',
-    'description': '<p>Whether multiple options can be selected or not.</p>\n',
+    'description': '<p>是否可以选择多个选项。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'propagateSelect',
-    'description': '<p>When <code>true</code>, selecting parent will select the descendants.</p>\n',
+    'description': '<p>当<code>true</code>时，选择父级将选择后代。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'selectionBehavior',
-    'description': '<p>How multiple selection should behave in the collection.</p>\n',
+    'description': '<p>多个选择在集合中的行为方式。</p>\n',
     'type': '\'toggle\' | \'replace\'',
     'required': false,
     'default': '\'toggle\''
@@ -98,7 +96,7 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
+    'description': '<p>切换开关值更改时调用的事件处理程序。</p>\n',
     'type': '[val: Record<string, any>]'
   }
 ]" />

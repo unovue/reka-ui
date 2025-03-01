@@ -1,29 +1,27 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'ol\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'hotkey',
-    'description': '<p>The keys to use as the keyboard shortcut that will move focus to the toast viewport.</p>\n',
+    'description': '<p>用作将焦点移动到 Toast 视口的键盘快捷键。</p>\n',
     'type': 'string[]',
     'required': false,
     'default': '[\'F8\']'
   },
   {
     'name': 'label',
-    'description': '<p>An author-localized label for the toast viewport to provide context for screen reader users\nwhen navigating page landmarks. The available <code>{hotkey}</code> placeholder will be replaced for you.\nAlternatively, you can pass in a custom function to generate the label.</p>\n',
+    'description': '<p>一个作者本地化的标签，用于在浏览页面地标时为屏幕阅读器用户提供上下文。可用于替换的<code>{hotkey}</code>占位。\n或者，您可以传入自定义函数来生成标签。</p>\n',
     'type': 'string | ((hotkey: string) => string)',
     'required': false,
     'default': '\'Notifications ({hotkey})\''

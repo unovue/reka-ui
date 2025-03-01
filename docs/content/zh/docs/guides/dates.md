@@ -1,54 +1,47 @@
 ---
-title: Dates & Times
-description: How to work with dates and times in Reka UI.
+title: 日期和时间
+description: 如何在 Reka UI 中使用日期和时间。
 ---
 
-# Dates & Times
+# 日期和时间
 
 <Description>
-How to work with dates and times in Reka UI.
+如何在 Reka UI 中使用日期和时间。
 </Description>
 
 <Callout type="tip">
 
-The inner-workings of our date-related components are heavily inspired by the research and work done
-by the [React Aria](https://react-spectrum.adobe.com/react-aria/) team at Adobe, who have created
-robust date components that excel in terms of accessibility, user experience, and flexibility.
+我们与日期相关的组件的内部工作原理在很大程度上受到了 Adobe 的 [React Aria](https://react-spectrum.adobe.com/react-aria/) 团队所做的研究和工作的启发，他们创建了强大的日期组件，这些组件在可访问性、用户体验和灵活性方面都表现出色。
 
 </Callout>
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
+该组件依赖于 [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) 包，这个包解决了在 JavaScript 中处理日期和时间时出现的许多问题。
 
-We highly recommend reading through the documentation for the package to get a solid feel for how it
-works, and you'll need to install it in your project to use the date-related components.
+我们强烈建议通读该包的文档，以便深入了解它的工作原理，并且你需要在你的项目中安装它才能使用与日期相关的组件。
 
 <InstallationTabs value="@internationalized/date" />
 
-## Date Objects
+## Date 对象
 
-We use the `DateValue` objects provided by `@internationalized/date` to
-represent dates in the various components. These objects are immutable, and provide information about
-the type of date they represent:
+我们使用 `@internationalized/date` 提供的 `DateValue` 对象来表示各种组件中的日期。这些对象是不可变的，并提供有关它们所表示的日期类型的信息：
 
-- `CalendarDate`: A date with no time component, such as `2023-10-11`.
-- `CalendarDateTime`: A date with a time component, but without a timezone, such as
+- `CalendarDate`: 没有时间组成部分的日期，例如 `2023-10-11`.
+- `CalendarDateTime`: 有时间组成部分但没有时区的日期，例如
   `2023-10-11T12:30:00`.
-- `ZonedDateTime`: A date with a time component and a timezone, such as
+- `ZonedDateTime`: 具有时间组成部分和时区的日期，例如
   `2023-10-11T21:00:00:00-04:00[America/New_York]`.
 
-The benefit of using these objects is that we can be very specific about the type of date we want,
-and the behavior of the builder will adapt to that type.
+使用这些对象的好处是我们可以非常具体地定义我们想要的日期类型，并且构建器的行为将适应该类型。
 
-Additionally, you don't have to worry about wrangling timezones, daylight savings time, or any other
-date-related nuance.
+此外，您不必担心时区、夏令时或任何其他与日期相关的细微差别。
 
-## Utility Functions
+## 通用函数
 
-This package also provides a number of utility functions which solves a lot of the problems that come with working with dates and times in JavaScript.
+这个包还提供了许多实用函数，解决了在 JavaScript 中使用日期和时间带来的许多问题。
 
-Specially designed to work well with [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html).
+专为 [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) 设计。
 
-### How to use?
+### 如何使用？
 
 ```ts
 import {

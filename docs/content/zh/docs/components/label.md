@@ -1,36 +1,36 @@
 ---
 
-title: Label
-description: Renders an accessible label associated with controls.
+title: 标签
+description: 呈现与控件关联的无障碍标签。
 name: label
 ---
 
-# Label
+# 标签
 
 <Description>
-Renders an accessible label associated with controls.
+呈现与控件关联的无障碍标签。
 </Description>
 
 <ComponentPreview name="Label" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Text selection is prevented when double clicking label.',
-    'Supports nested controls.',
+    '双击标签时阻止文本选择',
+    '支持嵌套控件',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup>
@@ -42,14 +42,14 @@ import { Label } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains the content for the label.
+包含标签的内容。
 
-<!-- @include: @/meta/Label.md -->
+<!-- @include: @/zh/meta/Label.md -->
 
-## Accessibility
+## 无障碍
 
-This component is based on the native `label` element, it will automatically apply the correct labelling when wrapping controls or using the `for` attribute. For your own custom controls to work correctly, ensure they use native elements such as `button` or `input` as a base.
+此组件基于原生 `label` 元素，在包装控件或使用 `for` 属性时，它将自动应用正确的标签。要使您自己的自定义控件正常工作，请确保它们使用原生元素（如 `button` 或 `input`）作为基础。

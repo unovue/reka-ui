@@ -1,15 +1,15 @@
 ---
-title: Date Picker Selection
+title: 日期范围选择器
 tags:
-  - Range Calendar
-  - Date Range Field
+  - 范围日历
+  - 日期范围字段
 ---
 
-# Date Picker Selection
+# 日期范围选择器
 
 <Description>
 
-Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+日期选择器允许用户选择一个日期或一系列日期。它们通常用于预订系统。
 
 </Description>
 
@@ -19,8 +19,8 @@ Date pickers let users select a date or a range of dates. They commonly use in b
 
 <ExampleSection>
 
-### Date Picker Selection
+### 日期范围选择器
 
-Dual-calendar display that shows two months side by side for easier date range selection, and quick selection options in a sidebar panel
+双日历显示，可并排显示两个月，以便更轻松地选择日期范围，并在侧边栏面板中快速选择选项。
 
 </ExampleSection>

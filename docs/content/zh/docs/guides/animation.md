@@ -1,21 +1,21 @@
 ---
-title: Animation/Transition
-description: Animate Reka UI with CSS keyframes, native Vue Transition or JavaScript animation library of your choice.
+title: 动画/过渡
+description: 使用 CSS 关键帧、原生 Vue 过渡或您选择的 JavaScript 动画库为 Reka UI 制作动画。
 ---
 
-# Animation
+# 动画
 
 <Description>
-Animate Reka UI with CSS keyframes, native Vue Transition or JavaScript animation library of your choice.
+使用 CSS 关键帧、原生 Vue 过渡或您选择的 JavaScript 动画库为 Reka UI 制作动画。
 </Description>
 
-Adding animation to Reka UI should feel similar to any other component, but there are some caveats noted here in regards to exiting animations with JS animation libraries.
+向 Reka UI 添加动画感觉应该与任何其他组件类似，但这里有一些一些关于使用 JS 动画库退出动画的注意事项。
 
-## Animating with CSS animation
+## 使用 CSS 动画制作动画
 
-The simplest way to animate Primitives is with CSS.
+为 Primitives 制作动画的最简单方法是使用 CSS。
 
-You can use CSS animation to animate both mount and unmount phases. The latter is possible because the Reka UI will suspend unmount while your animation plays out.
+您可以使用 CSS 动画为装载和卸载阶段添加动画效果。后者是可能的，因为 Reka UI 将在动画播放时暂停卸载。
 
 ```css
 @keyframes fadeIn {
@@ -47,9 +47,9 @@ You can use CSS animation to animate both mount and unmount phases. The latter i
 }
 ```
 
-## Animating with Vue Transition
+## 使用 Vue Transition 制作动画
 
-Other than using CSS animation, you might prefer to use the native Vue `<Transition>`. Great news! It should be as easy as wrapping component (that has `forceMount` prop), and you are done!
+除了使用 CSS 动画之外，您可能更喜欢使用原生的 Vue `<Transition>`。好消息！它应该像包装组件（具有 `forceMount` 属性）一样简单，然后你就完成了！
 
 ```vue line=11,13,14,19,25-33
 <script setup lang="ts">
@@ -88,9 +88,9 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
 </style>
 ```
 
-## ⭐️ Animating with Motion Vue
+## ⭐️ 使用 Motion Vue 制作动画
 
-[Motion Vue](https://motion.unovue.com/) is the recommended animation library for Reka UI. This lightweight, powerful library integrates seamlessly with components and offers extensive flexibility for creating smooth, performant animations.
+[Motion Vue](https://motion.unovue.com/) 是 Reka UI 的推荐动画库。这个轻量级、强大的库与组件无缝集成，并为创建流畅、高性能的动画提供了广泛的灵活性。
 
 ```vue line=3,12,14-18,22-26,29,31
 <script setup lang="ts">
@@ -131,15 +131,15 @@ import { AnimatePresence, Motion } from 'motion-v'
 
 <Callout type="tip">
 
-Check out this [Stackblitz Demo](https://stackblitz.com/edit/x7y44ngl?file=src%2FApp.vue) 🤩
+看看这个 [Stackblitz 演示](https://stackblitz.com/edit/x7y44ngl?file=src%2FApp.vue) 🤩
 
 </Callout>
 
-## Delegating unmounting for JavaScript Animation
+## 委派 JavaScript 动画的卸载
 
-When many stateful Primitives are hidden from view, they are actually removed from the DOM. JavaScript animation libraries need control of the unmounting phase, so we provide the `forceMount` prop on many components to allow consumers to delegate the mounting and unmounting of children based on the animation state determined by those libraries.
+当许多有状态的 Primitive 被隐藏在视图中时，它们实际上会从 DOM 中删除。JavaScript 动画库需要控制卸载阶段，因此我们在许多组件上提供了 `forceMount` 属性，以允许用户根据这些库确定的动画状态来委托子级的挂载和卸载。
 
-For example, if you want to use [@vueuse/motion](https://motion.vueuse.org/) to animate a `Dialog`, you would do so by conditionally rendering the dialog `Overlay` and `Content` parts based on the animation state from one of its composable like `useSpring`:
+例如，如果您想使用 [@vueuse/motion](https://motion.vueuse.org/) 为 `Dialog` 添加动画效果，则可以根据对话框的组合式函数之一（如 `useSpring`）的动画状态有条件地渲染对话框的 `Overlay` 和 `Content` 部件：
 
 ```vue line=32,34,41
 <script setup lang="ts">
@@ -198,6 +198,6 @@ watch(open, () => {
 
 <Callout type="tip">
 
-Check out this [Stackblitz Demo](https://stackblitz.com/edit/macsaz-xuwbw3im?file=src%2FApp.vue)
+看看这个[Stackblitz 演示](https://stackblitz.com/edit/macsaz-xuwbw3im?file=src%2FApp.vue)
 
 </Callout>

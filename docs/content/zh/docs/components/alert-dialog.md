@@ -1,39 +1,38 @@
 ---
-title: Alert Dialog
-description: A modal dialog that interrupts the user with important content and expects a response.
+title: 警报对话框
+description: 一个模态对话框，用重要内容打断用户并期望得到响应。
 name: alert-dialog
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog
 ---
 
-# Alert Dialog
+# 警报对话框
 
 <Description>
-A modal dialog that interrupts the user with important content and expects a
-response.
+一个模态对话框，用重要内容打断用户并期望得到响应。
 </Description>
 
 <ComponentPreview name="AlertDialog" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Focus is automatically trapped.',
-    'Can be controlled or uncontrolled.',
-    'Manages screen reader announcements with <code>Title</code> and <code>Description</code> components.',
-    'Esc closes the component automatically.'
+    '焦点自动被捕获。',
+    '可以是受控的或非受控的',
+    '使用<code>Title</code>和<code>Description</code>组件管理屏幕阅读器声明。',
+    'Esc 可自动关闭该组件'
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -66,19 +65,19 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of an alert dialog.
+包含警报对话框的所有部分。
 
-<!-- @include: @/meta/AlertDialogRoot.md -->
+<!-- @include: @/zh/meta/AlertDialogRoot.md -->
 
 ### Trigger
 
-A button that opens the dialog.
+打开对话框的按钮。
 
-<!-- @include: @/meta/AlertDialogTrigger.md -->
+<!-- @include: @/zh/meta/AlertDialogTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -91,15 +90,15 @@ A button that opens the dialog.
 
 ### Portal
 
-When used, portals your overlay and content parts into the <code>body</code>.
+使用时，将您的覆盖层和内容部分传送到<code>body</code>。
 
-<!-- @include: @/meta/AlertDialogPortal.md -->
+<!-- @include: @/zh/meta/AlertDialogPortal.md -->
 
 ### Overlay
 
-A layer that covers the inert portion of the view when the dialog is open.
+当对话框打开时，覆盖视图中无效部分的一层。
 
-<!-- @include: @/meta/AlertDialogOverlay.md -->
+<!-- @include: @/zh/meta/AlertDialogOverlay.md -->
 
 <DataAttributesTable
   :data="[
@@ -112,9 +111,9 @@ A layer that covers the inert portion of the view when the dialog is open.
 
 ### Content
 
-Contains content to be rendered when the dialog is open.
+包含在对话框打开时要呈现的内容。
 
-<!-- @include: @/meta/AlertDialogContent.md -->
+<!-- @include: @/zh/meta/AlertDialogContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -127,33 +126,33 @@ Contains content to be rendered when the dialog is open.
 
 ### Cancel
 
-A button that closes the dialog. This button should be distinguished visually from `AlertDialogAction` buttons.
+一个关闭对话框的按钮。此按钮应在视觉上与 `AlertDialogAction` 按钮区分开来。
 
-<!-- @include: @/meta/AlertDialogCancel.md -->
+<!-- @include: @/zh/meta/AlertDialogCancel.md -->
 
 ### Action
 
-A button that closes the dialog. These buttons should be distinguished visually from the `AlertDialogCancel` button.
+一个关闭对话框的按钮。此按钮应在视觉上与 `AlertDialogCancel` 区分开来。
 
-<!-- @include: @/meta/AlertDialogAction.md -->
+<!-- @include: @/zh/meta/AlertDialogAction.md -->
 
 ### Title
 
-An accessible name to be announced when the dialog is opened. Alternatively, you can provide `aria-label` or `aria-labelledby` to `AlertDialogContent` and exclude this component.
+当对话框打开时将声明的无障碍名称。或者，你可以向 `AlertDialogContent` 提供 `aria-label` 或 `aria-labelledby`，并摒弃此组件。
 
-<!-- @include: @/meta/AlertDialogTitle.md -->
+<!-- @include: @/zh/meta/AlertDialogTitle.md -->
 
 ### Description
 
-An accessible description to be announced when the dialog is opened. Alternatively, you can provide `aria-describedby` to `AlertDialogContent` and exclude this component.
+当对话框打开时将声明的无障碍描述。或者，你可以向 `AlertDialogContent` 提供 `aria-describedby` ，并摒弃此组件。
 
-<!-- @include: @/meta/AlertDialogDescription.md -->
+<!-- @include: @/zh/meta/AlertDialogDescription.md -->
 
-## Examples
+## 示例
 
-### Close after asynchronous form submission
+### 异步表单提交后关闭
 
-Use the controlled props to programmatically close the Alert Dialog after an async operation has completed.
+使用受控属性在异步操作完成后以编程方式关闭警告对话框。
 
 ```vue line=14,15,19,25-29
 <script setup>
@@ -199,9 +198,9 @@ const open = ref(false)
 
 <br />
 
-### Custom portal container
+### 自定义 portal 容器
 
-Customise the element that your alert dialog portals into.
+自定义你的警报对话框传送的元素。
 
 ```vue line=4,17
 <script setup>
@@ -225,25 +224,25 @@ const container = ref(null)
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Alert and Message Dialogs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog).
+遵循[警报和消息对话框 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog).
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable :data="[{
 keys: ['Space'],
-description: 'Opens/closes the dialog.',
+description: '打开/关闭对话框。',
 },{
 keys: ['Enter'],
-description: 'Opens/closes the dialog.',
+description: '打开/关闭对话框。',
 },{
 keys: ['Tab'],
-description: 'Moves focus to the next focusable element.',
+description: '将焦点移动到下一个可聚焦元素。',
 },{
 keys: ['Shift + Tab'],
-description: 'Moves focus to the previous focusable element.',
+description: '将焦点移动到上一个可聚焦元素。',
 },{
 keys: ['Esc'],
-description: 'Closes the dialog and moves focus to <Code>AlertDialogTrigger</code>.',
+description: '关闭对话框并将焦点移动到<code>AlertDialogTrigger</code>。',
 }]" />

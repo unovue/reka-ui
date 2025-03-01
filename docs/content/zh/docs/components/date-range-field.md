@@ -1,52 +1,52 @@
 ---
-title: Date Range Field
-description: Allows users to input a range of dates within a designated field.
+title: 日期范围字段
+description: 允许用户在指定字段内输入一个日期范围。
 name: date-range-field
 ---
 
-# Date Range Field
+# 日期范围字段
 
 <Badge>Alpha</Badge>
 
 <Description>
-Allows users to input a range of dates within a designated field.
+允许用户在指定字段内输入一个日期范围。
 </Description>
 
 <ComponentPreview name="DateRangeField" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation',
-    'Can be controlled or uncontrolled',
-    'Focus is fully managed',
-    'Localization support',
-    'Highly composable',
-    'Accessible by default',
-    'Supports both date and date-time formats'
+    '全键盘导航',
+    '可以是受控的或非受控的',
+    '焦点完全可控',
+    '本地化支持',
+    '高度可组合',
+    '默认无障碍',
+    '支持日期格式和日期时间格式'
   ]"
 />
 
-## Preface
+## 前言
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
+该组件依赖于 [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) 包，这个包解决了在 JavaScript 中处理日期和时间时出现的许多问题。
 
-We highly recommend reading through the documentation for the package to get a solid feel for how it works, and you'll need to install it in your project to use the date-related components.
+我们强烈建议通读该包的文档，以便深入了解它的工作原理，并且你需要在你的项目中安装它才能使用与日期相关的组件。
 
-## Installation
+## 安装
 
-Install the date package.
+安装日期包。
 
 <InstallationTabs value="@internationalized/date" />
 
-Install the component from your command line.
+从命令行安装此组件
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -63,88 +63,88 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a date field
+包含日期范围字段的所有部分
 
-<!-- @include: @/meta/DateRangeFieldRoot.md -->
+<!-- @include: @/zh/meta/DateRangeFieldRoot.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-invalid]',
-      values: 'Present when invalid',
+      values: '不合法时存在',
     }
   ]"
 />
 
 ### Input
 
-Contains the date field segments
+包含日期范围字段区段
 
-<!-- @include: @/meta/DateRangeFieldInput.md -->
+<!-- @include: @/zh/meta/DateRangeFieldInput.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-invalid]',
-      values: 'Present when invalid',
+      values: '不合法时存在',
     },
     {
       attribute: '[data-placeholder]',
-      values: 'Present when no value is set',
+      values: '没有设置值时存在',
     },
   ]"
 />
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: 'When focus moves onto the date field, focuses the first segment.'
+      description: '当焦点移动到日期字段时，聚焦第一段。'
     },
     {
       keys: ['ArrowLeft', 'ArrowRight'],
       description:
       `
-       Navigates between the date field segments.
+       在日期字段区段之间导航。
       `
     },
     {
       keys: ['ArrowUp', 'ArrowDown'],
-      description: 'Increments/changes the value of the segment.'
+      description: '增加/更改区段的值。'
     },
     {
       keys: ['0-9'],
       description: `
-          When the focus is on a numeric <Code>DateFieldInput</Code>, it types in the number and focuses the next segment if the next input would result in an invalid value.
+          当焦点在数字<Code>DateFieldInput</Code>上时，如果下一个输入会导致无效值，它会输入该数字并聚焦下一个段。
       `
     },
     {
       keys: ['Backspace'],
-      description:  'Deletes a digit from the focused numeric segments.'
+      description:  '从聚焦的数字区段中删除一个数字。'
     },
     {
       keys: ['A', 'P'],
-      description: 'When the focus is on the day period, it sets it to AM or PM.'
+      description: '当焦点在白天时，它会将其设置为上午或下午。'
     }
   ]"
 />

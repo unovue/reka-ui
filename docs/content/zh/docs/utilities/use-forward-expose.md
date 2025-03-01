@@ -1,19 +1,19 @@
 ---
 title: useForwardExpose
-description: Forward component's exposed value, props and $el.
+description: 穿透组件的暴露值、props 和 $el。
 ---
 
 # useForwardExpose
 
 <Description>
-Forward component's exposed value, props and $el.
+穿透组件的暴露值、props 和 $el。
 </Description>
 
-When building a component, if we have a non-single root node component, the template refs will not return the DOM element via `$el` ([read more](https://vuejs.org/api/component-instance.html#el)) , thus, we need to forward the `$el` in template ref for this component manually. Or in some case you want to target certain element as the expose element..
+在构建组件时，如果我们有一个非单根节点的组件，模板 refs 不会通过 `$el` 返回 DOM 元素（[阅读更多](https://cn.vuejs.org/api/component-instance.html#el)），因此，我们需要手动转发该组件的模板 ref 中的 `$el`。或者在某些情况下，您希望将某个元素作为暴露元素..
 
-Furthermore, this composable extend the missing exposed `props` from the template refs.
+此外，此组合式函数扩展了模板 ref 中缺少的公开 `props`。
 
-## Usage
+## 用法
 
 ```vue
 <script setup lang="ts">

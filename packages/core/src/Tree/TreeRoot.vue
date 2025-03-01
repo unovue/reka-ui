@@ -18,7 +18,7 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   getKey: (val: T) => string
   /** This function is passed the index of each item and should return a list of children for that item */
   getChildren?: (val: T) => T[] | undefined
-  /** How multiple selection should behave in the collection. */
+  /** 多个选择在集合中的行为方式。 */
   selectionBehavior?: 'toggle' | 'replace'
   /** Whether multiple options can be selected or not.  */
   multiple?: boolean

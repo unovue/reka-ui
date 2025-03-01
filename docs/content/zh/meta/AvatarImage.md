@@ -1,16 +1,14 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'img\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -31,7 +29,7 @@
 <EmitsTable :data="[
   {
     'name': 'loadingStatusChange',
-    'description': '<p>A callback providing information about the loading status of the image. &lt;br&gt;\nThis is useful in case you want to control more precisely what to render as the image is loading.</p>\n',
+    'description': '<p>提供有关图像加载状态信息的回调。&lt;br&gt;\n如果要更精确地控制在图像加载时要渲染的内容，这将非常有用。</p>\n',
     'type': '[value: ImageLoadingStatus]'
   }
 ]" />

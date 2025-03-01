@@ -1,44 +1,44 @@
 ---
 
-title: Number Field
-description: A number field allows a user to enter a number and increment or decrement the value using stepper buttons.
+title: 数字字段
+description: 数字字段允许用户输入一个数字，并使用步进按钮来增加或减少该值。
 name: number field
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton
 ---
 
-# Number Field
+# 数字字段
 
 <Description>
-A number field allows a user to enter a number and increment or decrement the value using stepper buttons.
+数字字段允许用户输入一个数字，并使用步进按钮来增加或减少该值。
 </Description>
 
 <ComponentPreview name="NumberField" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation.',
-    'Can be controlled or uncontrolled.',
-    'Support button hold and wheel event.',
-    'Support numbering systems in different locale.',
-    'Customizable formatting.'
+    '全键盘导航',
+    '可以是受控的或非受控的',
+    '支持按钮按住和滚轮事件',
+    '支持不同语言的编号系统',
+    '可自定义格式'
   ]"
 />
 
-## Installation
+## 安装
 
-Install the number package.
+安装 number 包。
 
 <InstallationTabs value="@internationalized/number" />
 
-Install the component from your command line.
+从命令行安装此组件
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -54,45 +54,43 @@ import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFie
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a number field. An `input` will also render when used within a `form` to ensure events propagate correctly.
+包含数字字段的所有部分。在 `form` 中使用时，`input` 也会渲染，以确保事件正确传播。
 
-<!-- @include: @/meta/NumberFieldRoot.md -->
+<!-- @include: @/zh/meta/NumberFieldRoot.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Input
 
-Input
+根据 `value` 和 `format` 选项呈现文本值的输入组件。
 
-The input component that renders the text value based on value and format options.
-
-<!-- @include: @/meta/NumberFieldInput.md -->
+<!-- @include: @/zh/meta/NumberFieldInput.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Increment
 
-The button that increases the value.
+增加值的按钮。
 
-<!-- @include: @/meta/NumberFieldIncrement.md -->
+<!-- @include: @/zh/meta/NumberFieldIncrement.md -->
 
 <DataAttributesTable
   :data="[
@@ -102,16 +100,16 @@ The button that increases the value.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Decrement
 
-The button that decreases the value.
+减小值的按钮。
 
-<!-- @include: @/meta/NumberFieldDecrement.md -->
+<!-- @include: @/zh/meta/NumberFieldDecrement.md -->
 
 <DataAttributesTable
   :data="[
@@ -121,16 +119,16 @@ The button that decreases the value.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ## Example
 
-### Decimal
+### 十进制
 
-All options supported by `Intl.NumberFormat` are supported, including configuration of minimum and maximum fraction digits, sign display, grouping separators, etc.
+支持 `Intl.NumberFormat` 支持的所有选项，包括最小和最大分数位数的配置、符号显示、分组分隔符等。
 
 ```vue line=3-7
 <template>
@@ -146,9 +144,9 @@ All options supported by `Intl.NumberFormat` are supported, including configurat
 </template>
 ```
 
-### Percentage
+### 百分比
 
-You can set `formatOptions.style` to `percent` to treat the value as a percentage. You need to set the step to 0.01 manually to allow an appropriate step size in this mode.
+您可以将 `formatOptions.style` 设置为 `percent` 以将值视为百分比。您需要手动将步长设置为 0.01，以便在此模式下允许适当的步长。
 
 ```vue line=3-7
 <template>
@@ -164,11 +162,11 @@ You can set `formatOptions.style` to `percent` to treat the value as a percentag
 </template>
 ```
 
-### Currency
+### 货币
 
-You can set `formatOptions.style` to `currency` to treat the value as a currency value. The currency option must also be passed to set the currency code (e.g., USD).
+您可以将 `formatOptions.style` 设置为 `currency`，以将该值视为货币值。还必须传递 `currency` 选项以设置货币代码（例如，CNY）。
 
-If you need to allow the user to change the currency, you should include a separate dropdown next to the number field. The number field itself will not determine the currency from the user input.
+如果您需要允许用户更改货币，则应在数字字段旁边包含一个单独的下拉列表。数字字段本身不会从用户输入中确定货币。
 
 ```vue line=4-9
 <template>
@@ -186,37 +184,37 @@ If you need to allow the user to change the currency, you should include a separ
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton).
+遵循 [Spinbutton WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Arrow Up'],
-      description: 'Increase the value',
+      description: '增加该值',
     },
     {
       keys: ['Arrow Down'],
-      description: 'Decrease the value',
+      description: '减小该值',
     },
     {
       keys: ['Page Up'],
-      description: 'Increase the value by scale of 10',
+      description: '将值增加 10 次',
     },
     {
       keys: ['Page Down'],
-      description: 'Decrease the value by scale of 10',
+      description: '将值减少 10 次',
     },
     {
       keys: ['Home'],
-      description: 'Set value to minimum (if <code>min</code> is provided)',
+      description: '将值设置为最小值（如果提供了<code>min</code>）',
     },
     {
       keys: ['End'],
-      description: 'Set value to maximum (if <code>max</code> is provided)',
+      description: '将值设置为最大值（如果提供了<code>max</code>）',
     },
   ]"
 />

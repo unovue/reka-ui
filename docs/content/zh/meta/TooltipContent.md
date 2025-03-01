@@ -1,101 +1,99 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'align',
-    'description': '<p>The preferred alignment against the trigger.\nMay change when collisions occur.</p>\n',
+    'description': '<p>相对触发器的首选对齐方式。发生碰撞时可能会发生变化。</p>\n',
     'type': '\'start\' | \'center\' | \'end\'',
     'required': false
   },
   {
     'name': 'alignOffset',
-    'description': '<p>An offset in pixels from the <code>start</code> or <code>end</code> alignment options.</p>\n',
+    'description': '<p>与<code>start</code>或<code>end</code>对齐选项的偏移量（以像素为单位）。</p>\n',
     'type': 'number',
     'required': false
   },
   {
     'name': 'ariaLabel',
-    'description': '<p>By default, screenreaders will announce the content inside\nthe component. If this is not descriptive enough, or you have\ncontent that cannot be announced, use aria-label as a more\ndescriptive label.</p>\n',
+    'description': '<p>默认情况下，屏幕阅读器将声明组件内部的内容。如果这还不够描述性，或者您有无法声明的内容，请使用 aria-label 作为更具描述性的标签。</p>\n',
     'type': 'string',
     'required': false
   },
   {
     'name': 'arrowPadding',
-    'description': '<p>The padding between the arrow and the edges of the content.\nIf your content has border-radius, this will prevent it from\noverflowing the corners.</p>\n',
+    'description': '<p>箭头和内容边缘之间的填充。如果你的内容有 border-radius，这将防止它溢出角落。</p>\n',
     'type': 'number',
     'required': false
   },
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'avoidCollisions',
-    'description': '<p>When <code>true</code>, overrides the side and align preferences\nto prevent collisions with boundary edges.</p>\n',
+    'description': '<p>如果<code>true</code>，则覆盖 side 和 align 首选项以防止与边界边发生碰撞。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'collisionBoundary',
-    'description': '<p>The element used as the collision boundary. By default\nthis is the viewport, though you can provide additional\nelement(s) to be included in this check.</p>\n',
+    'description': '<p>用作碰撞边界的元素。默认情况下，这是视区，但您可以提供要包含在此检测中的其他元素。</p>\n',
     'type': 'Element | (Element | null)[] | null',
     'required': false
   },
   {
     'name': 'collisionPadding',
-    'description': '<p>The distance in pixels from the boundary edges where collision\ndetection should occur. Accepts a number (same for all sides),\nor a partial padding object, for example: { top: 20, left: 20 }.</p>\n',
+    'description': '<p>与应发生碰撞检测的边界边缘的距离（以像素为单位）。接受一个数字（所有边都相同）或部分 Padding 对象，例如：{ top: 20, left: 20 }。</p>\n',
     'type': 'number | Partial<Record<\'top\' | \'right\' | \'bottom\' | \'left\', number>>',
     'required': false
   },
   {
     'name': 'forceMount',
-    'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
+    'description': '<p>用于在需要更多控制时强制挂载。\n使用Vue动画库控制动画时很有用。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'hideWhenDetached',
-    'description': '<p>Whether to hide the content when the trigger becomes fully occluded.</p>\n',
+    'description': '<p>是否在触发器完全遮挡时隐藏内容。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'positionStrategy',
-    'description': '<p>The type of CSS position property to use.</p>\n',
+    'description': '<p>要使用的 CSS position 属性的类型。</p>\n',
     'type': '\'fixed\' | \'absolute\'',
     'required': false
   },
   {
     'name': 'side',
-    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and avoidCollisions\nis enabled.</p>\n',
+    'description': '<p>触发器打开时要优先渲染的边。当发生碰撞并已启用 avoidCollisions 时将反转。</p>\n',
     'type': '\'top\' | \'right\' | \'bottom\' | \'left\'',
     'required': false,
     'default': '\'top\''
   },
   {
     'name': 'sideOffset',
-    'description': '<p>The distance in pixels from the trigger.</p>\n',
+    'description': '<p>距触发器的距离（以像素为单位）。</p>\n',
     'type': 'number',
     'required': false
   },
   {
     'name': 'sticky',
-    'description': '<p>The sticky behavior on the align axis. <code>partial</code> will keep the\ncontent in the boundary as long as the trigger is at least partially\nin the boundary whilst &quot;always&quot; will keep the content in the boundary\nregardless.</p>\n',
+    'description': '<p>对齐轴上的粘滞行为。只要触发器至少部分位于边界中，<code>partial</code>就会将内容保留在边界中，而 <code>always</code> 将始终将内容保留在边界中。</p>\n',
     'type': '\'partial\' | \'always\'',
     'required': false
   },
   {
     'name': 'updatePositionStrategy',
-    'description': '<p>Strategy to update the position of the floating element on every animation frame.</p>\n',
+    'description': '<p>更新每个动画帧上浮动元素位置的策略。</p>\n',
     'type': '\'always\' | \'optimized\'',
     'required': false
   }
@@ -104,12 +102,12 @@
 <EmitsTable :data="[
   {
     'name': 'escapeKeyDown',
-    'description': '<p>Event handler called when focus moves to the destructive action after opening. It can be prevented by calling <code>event.preventDefault</code></p>\n',
+    'description': '<p>当焦点移动到打开后的破坏性动作时调用的事件处理程序。可以通过调用<code>event.preventDefault</code>来阻止它</p>\n',
     'type': '[event: KeyboardEvent]'
   },
   {
     'name': 'pointerDownOutside',
-    'description': '<p>Event handler called when a pointer event occurs outside the bounds of the component. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
+    'description': '<p>当指针事件发生在组件边界之外时调用的事件处理程序。可以通过调用<code>event.preventDefault</code>来阻止它。</p>\n',
     'type': '[event: Event]'
   }
 ]" />

@@ -1,43 +1,43 @@
 ---
 
-title: Select
-description: Displays a list of options for the user to pick from—triggered by a button.
+title: 选择器
+description: 显示供用户选择的选项列表 - 由按钮触发。
 name: select
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/listbox
 ---
 
-# Select
+# 选择器
 
 <Description>
-Displays a list of options for the user to pick from—triggered by a button.
+显示供用户选择的选项列表 - 由按钮触发。
 </Description>
 
 <ComponentPreview name="Select" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Offers 2 positioning modes.',
-    'Supports items, labels, groups of items.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Supports custom placeholder.',
-    'Typeahead support.',
-    'Supports Right to Left direction.',
+    '可以是受控的或非受控的',
+    '提供 2 种定位模式',
+    '支持项、标签、项组',
+    '焦点完全可控',
+    '全键盘导航',
+    '支持自定义占位符',
+    '自动补全支持',
+    '支持从右到左的方向（RTL）',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -91,19 +91,19 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a Select
+包含选择器的所有部分
 
-<!-- @include: @/meta/SelectRoot.md -->
+<!-- @include: @/zh/meta/SelectRoot.md -->
 
 ### Trigger
 
-The button that toggles the Select The `SelectContent` will position itself by aligning over the trigger.
+切换选择器的按钮，`SelectContent` 将通过对齐触发器来定位自身。
 
-<!-- @include: @/meta/SelectTrigger.md -->
+<!-- @include: @/zh/meta/SelectTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -113,7 +113,7 @@ The button that toggles the Select The `SelectContent` will position itself by a
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-placeholder]',
@@ -124,29 +124,29 @@ The button that toggles the Select The `SelectContent` will position itself by a
 
 ### Value
 
-The part that reflects the selected value. By default the selected item's text will be rendered. if you require more control, you can instead control the select and pass your own `children`. It should not be styled to ensure correct positioning. An optional `placeholder` prop is also available for when the select has no value.
+反映所选值的部分。默认情况下，将呈现所选项的文本。如果需要更多控制，可以改为控制选择器并传递自己的 `children`。不应设置其样式以确保正确定位。当选择器没有值时，也可以使用可选的 `placeholder` prop。
 
-<!-- @include: @/meta/SelectValue.md -->
+<!-- @include: @/zh/meta/SelectValue.md -->
 
 ### Icon
 
-A small icon often displayed next to the value as a visual affordance for the fact it can be open. By default renders ▼ but you can use your own icon via `asChild` or use `children`.
+一个通常显示在值旁边的小图标，作为它可以打开的视觉方式。默认情况下，会呈现 ▼，但您可以通过 `asChild` 使用自己的图标或使用 `children`。
 
-<!-- @include: @/meta/SelectItem.md -->
+<!-- @include: @/zh/meta/SelectItem.md -->
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/SelectPortal.md -->
+<!-- @include: @/zh/meta/SelectPortal.md -->
 
 ### Content
 
-The component that pops out when the select is open.
+打开选择器时弹出的组件。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/SelectContent.md -->
+<!-- @include: @/zh/meta/SelectContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -169,38 +169,38 @@ The component that pops out when the select is open.
   :data="[
     {
       cssVariable: '--reka-select-content-transform-origin',
-      description: 'The <Code>transform-origin</Code> computed from the content and arrow positions/offsets. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>。仅在<Code>position=&quot;popper&quot;</Code>时出现。',
     },
     {
       cssVariable: '--reka-select-content-available-width',
-      description: 'The remaining width between the trigger and the boundary edge. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发器和边界边缘之间的剩余宽度。仅在<Code>position=&quot;popper&quot;</Code>时出现。',
     },
     {
       cssVariable: '--reka-select-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发器和边界边缘之间的剩余高度。仅在<Code>position=&quot;popper&quot;</Code>时出现。',
     },
     {
       cssVariable: '--reka-select-trigger-width',
-      description: 'The width of the trigger. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发器的宽度。仅在<Code>position=&quot;popper&quot;</Code>时出现。',
     },
     {
       cssVariable: '--reka-select-trigger-height',
-      description: 'The height of the trigger. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '扳机的高度。仅在<Code>position=&quot;popper&quot;</Code>时出现。',
     },
   ]"
 />
 
 ### Viewport
 
-The scrolling viewport that contains all of the items.
+包含所有项的滚动视口。
 
-<!-- @include: @/meta/SelectViewport.md -->
+<!-- @include: @/zh/meta/SelectViewport.md -->
 
 ### Item
 
-The component that contains the select items.
+包含选项的组件。
 
-<!-- @include: @/meta/SelectItem.md -->
+<!-- @include: @/zh/meta/SelectItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -210,67 +210,67 @@ The component that contains the select items.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### ItemText
 
-The textual part of the item. It should only contain the text you want to see in the trigger when that item is selected. It should not be styled to ensure correct positioning.
+项的文本部分。它应仅包含您希望在选择该项时在触发器中看到的文本。不应设置其样式以确保正确定位。
 
-<!-- @include: @/meta/SelectItemText.md -->
+<!-- @include: @/zh/meta/SelectItemText.md -->
 
 ### ItemIndicator
 
-Renders when the item is selected. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+在选择项时渲染。您可以直接设置此元素的样式，也可以将其用作包装器以将图标放入其中，或两者兼而有之。
 
-<!-- @include: @/meta/SelectItemIndicator.md -->
+<!-- @include: @/zh/meta/SelectItemIndicator.md -->
 
 ### ScrollUpButton
 
-An optional button used as an affordance to show the viewport overflow as well as functionally enable scrolling upwards.
+一个可选按钮，可供显示视区溢出，并启用向上滚动功能。
 
-<!-- @include: @/meta/SelectScrollUpButton.md -->
+<!-- @include: @/zh/meta/SelectScrollUpButton.md -->
 
 ### ScrollDownButton
 
-An optional button used as an affordance to show the viewport overflow as well as functionally enable scrolling downwards.
+一个可选按钮，可供显示视区溢出，并启用向下滚动功能。
 
-<!-- @include: @/meta/SelectScrollDownButton.md -->
+<!-- @include: @/zh/meta/SelectScrollDownButton.md -->
 
 ### Group
 
-Used to group multiple items. use in conjunction with `SelectLabel` to ensure good accessibility via automatic labelling.
+用于对多个项进行分组。与 `SelectLabel` 结合使用，通过自动标记确保良好的可访问性。
 
-<!-- @include: @/meta/SelectGroup.md -->
+<!-- @include: @/zh/meta/SelectGroup.md -->
 
 ### Label
 
-Used to render the label of a group. It won't be focusable using arrow keys.
+用于呈现组的标签。无法使用箭头键聚焦。
 
-<!-- @include: @/meta/SelectLabel.md -->
+<!-- @include: @/zh/meta/SelectLabel.md -->
 
 ### Separator
 
-Used to visually separate items in the Select
+用于视觉上分隔选择器中的项。
 
-<!-- @include: @/meta/SelectSeparator.md -->
+<!-- @include: @/zh/meta/SelectSeparator.md -->
 ### Arrow
 
-An optional arrow element to render alongside the content. This can be used to help visually link the trigger with the `SelectContent`. Must be rendered inside `SelectContent`. Only available when `position` is set to `popper`.
+一个可选的箭头元素，与内容一起渲染。这可用于帮助视觉上将触发器与 `SelectContent` 链接起来。必须在 `SelectContent` 中。仅当 `position` 设置为 `popper` 时可用。
 
-<!-- @include: @/meta/SelectArrow.md -->
+<!-- @include: @/zh/meta/SelectArrow.md -->
 
-## Examples
+## 示例
 
-### Change the positioning mode
+### 更改定位模式
 
-By default, `Select` will behave similarly to a native MacOS menu by positioning `SelectContent` relative to the active item. If you would prefer an alternative positioning approach similar to `Popover` or `DropdownMenu` then you can set `position` to `popper` and make use of additional alignment options such as `side`, `sideOffset` and more.
+默认情况下，`Select` 的行为类似于原生 MacOS 菜单，方法是将 `SelectContent` 相对于活动项定位。如果你更喜欢类似于 `Popover` 或 `DropdownMenu` 的替代定位方法，那么你可以将 `position` 设置为 `popper` 并使用其他对齐选项，例如 `side`、`sideOffset` 等。
 
 ```vue line=20
 // index.vue
@@ -303,11 +303,11 @@ import {
 </template>
 ```
 
-### Constrain the content size
+### 限制内容的大小
 
-When using `position="popper"` on `SelectContent`, you may want to constrain the width of the content so that it matches the trigger width. You may also want to constrain its height to not exceed the viewport.
+在 `SelectContent` 上使用 `position="popper"` 时，您可能希望限制内容的宽度，使其与触发器宽度匹配。您可能还希望将其高度限制为不超过视口。
 
-We expose several CSS custom properties such as `--reka-select-trigger-width` and `--reka-select-content-available-height` to support this. Use them to constrain the content dimensions.
+我们暴露了几个 CSS 自定义属性，例如 `--reka-select-trigger-width` 和 `--reka-select-content-available-height` 来支持这一点。使用它们来限制内容维度。
 
 ```vue line=20
 // index.vue
@@ -349,9 +349,9 @@ import {
 }
 ```
 
-### With disabled items
+### 禁用项
 
-You can add special styles to disabled items via the `data-disabled` attribute.
+您可以通过 `data-disabled` 属性向禁用的项添加特殊样式。
 
 ```vue line=22
 // index.vue
@@ -397,9 +397,9 @@ import {
 }
 ```
 
-### With a placeholder
+### 占位
 
-You can use the `placeholder` prop on `Value` for when the select has no value. There's also a `data-placeholder` attribute on `Trigger` to help with styling.
+当选择器没有值时，你可以在 `Value` 上使用 `placeholder` 属性。`Trigger` 上还有一个 `data-placeholder` 属性，用于帮助设置样式。
 
 ```vue line=19,20
 // index.vue
@@ -438,9 +438,9 @@ import './styles.css'
 }
 ```
 
-### With separators
+### 分割线
 
-Use the `Separator` part to add a separator between items.
+使用 `Separator` 部件在项之间添加分割线。
 
 ```vue line=10
 <template>
@@ -462,9 +462,9 @@ Use the `Separator` part to add a separator between items.
 </template>
 ```
 
-### With grouped items
+### 项分组
 
-Use the `Group` and `Label` parts to group items in a section.
+使用 `Group` 和 `Label` 部分对部分中的项进行分组。
 
 ```vue line=7,8,12
 <template>
@@ -486,9 +486,9 @@ Use the `Group` and `Label` parts to group items in a section.
 </template>
 ```
 
-### With complex items
+### 复杂项
 
-You can use custom content in your items.
+您可以在项中使用自定义内容。
 
 ```vue line=23
 <script setup lang="ts">
@@ -526,11 +526,11 @@ import {
 </template>
 ```
 
-### Controlling the value displayed in the trigger
+### 控制触发器中显示的值
 
-By default the trigger display the selected item's text (no longer automatically render `ItemText`'s content like in v1).
+默认情况下，触发器显示所选项的文本（不再像 v1 中那样自动呈现 `ItemText` 的内容）。
 
-If you need to render other than plain text, you can control the component using `v-model` props (or accessing `SelectValue`'s slotProps) and passing `slot` to `SelectValue`. Remember to make sure what you put in there is accessible.
+如果你需要渲染纯文本以外的内容，你可以使用 `v-model` props（或访问 `SelectValue` 的 slotProps）来控制组件，并将 `slot` 传递给 `SelectValue`。请记住确保您放入其中的内容是无障碍的。
 
 ```vue line=2,4,10-12
 <script setup>
@@ -569,9 +569,9 @@ const value = ref('france')
 </template>
 ```
 
-### With custom scrollbar
+### 自定义滚动条
 
-The native scrollbar is hidden by default as we recommend using the `ScrollUpButton` and `ScrollDownButton` parts for the best UX. If you do not want to use these parts, compose your select with our [Scroll Area](scroll-area) primitive.
+默认情况下，原生滚动条处于隐藏状态，因此我们建议使用 `ScrollUpButton` 和 `ScrollDownButton` 部件以获得最佳 UX。如果您不想使用这些部分，请使用我们的 [Scroll Area](scroll-area) primitive 来组合您的选择器。
 
 ```vue line=25,27,32-34
 // index.vue
@@ -644,42 +644,42 @@ import {
 }
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [ListBox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox).
+遵循 [ListBox WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/listbox)。
 
-See the W3C [Select-Only Combobox](https://www.w3.org/TR/wai-aria-practices/examples/combobox/combobox-select-only.html) example for more information.
+有关更多信息，请参阅 W3C [仅选组合框](https://www.w3.org/TR/wai-aria-practices/examples/combobox/combobox-select-only.html)示例。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: '<span> When focus is on <Code>SelectTrigger</Code>, opens the select and focuses the selected item. <br /> When focus is on an item, selects the focused item. </span>',
+      description: '<span> 当焦点位于<Code>SelectTrigger</Code>上时，打开选择并聚焦所选项。<br/>当焦点位于某项上时，选择聚焦项。 </span>',
     },
     {
       keys: ['Enter'],
-      description: '<span> When focus is on <Code>SelectTrigger</Code>, opens the select and focuses the first item. <br /> When focus is on an item, selects the focused item. </span>',
+      description: '<span> 当焦点位于<Code>SelectTrigger</Code>上时，打开选择并聚焦第一项。<br/>当焦点位于某项上时，选择焦点项。 </span>',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> When focus is on <Code>SelectTrigger</Code>, opens the Select <br /> When focus is on an item, moves focus to the next item. </span>',
+      description: '<span> 当焦点位于<Code>SelectTrigger</Code>时，打开选择器 <br /> 当焦点位于某项上时，将焦点移动到下一项。 </span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> When focus is on <Code>SelectTrigger</Code>, opens the Select <br /> When focus is on an item, moves focus to the previous item. </span>',
+      description: '<span> 当焦点位于<Code>SelectTrigger</Code>时，打开选择器 <br /> 当焦点位于某项上时，将焦点移动到前一项。 </span>',
     },
     {
       keys: ['Esc'],
-      description: '<span> Closes the select and moves focus to <Code>SelectTrigger</Code>. </span>',
+      description: '<span> 关闭选择器并将焦点移动到<Code>SelectTrigger</Code>。 </span>',
     },
   ]"
 />
 
-### Labelling
+### 打标签
 
-Use our [Label](label) component in order to offer a visual and accessible label for the Select
+使用我们的 [Label](label) 组件，以便为选择器提供视觉和无障碍的标签。
 
 ```vue line=19,22,26,28
 <script setup lang="ts">
@@ -719,15 +719,15 @@ import {
 </template>
 ```
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-### Abstract down to `Select` and `SelectItem`
+### 抽象为 `Select` 和 `SelectItem`
 
-This example abstracts most of the parts.
+此示例抽象了大部分部件。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -749,7 +749,7 @@ import { Select, SelectItem } from './your-select'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```ts
 // your-select.ts

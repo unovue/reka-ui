@@ -1,30 +1,28 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'duration',
-    'description': '<p>Time in milliseconds that each toast should remain visible for.</p>\n',
+    'description': '<p>每个 Toast 保持可见的时间（以毫秒为单位）。</p>\n',
     'type': 'number',
     'required': false,
     'default': '5000'
   },
   {
     'name': 'label',
-    'description': '<p>An author-localized label for each toast. Used to help screen reader users\nassociate the interruption with a toast.</p>\n',
+    'description': '<p>每个 Toast 的作者本地化标签。用于帮助屏幕阅读器用户将中断与 Toast 相关联。</p>\n',
     'type': 'string',
     'required': false,
     'default': '\'Notification\''
   },
   {
     'name': 'swipeDirection',
-    'description': '<p>Direction of pointer swipe that should close the toast.</p>\n',
+    'description': '<p>应该关闭 Toast 的指针滑动的方向。</p>\n',
     'type': '\'right\' | \'left\' | \'up\' | \'down\'',
     'required': false,
     'default': '\'right\''
   },
   {
     'name': 'swipeThreshold',
-    'description': '<p>Distance in pixels that the swipe must pass before a close is triggered.</p>\n',
+    'description': '<p>触发关闭前滑动必须经过的距离（以像素为单位）。</p>\n',
     'type': 'number',
     'required': false,
     'default': '50'

@@ -1,39 +1,37 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <SlotsTable :data="[
   {
     'name': 'date',
-    'description': '<p>The current date of the placeholder</p>\n',
+    'description': '<p>占位的当前日期</p>\n',
     'type': 'DateValue'
   },
   {
     'name': 'grid',
-    'description': '<p>The grid of dates</p>\n',
+    'description': '<p>日期网格</p>\n',
     'type': 'Grid<DateValue>[]'
   },
   {
     'name': 'weekDays',
-    'description': '<p>The days of the week</p>\n',
+    'description': '<p>一周中的几天</p>\n',
     'type': 'string[]'
   },
   {
     'name': 'weekStartsOn',
-    'description': '<p>The start of the week</p>\n',
+    'description': '<p>本周的开始</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6'
   },
   {
     'name': 'locale',
-    'description': '<p>The calendar locale</p>\n',
+    'description': '<p>日历区域</p>\n',
     'type': 'string'
   },
   {
     'name': 'fixedWeeks',
-    'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
+    'description': '<p>是否始终在日历中显示 6 周</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'modelValue',
-    'description': '<p>The current date of the calendar</p>\n',
+    'description': '<p>日历的当前日期</p>\n',
     'type': 'CalendarDate | CalendarDateTime | ZonedDateTime'
   }
 ]" />

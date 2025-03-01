@@ -1,9 +1,7 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'value',
-    'description': '<p>A unique value that associates the item with an active value when the navigation menu is controlled.</p>\n<p>This prop is managed automatically when uncontrolled.</p>\n',
+    'description': '<p>一个唯一值，用于在控制导航菜单时将项与活动值相关联。<br>此 prop 在不受控时自动管理。</p>\n',
     'type': 'string',
     'required': false
   }

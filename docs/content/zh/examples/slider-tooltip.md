@@ -1,15 +1,15 @@
 ---
-title: Slider Tooltip
+title: 滑块提示
 tags:
-  - Slider
-  - Tooltip
+  - 滑块
+  - 工具提示
 ---
 
-# Slider Tooltip
+# 滑块提示
 
 <Description>
 
-Render a Slider with a Tooltip that shows the current value of the Slider.
+显示滑块当前值的[工具提示](/zh/docs/components/tooltip)。
 
 </Description>
 
@@ -19,6 +19,6 @@ Render a Slider with a Tooltip that shows the current value of the Slider.
 
 <ExampleSection>
 
-### Slider Tooltip
+### 滑块提示
 
 </ExampleSection>

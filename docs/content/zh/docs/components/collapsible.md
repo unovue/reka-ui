@@ -1,37 +1,37 @@
 ---
 
-title: Collapsible
-description: An interactive component which expands/collapses a panel.
+title: 折叠面板
+description: 一个可展开/折叠面板的交互式组件。
 name: collapsible
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/disclosure
 ---
 
-# Collapsible
+# 折叠面板
 
 <Description>
-An interactive component which expands/collapses a panel.
+一个可展开/折叠面板的交互式组件。
 </Description>
 
 <ComponentPreview name="Collapsible" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation.',
-    'Can be controlled or uncontrolled.',
+    '全键盘导航',
+    '可以是受控的或非受控的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the components and piece the parts together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -46,13 +46,13 @@ import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a collapsible
+包含可折叠组件的所有部分。
 
-<!-- @include: @/meta/CollapsibleRoot.md -->
+<!-- @include: @/zh/meta/CollapsibleRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -62,16 +62,16 @@ Contains all the parts of a collapsible
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Trigger
 
-The button that toggles the collapsible
+切换可折叠部分的按钮。
 
-<!-- @include: @/meta/CollapsibleTrigger.md -->
+<!-- @include: @/zh/meta/CollapsibleTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -81,18 +81,18 @@ The button that toggles the collapsible
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Content
 
-The component that contains the collapsible content.
+包含可折叠内容的组件。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/CollapsibleContent.md -->
+<!-- @include: @/zh/meta/CollapsibleContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -102,7 +102,7 @@ The component that contains the collapsible content.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
@@ -111,20 +111,20 @@ The component that contains the collapsible content.
   :data="[
     {
       cssVariable: '--reka-collapsible-content-width',
-      description: 'The width of the content when it opens/closes',
+      description: '内容打开/关闭时的宽度。',
     },
     {
       cssVariable: '--reka-collapsible-content-height',
-      description: 'The height of the content when it opens/closes',
+      description: '内容打开/关闭时的高度。',
     },
   ]"
 />
 
-## Examples
+## 示例
 
-### Animating content size
+### 内容大小动画
 
-Use the `--reka-collapsible-content-width` and/or `--reka-collapsible-content-height` CSS variables to animate the size of the content when it opens/closes. Here's a demo:
+使用 `--reka-collapsible-content-width` 和/或 `--reka-collapsible-content-height` CSS 变量在内容打开/关闭时为内容的大小设置动画。下面是一个示例：
 
 ```vue line=10
 // index.vue
@@ -174,11 +174,11 @@ import './styles.css'
 }
 ```
 
-### Render content even when collapsed
+### 即使折叠也渲染内容
 
-By default hidden content will be removed, use `:unmountOnHide="false"` to keep the content always available.
+默认情况下，隐藏的内容将被移除，使用 `:unmountOnHide="false"` 可始终保持内容可用。
 
-This will also allow browser to search the hidden text, and open the collapsible.
+这也将允许浏览器搜索隐藏文本并打开可折叠部分。
 
 ```vue line=6
 <script setup>
@@ -192,21 +192,21 @@ import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Disclosure WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure).
+遵循[折叠面板 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure).
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: 'Opens/closes the collapsible',
+      description: '打开/关闭折叠面板',
     },
     {
       keys: ['Enter'],
-      description: 'Opens/closes the collapsible',
+      description: '打开/关闭折叠面板',
     },
   ]"
 />

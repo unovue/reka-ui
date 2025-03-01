@@ -1,38 +1,38 @@
 ---
 
-title: Scroll Area
-description: Augments native scroll functionality for custom, cross-browser styling.
+title: 滚动区域
+description: 自定义跨浏览器滚动样式，增强原生滚动功能。
 name: scroll-area
 ---
 
-# ScrollArea
+# 滚动区域
 
 <Description>
-Augments native scroll functionality for custom, cross-browser styling.
+自定义跨浏览器滚动样式，增强原生滚动功能。
 </Description>
 
 <ComponentPreview name="ScrollArea" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Scrollbar sits on top of the scrollable content, taking up no space.',
-    'Scrolling is native; no underlying position movements via CSS transformations.',
-    'Shims pointer behaviors only when interacting with the controls, so keyboard controls are unaffected.',
-    'Supports Right to Left direction.',
+    '滚动条位于可滚动内容的顶部，不占用任何空间',
+    '滚动是原生的；没有通过 CSS 转换进行的基础位置移动。',
+    '仅在与控件交互时填充指针行为，因此键盘控件不受影响。',
+    '支持从右到左的方向（RTL）',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -53,27 +53,27 @@ import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewpor
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a scroll area.
+包含滚动区域的所有部件。
 
-<!-- @include: @/meta/ScrollAreaRoot.md -->
+<!-- @include: @/zh/meta/ScrollAreaRoot.md -->
 
 ### Viewport
 
-The viewport area of the scroll area.
+滚动区域的视口区域。
 
-<!-- @include: @/meta/ScrollAreaViewport.md -->
+<!-- @include: @/zh/meta/ScrollAreaViewport.md -->
 
 ### Scrollbar
 
-The vertical scrollbar. Add a second `Scrollbar` with an `orientation` prop to enable horizontal scrolling.
+垂直滚动条。添加第二个带有 `orientation` 属性的 `Scrollbar` 以启用水平滚动。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/ScrollAreaScrollbar.md -->
+<!-- @include: @/zh/meta/ScrollAreaScrollbar.md -->
 
 <DataAttributesTable
   :data="[
@@ -90,9 +90,9 @@ The vertical scrollbar. Add a second `Scrollbar` with an `orientation` prop to e
 
 ### Thumb
 
-The thumb to be used in `ScrollAreaScrollbar`.
+要在 `ScrollAreaScrollbar` 中使用的滑钮。
 
-<!-- @include: @/meta/ScrollAreaThumb.md -->
+<!-- @include: @/zh/meta/ScrollAreaThumb.md -->
 
 <DataAttributesTable
   :data="[
@@ -105,14 +105,14 @@ The thumb to be used in `ScrollAreaScrollbar`.
 
 ### Corner
 
-The corner where both vertical and horizontal scrollbars meet.
+垂直滚动条和水平滚动条相交的角。
 
-<!-- @include: @/meta/ScrollAreaCorner.md -->
+<!-- @include: @/zh/meta/ScrollAreaCorner.md -->
 
-## Accessibility
+## 无障碍
 
-In most cases, it's best to rely on native scrolling and work with the customization options available in CSS. When that isn't enough, `ScrollArea` provides additional customizability while maintaining the browser's native scroll behavior (as well as accessibility features, like keyboard scrolling).
+在大多数情况下，最好依赖原生滚动并使用 CSS 中提供的自定义选项。如果这还不够，`ScrollArea` 会提供额外的可自定义性，同时保持浏览器的本机滚动行为（以及辅助功能，如键盘滚动）。
 
-### Keyboard Interactions
+### 键盘交互
 
-Scrolling via keyboard is supported by default because the component relies on native scrolling. Specific keyboard interactions may differ between platforms, so we do not specify them here or add specific event listeners to handle scrolling via key events.
+默认情况下支持通过键盘滚动，因为该组件依赖于原生滚动。特定的键盘交互可能因平台而异，因此我们不在此处指定它们，也不添加特定的事件侦听器来处理通过按键事件进行的滚动。

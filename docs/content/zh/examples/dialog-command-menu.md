@@ -1,15 +1,15 @@
 ---
-title: Dialog Command Menu
+title: 对话框命令菜单
 tags:
-  - Dialog
-  - Combobox
+  - 对话框
+  - 组合框
 ---
 
-# Dialog Command Menu
+# 对话框命令菜单
 
 <Description>
 
-Combining [Dialog](/docs/components/dialog) and [Combobox](/docs/components/combobox) to enable users to search a command list in a modal.
+将 [Dialog](/zh/docs/components/dialog) 和 [Combobox](/zh/docs/components/combobox) 结合使得使用户能够在模态框中搜索命令列表。
 
 </Description>
 
@@ -19,6 +19,6 @@ Combining [Dialog](/docs/components/dialog) and [Combobox](/docs/components/comb
 
 <ExampleSection>
 
-### Dialog
+### 对话框
 
 </ExampleSection>

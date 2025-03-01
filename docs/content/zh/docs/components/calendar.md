@@ -1,51 +1,51 @@
 ---
 
-title: Calendar
-description: Displays dates and days of the week, facilitating date-related interactions.
+title: 日历
+description: 显示日期和星期几，便于进行与日期相关的交互。
 name: calendar
 ---
 
-# Calendar
+# 日历
 
 <Badge>Alpha</Badge>
 
 <Description>
-Displays dates and days of the week, facilitating date-related interactions.
+显示日期和星期几，便于进行与日期相关的交互。
 </Description>
 
 <ComponentPreview name="Calendar" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation',
-    'Can be controlled or uncontrolled',
-    'Focus is fully managed',
-    'Localization support',
-    'Highly composable'
+    '全键盘导航',
+    '可以是受控的或非受控的',
+    '焦点完全可控',
+    '本地化支持',
+    '高度可组合'
   ]"
 />
 
-## Preface
+## 前言
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
+该组件依赖于 [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) 包，这个包解决了在 JavaScript 中处理日期和时间时出现的许多问题。
 
-We highly recommend reading through the documentation for the package to get a solid feel for how it works, and you'll need to install it in your project to use the date-related components.
+我们强烈建议通读该包的文档，以便深入了解它的工作原理，并且你需要在你的项目中安装它才能使用与日期相关的组件。
 
-## Installation
+## 安装
 
-Install the date package.
+安装日期包。
 
 <InstallationTabs value="@internationalized/date" />
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -90,212 +90,212 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a calendar
+包含日历的所有部分。
 
-<!-- @include: @/meta/CalendarRoot.md -->
+<!-- @include: @/zh/meta/CalendarRoot.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-invalid]',
-      values: 'Present when invalid',
+      values: '不合法时存在',
     }
   ]"
 />
 
 ### Header
 
-Contains the navigation buttons and the heading segments.
+包含导航按钮和标题部分。
 
-<!-- @include: @/meta/CalendarHeader.md -->
+<!-- @include: @/zh/meta/CalendarHeader.md -->
 
 ### Prev Button
 
-Calendar navigation button. It navigates the calendar one month/year/decade in the past based on the current calendar view.
+日历导航按钮。它根据当前日历视图将日历向后导航一个月/年/十年。
 
-<!-- @include: @/meta/CalendarPrev.md -->
+<!-- @include: @/zh/meta/CalendarPrev.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Next Button
 
-Calendar navigation button. It navigates the calendar one month/year/decade in the future based on the current calendar view.
+日历导航按钮。它根据当前日历视图将日历向前导航一个月/年/十年。
 
-<!-- @include: @/meta/CalendarNext.md -->
+<!-- @include: @/zh/meta/CalendarNext.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Heading
 
-Heading for displaying the current month and year
+用于显示当前月份和年份的标题
 
-<!-- @include: @/meta/CalendarHeading.md -->
+<!-- @include: @/zh/meta/CalendarHeading.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     }
   ]"
 />
 
 ### Grid
 
-Container for wrapping the calendar grid.
+用于包裹日历网格的容器。
 
-<!-- @include: @/meta/CalendarGrid.md -->
+<!-- @include: @/zh/meta/CalendarGrid.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-readonly]',
-      values: 'Present when readonly',
+      values: '只读时存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     }
   ]"
 />
 
 ### Grid Head
 
-Container for wrapping the grid head.
+用于包裹网格头部的容器。
 
-<!-- @include: @/meta/CalendarGridHead.md -->
+<!-- @include: @/zh/meta/CalendarGridHead.md -->
 
 ### Grid Body
 
-Container for wrapping the grid body.
+用于包裹网格主体的容器。
 
-<!-- @include: @/meta/CalendarGridBody.md -->
+<!-- @include: @/zh/meta/CalendarGridBody.md -->
 
 ### Grid Row
 
-Container for wrapping the grid row.
+用于包裹网格行的容器。
 
-<!-- @include: @/meta/CalendarGridRow.md -->
+<!-- @include: @/zh/meta/CalendarGridRow.md -->
 
 ### Head Cell
 
-Container for wrapping the head cell. Used for displaying the week days.
+用于包裹表头单元格的容器。用于显示星期几。
 
-<!-- @include: @/meta/CalendarHeadCell.md -->
+<!-- @include: @/zh/meta/CalendarHeadCell.md -->
 
 ### Cell
 
-Container for wrapping the calendar cells.
+用于包裹日历单元格的容器。
 
-<!-- @include: @/meta/CalendarCell.md -->
+<!-- @include: @/zh/meta/CalendarCell.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Cell Trigger
 
-Interactable container for displaying the cell dates. Clicking it selects the date.
+用于显示单元格日期的可交互容器。点击它可选择日期。
 
-<!-- @include: @/meta/CalendarCellTrigger.md -->
+<!-- @include: @/zh/meta/CalendarCellTrigger.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-selected]',
-      values: 'Present when selected',
+      values: '选中时存在',
     },
     {
       attribute: '[data-value]',
-      values: 'The ISO string value of the date.',
+      values: '日期的 ISO 字符串值。',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-unavailable]',
-      values: 'Present when unavailable',
+      values: '不可用状态时存在',
     },
     {
       attribute: '[data-today]',
-      values: 'Present when today',
+      values: '今天时存在',
     },
     {
       attribute: '[data-outside-view]',
-      values: 'Present when the date is outside the current month it is displayed in.',
+      values: '如果日期在其显示所在的当前月份之外，则会出现。',
     },
     {
       attribute: '[data-outside-visible-view]',
-      values: 'Present when the date is outside the months that are visible on the calendar.',
+      values: '当日期在日历上可见的月份之外时出现。',
     },
     {
       attribute: '[data-focused]',
-      values: 'Present when focused',
+      values: '聚焦时存在',
     }
   ]"
 />
 
-## Examples
+## 示例
 
-### Calendar with Year Incrementation
+### 带有年份递增功能的日历
 
-This example showcases a calendar which allows incrementing the year.
+这个示例展示了一个可以增加年份的日历。
 
 <ComponentPreview name="CalendarYearIncrement" />
 
-### Calendar with Locale and Calendar System Selection
+### 带有区域设置和日历系统选择的日历
 
-This example showcases some of the available locales and how the calendar systems are displayed.
+此示例展示了一些可用的区域设置以及日历系统的显示方式。
 
 <ComponentPreview name="CalendarSelect" />
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: 'When focus moves onto the calendar, focuses the first navigation button.'
+      description: '当焦点移动到日历上时，聚焦第一个导航按钮。'
     },
     {
       keys: ['Space'],
       description:`
       <span>
-          When the focus is on either <Code>CalendarNext</Code> or <Code>CalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
+          当焦点位于<Code>CalendarNext</Code>或<Code>CalendarPrev</Code>时，它会导航日历。否则，它会选择日期。
       </span>
     ` ,
     },
@@ -303,7 +303,7 @@ This example showcases some of the available locales and how the calendar system
       keys: ['Enter'],
       description:`
       <span>
-          When the focus is on either <Code>CalendarNext</Code> or <Code>CalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
+          当焦点位于<Code>CalendarNext</Code>或<Code>CalendarPrev</Code>时，它会导航日历。否则，它会选择日期。
       </span>
     ` ,
     },
@@ -311,7 +311,7 @@ This example showcases some of the available locales and how the calendar system
       keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'],
       description:
       `
-        When the focus is on <Code>CalendarCellTrigger</Code>, it navigates the dates, changing the month/year/decade if necessary.
+        当焦点位于<Code>CalendarCellTrigger</Code>时，它会导航日期，并在必要时更改月/年/十年。
       `
     }
   ]"

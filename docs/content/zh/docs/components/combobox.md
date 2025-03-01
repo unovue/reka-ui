@@ -1,42 +1,42 @@
 ---
 
-title: Combobox
-description: Choose from a list of suggested values with full keyboard support.
+title: 组合框
+description: 从具有完整键盘支持的建议值列表中进行选择。
 name: combobox
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/listbox
 ---
 
-# Combobox
+# 组合框
 
 <Description>
-Choose from a list of suggested values with full keyboard support.
+从具有完整键盘支持的建议值列表中进行选择。
 </Description>
 
 <ComponentPreview name="Combobox" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Offers 2 positioning modes.',
-    'Supports items, labels, groups of items.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Supports custom placeholder.',
-    'Supports Right to Left direction.',
+    '可以是受控的或非受控的',
+    '提供两种定位模式',
+    '支持项、标签、项组',
+    '焦点完全可控',
+    '全键盘导航',
+    '支持自定义占位符',
+    '支持从右到左的方向（RTL）',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -89,31 +89,31 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a Combobox
+包含组合框的所有部分。
 
-<!-- @include: @/meta/ComboboxRoot.md -->
+<!-- @include: @/zh/meta/ComboboxRoot.md -->
 
 ### Anchor
 
-Used as an anchor if you set `ComboboxContent`'s position to `popper`.
+如果将 `ComboboxContent` 的位置设置为 `popper`，则用作锚点。
 
-<!-- @include: @/meta/ComboboxAnchor.md -->
+<!-- @include: @/zh/meta/ComboboxAnchor.md -->
 
 ### Input
 
-The input component to search through the combobox items.
+用于在组合框项目中进行搜索的输入组件。
 
-<!-- @include: @/meta/ComboboxInput.md -->
+<!-- @include: @/zh/meta/ComboboxInput.md -->
 
 ### Trigger
 
-The button that toggles the Combobox Content.
+切换组合框内容（打开/关闭）的按钮。
 
-<!-- @include: @/meta/ComboboxTrigger.md -->
+<!-- @include: @/zh/meta/ComboboxTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -123,38 +123,36 @@ The button that toggles the Combobox Content.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Cancel
 
-The button that clears the search term.
+清除搜索词的按钮。
 
-<!-- @include: @/meta/ComboboxCancel.md -->
+<!-- @include: @/zh/meta/ComboboxCancel.md -->
 
 ### Empty
 
-Shown when none of the items match the query.
+当没有任何项与查询匹配时显示。
 
-<!-- @include: @/meta/ComboboxEmpty.md -->
+<!-- @include: @/zh/meta/ComboboxEmpty.md -->
 
 ### Portal
 
-When used, portals the content part into the `body`.
+你需要为 `ComboboxContent` 设置 `position="popper"` ，以确保其位置自动计算，类似于 `Popover` 或 `DropdownMenu`。
 
-You need to set `position="popper"` for `ComboboxContent` to make sure the position was automatically computed similar to `Popover` or `DropdownMenu`.
-
-<!-- @include: @/meta/ComboboxPortal.md -->
+<!-- @include: @/zh/meta/ComboboxPortal.md -->
 
 ### Content
 
-The component that pops out when the combobox is open.
+组合框打开时弹出的组件。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/ComboboxContent.md -->
+<!-- @include: @/zh/meta/ComboboxContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -177,38 +175,38 @@ The component that pops out when the combobox is open.
   :data="[
     {
       cssVariable: '--reka-combobox-content-transform-origin',
-      description: 'The <Code>transform-origin</Code> computed from the content and arrow positions/offsets. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '从内容和箭头位置/偏移量计算的<Code>transform-origin</Code>。仅在<Code>position=&quot;popper&quot;</Code>时存在。',
     },
     {
       cssVariable: '--reka-combobox-content-available-width',
-      description: 'The remaining width between the trigger and the boundary edge. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发元素与边界边缘之间的剩余宽度。仅当<Code>position=&quot;popper&quot;</Code>时存在。',
     },
     {
       cssVariable: '--reka-combobox-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发元素与边界边缘之间的剩余高度。仅当<Code>position=&quot;popper&quot;</Code>时存在。',
     },
     {
       cssVariable: '--reka-combobox-trigger-width',
-      description: 'The width of the trigger. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发器的宽度。仅当<Code>position=&quot;popper&quot;</Code>时存在。',
     },
     {
       cssVariable: '--reka-combobox-trigger-height',
-      description: 'The height of the trigger. Only present when <Code>position=&quot;popper&quot;</Code>.',
+      description: '触发器的高度。仅当<Code>position=&quot;popper&quot;</Code>时存在。',
     },
   ]"
 />
 
 ### Viewport
 
-The scrolling viewport that contains all of the items.
+包含所有项的滚动视口。
 
-<!-- @include: @/meta/ComboboxViewport.md -->
+<!-- @include: @/zh/meta/ComboboxViewport.md -->
 
 ### Item
 
-The component that contains the combobox items.
+包含组合框项的组件。
 
-<!-- @include: @/meta/ComboboxItem.md -->
+<!-- @include: @/zh/meta/ComboboxItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -218,66 +216,66 @@ The component that contains the combobox items.
     },
     {
       attribute: '[data-highlighted]',
-      values: 'Present when highlighted',
+      values: '高亮状态下存在',
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### ItemIndicator
 
-Renders when the item is selected. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+当项被选中时进行渲染。你可以直接设置这个元素的样式，或者将其用作包装器来放入一个图标，或者两者兼而有之。
 
-<!-- @include: @/meta/ComboboxItemIndicator.md -->
+<!-- @include: @/zh/meta/ComboboxItemIndicator.md -->
 
 ### Group
 
-Used to group multiple items. use in conjunction with `ComboboxLabel` to ensure good accessibility via automatic labelling.
+用于对多个项目进行分组。与 `ComboboxLabel` 结合使用，以通过自动标记确保良好的可访问性。
 
-<!-- @include: @/meta/ComboboxGroup.md -->
+<!-- @include: @/zh/meta/ComboboxGroup.md -->
 
 ### Label
 
-Used to render the label of a group. It won't be focusable using arrow keys.
+用于呈现组的标签。使用箭头键无法将其聚焦。
 
-<!-- @include: @/meta/ComboboxLabel.md -->
+<!-- @include: @/zh/meta/ComboboxLabel.md -->
 
 ### Separator
 
-Used to visually separate items in the Combobox
+用于在组合框中直观地分隔项目。
 
-<!-- @include: @/meta/ComboboxSeparator.md -->
+<!-- @include: @/zh/meta/ComboboxSeparator.md -->
 
 ### Arrow
 
-An optional arrow element to render alongside the content. This can be used to help visually link the trigger with the `ComboboxContent`. Must be rendered inside `ComboboxContent`. Only available when `position` is set to `popper`.
+一个可选的箭头元素，与内容一起呈现。这可以用于在视觉上连接触发器与 `ComboboxContent`。必须在 `ComboboxContent` 内部呈现。仅当 `position` 设置为 `popper` 时可用。
 
-<!-- @include: @/meta/ComboboxArrow.md -->
+<!-- @include: @/zh/meta/ComboboxArrow.md -->
 
 ### Virtualizer
 
-Virtual container to achieve list virtualization.
+实现列表虚拟化的虚拟容器。
 
 <Callout type="warning">
 
-Combobox items **must** be filtered manually before passing them over to the virtualizer. See [example below](#virtualized-combobox-with-working-filtering).
+组合框项**必须**在传递给虚拟化器之前手动进行过滤。参见[下面的示例](#virtualized-combobox-with-working-filtering)。
 
 </Callout>
 
-See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
+查看[虚拟化指南](../guides/virtualization.md)以获取有关虚拟化的更多通用信息。
 
-<!-- @include: @/meta/ComboboxVirtualizer.md -->
+<!-- @include: @/zh/meta/ComboboxVirtualizer.md -->
 
-## Examples
+## 示例
 
-### Binding objects as values
+### 将对象绑定为值
 
-Unlike native HTML form controls which only allow you to provide strings as values, `reka-ui` supports binding complex objects as well.
+与仅允许提供字符串作为值的原生 HTML 表单控件不同，`reka-ui` 也支持绑定复杂对象。
 
-Make sure to set the `displayValue` prop to set the input value on item selection.
+确保设置 `displayValue` 属性以在项选择时设置输入值。
 
 ```vue line=12,17,26
 <script setup lang="ts">
@@ -313,9 +311,9 @@ const selectedPeople = ref(people[0])
 </template>
 ```
 
-### Selecting multiple values
+### 选择多个值
 
-The `Combobox` component allows you to select multiple values. You can enable this by providing an array of values instead of a single value.
+`Combobox` 组件允许你选择多个值。你可以通过提供一个值数组而不是单个值来启用此功能。
 
 ```vue line=12,16
 <script setup lang="ts">
@@ -342,11 +340,11 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
-### Custom filtering
+### 自定义筛选
 
-Internally, `ComboboxRoot` will filter the item based on the rendered text.
+在内部，`ComboboxRoot` 将根据呈现的文本对项目进行筛选。
 
-However, you may also provide your own custom filtering logic together with setting `ignoreFilter="false"`.
+但是，您也可以提供自己的自定义筛选逻辑，并设置 `ignoreFilter="false"`。
 
 ```vue line=15,16,22,28
 <script setup lang="ts">
@@ -388,9 +386,9 @@ const filteredPeople = computed(() => people.filter(p => startsWith(p.name, sear
 </template>
 ```
 
-### Custom label
+### 自定义标签
 
-By default the `Combobox` will use the input contents as the label for screenreaders. If you'd like more control over what is announced to assistive technologies, use the [Label](/docs/components/label) component.
+默认情况下，`Combobox` 将使用输入内容作为屏幕阅读器的标签。如果您希望对辅助技术声明的内容有更多控制，请使用[标签](/zh/docs/components/label)组件。
 
 ```vue line=8,9
 <script setup lang="ts">
@@ -410,9 +408,9 @@ import { ComboboxInput, ComboboxRoot, Label } from 'reka-ui'
 </template>
 ```
 
-### With disabled items
+### 禁用项
 
- You can add special styles to disabled items via the `data-disabled` attribute.
+你可以通过 `data-disabled` 属性为禁用项添加特殊样式。
 
 ```vue line=17
 <script setup lang="ts">
@@ -450,9 +448,9 @@ import {
 }
 ```
 
-### With separators
+### 分割线
 
-Use the `Separator` part to add a separator between items.
+使用 `Separator` 部分在条目之间添加分割线。
 
 ```vue line=21
 <script setup lang="ts">
@@ -485,9 +483,9 @@ import {
 </template>
 ```
 
-### With grouped items
+### 分组项
 
-Use the `Group` and `Label` parts to group items in a section.
+使用 `Group` 和 `Label` 部分在一个区域中对项进行分组。
 
 ```vue line=19,20,24
 <script setup lang="ts">
@@ -520,9 +518,9 @@ import {
 </template>
 ```
 
-### With complex items
+### 复杂项
 
-You can use custom content in your items.
+你可以在你的项中使用自定义内容。
 
 ```vue line=21
 <script setup lang="ts">
@@ -556,10 +554,9 @@ import {
 </template>
 ```
 
-### Prevent select behavior
+### 避免选择行为
 
-By default, selecting `ComboboxItem` would close the content, and update the `modelValue` with the provided value.
-You can prevent this behavior by preventing default `@select.prevent`.
+默认情况下，选择 `ComboboxItem` 将关闭内容，并使用提供的值更新 `modelValue`。你可以通过阻止默认行为 `@select.prevent` 来防止这种行为。
 
 ```vue line=11
 <script setup lang="ts">
@@ -582,11 +579,11 @@ import { ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxIt
 </template>
 ```
 
-### Virtualized combobox with working filtering
+### 具有可用过滤功能的虚拟化组合框
 
-Combobox items **must** be filtered manually before passing them over to the virtualizer.
+组合框项目**必须**在将它们传递给虚拟化程序之前手动过滤。
 
-See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
+查看[虚拟化指南](../guides/virtualization.md)以获取有关虚拟化的更多通用信息。
 
 ```vue line=9-10,17,19-28
 <script setup lang="ts">
@@ -624,44 +621,44 @@ const filteredPeople = computed(() => people.filter(p => contains(p.name, search
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Combobox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
+遵循[组合框WAI-ARIA设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/)。
 
-See the W3C [Combobox Autocomplete List](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/) example for more information.
+查看 W3C [组合框自动完成列表](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/) 示例获取更多信息。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Enter'],
-      description: '<span>When focus is on <Code>ComboboxItem</Code>, selects the focused item. </span>',
+      description: '<span>当焦点位于<Code>ComboboxItem</Code>时，选择焦点项。</span>',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> When focus is on <Code>ComboboxInput</Code>, opens the combobox content. <br /> When focus is on an item, moves focus to the next item. </span>',
+      description: '<span> 当焦点在<Code>ComboboxInput</Code>上时，打开组合框内容。<br/>当焦点在一个项上时，将焦点移动到下一个项。 </span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> When focus is on <Code>ComboboxInput</Code>, opens the combobox content. <br /> When focus is on an item, moves focus to the previous item. </span>',
+      description: '<span> 当焦点在<Code>ComboboxInput</Code>上时，打开组合框内容。<br/>当焦点在一个项上时，将焦点移动到前一个项。 </span>',
     },
     {
       keys: ['Esc'],
-      description: '<span> Closes combobox and restores the selected item in the <Code>ComboboxInput</Code> field. </span>',
+      description: '<span> 关闭组合框并恢复<Code>ComboboxInput</Code>字段中的选定项。 </span>',
     },
   ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-### Command Menu
+### 命令菜单
 
-Combobox can be use to build your own Command Menu.
+组合框可用于构建你自己的命令菜单。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -683,7 +680,7 @@ import { Command, CommandItem } from './your-command'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```ts
 // your-command.ts

@@ -1,17 +1,19 @@
 ---
 title: useDateFormatter
-description: Creates a wrapper around the `DateFormatter`, which is an improved version of the Intl.DateTimeFormat API, that is used internally by the various date builders to easily format dates in a consistent way.
+description: 围绕 `DateFormatter` 创建一个包装器，它是 Intl.DateTimeFormat API 的改进版本，各种日期生成器在内部使用它来轻松地以一致的方式格式化日期。
 ---
 
 # useDateFormatter
 
 <Description>
-Creates a wrapper around the `DateFormatter`, which is an improved version of the Intl.DateTimeFormat API, that is used internally by the various date builders to easily format dates in a consistent way.
+
+围绕 `DateFormatter` 创建一个包装器，它是 Intl.DateTimeFormat API 的改进版本，各种日期生成器在内部使用它来轻松地以一致的方式格式化日期。
+
 </Description>
 
-More information on the DateFormatter [here](https://react-spectrum.adobe.com/internationalized/date/DateFormatter.html).
+有关 DateFormatter 的更多信息[在此](https://react-spectrum.adobe.com/internationalized/date/DateFormatter.html)。
 
-## Usage
+## 用法
 
 ```vue
 <script setup lang="ts">

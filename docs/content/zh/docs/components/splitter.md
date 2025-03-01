@@ -1,40 +1,40 @@
 ---
-title: Splitter
-description: A component that divides your layout into resizable sections.
+title: 拆分器
+description: 将布局划分为可调整大小的部分的组件。
 name: splitter
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/
 ---
 
-# Splitter
+# 拆分器
 
 <Description>
-A component that divides your layout into resizable sections.
+将布局划分为可调整大小的部分的组件。
 </Description>
 
 <ComponentPreview name="Splitter" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Supports keyboard interaction.',
-    'Supports horizontal/vertical layout.',
-    'Supports nested layout.',
-    'Supports Right to Left direction.',
-    'Can resize across another panel.',
-    'Can be mounted conditionally.'
+    '支持键盘交互',
+    '支持水平/垂直布局',
+    '支持嵌套布局',
+    '支持从右到左的方向（RTL）',
+    '可以在另一个面板上调整大小',
+    '可以有条件地装载'
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -49,13 +49,13 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Group
 
-Contains all the parts of a Splitter.
+包含拆分器的所有部分。
 
-<!-- @include: @/meta/SplitterGroup.md -->
+<!-- @include: @/zh/meta/SplitterGroup.md -->
 
 <DataAttributesTable
   :data="[
@@ -72,15 +72,15 @@ Contains all the parts of a Splitter.
 
 ### Panel
 
-A collapsible section.
+可折叠的部分。
 
-<!-- @include: @/meta/SplitterPanel.md -->
+<!-- @include: @/zh/meta/SplitterPanel.md -->
 
 ### Resize Handle
 
-Handle that use for resizing.
+按住来调整大小。
 
-<!-- @include: @/meta/SplitterResizeHandle.md -->
+<!-- @include: @/zh/meta/SplitterResizeHandle.md -->
 
 <DataAttributesTable
   :data="[
@@ -90,7 +90,7 @@ Handle that use for resizing.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -99,13 +99,13 @@ Handle that use for resizing.
   ]"
 />
 
-## Examples
+## 示例
 
-### Collapsible
+### 折叠
 
-Use the `collapsible` prop to allow the panel to collapse into `collapsedSize` when `minSize` is reached.
+使用 `collapsible` 属性允许面板在达到 `minSize` 时折叠成 `collapsedSize`。
 
-(`collapsedSize` and `minSize` props are required.)
+（`collapsedSize` 和 `minSize` 属性是必需的。）
 
 ```vue line=2
 <template>
@@ -125,9 +125,9 @@ Use the `collapsible` prop to allow the panel to collapse into `collapsedSize` w
 </template>
 ```
 
-### Persist in localStorage
+### 持久保存在 localStorage 中
 
-Use the `autoSaveId` prop to save the layout data into `localStorage`.
+使用 `autoSaveId` 属性将布局数据保存到 `localStorage` 中。
 
 ```vue line=2
 <template>
@@ -137,9 +137,9 @@ Use the `autoSaveId` prop to save the layout data into `localStorage`.
 </template>
 ```
 
-### Persist layout with SSR
+### 使用 SSR 持久化布局
 
-By default, Splitter uses `localStorage` to persist layouts. With server rendering, this can cause a flicker when the default layout (rendered on the server) is replaced with the persisted layout (in `localStorage`). The way to avoid this flicker is to also persist the layout with a cookie like so:
+默认情况下，拆分器使用 `localStorage` 来持久化布局。使用服务器渲染时，当默认布局（在服务器上渲染）替换为持久布局（在 `localStorage` 中）时，这可能会导致闪烁。避免这种闪烁的方法是使用 cookie 持久化布局，如下所示：
 
 ```vue line=3,7,8,12
 <!-- with Nuxt -->
@@ -163,9 +163,9 @@ const layout = useCookie<number[]>('splitter:layout')
 </template>
 ```
 
-### Collapse/Expand programmatically
+### 以程序方式折叠/展开
 
-Sometimes panels need to resize or collapse/expand in response to user actions. `SplitterPanel` exposes the `collapse` and `expand` methods to achieve this.
+有时，面板需要调整大小或折叠/展开以响应用户作。`SplitterPanel` 公开了 `collapse` 和 `expand` 方法来实现此目的。
 
 ```vue line=2,7,14
 <script setup lang="ts">
@@ -196,9 +196,9 @@ const panelRef = ref<InstanceType<typeof SplitterPanel>>()
 </template>
 ```
 
-### Custom handle
+### 自定义拖动把手
 
-Customize the handle by passing any element as the slot.
+通过将任何元素传入插槽来自定义把手。
 
  ```vue line=6-8
 <template>
@@ -218,9 +218,9 @@ Customize the handle by passing any element as the slot.
 
 ### SSR
 
-Splitter component heavily relies on unique `id`, however for Vue<3.4 we don't have a reliable way of generating [SSR-friendly `id`](https://github.com/vuejs/rfcs/discussions/557).
+拆分器组件严重依赖唯一 `id`，但是对于 Vue<3.4，我们没有可靠的方法来生成[SSR 友好的 `id`](https://github.com/vuejs/rfcs/discussions/557)。
 
-Thus, if you are using Nuxt or other SSR framework, you are required to manually add the `id` for all Splitter components. Alternatively, you can wrap the component with `<ClientOnly>`.
+因此，如果您使用的是 Nuxt 或其他 SSR 框架，则需要手动添加所有拆分器组件的 `id`。或者，您也可以用 `<ClientOnly>`.
 
 ```vue
 <template>
@@ -238,38 +238,38 @@ Thus, if you are using Nuxt or other SSR framework, you are required to manually
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Window Splitter WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter).
+遵循 [Window Splitter WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable :data="[
     {
       keys: ['Enter'],
-      description: 'If the primary pane is not collapsed, collapses the pane. If the pane is collapsed, restores the splitter to its previous position.',
+      description: '如果主窗格未折叠，则折叠窗格。如果窗格已折叠，则将拆分器恢复到其先前的位置。',
     },
     {
       keys: ['ArrowDown'],
-      description: 'Moves a horizontal splitter down.',
+      description: '向下移动水平拆分器。',
     },
     {
       keys: ['ArrowUp'],
-      description: 'Moves a horizontal splitter up.',
+      description: '向上移动水平拆分器。',
     },
     {
       keys: ['ArrowRight'],
-      description: 'Moves a vertical splitter to the right.',
+      description: '将垂直拆分器向右移动。',
     },
     {
       keys: ['ArrowLeft'],
-      description: 'Moves a vertical splitter to the left.',
+      description: '将垂直拆分器向左移动。',
     },
     {
       keys: ['Home'],
-      description: 'Moves splitter to the position that gives the primary pane its smallest allowed size. ',
+      description: '将拆分器移动到为主窗格提供最小允许大小的位置。',
     },
     {
       keys: ['End'],
-      description: 'Moves splitter to the position that gives the primary pane its largest allowed size.',
+      description: '将拆分器移动到为主窗格提供最大允许大小的位置。',
     }]" />

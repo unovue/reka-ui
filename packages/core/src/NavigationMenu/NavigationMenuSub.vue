@@ -18,7 +18,7 @@ export interface NavigationMenuSubProps extends PrimitiveProps {
    * Use when you do not need to control the value state.
    */
   defaultValue?: string
-  /** The orientation of the menu. */
+  /** 菜单的方向。 */
   orientation?: Orientation
 }
 </script>

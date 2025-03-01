@@ -1,15 +1,15 @@
 ---
-title: Combobox TagsInput
+title: 标签输入的组合框
 tags:
-  - Combobox
-  - Form controls
+  - 组合框
+  - 表单控件
 ---
 
-# Combobox with TagsInput
+# 标签输入的组合框
 
 <Description>
 
-Rendering multiple Checkbox elements to form a group of checkboxes. The behavior is similar to having `v-model` for multiple native `input[type="checkbox"]`.
+呈现多个复选框元素以形成一组复选框。该行为类似于为多个原生 `input[type="checkbox"]` 提供 `v-model`。
 
 </Description>
 

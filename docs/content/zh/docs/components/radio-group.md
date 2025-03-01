@@ -1,38 +1,38 @@
 ---
 
-title: Radio Group
-description: A set of checkable buttons—known as radio buttons—where no more than one of the buttons can be checked at a time.
+title: 单选组
+description: 一组可选中的按钮（称为单选按钮），其中一次只能选中一个按钮。
 name: radio-group
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/radiobutton
 ---
 
-# RadioGroup
+# 单选组
 
 <Description>
-A set of checkable buttons—known as radio buttons—where no more than one of the buttons can be checked at a time.
+一组可选中的按钮（称为单选按钮），其中一次只能选中一个按钮。
 </Description>
 
 <ComponentPreview name="RadioGroup" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Full keyboard navigation.',
-    'Supports horizontal/vertical orientation.',
-    'Can be controlled or uncontrolled.',
+    '全键盘导航',
+    '支持水平/垂直方向',
+    '可以是受控的或非受控的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -48,28 +48,28 @@ import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a radio group.
+包含单选组的所有部件。
 
-<!-- @include: @/meta/RadioGroupRoot.md -->
+<!-- @include: @/zh/meta/RadioGroupRoot.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Item
 
-An item in the group that can be checked. An `input` will also render when used within a `form` to ensure events propagate correctly.
+组中可以选中的项目。在 `form` 中使用时，`input` 也会渲染，以确保事件正确传播。
 
-<!-- @include: @/meta/RadioGroupItem.md -->
+<!-- @include: @/zh/meta/RadioGroupItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -79,18 +79,18 @@ An item in the group that can be checked. An `input` will also render when used 
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Indicator
 
-Renders when the radio item is in a checked state. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+当单选按钮项处于选中状态时渲染。您可以直接设置此元素的样式，也可以将其用作包装器以将图标放入其中，或两者兼而有之。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/RadioGroupIndicator.md -->
+<!-- @include: @/zh/meta/RadioGroupIndicator.md -->
 
 <DataAttributesTable
   :data="[
@@ -100,42 +100,42 @@ Renders when the radio item is in a checked state. You can style this element di
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Radio Group WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radiobutton) and uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) to manage focus movement among radio items.
+遵循[单选组 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/radiobutton)，并使用[移动 tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html)来管理单选项之间的焦点移动。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: 'Moves focus to either the checked radio item or the first radio item in the group.',
+      description: '将焦点移动到选中的单选按钮项或组中的第一个单选按钮项。',
     },
     {
       keys: ['Space'],
-      description: 'When focus is on an unchecked radio item, checks it.',
+      description: '当焦点位于未选中的单选项上时，选中它。',
     },
     {
       keys: ['ArrowDown'],
-      description: 'Moves focus and checks the next radio item in the group.',
+      description: '移动焦点并选中组中的下一个单选项。',
     },
     {
       keys: ['ArrowRight'],
-      description: 'Moves focus and checks the next radio item in the group.',
+      description: '移动焦点并选中组中的下一个单选项。',
     },
     {
       keys: ['ArrowUp'],
-      description: 'Moves focus to the previous radio item in the group.',
+      description: '移动焦点到组内的上一个单选项',
     },
     {
       keys: ['ArrowLeft'],
-      description: 'Moves focus to the previous radio item in the group.',
+      description: '移动焦点到组内的上一个单选项',
     },
   ]"
 />

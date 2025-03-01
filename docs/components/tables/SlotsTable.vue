@@ -23,10 +23,10 @@ const props = defineProps<SlotsTableProps>()
     <ProseThead>
       <ProseTr>
         <ProseTh class="w-1/3">
-          <span>Slots (default)</span>
+          <span>{{ $t('slots-default') }}</span>
         </ProseTh>
         <ProseTh>
-          <span>Payload</span>
+          <span>{{ $t('payload') }}</span>
         </ProseTh>
       </ProseTr>
     </ProseThead>

@@ -1,36 +1,36 @@
 ---
 title: Presence
-description: Manages mounting and unmounting of element with transition support.
+description: 通过过渡支持管理元素的挂载和取消挂载。
 ---
 
 # Presence
 
 <Description>
-Manages mounting and unmounting of element with transition support.
+通过过渡支持管理元素的挂载和取消挂载。
 </Description>
 
-<Callout type="info" title="Question">
+<Callout type="info" title="问题">
 
-How is this component different from [Vue Transition](https://vuejs.org/guide/built-ins/transition.html#transition)?
+这个组件和 [Vue Transition](https://cn.vuejs.org/guide/built-ins/transition.html#transition) 有什么不同？
 
-A: The biggest difference is it accepts css animation, and control the visibility of element.
+A： 最大的区别是它接受 css 动画，并控制元素的可见性。
 
 </Callout>
 
-Presence component provides enhanced control over element mounting/unmounting. It ensures animations and transitions complete before removing elements from the DOM, making it perfect for animated UI components.
+Presence 组件增强了对元素安装/卸载的控制。它确保在从 DOM 中删除元素之前完成动画和过渡，使其非常适合动画 UI 组件。
 
-## API Reference
+## API 参考
 
 <PropsTable :data="[
   {
     'name': 'present',
-    'description': '<p>Conditional to mount or unmount the child element. Similar to <code>v-if</code></p>\n',
+    'description': '<p>有条件地挂载或卸载子元素。类似于 <code>v-if</code></p>\n',
     'type': 'boolean',
     'required': true,
   },
   {
     'name': 'forceMount',
-    'description': '<p>Force the element to render all the time.\n\nUseful for programmatically render grandchild component with the exposed <code>present</code></p>\n',
+    'description': '<p>强制元素始终呈现。用于以程序方式呈现具有公开 <code>present</code> 的孙组件</p>\n',
     'type': 'boolean',
     'required': false,
     'default': false
@@ -40,33 +40,33 @@ Presence component provides enhanced control over element mounting/unmounting. I
 <EmitsTable :data="[
   {
     'name': 'enter',
-    'description': '<p>Event handler called when the enter animation has started</p>\n',
+    'description': '<p>当进入动画开始时调用的事件处理程序</p>\n',
     'type': 'CustomEvent'
   },
   {
     'name': 'after-enter',
-    'description': '<p>Event handler called when the enter animation has finished</p>\n',
+    'description': '<p>当 enter 动画完成时调用的事件处理程序</p>\n',
     'type': 'CustomEvent'
   },
   {
     'name': 'leave',
-    'description': '<p>Event handler called when the leave animation has started</p>\n',
+    'description': '<p>离开动画开始时调用的事件处理程序</p>\n',
     'type': 'CustomEvent'
   },
   {
     'name': 'after-leave',
-    'description': '<p>Event handler called when the leave animation has finished</p>\n',
+    'description': '<p>离开动画完成时调用的事件处理程序</p>\n',
     'type': 'CustomEvent'
   },
 ]" />
 
 <Callout type="tip">
 
-Read our [Animation Guide](/docs/guides/animation) to learn more about implementing animations with Presence component.
+阅读我们的[动画指南](/zh/docs/guides/animation)，了解有关使用 Presence 组件实现动画的更多信息。
 
 </Callout>
 
-## Example
+## 示例
 
 ```vue line=2,4,5
 <template>
@@ -83,7 +83,7 @@ Read our [Animation Guide](/docs/guides/animation) to learn more about implement
 
 ### Force Mount
 
-When you need to ensure content is always rendered regardless of the present state:
+当您需要确保无论当前状态如何都始终呈现内容时：
 
 ```vue
 <template>

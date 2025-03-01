@@ -1,41 +1,41 @@
 ---
-title: Navigation Menu
-description: A collection of links for navigating websites.
+title: 导航菜单
+description: 用于导航 Web 站点的链接集合。
 name: navigation-menu
 aria: https://www.w3.org/TR/wai-aria/#navigation
 ---
 
-# Navigation Menu
+# 导航菜单
 
 <Description>
-A collection of links for navigating websites.
+用于导航 Web 站点的链接集合。
 </Description>
 
 <ComponentPreview name="NavigationMenu" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Flexible layout structure with managed tab focus.',
-    'Supports submenus.',
-    'Optional active item indicator.',
-    'Full keyboard navigation.',
-    'Exposes CSS variables for advanced animation.',
-    'Supports custom timings.',
+    '可以是受控的或非受控的',
+    '灵活的布局结构，可管理选项卡焦点。',
+    '支持子菜单',
+    '可选的活动项指示器',
+    '全键盘导航',
+    '暴露用于高级动画的 CSS 变量',
+    '支持自定义时间函数',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -84,13 +84,13 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a navigation menu.
+包含导航菜单的所有部分。
 
-<!-- @include: @/meta/NavigationMenuRoot.md -->
+<!-- @include: @/zh/meta/NavigationMenuRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -103,9 +103,9 @@ Contains all the parts of a navigation menu.
 
 ### Sub
 
-Signifies a submenu. Use it in place of the root part when nested to create a submenu.
+表示子菜单。嵌套时使用它代替根部分来创建子菜单。
 
-<!-- @include: @/meta/NavigationMenuSub.md -->
+<!-- @include: @/zh/meta/NavigationMenuSub.md -->
 
 <DataAttributesTable
   :data="[
@@ -118,9 +118,9 @@ Signifies a submenu. Use it in place of the root part when nested to create a su
 
 ### List
 
-Contains the top level menu items.
+包含顶级菜单项。
 
-<!-- @include: @/meta/NavigationMenuList.md -->
+<!-- @include: @/zh/meta/NavigationMenuList.md -->
 
 <DataAttributesTable
   :data="[
@@ -133,15 +133,15 @@ Contains the top level menu items.
 
 ### Item
 
-A top level menu item, contains a link or trigger with content combination.
+顶级菜单项，包含带有内容组合的链接或触发器。
 
-<!-- @include: @/meta/NavigationMenuItem.md -->
+<!-- @include: @/zh/meta/NavigationMenuItem.md -->
 
 ### Trigger
 
-The button that toggles the content.
+切换内容的按钮。
 
-<!-- @include: @/meta/NavigationMenuTrigger.md -->
+<!-- @include: @/zh/meta/NavigationMenuTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -151,18 +151,18 @@ The button that toggles the content.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Content
 
-Contains the content associated with each trigger.
+包含与每个触发器关联的内容。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/NavigationMenuContent.md -->
+<!-- @include: @/zh/meta/NavigationMenuContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -183,9 +183,9 @@ Contains the content associated with each trigger.
 
 ### Link
 
-A navigational link.
+导航链接。
 
-<!-- @include: @/meta/NavigationMenuLink.md -->
+<!-- @include: @/zh/meta/NavigationMenuLink.md -->
 
 <DataAttributesTable
   :data="[
@@ -198,11 +198,11 @@ A navigational link.
 
 ### Indicator
 
-An optional indicator element that renders below the list, is used to highlight the currently active trigger.
+呈现在列表下方的可选指示符元素用于突出显示当前活动的触发器。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/NavigationMenuIndicator.md -->
+<!-- @include: @/zh/meta/NavigationMenuIndicator.md -->
 
 <DataAttributesTable
   :data="[
@@ -221,22 +221,22 @@ An optional indicator element that renders below the list, is used to highlight 
   :data="[
     {
       cssVariable: '--reka-navigation-menu-indicator-size',
-      description: 'The size of the indicator.',
+      description: '指示器的大小。',
     },
     {
       cssVariable: '--reka-navigation-menu-indicator-position',
-      description: 'The position of the indicator',
+      description: '指示器的位置',
     },
   ]"
 />
 
 ### Viewport
 
-An optional viewport element that is used to render active content outside of the list.
+一个可选的视口元素，用于在列表之外呈现活动内容。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/NavigationMenuViewport.md -->
+<!-- @include: @/zh/meta/NavigationMenuViewport.md -->
 
 <DataAttributesTable
   :data="[
@@ -255,20 +255,20 @@ An optional viewport element that is used to render active content outside of th
   :data="[
     {
       cssVariable: '--reka-navigation-menu-viewport-width',
-      description: 'The width of the viewport when visible/hidden, computed from the active content',
+      description: '可见/隐藏时视口的宽度，根据活动内容计算',
     },
     {
       cssVariable: '--reka-navigation-menu-viewport-height',
-      description: 'The height of the viewport when visible/hidden, computed from the active content',
+      description: '可视/隐藏时视口的高度，根据活动内容计算',
     },
   ]"
 />
 
-## Examples
+## 示例
 
-### Vertical
+### 纵向
 
-You can create a vertical menu by using the `orientation` prop.
+您可以使用 `orientation` prop 创建垂直菜单。
 
 ```vue line=16
 <script setup lang="ts">
@@ -301,11 +301,9 @@ import {
 </template>
 ```
 
-### Flexible layouts
+### 灵活的布局
 
-Use the `Viewport` part when you need extra control over where `Content` is rendered. This can be helpful when your design
-requires an adjusted DOM structure or if you need flexibility to achieve [advanced animation](/docs/components/navigation-menu#advanced-animation).
-Tab focus will be maintained automatically.
+当您需要对 `Content` 的渲染位置进行额外控制时，请使用 `Viewport` 部分。当您的设计需要调整 DOM 结构或需要灵活性来实现[高级动画](/zh/docs/components/navigation-menu#advanced-animation)时，这会很有帮助。Tab 键焦点将自动保持。
 
 ```vue line=26
 <script setup lang="ts">
@@ -338,10 +336,9 @@ import {
 </template>
 ```
 
-### With indicator
+### 指示器
 
-You can use the optional `Indicator` part to highlight the currently active `Trigger`, this is useful when you want to provide
-an animated visual cue such as an arrow or highlight to accompany the `Viewport`.
+您可以使用可选的 `Indicator` 部分来高亮显示当前活动的 `Trigger`，当您想要提供动画视觉提示（如箭头或高光）以伴随 `Viewport` 时，这非常有用。
 
 ```vue line=24
 <script setup lang="ts">
@@ -391,11 +388,9 @@ import {
 }
 ```
 
-### With submenus
+### 子菜单
 
-Create a submenu by nesting your `NavigationMenu` and using the `Sub` part in place of its `Root`.
-Submenus work differently to `Root` navigation menus and are similar to [`Tabs`](/docs/components/tabs) in that one item should always be active, so be
-sure to assign and set a `defaultValue`.
+通过嵌套 `NavigationMenu` 并使用 `Sub` 部件代替其 `Root` 来创建子菜单。子菜单的工作方式与 `Root` 导航菜单不同，并且类似于 [`Tabs`](/zh/docs/components/tabs)，因为一个项应始终处于活动状态，因此请务必分配和设置 `defaultValue`。
 
 ```vue line=7,23-34
 <script setup lang="ts">
@@ -439,10 +434,9 @@ import {
 </template>
 ```
 
-### With client side routing
+### 使用客户端路由
 
-If you need to use the `RouterLink` component provided by your routing package then we recommend adding `asChild="true"` to `NavigationMenuLink`, or setting `as="RouterLink"`.
-This will ensure accessibility and consistent keyboard control is maintained:
+如果你需要使用路由包提供的 `RouterLink` 组件，那么我们建议在 `NavigationMenuLink` 中添加 `asChild="true"`，或者设置 `as="RouterLink"` 这将确保辅助功能和一致的键盘控制：
 
 ```vue line=12-14,19-21
 <script setup lang="ts">
@@ -475,11 +469,11 @@ import { NavigationMenuItem, NavigationMenuList, NavigationMenuRoot } from 'reka
 </template>
 ```
 
-### Advanced animation
+### 高级动画
 
-We expose `--reka-navigation-menu-viewport-[width|height]` and `data-motion['from-start'|'to-start'|'from-end'|'to-end']` attributes to allow you to animate `Viewport` size and `Content` position based on the enter/exit direction.
+我们暴露了 `--reka-navigation-menu-viewport-[width|height]` 和 `data-motion['from-start'|'to-start'|'from-end'|'to-end']` 属性，以允许您根据进入/退出方向为 `Viewport` 大小和 `Content` 位置设置动画。
 
-Combining these with `position: absolute;` allows you to create smooth overlapping animation effects when moving between items.
+将这些与 `position: absolute;` 结合使用，可以在项目之间移动时创建平滑重叠的动画效果。
 
 ```vue line=17,23,29
 <script setup lang="ts">
@@ -589,27 +583,23 @@ import {
 }
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [`navigation` role requirements](https://www.w3.org/TR/wai-aria-1.2/#navigation).
+遵循[`navigation` role 要求](https://www.w3.org/TR/wai-aria-1.2/#navigation)。
 
-### Differences to menubar
+### 与 menubar 的区别
 
-`NavigationMenu` should not be confused with `menubar`, although this primitive shares the name `menu` in the colloquial sense to refer to a set of navigation links, it does not use the WAI-ARIA `menu` role.
-This is because `menu` and `menubars` behave like native operating system menus most commonly found in desktop application windows, as such they feature complex functionality like composite focus management and first-character navigation.
+`NavigationMenu` 不应该与 `menubar` 混淆，尽管此 primitive 在口语意义上共享名称 `menu` 来引用一组导航链接，但它不使用 WAI-ARIA `menu` role。这是因为 `menu` `menubars` 的行为类似于桌面应用程序窗口中最常见的原生系统菜单，因此它们具有复杂的功能，如复合焦点管理和首字符导航。
 
-These features are often considered [unnecessary for website navigation](https://github.com/w3c/aria-practices/issues/353) and at worst can confuse users who are familiar with established website patterns.
+这些功能通常被认为[对于网站导航是不必要的](https://github.com/w3c/aria-practices/issues/353)，最坏的情况是会让熟悉网站模式惯例的用户感到困惑。
 
-See the W3C [Disclosure Navigation Menu](https://w3c.github.io/aria-practices/examples/disclosure/disclosure-navigation.html) example for more information.
+有关更多信息，请参阅 [Disclosure Navigation Menu](https://w3c.github.io/aria-practices/examples/disclosure/disclosure-navigation.html) 示例。
 
-### Link usage and aria-current
+### 链接使用情况和 aria-current
 
-It's important to use `NavigationMenuLink` for all navigational links within a menu, this not only applies to the main list
-but also within any content rendered via `NavigationMenuContent`. This will ensure consistent keyboard interactions and accessibility
-while also giving access to the `active` prop for setting `aria-current` and the active styles.
-See [this example](/docs/components/navigation-menu#with-client-side-routing) for more information on usage with third party routing components.
+对菜单中的所有导航链接使用 `NavigationMenuLink` 非常重要，这不仅适用于主列表，也适用于通过 `NavigationMenuContent` 渲染的任何内容。这将确保一致的键盘交互和可访问性，同时还可以访问 `active` prop 来设置 `aria-current` 和激活样式。有关与第三方路由组件一起使用的更多信息，请参阅[此示例](/zh/docs/components/navigation-menu#with-client-side-routing)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
@@ -617,24 +607,24 @@ See [this example](/docs/components/navigation-menu#with-client-side-routing) fo
       keys: ['Space', 'Enter'],
       description: `
         <span>
-          When focus is on <code>NavigationMenuTrigger</code>, opens the content.
+          当焦点在<code>NavigationMenuTrigger</code>时，打开内容。
         </span>
       `,
     },
     {
       keys: ['Tab'],
-      description: 'Moves focus to the next focusable element.',
+      description: '将焦点移动到下一个可聚焦元素。',
     },
     {
       keys: ['ArrowDown'],
       description: `
         <span>
-          When <code>horizontal</code> and focus is on an open
-          <code>NavigationMenuTrigger</code>, moves focus into
+          当<code>horizontal</code>并且焦点在打开的
+          <code>NavigationMenuTrigger</code>时，将焦点移动到
           <code>NavigationMenuContent</code>.
           <br />
-          Moves focus to the next <code>NavigationMenuTrigger</code> or
-          <code>NavigationMenuLink</code>.
+          将焦点移动到下一个<code>NavigationMenuTrigger</code>或
+          <code>NavigationMenuLink</code>。
         </span>
       `,
     },
@@ -642,8 +632,8 @@ See [this example](/docs/components/navigation-menu#with-client-side-routing) fo
       keys: ['ArrowUp'],
       description: `
         <span>
-          Moves focus to the previous <code>NavigationMenuTrigger</code> or
-          <code>NavigationMenuLink</code>.
+          将焦点移动到前面的<code>NavigationMenuTrigger</code>或
+          <code>NavigationMenuLink</code>。
         </span>
       `,
     },
@@ -651,11 +641,11 @@ See [this example](/docs/components/navigation-menu#with-client-side-routing) fo
       keys: ['ArrowRight', 'ArrowLeft'],
       description: `
         <span>
-          When <code>vertical</code> and focus is on an open
-          <code>NavigationMenuTrigger</code>, moves focus into its
+          当<code>vertical</code>并且焦点在打开的
+          <code>NavigationMenuTrigger</code>时，将焦点移动到
           <code>NavigationMenuContent</code>.
           <br />
-          Moves focus to the next / previous <code> NavigationMenuTrigger </code> or <code>NavigationMenuLink</code>.
+          将焦点移动到下一个/上一个<code>NavigationMenuTrigger</code>或<code>NavigationMenuLink</code>。
         </span>
       `,
     },
@@ -663,8 +653,8 @@ See [this example](/docs/components/navigation-menu#with-client-side-routing) fo
       keys: ['Home', 'End'],
       description: `
         <span>
-          Moves focus to the first/last <code>NavigationMenu.Trigger</code> or
-          <code>NavigationMenu.Link</code>.
+          将焦点移动到第一个/最后一个<code>NavigationMenu. Trigger</code>或
+          <code>NavigationMenu.Link</code>
         </span>
       `,
     },
@@ -672,8 +662,8 @@ See [this example](/docs/components/navigation-menu#with-client-side-routing) fo
       keys: ['Esc'],
       description: `
         <span>
-          Closes open <code>NavigationMenu.Content</code> and moves focus to its
-          <code>NavigationMenu.Trigger</code>.
+          关闭打开的<code>NavigationMenu. Content</code>并将焦点移动到其
+          <code>NavigationMenu.Trigger</code>。
         </span>
       `,
     },

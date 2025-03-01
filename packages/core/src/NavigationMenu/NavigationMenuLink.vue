@@ -12,7 +12,7 @@ export type NavigationMenuLinkEmits = {
   select: [payload: CustomEvent<{ originalEvent: Event }>]
 }
 export interface NavigationMenuLinkProps extends PrimitiveProps {
-  /** Used to identify the link as the currently active page. */
+  /** 用于将链接标识为当前活动页面。 */
   active?: boolean
 }
 </script>

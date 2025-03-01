@@ -7,7 +7,7 @@ import { useCollection } from '@/Collection'
 export interface MenubarRootProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
   modelValue?: string
-  /** The value of the menu that should be open when initially rendered. Use when you do not need to control the value state. */
+  /** 最初渲染时应打开的菜单的值。在不需要控制值状态时使用。 */
   defaultValue?: string
   /**
    * The reading direction of the combobox when applicable.

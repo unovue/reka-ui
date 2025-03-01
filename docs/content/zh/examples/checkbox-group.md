@@ -1,15 +1,15 @@
 ---
-title: Checkbox Group
+title: 复选框组
 tags:
-  - Checkbox
-  - Form controls
+  - 复选框
+  - 表单控件
 ---
 
-# Checkbox Group
+# 复选框组
 
 <Description>
 
-Rendering multiple Checkbox elements to form a group of checkboxes. The behavior is similar to having `v-model` for multiple native `input[type="checkbox"]`.
+呈现多个复选框元素以形成一组复选框。该行为类似于为多个原生 `input[type="checkbox"]` 提供 `v-model`。
 
 </Description>
 
@@ -19,8 +19,8 @@ Rendering multiple Checkbox elements to form a group of checkboxes. The behavior
 
 <ExampleSection>
 
-### Checkbox Group
+### 复选框组
 
-Renders when the checkbox is in a checked or indeterminate state. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+当复选框处于选中或不确定状态时呈现。您可以直接设置此元素的样式，也可以将其用作包装器来放入图标，或两者兼而有之。
 
 </ExampleSection>

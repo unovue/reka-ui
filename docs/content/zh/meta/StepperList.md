@@ -1,16 +1,14 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwrite by <code>asChild</code></p>\n',
+    'description': '<p>此组件应呈现为的元素或组件。可以被<Code>asChild</Code>覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://reka-ui.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>Read our <a href=\'https://reka-ui.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   }

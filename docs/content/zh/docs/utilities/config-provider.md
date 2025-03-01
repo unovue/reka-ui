@@ -1,25 +1,25 @@
 ---
-title: Config Provider
-description: Wraps your app to provide global configurations.
+title: Config Provider 配置下发
+description: 包装您的应用程序以提供全局配置。
 ---
 
-# Config Provider
+# Config Provider 配置下发
 
 <Description>
-Wraps your app to provide global configurations.
+包装您的应用程序以提供全局配置。
 </Description>
 
 <Highlights
   :features="[
-    'Enables all primitives to inherit global reading direction.',
-    'Enables changing the behavior of scroll body when setting body lock.',
-    'Much more controls to prevent layout shifts.',
+    '使所有 primitives 都能继承全局读取方向。',
+    '允许在设置主体锁定时更改滚动主体的行为。',
+    '更多控件可防止布局偏移。',
   ]"
 />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup lang="ts">
@@ -33,21 +33,21 @@ import { ConfigProvider } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Config Provider
 
-When creating localized apps that require right-to-left (RTL) reading direction, you need to wrap your application with the `ConfigProvider` component to ensure all of the primitives adjust their behavior based on the `dir` prop.
+当创建需要从右到左 （RTL） 读取方向的本地化应用程序时，你需要使用 `ConfigProvider` 组件包装你的应用程序，以确保所有 primitives 都根据 `dir` 属性调整它们的行为。
 
-You can also change the global behavior of `bodylock` for components such as `Alert`, `DropdownMenu` and etc to fit your layout to prevent any [content shifts](https://github.com/unovue/radix-vue/issues/385).
+您还可以更改 `Alert`、`DropdownMenu` 等组件的 `bodylock` 的全局行为，以适应您的布局，以防止任何[内容偏移](https://github.com/unovue/radix-vue/issues/385)。
 
-<!-- @include: @/meta/ConfigProvider.md -->
+<!-- @include: @/zh/meta/ConfigProvider.md -->
 
-## Example
+## 示例
 
-Use the config provider.
+使用 config provider.
 
-Set global direction to `rtl`, and scroll body behavior to `false` (will not set any padding/margin).
+将全局方向设置为 `rtl`，并将滚动行为（scroll body behavior）设置为 `false`（不会设置任何填充/边距）。
 
 ```vue
 <script setup lang="ts">
@@ -64,11 +64,11 @@ import { ConfigProvider } from 'reka-ui'
 </template>
 ```
 
-## Hydration issue (Vue < 3.5)
+## 水合问题 （View < 3.5）
 
-We expose a temporary workaround to allow current Nuxt (with version >3.10) project fix the current hydration issue by using [`useId`](https://nuxt.com/docs/api/composables/use-id) provided by Nuxt.
+我们公开了一个临时解决方法，允许当前的 Nuxt（版本 >3.10）项目使用 Nuxt 提供的 [`useId`](https://nuxt.com/docs/api/composables/use-id) 修复当前的水合问题。
 
-> Inspired by [Headless UI](https://github.com/tailwindlabs/headlessui/pull/2959)
+> 受 [Headless UI](https://github.com/tailwindlabs/headlessui/pull/2959) 的启发
 
  ```vue
  <!-- in Nuxt's app.vue -->

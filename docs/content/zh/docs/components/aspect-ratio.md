@@ -1,35 +1,35 @@
 ---
 
-title: Aspect Ratio
-description: Displays content within a desired ratio.
+title: 横纵比
+description: 以所需比例显示内容。
 name: aspect-ratio
 ---
 
-# Aspect Ratio
+# 横纵比
 
 <Description>
-Displays content within a desired ratio.
+以所需比例显示内容。
 </Description>
 
 <ComponentPreview type="demo" name="AspectRatio" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Accepts any custom ratio.'
+    '接受任何自定义比例。'
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup>
@@ -41,10 +41,10 @@ import { AspectRatio } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains the content you want to constrain to a given ratio.
+包含你想要约束为给定比例的内容。
 
-<!-- @include: @/meta/AspectRatio.md -->
+<!-- @include: @/zh/meta/AspectRatio.md -->

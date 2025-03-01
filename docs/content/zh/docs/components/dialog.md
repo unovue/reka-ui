@@ -1,40 +1,40 @@
 ---
 
-title: Dialog
-description: A window overlaid on either the primary window or another dialog window, rendering the content underneath inert.
+title: 对话框
+description: 一个覆盖在主窗口或另一个对话框窗口上的窗口，使下面的内容无效。
 name: dialog
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/dialogmodal
 ---
 
-# Dialog
+# 对话框
 
 <Description>
-A window overlaid on either the primary window or another dialog window, rendering the content underneath inert.
+一个覆盖在主窗口或另一个对话框窗口上的窗口，使下面的内容无效。
 </Description>
 
 <ComponentPreview name="Dialog" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Supports modal and non-modal modes.',
-    'Focus is automatically trapped when modal.',
-    'Can be controlled or uncontrolled.',
-    '<span> Manages screen reader announcements with <Code>Title</Code> and<Code>Description</Code> components.</span>',
-    'Esc closes the component automatically.',
+    '支持模态和非模态模式',
+    '模态时自动捕获焦点',
+    '可以是受控的或非受控的',
+    '<span>使用<Code>Title</Code>和<Code>Description</Code>组件管理屏幕阅读器声明</span>',
+    'Esc 可自动关闭该组件',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -65,19 +65,19 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a dialog
+包含对话框的所有部分
 
-<!-- @include: @/meta/DialogRoot.md -->
+<!-- @include: @/zh/meta/DialogRoot.md -->
 
 ### Trigger
 
-The button that opens the dialog
+打开对话框的按钮
 
-<!-- @include: @/meta/DialogTrigger.md -->
+<!-- @include: @/zh/meta/DialogTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -90,17 +90,17 @@ The button that opens the dialog
 
 ### Portal
 
-When used, portals your overlay and content parts into the `body`.
+使用时，将您的覆盖和内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/DialogPortal.md -->
+<!-- @include: @/zh/meta/DialogPortal.md -->
 
 ### Overlay
 
-A layer that covers the inert portion of the view when the dialog is open.
+打开对话框时覆盖视图惰性部分的层。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/DialogOverlay.md -->
+<!-- @include: @/zh/meta/DialogOverlay.md -->
 
 <DataAttributesTable
   :data="[
@@ -113,11 +113,11 @@ A layer that covers the inert portion of the view when the dialog is open.
 
 ### Content
 
-Contains content to be rendered in the open dialog
+包含要在打开对话框中呈现的内容
 
 <PresenceCallout />
 
-<!-- @include: @/meta/DialogContent.md -->
+<!-- @include: @/zh/meta/DialogContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -130,37 +130,37 @@ Contains content to be rendered in the open dialog
 
 ### Close
 
-The button that closes the dialog
+关闭对话框的按钮
 
-<!-- @include: @/meta/DialogClose.md -->
+<!-- @include: @/zh/meta/DialogClose.md -->
 
 ### Title
 
-An accessible title to be announced when the dialog is opened.
+对话框打开时声明的无障碍标题。
 
-If you want to hide the title, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`.
+如果您想隐藏标题，请将其包装在我们的视觉隐藏实用组件，如 `<VisuallyHidden asChild>`。
 
-<!-- @include: @/meta/DialogTitle.md -->
+<!-- @include: @/zh/meta/DialogTitle.md -->
 
 ### Description
 
-An optional accessible description to be announced when the dialog is opened.
+可选的对话框打开时声明的无障碍描述。
 
-If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part and pass `:aria-describedby="undefined"` to `DialogContent`.
+如果您想隐藏描述，请将其包装在我们的 `Visual Hidden` 实用组件，如下所示 `<VisuallyHidden asChild>`。如果您想完全删除描述，请删除此部分并将 `:aria-describedby="undefined"` 传递给 `DialogContent`。
 
-<!-- @include: @/meta/DialogDescription.md -->
+<!-- @include: @/zh/meta/DialogDescription.md -->
 
-## Examples
+## 示例
 
-### Nested dialog
+### 嵌套对话框
 
-You can nest multiple layers of dialogs.
+您可以嵌套多层对话框。
 
 <ComponentPreview name="DialogNested" />
 
-### Close after asynchronous form submission
+### 异步表单提交后关闭
 
-Use the controlled props to programmatically close the Dialog after an async operation has completed.
+异步操作完成后，使用受控属性以程序方式关闭对话框。
 
 ```vue line=4,5,15-19,22-24
 <script setup>
@@ -194,9 +194,9 @@ const open = ref(false)
 </template>
 ```
 
-### Scrollable overlay
+### 可滚动覆盖层
 
-Move the content inside the overlay to render a dialog with overflow.
+将覆盖层内部的内容移动，以呈现带有溢出的对话框。
 
 ```vue
 // index.vue
@@ -241,7 +241,7 @@ import './styles.css'
 }
 ```
 
-However, there's a caveat to this approach, where user might click on the scrollbar and close the dialog unintentionally. There's no universal solution that would fix this issue for now, however you can add the following snippet to `DialogContent` to prevent closing of modal when clicking on scrollbar.
+然而，这种方法有一个需要注意的地方，即用户可能会意外地点击滚动条并关闭对话框。目前没有通用的解决方案来解决这个问题，但是你可以将以下代码片段添加到 `DialogContent` 中，以防止在点击滚动条时关闭模态框。
 
 ```vue
 <DialogContent
@@ -255,9 +255,9 @@ However, there's a caveat to this approach, where user might click on the scroll
 >
 ```
 
-### Custom portal container
+### 传送到自定义容器
 
-Customise the element that your dialog portals into.
+自定义对话框传送的元素。
 
 ```vue line=4,11,17
 <script setup>
@@ -281,19 +281,19 @@ const container = ref(null)
 </template>
 ```
 
-### Disable close on Interaction outside
+### 禁止在外部交互时关闭
 
-For example, if you have some global Toaster component that should not close the Dialog when clicking on it.
+例如，如果你有一些全局的通知组件，点击它时不应该关闭对话框。
 
 <ComponentPreview name="DialogToaster" />
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+遵循[对话框 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)。
 
-### Close icon button
+### 关闭图标按钮
 
-When providing an icon (or font icon), remember to label it correctly for screen reader users.
+当提供图标（或字体图标）时，记得为屏幕阅读器用户正确地标记它。
 
 ```html line=8-9
 <DialogRoot>
@@ -311,42 +311,42 @@ When providing an icon (or font icon), remember to label it correctly for screen
 </DialogRoot>
 ```
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: 'Opens/closes the dialog',
+      description: '打开/关闭对话框',
     },
     {
       keys: ['Enter'],
-      description: 'Opens/closes the dialog',
+      description: '打开/关闭对话框',
     },
     {
       keys: ['Tab'],
-      description: 'Moves focus to the next focusable element.',
+      description: '将焦点移动到下一个可聚焦元素。',
     },
     {
       keys: ['Shift + Tab'],
-      description: 'Moves focus to the previous focusable element.',
+      description: '将焦点移动到上一个可聚焦元素。',
     },
     {
       keys: ['Esc'],
-      description: '<span>Closes the dialog and moves focus to <Code>DialogTrigger</Code>.</span>',
+      description: '<span>关闭对话框并将焦点移动到<Code>DialogTrigger</Code>。</span>',
     },
   ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-### Abstract the overlay and the close button
+### 抽象化叠加层和关闭按钮
 
-This example abstracts the `DialogOverlay` and `DialogClose` parts.
+此示例抽象了 `DialogOverlay` 和 `DialogClose` 部分。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup>
@@ -361,7 +361,7 @@ import { Dialog, DialogContent, DialogTrigger } from './your-dialog'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```ts
 // your-dialog.ts

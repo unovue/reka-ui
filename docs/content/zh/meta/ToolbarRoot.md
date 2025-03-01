@@ -1,34 +1,32 @@
-<!-- This file was automatic generated. Do not edit it manually -->
-
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'description': '<p>当前元素应渲染为的元素或组件。可以被 <code>asChild</code> 覆盖</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>将默认渲染的元素更改为作为子元素传递的元素，合并它们的 props 和行为。</p>\n<p>阅读我们的<a href=\'../guides/composition\'>合成</a>指南了解更多详情。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'dir',
-    'description': '<p>The reading direction of the combobox when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
+    'description': '<p>列表框的读取方向（如果适用）。<br/>如果省略，则从 <code>ConfigProvider</code>全局继承或采用 LTR（从左到右）读取模式。</p>\n',
     'type': '\'ltr\' | \'rtl\'',
     'required': false
   },
   {
     'name': 'loop',
-    'description': '<p>When <code>true</code>, keyboard navigation will loop from last tab to first, and vice versa.</p>\n',
+    'description': '<p>当<code>true</code>时，键盘导航将从最后一个选项卡循环到第一个选项卡，反之亦然。</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'orientation',
-    'description': '<p>The orientation of the toolbar</p>\n',
+    'description': '<p>工具栏的方向</p>\n',
     'type': '\'vertical\' | \'horizontal\'',
     'required': false,
     'default': '\'horizontal\''

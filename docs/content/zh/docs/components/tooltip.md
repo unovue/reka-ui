@@ -1,31 +1,31 @@
 ---
-title: Tooltip
-description: A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.
+title: 工具提示
+description: 当元素获得键盘焦点或鼠标悬停在元素上时，显示与元素相关的信息的弹出面板。
 name: tooltip
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/tooltip
 ---
 
-# Tooltip
+# 工具提示
 
 <Description>
-A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.
+当元素获得键盘焦点或鼠标悬停在元素上时，显示与元素相关的信息的弹出面板。
 </Description>
 
 <ComponentPreview name="Tooltip" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Provider to control display delay globally.',
-    'Opens when the trigger is focused or hovered.',
-    'Closes when the trigger is activated or when pressing escape.',
-    'Supports custom timings.']"
+    'Provider，用于全局控制显示延迟',
+    '当触发器聚焦或悬停时打开',
+    '当触发器被激活或按 escape 时关闭',
+    '支持自定义时间函数']"
 />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup lang="ts">
@@ -46,25 +46,25 @@ import { TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRo
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Provider
 
-Wraps your app to provide global functionality to your tooltips.
+包装您的应用程序以为您的工具提示提供全局功能。
 
-<!-- @include: @/meta/TooltipProvider.md -->
+<!-- @include: @/zh/meta/TooltipProvider.md -->
 
 ### Root
 
-Contains all the parts of a tooltip.
+包含工具提示的所有部分。
 
-<!-- @include: @/meta/TooltipRoot.md -->
+<!-- @include: @/zh/meta/TooltipRoot.md -->
 
 ### Trigger
 
-The button that toggles the tooltip. By default, the `TooltipContent` will position itself against the trigger.
+用于切换工具提示的按钮。默认情况下，`TooltipContent` 将自身定位在触发器上。
 
-<!-- @include: @/meta/TooltipTrigger.md -->
+<!-- @include: @/zh/meta/TooltipTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -77,17 +77,17 @@ The button that toggles the tooltip. By default, the `TooltipContent` will posit
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/TooltipPortal.md -->
+<!-- @include: @/zh/meta/TooltipPortal.md -->
 
 ### Content
 
-The component that pops out when the tooltip is open.
+工具提示打开时弹出的组件。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/TooltipContent.md -->
+<!-- @include: @/zh/meta/TooltipContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -110,38 +110,38 @@ The component that pops out when the tooltip is open.
   :data="[
     {
       cssVariable: '--reka-tooltip-content-transform-origin',
-      description: ' The <Code>transform-origin</Code> computed from the content and arrow positions/offsets',
+      description: ' 根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>',
     },
     {
       cssVariable: '--reka-tooltip-content-available-width',
-      description: 'The remaining width between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余宽度',
     },
     {
       cssVariable: '--reka-tooltip-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余高度',
     },
     {
       cssVariable: '--reka-tooltip-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-tooltip-trigger-height',
-      description: 'The height of the trigger',
+      description: '扳机的高度',
     },
   ]"
 />
 
 ### Arrow
 
-An optional arrow element to render alongside the tooltip. This can be used to help visually link the trigger with the `TooltipContent`. Must be rendered inside `TooltipContent`.
+一个可选的箭头元素，用于与工具提示一起呈现。这可用于帮助直观地将触发器与 `TooltipContent` 链接起来。必须在 `TooltipContent` 中。
 
-<!-- @include: @/meta/TooltipArrow.md -->
+<!-- @include: @/zh/meta/TooltipArrow.md -->
 
-## Examples
+## 示例
 
-### Configure globally
+### 全局配置
 
-Use the `Provider` to control `delayDuration` and `skipDelayDuration` globally.
+使用 `Provider` 全局控制 `delayDuration` 和 `skipDelayDuration`。
 
 ```vue line=6
 <script setup>
@@ -165,9 +165,9 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 </template>
 ```
 
-### Show instantly
+### 立即显示
 
-Use the `delayDuration` prop to control the time it takes for the tooltip to open.
+使用 `delayDuration` 属性来控制打开工具提示所需的时间。
 
 ```vue line=6
 <script setup>
@@ -182,12 +182,12 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 </template>
 ```
 
-### Displaying a tooltip from a disabled button
+### 显示已禁用按钮的工具提示
 
-Since disabled buttons don't fire events, you need to:
+由于禁用的按钮不会触发事件，因此您需要：
 
-- Render the `Trigger` as `span`.
-- Ensure the `button` has no `pointerEvents`.
+- 将 `Trigger` 渲染为 `span`。
+- 确保 `button` 没有  `pointerEvents`。
 
 ```vue line=7-11
 <script setup>
@@ -209,11 +209,11 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 </template>
 ```
 
-### Constrain the content size
+### 限制内容的大小
 
-You may want to constrain the width of the content so that it matches the trigger width. You may also want to constrain its height to not exceed the viewport.
+您可能希望限制内容的宽度，使其与触发器宽度匹配。您可能还希望将其高度限制为不超过视口。
 
-We expose several CSS custom properties such as `--reka-tooltip-trigger-width` and `--reka-tooltip-content-available-height` to support this. Use them to constrain the content dimensions.
+我们暴露了几个 CSS 自定义属性，例如 `--reka-tooltip-trigger-width` 和 `--reka-tooltip-content-available-height` 来支持这一点。使用它们来限制内容维度。
 
 ```vue line=10
  <!-- index.vue -->
@@ -244,9 +244,9 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 }
 ```
 
-### Origin-aware animations
+### 原点感知（Origin-aware）动画
 
-We expose a CSS custom property `--reka-tooltip-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
+我们暴露了一个 CSS 自定义属性 `--reka-tooltip-content-transform-origin`。使用它可以根据 `side`、`sideOffset`、`align`、`alignOffset` 和任何碰撞从其计算的原点对内容进行动画处理。
 
 ```vue line=9
  <!-- index.vue -->
@@ -283,9 +283,9 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 }
 ```
 
-### Collision-aware animations
+### 碰撞感知（Collision-aware）动画
 
-We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
+我们暴露 `data-side` 和 `data-align` 属性。它们的值将在运行时更改以反映碰撞。使用它们创建碰撞和方向感知动画。
 
 ```vue line=9
  <!-- index.vue -->
@@ -339,40 +339,40 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 }
 ```
 
-## Accessibility
+## 无障碍
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
 :data="[
 {
 keys: ['Tab'],
-description: 'Opens/closes the tooltip without delay.',
+description: '立即打开/关闭工具提示。',
 },
 {
 keys: ['Space'],
-description: 'If open, closes the tooltip without delay.',
+description: '如果打开，则立即关闭工具提示。',
 },
 {
 keys: ['Enter'],
-description: 'If open, closes the tooltip without delay.',
+description: '如果打开，则立即关闭工具提示。',
 },
 {
 keys: ['Escape'],
-description: 'If open, closes the tooltip without delay.',
+description: '如果打开，则立即关闭工具提示。',
 },
 ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-### Abstract parts and introduce a content prop
+### 抽象部件并引入 content prop
 
-This example abstracts all of the `Tooltip` parts and introduces a new `content` prop.
+此示例抽象了所有 `Tooltip` 部分，并引入了一个新的 `content` 属性。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -386,9 +386,9 @@ import { Tooltip } from './your-tooltip'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
-Use the [`asChild` prop](/docs/guides/composition) to convert the trigger part into a slottable area. It will replace the trigger with the child that gets passed to it.
+使用 [`asChild` 属性](/zh/docs/guides/composition)将触发器部分转换为可开槽区域。它会将触发器替换为传递给它的子组件。
 
 ```vue line=13-15
 <!-- your-tooltip.vue  -->

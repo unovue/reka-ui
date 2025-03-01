@@ -1,6 +1,6 @@
 ---
 title: Toast
-description: A succinct message that is displayed temporarily.
+description: 临时显示的简洁消息。
 name: toast
 aria: https://www.w3.org/TR/wai-aria/#aria-live
 ---
@@ -8,31 +8,31 @@ aria: https://www.w3.org/TR/wai-aria/#aria-live
 # Toast
 
 <Description>
-A succinct message that is displayed temporarily.
+临时显示的简洁消息。
 </Description>
 
 <ComponentPreview name="Toast" />
 
 <Highlights
   :features="[
-    'Automatically closes.',
-    'Pauses closing on hover, focus and window blur.',
-    'Supports hotkey to jump to toast viewport.',
-    'Supports closing via swipe gesture.',
-    'Exposes CSS variables for swipe gesture animations.',
-    'Can be controlled or uncontrolled.',
+    '自动关闭',
+    '在悬停、焦点和窗口失焦时暂停关闭',
+    '支持热键跳转到 toast 视口',
+    '支持通过滑动手势关闭',
+    '暴露滑动手势动画的 CSS 变量',
+    '可以是受控的或非受控的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup lang="ts">
@@ -53,27 +53,27 @@ import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, To
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Provider
 
-The provider that wraps your toasts and toast viewport. It usually wraps the application.
+包装 toast 和 toast 视区的提供程序。它通常包着应用程序。
 
-<!-- @include: @/meta/ToastProvider.md -->
+<!-- @include: @/zh/meta/ToastProvider.md -->
 
 ### Viewport
 
-The fixed area where toasts appear. Users can jump to the viewport by pressing a hotkey. It is up to you to ensure the discoverability of the hotkey for keyboard users.
+显示 toasts 的固定区域。用户可以通过按热键跳转到视区。由您来确保键盘用户可发现热键。
 
-<!-- @include: @/meta/ToastViewport.md -->
+<!-- @include: @/zh/meta/ToastViewport.md -->
 
 ### Root
 
-The toast that automatically closes. It should not be held open to [acquire a user response](/docs/components/toast#action).
+自动关闭的 toast。它不应保持打开状态以[获取用户响应](/zh/docs/components/toast#action)。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/ToastRoot.md -->
+<!-- @include: @/zh/meta/ToastRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -96,62 +96,62 @@ The toast that automatically closes. It should not be held open to [acquire a us
   :data="[
     {
       cssVariable: '--reka-toast-swipe-move-x',
-      description: 'The offset position of the toast when horizontally swiping',
+      description: '水平滑动时 toast 的偏移位置',
     },
     {
       cssVariable: '--reka-toast-swipe-move-y',
-      description: 'The offset position of the toast when vertically swiping',
+      description: '垂直滑动时 toast 的偏移位置',
     },
     {
       cssVariable: '--reka-toast-swipe-end-x',
       description:
-        'The offset end position of the toast after horizontally swiping',
+        '水平滑动后 toast 的偏移结束位置',
     },
     {
       cssVariable: '--reka-toast-swipe-end-y',
       description:
-        'The offset end position of the toast after vertically swiping',
+        '垂直滑动后 toast 的偏移结束位置',
     },
   ]"
 />
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/ToastPortal.md -->
+<!-- @include: @/zh/meta/ToastPortal.md -->
 
 ### Title
 
-An optional title for the toast
+toast 的可选标题。
 
-<!-- @include: @/meta/ToastTitle.md -->
+<!-- @include: @/zh/meta/ToastTitle.md -->
 
 ### Description
 
-The toast message.
+toast 消息。
 
-<!-- @include: @/meta/ToastDescription.md -->
+<!-- @include: @/zh/meta/ToastDescription.md -->
 
 ### Action
 
-An action that is safe to ignore to ensure users are not expected to complete tasks with unexpected side effects as a result of a [time limit](https://www.w3.org/TR/UNDERSTANDING-WCAG20/time-limits-required-behaviors.html).
+可以安全地忽略的动作，以确保用户不会因[时间限制](https://www.w3.org/TR/UNDERSTANDING-WCAG20/time-limits-required-behaviors.html)而完成具有意外副作用的任务。
 
-When obtaining a user response is necessary, portal an ["AlertDialog"](/docs/components/alert-dialog) styled as a toast into the viewport instead.
+当需要获取用户响应时，请改为将样式设置为 toast 的 [“AlertDialog”](/zh/docs/components/alert-dialog) 传送到视区中。
 
-<!-- @include: @/meta/ToastAction.md -->
+<!-- @include: @/zh/meta/ToastAction.md -->
 
 ### Close
 
-A button that allows users to dismiss the toast before its duration has elapsed.
+一个按钮，允许用户在 toast 持续时间结束之前关闭 toast。
 
-<!-- @include: @/meta/ToastClose.md -->
+<!-- @include: @/zh/meta/ToastClose.md -->
 
-## Examples
+## 示例
 
-### Custom hotkey
+### 自定义热键
 
-Override the default hotkey using the `event.code` value for each key from [keycode.info](https://keycode.info/).
+使用 [keycode.info](https://keycode.info/) 中每个键的 `event.code` 值覆盖默认热键。
 
 ```html line=3
 <ToastProvider>
@@ -160,9 +160,9 @@ Override the default hotkey using the `event.code` value for each key from [keyc
 </ToastProvider>
 ```
 
-### Custom duration
+### 自定义持续时间
 
-Customise the duration of a toast to override the provider value.
+自定义 toast 的持续时间以覆盖 provider 值。
 
 ```vue line=1
 <ToastRoot :duration="3000">
@@ -170,9 +170,9 @@ Customise the duration of a toast to override the provider value.
 </ToastRoot>
 ```
 
-### Duplicate toasts
+### 重复的 Toast
 
-When a toast must appear every time a user clicks a button, use state to render multiple instances of the same toast (see below). Alternatively, you can abstract the parts to create your own [imperative API](/docs/components/toast#imperative-api).
+如果每次用户单击按钮时都必须显示 Toast，请使用 state 渲染同一 Toast 的多个实例（请参阅下文）。或者，您可以抽象这些部分以创建自己的[命令式 API](/zh/docs/components/toast#imperative-api)。
 
 ```html line=2,7
 <div>
@@ -187,9 +187,9 @@ When a toast must appear every time a user clicks a button, use state to render 
 </div>
 ```
 
-### Animating swipe gesture
+### 为滑动手势添加动画效果
 
-Combine `--reka-toast-swipe-move-[x|y]` and `--reka-toast-swipe-end-[x|y]` CSS variables with `data-swipe="[start|move|cancel|end]"` attributes to animate a swipe to close gesture. Here's an example:
+将 `--reka-toast-swipe-move-[x|y]` 和 `--reka-toast-swipe-end-[x|y]` CSS 变量与 `data-swipe="[start|move|cancel|end]"` 属性结合使用，以动画形式呈现滑动关闭手势。下面是一个示例：
 
 ```html line=2
 <ToastProvider swipeDirection="right">
@@ -221,23 +221,23 @@ Combine `--reka-toast-swipe-move-[x|y]` and `--reka-toast-swipe-end-[x|y]` CSS v
 }
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [`aria-live` requirements](https://www.w3.org/TR/wai-aria/#aria-live).
+遵守 [`aria-live` 要求](https://www.w3.org/TR/wai-aria/#aria-live)。
 
-### Sensitivity
+### 敏感度
 
-Control the sensitivity of the toast for screen readers using the `type` prop.
+使用 `type` 属性控制屏幕阅读器的 toast 的敏感度。
 
-For toasts that are the result of a user action, choose `foreground`. Toasts generated from background tasks should use `background`.
+对于作为用户动作结果的 toast，请选择 `foreground`。从后台任务生成的 Toast 应使用 `background`。
 
-#### Foreground
+#### 前台
 
-Foreground toasts are announced immediately. Assistive technologies may choose to clear previously queued messages when a foreground toast appears. Try to avoid stacking distinct foreground toasts at the same time.
+前台 Toast 会立即声明。辅助技术可以选择在前台 toast 出现时清除以前排队的消息。尽量避免同时堆叠不同的前台 toast。
 
-#### Background
+#### 后台
 
-Background toasts are announced at the next graceful opportunity, for example, when the screen reader has finished reading its current sentence. They do not clear queued messages so overusing them can be perceived as a laggy user experience for screen reader users when used in response to a user interaction.
+后台 toast 将在下一个优雅机会时声明，例如，当屏幕阅读器读完其当前句子时。它们不会清除排队的消息，因此在用于响应用户交互时，过度使用它们可能会被视为屏幕阅读器用户的用户体验滞后。
 
 ```html line=1,6
 <ToastRoot type="foreground">
@@ -251,11 +251,11 @@ Background toasts are announced at the next graceful opportunity, for example, w
 </ToastRoot>
 ```
 
-### Alternative action
+### 替代动作
 
-Use the `altText` prop on the `Action` to instruct an alternative way of actioning the toast to screen reader users.
+使用 `Action` 上的 `altText` 属性，指定以另一种方式向屏幕阅读器用户操作 Toast。
 
-You can direct the user to a permanent place in your application where they can action it or implement your own custom hotkey logic. If implementing the latter, use `foreground` type to announce immediately and increase the duration to give the user ample time.
+您可以将用户定向到应用程序中的永久位置，他们可以在其中操作它或实现您自己的自定义热键逻辑。如果实现后者，请使用 `foreground` 类型立即声明并增加持续时间以给用户充足的时间。
 
 ```html line=4,10,12
 <ToastRoot type="background">
@@ -276,9 +276,9 @@ You can direct the user to a permanent place in your application where they can 
 </ToastRoot>
 ```
 
-### Close icon button
+### 关闭图标按钮
 
-When providing an icon (or font icon), remember to label it correctly for screen reader users.
+提供图标（或字体图标）时，请记住为屏幕阅读器用户正确标记它。
 
 ```html line=3-4
 <ToastRoot type="foreground">
@@ -289,55 +289,53 @@ When providing an icon (or font icon), remember to label it correctly for screen
 </ToastRoot>
 ```
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['F8'],
-      description: 'Focuses toasts viewport.',
+      description: '聚焦 Toast 视口。',
     },
     {
       keys: ['Tab'],
-      description: 'Moves focus to the next focusable element.',
+      description: '将焦点移动到下一个可聚焦元素。',
     },
     {
       keys: ['Shift + Tab'],
-      description: 'Moves focus to the previous focusable element.',
+      description: '将焦点移动到上一个可聚焦元素。',
     },
     {
       keys: ['Space'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          当焦点位于<Code>ToastAction</Code>或<Code>ToastClose</Code>上时，关闭 Toast。
         </span>`
     },
     {
       keys: ['Enter'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          当焦点位于<Code>ToastAction</Code>或<Code>ToastClose</Code>上时，关闭 Toast。
         </span>`
     },
     {
       keys: ['Esc'],
       description: `
         <span>
-          When focus is on a <Code>Toast</Code>, closes the toast
+          当焦点位于<Code>Toast</Code>上时，关闭 Toast。
         </span> `
     },
   ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-### Abstract parts
+### 抽象化部件
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -356,7 +354,7 @@ import Toast from './your-toast.vue'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```vue
 // your-toast.vue
@@ -388,11 +386,11 @@ defineProps<{
 </template>
 ```
 
-### Imperative API
+### 命令式 API
 
-Create your own imperative API to allow [toast duplication](/docs/components/toast#duplicate-toasts) if preferred.
+创建您自己的命令式 API，以允许 [toast 重复](/zh/docs/components/toast#duplicate-toasts)（如果愿意）。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -413,7 +411,7 @@ const savedRef = ref<InstanceType<typeof Toast>>()
 </template>
 ```
 
-#### Implementation
+#### 实现
 
 ```vue
 // your-toast.vue

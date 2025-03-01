@@ -1,32 +1,32 @@
 ---
 
-title: Separator
-description: Visually or semantically separates content.
+title: 分割线
+description: 在视觉上或语义上分隔内容。
 name: separator
 aria: https://www.w3.org/TR/wai-aria-1.2/#separator
 ---
 
-# Separator
+# 分割线
 
 <Description>
-Visually or semantically separates content.
+在视觉上或语义上分隔内容。
 </Description>
 
 <ComponentPreview name="Separator" />
 
-## Features
+## 特性
 
-<Highlights :features="['Supports horizontal and vertical orientations.']" />
+<Highlights :features="['支持水平和垂直方向']" />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -38,13 +38,13 @@ import { Separator } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-The separator.
+分割线。
 
-<!-- @include: @/meta/Separator.md -->
+<!-- @include: @/zh/meta/Separator.md -->
 
 <DataAttributesTable
   :data="[
@@ -55,6 +55,6 @@ The separator.
   ]"
 />
 
-## Accessibility
+## 无障碍
 
-Adheres to the [`separator` role requirements](https://www.w3.org/TR/wai-aria-1.2/#separator).
+遵守 [separator 角色要求](https://www.w3.org/TR/wai-aria-1.2/#separator)。

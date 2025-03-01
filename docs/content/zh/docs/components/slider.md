@@ -1,41 +1,41 @@
 ---
 
-title: Slider
-description: An input where the user selects a value from within a given range.
+title: 滑块
+description: 用户从给定范围内选择一个值的输入。
 name: slider
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/slidertwothumb
 ---
 
-# Slider
+# 滑块
 
 <Description>
-An input where the user selects a value from within a given range.
+用户从给定范围内选择一个值的输入。
 </Description>
 
 <ComponentPreview name="Slider" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Supports multiple thumbs.',
-    'Supports a minimum value between thumbs.',
-    'Supports touch or click on track to update value.',
-    'Supports Right to Left direction.',
-    'Full keyboard navigation.',
+    '可以是受控的或非受控的',
+    '支持多个滑块滑钮',
+    '支持滑块之间的最小值',
+    '支持触摸或单击轨道以更新值',
+    '支持从右到左的方向（RTL）',
+    '全键盘导航',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -52,19 +52,19 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a slider. It will render an `input` for each thumb when used within a `form` to ensure events propagate correctly.
+包含滑块的所有部分。在 `form` 中使用时，它将为每个滑钮呈现一个 `input`，以确保事件正确传播。
 
-<!-- @include: @/meta/SliderRoot.md -->
+<!-- @include: @/zh/meta/SliderRoot.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -75,15 +75,15 @@ Contains all the parts of a slider. It will render an `input` for each thumb whe
 
 ### Track
 
-The track that contains the `SliderRange`.
+包含 `SliderRange` 的轨道。
 
-<!-- @include: @/meta/SliderTrack.md -->
+<!-- @include: @/zh/meta/SliderTrack.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -94,15 +94,15 @@ The track that contains the `SliderRange`.
 
 ### Range
 
-The range part. Must live inside `SliderTrack`.
+范围部分。必须位于 `SliderTrack` 中。
 
-<!-- @include: @/meta/SliderRange.md -->
+<!-- @include: @/zh/meta/SliderRange.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -113,15 +113,15 @@ The range part. Must live inside `SliderTrack`.
 
 ### Thumb
 
-A draggable thumb. You can render multiple thumbs.
+一个可拖动的滑钮。您可以渲染多个滑钮。
 
-<!-- @include: @/meta/SliderThumb.md -->
+<!-- @include: @/zh/meta/SliderThumb.md -->
 
 <DataAttributesTable
   :data="[
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -130,11 +130,11 @@ A draggable thumb. You can render multiple thumbs.
   ]"
 />
 
-## Examples
+## 示例
 
-### Vertical orientation
+### 垂直方向
 
-Use the `orientation` prop to create a vertical slider.
+使用 `orientation` 属性创建一个垂直滑块。
 
 ```vue line=7
 // index.vue
@@ -194,9 +194,9 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 }
 ```
 
-### Create a range
+### 创建范围滑块
 
-Add multiple thumbs and values to create a range slider.
+添加多个滑钮和值以创建范围滑块。
 
 ```vue line=7,11-12
 // index.vue
@@ -215,9 +215,9 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 </template>
 ```
 
-### Define step size
+### 定义步长
 
-Use the `step` prop to increase the stepping interval.
+使用 `step` 属性来定义步长。
 
 ```vue line=7
 // index.vue
@@ -238,9 +238,9 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 </template>
 ```
 
-### Prevent thumb overlap
+### 防止滑钮重叠
 
-Use `minStepsBetweenThumbs` to avoid thumbs with equal values.
+使用 `minStepsBetweenThumbs` 可避免使用值相等的滑钮。
 
 ```vue line=10
 // index.vue
@@ -263,66 +263,66 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slidertwothumb).
+遵循 [Slider WAI-ARIA](https://www.w3.org/WAI/ARIA/apg/patterns/slidertwothumb) 设计模式。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['ArrowRight'],
-      description: '<span> Increments/decrements by the <Code>step</Code> value depending on <Code>orientation</Code>. </span>',
+      description: '<span> 根据<Code>orientation</Code>按<Code>step</Code>值递增/递减。 </span>',
     },
     {
       keys: ['ArrowLeft'],
-      description: '<span> Increments/decrements by the <Code>step</Code> value depending on <Code>orientation</Code>. </span>',
+      description: '<span> 根据<Code>orientation</Code>按<Code>step</Code>值递增/递减。 </span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> Increases the value by the <Code>step</Code> amount. </span>',
+      description: '<span> 按<Code>step</Code>量增加值。 </span>',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> Decreases the value by the <Code>step</Code> amount. </span>',
+      description: '<span> 按<Code>step</Code>量减少值。 </span>',
     },
     {
       keys: ['PageUp'],
-      description: '<span> Increases the value by a larger <Code>step</Code>. </span>',
+      description: '<span> 用更大的<Code>step</Code>增加值。</span>',
     },
     {
       keys: ['PageDown'],
-      description: '<span> Decreases the value by a larger <Code>step</Code>. </span>',
+      description: '<span> 用更大的<Code>step</Code>减少值。</span>',
     },
     {
       keys: ['Shift + ArrowUp'],
-      description: '<span> Increases the value by a larger <Code>step</Code>. </span>',
+      description: '<span> 用更大的<Code>step</Code>增加值。</span>',
     },
     {
       keys: ['Shift + ArrowDown'],
-      description: '<span> Decreases the value by a larger <Code>step</Code>. </span>',
+      description: '<span> 用更大的<Code>step</Code>减少值。</span>',
     },
     {
       keys: ['Home'],
-      description: 'Sets the value to its minimum.',
+      description: '设为最小值。',
     },
     {
       keys: ['End'],
-      description: 'Sets the value to its maximum.',
+      description: '设为最大值。',
     },
   ]"
 />
 
-## Custom APIs
+## 自定义 API
 
-Create your own API by abstracting the primitive parts into your own component.
+通过将原始部分抽象到自己的组件中创建你自己的 API。
 
-### Abstract all parts
+### 抽象所有部件
 
-This example abstracts all of the `Slider` parts so it can be used as a self closing element.
+此示例抽象了所有 `Slider` 部件，以便它可以用作自闭合元素。
 
-#### Usage
+#### 使用
 
 ```vue
 <script setup lang="ts">
@@ -334,7 +334,7 @@ import { Slider } from './your-slider'
 </template>
 ```
 
-#### Implementation
+#### 实现
 
  ```ts
 // your-slider.ts
@@ -366,11 +366,11 @@ const forward = useForwardPropsEmits(props, emits)
 </template>
 ```
 
-## Caveats
+## 警告
 
-### Mouse events are not fired
+### 不触发鼠标事件
 
-Because of [a limitation](https://github.com/unovue/reka-ui/blob/main/packages/core/src/Slider/SliderImpl.vue#L48-L49) we faced during implementation, the following example won't work as expected and the `@mousedown` and `@mousedown` event handlers won't be fired:
+由于我们在实现过程中遇到的[限制](https://github.com/unovue/reka-ui/blob/main/packages/radix-vue/src/Slider/SliderImpl.vue#L48-L49)，以下示例无法按预期工作，并且不会触发 `@mousedown` 和 `@mousedown` 事件处理程序：
 
 ```vue
 <SliderRoot
@@ -381,4 +381,4 @@ Because of [a limitation](https://github.com/unovue/reka-ui/blob/main/packages/c
 </SliderRoot>
 ```
 
-We recommend using pointer events instead (eg. `@pointerdown`, `@pointerup`). Regardless of the above limitation, these events are better suited for cross-platform/device handling as they are fired for all pointer input types (mouse, touch, pen, etc.).
+我们建议改用指针事件（例如。`@pointerdown`，`@pointerup`）。无论上述限制如何，这些事件都更适合跨平台/设备处理，因为它们是针对所有指针输入类型（鼠标、触摸、笔等）触发的。

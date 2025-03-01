@@ -1,39 +1,39 @@
 ---
 
-title: Hover Card
-description: For sighted users to preview content available behind a link.
+title: 悬停卡片
+description: 供视力正常的用户预览链接后面可用的内容。
 name: hover-card
 ---
 
-# HoverCard
+# 悬停卡片
 
 <Description>
-For sighted users to preview content available behind a link.
+供视力正常的用户预览链接后面可用的内容。
 </Description>
 
 <ComponentPreview name="HoverCard" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Can be controlled or uncontrolled.',
-    'Customize side, alignment, offsets, collision handling.',
-    'Optionally render a pointing arrow.',
-    'Supports custom open and close delays.',
-    'Ignored by screen readers.',
+    '可以是受控的或非受控的',
+    '自定义边、对齐方式、偏移量、冲突处理',
+    '（可选）渲染指向箭头',
+    '支持自定义打开和关闭延迟',
+    '被屏幕阅读器忽略',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -52,19 +52,19 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a hover card.
+包含悬停卡片的所有部分。
 
-<!-- @include: @/meta/HoverCardRoot.md -->
+<!-- @include: @/zh/meta/HoverCardRoot.md -->
 
 ### Trigger
 
-The link that opens the hover card when hovered.
+悬停时打开悬停卡片的链接。
 
-<!-- @include: @/meta/HoverCardTrigger.md -->
+<!-- @include: @/zh/meta/HoverCardTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -77,17 +77,17 @@ The link that opens the hover card when hovered.
 
 ### Portal
 
-When used, portals the content part into the `body`.
+使用时，将内容部分传送到 `body` 中。
 
-<!-- @include: @/meta/HoverCardPortal.md -->
+<!-- @include: @/zh/meta/HoverCardPortal.md -->
 
 ### Content
 
-The component that pops out when the hover card is open.
+悬停卡片打开时弹出的组件。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/HoverCardContent.md -->
+<!-- @include: @/zh/meta/HoverCardContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -110,38 +110,38 @@ The component that pops out when the hover card is open.
   :data="[
     {
       cssVariable: '--reka-hover-card-content-transform-origin',
-      description: 'The <Code>transform-origin</Code> computed from the content and arrow positions/offsets',
+      description: '根据内容和箭头位置/偏移量计算的<Code>transform-origin</Code>',
     },
     {
       cssVariable: '--reka-hover-card-content-available-width',
-      description: 'The remaining width between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余宽度',
     },
     {
       cssVariable: '--reka-hover-card-content-available-height',
-      description: 'The remaining height between the trigger and the boundary edge',
+      description: '触发器和边界边缘之间的剩余高度',
     },
     {
       cssVariable: '--reka-hover-card-trigger-width',
-      description: 'The width of the trigger',
+      description: '触发器的宽度',
     },
     {
       cssVariable: '--reka-hover-card-trigger-height',
-      description: 'The height of the trigger',
+      description: '扳机的高度',
     },
   ]"
 />
 
 ### Arrow
 
-An optional arrow element to render alongside the hover card. This can be used to help visually link the trigger with the `HoverCardContent`. Must be rendered inside `HoverCardContent`.
+一个可选的箭头元素，与悬停卡片一起呈现。这可用于帮助视觉上将触发器与 `HoverCardContent` 链接起来。必须在 `HoverCardContent` 中。
 
-<!-- @include: @/meta/HoverCardArrow.md -->
+<!-- @include: @/zh/meta/HoverCardArrow.md -->
 
-## Examples
+## 示例
 
-### Show instantly
+### 立即显示
 
-Use the `openDelay` prop to control the time it takes for the hover card to open.
+使用 `openDelay` 属性来控制悬停卡打开所需的时间。
 
 ```vue line=12
 <script setup>
@@ -162,11 +162,11 @@ import {
 </template>
 ````
 
-### Constrain the content size
+### 限制内容的大小
 
-You may want to constrain the width of the content so that it matches the trigger width. You may also want to constrain its height to not exceed the viewport.
+您可能希望限制内容的宽度，使其与触发器宽度匹配。您可能还希望将其高度限制为不超过视口。
 
-We expose several CSS custom properties such as `--reka-hover-card-trigger-width` and `--reka-hover-card-content-available-height` to support this. Use them to constrain the content dimensions.
+我们暴露了几个 CSS 自定义属性，例如 `--reka-hover-card-trigger-width` 和 `--reka-hover-card-content-available-height` 来支持这一点。使用它们来限制内容维度。
 
 ```vue line=10
 // index.vue
@@ -197,9 +197,9 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 }
 ```
 
-### Origin-aware animations
+### 原点感知（Origin-aware）动画
 
-We expose a CSS custom property `--reka-hover-card-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
+我们暴露了一个 CSS 自定义属性 `--reka-hover-card-content-transform-origin`。使用它可以根据 `side`、`sideOffset`、`align`、`alignOffset` 和任何碰撞从其计算的原点对内容进行动画处理。
 
 ```vue line=9
 // index.vue
@@ -236,9 +236,9 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 }
 ```
 
-### Collision-aware animations
+### 碰撞感知（Collision-aware）动画
 
-We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
+我们暴露 `data-side` 和 `data-align` 属性。它们的值将在运行时更改以反映碰撞。使用它们创建碰撞和方向感知动画。
 
 ```vue line=9
 // index.vue
@@ -292,18 +292,18 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 }
 ```
 
-## Accessibility
+## 无障碍
 
-The hover card is intended for sighted users only, the content will be inaccessible to keyboard users.
+悬停卡片仅供视力正常的用户使用，键盘用户无法访问内容。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable :data="[
     {
       keys: ['Tab'],
-      description: 'Opens/closes the hover card.',
+      description: '打开/关闭悬停卡片。',
     },
     {
       keys: ['Enter'],
-      description: 'Opens the hover card link',
+      description: '打开悬停卡片链接',
     }]" />

@@ -1,38 +1,38 @@
 ---
 
-title: Checkbox
-description: A control that allows the user to toggle between checked and not checked.
+title: 复选框
+description: 一个允许用户在选中和未选中状态之间切换的控件。
 name: checkbox
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/checkbox
 ---
 
-# Checkbox
+# 复选框
 
 <Description>
-A control that allows the user to toggle between checked and not checked.
+一个允许用户在选中和未选中状态之间切换的控件。
 </Description>
 
 <ComponentPreview name="Checkbox" />
 
-## Features
+## 特性
 
 <Highlights
   :features="[
-    'Supports indeterminate state.',
-    'Full keyboard navigation.',
-    'Can be controlled or uncontrolled.',
+    '支持不确定状态',
+    '全键盘导航',
+    '可以是受控的或非受控的',
   ]"
 />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import all parts and piece them together.
+导入所有零件并将它们拼凑在一起。
 
 ```vue
 <script setup>
@@ -53,13 +53,13 @@ import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the parts of a checkbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
+包含复选框的所有部分。当在 `form` 内使用时，`input` 也将呈现，以确保事件正确传播。
 
-<!-- @include: @/meta/CheckboxRoot.md -->
+<!-- @include: @/zh/meta/CheckboxRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -69,18 +69,18 @@ Contains all the parts of a checkbox. An `input` will also render when used with
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### Indicator
 
-Renders when the checkbox is in a checked or indeterminate state. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
+当复选框处于选中或不确定状态时呈现。你可以直接设置此元素的样式，也可以将其用作包装器来放入一个图标，或者两者兼而有之。
 
 <PresenceCallout />
 
-<!-- @include: @/meta/CheckboxIndicator.md -->
+<!-- @include: @/zh/meta/CheckboxIndicator.md -->
 
 <DataAttributesTable
   :data="[
@@ -90,22 +90,22 @@ Renders when the checkbox is in a checked or indeterminate state. You can style 
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
   ]"
 />
 
 ### CheckboxGroupRoot
 
-Wrapper around `CheckboxRoot` to support array of `modelValue`
+围绕 `CheckboxRoot` 的包装器，以支持 `modelValue` 数组。
 
-<!-- @include: @/meta/CheckboxGroupRoot.md -->
+<!-- @include: @/zh/meta/CheckboxGroupRoot.md -->
 
-## Examples
+## 示例
 
-### Indeterminate
+### 不确定状态
 
-You can set the checkbox to `indeterminate` by taking control of its state.
+你可以通过控制其状态将复选框设置为 `indeterminate` 状态。
 
 ```vue line=5,9-14,16-18
 <script setup>
@@ -138,17 +138,17 @@ const checked = ref('indeterminate')
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Adheres to the [tri-state Checkbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox).
+遵循[三态复选框 WAI-ARIA 设计模式](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox)。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Space'],
-      description: 'Checks/unchecks the checkbox',
+      description: '选中/取消选中复选框',
     },
   ]"
 />

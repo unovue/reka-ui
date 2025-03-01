@@ -1,33 +1,32 @@
 ---
 
-title: Toolbar
-description: A container for grouping a set of controls, such as buttons, toggle groups or dropdown menus.
+title: 工具栏
+description: 用于对一组控件（如按钮、工具栏组或下拉菜单）进行分组的容器。
 name: toolbar
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/toolbar
 ---
 
-# Toolbar
+# 工具栏
 
 <Description>
-A container for grouping a set of controls, such as buttons, Toolbar groups or
-dropdown menus.
+用于对一组控件（如按钮、工具栏组或下拉菜单）进行分组的容器。
 </Description>
 
 <ComponentPreview name="Toolbar" />
 
-## Features
+## 特性
 
-<Highlights :features="['Full keyboard navigation.']" />
+<Highlights :features="['全键盘导航']" />
 
-## Installation
+## 安装
 
-Install the component from your command line.
+从命令行安装组件。
 
 <InstallationTabs value="reka-ui" />
 
-## Anatomy
+## 组件解析
 
-Import the component.
+导入组件。
 
 ```vue
 <script setup lang="ts">
@@ -53,13 +52,13 @@ import {
 </template>
 ```
 
-## API Reference
+## API 参考
 
 ### Root
 
-Contains all the toolbar component parts.
+包含所有工具栏组件部件。
 
-<!-- @include: @/meta/ToolbarRoot.md -->
+<!-- @include: @/zh/meta/ToolbarRoot.md -->
 
 <DataAttributesTable
   :data="[
@@ -72,9 +71,9 @@ Contains all the toolbar component parts.
 
 ### Button
 
-A button item.
+按钮项。
 
-<!-- @include: @/meta/ToolbarButton.md -->
+<!-- @include: @/zh/meta/ToolbarButton.md -->
 
 <DataAttributesTable
   :data="[
@@ -87,15 +86,15 @@ A button item.
 
 ### Link
 
-A link item.
+链接项。
 
-<!-- @include: @/meta/ToolbarLink.md -->
+<!-- @include: @/zh/meta/ToolbarLink.md -->
 
 ### ToggleGroup
 
-A set of two-state buttons that can be toggled on or off.
+一组可以打开或关闭的双状态按钮。
 
-<!-- @include: @/meta/ToolbarToggleGroup.md -->
+<!-- @include: @/zh/meta/ToolbarToggleGroup.md -->
 
 <DataAttributesTable
   :data="[
@@ -108,9 +107,9 @@ A set of two-state buttons that can be toggled on or off.
 
 ### ToggleItem
 
-An item in the group.
+组中的项。
 
-<!-- @include: @/meta/ToolbarToggleItem.md -->
+<!-- @include: @/zh/meta/ToolbarToggleItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -120,7 +119,7 @@ An item in the group.
     },
     {
       attribute: '[data-disabled]',
-      values: 'Present when disabled',
+      values: '禁用时存在',
     },
     {
       attribute: '[data-orientation]',
@@ -131,9 +130,9 @@ An item in the group.
 
 ### Separator
 
-Used to visually separate items in the toolbar
+用于视觉上分隔工具栏中的项目
 
-<!-- @include: @/meta/ToolbarSeparator.md -->
+<!-- @include: @/zh/meta/ToolbarSeparator.md -->
 
 <DataAttributesTable
   :data="[
@@ -144,13 +143,13 @@ Used to visually separate items in the toolbar
   ]"
 />
 
-## Examples
+## 示例
 
-### Use with other primitives
+### 与其他 Primitives 一起使用
 
-All our primitives which expose a `Trigger` part, such as `Dialog`, `AlertDialog`, `Popover`, `DropdownMenu` can be composed within a toolbar by using the [`asChild` prop](/docs/guides/composition).
+我们所有 Primitives 暴露 `Trigger` 部件 ，例如 `Dialog`、`AlertDialog`、`Popover`、`DropdownMenu`，都可以使用 [`asChild` 属性](/zh/docs/guides/composition)在工具栏中组合。
 
-Here is an example using our `DropdownMenu` primitive.
+下面是一个使用 `DropdownMenu` 基元的示例。
 
 ```vue line=20-22
 <script setup lang="ts">
@@ -181,49 +180,49 @@ import {
 </template>
 ```
 
-## Accessibility
+## 无障碍
 
-Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) to manage focus movement among items.
+使用[浮动 tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) 管理项之间的焦点移动。
 
-### Keyboard Interactions
+### 键盘交互
 
 <KeyboardTable
   :data="[
     {
       keys: ['Tab'],
-      description: 'Moves focus to the first item in the group.',
+      description: '将焦点移动到组中的第一项。',
     },
     {
       keys: ['Space'],
-      description: 'Activates/deactivates the item.',
+      description: '激活/停用项目。',
     },
     {
       keys: ['Enter'],
-      description: 'Activates/deactivates the item.',
+      description: '激活/停用项目。',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> Moves focus to the next item depending on <Code>orientation</Code>.</span>',
+      description: '<span> 根据<Code>orientation</Code>将焦点移动到下一项。</span>',
     },
     {
       keys: ['ArrowRight'],
-      description: '<span> Moves focus to the next item depending on <Code>orientation</Code>.</span>',
+      description: '<span> 根据<Code>orientation</Code>将焦点移动到下一项。</span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> Moves focus to the previous item depending on <Code>orientation</Code> .</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移动到上一项。</span>',
     },
     {
       keys: ['ArrowLeft'],
-      description: '<span> Moves focus to the previous item depending on <Code>orientation</Code> .</span>',
+      description: '<span>根据<Code>orientation</Code>将焦点移动到上一项。</span>',
     },
     {
       keys: ['Home'],
-      description: '<span>Moves focus to the first item.</span>',
+      description: '<span>将焦点移至第一项。</span>',
     },
     {
       keys: ['End'],
-      description: '<span>Moves focus to the last item.</span>',
+      description: '<span>将焦点移至最后一项。</span>',
     },
   ]"
 />
