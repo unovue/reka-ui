@@ -2,8 +2,10 @@
 import { computed, watch } from 'vue'
 import { type SidebarItem, useSidebarControl } from '../composables/sidebar'
 import { useCurrentElement } from '@vueuse/core'
+import { withBase } from 'ufo'
 
 const props = defineProps<{
+  base?: string
   item: SidebarItem
 }>()
 const { isActiveLink } = useSidebarControl(computed(() => props.item))
@@ -25,8 +27,8 @@ watch(isActiveLink, () => {
     :class="{ 'is-active !bg-primary/10 !text-primary font-semibold': isActiveLink }"
   >
     <a
-      :href="item.link"
-      class="h-[2.15rem] px-4 inline-flex items-center w-full"
+      :href="base && item.link ? withBase(item.link, base) : item.link"
+      class="py-1 min-h-8 px-4 flex items-center w-full"
       v-html="item.text"
     />
   </div>

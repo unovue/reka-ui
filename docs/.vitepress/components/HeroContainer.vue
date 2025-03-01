@@ -49,13 +49,13 @@ watch(() => props.cssFramework, () => {
           for="view-code"
           class="font-medium text-sm"
         >
-          View code
+          {{ $t('view-code') }}
         </Label>
         <SwitchRoot
           id="view-code"
           v-model="isCodeView"
           class="w-[34px] h-5 ml-2 flex data-[state=unchecked]:bg-primary/50 data-[state=checked]:bg-primary rounded-full relative transition"
-          aria-label="View code"
+          :aria-label="$t('view-code')"
         >
           <SwitchThumb
             class="w-4 h-4 my-auto bg-white text-xs flex items-center justify-center shadow-xl rounded-full transition-transform translate-x-0.5 will-change-transform data-[state=checked]:translate-x-full"

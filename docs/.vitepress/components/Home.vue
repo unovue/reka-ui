@@ -12,6 +12,7 @@ import SliderDemo from '../../components/demo/Slider/tailwind/index.vue'
 import PinInputDemo from '../../components/demo/PinInput/tailwind/index.vue'
 import ProgressDemo from '../../components/demo/Progress/tailwind/index.vue'
 import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
+import { normalizeLink } from '../functions/utils'
 </script>
 
 <template>
@@ -26,46 +27,52 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
             <span class="group-hover:ml-3 group-focus:ml-3 ml-1 transition-[margin]">v2 Release!</span>
           </Chip>
           <h1 class="text-pretty text-center text-4xl font-bold sm:text-6xl sm:font-extrabold md:text-7xl text-foreground">
-            Craft accessible web apps with Vue
+            {{ $t('craft-accessible-web-apps-with-vue') }}
           </h1>
         </div>
-
-        <p class="max-w-[720px] text-pretty text-center text-lg md:text-xl md:leading-8 lg:leading-9 lg:text-2xl text-muted-foreground">
-          An open-source library with
-          <a
-            class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
-            href="/docs/guides/styling"
-          >
-            unstyled</a>,
-          <a
-            class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
-            href="/docs/guides/composition"
-          >
-            primitive
-          </a>
-          components,
-          accompanied by a variety of
-          <a
-            class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
-            href="/examples"
-          >
-            examples & use cases
-          </a>
-          ready to be integrated into your projects.
-        </p>
+        <i18n-t
+          keypath="an-open-source-library-with"
+          tag="p"
+          class="max-w-[720px] text-pretty text-center text-lg md:text-xl md:leading-8 lg:leading-9 lg:text-2xl text-muted-foreground"
+        >
+          <template #unstyled>
+            <a
+              class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
+              :href="normalizeLink('/docs/guides/styling')"
+            >
+              {{ $t('unstyled') }}
+            </a>
+          </template>
+          <template #primitive>
+            <a
+              class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
+              :href="normalizeLink('/docs/guides/composition')"
+            >
+              {{ $t('primitive') }}
+            </a>
+          </template>
+          <template #examples-and-use-cases>
+            <a
+              class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
+              :href="normalizeLink('/examples')"
+            >
+              {{ $t('examples-and-use-cases') }}
+            </a>
+          </template>
+        </i18n-t>
       </div>
       <div class="mb-12 flex max-w-[calc(100%-2rem)] flex-wrap items-center justify-center gap-4 md:mb-20">
         <a
           class="flex items-center justify-center gap-2 whitespace-nowrap rounded-lg py-2.5 px-5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
-          href="/docs/overview/getting-started"
+          :href="normalizeLink('/docs/overview/getting-started')"
         >
-          Get started
+          {{ $t('get-started') }}
         </a>
         <a
           class="group flex items-center justify-center gap-2 font-semibold text-foreground/70 hover:text-foreground whitespace-nowrap rounded-lg py-2.5 px-5 hover:bg-card border border-muted bg-muted/50"
-          href="/docs/components/checkbox"
+          :href="normalizeLink('/docs/components/checkbox')"
         >
-          Explore components
+          {{ $t('explore-components') }}
           <Icon icon="lucide:arrow-right" />
         </a>
       </div>
@@ -133,10 +140,10 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
     <div class="grid grid-cols-1 lg:grid-cols-5 md:h-[36rem] lg:h-96 gap-y-4 lg:gap-4">
       <div class="flex flex-col col-span-3 rounded-2xl border border-muted bg-card p-6 md:p-10 overflow-hidden relative">
         <div class="font-bold text-lg">
-          Accessibility out of the box.
+          {{ $t('accessibility-out-of-the-box') }}
         </div>
         <div class="text-muted-foreground">
-          Supports assistive technology
+          {{ $t('supports-assistive-technology') }}
         </div>
 
         <img
@@ -150,7 +157,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
               icon="lucide:shield-check"
               class="text-primary text-xl"
             />
-            <span>WAI-ARIA compliant</span>
+            <span>{{ $t('wai-aria-compliant') }}</span>
           </div>
 
           <div class="md:absolute font-medium text-sm text-muted-foreground md:translate-x-28 md:-translate-y-16 rounded-full border border-muted px-5 py-2.5 bg-background/50 backdrop-blur-lg flex items-center gap-2">
@@ -158,7 +165,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
               icon="lucide:keyboard"
               class="text-primary text-xl"
             />
-            <span>Keyboard navigation</span>
+            <span>{{ $t('keyboard-navigation') }}</span>
           </div>
 
           <div class="md:absolute font-medium text-sm text-muted-foreground md:-translate-x-20 md:translate-y-16 rounded-full border border-muted px-5 py-2.5 bg-background/50 backdrop-blur-lg flex items-center gap-2">
@@ -166,7 +173,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
               icon="lucide:text-cursor-input"
               class="text-primary text-xl"
             />
-            <span>Focus management</span>
+            <span>{{ $t('focus-management') }}</span>
           </div>
 
           <div class="md:absolute font-medium text-sm text-muted-foreground md:translate-x-44 md:translate-y-4 rounded-full border border-muted px-5 py-2.5 bg-background/50 backdrop-blur-lg flex items-center gap-2">
@@ -174,7 +181,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
               icon="lucide:view"
               class="text-primary text-xl"
             />
-            <span>Screen reader support</span>
+            <span>{{ $t('screen-reader-support') }}</span>
           </div>
         </div>
 
@@ -183,10 +190,10 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
       <div class="col-span-2 rounded-2xl border border-muted bg-card h-[22rem] md:h-auto p-6 md:p-10 relative overflow-hidden">
         <div>
           <div class="font-bold text-lg">
-            Save time. Ship faster.
+            {{ $t('save-time-ship-faster') }}
           </div>
           <div class="text-muted-foreground">
-            40+ Primitive Components
+            {{ $t('40-primitive-components') }}
           </div>
         </div>
 
@@ -206,10 +213,10 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
       <div class="col-span-2 rounded-2xl border border-muted bg-card h-96 md:h-auto p-6 md:p-10 relative overflow-hidden">
         <div class="absolute flex flex-col w-full">
           <div class="font-bold text-lg z-10 ">
-            Developer Experience First.
+            {{ $t('developer-experience-first') }}
           </div>
           <div class="text-muted-foreground">
-            Unstyled, Customizable, Familiar API
+            {{ $t('unstyled-customizable-familiar-api') }}
           </div>
 
           <div class="w-full h-full relative mt-8">
@@ -237,10 +244,10 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
       <div class="col-span-3 rounded-2xl border border-muted bg-card h-80 md:h-auto p-6 md:p-10 relative overflow-hidden">
         <div class="z-10 absolute">
           <div class="font-bold text-xl text-white">
-            Ready for an international audience
+            {{ $t('ready-for-an-international-audience') }}
           </div>
           <div class="text-muted-foreground">
-            RTL support, Locale, Numbering System
+            {{ $t('rtl-support-locale-numbering-system') }}
           </div>
         </div>
         <img
@@ -261,7 +268,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
             600k+
           </div>
           <div class="mt-1">
-            Monthly downloads
+            {{ $t('monthly-downloads') }}
           </div>
         </div>
 
@@ -270,7 +277,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
             130+
           </div>
           <div class="mt-1">
-            Contributors
+            {{ $t('contributors') }}
           </div>
         </div>
 
@@ -279,7 +286,7 @@ import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
             4k+
           </div>
           <div class="mt-1">
-            GitHub Stars
+            {{ $t('github-stars') }}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import { hyphenate } from '@vueuse/core'
 import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'reka-ui'
 import { computed } from 'vue'
+import { normalizeLink } from '../.vitepress/functions/utils'
 
 const props = defineProps<{
   name: string
@@ -11,11 +12,11 @@ const UTILITY_COMPONENT = ['ConfigProvider', 'VisuallyHidden', 'FocusScope']
 
 const href = computed(() => {
   if (UTILITY_COMPONENT.includes(props.name)) {
-    return `/docs/utilities/${hyphenate(props.name)}`
+    return normalizeLink(`/docs/utilities/${hyphenate(props.name)}`)
   }
   else {
     const [last, ...parts] = hyphenate(props.name).split('-').reverse()
-    return `/docs/components/${parts.reverse().join('-')}#${last}`
+    return normalizeLink(`/docs/components/${parts.reverse().join('-')}#${last}`)
   }
 })
 </script>

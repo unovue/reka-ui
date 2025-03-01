@@ -17,10 +17,10 @@ const props = defineProps<DataAttributesTableProps>()
     <ProseThead>
       <ProseTr>
         <ProseTh class="w-[45%]">
-          <span>CSS Variable</span>
+          <span>{{ $t('css-variable') }}</span>
         </ProseTh>
         <ProseTh class="w-[55%]">
-          <span>Description</span>
+          <span>{{ $t('description') }}</span>
         </ProseTh>
       </ProseTr>
     </ProseThead>

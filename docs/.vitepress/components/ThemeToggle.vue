@@ -4,14 +4,14 @@ import { useData } from 'vitepress'
 import { Icon } from '@iconify/vue'
 import { ref, watchPostEffect } from 'vue'
 
-const { isDark } = useData()
+const { isDark, theme } = useData()
 
 const switchTitle = ref('')
 
 watchPostEffect(() => {
   switchTitle.value = isDark.value
-    ? 'Switch to light theme'
-    : 'Switch to dark theme'
+    ? theme.value.lightModeSwitchTitle || 'Switch to light theme'
+    : theme.value.darkModeSwitchTitle || 'Switch to dark theme'
 })
 </script>
 

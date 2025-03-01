@@ -23,10 +23,10 @@ const props = defineProps<EmitsTableProps>()
     <ProseThead>
       <ProseTr>
         <ProseTh class="w-1/3">
-          <span>Emit</span>
+          <span>{{ $t('emit') }}</span>
         </ProseTh>
         <ProseTh>
-          <span>Payload</span>
+          <span>{{ $t('payload') }}</span>
         </ProseTh>
       </ProseTr>
     </ProseThead>

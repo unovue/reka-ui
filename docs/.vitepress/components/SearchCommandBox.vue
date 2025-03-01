@@ -13,7 +13,7 @@ const emits = defineEmits<{
   close: []
 }>()
 
-const { localeIndex } = useData()
+const { localeIndex, theme } = useData()
 
 const filterText = ref('')
 const enableNoResults = ref(false)
@@ -135,7 +135,7 @@ function formMarkRegex(terms: Set<string>) {
       <ListboxFilter
         v-model="filterText"
         class="w-full h-12 md:h-14 outline-none bg-transparent placeholder:text-muted-foreground text-sm flex-1"
-        placeholder="Search documentation"
+        :placeholder="theme.search?.options?.translations?.button?.buttonAriaLabel || 'Search documentation'"
         auto-focus
       />
       <DialogClose>
@@ -195,29 +195,29 @@ function formMarkRegex(terms: Set<string>) {
         v-if="filterText && !results.length && enableNoResults"
         class="flex items-center justify-center text-foreground p-16 text-sm"
       >
-        No results for "<strong>{{ filterText }}</strong>"
+        {{ theme.search?.options?.translations?.modal?.noResultsText || 'No results for' }} "<strong>{{ filterText }}</strong>"
       </li>
     </ListboxContent>
 
     <div class="py-4 px-6 prose prose-stone dark:prose-invert text-sm hidden md:flex items-center gap-4">
       <span class="inline-flex items-center gap-1 leading-4">
-        <kbd aria-label="Up arrow">
+        <kbd :aria-label="theme.search?.options?.translations?.modal?.footer.navigateUpKeyAriaLabel || 'Up arrow'">
           <Icon icon="lucide:arrow-up" />
         </kbd>
-        <kbd aria-label="Down arrow">
+        <kbd :aria-label="theme.search?.options?.translations?.modal?.footer.navigateDownKeyAriaLabel || 'Down arrow'">
           <Icon icon="lucide:arrow-down" />
         </kbd>
-        to navigate
+        {{ theme.search?.options?.translations?.modal?.footer?.navigateText || 'to navigate' }}
       </span>
       <span class="inline-flex items-center gap-1 leading-4">
         <kbd aria-label="Enter">
           enter
         </kbd>
-        to select
+        {{ theme.search?.options?.translations?.modal?.footer?.selectText || 'to select' }}
       </span>
       <span class="inline-flex items-center gap-1 leading-4">
         <kbd aria-label="Escape">esc</kbd>
-        to close
+        {{ theme.search?.options?.translations?.modal?.footer?.closeText || 'to close' }}
       </span>
     </div>
   </ListboxRoot>

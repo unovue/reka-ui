@@ -19,12 +19,12 @@ export const [injectTooltipProviderContext, provideTooltipProviderContext]
 
 export interface TooltipProviderProps {
   /**
-   * The duration from when the pointer enters the trigger until the tooltip gets opened.
+   * 从指针进入触发器到工具提示打开的持续时间。
    * @defaultValue 700
    */
   delayDuration?: number
   /**
-   * How much time a user has to enter another trigger without incurring a delay again.
+   * 用户必须输入另一个触发器而不再次产生延迟的时间。
    * @defaultValue 300
    */
   skipDelayDuration?: number

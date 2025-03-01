@@ -39,5 +39,16 @@
     "json",
     "jsonc",
     "yaml"
+  ],
+  "i18n-ally.sourceLanguage": "en",
+  "i18n-ally.displayLanguage": "en",
+  "i18n-ally.keystyle": "nested",
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "i18n-ally.localesPaths": [
+    "docs/locales"
+  ],
+  "i18n-ally.enabledFrameworks": [
+    "vue",
+    "i18n-tag"
   ]
 }

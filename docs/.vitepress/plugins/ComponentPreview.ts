@@ -56,7 +56,7 @@ export default function (md: MarkdownRenderer) {
         props[propName] = propValue
       }
 
-      const pathName = props.type === 'example' ? `../../components/examples/${props.name}` : `../../../components/demo/${props.name}`
+      const pathName = props.type === 'example' ? `../../../components/examples/${props.name}` : `../../../../components/demo/${props.name}`
       insertComponentImport(props.type === 'example' ? `import ${props.name} from '${pathName}/index.vue'` : `import ${props.name} from '${pathName}/tailwind/index.vue'`)
 
       const index = state.tokens.findIndex(i => i.content.match(regex))

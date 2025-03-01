@@ -6,11 +6,21 @@ import Navbar from '../components/Navbar.vue'
 // import HomePageDemo from '../components/HomePageDemo.vue'
 import Home from '../components/Home.vue'
 import { useScroll } from '@vueuse/core'
-import { toRefs } from 'vue'
+import { toRefs, watch } from 'vue'
 import { TooltipProvider } from 'reka-ui'
 import Showcase from './Showcase.vue'
+import { useI18n } from 'vue-i18n'
+import { normalizeLink } from '../functions/utils'
 
-const { site, theme, frontmatter } = useData()
+const { locale } = useI18n()
+const { site, theme, frontmatter, lang } = useData()
+
+watch(lang, (newLang) => {
+  locale.value = newLang
+}, {
+  immediate: true,
+})
+
 const { path } = toRefs(useRoute())
 const { arrivedState } = useScroll(globalThis.window)
 const { top } = toRefs(arrivedState)
@@ -26,7 +36,7 @@ const { top } = toRefs(arrivedState)
         <div class="max-w-[1440px] flex items-center justify-between mx-auto px-6">
           <div class="w-full justify-between md:justify-normal flex items-center gap-8">
             <a
-              href="/"
+              :href="normalizeLink('/')"
               class="flex items-center gap-2"
             >
               <img

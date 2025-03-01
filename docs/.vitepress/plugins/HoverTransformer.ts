@@ -44,7 +44,6 @@ export function createHoverTransformer(): ShikiTransformer {
     code(codeEl) {
       if (this.options.lang !== 'vue')
         return
-
       const component = Object.values(componentsObj).flat()
       // Build a map of tokens to their line and character position
       const tokensMap: [line: number, charStart: number, charEnd: number, token: Element | Text, value: string][] = []
@@ -59,7 +58,7 @@ export function createHoverTransformer(): ShikiTransformer {
 
               if (!contentMap.get(value)) {
                 try {
-                  const raw = readFileSync(join(__dirname, `../../content/meta/${value}.md`), 'utf8')
+                  const raw = readFileSync(join(__dirname, `../../content/en/meta/${value}.md`), 'utf8')
 
                   const content = ['PropsTable', 'EmitsTable', 'SlotsTable', 'MethodsTable']
                     .map(tag => extractAndTransformData(tag, raw))

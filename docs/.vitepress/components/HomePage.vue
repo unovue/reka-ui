@@ -13,7 +13,7 @@ import Contributors from './Contributors.vue'
             id="meet-the-team"
             class="opacity-50 font-medium pt-10 pb-2"
           >
-            Meet The Team
+            {{ $t('meet-the-team') }}
           </h2>
           <div class="w-full">
             <VPTeamMembers
@@ -25,16 +25,19 @@ import Contributors from './Contributors.vue'
             id="the-team"
             class="op50 font-medium pt-5 pb-2"
           >
-            Contributors
+            {{ $t('contributors') }}
           </h2>
-          <p class="text-lg max-w-200 text-center leading-7">
+          <i18n-t
+            keypath="join-thne-community-and-get-involved"
+            class="text-lg max-w-200 text-center leading-7"
+          >
             <Contributors />
             <br>
             <a
               href="https://chat.unovue.com"
               rel="noopener noreferrer"
-            >Join the community</a> and get involved!
-          </p>
+            >{{ $t('join-the-community') }}</a>
+          </i18n-t>
         </div>
       </main>
     </div>

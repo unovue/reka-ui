@@ -3,9 +3,11 @@ import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRo
 import { Icon } from '@iconify/vue'
 import { defineAsyncComponent, ref } from 'vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
+import { useData } from 'vitepress'
 
 const SearchCommandBox = defineAsyncComponent(() => import('./SearchCommandBox.vue'))
 
+const { theme } = useData()
 const open = ref(false)
 const { meta_k } = useMagicKeys()
 
@@ -25,7 +27,7 @@ function handleClose() {
   <DialogRoot v-model:open="open">
     <DialogTrigger class="flex items-center space-x-2 text-md md:text-sm py-[7px] px-3 rounded-lg md:border border-muted md:bg-card hover:bg-muted text-muted-foreground">
       <Icon icon="lucide:search" />
-      <span class="hidden md:inline-flex w-24 lg:w-40 text-left">Search</span>
+      <span class="hidden md:inline-flex w-24 lg:w-40 text-left">{{ theme.search?.options?.translations?.button.buttonText || 'Search' }}</span>
       <span class="hidden md:inline-flex text-xs">
         <kbd>⌘ K</kbd>
       </span>
@@ -39,10 +41,10 @@ function handleClose() {
         class="fixed top-[10%] left-[50%] max-h-[85vh] w-[90vw] max-w-[750px] translate-x-[-50%] rounded-xl bg-card shadow-xl overflow-hidden focus:outline-none z-[100] border border-muted"
       >
         <DialogTitle class="sr-only">
-          Search documentation
+          {{ $t('search-documentation') }}
         </DialogTitle>
         <DialogDescription class="sr-only">
-          Show related results based on search term
+          {{ $t('show-related-results-based-on-search-term') }}
         </DialogDescription>
 
         <SearchCommandBox

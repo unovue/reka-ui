@@ -58,7 +58,7 @@ primitiveComponents.forEach((componentPath) => {
   const componentName = parse(componentPath).name
   const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath))
 
-  const metaDirPath = resolve(__dirname, '../content/meta')
+  const metaDirPath = resolve(__dirname, '../en/content/meta')
   // if meta dir doesn't exist create
   if (!existsSync(metaDirPath))
     mkdirSync(metaDirPath)

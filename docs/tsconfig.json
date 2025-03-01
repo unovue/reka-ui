@@ -12,7 +12,7 @@
       "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
-    "types": ["unplugin-icons/types/vue", "vitepress/client", "vue"],
+    "types": ["unplugin-icons/types/vue", "vitepress/client", "vue", "@intlify/unplugin-vue-i18n/messages"],
     "strict": true,
     "declaration": false,
     "outDir": "dist",

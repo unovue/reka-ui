@@ -5,6 +5,7 @@ import DocSidebarItem from './DocSidebarItem.vue'
 import { Icon } from '@iconify/vue'
 
 defineProps<{
+  base?: string
   items: DefaultTheme.SidebarItem[]
 }>()
 </script>
@@ -32,6 +33,7 @@ defineProps<{
         <DocSidebarItem
           v-for="subitem in item.items"
           :key="subitem.text"
+          :base="base"
           :item="subitem"
         />
       </CollapsibleContent>
@@ -39,6 +41,7 @@ defineProps<{
 
     <DocSidebarItem
       v-else
+      :base="base"
       :item="item"
     />
   </div>

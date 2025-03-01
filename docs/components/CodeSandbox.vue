@@ -38,10 +38,10 @@ defineProps<{
       :value="makeCodeSandboxParams(name, sources)"
     >
 
-    <Tooltip :content="`Open ${name} in CodeSandbox`">
+    <Tooltip :content="$t('open-name-in-codesandbox', [name])">
       <button
         type="submit"
-        aria-label="Open on CodeSandbox"
+        :aria-label="$t('open-on-codesandbox')"
       >
         <Icon icon="ph-codesandbox-logo" />
       </button>

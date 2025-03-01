@@ -64,7 +64,7 @@ const showFooter = computed(
         id="doc-footer-aria-label"
         class="sr-only"
       >
-        Pager
+        {{ $t('pager') }}
       </span>
 
       <div class="w-full group">

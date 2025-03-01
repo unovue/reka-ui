@@ -4,6 +4,7 @@ import { type DefaultTheme, useData, useRoute } from 'vitepress'
 import { computed, ref, toRefs, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
+import { withBase } from 'ufo'
 import { flatten } from '../functions/flatten'
 import DocSidebarItem from '../components/DocSidebarItem.vue'
 
@@ -13,7 +14,10 @@ const { page, theme } = useData()
 const isSidebarOpen = ref(false)
 const sidebar = computed(() => (theme.value.sidebar as DefaultTheme.SidebarItem[]))
 
-const sectionTabs = computed(() => sidebar.value.map(val => ({ label: val.text, link: flatten(val.items ?? [], 'items').filter(i => !!i.link)?.[0].link, icon: val.icon })))
+const sectionTabs = computed(() => sidebar.value.map((val) => {
+  const _link = flatten(val.items ?? [], 'items').filter(i => !!i.link)?.[0].link
+  return { label: val.text, link: val.base && _link ? withBase(_link, val.base) : _link, icon: val.icon }
+}))
 
 const { arrivedState } = useScroll(globalThis.window)
 const { top } = toRefs(arrivedState)

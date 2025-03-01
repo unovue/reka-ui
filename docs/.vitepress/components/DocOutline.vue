@@ -37,7 +37,7 @@ useActiveAnchor(container, marker)
       class="font-bold text-sm mb-2 trunc"
       role="heading"
     >
-      On this page
+      {{ theme.outline?.label || 'On this page' }}
     </div>
 
     <div class="border-l border-muted">

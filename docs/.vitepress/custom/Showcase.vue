@@ -10,7 +10,7 @@ const { frontmatter } = useData()
     <div class="mx-auto w-full">
       <div class="mt-8 mb-16 md:mt-24 md:mb-24 flex flex-col">
         <h1 class="text-4xl lg:text-5xl font-bold">
-          Showcase
+          {{ $t('showcase') }}
         </h1>
         <h2 class="mt-2 md:mt-6 md:text-xl font-medium text-muted-foreground max-w-[640px]">
           {{ frontmatter.description }}
@@ -21,14 +21,14 @@ const { frontmatter } = useData()
           target="_blank"
           href="https://github.com/unovue/reka-ui/edit/main/docs/content/showcase.md"
         >
-          Add Showcase
+          {{ $t('add-showcase') }}
         </a>
       </div>
 
       <div class="flex flex-col gap-8 md:gap-12">
         <div>
           <h3 class="text-primary md:text-lg font-bold ml-2 inline-flex items-center group">
-            Packages
+            {{ $t('packages') }}
           </h3>
           <div class="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <CardLink
@@ -41,7 +41,7 @@ const { frontmatter } = useData()
 
         <div>
           <h3 class="text-primary md:text-lg font-bold ml-2 inline-flex items-center group">
-            Projects
+            {{ $t('projects') }}
           </h3>
           <div class="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <CardLink
@@ -54,7 +54,7 @@ const { frontmatter } = useData()
 
         <div v-if="frontmatter.starters && frontmatter.starters.length">
           <h3 class="text-primary md:text-lg font-bold ml-2 inline-flex items-center group">
-            Starters
+            {{ $t('starters') }}
           </h3>
           <div class="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <CardLink

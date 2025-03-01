@@ -3,14 +3,16 @@ import { computed } from 'vue'
 import { useEditLink } from '../composables/edit-link'
 import { Icon } from '@iconify/vue'
 import { discord, github, sponsor } from '../meta'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const editLink = useEditLink()
 
 const links = computed(() => [
   { label: editLink.value.text, url: editLink.value.url, icon: 'lucide:pencil-line' },
-  { label: 'Star on GitHub', url: github, icon: 'lucide:star' },
-  { label: 'Chat on Discord', url: discord, icon: 'lucide:messages-square' },
-  { label: 'Support the project', url: sponsor, icon: 'lucide:hand-heart' },
+  { label: t('star-on-github'), url: github, icon: 'lucide:star' },
+  { label: t('chat-on-discord'), url: discord, icon: 'lucide:messages-square' },
+  { label: t('support-the-project'), url: sponsor, icon: 'lucide:hand-heart' },
 ])
 </script>
 
@@ -18,7 +20,7 @@ const links = computed(() => [
   <div>
     <div class="pt-4">
       <div class="font-bold text-sm mb-2">
-        Community
+        {{ $t('community') }}
       </div>
 
       <div class="space-y-3 lg:space-y-2 mt-4">
