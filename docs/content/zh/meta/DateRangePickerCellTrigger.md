@@ -36,5 +36,55 @@
     'name': 'disabled',
     'description': '<p>当前禁用状态</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'selected',
+    'description': '<p>当前选定状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'today',
+    'description': '<p>当前今日状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'outsideView',
+    'description': '<p>当前外部视图状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'outsideVisibleView',
+    'description': '<p>当前外部可见视图状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'unavailable',
+    'description': '<p>当前不可用状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'highlighted',
+    'description': '<p>当前高亮状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'highlightedStart',
+    'description': '<p>当前突出显示的开始状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'highlightedEnd',
+    'description': '<p>当前突出显示的结尾状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'selectionStart',
+    'description': '<p>当前选择开始状态</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'selectionEnd',
+    'description': '<p>当前选择结尾状态</p>\n',
+    'type': 'boolean'
   }
 ]" />
