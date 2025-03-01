@@ -44,7 +44,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Combobox
 
-- [Remove `filter-function` props](https://github.com/unovue/reka-ui/commit/ee8a3f2366a5c27c2bf1cc0a1ecbb0fea559a9f7) - `Combobox` has been refactored and improve to support better custom filtering. Read more.
+- [Remove `filter-function` props](https://github.com/unovue/reka-ui/commit/ee8a3f2366a5c27c2bf1cc0a1ecbb0fea559a9f7) - `Combobox` has been refactored and improved to support better custom filtering. Read more.
 
   ```vue
   <template>
@@ -72,14 +72,28 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 - [Rename controlled state to `v-model`](https://github.com/unovue/reka-ui/commit/87aa5ba6016fa7a98f02ea43062212906b2633a0) - Replace `v-model:checked`, `v-model:pressed` with more familiar API for form component.
 
-  ```vue
-  <template>
-    <CheckboxRoot v-model:checked="value" /> <!-- [!code --] -->
-    <CheckboxRoot v-model="value" /> <!-- [!code ++] -->
-  </template>
-  ```
+```vue
+<template>
+  <CheckboxRoot v-model:checked="value" /> <!-- [!code --] -->
+  <CheckboxRoot v-model="value" /> <!-- [!code ++] -->
+</template>
+```
 
-- [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously `VisuallyHidden` were position at the root node, causing style scoped to not be applied.
+- [Reposition `VisuallyHidden`](https://github.com/unovue/reka-ui/commit/107389a9c230d2c94232887b9cbe2710222564aa) - Previously, `VisuallyHidden` were positioned at the root node, causing style scoped to not be applied.
+
+### Menu CheckboxItem
+
+- Similar to the changes in form component, the API for binding `CheckboxItem` has been changed from `v-model:checked` to `v-model`.
+
+```vue
+<template>
+  <DropdownMenuCheckboxItem v-model:checked="value" /> <!-- [!code --] -->
+  <DropdownMenuCheckboxItem v-model="value" /> <!-- [!code ++] -->
+
+  <DropdownMenuCheckboxItem checked /> <!-- [!code --] -->
+  <DropdownMenuCheckboxItem :model-value="true" /> <!-- [!code ++] -->
+</template>
+```
 
 ### Pagination
 
@@ -115,7 +129,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Select
 
-- [`SelectValue` no longer render teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - Previous implmenentation of `SelectValue` will render the selected `SelectItem` via teleporting fragment. This causes SSR flickering, and it is unnecessarily computation.
+- [`SelectValue` no longer render teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - Previous implementation of `SelectValue` will render the selected `SelectItem` via teleporting fragment. This causes SSR flickering, and it is unnecessarily computation.
 
   ```vue
   <template>
@@ -124,3 +138,38 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
     </SelectValue>
   </template>
   ```
+
+### Presence
+
+To have better supports for SSR content, we also modify the logic around the usage of `forceMount` for component that utilize Presence:
+
+- `Accordion`
+- `Collapsible`
+- `Tabs`
+- `NavigationMenu`
+
+[`forceMount` will now render the component](https://github.com/unovue/reka-ui/commit/6f7f29abe79ac6c3ace117a398b6f7613ab6d2bc) eventhough the state is inactive. You are now required to handle the visibility logic of the component manually.
+
+```vue
+<template>
+  <TabsRoot
+    v-slot="{ modelValue }"
+    default-value="tab1"
+  >
+    <TabsContent
+      value="tab1"
+      force-mount
+      :hidden="modelValue !== 'tab1'"
+    >
+      …
+    </TabsContent>
+    <TabsContent
+      value="tab2"
+      force-mount
+      :hidden="modelValue !== 'tab2'"
+    >
+      …
+    </TabsContent>
+  </TabsRoot>
+</template>
+```

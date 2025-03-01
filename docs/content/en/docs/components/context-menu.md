@@ -425,7 +425,7 @@ import {
 
 You can add special styles to disabled items via the `data-disabled` attribute.
 
-```vue line=10
+```vue line=12
 <script setup lang="ts">
 import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
 </script>
@@ -461,7 +461,7 @@ import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot
 
 Use the `Separator` part to add a separator between items.
 
-```vue line=8,18,20
+```vue line=7,18,20
 <script setup lang="ts">
 import {
   ContextMenuContent,
@@ -666,7 +666,7 @@ import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot
 </template>
 ```
 
-```css
+```css line=3-4
 /* styles.css */
 .ContextMenuContent {
   width: var(--reka-context-menu-trigger-width);

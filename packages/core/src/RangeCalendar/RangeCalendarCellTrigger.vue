@@ -9,7 +9,7 @@ import {
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { useKbd } from '@/shared'
-import { isBetweenInclusive, toDate } from '@/date'
+import { getDaysInMonth, isBetweenInclusive, toDate } from '@/date'
 
 export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
   day: DateValue
@@ -22,6 +22,27 @@ export interface RangeCalendarCellTriggerSlot {
     dayValue: string
     /** Current disable state */
     disabled: boolean
+    /** Current selected state */
+    selected: boolean
+    /** Current today state */
+    today: boolean
+    /** Current outside view state */
+    outsideView: boolean
+    /** Current outside visible view state */
+    outsideVisibleView: boolean
+    /** Current unavailable state */
+    unavailable: boolean
+    /** Current highlighted state */
+    highlighted: boolean
+    /** Current highlighted start state */
+    highlightedStart: boolean
+    /** Current highlighted end state */
+    highlightedEnd: boolean
+    /** Current selection start state */
+    selectionStart: boolean
+    /** Current selection end state */
+    selectionEnd: boolean
+
   }) => any
 }
 </script>
@@ -47,7 +68,7 @@ const labelText = computed(() => rootContext.formatter.custom(toDate(props.day),
 }))
 
 const isDisabled = computed(() => rootContext.isDateDisabled(props.day))
-const isUnavailable = computed(() => rootContext.isDateUnavailable?.(props.day))
+const isUnavailable = computed(() => rootContext.isDateUnavailable?.(props.day) ?? false)
 const isSelectedDate = computed(() => rootContext.isSelected(props.day))
 const isSelectionStart = computed(() => rootContext.isSelectionStart(props.day))
 const isSelectionEnd = computed(() => rootContext.isSelectionEnd(props.day))
@@ -173,7 +194,17 @@ function handleArrowKey(e: KeyboardEvent) {
       const newCollectionItems: HTMLElement[] = parentElement
         ? Array.from(parentElement.querySelectorAll(SELECTOR))
         : []
-      newCollectionItems[newCollectionItems.length - Math.abs(newIndex)].focus()
+      if (!rootContext.pagedNavigation.value) {
+        // Placeholder is set to first month of the new page
+        const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
+        newCollectionItems[
+          numberOfDays - Math.abs(newIndex)
+        ].focus()
+        return
+      }
+      newCollectionItems[
+        newCollectionItems.length - Math.abs(newIndex)
+      ].focus()
     })
     return
   }
@@ -186,6 +217,14 @@ function handleArrowKey(e: KeyboardEvent) {
       const newCollectionItems: HTMLElement[] = parentElement
         ? Array.from(parentElement.querySelectorAll(SELECTOR))
         : []
+
+      if (!rootContext.pagedNavigation.value) {
+        // Placeholder is set to first month of the new page
+        const numberOfDays = getDaysInMonth(rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value - 1 }))
+        newCollectionItems[newCollectionItems.length - numberOfDays + newIndex - allCollectionItems.length].focus()
+        return
+      }
+
       newCollectionItems[newIndex - allCollectionItems.length].focus()
     })
   }
@@ -223,6 +262,16 @@ function handleArrowKey(e: KeyboardEvent) {
     <slot
       :day-value="dayValue"
       :disabled="isDisabled"
+      :today="isDateToday"
+      :selected="isSelectedDate"
+      :outside-view="isOutsideView"
+      :outside-visible-view="isOutsideVisibleView"
+      :unavailable="isUnavailable"
+      :highlighted="isHighlighted && !isUnavailable"
+      :highlighted-start="isHighlightStart"
+      :highlighted-end="isHighlightEnd"
+      :selection-start="isSelectionStart"
+      :selection-end="isSelectionEnd"
     >
       {{ dayValue }}
     </slot>

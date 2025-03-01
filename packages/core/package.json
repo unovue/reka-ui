@@ -1,17 +1,17 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "1.0.0-alpha.10",
+  "version": "2.0.2",
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
-  "homepage": "https://github.com/unovue/radix-vue",
+  "homepage": "https://github.com/unovue/reka-ui",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/unovue/radix-vue.git"
+    "url": "git+https://github.com/unovue/reka-ui.git"
   },
   "bugs": {
-    "url": "https://github.com/unovue/radix-vue/issues"
+    "url": "https://github.com/unovue/reka-ui/issues"
   },
   "keywords": [
     "ui",
@@ -33,12 +33,12 @@
     },
     "./date": {
       "import": {
-        "types": "./dist/date/index.d.ts",
-        "default": "./dist/date/index.js"
+        "types": "./dist/date.d.ts",
+        "default": "./dist/date.js"
       },
       "require": {
-        "types": "./dist/date/index.d.ts",
-        "default": "./dist/date/index.umd.cjs"
+        "types": "./dist/date.d.ts",
+        "default": "./dist/date.cjs"
       }
     },
     "./namespaced": {
@@ -96,7 +96,7 @@
     "type-gen": "vue-tsc --declaration  --emitDeclarationOnly",
     "test": "vitest",
     "test-update": "vitest -u",
-    "pub:release": "pnpm publish --access public"
+    "pub:release": "pnpm publish --no-git-checks --access public"
   },
   "peerDependencies": {
     "vue": ">= 3.2.0"
@@ -125,13 +125,13 @@
     "@types/node": "^20.17.17",
     "@vitejs/plugin-vue": "^5.1.4",
     "@vitejs/plugin-vue-jsx": "^4.0.1",
-    "@vitest/coverage-istanbul": "^2.1.8",
+    "@vitest/coverage-istanbul": "^2.1.9",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.5.1",
     "jsdom": "^25.0.1",
     "vite": "^5.4.12",
     "vite-plugin-dts": "^4.2.3",
-    "vitest": "^2.1.8",
+    "vitest": "^2.1.9",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^0.3.3",
     "vue": "3.5.13",

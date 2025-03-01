@@ -139,7 +139,7 @@ Triggers that set the page value to the last page
 
 You can add `PaginationEllipsis` as a visual cue for more previous and after items.
 
-```vue line=10-12
+```vue line=10,14
 <script setup lang="ts">
 import { PaginationEllipsis, PaginationList, PaginationListItem, PaginationRoot } from 'reka-ui'
 </script>

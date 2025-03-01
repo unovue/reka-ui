@@ -153,12 +153,6 @@ The button that remove all tags.
 
 ## Examples
 
-### With Combobox
-
-You can compose Tags input together with [Combobox](../components/combobox.html).
-
-<ComponentPreview name="TagsInputCombobox" />
-
 ### Paste behavior
 
 You can automatically add tags on paste by passing the `add-on-paste` prop.

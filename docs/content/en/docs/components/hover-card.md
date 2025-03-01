@@ -168,7 +168,7 @@ You may want to constrain the width of the content so that it matches the trigge
 
 We expose several CSS custom properties such as `--reka-hover-card-trigger-width` and `--reka-hover-card-content-available-height` to support this. Use them to constrain the content dimensions.
 
-```vue line=10
+```vue line=11
 // index.vue
 <script setup>
 import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'reka-ui'
@@ -201,8 +201,7 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 
 We expose a CSS custom property `--reka-hover-card-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
 
-```vue line=9
-// index.vue
+```vue line=8
 <script setup>
 import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'reka-ui'
 </script>
@@ -240,8 +239,7 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 
 We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
 
-```vue line=9
-// index.vue
+```vue line=8
 <script setup>
 import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'reka-ui'
 </script>

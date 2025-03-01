@@ -3,7 +3,7 @@ import type { ToggleProps } from '@/Toggle'
 import { isValueEqualOrExist, useForwardExpose } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
 
-export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'required'> {
+export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'required' | 'modelValue' | 'defaultValue'> {
   /**
    * A string value for the toggle group item. All items within a toggle group should use a unique value.
    */

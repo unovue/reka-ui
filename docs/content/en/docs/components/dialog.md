@@ -295,20 +295,22 @@ Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
 
 When providing an icon (or font icon), remember to label it correctly for screen reader users.
 
-```html line=8-9
-<DialogRoot>
-  <DialogTrigger />
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogContent>
-      <DialogTitle />
-      <DialogDescription />
-      <DialogClose aria-label="Close">
-        <span aria-hidden="true">×</span>
-      </DialogClose>
-    </DialogContent>
-  </DialogPortal>
-</DialogRoot>
+```vue line=9-11
+<template>
+  <DialogRoot>
+    <DialogTrigger />
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogContent>
+        <DialogTitle />
+        <DialogDescription />
+        <DialogClose aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </DialogClose>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
+</template>
 ```
 
 ### Keyboard Interactions
@@ -372,19 +374,19 @@ export { DialogRoot as Dialog, DialogTrigger } from 'reka-ui'
 ```vue
 <!-- DialogContent.vue -->
 <script setup lang="ts">
-import { DialogClose, DialogContent, type DialogContentEmits, type DialogContentProps, DialogOverlay, DialogPortal, useEmitAsProps, } from 'reka-ui'
+import { DialogClose, DialogContent, type DialogContentEmits, type DialogContentProps, DialogOverlay, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { Cross2Icon } from '@radix-icons/vue'
 
 const props = defineProps<DialogContentProps>()
 const emits = defineEmits<DialogContentEmits>()
 
-const emitsAsProps = useEmitAsProps(emits)
+const forwarded = useForwardPropsEmits(props, emits)
 </script>
 
 <template>
   <DialogPortal>
     <DialogOverlay />
-    <DialogContent v-bind="{ ...props, ...emitsAsProps }">
+    <DialogContent v-bind="forwarded">
       <slot />
 
       <DialogClose>

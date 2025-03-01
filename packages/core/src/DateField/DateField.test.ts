@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/dom'
 
 import { axe } from 'vitest-axe'
 import DateField from './story/_DateField.vue'
@@ -271,6 +270,57 @@ describe('dateField', async () => {
     }
   })
 
+  it(`preserve other segment when one segment's value is deleted`, async () => {
+    const { user, day, month, year } = setup({
+      dateFieldProps: {
+        modelValue: zonedDateTime,
+      },
+    })
+
+    const initialValues = {
+      month: month.innerHTML,
+      day: day.innerHTML,
+      year: year.innerHTML,
+    }
+
+    await user.click(month)
+    await user.keyboard(kbd.BACKSPACE)
+
+    expect(month).toHaveTextContent('mm')
+    expect(day).toHaveTextContent(initialValues.day)
+    expect(year).toHaveTextContent(initialValues.year)
+
+    await user.click(day)
+    await user.keyboard(kbd.BACKSPACE)
+    await user.keyboard(kbd.BACKSPACE)
+
+    expect(month).toHaveTextContent('mm')
+    expect(day).toHaveTextContent('dd')
+    expect(year).toHaveTextContent(initialValues.year)
+  })
+
+  it('should clear all segment when `modelValue` is set to nullish', async () => {
+    const { day, month, year, rerender } = setup({
+      dateFieldProps: {
+        modelValue: zonedDateTime.copy(),
+      },
+    })
+
+    expect(month).not.toHaveTextContent('mm')
+    expect(day).not.toHaveTextContent('dd')
+    expect(year).not.toHaveTextContent('yyyy')
+
+    await rerender({
+      dateFieldProps: {
+        modelValue: undefined,
+      },
+    })
+
+    expect(month).toHaveTextContent('mm')
+    expect(day).toHaveTextContent('dd')
+    expect(year).toHaveTextContent('yyyy')
+  })
+
   it('prevents interaction when `disabled`', async () => {
     const { user, getByTestId, day, month, year } = setup({
       dateFieldProps: {
@@ -342,8 +392,6 @@ describe('dateField', async () => {
     expect(year).toHaveFocus()
     await user.keyboard('{1111}')
     expect(year).toHaveTextContent('1111')
-
-    screen.logTestingPlaygroundURL()
 
     expect(input).toHaveAttribute('data-invalid')
 

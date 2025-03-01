@@ -1,7 +1,7 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "1.0.0-alpha.10",
+  "version": "2.0.2",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "license": "MIT",
@@ -31,7 +31,7 @@
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "bumpp": "^9.11.1",
-    "eslint": "^9.19.0",
+    "eslint": "^9.21.0",
     "lint-staged": "^15.4.3",
     "pnpm": "^9.15.0",
     "rimraf": "^6.0.1",

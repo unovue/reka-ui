@@ -236,4 +236,17 @@ describe('datePicker', async () => {
     expect(month).not.toHaveAttribute('tabindex')
     expect(year).not.toHaveAttribute('tabindex')
   })
+
+  it('should select and deselect a date', async () => {
+    const { user, trigger, getByTestId } = setup()
+
+    await user.click(trigger)
+    const calendar = getByTestId('calendar')
+    const targetCell = calendar.querySelector('div[data-reka-calendar-cell-trigger]:not([data-outside-view])')!
+
+    await user.click(targetCell)
+    expect(calendar.querySelector('[data-selected]')).toBeInTheDocument()
+    await user.click(targetCell)
+    expect(calendar.querySelector('[data-selected]')).not.toBeInTheDocument()
+  })
 })

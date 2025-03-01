@@ -30,7 +30,7 @@ const { top } = toRefs(arrivedState)
   <TooltipProvider>
     <div class="flex flex-col items-center min-h-screen h-full">
       <header
-        class="w-full py-4 sticky top-0 z-10 transition-all duration-500 h-[68px] md:h-full"
+        class="w-full py-4 sticky top-0 z-20 transition-all duration-500 h-[68px] md:h-full"
         :class="[top ? 'bg-transparent backdrop-blur-0' : 'bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/90']"
       >
         <div class="max-w-[1440px] flex items-center justify-between mx-auto px-6">

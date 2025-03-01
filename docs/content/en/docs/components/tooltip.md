@@ -143,7 +143,7 @@ An optional arrow element to render alongside the tooltip. This can be used to h
 
 Use the `Provider` to control `delayDuration` and `skipDelayDuration` globally.
 
-```vue line=6
+```vue line=7-8
 <script setup>
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
 </script>
@@ -216,7 +216,6 @@ You may want to constrain the width of the content so that it matches the trigge
 We expose several CSS custom properties such as `--reka-tooltip-trigger-width` and `--reka-tooltip-content-available-height` to support this. Use them to constrain the content dimensions.
 
 ```vue line=10
- <!-- index.vue -->
 <script setup>
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
 </script>
@@ -248,8 +247,7 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 
 We expose a CSS custom property `--reka-tooltip-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.
 
-```vue line=9
- <!-- index.vue -->
+```vue line=8
 <script setup>
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
 </script>
@@ -287,8 +285,7 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 
 We expose `data-side` and `data-align` attributes. Their values will change at runtime to reflect collisions. Use them to create collision and direction-aware animations.
 
-```vue line=9
- <!-- index.vue -->
+```vue line=8
 <script setup>
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
 </script>

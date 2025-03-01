@@ -51,6 +51,7 @@ export default defineConfig({
           { text: 'Styling', link: '/docs/guides/styling' },
           { text: 'Animation/Transition', link: '/docs/guides/animation' },
           { text: 'Composition', link: '/docs/guides/composition' },
+          { text: `Controlled State ${BadgeHTML('New')}`, link: '/docs/guides/controlled-state' },
           {
             text: 'Server side rendering',
             link: '/docs/guides/server-side-rendering',
@@ -70,13 +71,11 @@ export default defineConfig({
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
-          // { text: `Namespaced ${BadgeHTML('New')}`, link: '/docs/guides/namespaced-components' },
         ],
       },
       {
         text: 'Components',
         icon: 'lucide:box',
-        link: '/docs/components/',
         items: [
           {
             text: 'Form',
@@ -196,6 +195,7 @@ export default defineConfig({
                 text: 'useEmitAsProps',
                 link: '/docs/utilities/use-emit-as-props',
               },
+              { text: 'useFilter', link: '/docs/utilities/use-filter' },
               {
                 text: 'useForwardExpose',
                 link: '/docs/utilities/use-forward-expose',

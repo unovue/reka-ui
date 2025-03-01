@@ -44,7 +44,7 @@ const props = defineProps<PropsTableProps>()
       >
         <ProseTd>
           <div class="flex h-full items-start gap-1">
-            <ProseCodeInline class="text-[13px]">
+            <ProseCodeInline>
               {{ prop.name }}{{ prop.required ? "*" : null }}
             </ProseCodeInline>
           </div>

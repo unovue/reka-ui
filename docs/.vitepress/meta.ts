@@ -17,12 +17,12 @@ export const ogImage = `${ogUrl}og.jpg`
 
 /* Legacy Radix Vue */
 export const legacyVersion = 'Radix Vue v1.9.x'
-export const legacyLink = 'https://reka-ui.com/'
+export const legacyLink = 'https://radix-vue.com/'
 
 /* GitHub and social links */
-export const github = 'https://github.com/unovue/radix-vue/tree/v2'
-export const releases = 'https://github.com/unovue/radix-vue/releases'
-export const contributing = 'https://github.com/unovue/radix-vue/blob/main/CONTRIBUTING.md'
+export const github = 'https://github.com/unovue/reka-ui'
+export const releases = 'https://github.com/unovue/reka-ui/releases'
+export const contributing = 'https://github.com/unovue/reka-ui/blob/main/CONTRIBUTING.md'
 export const discord = 'https://chat.unovue.com'
 // export const mastodon = "https://elk.zone/m.webtoo.ls/@vitest";
 // export const twitter = "https://twitter.com/vitest_dev";

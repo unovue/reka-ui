@@ -272,7 +272,7 @@ An optional arrow element to render alongside the content. This can be used to h
 
 By default, `Select` will behave similarly to a native MacOS menu by positioning `SelectContent` relative to the active item. If you would prefer an alternative positioning approach similar to `Popover` or `DropdownMenu` then you can set `position` to `popper` and make use of additional alignment options such as `side`, `sideOffset` and more.
 
-```vue line=20
+```vue line=20-23
 // index.vue
 <script setup lang="ts">
 import {
@@ -309,7 +309,7 @@ When using `position="popper"` on `SelectContent`, you may want to constrain the
 
 We expose several CSS custom properties such as `--reka-select-trigger-width` and `--reka-select-content-available-height` to support this. Use them to constrain the content dimensions.
 
-```vue line=20
+```vue line=21
 // index.vue
 <script setup lang="ts">
 import {
@@ -353,7 +353,7 @@ import {
 
 You can add special styles to disabled items via the `data-disabled` attribute.
 
-```vue line=22
+```vue line=23-24
 // index.vue
 <script setup lang="ts">
 import {

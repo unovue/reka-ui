@@ -166,7 +166,7 @@ Contains the collapsible content for an item.
 
 Use the `defaultValue` prop to define the open item by default.
 
-```vue line=2
+```vue line=4
 <template>
   <AccordionRoot
     type="single"
@@ -186,7 +186,7 @@ Use the `defaultValue` prop to define the open item by default.
 
 Use the `collapsible` prop to allow all items to close.
 
-```vue line=2
+```vue line=4
 <template>
   <AccordionRoot
     type="single"
@@ -223,7 +223,7 @@ Set the `type` prop to `multiple` to enable opening multiple items at once.
 
 You can add extra decorative elements, such as chevrons, and rotate it when the item is open.
 
-```vue line=14
+```vue line=16
 // index.vue
 <script setup>
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui'

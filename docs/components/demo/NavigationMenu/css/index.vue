@@ -128,7 +128,7 @@ const currentTrigger = ref('')
       <NavigationMenuItem>
         <NavigationMenuLink
           class="NavigationMenuLink"
-          href="https://github.com/unovue/radix-vue"
+          href="https://github.com/unovue/reka-ui"
         >
           Github
         </NavigationMenuLink>

@@ -29,7 +29,7 @@ const activeType = computed(() => {
 
 <template>
   <div
-    class="text-sm rounded-xl border px-6 py-4 [&_p]:mb-0 my-4"
+    class="text-sm rounded-xl border px-6 py-4 last:[&>*]:mb-0 my-4"
     :class="activeType.class"
   >
     <div class="flex items-center gap-2 font-semibold mb-4">

@@ -19,6 +19,7 @@ export {
   default as ListboxItem,
   type ListboxItemProps,
   type ListboxItemEmits,
+  type SelectEvent as ListboxItemSelectEvent,
 } from './ListboxItem.vue'
 export {
   default as ListboxItemIndicator,

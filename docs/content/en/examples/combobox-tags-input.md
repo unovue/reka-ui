@@ -2,14 +2,14 @@
 title: Combobox TagsInput
 tags:
   - Combobox
-  - Form controls
+  - Tags Input
 ---
 
 # Combobox with TagsInput
 
 <Description>
 
-Rendering multiple Checkbox elements to form a group of checkboxes. The behavior is similar to having `v-model` for multiple native `input[type="checkbox"]`.
+Rendering [Combobox](/docs/components/combobox) with [Tags Input](/docs/components/tags-input).
 
 </Description>
 

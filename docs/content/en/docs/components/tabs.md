@@ -152,7 +152,7 @@ Contains the content associated with each trigger.
 
 You can create vertical tabs by using the `orientation` prop.
 
-```vue line=6
+```vue line=8
 <script setup>
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 </script>

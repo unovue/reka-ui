@@ -176,8 +176,7 @@ provideDatePickerRootContext({
     }
   },
   onPlaceholderChange(date: DateValue) {
-    if (date.compare(placeholder.value) === 0)
-      placeholder.value = date.copy()
+    placeholder.value = date.copy()
   },
 })
 </script>

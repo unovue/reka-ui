@@ -138,7 +138,8 @@ export function usePresence(
         // We avoid doing so during cleanup as the node may change but still exist.
         dispatch('ANIMATION_END')
 
-        ownerWindow?.clearTimeout(timeoutId)
+        if (timeoutId !== undefined)
+          ownerWindow?.clearTimeout(timeoutId)
         oldNode?.removeEventListener('animationstart', handleAnimationStart)
         oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
         oldNode?.removeEventListener('animationend', handleAnimationEnd)

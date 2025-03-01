@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import Chip from './Chip.vue'
 import AccordionDemo from '../../components/demo/Accordion/tailwind/index.vue'
 import HoverCardDemo from '../../components/demo/HoverCard/tailwind/index.vue'
 import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
@@ -17,10 +18,18 @@ import { normalizeLink } from '../functions/utils'
 <template>
   <section>
     <div class="grid justify-items-center gap-8 p-5 px-3 sm:px-4 md:gap-10 md:px-8">
-      <div class="mt-6 grid w-full max-w-4xl justify-items-center gap-[inherit] sm:mt-10 md:mt-20">
-        <h1 class="text-pretty text-center text-4xl font-bold sm:text-6xl sm:font-extrabold md:text-7xl text-foreground">
-          {{ $t('craft-accessible-web-apps-with-vue') }}
-        </h1>
+      <div class="mt-2 grid w-full max-w-4xl justify-items-center gap-[inherit] sm:mt-10 md:mt-20">
+        <div class="flex flex-col items-center gap-4">
+          <Chip href="/docs/overview/releases">
+            <div class="group-hover:scale-150 group-focus:scale-150 transition origin-bottom-left">
+              🎉
+            </div>
+            <span class="group-hover:ml-3 group-focus:ml-3 ml-1 transition-[margin]">v2 Release!</span>
+          </Chip>
+          <h1 class="text-pretty text-center text-4xl font-bold sm:text-6xl sm:font-extrabold md:text-7xl text-foreground">
+            {{ $t('craft-accessible-web-apps-with-vue') }}
+          </h1>
+        </div>
         <i18n-t
           keypath="an-open-source-library-with"
           tag="p"
@@ -44,7 +53,6 @@ import { normalizeLink } from '../functions/utils'
           </template>
           <template #examples-and-use-cases>
             <a
-
               class="relative inline-block text-foreground font-semibold before:absolute before:top-full before:inset-x-0 before:[translate:0_-0.1em] before:h-[2px] before:bg-primary hover:before:h-[4px]"
               :href="normalizeLink('/examples')"
             >
@@ -130,7 +138,7 @@ import { normalizeLink } from '../functions/utils'
 
   <section class="px-4 py-12 md:py-24 max-w-screen-xl mx-auto md:px-6">
     <div class="grid grid-cols-1 lg:grid-cols-5 md:h-[36rem] lg:h-96 gap-y-4 lg:gap-4">
-      <div class="flex flex-col col-span-3 rounded-2xl border border-muted p-6 md:p-10 overflow-hidden relative">
+      <div class="flex flex-col col-span-3 rounded-2xl border border-muted bg-card p-6 md:p-10 overflow-hidden relative">
         <div class="font-bold text-lg">
           {{ $t('accessibility-out-of-the-box') }}
         </div>
@@ -179,7 +187,7 @@ import { normalizeLink } from '../functions/utils'
 
         <div />
       </div>
-      <div class="col-span-2 rounded-2xl border border-muted h-[22rem] md:h-auto p-6 md:p-10 relative overflow-hidden">
+      <div class="col-span-2 rounded-2xl border border-muted bg-card h-[22rem] md:h-auto p-6 md:p-10 relative overflow-hidden">
         <div>
           <div class="font-bold text-lg">
             {{ $t('save-time-ship-faster') }}
@@ -202,7 +210,7 @@ import { normalizeLink } from '../functions/utils'
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-5 md:h-[36rem] lg:h-96 gap-y-4 lg:gap-4 mt-4">
-      <div class="col-span-2 rounded-2xl border border-muted h-96 md:h-auto p-6 md:p-10 relative overflow-hidden">
+      <div class="col-span-2 rounded-2xl border border-muted bg-card h-96 md:h-auto p-6 md:p-10 relative overflow-hidden">
         <div class="absolute flex flex-col w-full">
           <div class="font-bold text-lg z-10 ">
             {{ $t('developer-experience-first') }}
@@ -233,7 +241,7 @@ import { normalizeLink } from '../functions/utils'
         </div>
       </div>
 
-      <div class="col-span-3 rounded-2xl border border-muted h-80 md:h-auto p-6 md:p-10 relative overflow-hidden">
+      <div class="col-span-3 rounded-2xl border border-muted bg-card h-80 md:h-auto p-6 md:p-10 relative overflow-hidden">
         <div class="z-10 absolute">
           <div class="font-bold text-xl text-white">
             {{ $t('ready-for-an-international-audience') }}
@@ -252,12 +260,12 @@ import { normalizeLink } from '../functions/utils'
     </div>
   </section>
 
-  <section class="py-24 sm:py-40 w-full mx-auto px-6 bg-gradient-to-b from-background via-card/80 to-background">
+  <section class="py-24 sm:py-56 w-full mx-auto px-6 bg-gradient-to-b from-background via-card/80 to-background">
     <div class="max-w-screen-xl mx-auto">
       <div class="flex flex-col sm:flex-row items-center justify-center gap-12 sm:gap-20">
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            500k+
+            600k+
           </div>
           <div class="mt-1">
             {{ $t('monthly-downloads') }}
@@ -266,7 +274,7 @@ import { normalizeLink } from '../functions/utils'
 
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            100+
+            130+
           </div>
           <div class="mt-1">
             {{ $t('contributors') }}
@@ -275,7 +283,7 @@ import { normalizeLink } from '../functions/utils'
 
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            3k+
+            4k+
           </div>
           <div class="mt-1">
             {{ $t('github-stars') }}
@@ -284,4 +292,72 @@ import { normalizeLink } from '../functions/utils'
       </div>
     </div>
   </section>
+
+  <section class="px-4 py-12 md:py-32 max-w-screen-xl mx-auto md:px-6">
+    <h2 class="text-pretty text-center text-3xl font-bold sm:text-5xl sm:font-extrabold md:text-6xl text-foreground">
+      Ready to get started?
+    </h2>
+
+    <div class="mt-6 md:mt-12 grid md:grid-cols-3 gap-4 md:gap-8">
+      <a
+        href="/docs/overview/installation"
+        class="group rounded-2xl border border-muted bg-card hover:bg-muted/50 p-4 md:p-6 relative"
+      >
+        <div class="p-2 text-xl rounded-lg border-primary/30 text-primary bg-primary/10 w-max group-hover:scale-105 group-focus:scale-105 transition">
+          <Icon icon="lucide:wrench" />
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <h3 class="font-semibold text-lg">
+            Install and Setup
+          </h3>
+          <Icon icon="lucide:arrow-right" />
+        </div>
+        <p class="mt-2 text-muted-foreground group-hover:text-foreground group-focus:text-foreground">
+          Learn how to install and setup Reka UI in your project, and build and style a component.
+        </p>
+      </a>
+
+      <a
+        href="/docs/components/checkbox"
+        class="group rounded-2xl border border-muted bg-card hover:bg-muted/50 p-4 md:p-6 relative"
+      >
+        <div class="p-2 text-xl rounded-lg border-primary/30 text-primary bg-primary/10 w-max group-hover:scale-105 group-focus:scale-105 transition">
+          <Icon icon="lucide:box" />
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <h3 class="font-semibold text-lg">
+            Browse components
+          </h3>
+          <Icon icon="lucide:arrow-right" />
+        </div>
+        <p class="mt-2 text-muted-foreground group-hover:text-foreground group-focus:text-foreground">
+          Check out all the components and utilities offered by Reka UI.
+        </p>
+      </a>
+
+      <a
+        href="/examples/checkbox-group"
+        class="group rounded-2xl border border-muted bg-card hover:bg-muted/50 p-4 md:p-6 relative"
+      >
+        <div class="p-2 text-xl rounded-lg border-primary/30 text-primary bg-primary/10 w-max group-hover:scale-105 group-focus:scale-105 transition">
+          <Icon icon="lucide:swatch-book" />
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <h3 class="font-semibold text-lg">
+            Explore Examples
+          </h3>
+          <Icon icon="lucide:arrow-right" />
+        </div>
+        <p class="mt-2 text-muted-foreground group-hover:text-foreground group-focus:text-foreground">
+          Check out some fully styled examples showing what is possible with Reka UI.
+        </p>
+      </a>
+    </div>
+  </section>
+
+  <footer class="px-4 py-8 max-w-screen-xl mx-auto md:px-6 justify-end flex">
+    <div class="text-muted-foreground text-sm">
+      2025 @ unovue
+    </div>
+  </footer>
 </template>

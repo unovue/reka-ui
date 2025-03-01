@@ -71,7 +71,7 @@ You can style a component state by targeting its `data-state` attribute.
 
 You can style a component using scoped style. Be wary of teleported elements, as they require the use of [deep selectors](https://vuejs.org/api/sfc-css-features.html#deep-selectors) to be targeted.
 
-```vue{7}
+```vue{9}
 <script setup lang="ts">
 import { DropdownMenuRoot, DropdownMenuItem, ... } from "reka-ui";
 </script>

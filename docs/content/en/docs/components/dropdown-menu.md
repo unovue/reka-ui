@@ -436,7 +436,7 @@ import {
 
 You can add special styles to disabled items via the `data-disabled` attribute.
 
-```vue line=16
+```vue line=18
 <script setup lang="ts">
 import {
   DropdownMenuContent,
@@ -478,7 +478,7 @@ import {
 
 Use the `Separator` part to add a separator between items.
 
-```vue line=7 ,18,20
+```vue line=7,18,20
 <script setup lang="ts">
 import {
   DropdownMenuContent,
@@ -541,7 +541,7 @@ import {
 
 Use the `CheckboxItem` part to add an item that can be checked.
 
-```vue line=5 ,26-31
+```vue line=5,26-31
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
@@ -671,7 +671,7 @@ You may want to constrain the width of the content (or sub-content) so that it m
 
 We expose several CSS custom properties such as `--reka-dropdown-menu-trigger-width` and `--reka-dropdown-menu-content-available-height` to support this. Use them to constrain the content dimensions.
 
-```vue line=9
+```vue line=9-12
 <script setup lang="ts">
 import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 </script>

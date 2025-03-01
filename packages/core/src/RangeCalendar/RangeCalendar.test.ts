@@ -479,4 +479,87 @@ describe('rangeCalendar', () => {
       expect(weekdayEl).toHaveTextContent(weekday)
     }
   })
+
+  it('properly handles multiple months correctly', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        numberOfMonths: 2,
+      },
+    })
+
+    const selectedDays = getSelectedDays(calendar)
+    expect(selectedDays.at(0)).toHaveTextContent(String(calendarDateRange.start.day))
+    expect(selectedDays.at(-1)).toHaveTextContent(String(calendarDateRange.end.day))
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - February 1980')
+
+    const firstMonthDayDateStr = calendarDateRange.start.set({ day: 12 }).toString()
+    const firstMonthDay = getByTestId('date-1-12')
+    expect(firstMonthDay).toHaveTextContent('12')
+    expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
+
+    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDayDateStr = calendarDateRange.start.set({ day: 15, month: 2 }).toString()
+    expect(secondMonthDay).toHaveTextContent('15')
+    expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
+
+    const prevButton = getByTestId('prev-button')
+    const nextButton = getByTestId('next-button')
+
+    await user.click(nextButton)
+    expect(heading).toHaveTextContent('February - March 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+
+    await user.click(prevButton)
+    expect(heading).toHaveTextContent('January - February 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+
+    await user.click(prevButton)
+    expect(heading).toHaveTextContent('December 1979 - January 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+  })
+
+  it('properly handles `pagedNavigation` with multiple months', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        numberOfMonths: 2,
+        pagedNavigation: true,
+      },
+    })
+
+    const selectedDays = getSelectedDays(calendar)
+    expect(selectedDays.at(0)).toHaveTextContent(String(calendarDateRange.start.day))
+    expect(selectedDays.at(-1)).toHaveTextContent(String(calendarDateRange.end.day))
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - February 1980')
+
+    const firstMonthDayDateStr = calendarDateRange.start.set({ day: 12 }).toString()
+    const firstMonthDay = getByTestId('date-1-12')
+    expect(firstMonthDay).toHaveTextContent('12')
+    expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
+
+    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDayDateStr = calendarDateRange.start.set({ day: 15, month: 2 }).toString()
+    expect(secondMonthDay).toHaveTextContent('15')
+    expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
+
+    const prevButton = getByTestId('prev-button')
+    const nextButton = getByTestId('next-button')
+
+    await user.click(nextButton)
+    expect(heading).toHaveTextContent('March - April 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+
+    await user.click(prevButton)
+    expect(heading).toHaveTextContent('January - February 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+
+    await user.click(prevButton)
+    expect(heading).toHaveTextContent('November - December 1979')
+    expect(firstMonthDay).not.toBeInTheDocument()
+  })
 })

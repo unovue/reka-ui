@@ -45,6 +45,7 @@ export default defineConfig({
           { text: '设置样式', link: '/styling' },
           { text: '动画/渐变', link: '/animation' },
           { text: '组合式', link: '/composition' },
+          { text: `受控状态 ${BadgeHTML('New')}`, link: '/controlled-state' },
           { text: '服务端渲染', link: '/server-side-rendering' },
           { text: '命名空间', link: '/namespaced-components' },
           { text: '日期处理', link: '/dates' },
@@ -176,7 +177,7 @@ export default defineConfig({
             ],
           },
           {
-            text: '组合式',
+            text: '组合式函数',
             items: [
               { text: 'useId', link: '/use-id' },
               {
@@ -187,6 +188,7 @@ export default defineConfig({
                 text: 'useEmitAsProps',
                 link: '/use-emit-as-props',
               },
+              { text: 'useFilter', link: '/use-filter' },
               {
                 text: 'useForwardExpose',
                 link: '/use-forward-expose',

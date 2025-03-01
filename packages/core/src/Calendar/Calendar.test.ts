@@ -241,6 +241,46 @@ describe('calendar', async () => {
     expect(firstMonthDay).not.toBeInTheDocument()
   })
 
+  it('properly handles multiple months correctly', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateTime,
+        numberOfMonths: 2,
+      },
+    })
+
+    const selectedDay = getSelectedDay(calendar)
+    expect(selectedDay).toHaveTextContent(String(calendarDateTime.day))
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - February 1980')
+
+    const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
+    const firstMonthDay = getByTestId('date-1-12')
+    expect(firstMonthDay).toHaveTextContent('12')
+    expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
+
+    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
+    expect(secondMonthDay).toHaveTextContent('15')
+    expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
+
+    const prevButton = getByTestId('prev-button')
+    const nextButton = getByTestId('next-button')
+
+    await user.click(nextButton)
+    expect(heading).toHaveTextContent('February - March 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+
+    await user.click(prevButton)
+    expect(heading).toHaveTextContent('January - February 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+
+    await user.click(prevButton)
+    expect(heading).toHaveTextContent('December 1979 - January 1980')
+    expect(firstMonthDay).not.toBeInTheDocument()
+  })
+
   it('properly handles `pagedNavigation` with multiple months', async () => {
     const { getByTestId, calendar, user } = setup({
       calendarProps: {

@@ -117,9 +117,9 @@ function checkOverflowScroll(ele: Element): boolean {
     return true
   }
   else {
-    const parent = ele.parentNode as Element
+    const parent = ele.parentNode
 
-    if (!parent || parent.tagName === 'BODY')
+    if (!(parent instanceof Element) || parent.tagName === 'BODY')
       return false
 
     return checkOverflowScroll(parent)

@@ -1,5 +1,20 @@
 import { type MaybeRef, computed, unref } from 'vue'
 
+/**
+ * Provides locale-aware string filtering functions.
+ * Uses `Intl.Collator` for comparison to ensure proper Unicode handling.
+ *
+ * @param options - Optional collator options to customize comparison behavior.
+ *   See [Intl.CollatorOptions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/Collator#options) for details.
+ * @returns An object with methods to check if a string starts with, ends with, or contains a substring.
+ *
+ * @example
+ * const { startsWith, endsWith, contains } = useFilter();
+ *
+ * startsWith('hello', 'he'); // true
+ * endsWith('hello', 'lo'); // true
+ * contains('hello', 'ell'); // true
+ */
 export function useFilter(options?: MaybeRef<Intl.CollatorOptions>) {
   const computedOptions = computed(() => unref(options))
   const collator = computed(() => new Intl.Collator('en', { usage: 'search', ...computedOptions.value }))

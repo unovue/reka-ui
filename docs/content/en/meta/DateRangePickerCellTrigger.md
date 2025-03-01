@@ -38,5 +38,55 @@
     'name': 'disabled',
     'description': '<p>Current disable state</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'selected',
+    'description': '<p>Current selected state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'today',
+    'description': '<p>Current today state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'outsideView',
+    'description': '<p>Current outside view state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'outsideVisibleView',
+    'description': '<p>Current outside visible view state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'unavailable',
+    'description': '<p>Current unavailable state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'highlighted',
+    'description': '<p>Current highlighted state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'highlightedStart',
+    'description': '<p>Current highlighted start state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'highlightedEnd',
+    'description': '<p>Current highlighted end state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'selectionStart',
+    'description': '<p>Current selection start state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'selectionEnd',
+    'description': '<p>Current selection end state</p>\n',
+    'type': 'boolean'
   }
 ]" />

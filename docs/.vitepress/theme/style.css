@@ -2,8 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist[wght].ttf");
+}
+@font-face {
+  font-family: "GeistMono";
+  src: url("/fonts/GeistMono[wght].ttf");
+}
+
 @layer base {
    :root {
+		--font-geist-sans: "Geist";
+		--font-geist-mono: "GeistMono";
+
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
 
@@ -75,7 +87,7 @@
   }
 
 	body {
-		@apply bg-background text-foreground min-h-screen antialiased !font-inter;
+		@apply bg-background text-foreground min-h-screen antialiased;
 		/* font-feature-settings: "rlig" 1, "calt" 1; */
 		font-synthesis-weight: none;
     text-rendering: optimizeLegibility;

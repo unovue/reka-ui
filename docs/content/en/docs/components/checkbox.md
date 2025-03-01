@@ -95,7 +95,7 @@ Renders when the checkbox is in a checked or indeterminate state. You can style 
   ]"
 />
 
-### CheckboxGroupRoot
+### Group Root
 
 Wrapper around `CheckboxRoot` to support array of `modelValue`
 

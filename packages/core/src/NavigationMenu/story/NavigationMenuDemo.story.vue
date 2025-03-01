@@ -135,7 +135,7 @@ const currentTrigger = ref('')
             <NavigationMenuItem>
               <NavigationMenuLink
                 class="text-grass11 hover:bg-green3 focus:shadow-green7 block select-none rounded-[4px] px-3 py-2 text-sm font-medium leading-none no-underline outline-none focus:shadow-[0_0_0_2px]"
-                href="https://github.com/unovue/radix-vue"
+                href="https://github.com/unovue/reka-ui"
               >
                 GitHub
               </NavigationMenuLink>

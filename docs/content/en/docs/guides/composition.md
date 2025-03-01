@@ -1,21 +1,23 @@
 ---
 
 title: Composition
-description: Use the `asChild` prop to compose Radix's functionality onto alternative element types or your own Vue components.
+description: Use the `asChild` prop to compose Reka's functionality onto alternative element types or your own Vue components.
 ---
 
 # Composition
 
 <Description>
-Use the `asChild` prop to compose Radix's functionality onto alternative
+
+Use the `asChild` prop to compose Reka's functionality onto alternative
 element types or your own Vue components.
+
 </Description>
 
 All Reka UI parts that render a DOM element accept an `asChild` prop. When `asChild` is set to `true`, Reka UI will not render a default DOM element, instead passing the props and behavior required to make it functional to the first child of the slots.
 
 ## Changing the element type
 
-In the majority of cases you shouldn’t need to modify the element type as Radix has been designed to provide the most appropriate defaults. However, there are cases where it is helpful to do so.
+In the majority of cases you shouldn’t need to modify the element type as Reka has been designed to provide the most appropriate defaults. However, there are cases where it is helpful to do so.
 
 A good example is with `TooltipTrigger`. By default this part is rendered as a `button`, though you may want to add a tooltip to a link (`a` tag) as well. Let's see how you can achieve this using `asChild`:
 
@@ -34,7 +36,11 @@ import { TooltipRoot, TooltipTrigger, TooltipPortal } from "reka-ui";
 </template>
 ```
 
-> If you do decide to change the underlying element type, it is your responsibility to ensure it remains accessible and functional. In the case of `TooltipTrigger` for example, it must be a focusable element that can respond to pointer and keyboard events. If you were to switch it to a `div`, it would no longer be accessible.
+<Callout type="warning">
+
+If you do decide to change the underlying element type, it is your responsibility to ensure it remains accessible and functional. In the case of `TooltipTrigger` for example, it must be a focusable element that can respond to pointer and keyboard events. If you were to switch it to a `div`, it would no longer be accessible.
+
+</Callout>
 
 In reality, you will rarely modify the underlying DOM element like we've seen above. Instead it's more common to use your own Vue components. This is especially true for most `Trigger` parts, as you usually want to compose the functionality with the custom buttons and links in your design system.
 

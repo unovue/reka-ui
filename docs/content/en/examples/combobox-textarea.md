@@ -9,7 +9,7 @@ tags:
 
 <Description>
 
-Rendering [Combobox](/docs/components/combobox) as a textarea element to create an accessible multiline textboxt. Inserting specific characters triggers a popup with dynamic suggestions.
+Rendering [Combobox](/docs/components/combobox) as a textarea element to create an accessible multiline textbox. Inserting specific characters triggers a popup with dynamic suggestions.
 
 </Description>
 

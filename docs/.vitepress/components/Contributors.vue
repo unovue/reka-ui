@@ -17,6 +17,7 @@ function getInitials(name: string) {
       :key="name"
       :delay-duration="0"
       :disable-hoverable-content="true"
+      :data-id="name"
     >
       <TooltipTrigger as-child>
         <AvatarRoot as-child>

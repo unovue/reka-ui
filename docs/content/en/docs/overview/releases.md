@@ -9,13 +9,19 @@ description: Discover the latest release of Reka UI.
 Discover the latest release of Reka UI.
 </Description>
 
-[Latest releases on github](https://github.com/unovue/radix-vue/releases)
+[Latest releases on github](https://github.com/unovue/reka-ui/releases)
 
 ---
 
 ## 2.0 Changes
 
 ### ✨ New Features
+
+<Callout type="tip">
+
+We recommend reviewing the [migration guide](/docs/guides/migration) to make transitioning from v1 to v2 smooth.
+
+</Callout>
 
 #### Components
 - **TimeField**: Implement new TimeField component
@@ -79,5 +85,3 @@ Discover the latest release of Reka UI.
   - Refactor SelectValue rendering mechanism
 - **Arrow**: Improve polygon implementation
 - **Calendar**: Remove deprecated `step` prop
-
-We recommend reviewing the [migration guide](/docs/guides/migration) to make transitioning from v1 to v2 smooth.

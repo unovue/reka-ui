@@ -252,7 +252,8 @@ watch([startValue, locale], ([_startValue]) => {
   if (_startValue !== undefined) {
     startSegmentValues.value = { ...syncSegmentValues({ value: _startValue, formatter }) }
   }
-  else if (Object.values(startSegmentValues.value).every(value => value === null) || _startValue === undefined) {
+  // If segment has null value, means that user modified it, thus do not reset the segmentValues
+  else if (Object.values(startSegmentValues.value).every(value => value !== null) && _startValue === undefined) {
     startSegmentValues.value = { ...initialSegments }
   }
 })
@@ -278,7 +279,8 @@ watch([endValue, locale], ([_endValue]) => {
   if (_endValue !== undefined) {
     endSegmentValues.value = { ...syncSegmentValues({ value: _endValue, formatter }) }
   }
-  else if (Object.values(endSegmentValues.value).every(value => value === null) || _endValue === undefined) {
+  // If segment has null value, means that user modified it, thus do not reset the segmentValues
+  else if (Object.values(endSegmentValues.value).every(value => value !== null) && _endValue === undefined) {
     endSegmentValues.value = { ...initialSegments }
   }
 })

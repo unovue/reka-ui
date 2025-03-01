@@ -28,7 +28,7 @@ Check out the release note [here](/docs/overview/releases#_2-0-changes)
 
 <Callout type="tip">
 
-Curious about the rebrand? See the announcement in [this discussion](https://github.com/unovue/radix-vue/issues/908).
+Curious about the rebrand? See the announcement in [this discussion](https://github.com/unovue/reka-ui/issues/908).
 
 </Callout>
 

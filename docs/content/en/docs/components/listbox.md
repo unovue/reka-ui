@@ -262,7 +262,9 @@ const filteredPeople = computed(() => people.filter(p => startsWith(p.name, sear
 
 Rendering a long list of item can slow down the app, thus using virtualization would significantly improve the performance.
 
-```vue line=19-23,24
+See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
+
+```vue line=18-23
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from 'reka-ui'
@@ -280,7 +282,6 @@ const people = [
 <template>
   <ListboxRoot>
     <ListboxContent>
-      <!-- checkout https://reka-ui.com/components/listbox.html#virtualizer -->
       <ListboxVirtualizer
         v-slot="{ option }"
         :options="people"

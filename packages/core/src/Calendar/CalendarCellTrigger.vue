@@ -9,7 +9,7 @@ import {
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { useKbd } from '@/shared'
-import { toDate } from '@/date'
+import { getDaysInMonth, toDate } from '@/date'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -24,6 +24,16 @@ export interface CalendarCellTriggerSlot {
     dayValue: string
     /** Current disable state */
     disabled: boolean
+    /** Current selected state */
+    selected: boolean
+    /** Current today state */
+    today: boolean
+    /** Current outside view state */
+    outsideView: boolean
+    /** Current outside visible view state */
+    outsideVisibleView: boolean
+    /** Current unavailable state */
+    unavailable: boolean
   }) => any
 }
 </script>
@@ -56,7 +66,7 @@ const labelText = computed(() => {
 
 const isDisabled = computed(() => rootContext.isDateDisabled(props.day))
 const isUnavailable = computed(() =>
-  rootContext.isDateUnavailable?.(props.day),
+  rootContext.isDateUnavailable?.(props.day) ?? false,
 )
 const isDateToday = computed(() => {
   return isToday(props.day, getLocalTimeZone())
@@ -134,6 +144,14 @@ function handleArrowKey(e: KeyboardEvent) {
       const newCollectionItems: HTMLElement[] = parentElement
         ? Array.from(parentElement.querySelectorAll(SELECTOR))
         : []
+      if (!rootContext.pagedNavigation.value) {
+        // Placeholder is set to first month of the new page
+        const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
+        newCollectionItems[
+          numberOfDays - Math.abs(newIndex)
+        ].focus()
+        return
+      }
       newCollectionItems[
         newCollectionItems.length - Math.abs(newIndex)
       ].focus()
@@ -149,6 +167,14 @@ function handleArrowKey(e: KeyboardEvent) {
       const newCollectionItems: HTMLElement[] = parentElement
         ? Array.from(parentElement.querySelectorAll(SELECTOR))
         : []
+
+      if (!rootContext.pagedNavigation.value) {
+        // Placeholder is set to first month of the new page
+        const numberOfDays = getDaysInMonth(rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value - 1 }))
+        newCollectionItems[newCollectionItems.length - numberOfDays + newIndex - allCollectionItems.length].focus()
+        return
+      }
+
       newCollectionItems[newIndex - allCollectionItems.length].focus()
     })
   }
@@ -179,6 +205,11 @@ function handleArrowKey(e: KeyboardEvent) {
     <slot
       :day-value="dayValue"
       :disabled="isDisabled"
+      :today="isDateToday"
+      :selected="isSelectedDate"
+      :outside-view="isOutsideView"
+      :outside-visible-view="isOutsideVisibleView"
+      :unavailable="isUnavailable"
     >
       {{ dayValue }}
     </slot>

@@ -317,7 +317,7 @@ const selectedPeople = ref(people[0])
 
 The `Combobox` component allows you to select multiple values. You can enable this by providing an array of values instead of a single value.
 
-```vue line=12,16
+```vue line=12,17-18
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ComboboxRoot } from 'reka-ui'
@@ -346,7 +346,7 @@ const selectedPeople = ref([people[0], people[1]])
 
 Internally, `ComboboxRoot` will filter the item based on the rendered text.
 
-However, you may also provide your own custom filtering logic together with setting `ignoreFilter="false"`.
+However, you may also provide your own custom filtering logic together with setting `ignoreFilter="true"`.
 
 ```vue line=15,16,22,28
 <script setup lang="ts">
@@ -392,7 +392,7 @@ const filteredPeople = computed(() => people.filter(p => startsWith(p.name, sear
 
 By default the `Combobox` will use the input contents as the label for screenreaders. If you'd like more control over what is announced to assistive technologies, use the [Label](/docs/components/label) component.
 
-```vue line=8,9
+```vue line=8,10
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ComboboxInput, ComboboxRoot, Label } from 'reka-ui'
@@ -414,7 +414,7 @@ import { ComboboxInput, ComboboxRoot, Label } from 'reka-ui'
 
  You can add special styles to disabled items via the `data-disabled` attribute.
 
-```vue line=17
+```vue line=19
 <script setup lang="ts">
 import { ref } from 'vue'
 import {

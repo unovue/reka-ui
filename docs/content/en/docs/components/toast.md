@@ -153,49 +153,59 @@ A button that allows users to dismiss the toast before its duration has elapsed.
 
 Override the default hotkey using the `event.code` value for each key from [keycode.info](https://keycode.info/).
 
-```html line=3
-<ToastProvider>
-  ...
-  <ToastViewport :hotkey="['altKey', 'KeyT']" />
-</ToastProvider>
+```vue line=4
+<template>
+  <ToastProvider>
+    ...
+    <ToastViewport :hotkey="['altKey', 'KeyT']" />
+  </ToastProvider>
+</template>
 ```
 
 ### Custom duration
 
 Customise the duration of a toast to override the provider value.
 
-```vue line=1
-<ToastRoot :duration="3000">
-  <ToastDescription>Saved!</ToastDescription>
-</ToastRoot>
+```vue line=2
+<template>
+  <ToastRoot :duration="3000">
+    <ToastDescription>Saved!</ToastDescription>
+  </ToastRoot>
+</template>
 ```
 
 ### Duplicate toasts
 
 When a toast must appear every time a user clicks a button, use state to render multiple instances of the same toast (see below). Alternatively, you can abstract the parts to create your own [imperative API](/docs/components/toast#imperative-api).
 
-```html line=2,7
-<div>
-  <form @submit="count++">
-    ...
-    <button>save</button>
-  </form>
+```vue line=3,8
+<template>
+  <div>
+    <form @submit="count++">
+      ...
+      <button>save</button>
+    </form>
 
-  <ToastRoot v-for="(_, index) in count" :key="index">
-    <ToastDescription>Saved!</ToastDescription>
-  </ToastRoot>
-</div>
+    <ToastRoot v-for="(_, index) in count" :key="index">
+      <ToastDescription>Saved!</ToastDescription>
+    </ToastRoot>
+  </div>
+</template>
 ```
 
 ### Animating swipe gesture
 
 Combine `--reka-toast-swipe-move-[x|y]` and `--reka-toast-swipe-end-[x|y]` CSS variables with `data-swipe="[start|move|cancel|end]"` attributes to animate a swipe to close gesture. Here's an example:
 
-```html line=2
-<ToastProvider swipeDirection="right">
-  <ToastRoot class="ToastRoot">...</ToastRoot>
-  <ToastViewport />
-</ToastProvider>
+```vue line=2
+<template>
+  <ToastProvider swipe-direction="right">
+    <ToastRoot class="ToastRoot">
+      ...
+    </ToastRoot>
+    <ToastViewport />
+  </ToastProvider>
+</template>
 ```
 
 ```css line=2,3,5,9,15
@@ -239,16 +249,18 @@ Foreground toasts are announced immediately. Assistive technologies may choose t
 
 Background toasts are announced at the next graceful opportunity, for example, when the screen reader has finished reading its current sentence. They do not clear queued messages so overusing them can be perceived as a laggy user experience for screen reader users when used in response to a user interaction.
 
-```html line=1,6
-<ToastRoot type="foreground">
-  <ToastDescription>File removed successfully.</ToastDescription>
-  <ToastClose>Dismiss</ToastClose>
-</ToastRoot>
+```vue line=2,7
+<template>
+  <ToastRoot type="foreground">
+    <ToastDescription>File removed successfully.</ToastDescription>
+    <ToastClose>Dismiss</ToastClose>
+  </ToastRoot>
 
-<ToastRoot type="background">
-  <ToastDescription>We've just released Radix 1.0.</ToastDescription>
-  <ToastClose>Dismiss</ToastClose>
-</ToastRoot>
+  <ToastRoot type="background">
+    <ToastDescription>We've just released Reka UI 2.0.</ToastDescription>
+    <ToastClose>Dismiss</ToastClose>
+  </ToastRoot>
+</template>
 ```
 
 ### Alternative action
@@ -257,36 +269,40 @@ Use the `altText` prop on the `Action` to instruct an alternative way of actioni
 
 You can direct the user to a permanent place in your application where they can action it or implement your own custom hotkey logic. If implementing the latter, use `foreground` type to announce immediately and increase the duration to give the user ample time.
 
-```html line=4,10,12
-<ToastRoot type="background">
-  <ToastTitle>Upgrade Available!</ToastTitle>
-  <ToastDescription>We've just released Radix 1.0.</ToastDescription>
-  <ToastAction altText="Goto account settings to upgrade">
-    Upgrade
-  </ToastAction>
-  <ToastClose>Dismiss</ToastClose>
-</ToastRoot>
+```vue line=5,11,13
+<template>
+  <ToastRoot type="background">
+    <ToastTitle>Upgrade Available!</ToastTitle>
+    <ToastDescription>We've just released Reka UI 2.0.</ToastDescription>
+    <ToastAction alt-text="Goto account settings to upgrade">
+      Upgrade
+    </ToastAction>
+    <ToastClose>Dismiss</ToastClose>
+  </ToastRoot>
 
-<ToastRoot type="foreground" :duration="10000">
-  <ToastDescription>File removed successfully.</ToastDescription>
-  <ToastAction altText="Undo (Alt+U)">
-    Undo <kbd>Alt</kbd>+<kbd>U</kbd>
-  </ToastAction>
-  <ToastClose>Dismiss</ToastClose>
-</ToastRoot>
+  <ToastRoot type="foreground" :duration="10000">
+    <ToastDescription>File removed successfully.</ToastDescription>
+    <ToastAction alt-text="Undo (Alt+U)">
+      Undo <kbd>Alt</kbd>+<kbd>U</kbd>
+    </ToastAction>
+    <ToastClose>Dismiss</ToastClose>
+  </ToastRoot>
+</template>
 ```
 
 ### Close icon button
 
 When providing an icon (or font icon), remember to label it correctly for screen reader users.
 
-```html line=3-4
-<ToastRoot type="foreground">
-  <ToastDescription>Saved!</ToastDescription>
-  <ToastClose aria-label="Close">
-    <span aria-hidden="true">×</span>
-  </ToastClose>
-</ToastRoot>
+```vue line=4-5
+<template>
+  <ToastRoot type="foreground">
+    <ToastDescription>Saved!</ToastDescription>
+    <ToastClose aria-label="Close">
+      <span aria-hidden="true">×</span>
+    </ToastClose>
+  </ToastRoot>
+</template>
 ```
 
 ### Keyboard Interactions
@@ -374,7 +390,9 @@ defineProps<{
     <ToastTitle v-if="title">
       {{ title }}
     </ToastTitle>
-    <ToastDescription>{{ content }}</ToastDescription>
+    <ToastDescription v-if="content">
+      {{ content }}
+    </ToastDescription>
     <ToastAction
       as-child
       alt-text="toast"

@@ -136,7 +136,7 @@ A draggable thumb. You can render multiple thumbs.
 
 Use the `orientation` prop to create a vertical slider.
 
-```vue line=7
+```vue line=10
 // index.vue
 <script setup>
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
@@ -219,7 +219,7 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 
 Use the `step` prop to increase the stepping interval.
 
-```vue line=7
+```vue line=9
 // index.vue
 <script setup>
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
@@ -353,13 +353,13 @@ const forward = useForwardPropsEmits(props, emits)
 </script>
 
 <template>
-  <SliderRoot v-bind="forward">
+  <SliderRoot v-slot="{ modelValue }" v-bind="forward">
     <SliderTrack>
       <SliderRange />
     </SliderTrack>
 
     <SliderThumb
-      v-for="(_, i) in value"
+      v-for="(_, i) in modelValue"
       :key="i"
     />
   </SliderRoot>

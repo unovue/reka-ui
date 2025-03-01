@@ -97,9 +97,9 @@ Virtual container to achieve list virtualization.
 
 ### Selecting multiple items
 
-The `Tree` component allows you to select multiple items. You can enable this by providing an array of values instead of a single value.
+The `Tree` component allows you to select multiple items. You can enable this by providing an array of values instead of a single value and set `multiple="true"`.
 
-```vue line=12,16
+```vue line=12,17-18
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TreeRoot } from 'reka-ui'
@@ -128,7 +128,9 @@ const selectedPeople = ref([people[0], people[1]])
 
 Rendering a long list of item can slow down the app, thus using virtualization would significantly improve the performance.
 
-```vue line=9-16
+See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
+
+```vue line=8-15
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
@@ -136,7 +138,6 @@ import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
 
 <template>
   <TreeRoot :items>
-    <!-- checkout https://reka-ui.com/components/tree.html#virtualizer -->
     <TreeVirtualizer
       v-slot="{ item }"
       :text-content="(opt) => opt.name"
@@ -155,7 +156,7 @@ Some `Tree` component might want to show `toggled/indeterminate` checkbox. We ca
 
 We set `propagateSelect` to `true` because we want the parent checkbox to select/deselect it's descendants. Then, we add a checkbox that triggers `select` event.
 
-```vue line=10-11,17-25,29-33
+```vue line=10-11,17-25,27-30
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TreeItem, TreeRoot } from 'reka-ui'

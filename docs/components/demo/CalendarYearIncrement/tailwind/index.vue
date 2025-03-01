@@ -28,7 +28,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:double-arrow-left"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarPrev>
       <CalendarPrev
@@ -36,7 +36,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:chevron-left"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarPrev>
       <CalendarHeading class="text-sm text-black font-medium" />
@@ -46,7 +46,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:chevron-right"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarNext>
 
@@ -56,7 +56,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:double-arrow-right"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarNext>
     </CalendarHeader>

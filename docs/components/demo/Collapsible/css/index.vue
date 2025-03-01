@@ -29,7 +29,7 @@ const open = ref(false)
     </div>
 
     <div class="Repository">
-      <span class="Text">@unovue/radix-vue</span>
+      <span class="Text">@unovue/reka-ui</span>
     </div>
 
     <CollapsibleContent>

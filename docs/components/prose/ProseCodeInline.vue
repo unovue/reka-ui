@@ -10,10 +10,10 @@ const props = withDefaults(defineProps<ProseCodeInlineProps>(), {
 
 <template>
   <code
-    class=""
+    class="px-2"
     :class="`${
       props.variant === 'primary'
-        ? 'text-primary bg-primary/10 border-none'
+        ? 'text-primary bg-primary/10 border-none text-[13px] md:text-[14px]'
         : 'text-foreground'
     }`"
   >
