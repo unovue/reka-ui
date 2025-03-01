@@ -15,6 +15,12 @@ import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 const props = defineProps<AlertDialogProps>()
 const emits = defineEmits<AlertDialogEmits>()
 
+defineSlots<{
+  default: (props: {
+    /** Current open state */
+    open: typeof forwarded.value.open
+  }) => any
+}>()
 const forwarded = useForwardPropsEmits(props, emits)
 useForwardExpose()
 </script>
@@ -24,6 +30,6 @@ useForwardExpose()
     v-bind="forwarded"
     :modal="true"
   >
-    <slot />
+    <slot :open="forwarded.open" />
   </DialogRoot>
 </template>
