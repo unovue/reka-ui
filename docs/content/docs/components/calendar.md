@@ -281,6 +281,12 @@ This example showcases some of the available locales and how the calendar system
 
 <ComponentPreview name="CalendarSelect" />
 
+### Calendar swipe gesture navigation
+
+This component demonstrates intuitive calendar navigation using touch-based swipe gestures, user-friendly way to browse through months.
+
+<ComponentPreview name="CalendarSwipe" />
+
 ## Accessibility
 
 ### Keyboard Interactions
