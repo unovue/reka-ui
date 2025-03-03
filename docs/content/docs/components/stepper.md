@@ -150,7 +150,7 @@ You can create vertical steps by using the `orientation` prop.
 
 ```vue line=8
 <script setup>
-import { StepperDescription, StepperIndicator, StepperItem, StepperList, StepperRoot, StepperTitle } from 'reka-ui'
+import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperTitle } from 'reka-ui'
 </script>
 
 <template>
@@ -158,18 +158,16 @@ import { StepperDescription, StepperIndicator, StepperItem, StepperList, Stepper
     :default-value="1"
     orientation="vertical"
   >
-    <StepperList aria-label="stepper example">
-      <StepperItem>
-        <StepperIndicator />
-        <StepperTitle />
-        <StepperDescription />
-      </StepperItem>
-      <StepperItem>
-        <StepperIndicator />
-        <StepperTitle />
-        <StepperDescription />
-      </StepperItem>
-    </StepperList>
+    <StepperItem>
+      <StepperIndicator />
+      <StepperTitle />
+      <StepperDescription />
+    </StepperItem>
+    <StepperItem>
+      <StepperIndicator />
+      <StepperTitle />
+      <StepperDescription />
+    </StepperItem>
   </StepperRoot>
 </template>
 ```
