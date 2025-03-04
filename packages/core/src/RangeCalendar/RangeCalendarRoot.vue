@@ -1,5 +1,5 @@
 <script lang="ts">
-import { type DateValue, isEqualDay } from '@internationalized/date'
+import { type Calendar, type DateValue, GregorianCalendar, isEqualDay } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
@@ -97,6 +97,7 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: DateValue) => DateValue
+  calendar?: Calendar
 }
 
 export type RangeCalendarRootEmits = {
@@ -133,6 +134,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
   allowNonContiguousRanges: false,
+  calendar: () => new GregorianCalendar(),
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
 
@@ -197,6 +199,7 @@ const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
   defaultValue: currentModelValue.value.start,
   locale: props.locale,
+  calendar: props.calendar,
 })
 
 const startValue = ref(currentModelValue.value.start) as Ref<DateValue | undefined>
