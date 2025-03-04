@@ -12,7 +12,7 @@ packages:
   - title: Nuxt UI
     description: A UI Library for Modern Web Apps, powered by Vue & Tailwind CSS.
     url: https://ui3.nuxt.dev/
-    image: https://ui3.nuxt.dev/social-card.png
+    image: https://ui3.nuxt.dev/og-image.png
 
   - title: UI Thing
     description: Reusable Nuxt 3 components.
