@@ -27,7 +27,7 @@ const links = computed(() => [
           :key="link.label"
           :href="link.url"
           target="_blank"
-          class="inline-flex gap-2 items-center font-medium text-muted-foreground hover:text-white text-sm"
+          class="inline-flex gap-2 items-center font-medium text-muted-foreground hover:text-foreground text-sm"
         >
           <Icon
             class="text-xl"
