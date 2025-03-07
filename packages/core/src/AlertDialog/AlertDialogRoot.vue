@@ -21,9 +21,10 @@ useForwardExpose()
 
 <template>
   <DialogRoot
+    v-slot="slotProps"
     v-bind="forwarded"
     :modal="true"
   >
-    <slot />
+    <slot v-bind="slotProps" />
   </DialogRoot>
 </template>
