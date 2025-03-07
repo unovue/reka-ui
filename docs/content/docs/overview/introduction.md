@@ -79,3 +79,4 @@ All credits go to these open-source works and resources
 - Floating UI - https://floating-ui.com
 - VueUse - https://vueuse.org
 - HeadlessUI - https://headlessui.com
+- Ariakit - https://ariakit.org/
