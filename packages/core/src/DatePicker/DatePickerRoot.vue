@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import { type DateValue, GregorianCalendar } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import { computed, ref, toRefs, watch } from 'vue'
@@ -77,6 +77,7 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   locale: 'en',
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  calendar: () => new GregorianCalendar(),
 })
 const emits = defineEmits<DatePickerRootEmits & PopoverRootEmits>()
 const {
@@ -117,6 +118,7 @@ const defaultDate = computed(() => getDefaultDate({
   granularity: props.granularity,
   defaultValue: modelValue.value,
   locale: props.locale,
+  calendar: props.calendar,
 }))
 
 const placeholder = useVModel(props, 'placeholder', emits, {
