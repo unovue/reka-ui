@@ -94,7 +94,7 @@ const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error ignore the type error here
-  defaultValue: props.defaultValue ?? multiple.value ? [] : undefined,
+  defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: (props.modelValue === undefined) as false,
   deep: true,
 }) as Ref<T | T[]>
