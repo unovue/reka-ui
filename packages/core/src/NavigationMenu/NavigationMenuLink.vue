@@ -20,6 +20,7 @@ export interface NavigationMenuLinkProps extends PrimitiveProps {
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { EVENT_ROOT_CONTENT_DISMISS, LINK_SELECT } from './utils'
+import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 const props = withDefaults(defineProps<NavigationMenuLinkProps>(), {
   as: 'a',
@@ -29,6 +30,8 @@ const emits = defineEmits<NavigationMenuLinkEmits>()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 useForwardExpose()
+
+const menuContext = injectNavigationMenuContext()
 
 async function handleClick(ev: MouseEvent) {
   const linkSelectEvent = new CustomEvent(LINK_SELECT, {
@@ -40,7 +43,7 @@ async function handleClick(ev: MouseEvent) {
   })
   emits('select', linkSelectEvent)
 
-  if (!linkSelectEvent.defaultPrevented && !ev.metaKey) {
+  if (!linkSelectEvent.defaultPrevented && !ev.metaKey && !menuContext.disableLinkClickClose.value) {
     const rootContentDismissEvent = new CustomEvent(
       EVENT_ROOT_CONTENT_DISMISS,
       {

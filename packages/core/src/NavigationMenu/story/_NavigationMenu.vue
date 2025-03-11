@@ -15,11 +15,13 @@ import NavigationMenuListItem from './_NavigationMenuListItem.vue'
 export interface TestProps {
   disableClickTrigger?: boolean
   disableHoverTrigger?: boolean
+  disableLinkClickClose?: boolean
 }
 
 const props = withDefaults(defineProps<TestProps>(), {
   disableClickTrigger: false,
   disableHoverTrigger: false,
+  disableLinkClickClose: false,
 })
 
 const currentTrigger = ref('')
@@ -35,7 +37,7 @@ const currentTrigger = ref('')
       <NavigationMenuList
         class="center shadow-blackA7 m-0 flex list-none rounded-[6px] bg-white p-1 shadow-[0_2px_10px]"
       >
-        <NavigationMenuItem>
+        <NavigationMenuItem value="learn">
           <NavigationMenuTrigger
             class="text-grass11 hover:bg-green3 focus:shadow-green7 group flex select-none items-center justify-between gap-[2px] rounded-[4px] px-3 py-2 text-[15px] font-medium leading-none outline-none focus:shadow-[0_0_0_2px]"
           >
@@ -52,7 +54,6 @@ const currentTrigger = ref('')
                   href="/"
                   target="_blank"
                   class="focus:shadow-green7 from-green9 to-teal9 flex h-full w-full select-none flex-col justify-end rounded-[6px] bg-gradient-to-b p-[25px] no-underline outline-none focus:shadow-[0_0_0_2px]"
-                  @select.prevent
                 >
                   <svg
                     alt="logo"
@@ -103,7 +104,7 @@ const currentTrigger = ref('')
           </NavigationMenuContent>
         </NavigationMenuItem>
 
-        <NavigationMenuItem>
+        <NavigationMenuItem value="overview">
           <NavigationMenuTrigger
             class="text-grass11 hover:bg-green3 focus:shadow-green7 group flex select-none items-center justify-between gap-[2px] rounded-[4px] px-3 py-2 text-[15px] font-medium leading-none outline-none focus:shadow-[0_0_0_2px]"
           >

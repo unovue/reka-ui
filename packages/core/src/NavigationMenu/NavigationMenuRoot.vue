@@ -49,6 +49,11 @@ export interface NavigationMenuRootProps extends PrimitiveProps {
    * @defaultValue false
    */
   disablePointerLeaveClose?: boolean
+  /**
+   * If `true`, menu will not close by click on link
+   * @defaultValue false
+   */
+  disableLinkClickClose?: boolean
 
   /**
    * When `true`, the element will be unmounted on closed state.
@@ -71,6 +76,7 @@ export interface NavigationMenuContext {
   orientation: Orientation
   disableClickTrigger: Ref<boolean>
   disableHoverTrigger: Ref<boolean>
+  disableLinkClickClose: Ref<boolean>
   unmountOnHide: Ref<boolean>
   rootNavigationMenu: Ref<HTMLElement | undefined>
   activeTrigger: Ref<HTMLElement | undefined>
@@ -109,6 +115,8 @@ const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
   orientation: 'horizontal',
   disableClickTrigger: false,
   disableHoverTrigger: false,
+  disablePointerLeaveClose: false,
+  disableLinkClickClose: false,
   unmountOnHide: true,
   as: 'nav',
 })
@@ -135,7 +143,7 @@ const activeTrigger = ref<HTMLElement>()
 
 const { getItems, CollectionSlot } = useCollection({ key: 'NavigationMenu', isProvider: true })
 
-const { delayDuration, skipDelayDuration, dir: propDir, disableClickTrigger, disableHoverTrigger, unmountOnHide } = toRefs(props)
+const { delayDuration, skipDelayDuration, dir: propDir, disableClickTrigger, disableHoverTrigger, disableLinkClickClose, unmountOnHide } = toRefs(props)
 const dir = useDirection(propDir)
 
 const isDelaySkipped = refAutoReset(false, skipDelayDuration)
@@ -171,6 +179,7 @@ provideNavigationMenuContext({
   baseId: useId(undefined, 'reka-navigation-menu'),
   disableClickTrigger,
   disableHoverTrigger,
+  disableLinkClickClose,
   dir,
   unmountOnHide,
   orientation: props.orientation,

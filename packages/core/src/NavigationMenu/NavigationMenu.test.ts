@@ -10,6 +10,7 @@ import { sleep } from '@/test'
 import NavigationMenuItem from './NavigationMenuItem.vue'
 
 import { useDebounceFn } from '@vueuse/core'
+import NavigationMenuLink from './NavigationMenuLink.vue'
 
 vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual('@vueuse/core')
@@ -109,6 +110,8 @@ describe('given default NavigationMenu', () => {
 
     const findLinkContent = () => wrapper.find('[data-dismissable-layer]')
 
+    const findLink = () => wrapper.findComponent(NavigationMenuLink)
+
     it('should open menu on click by default', async () => {
       const button = findTriggerButton()
 
@@ -158,6 +161,23 @@ describe('given default NavigationMenu', () => {
       const content = findLinkContent()
 
       expect(content.exists()).toBeFalsy()
+    })
+
+    it('should not close content on link click', async () => {
+      await wrapper.setProps({ disableLinkClickClose: true })
+      const button = findTriggerButton()
+
+      button.trigger('click', { pointerType: 'mouse' })
+
+      await wrapper.vm.$nextTick()
+
+      const link = findLink()
+
+      link.trigger('click', { pointerType: 'mouse' })
+
+      await wrapper.vm.$nextTick()
+
+      expect(button.element.getAttribute('data-state')).toEqual('open')
     })
   })
 })
