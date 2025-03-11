@@ -1,6 +1,8 @@
 export {
   injectCalendarRootContext,
   default as CalendarRoot,
+  type MultipleCalendarRootProps,
+  type SingleCalendarRootProps,
   type CalendarRootProps,
   type CalendarRootEmits,
 } from './CalendarRoot.vue'
