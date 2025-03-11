@@ -1,3 +1,5 @@
+export type { DateValue } from '../date'
+
 export {
   injectCalendarRootContext,
   default as CalendarRoot,
