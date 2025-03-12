@@ -3,6 +3,8 @@
 */
 
 import type { DateValue } from '@internationalized/date'
+
+export type { DateValue }
 import type { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, NON_EDITABLE_SEGMENT_PARTS, TIME_SEGMENT_PARTS } from './parts'
 
 // Days of the week, starting with Sunday

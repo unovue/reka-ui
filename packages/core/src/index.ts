@@ -64,6 +64,7 @@ export {
   createContext,
   type Formatter,
   type DateRange,
+  type DateValue,
 } from './shared'
 export {
   type ReferenceElement,
