@@ -197,7 +197,7 @@ describe('numberField', () => {
     })
 
     it('should compute min-max with step correctly', async () => {
-      const { input } = setup({ min: 2, max: 21, step: 3 })
+      const { input } = setup({ min: 2, max: 21, step: 3, stepSnapping: true })
 
       expect(input.value).toBe('')
       await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 2
@@ -208,8 +208,19 @@ describe('numberField', () => {
       await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 17
       await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 20
       expect(input.value).toBe('20')
-      await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 20 (max)
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 20 (max snapped to step)
       expect(input.value).toBe('20')
+    })
+
+    it('should compute min-max with step correctly when stepSnapping false', async () => {
+      const { input } = setup({ min: 17, max: 21, step: 3, stepSnapping: false })
+
+      expect(input.value).toBe('')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 17
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 20
+      expect(input.value).toBe('20')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 21 (max not snapped to step)
+      expect(input.value).toBe('21')
     })
   })
 

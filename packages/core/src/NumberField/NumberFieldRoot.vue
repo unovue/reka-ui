@@ -14,6 +14,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   max?: number
   /** The amount that the input value changes with each increment or decrement "tick". */
   step?: number
+  /** When `false`, prevents the value from snapping to the nearest increment of the step value */
+  stepSnapping?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
   formatOptions?: Intl.NumberFormatOptions
   /** The locale to use for formatting dates */
@@ -63,9 +65,10 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   as: 'div',
   defaultValue: undefined,
   step: 1,
+  stepSnapping: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, min, max, step, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -147,7 +150,7 @@ function setInputValue(val: string) {
 function clampInputValue(val: number) {
   // Clamp to min and max, round to the nearest step, and round to specified number of digits
   let clampedValue: number
-  if (step.value === undefined || isNaN(step.value))
+  if (step.value === undefined || isNaN(step.value) || !stepSnapping.value)
     clampedValue = clamp(val, min.value, max.value)
   else
     clampedValue = snapValueToStep(val, min.value, max.value, step.value)
