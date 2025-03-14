@@ -58,7 +58,17 @@
 <SlotsTable :data="[
   {
     'name': 'modelValue',
+    'description': '<p>Current model value</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'pressed',
     'description': '<p>Current pressed state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'disabled',
+    'description': '<p>Current disabled state</p>\n',
     'type': 'boolean'
   }
 ]" />
