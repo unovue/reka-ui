@@ -7,6 +7,7 @@ export {
 } from './comparators'
 export type {
   DateRange,
+  DateValue,
   DayOfWeek,
   HourCycle,
   DayPeriod,
