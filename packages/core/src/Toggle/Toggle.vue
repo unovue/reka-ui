@@ -43,8 +43,12 @@ const emits = defineEmits<ToggleEmits>()
 
 defineSlots<{
   default: (props: {
-    /** Current pressed state */
+    /** Current model value */
     modelValue: typeof modelValue.value
+    /** Current pressed state */
+    pressed: typeof modelValue.value
+    /** Current disabled state */
+    disabled: boolean
   }) => any
 }>()
 
@@ -79,7 +83,11 @@ const isFormControl = useFormControl(currentElement)
     :disabled="disabled"
     @click="togglePressed"
   >
-    <slot :model-value="modelValue" :disabled="disabled" :active="modelValue" />
+    <slot
+      :model-value="modelValue"
+      :disabled="disabled"
+      :pressed="modelValue"
+    />
 
     <VisuallyHiddenInput
       v-if="isFormControl && name && !toggleGroupContext"
