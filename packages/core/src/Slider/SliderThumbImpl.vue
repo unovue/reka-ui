@@ -32,9 +32,14 @@ const percent = computed(() => value.value === undefined ? 0 : convertValueToPer
 const label = computed(() => getLabel(props.index, rootContext.modelValue?.value?.length ?? 0))
 const size = useSize(thumbElement)
 const orientationSize = computed(() => size[orientation!.size].value)
-const thumbInBoundsOffset = computed(() => orientationSize.value
-  ? getThumbInBoundsOffset(orientationSize.value, percent.value, orientation!.direction)
-  : 0)
+const thumbInBoundsOffset = computed(() => {
+  if (rootContext.disableThumbOffset.value || !orientationSize.value) {
+    return 0
+  }
+  else {
+    return getThumbInBoundsOffset(orientationSize.value, percent.value, orientation!.direction)
+  }
+})
 
 const isMounted = useMounted()
 onMounted(() => {

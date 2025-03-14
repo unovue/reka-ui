@@ -26,6 +26,8 @@ export interface SliderRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** The minimum permitted steps between multiple thumbs. */
   minStepsBetweenThumbs?: number
+  /** When `true`, slider thumb will not include the inbound pixel offset */
+  disableThumbOffset?: true
 }
 
 export type SliderRootEmits = {
@@ -50,6 +52,7 @@ export interface SliderRootContext {
   currentModelValue: ComputedRef<number[]>
   valueIndexToChangeRef: Ref<number>
   thumbElements: Ref<HTMLElement[]>
+  disableThumbOffset: Ref<boolean>
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]
@@ -87,7 +90,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { min, max, step, minStepsBetweenThumbs, orientation, disabled, dir: propDir } = toRefs(props)
+const { min, max, step, minStepsBetweenThumbs, orientation, disabled, disableThumbOffset, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 const { forwardRef, currentElement } = useForwardExpose()
 const isFormControl = useFormControl(currentElement)
@@ -151,6 +154,7 @@ provideSliderRootContext({
   min,
   max,
   disabled,
+  disableThumbOffset,
 })
 </script>
 
