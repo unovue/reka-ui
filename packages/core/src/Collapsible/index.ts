@@ -11,4 +11,5 @@ export {
 export {
   default as CollapsibleContent,
   type CollapsibleContentProps,
+  type CollapsibleContentEmits,
 } from './CollapsibleContent.vue'
