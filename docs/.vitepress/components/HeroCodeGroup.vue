@@ -57,6 +57,7 @@ watch(open, () => {
   <TabsRoot
     v-model="currentTab"
     class="bg-[hsl(141_17%_5%)] border border-[hsl(0_0%_15%)] rounded-xl overflow-hidden"
+    :unmount-on-hide="false"
     @update:model-value="open = true"
   >
     <div class="bg-[hsl(141_17%_5%)]  border-b-2 border-[hsl(0_0%_15%)] flex pr-2">
