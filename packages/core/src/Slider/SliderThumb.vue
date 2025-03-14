@@ -15,7 +15,7 @@ const { getItems } = useCollection()
 
 const { forwardRef, currentElement: thumbElement } = useForwardExpose()
 
-const index = computed(() => thumbElement.value ? getItems().findIndex(i => i.ref === thumbElement.value) : -1)
+const index = computed(() => thumbElement.value ? getItems(true).findIndex(i => i.ref === thumbElement.value) : -1)
 </script>
 
 <template>
