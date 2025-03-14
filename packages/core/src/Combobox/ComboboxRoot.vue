@@ -66,7 +66,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { computed, nextTick, reactive, ref, toRefs, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { type EventHookOn, createEventHook, useVModel } from '@vueuse/core'
 import { ListboxRoot } from '@/Listbox'
@@ -192,6 +192,15 @@ watch(() => open.value, () => {
       filterItems()
   })
 }, { flush: 'post' })
+
+const inst = getCurrentInstance()
+onMounted(() => {
+  if (inst?.exposed) {
+    inst.exposed.highlightItem = primitiveElement.value?.highlightItem
+    inst.exposed.highlightFirstItem = primitiveElement.value?.highlightFirstItem
+    inst.exposed.highlightSelected = primitiveElement.value?.highlightSelected
+  }
+})
 
 defineExpose({
   filtered: computed(() => filterState.filtered),
