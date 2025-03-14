@@ -80,6 +80,13 @@
     'type': 'number',
     'required': false,
     'default': '1'
+  },
+  {
+    'name': 'stepSnapping',
+    'description': '<p>When <code>false</code>, prevents the value from snapping to the nearest increment of the step value.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': true
   }
 ]" />
 
