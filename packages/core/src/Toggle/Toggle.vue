@@ -43,8 +43,10 @@ const emits = defineEmits<ToggleEmits>()
 
 defineSlots<{
   default: (props: {
-    /** Current model value */
+    /** Current value */
     modelValue: typeof modelValue.value
+    /** Current state */
+    state: typeof dataState.value
     /** Current pressed state */
     pressed: typeof modelValue.value
     /** Current disabled state */
@@ -87,6 +89,7 @@ const isFormControl = useFormControl(currentElement)
       :model-value="modelValue"
       :disabled="disabled"
       :pressed="modelValue"
+      :state="dataState"
     />
 
     <VisuallyHiddenInput
