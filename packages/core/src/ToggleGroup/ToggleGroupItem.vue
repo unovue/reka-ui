@@ -39,11 +39,12 @@ const { forwardRef } = useForwardExpose()
     <Toggle
       v-bind="props"
       :ref="forwardRef"
+      v-slot="slotProps"
       :disabled="disabled"
       :model-value="pressed"
       @update:model-value="rootContext.changeModelValue(value)"
     >
-      <slot />
+      <slot v-bind="slotProps" />
     </Toggle>
   </component>
 </template>

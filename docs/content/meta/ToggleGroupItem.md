@@ -27,3 +27,26 @@
     'required': true
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'modelValue',
+    'description': '<p>Current value</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'state',
+    'description': '<p>Current state</p>\n',
+    'type': '\'on\' | \'off\''
+  },
+  {
+    'name': 'pressed',
+    'description': '<p>Current pressed state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'disabled',
+    'description': '<p>Current disabled state</p>\n',
+    'type': 'boolean'
+  }
+]" />
