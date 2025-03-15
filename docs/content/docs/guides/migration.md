@@ -173,3 +173,17 @@ To have better supports for SSR content, we also modify the logic around the usa
   </TabsRoot>
 </template>
 ```
+
+## For Nuxt module users
+
+If you are using Nuxt, you need to update your module import.
+
+ ```ts
+ // nuxt.config.ts
+export default defineNuxtConfig({
+  modules: [
+    'radix-vue/nuxt' <!-- [!code --] -->
+    'reka-ui/nuxt' <!-- [!code ++] -->
+  ],
+})
+ ```
