@@ -1,5 +1,5 @@
-import { type Component, type PropType, defineComponent, h } from 'vue'
-import { Slot } from './Slot'
+import { type Component, type PropType, defineComponent, h, computed } from 'vue'
+import { Slot } from './Slot.ts'
 
 export type AsTag =
   | 'a'
@@ -25,7 +25,7 @@ export interface PrimitiveProps {
   /**
    * Change the default rendered element for the one passed as a child, merging their props and behavior.
    *
-   * Read our [Composition](https://www.reka-ui.com/docs/guides/composition) guide for more details.
+   * Read our [Composition](https://www.radix-vue.com/guides/composition.html) guide for more details.
    */
   asChild?: boolean
   /**
@@ -49,16 +49,19 @@ export const Primitive = defineComponent({
     },
   },
   setup(props, { attrs, slots }) {
-    const asTag = props.asChild ? 'template' : props.as
+    const asTag = computed(() => (props.asChild ? 'template' : props.as))
+    return () => {
+      const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 
-    // For self closing tags, don't provide default slots because of hydration issue
-    const SELF_CLOSING_TAGS = ['area', 'img', 'input']
-    if (typeof asTag === 'string' && SELF_CLOSING_TAGS.includes(asTag))
-      return () => h(asTag, attrs)
+      if (typeof asTag.value === 'string' && SELF_CLOSING_TAGS.includes(asTag.value)) {
+        return h(asTag.value, attrs)
+      }
 
-    if (asTag !== 'template')
-      return () => h(props.as, attrs, { default: slots.default })
+      if (asTag.value !== 'template') {
+        return h(props.as, attrs, slots)
+      }
 
-    return () => h(Slot, attrs, { default: slots.default })
+      return h(Slot, attrs, { default: slots.default })
+    }
   },
 })
