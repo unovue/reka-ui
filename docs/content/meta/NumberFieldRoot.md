@@ -27,6 +27,12 @@
     'required': false
   },
   {
+    'name': 'disableWheelChange',
+    'description': '<p>When <code>true</code>, prevents the value from changing on wheel scroll.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'formatOptions',
     'description': '<p>Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user.</p>\n',
     'type': 'NumberFormatOptions',
@@ -83,10 +89,10 @@
   },
   {
     'name': 'stepSnapping',
-    'description': '<p>When <code>false</code>, prevents the value from snapping to the nearest increment of the step value.</p>\n',
+    'description': '<p>When <code>false</code>, prevents the value from snapping to the nearest increment of the step value</p>\n',
     'type': 'boolean',
     'required': false,
-    'default': true
+    'default': 'true'
   }
 ]" />
 

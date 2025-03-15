@@ -93,6 +93,13 @@
     'type': 'number',
     'required': false,
     'default': '1'
+  },
+  {
+    'name': 'thumbAlignment',
+    'description': '<p>The alignment of the slider thumb.</p>\n<ul>\n<li><code>contain</code>: thumbs will be contained within the bounds of the track.</li>\n<li><code>overflow</code>: thumbs will not be bound by the track. No extra offset will be added.</li>\n</ul>\n',
+    'type': '\'contain\' | \'overflow\'',
+    'required': false,
+    'default': '\'contain\''
   }
 ]" />
 
