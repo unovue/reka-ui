@@ -5,6 +5,8 @@ import type { DataOrientation, Direction, FormFieldProps } from '../shared/types
 import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
 
+type ThumbAlignment = 'contain' | 'overflow'
+
 export interface SliderRootProps extends PrimitiveProps, FormFieldProps {
   /** The value of the slider when initially rendered. Use when you do not need to control the state of the slider. */
   defaultValue?: number[]
@@ -26,8 +28,13 @@ export interface SliderRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** The minimum permitted steps between multiple thumbs. */
   minStepsBetweenThumbs?: number
-  /** When `true`, slider thumb will not include the inbound pixel offset */
-  disableThumbOffset?: true
+  /**
+   * The alignment of the slider thumb.
+   * - `contain`: thumbs will be contained within the bounds of the track.
+   * - `overflow`: thumbs will not be bound by the track. No extra offset will be added.
+   * @defaultValue 'contain'
+   */
+  thumbAlignment?: ThumbAlignment
 }
 
 export type SliderRootEmits = {
@@ -52,7 +59,7 @@ export interface SliderRootContext {
   currentModelValue: ComputedRef<number[]>
   valueIndexToChangeRef: Ref<number>
   thumbElements: Ref<HTMLElement[]>
-  disableThumbOffset: Ref<boolean>
+  thumbAlignment: Ref<ThumbAlignment>
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]
@@ -80,6 +87,7 @@ const props = withDefaults(defineProps<SliderRootProps>(), {
   minStepsBetweenThumbs: 0,
   defaultValue: () => [0],
   inverted: false,
+  thumbAlignment: 'contain',
 })
 const emits = defineEmits<SliderRootEmits>()
 
@@ -90,7 +98,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { min, max, step, minStepsBetweenThumbs, orientation, disabled, disableThumbOffset, dir: propDir } = toRefs(props)
+const { min, max, step, minStepsBetweenThumbs, orientation, disabled, thumbAlignment, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 const { forwardRef, currentElement } = useForwardExpose()
 const isFormControl = useFormControl(currentElement)
@@ -154,7 +162,7 @@ provideSliderRootContext({
   min,
   max,
   disabled,
-  disableThumbOffset,
+  thumbAlignment,
 })
 </script>
 

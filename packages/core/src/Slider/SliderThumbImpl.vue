@@ -33,7 +33,7 @@ const label = computed(() => getLabel(props.index, rootContext.modelValue?.value
 const size = useSize(thumbElement)
 const orientationSize = computed(() => size[orientation!.size].value)
 const thumbInBoundsOffset = computed(() => {
-  if (rootContext.disableThumbOffset.value || !orientationSize.value) {
+  if (rootContext.thumbAlignment.value === 'overflow' || !orientationSize.value) {
     return 0
   }
   else {

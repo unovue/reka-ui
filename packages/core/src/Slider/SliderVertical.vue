@@ -4,25 +4,43 @@ import { computed, ref, toRefs } from 'vue'
 import type { SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
 import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'
 import { useForwardExpose } from '@/shared'
+import { injectSliderRootContext } from './SliderRoot.vue'
 
 interface SliderVerticalProps extends SliderOrientationPrivateProps {}
 const props = defineProps<SliderVerticalProps>()
 const emits = defineEmits<SliderOrientationPrivateEmits>()
 const { max, min, inverted } = toRefs(props)
 
+const rootContext = injectSliderRootContext()
 const { forwardRef, currentElement: sliderElement } = useForwardExpose()
 
+const offsetPosition = ref<number>()
 const rectRef = ref<ClientRect>()
 const isSlidingFromBottom = computed(() => !inverted.value)
 
-function getValueFromPointer(pointerPosition: number) {
+function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
   const rect = rectRef.value || sliderElement.value!.getBoundingClientRect()
-  const input: [number, number] = [0, rect.height]
+
+  // Get the currently active thumb element
+  const thumb = [...rootContext.thumbElements.value][rootContext.valueIndexToChangeRef.value]
+  const thumbHeight = rootContext.thumbAlignment.value === 'contain' ? thumb.clientHeight : 0
+
+  // Calculate offset for dragging, but only when needed
+  if (!offsetPosition.value && !slideStart && rootContext.thumbAlignment.value === 'contain') {
+    offsetPosition.value = event.clientY - thumb.getBoundingClientRect().top
+  }
+
+  // Define the input range (slider track width minus thumb width)
+  const input: [number, number] = [0, rect.height - thumbHeight]
   const output: [number, number] = isSlidingFromBottom.value ? [max.value, min.value] : [min.value, max.value]
   const value = linearScale(input, output)
 
+  const position = slideStart
+    ? event.clientY - rect.top - thumbHeight / 2
+    : event.clientY - rect.top - (offsetPosition.value ?? 0)
+
   rectRef.value = rect
-  return value(pointerPosition - rect.top)
+  return value(position)
 }
 
 provideSliderOrientationContext({
@@ -38,18 +56,20 @@ provideSliderOrientationContext({
     :ref="forwardRef"
     data-orientation="vertical"
     :style="{
-      ['--reka-slider-thumb-transform' as any]: 'translateY(50%)',
+      ['--reka-slider-thumb-transform' as any]:
+        !isSlidingFromBottom && rootContext.thumbAlignment.value === 'overflow' ? 'translateY(-50%)' : 'translateY(50%)',
     }"
     @slide-start="(event) => {
-      const value = getValueFromPointer(event.clientY);
+      const value = getValueFromPointerEvent(event, true);
       emits('slideStart', value)
     }"
     @slide-move="(event) => {
-      const value = getValueFromPointer(event.clientY);
+      const value = getValueFromPointerEvent(event);
       emits('slideMove', value)
     }"
     @slide-end="() => {
       rectRef = undefined;
+      offsetPosition = undefined
       emits('slideEnd')
     }"
     @step-key-down="(event) => {

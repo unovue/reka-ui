@@ -4,6 +4,7 @@ import { computed, ref, toRefs } from 'vue'
 import type { Direction, SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
 import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'
 import { useForwardExpose } from '@/shared'
+import { injectSliderRootContext } from './SliderRoot.vue'
 
 interface SliderHorizontalProps extends SliderOrientationPrivateProps {
   dir?: Direction
@@ -14,18 +15,35 @@ const emits = defineEmits<SliderOrientationPrivateEmits>()
 const { max, min, dir, inverted } = toRefs(props)
 
 const { forwardRef, currentElement: sliderElement } = useForwardExpose()
+const rootContext = injectSliderRootContext()
 
+const offsetPosition = ref<number>()
 const rectRef = ref<ClientRect>()
 const isSlidingFromLeft = computed(() => (dir?.value === 'ltr' && !inverted.value) || (dir?.value !== 'ltr' && inverted.value))
 
-function getValueFromPointer(pointerPosition: number) {
+function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
   const rect = rectRef.value || sliderElement.value!.getBoundingClientRect()
-  const input: [number, number] = [0, rect.width]
+
+  // Get the currently active thumb element
+  const thumb = [...rootContext.thumbElements.value][rootContext.valueIndexToChangeRef.value]
+  const thumbWidth = rootContext.thumbAlignment.value === 'contain' ? thumb.clientWidth : 0
+
+  // Calculate offset for dragging, but only when needed
+  if (!offsetPosition.value && !slideStart && rootContext.thumbAlignment.value === 'contain') {
+    offsetPosition.value = event.clientX - thumb.getBoundingClientRect().left
+  }
+
+  // Define the input range (slider track width minus thumb width)
+  const input: [number, number] = [0, rect.width - thumbWidth]
   const output: [number, number] = isSlidingFromLeft.value ? [min.value, max.value] : [max.value, min.value]
   const value = linearScale(input, output)
 
   rectRef.value = rect
-  return value(pointerPosition - rect.left)
+  const position = slideStart
+    ? event.clientX - rect.left - thumbWidth / 2
+    : event.clientX - rect.left - (offsetPosition.value ?? 0)
+
+  return value(position)
 }
 
 provideSliderOrientationContext({
@@ -42,18 +60,20 @@ provideSliderOrientationContext({
     :dir="dir"
     data-orientation="horizontal"
     :style="{
-      ['--reka-slider-thumb-transform' as any]: 'translateX(-50%)',
+      ['--reka-slider-thumb-transform' as any]:
+        !isSlidingFromLeft && rootContext.thumbAlignment.value === 'overflow' ? 'translateX(50%)' : 'translateX(-50%)',
     }"
     @slide-start="(event) => {
-      const value = getValueFromPointer(event.clientX);
+      const value = getValueFromPointerEvent(event, true);
       emits('slideStart', value)
     }"
     @slide-move="(event) => {
-      const value = getValueFromPointer(event.clientX);
+      const value = getValueFromPointerEvent(event);
       emits('slideMove', value)
     }"
     @slide-end="() => {
       rectRef = undefined;
+      offsetPosition = undefined
       emits('slideEnd')
     }"
     @step-key-down="(event) => {
