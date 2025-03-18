@@ -6,6 +6,7 @@ import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import type { AcceptableValue } from '@/shared/types'
 import { injectComboboxGroupContext } from './ComboboxGroup.vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { isEqual } from 'ohash'
 
 interface ComboboxItemContext {
   isSelected: Ref<boolean>
@@ -76,6 +77,10 @@ onMounted(() => {
 })
 onUnmounted(() => {
   rootContext.allItems.value.delete(id)
+})
+
+provideComboboxItemContext({
+  isSelected: computed(() => isEqual(rootContext.modelValue.value, props.value)),
 })
 </script>
 
