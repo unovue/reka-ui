@@ -298,6 +298,29 @@ describe('numberField', () => {
       await fireEvent.keyDown(input, { key: kbd.ENTER })
       expect(input.value).toBe('EUR 7.00')
     })
+
+    it('should correctly update model value independently of formatting', async () => {
+      const { input, emitted } = setup({
+        defaultValue: 100,
+      })
+
+      // after update, both internal and displayed value are not formatted
+      await fireEvent.update(input, '1000')
+      expect(input.value).toBe('1000')
+      expect(emitted('update:model-value')[0]).toEqual([1000])
+      // update:model-value fired after each consecutive update
+      await fireEvent.update(input, '10000')
+      expect(input.value).toBe('10000')
+      expect(emitted('update:model-value')[1]).toEqual([10000])
+      // on 'enter' key press formatting is applied to text, model value does not change
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('10,000')
+      expect(emitted('update:model-value').length).toBe(2)
+      // update:model-value always sends non-formatted value even if current text is formatted
+      await fireEvent.update(input, '10,001')
+      expect(input.value).toBe('10,001')
+      expect(emitted('update:model-value')[2]).toEqual([10001])
+    })
   })
 })
 

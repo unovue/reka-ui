@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { clamp, createContext, snapValueToStep, useFormControl, useLocale } from '@/shared'
-import { type HTMLAttributes, type Ref, computed, ref, toRefs } from 'vue'
+import { type HTMLAttributes, type Ref, computed, ref, toRefs, watch } from 'vue'
 import type { FormFieldProps } from '@/shared/types'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
@@ -42,7 +42,7 @@ interface NumberFieldRootContext {
   inputMode: Ref<HTMLAttributes['inputmode']>
   textValue: Ref<string>
   validate: (val: string) => boolean
-  applyInputValue: (val: string) => void
+  applyInputValue: (val: string, format?: boolean) => void
   disabled: Ref<boolean>
   disableWheelChange: Ref<boolean>
   max: Ref<number | undefined>
@@ -71,7 +71,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   stepSnapping: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, disableWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { defaultValue, disabled, disableWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -83,6 +83,8 @@ const { primitiveElement, currentElement } = usePrimitiveElement()
 const locale = useLocale(propLocale)
 const isFormControl = useFormControl(currentElement)
 const inputEl = ref<HTMLInputElement>()
+const textValue = ref<string>('')
+let skipFormatNextUpdate: boolean = false
 
 const isDecreaseDisabled = computed(() => (
   clampInputValue(modelValue.value) === min.value
@@ -139,7 +141,18 @@ const inputMode = computed<HTMLAttributes['inputmode']>(() => {
 // Replace negative textValue formatted using currencySign: 'accounting'
 // with a textValue that can be announced using a minus sign.
 const textValueFormatter = useNumberFormatter(locale, formatOptions)
-const textValue = computed(() => isNaN(modelValue.value) ? '' : textValueFormatter.format(modelValue.value))
+
+updateTextValue(modelValue.value)
+
+watch([modelValue, defaultValue, formatOptions, propLocale], () => {
+  if (!skipFormatNextUpdate)
+    updateTextValue(modelValue.value)
+  skipFormatNextUpdate = false
+})
+
+function updateTextValue(value: number | null) {
+  textValue.value = (value === null || isNaN(value)) ? '' : textValueFormatter.format(value)
+}
 
 function validate(val: string) {
   return numberParser.isValidPartialNumber(val, min.value, max.value)
@@ -162,10 +175,16 @@ function clampInputValue(val: number) {
   return clampedValue
 }
 
-function applyInputValue(val: string) {
+function applyInputValue(val: string, format: boolean = true) {
   const parsedValue = numberParser.parse(val)
 
+  // if formatting not requested, set flag to skip formatting in the watcher before updating the value
+  if (!format)
+    skipFormatNextUpdate = true
   modelValue.value = clampInputValue(parsedValue)
+  // if formatting is requested, force a text value update here in case the current value is the same as previous
+  if (format)
+    updateTextValue(modelValue.value)
   // Set to empty state if input value is empty
   if (!val.length)
     return setInputValue(val)
