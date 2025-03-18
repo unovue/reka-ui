@@ -4,6 +4,7 @@ import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
+import { isEqual } from 'ohash'
 
 export interface TagsInputItemDeleteProps extends PrimitiveProps {}
 </script>
@@ -24,7 +25,7 @@ const disabled = computed(() => itemContext.disabled?.value || context.disabled.
 function handleDelete() {
   if (disabled.value)
     return
-  const index = context.modelValue.value.findIndex(i => i === itemContext.value.value)
+  const index = context.modelValue.value.findIndex(i => isEqual(i, itemContext.value.value))
   context.onRemoveValue(index)
 }
 </script>
