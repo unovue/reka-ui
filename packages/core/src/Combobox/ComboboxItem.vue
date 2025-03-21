@@ -1,19 +1,13 @@
 <script lang="ts">
-import { type Ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
-import { createContext, useId } from '@/shared'
+import { useId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import type { AcceptableValue } from '@/shared/types'
 import { injectComboboxGroupContext } from './ComboboxGroup.vue'
 import { usePrimitiveElement } from '@/Primitive'
-import { isEqual } from 'ohash'
 
-interface ComboboxItemContext {
-  isSelected: Ref<boolean>
-}
-
-export const [injectComboboxItemContext, provideComboboxItemContext]
-  = createContext<ComboboxItemContext>('ComboboxItem')
+export { injectListboxItemContext as injectComboboxItemContext } from '@/Listbox'
 
 export type ComboboxItemEmits<T = AcceptableValue> = ListboxItemEmits<T>
 export interface ComboboxItemProps<T = AcceptableValue> extends ListboxItemProps<T> {
@@ -77,10 +71,6 @@ onMounted(() => {
 })
 onUnmounted(() => {
   rootContext.allItems.value.delete(id)
-})
-
-provideComboboxItemContext({
-  isSelected: computed(() => isEqual(rootContext.modelValue.value, props.value)),
 })
 </script>
 
