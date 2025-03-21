@@ -65,6 +65,12 @@ projects:
     url: https://cider.sh
     image: https://cider.sh/og.png
 
+
+  - title: DevDb
+    description: A lightweight VS Code extension that auto-loads your database and provides affordances from your database to aid development and debugging.
+    url: https://github.com/damms005/devdb-vscode
+    image: https://github.com/damms005/devdb-vscode/raw/main/resources/screenshots/new/main-light-dark.png
+
 starters:
   - title: shadcn-docs
     description: A Nuxt content docs theme built with `shadcn-vue`
