@@ -24,7 +24,7 @@ const { forwardRef } = useForwardExpose()
       v-bind="props"
       :ref="forwardRef"
       :type="as === 'button' ? 'button' : undefined "
-      @click="rootContext.onClose()"
+      @click="rootContext.onClose"
     >
       <slot />
     </Primitive>

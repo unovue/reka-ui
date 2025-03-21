@@ -98,15 +98,19 @@ function startTimer(duration: number) {
   closeTimerRef.value = window.setTimeout(handleClose, duration)
 }
 
-function handleClose() {
+function handleClose(event?: PointerEvent) {
+  const isNonMouseClick = event?.pointerId === -1
   // focus viewport if focus is within toast to read the remaining toast
   // count to SR users and ensure focus isn't lost
   const isFocusInToast = currentElement.value?.contains(getActiveElement())
-  if (isFocusInToast)
+  if (isFocusInToast && isNonMouseClick)
     providerContext.viewport.value?.focus()
 
-  // when manually close the toast, we reset isClosePausedRef
-  providerContext.isClosePausedRef.value = false
+  if (isNonMouseClick) {
+    // when manually close the toast, we reset isClosePausedRef
+    providerContext.isClosePausedRef.value = false
+  }
+
   emits('close')
 }
 
