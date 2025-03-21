@@ -71,6 +71,7 @@ const open = useVModel(props, 'open', emits, {
         (event.currentTarget as HTMLElement).setAttribute('data-swipe', 'start');
       }"
       @swipe-move="(event) => {
+        emits('swipeMove', event);
         const { x, y } = event.detail.delta;
         const target = event.currentTarget as HTMLElement
         target.setAttribute('data-swipe', 'move');
@@ -78,6 +79,7 @@ const open = useVModel(props, 'open', emits, {
         target.style.setProperty('--reka-toast-swipe-move-y', `${y}px`);
       }"
       @swipe-cancel="(event) => {
+        emits('swipeCancel', event);
         const target = event.currentTarget as HTMLElement
         target.setAttribute('data-swipe', 'cancel');
         target.style.removeProperty('--reka-toast-swipe-move-x');
@@ -86,6 +88,7 @@ const open = useVModel(props, 'open', emits, {
         target.style.removeProperty('--reka-toast-swipe-end-y');
       }"
       @swipe-end="(event) => {
+        emits('swipeEnd', event);
         const { x, y } = event.detail.delta;
         const target = event.currentTarget as HTMLElement
         target.setAttribute('data-swipe', 'end');
