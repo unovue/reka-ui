@@ -79,6 +79,23 @@ describe('rangeCalendar', () => {
     expect(heading).toHaveTextContent('January 1980')
   })
 
+  it('respects programmatically updated value', async () => {
+    const { calendar, getByTestId, rerender } = setup({ calendarProps: { modelValue: undefined } })
+
+    const selectedDays = calendar.querySelectorAll<HTMLElement>('[data-selected]')
+    expect(selectedDays).toHaveLength(0)
+
+    // update value programmatically
+    await rerender({
+      calendarProps: {
+        modelValue: zonedDateTimeRange,
+      },
+    })
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January 1980')
+  })
+
   it('resets range on select when a range is already selected', async () => {
     const { getByTestId, calendar, user, rerender } = setup({
       calendarProps: { modelValue: calendarDateRange },
