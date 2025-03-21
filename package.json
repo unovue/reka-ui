@@ -32,10 +32,10 @@
     "@commitlint/config-conventional": "^19.7.1",
     "bumpp": "^9.11.1",
     "eslint": "^9.22.0",
-    "lint-staged": "^15.4.3",
+    "lint-staged": "^15.5.0",
     "pnpm": "^9.15.0",
     "rimraf": "^6.0.1",
-    "simple-git-hooks": "^2.11.1",
+    "simple-git-hooks": "^2.12.1",
     "typescript": "5.3.3"
   },
   "commitlint": {
