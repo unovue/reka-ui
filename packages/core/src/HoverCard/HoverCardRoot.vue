@@ -4,7 +4,7 @@ import { createContext, useForwardExpose } from '@/shared'
 
 export interface HoverCardRootProps {
   /** The open state of the hover card when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: false
+  defaultOpen?: boolean
   /** The controlled open state of the hover card. Can be binded as `v-model:open`. */
   open?: boolean
   /** The duration from when the mouse enters the trigger until the hover card opens. */

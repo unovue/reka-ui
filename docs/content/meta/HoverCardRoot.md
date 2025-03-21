@@ -11,7 +11,7 @@
   {
     'name': 'defaultOpen',
     'description': '<p>The open state of the hover card when it is initially rendered. Use when you do not need to control its open state.</p>\n',
-    'type': 'false',
+    'type': 'boolean',
     'required': false,
     'default': 'false'
   },
