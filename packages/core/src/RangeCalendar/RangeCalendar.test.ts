@@ -79,13 +79,13 @@ describe('rangeCalendar', () => {
     expect(heading).toHaveTextContent('January 1980')
   })
 
-  it('respects programatically updated value', async () => {
+  it('respects programmatically updated value', async () => {
     const { calendar, getByTestId, rerender } = setup({ calendarProps: { modelValue: undefined } })
 
     const selectedDays = calendar.querySelectorAll<HTMLElement>('[data-selected]')
     expect(selectedDays).toHaveLength(0)
 
-    // update value programatically
+    // update value programmatically
     await rerender({
       calendarProps: {
         modelValue: zonedDateTimeRange,
