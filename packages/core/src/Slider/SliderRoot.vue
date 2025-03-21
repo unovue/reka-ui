@@ -88,6 +88,7 @@ const props = withDefaults(defineProps<SliderRootProps>(), {
   defaultValue: () => [0],
   inverted: false,
   thumbAlignment: 'contain',
+  as: 'span',
 })
 const emits = defineEmits<SliderRootEmits>()
 

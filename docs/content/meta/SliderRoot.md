@@ -6,7 +6,7 @@
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
-    'default': '\'div\''
+    'default': '\'span\''
   },
   {
     'name': 'asChild',
