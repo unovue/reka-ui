@@ -99,14 +99,16 @@ function startTimer(duration: number) {
 }
 
 function handleClose(event?: PointerEvent) {
-  const isNonMouseClick = event?.pointerId === -1
+  const isNonPointerEvent = event?.pointerType === ''
+
+  // reka: update to only perform focus when user focus via keyboard
   // focus viewport if focus is within toast to read the remaining toast
   // count to SR users and ensure focus isn't lost
   const isFocusInToast = currentElement.value?.contains(getActiveElement())
-  if (isFocusInToast && isNonMouseClick)
+  if (isFocusInToast && isNonPointerEvent)
     providerContext.viewport.value?.focus()
 
-  if (isNonMouseClick) {
+  if (isNonPointerEvent) {
     // when manually close the toast, we reset isClosePausedRef
     providerContext.isClosePausedRef.value = false
   }
