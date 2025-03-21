@@ -10,7 +10,9 @@ import SliderThumbImpl from './SliderThumbImpl.vue'
 import { useCollection } from '@/Collection'
 import { computed } from 'vue'
 
-const props = defineProps<SliderThumbProps>()
+const props = withDefaults(defineProps<SliderThumbProps>(), {
+  as: 'span',
+})
 const { getItems } = useCollection()
 
 const { forwardRef, currentElement: thumbElement } = useForwardExpose()
