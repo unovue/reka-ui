@@ -146,7 +146,7 @@ function handleArrowKey(e: KeyboardEvent) {
         : []
       if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
         // Placeholder is set to first month of the new page
-        const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
+        const numberOfDays = getDaysInMonth(rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value }))
         newCollectionItems[
           numberOfDays - Math.abs(newIndex)
         ].focus()
@@ -170,8 +170,10 @@ function handleArrowKey(e: KeyboardEvent) {
 
       if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
         // Placeholder is set to first month of the new page
-        const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
-        newCollectionItems[newIndex - allCollectionItems.length + numberOfDays].focus()
+        const numberOfDays = getDaysInMonth(
+          rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value - 1 }),
+        )
+        newCollectionItems[newIndex - allCollectionItems.length + (newCollectionItems.length - numberOfDays)].focus()
         return
       }
 

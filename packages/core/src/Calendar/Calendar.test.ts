@@ -5,7 +5,7 @@ import CalendarMultiple from './story/_CalendarMultiple.vue'
 import userEvent from '@testing-library/user-event'
 import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { useTestKbd } from '@/shared'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
@@ -742,9 +742,34 @@ describe('calendar - edge cases', () => {
     expect(heading).toHaveTextContent('January - February 2025')
 
     await user.keyboard(kbd.ARROW_RIGHT)
-    screen.debug()
     expect(getByTestId('date-1-3-1')).toHaveFocus()
     await user.keyboard(kbd.ARROW_LEFT)
     expect(getByTestId('date-0-2-28')).toHaveFocus()
+  })
+
+  it('handles multiple number of months properly', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        defaultPlaceholder: edgeCaseCalendarDate,
+        numberOfMonths: 4,
+      },
+    })
+
+    const lastDayOfMonth = getByTestId('date-3-4-30')
+    lastDayOfMonth.focus()
+    expect(lastDayOfMonth).toHaveFocus()
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - April 2025')
+
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('date-3-5-1')).toHaveFocus()
+
+    const firstDayOfMonth = getByTestId('date-0-2-1')
+    firstDayOfMonth.focus()
+    expect(firstDayOfMonth).toHaveFocus()
+
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(getByTestId('date-0-1-31')).toHaveFocus()
   })
 })
