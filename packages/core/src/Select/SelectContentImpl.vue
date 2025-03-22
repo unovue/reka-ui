@@ -118,6 +118,7 @@ const selectedItem = ref<HTMLElement>()
 const selectedItemText = ref<HTMLElement>()
 const isPositioned = ref(false)
 const firstValidItemFoundRef = ref(false)
+const firstSelectedItemInArrayFoundRef = ref(false)
 
 function focusSelectedItem() {
   if (selectedItem.value && content.value)
@@ -226,15 +227,27 @@ provideSelectContentContext({
     const isFirstValidItem = !firstValidItemFoundRef.value && !disabled
     const isSelectedItem = valueComparator(rootContext.modelValue.value, value, rootContext.by)
 
+    if (rootContext.multiple.value) {
+      if (firstSelectedItemInArrayFoundRef.value) {
+        return
+      }
+      if (isSelectedItem || isFirstValidItem) {
+        selectedItem.value = node
+
+        // make sure to keep the first item highlighted when `multiple`
+        if (isSelectedItem) {
+          firstSelectedItemInArrayFoundRef.value = true
+        }
+      }
+    }
+    else {
+      if (isSelectedItem || isFirstValidItem) {
+        selectedItem.value = node
+      }
+    }
+
     if (isFirstValidItem) {
-      if (rootContext.isEmptyModelValue.value) {
-        firstValidItemFoundRef.value = true
-        selectedItem.value = node
-      }
-      else if (isSelectedItem) {
-        firstValidItemFoundRef.value = true
-        selectedItem.value = node
-      }
+      firstValidItemFoundRef.value = true
     }
   },
   selectedItem,
