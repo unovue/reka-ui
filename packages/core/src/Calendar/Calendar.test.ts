@@ -5,10 +5,11 @@ import CalendarMultiple from './story/_CalendarMultiple.vue'
 import userEvent from '@testing-library/user-event'
 import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { useTestKbd } from '@/shared'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
+const edgeCaseCalendarDate = new CalendarDate(2025, 1, 1)
 const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
 const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
 
@@ -216,11 +217,11 @@ describe('calendar', async () => {
     expect(heading).toHaveTextContent('January - February 1980')
 
     const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
-    const firstMonthDay = getByTestId('date-1-12')
+    const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
-    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDay = getByTestId('date-1-2-15')
     const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
@@ -256,11 +257,11 @@ describe('calendar', async () => {
     expect(heading).toHaveTextContent('January - February 1980')
 
     const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
-    const firstMonthDay = getByTestId('date-1-12')
+    const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
-    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDay = getByTestId('date-1-2-15')
     const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
@@ -297,11 +298,11 @@ describe('calendar', async () => {
     expect(heading).toHaveTextContent('January - February 1980')
 
     const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
-    const firstMonthDay = getByTestId('date-1-12')
+    const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
-    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDay = getByTestId('date-1-2-15')
     const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
@@ -721,5 +722,29 @@ describe('calendar - `multiple`', () => {
     expect(selectedDays2.length).toBe(1)
     await user.click(selectedDays2[0])
     expect(getSelectedDays(calendar).length).toBe(1)
+  })
+})
+
+describe('calendar - edge cases', () => {
+  it('handles february correctly using arrow keys', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        defaultPlaceholder: edgeCaseCalendarDate,
+        numberOfMonths: 2,
+      },
+    })
+
+    const lastDayOfMonth = getByTestId('date-1-2-28')
+    lastDayOfMonth.focus()
+    expect(lastDayOfMonth).toHaveFocus()
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - February 2025')
+
+    await user.keyboard(kbd.ARROW_RIGHT)
+    screen.debug()
+    expect(getByTestId('date-1-3-1')).toHaveFocus()
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(getByTestId('date-0-2-28')).toHaveFocus()
   })
 })
