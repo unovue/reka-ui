@@ -96,6 +96,7 @@ function handleChange() {
     @input="(event: InputEvent) => {
       const target = event.target as HTMLInputElement
       inputValue = target.value
+      rootContext.applyInputValue(target.value, false)
     }"
     @change="handleChange"
     @keydown.enter="rootContext.applyInputValue($event.target?.value)"

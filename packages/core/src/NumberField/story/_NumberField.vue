@@ -4,6 +4,7 @@ import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFie
 import { Icon } from '@iconify/vue'
 
 const props = defineProps<NumberFieldRootProps>()
+const emit = defineEmits(['update:model-value'])
 </script>
 
 <template>
@@ -12,6 +13,7 @@ const props = defineProps<NumberFieldRootProps>()
     id="number-field"
     data-testid="root"
     class="text-sm flex items-center border bg-blackA7 border-blackA9 rounded-md text-white"
+    @update:model-value="emit('update:model-value', $event)"
   >
     <label
       for="number-field"
