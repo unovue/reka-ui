@@ -55,7 +55,7 @@ watch([modelValue, open], () => {
     return
 
   requestAnimationFrame(() => {
-    const el = (currentElement.value as HTMLElement)?.querySelector('[data-state=open]')?.children?.[0] as HTMLElement | undefined
+    const el = (currentElement.value as HTMLElement)?.querySelector('[data-state=open]') as HTMLElement | undefined
     content.value = el
   })
 }, { immediate: true, flush: 'post' })

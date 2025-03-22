@@ -120,11 +120,9 @@ const currentTrigger = ref('')
                     </NavigationMenuItem>
 
                     <NavigationMenuIndicator
-                      class="data-[state=hidden]:opacity-0 duration-200 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut top-full z-[1] flex h-[10px] items-end justify-center overflow-hidden transition-[all,transform_250ms_ease]"
+                      class="absolute data-[state=hidden]:opacity-0 duration-200 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut top-full w-[--reka-navigation-menu-indicator-size] translate-x-[--reka-navigation-menu-indicator-position] mt-[1px] z-[100] flex h-[10px] items-end justify-center overflow-hidden transition-[all,transform_250ms_ease]"
                     >
-                      <div
-                        class="relative top-[70%] h-[10px] w-[10px] rotate-[45deg] rounded-tl-[2px] bg-white"
-                      />
+                      <div class="relative top-[70%] h-[12px] w-[12px] rotate-[45deg] bg-white border" />
                     </NavigationMenuIndicator>
                   </NavigationMenuList>
 
@@ -225,11 +223,9 @@ const currentTrigger = ref('')
                     </NavigationMenuItem>
 
                     <NavigationMenuIndicator
-                      class="data-[state=hidden]:opacity-0 duration-200 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut top-full z-[1] flex h-[10px] items-end justify-center overflow-hidden transition-[all,transform_250ms_ease]"
+                      class="absolute data-[state=hidden]:opacity-0 duration-200 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut top-full w-[--reka-navigation-menu-indicator-size] translate-x-[--reka-navigation-menu-indicator-position] mt-[1px] z-[100] flex h-[10px] items-end justify-center overflow-hidden transition-[all,transform_250ms_ease]"
                     >
-                      <div
-                        class="relative top-[70%] h-[10px] w-[10px] rotate-[45deg] rounded-tl-[2px] bg-white"
-                      />
+                      <div class="relative top-[70%] h-[12px] w-[12px] rotate-[45deg] bg-white border" />
                     </NavigationMenuIndicator>
                   </NavigationMenuList>
 
@@ -248,11 +244,9 @@ const currentTrigger = ref('')
             </NavigationMenuItem>
 
             <NavigationMenuIndicator
-              class="data-[state=hidden]:opacity-0 duration-200 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut top-full z-[1] flex h-[10px] items-end justify-center overflow-hidden transition-[all,transform_250ms_ease]"
+              class="absolute data-[state=hidden]:opacity-0 duration-200 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut top-full w-[--reka-navigation-menu-indicator-size] translate-x-[--reka-navigation-menu-indicator-position] mt-[1px] z-[100] flex h-[10px] items-end justify-center overflow-hidden transition-[all,transform_250ms_ease]"
             >
-              <div
-                class="relative top-[70%] h-[10px] w-[10px] rotate-[45deg] rounded-tl-[2px] bg-white"
-              />
+              <div class="relative top-[70%] h-[12px] w-[12px] rotate-[45deg] bg-white border" />
             </NavigationMenuIndicator>
           </NavigationMenuList>
 
