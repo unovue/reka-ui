@@ -79,7 +79,7 @@ const isHighlighted = computed(() => rootContext.highlightedRange.value
   : false)
 
 const SELECTOR
-  = '[data-reka-calendar-cell-trigger]:not([data-disabled]):not([data-outside-view]):not([data-outside-visible-view])'
+  = '[data-reka-calendar-cell-trigger]:not([data-outside-view]):not([data-outside-visible-view])'
 
 const isDateToday = computed(() => {
   return isToday(props.day, getLocalTimeZone())
