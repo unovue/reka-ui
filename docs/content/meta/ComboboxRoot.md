@@ -50,6 +50,12 @@
     'type': '((val: string[] | number[] | false[] | true[] | Record<string, any>[], term: string) => string[] | number[] | false[] | true[] | Record<string, any>[])',
     'required': false
   },
+    {
+    'name': 'inputEnterFunction',
+    'description': '<p>Custom function for handling combobox input enter event that preserves native event. By default, when user presses enter on <code>ComboboxInput</code>, the currently selected item is automatically selected, triggering a click event. This might not be ideal in some cases (example: search suggestions box), where pressing enter should trigger a different action. For such cases, you can provide a custom function to handle the enter event.</p>\n',
+    'type': '((event: InputEvent, selectedValue: AcceptableValue | undefined) => void)',
+    'required': false
+  }
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the Combobox. Can be binded with with <code>v-model</code>.</p>\n',

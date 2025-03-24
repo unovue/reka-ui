@@ -70,6 +70,8 @@ export interface ComboboxRootProps<T = AcceptableValue> extends PrimitiveProps {
   dir?: Direction
   /** The custom filter function for filtering `ComboboxItem`. */
   filterFunction?: (val: ArrayOrWrapped<T>, term: string) => ArrayOrWrapped<T>
+  /** Custom function for handling combobox input enter event that preserves native event. */
+  inputEnterFunction?: (event: InputEvent, selectedValue: T | undefined) => void
   /** The display value of input for selected item. Does not work with `multiple`. */
   displayValue?: (val: T) => string
   /**
@@ -267,6 +269,11 @@ function onCompositionEnd() {
   })
 }
 async function onInputEnter(event: InputEvent) {
+  if (props.inputEnterFunction) {
+    props.inputEnterFunction(event, selectedValue.value)
+    return
+  }
+
   if (filteredOptions.value.length && selectedValue.value && selectedElement.value instanceof Element) {
     event.preventDefault()
     event.stopPropagation()
