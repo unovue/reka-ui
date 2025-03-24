@@ -55,20 +55,6 @@ interface TreeRootContext<T = Record<string, any>> {
   handleMultipleReplace: ReturnType<typeof useSelectionBehavior>['handleMultipleReplace']
 }
 
-export type FlattenedItem<T> = {
-  _id: string
-  index: number
-  value: T
-  level: number
-  hasChildren: boolean
-  parentItem?: T
-  bind: {
-    value: T
-    level: number
-    [key: string]: any
-  }
-}
-
 export const [injectTreeRootContext, provideTreeRootContext] = createContext<TreeRootContext<any>>('TreeRoot')
 </script>
 
@@ -78,6 +64,7 @@ import { type EventHook, createEventHook, useVModel } from '@vueuse/core'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { type Ref, computed, nextTick, ref, toRefs } from 'vue'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
+import { flattenedItems, flattenItems, flattenFilter } from './utils'
 
 const props = withDefaults(defineProps<TreeRootProps<T, U>>(), {
   as: 'ul',
@@ -126,39 +113,29 @@ const selectedKeys = computed(() => {
     return [props.getKey(modelValue.value as any ?? {})]
 })
 
-function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedItem<T>[] {
-  return items.reduce((acc: FlattenedItem<T>[], item: T, index: number) => {
-    const key = props.getKey(item)
-    const children = props.getChildren(item)
-    const isExpanded = expanded.value.includes(key)
-
-    const flattenedItem: FlattenedItem<T> = {
-      _id: key,
-      value: item,
-      index,
-      level,
-      parentItem,
-      hasChildren: !!children,
-      bind: {
-        'value': item,
-        level,
-        'aria-setsize': items.length,
-        'aria-posinset': index + 1,
-      },
-    }
-    acc.push(flattenedItem)
-
-    if (children && isExpanded)
-      acc.push(...flattenItems(children, level + 1, item))
-
-    return acc
-  }, [])
-}
+const stext = ref<string>('')
+const searchFunc : (T)=>bool = (i) ->props.getKey(item).toLowerCase().includes(stext.value)
+const searchForceVisible = ref<string[]>([])
 
 const expandedItems = computed(() => {
-  const items = props.items
-  const expandedKeys = expanded.value.map(i => i)
-  return flattenItems(items ?? [])
+  const items = props.items ?? []
+  const expandedKeys = expanded.value.map((i) => i)
+  // when no search
+  if (search.value === '') {
+    return flattenItems(items, {
+      expanded: expandedKeys,
+      getKey: props.getKey,
+      getChildren: props.getChildren,
+    })
+  } else {
+    const st = search.value.toLowerCase()
+    return flattenFilter(items, {
+      predicate: searchFunc.value,
+      forceVisible: searchForceVisible.value,
+      getKey: props.getKey,
+      getChildren: props.getChildren,
+    })
+  }
 })
 
 function handleKeydown(event: KeyboardEvent) {
