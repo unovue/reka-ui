@@ -1,3 +1,4 @@
+import type { ComputedRef } from 'vue'
 import { clamp, createContext } from '@/shared'
 
 export interface SliderOrientationPrivateProps {
@@ -130,16 +131,15 @@ export const BACK_KEYS: Record<SlideDirection, string[]> = {
   'from-left': ['Home', 'PageDown', 'ArrowDown', 'ArrowLeft'],
   'from-right': ['Home', 'PageDown', 'ArrowDown', 'ArrowRight'],
   'from-bottom': ['Home', 'PageDown', 'ArrowDown', 'ArrowLeft'],
-  'from-top': ['Home', 'PageDown', 'ArrowUp', 'ArrowLeft'],
-
+  'from-top': ['Home', 'PageUp', 'ArrowUp', 'ArrowLeft'],
 }
 
 type Side = 'top' | 'right' | 'bottom' | 'left'
 interface SliderOrientation {
-  startEdge: Side
-  endEdge: Side
+  startEdge: ComputedRef<Side>
+  endEdge: ComputedRef<Side>
+  direction: ComputedRef<1 | -1>
   size: 'width' | 'height'
-  direction: number
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
