@@ -10,6 +10,7 @@ import {
 import { computed, nextTick } from 'vue'
 import { useKbd } from '@/shared'
 import { getDaysInMonth, isBetweenInclusive, toDate } from '@/date'
+import { getSelectableCells } from '@/Calendar/utils'
 
 export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
   day: DateValue
@@ -77,9 +78,6 @@ const isHighlightEnd = computed(() => rootContext.isHighlightedEnd(props.day))
 const isHighlighted = computed(() => rootContext.highlightedRange.value
   ? isBetweenInclusive(props.day, rootContext.highlightedRange.value.start, rootContext.highlightedRange.value.end)
   : false)
-
-const SELECTOR
-  = '[data-reka-calendar-cell-trigger]:not([data-outside-view]):not([data-outside-visible-view])'
 
 const isDateToday = computed(() => {
   return isToday(props.day, getLocalTimeZone())
@@ -152,83 +150,105 @@ function handleArrowKey(e: KeyboardEvent) {
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
-  const allCollectionItems: HTMLElement[] = parentElement
-    ? Array.from(parentElement.querySelectorAll(SELECTOR))
-    : []
-
-  const index = allCollectionItems.indexOf(currentElement.value)
-  let newIndex = index
   const indexIncrementation = 7
   const sign = rootContext.dir.value === 'rtl' ? -1 : 1
   switch (e.code) {
     case kbd.ARROW_RIGHT:
-      newIndex += sign
+      shiftFocus(currentElement.value, sign)
       break
     case kbd.ARROW_LEFT:
-      newIndex -= sign
+      shiftFocus(currentElement.value, -sign)
       break
     case kbd.ARROW_UP:
-      newIndex -= indexIncrementation
+      shiftFocus(currentElement.value, -indexIncrementation)
       break
     case kbd.ARROW_DOWN:
-      newIndex += indexIncrementation
+      shiftFocus(currentElement.value, indexIncrementation)
       break
     case kbd.ENTER:
     case kbd.SPACE_CODE:
       changeDate(e, props.day)
-      return
-    default:
-      return
   }
 
-  if (newIndex >= 0 && newIndex < allCollectionItems.length) {
-    allCollectionItems[newIndex].focus()
-    return
-  }
-
-  if (newIndex < 0) {
-    if (rootContext.isPrevButtonDisabled())
+  function shiftFocus(node: HTMLElement, add: number) {
+    const allCollectionItems: HTMLElement[] = getSelectableCells(parentElement)
+    if (!allCollectionItems.length)
       return
-    rootContext.prevPage()
-    nextTick(() => {
-      const newCollectionItems: HTMLElement[] = parentElement
-        ? Array.from(parentElement.querySelectorAll(SELECTOR))
-        : []
-      if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
+
+    const index = allCollectionItems.indexOf(node)
+    const newIndex = index + add
+
+    if (newIndex >= 0 && newIndex < allCollectionItems.length) {
+      if (allCollectionItems[newIndex].hasAttribute('data-disabled')) {
+        shiftFocus(allCollectionItems[newIndex], add)
+      }
+      allCollectionItems[newIndex].focus()
+      return
+    }
+
+    if (newIndex < 0) {
+      if (rootContext.isPrevButtonDisabled())
+        return
+      rootContext.prevPage()
+      nextTick(() => {
+        const newCollectionItems: HTMLElement[] = getSelectableCells(parentElement)
+        if (!newCollectionItems.length)
+          return
+        if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
         // Placeholder is set to first month of the new page
-        const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
+          const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
+          const computedIndex = numberOfDays - Math.abs(newIndex)
+          if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
+            shiftFocus(newCollectionItems[computedIndex], add)
+          }
+          newCollectionItems[
+            computedIndex
+          ].focus()
+          return
+        }
+        const computedIndex = newCollectionItems.length - Math.abs(newIndex)
+        if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
+          shiftFocus(newCollectionItems[computedIndex], add)
+        }
         newCollectionItems[
-          numberOfDays - Math.abs(newIndex)
+          computedIndex
         ].focus()
-        return
-      }
-      newCollectionItems[
-        newCollectionItems.length - Math.abs(newIndex)
-      ].focus()
-    })
-    return
-  }
-
-  if (newIndex >= allCollectionItems.length) {
-    if (rootContext.isNextButtonDisabled())
+      })
       return
-    rootContext.nextPage()
-    nextTick(() => {
-      const newCollectionItems: HTMLElement[] = parentElement
-        ? Array.from(parentElement.querySelectorAll(SELECTOR))
-        : []
+    }
 
-      if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
-        // Placeholder is set to first month of the new page
-        const numberOfDays = getDaysInMonth(
-          rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value - 1 }),
-        )
-        newCollectionItems[newIndex - allCollectionItems.length + (newCollectionItems.length - numberOfDays)].focus()
+    if (newIndex >= allCollectionItems.length) {
+      if (rootContext.isNextButtonDisabled())
         return
-      }
+      rootContext.nextPage()
+      nextTick(() => {
+        const newCollectionItems: HTMLElement[] = getSelectableCells(parentElement)
+        if (!newCollectionItems.length)
+          return
 
-      newCollectionItems[newIndex - allCollectionItems.length].focus()
-    })
+        if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
+        // Placeholder is set to first month of the new page
+          const numberOfDays = getDaysInMonth(
+            rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value - 1 }),
+          )
+
+          const computedIndex = newIndex - allCollectionItems.length + (newCollectionItems.length - numberOfDays)
+
+          if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
+            shiftFocus(newCollectionItems[computedIndex], add)
+          }
+          newCollectionItems[computedIndex].focus()
+          return
+        }
+
+        const computedIndex = newIndex - allCollectionItems.length
+        if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
+          shiftFocus(newCollectionItems[computedIndex], add)
+        }
+
+        newCollectionItems[computedIndex].focus()
+      })
+    }
   }
 }
 </script>
