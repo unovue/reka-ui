@@ -497,6 +497,50 @@ describe('rangeCalendar', () => {
     }
   })
 
+  it('handles maxValue correctly using arrow keys', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        maxValue: new CalendarDate(1980, 2, 15),
+      },
+    })
+
+    const lastDayOfMonth = getByTestId('date-1-31')
+    lastDayOfMonth.focus()
+    expect(lastDayOfMonth).toHaveFocus()
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January 1980')
+
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('date-2-1')).toHaveFocus()
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(getByTestId('date-1-31')).toHaveFocus()
+  })
+
+  it('handles minValue correctly using arrow keys', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        minValue: new CalendarDate(1979, 12, 15),
+      },
+    })
+
+    const firstDayOfMonth = getByTestId('date-1-1')
+    firstDayOfMonth.focus()
+    expect(firstDayOfMonth).toHaveFocus()
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January 1980')
+
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(getByTestId('date-12-31')).toHaveFocus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('date-1-1')).toHaveFocus()
+  })
+})
+
+describe('numberOfMonths > 1', () => {
   it('properly handles multiple months correctly', async () => {
     const { getByTestId, calendar, user } = setup({
       calendarProps: {
@@ -513,11 +557,11 @@ describe('rangeCalendar', () => {
     expect(heading).toHaveTextContent('January - February 1980')
 
     const firstMonthDayDateStr = calendarDateRange.start.set({ day: 12 }).toString()
-    const firstMonthDay = getByTestId('date-1-12')
+    const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
-    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDay = getByTestId('date-1-2-15')
     const secondMonthDayDateStr = calendarDateRange.start.set({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
@@ -538,7 +582,7 @@ describe('rangeCalendar', () => {
     expect(firstMonthDay).not.toBeInTheDocument()
   })
 
-  it('properly handles `pagedNavigation` with multiple months', async () => {
+  it('properly handles `pagedNavigation`', async () => {
     const { getByTestId, calendar, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
@@ -555,11 +599,11 @@ describe('rangeCalendar', () => {
     expect(heading).toHaveTextContent('January - February 1980')
 
     const firstMonthDayDateStr = calendarDateRange.start.set({ day: 12 }).toString()
-    const firstMonthDay = getByTestId('date-1-12')
+    const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
-    const secondMonthDay = getByTestId('date-2-15')
+    const secondMonthDay = getByTestId('date-1-2-15')
     const secondMonthDayDateStr = calendarDateRange.start.set({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
@@ -578,5 +622,49 @@ describe('rangeCalendar', () => {
     await user.click(prevButton)
     expect(heading).toHaveTextContent('November - December 1979')
     expect(firstMonthDay).not.toBeInTheDocument()
+  })
+
+  it('handles maxValue correctly using arrow keys', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        numberOfMonths: 2,
+        maxValue: new CalendarDate(1980, 3, 15),
+      },
+    })
+
+    const lastDayOfMonth = getByTestId('date-1-2-29')
+    lastDayOfMonth.focus()
+    expect(lastDayOfMonth).toHaveFocus()
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - February 1980')
+
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('date-1-3-1')).toHaveFocus()
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(getByTestId('date-0-2-29')).toHaveFocus()
+  })
+
+  it('handles minValue correctly using arrow keys', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        numberOfMonths: 2,
+        minValue: new CalendarDate(1979, 12, 15),
+      },
+    })
+
+    const firstDayOfMonth = getByTestId('date-0-1-1')
+    firstDayOfMonth.focus()
+    expect(firstDayOfMonth).toHaveFocus()
+
+    const heading = getByTestId('heading')
+    expect(heading).toHaveTextContent('January - February 1980')
+
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(getByTestId('date-0-12-31')).toHaveFocus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('date-1-1-1')).toHaveFocus()
   })
 })
