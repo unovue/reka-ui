@@ -114,8 +114,8 @@ importers:
         specifier: ^12.5.0
         version: 12.5.0(typescript@5.4.2)
       motion-v:
-        specifier: 0.10.0-beta.1
-        version: 0.10.0-beta.1(vue@3.5.13(typescript@5.4.2))
+        specifier: 0.13.1
+        version: 0.13.1(vue@3.5.13(typescript@5.4.2))
       reka-ui:
         specifier: link:../packages/core
         version: link:../packages/core
@@ -3536,8 +3536,8 @@ packages:
   fraction.js@4.3.7:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
 
-  framer-motion@12.4.0:
-    resolution: {integrity: sha512-QX92ThRniev3YTkjXOV/7m9fXBRQ5xDDRWDinuU//Xkjh+q9ppg3Nb0b95xgJYd2AE0rgJ7eoihY+Z+jjSv22w==}
+  framer-motion@12.5.0:
+    resolution: {integrity: sha512-buPlioFbH9/W7rDzYh1C09AuZHAk2D1xTA1BlounJ2Rb9aRg84OXexP0GLd+R83v0khURdMX7b5MKnGTaSg5iA==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -4666,14 +4666,14 @@ packages:
   moo-color@1.0.3:
     resolution: {integrity: sha512-i/+ZKXMDf6aqYtBhuOcej71YSlbjT3wCO/4H1j8rPvxDJEifdwgg5MaFyu6iYAT8GBZJg2z0dkgK4YMzvURALQ==}
 
-  motion-dom@12.0.0:
-    resolution: {integrity: sha512-CvYd15OeIR6kHgMdonCc1ihsaUG4MYh/wrkz8gZ3hBX/uamyZCXN9S9qJoYF03GqfTt7thTV/dxnHYX4+55vDg==}
+  motion-dom@12.6.1:
+    resolution: {integrity: sha512-8XVsriTUEVOepoIDgE/LDGdg7qaKXWdt+wQA/8z0p8YzJDLYL8gbimZ3YkCLlj7bB2i/4UBD/g+VO7y9ZY0zHQ==}
 
-  motion-utils@12.0.0:
-    resolution: {integrity: sha512-MNFiBKbbqnmvOjkPyOKgHUp3Q6oiokLkI1bEwm5QA28cxMZrv0CbbBGDNmhF6DIXsi1pCQBSs0dX8xjeER1tmA==}
+  motion-utils@12.5.0:
+    resolution: {integrity: sha512-+hFFzvimn0sBMP9iPxBa9OtRX35ZQ3py0UHnb8U29VD+d8lQ8zH3dTygJWqK7av2v6yhg7scj9iZuvTS0f4+SA==}
 
-  motion-v@0.10.0-beta.1:
-    resolution: {integrity: sha512-OlwE3817XY06uje+WYQQkBKcFzQQpmUWnV6WrrMGVJmYTsLP8/nepJ3ClyhfoHi3CbZ1L7KOoBGm+DQfcAycvQ==}
+  motion-v@0.13.1:
+    resolution: {integrity: sha512-Hs1p0he2Ee6mhLMkTpB08cvjWT/24b+spJ28O+KzHqFgx34BDyFUIhDJvi6i7QF3BjS2ukgbHQdE3Uy5nVngUA==}
     peerDependencies:
       vue: '>=3.0.0'
 
@@ -10388,10 +10388,10 @@ snapshots:
 
   fraction.js@4.3.7: {}
 
-  framer-motion@12.4.0:
+  framer-motion@12.5.0:
     dependencies:
-      motion-dom: 12.0.0
-      motion-utils: 12.0.0
+      motion-dom: 12.6.1
+      motion-utils: 12.5.0
       tslib: 2.6.3
 
   from2@2.3.0:
@@ -11655,17 +11655,18 @@ snapshots:
     dependencies:
       color-name: 1.1.4
 
-  motion-dom@12.0.0:
+  motion-dom@12.6.1:
     dependencies:
-      motion-utils: 12.0.0
+      motion-utils: 12.5.0
 
-  motion-utils@12.0.0: {}
+  motion-utils@12.5.0: {}
 
-  motion-v@0.10.0-beta.1(vue@3.5.13(typescript@5.4.2)):
+  motion-v@0.13.1(vue@3.5.13(typescript@5.4.2)):
     dependencies:
       '@vueuse/core': 10.11.1(vue@3.5.13(typescript@5.4.2))
-      framer-motion: 12.4.0
+      framer-motion: 12.5.0
       hey-listen: 1.0.8
+      motion-dom: 12.6.1
       vue: 3.5.13(typescript@5.4.2)
     transitivePeerDependencies:
       - '@emotion/is-prop-valid'
