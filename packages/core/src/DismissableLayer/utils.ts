@@ -157,6 +157,7 @@ export function useFocusOutside(
         return
 
       await nextTick()
+      await nextTick()
       if (!element.value || isLayerExist(element.value, event.target as HTMLElement))
         return
 
