@@ -129,7 +129,7 @@
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.5.1",
     "jsdom": "^25.0.1",
-    "vite": "^5.4.12",
+    "vite": "^5.4.15",
     "vite-plugin-dts": "^4.2.3",
     "vitest": "^2.1.9",
     "vitest-axe": "0.1.0",
