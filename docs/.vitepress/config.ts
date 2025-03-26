@@ -309,10 +309,8 @@ export default defineConfig({
           {
             text: 'Dialog',
             items: [
-              {
-                text: 'Dialog Command Menu',
-                link: '/examples/dialog-command-menu',
-              },
+              { text: 'Dialog Command Menu', link: '/examples/dialog-command-menu' },
+              { text: 'Dialog Gesture Driven', link: '/examples/dialog-gesture-driven' },
             ],
           },
           {
