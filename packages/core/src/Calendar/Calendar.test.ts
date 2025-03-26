@@ -520,7 +520,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: calendarDate,
-        isDateUnavailable: (date) => {
+        isDateUnavailable: (date: DateValue) => {
           return date.day === 3
         },
       },
@@ -532,6 +532,43 @@ describe('calendar', async () => {
     expect(thirdDayInMonth).toHaveAttribute('aria-disabled', 'true')
     await user.click(thirdDayInMonth)
     expect(thirdDayInMonth).not.toHaveAttribute('data-selected')
+  })
+
+  it('handles disabled dates appropriately', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        placeholder: calendarDate,
+        isDateDisabled: (date: DateValue) => {
+          return date.day === 3
+        },
+      },
+    })
+
+    const thirdDayInMonth = getByTestId('date-1-3')
+    expect(thirdDayInMonth).toHaveTextContent('3')
+    expect(thirdDayInMonth).toHaveAttribute('data-disabled')
+    expect(thirdDayInMonth).toHaveAttribute('aria-disabled', 'true')
+    await user.click(thirdDayInMonth)
+    expect(thirdDayInMonth).not.toHaveFocus()
+
+    const secondDayInMonth = getByTestId('date-1-2')
+    secondDayInMonth.focus()
+
+    expect(secondDayInMonth).toHaveFocus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('date-1-4')).toHaveFocus()
+    await user.keyboard(kbd.ARROW_LEFT)
+    expect(secondDayInMonth).toHaveFocus()
+
+    const tenthDayOfMonth = getByTestId('date-1-10')
+    tenthDayOfMonth.focus()
+    expect(tenthDayOfMonth).toHaveFocus()
+
+    await user.keyboard(kbd.ARROW_UP)
+    expect(getByTestId('date-12-27')).toHaveFocus()
+
+    await user.keyboard(kbd.ARROW_DOWN)
+    expect(getByTestId('date-1-10')).toHaveFocus()
   })
 
   it('doesnt allow focus or interaction when `disabled` is `true`', async () => {
