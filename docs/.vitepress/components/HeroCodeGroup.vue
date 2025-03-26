@@ -21,7 +21,7 @@ const slots = useSlots()
 const slotsFramework = computed(() => slots.default?.().map(slot => slot.props?.key?.toString()?.replace('_', '')) ?? [])
 
 const cssFrameworkOptions = computed(() => [
-  { label: 'Tailwind', value: 'tailwind', icon: 'devicon:tailwindcss' },
+  { label: 'Tailwind 3', value: 'tailwind', icon: 'devicon:tailwindcss' },
   { label: 'CSS', value: 'css', icon: 'devicon:css3' },
   { label: 'Pinceau', value: 'pinceau' },
 ].filter(i => slotsFramework.value.includes(i.value)))
