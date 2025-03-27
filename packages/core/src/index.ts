@@ -47,6 +47,7 @@ export * from './Viewport'
 // utilities
 export * from './ConfigProvider'
 export * from './FocusScope'
+export * from './RovingFocus'
 export * from './Presence'
 export { Primitive, Slot, type PrimitiveProps, type AsTag } from './Primitive'
 export { VisuallyHidden, type VisuallyHiddenProps } from './VisuallyHidden'

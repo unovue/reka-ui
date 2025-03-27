@@ -441,6 +441,11 @@ export const components = {
     'FocusScope',
   ],
 
+  rovingFocus: [
+    'RovingFocusGroup',
+    'RovingFocusItem',
+  ],
+
   presence: [
     'Presence',
   ],
