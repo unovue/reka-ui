@@ -50,7 +50,7 @@ For changelog, visit [releases](https://github.com/unovue/reka-ui/releases).
 
 ## Contributing
 
-We would love to have your contributions! All PRs are welcome! We need help building the core components, docs, tests, stories! Join our discord and we will get you up and running!
+We would love to have your contributions! All PRs are welcome! We need help building the core components, docs, tests, stories! [Join our discord](https://chat.unovue.com/) and we will get you up and running!
 
 ## Dev Setup
 
