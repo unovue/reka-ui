@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 
-import type { Ref } from 'vue'
+import { type Matcher, hasTime, isBefore } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import { type Formatter, createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -9,11 +9,15 @@ import {
   type HourCycle,
   type SegmentPart,
   type SegmentValueObj,
+  createContent,
   getDefaultDate,
+  getSegmentElements,
+  initializeSegmentValues,
+  isSegmentNavigationKey,
+  syncSegmentValues,
 } from '@/shared/date'
-import { type Matcher, hasTime, isBefore } from '@/date'
-import { createContent, getSegmentElements, initializeSegmentValues, isSegmentNavigationKey, syncSegmentValues } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
+import type { Ref } from 'vue'
 
 type DateFieldRootContext = {
   locale: Ref<string>
@@ -30,6 +34,7 @@ type DateFieldRootContext = {
   elements: Ref<Set<HTMLElement>>
   focusNext: () => void
   setFocusedElement: (el: HTMLElement) => void
+  programmaticContinuation: Ref<boolean>
 }
 
 export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
@@ -77,10 +82,10 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 defineOptions({
   inheritAttrs: false,
@@ -245,6 +250,8 @@ function setFocusedElement(el: HTMLElement) {
   currentFocusedElement.value = el
 }
 
+const programmaticContinuation = ref(false)
+
 provideDateFieldRootContext({
   isDateUnavailable: propsIsDateUnavailable.value,
   locale,
@@ -262,6 +269,7 @@ provideDateFieldRootContext({
   focusNext() {
     nextFocusableSegment.value?.focus()
   },
+  programmaticContinuation,
 })
 
 defineExpose({
