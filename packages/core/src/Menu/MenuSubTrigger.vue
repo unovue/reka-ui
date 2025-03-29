@@ -2,7 +2,13 @@
 import type { MenuItemImplProps } from './MenuItemImpl.vue'
 import type { Side } from './utils'
 
-export interface MenuSubTriggerProps extends MenuItemImplProps {}
+export interface MenuSubTriggerProps extends MenuItemImplProps {
+  /**
+  * Sets the delay for when the submenu is closed.
+  * @default 300
+  */
+  grace?: number
+}
 </script>
 
 <script setup lang="ts">
@@ -15,7 +21,7 @@ import { useId } from '@/shared'
 import { SUB_OPEN_KEYS, getOpenState, isMouseEvent } from './utils'
 import MenuAnchor from './MenuAnchor.vue'
 
-const props = defineProps<MenuSubTriggerProps>()
+const props = withDefaults(defineProps<MenuSubTriggerProps>(), { grace: 300 })
 
 const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
@@ -84,7 +90,7 @@ async function handlePointerLeave(event: PointerEvent) {
     window.clearTimeout(contentContext.pointerGraceTimerRef.value)
     contentContext.pointerGraceTimerRef.value = window.setTimeout(
       () => contentContext.onPointerGraceIntentChange(null),
-      300,
+      props.grace,
     )
   }
   else {
