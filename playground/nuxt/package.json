@@ -16,9 +16,9 @@
   "devDependencies": {
     "@iconify/vue": "^4.3.0",
     "@nuxt/devtools": "latest",
-    "@nuxtjs/tailwindcss": "^6.13.1",
+    "@nuxtjs/tailwindcss": "^6.13.2",
     "@radix-ui/colors": "^3.0.0",
-    "@types/node": "^22.13.5",
+    "@types/node": "^22.13.14",
     "nuxt": "^3.16.0"
   }
 }
