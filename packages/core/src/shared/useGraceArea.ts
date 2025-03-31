@@ -43,13 +43,10 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
   watchEffect((cleanupFn) => {
     if (pointerGraceArea.value) {
       const handleTrackPointerGrace = (event: PointerEvent) => {
-        if (!pointerGraceArea.value)
+        if (!pointerGraceArea.value || !(event.target instanceof HTMLElement))
           return
 
-        if (event.target === null)
-          return
-
-        const target = event.target as HTMLElement
+        const target = event.target
         const pointerPosition = { x: event.clientX, y: event.clientY }
         const hasEnteredTarget = triggerElement.value?.contains(target) || containerElement.value?.contains(target)
         const isPointerOutsideGraceArea = !isPointInPolygon(pointerPosition, pointerGraceArea.value)
