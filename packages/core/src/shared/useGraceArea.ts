@@ -45,6 +45,10 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
       const handleTrackPointerGrace = (event: PointerEvent) => {
         if (!pointerGraceArea.value)
           return
+
+        if (event.target === null)
+          return
+
         const target = event.target as HTMLElement
         const pointerPosition = { x: event.clientX, y: event.clientY }
         const hasEnteredTarget = triggerElement.value?.contains(target) || containerElement.value?.contains(target)
