@@ -19,6 +19,8 @@ type RangeCalendarRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
+  grid: Ref< Grid<DateValue>[]>
+  weekDays: Ref<string[]>
   weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
@@ -329,6 +331,8 @@ provideRangeCalendarRootContext({
   disabled,
   initialFocus,
   pagedNavigation,
+  grid,
+  weekDays: weekdays,
   weekStartsOn,
   weekdayFormat,
   fixedWeeks,
