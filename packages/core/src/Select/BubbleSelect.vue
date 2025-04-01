@@ -25,10 +25,10 @@ watch(() => props.value, (cur, prev) => {
     'value',
   ) as PropertyDescriptor
   const setValue = descriptor.set
-  if (cur !== prev && setValue) {
+  if (cur !== prev && setValue && selectElement.value) {
     const event = new Event('change', { bubbles: true })
     setValue.call(selectElement.value, cur)
-    selectElement.value?.dispatchEvent(event)
+    selectElement.value.dispatchEvent(event)
   }
 })
 
