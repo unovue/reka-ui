@@ -40,6 +40,8 @@ type CalendarRootContext = {
   isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
   formatter: Formatter
   dir: Ref<Direction>
+  grid: Ref< Grid<DateValue>[]>
+  weekDays: Ref<string[]>
 }
 
 interface BaseCalendarRootProps extends PrimitiveProps {
@@ -304,6 +306,8 @@ provideCalendarRootContext({
   disabled,
   initialFocus,
   pagedNavigation,
+  grid,
+  weekDays: weekdays,
   weekStartsOn,
   weekdayFormat,
   fixedWeeks,
