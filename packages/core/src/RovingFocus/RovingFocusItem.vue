@@ -3,8 +3,14 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface RovingFocusItemProps extends PrimitiveProps {
   tabStopId?: string
+  /**
+   * When `false`, item wil be not be focusable.
+   * @defaultValue `true`
+   */
   focusable?: boolean
+  /** When `true`, item wil be initially focused. */
   active?: boolean
+  /** When `true`, shift + arrow key will allow focusing on next/previous item. */
   allowShiftKey?: boolean
 }
 </script>

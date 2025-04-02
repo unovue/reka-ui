@@ -22,8 +22,17 @@ export interface RovingFocusGroupProps extends PrimitiveProps {
    * @defaultValue false
    */
   loop?: boolean
+  /** The controlled value of the current stop item. Can be binded as `v-model`. */
   currentTabStopId?: string | null
+  /**
+   * The value of the current stop item.
+   *
+   * Use when you do not need to control the state of the stop item.
+   */
   defaultCurrentTabStopId?: string
+  /**
+   * When `true`, will prevent scrolling to the focus item when focused.
+   */
   preventScrollOnEntryFocus?: boolean
 }
 
