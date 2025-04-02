@@ -41,11 +41,37 @@ Contains all the parts of a Roving Focus
 
 <!-- @include: @/meta/RovingFocusGroup.md -->
 
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-orientation]',
+      values: ['vertical', 'horizontal', undefined],
+    },
+  ]"
+/>
+
 ### Item
 
 The item that would inherit the roving tabindex
 
 <!-- @include: @/meta/RovingFocusItem.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-active]',
+      values: 'Present when not active',
+    },
+    {
+      attribute: '[data-disabled]',
+      values: 'Present when not focusable',
+    },
+    {
+      attribute: '[data-orientation]',
+      values: ['vertical', 'horizontal', undefined],
+    },
+  ]"
+/>
 
 ## Examples
 
