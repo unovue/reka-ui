@@ -61,9 +61,9 @@ describe('test RovingFocus functionalities', () => {
     })
     const buttons = wrapper.findAll('button')
 
-    expect(buttons[0].attributes('data-active')).toBe('true')
-    expect(buttons[1].attributes('data-active')).toBe('false')
-    expect(buttons[2].attributes('data-active')).toBe('false')
+    expect(buttons[0].attributes('data-active')).toBe('')
+    expect(buttons[1].attributes('data-active')).toBe(undefined)
+    expect(buttons[2].attributes('data-active')).toBe(undefined)
   })
 })
 
@@ -89,7 +89,7 @@ describe('test RovingFocus with Arrow Navigation', () => {
     const buttons = wrapper.findAll('button')
     // make focus to the RovingFocusGroup
     await userEvent.tab()
-    expect(buttons[1].attributes('data-active')).toBe('true')
+    expect(buttons[1].attributes('data-active')).toBe('')
     expect(buttons[1].element).toBe(document.activeElement)
 
     await userEvent.keyboard('[ArrowRight]')
@@ -120,7 +120,7 @@ describe('test RovingFocus with Arrow Navigation', () => {
 
     // make focus to the RovingFocusGroup
     await userEvent.tab()
-    expect(buttons[1].attributes('data-active')).toBe('true')
+    expect(buttons[1].attributes('data-active')).toBe('')
     expect(buttons[1].element).toBe(document.activeElement)
 
     await userEvent.keyboard('[ArrowRight]')
