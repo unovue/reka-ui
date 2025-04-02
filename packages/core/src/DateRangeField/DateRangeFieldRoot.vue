@@ -193,6 +193,7 @@ const isInvalid = computed(() => {
       modelValue.value.end,
       propsIsDateUnavailable.value,
       undefined,
+      false,
     )
     if (!allValid)
       return true

@@ -63,6 +63,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   placeholder?: DateValue
   /** When combined with `isDateUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. */
   allowNonContiguousRanges?: boolean
+  /** When combined with `allowNonContiguousRanges = false`, determines whether disabled dates should cause a break of contiguity. */
+  ignoreDisabledDatesForContiguity?: boolean
   /** This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month */
   pagedNavigation?: boolean
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
@@ -135,6 +137,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
   allowNonContiguousRanges: false,
+  ignoreDisabledDatesForContiguity: false,
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
 
@@ -177,6 +180,7 @@ const {
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
   allowNonContiguousRanges,
+  ignoreDisabledDatesForContiguity,
 } = toRefs(props)
 
 const { primitiveElement, currentElement: parentElement }
@@ -259,6 +263,7 @@ const {
   isDateUnavailable,
   focusedValue,
   allowNonContiguousRanges,
+  ignoreDisabledDatesForContiguity,
 })
 
 watch(modelValue, (_modelValue, _prevValue) => {

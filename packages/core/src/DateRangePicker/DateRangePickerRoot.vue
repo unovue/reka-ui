@@ -40,9 +40,10 @@ type DateRangePickerRootContext = {
   onStartValueChange: (date: DateValue | undefined) => void
   dir: Ref<Direction>
   allowNonContiguousRanges: Ref<boolean>
+  ignoreDisabledDatesForContiguity: Ref<boolean>
 }
 
-export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'allowNonContiguousRanges'>
+export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'allowNonContiguousRanges' | 'ignoreDisabledDatesForContiguity'>
 
 export type DateRangePickerRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -83,6 +84,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
   allowNonContiguousRanges: false,
+  ignoreDisabledDatesForContiguity: false,
 })
 const emits = defineEmits<DateRangePickerRootEmits & PopoverRootEmits>()
 const {
@@ -109,6 +111,7 @@ const {
   hourCycle,
   dir: propsDir,
   allowNonContiguousRanges,
+  ignoreDisabledDatesForContiguity,
 } = toRefs(props)
 
 const dir = useDirection(propsDir)
@@ -145,6 +148,7 @@ watch(modelValue, (value) => {
 
 provideDateRangePickerRootContext({
   allowNonContiguousRanges,
+  ignoreDisabledDatesForContiguity,
   isDateUnavailable: propsIsDateUnavailable.value,
   isDateDisabled: propsIsDateDisabled.value,
   locale,

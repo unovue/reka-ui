@@ -175,9 +175,24 @@ export function areAllDaysBetweenValid(
   end: DateValue,
   isUnavailable: Matcher | undefined,
   isDisabled: Matcher | undefined,
+  ignoreDisabledDatesForContiguity: boolean,
 ) {
   if (isUnavailable === undefined && isDisabled === undefined)
     return true
+
+  if (ignoreDisabledDatesForContiguity) {
+    let dCurrent = start.add({ days: 1 })
+    if (isUnavailable?.(dCurrent))
+      return false
+
+    const dEnd = end
+    while (dCurrent.compare(dEnd) < 0) {
+      dCurrent = dCurrent.add({ days: 1 })
+      if (isUnavailable?.(dCurrent))
+        return false
+    }
+    return true
+  }
 
   let dCurrent = start.add({ days: 1 })
   if (isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
