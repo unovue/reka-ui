@@ -53,7 +53,7 @@ export function usePresence(
             dispatchCustomEvent('after-enter')
         }
         else if (
-          currentAnimationName === 'none'
+          currentAnimationName === 'none' || currentAnimationName === 'undefined'
           || stylesRef.value?.display === 'none'
         ) {
           // If there is no exit animation or the element is hidden, animations won't run
