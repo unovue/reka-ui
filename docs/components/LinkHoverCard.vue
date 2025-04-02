@@ -7,11 +7,13 @@ const props = defineProps<{
   name: string
 }>()
 
-const UTILITY_COMPONENT = ['ConfigProvider', 'VisuallyHidden', 'FocusScope']
+const UTILITY_COMPONENT = ['ConfigProvider', 'VisuallyHidden', 'FocusScope', 'RovingFocus']
 
 const href = computed(() => {
-  if (UTILITY_COMPONENT.includes(props.name)) {
-    return `/docs/utilities/${hyphenate(props.name)}`
+  const utilityComponent = UTILITY_COMPONENT.find(c => props.name.includes(c))
+  if (utilityComponent) {
+    const hash = hyphenate(props.name.split(utilityComponent)?.[1])
+    return `/docs/utilities/${hyphenate(utilityComponent)}${hash ? `#${hash}` : ''}`
   }
   else {
     const [last, ...parts] = hyphenate(props.name).split('-').reverse()

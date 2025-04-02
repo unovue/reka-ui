@@ -240,6 +240,7 @@ export default defineConfig({
               { text: 'Focus Scope', link: '/docs/utilities/focus-scope' },
               { text: 'Presence', link: '/docs/utilities/presence' },
               { text: 'Primitive', link: '/docs/utilities/primitive' },
+              { text: 'Roving Focus', link: '/docs/utilities/roving-focus' },
               { text: 'Slot', link: '/docs/utilities/slot' },
               { text: 'Visually Hidden', link: '/docs/utilities/visually-hidden' },
             ],
