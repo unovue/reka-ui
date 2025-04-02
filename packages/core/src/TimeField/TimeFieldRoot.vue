@@ -3,7 +3,7 @@ import { type DateValue, Time, getLocalTimeZone, isEqualDay, toCalendarDateTime,
 
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { type Formatter, createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   type HourCycle,
   type SegmentPart,
@@ -138,6 +138,8 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 const convertedModelValue = computed({
   get() {
+    if (isNullish(modelValue.value))
+      return modelValue.value
     return convertValue(modelValue.value)
   },
   set(newValue) {
@@ -221,15 +223,15 @@ watch(locale, (value) => {
 })
 
 watch(convertedModelValue, (_modelValue) => {
-  if (_modelValue !== undefined && (!isEqualDay(convertedPlaceholder.value, _modelValue) || convertedPlaceholder.value.compare(_modelValue) !== 0))
+  if (!isNullish(_modelValue) && (!isEqualDay(convertedPlaceholder.value, _modelValue) || convertedPlaceholder.value.compare(_modelValue) !== 0))
     placeholder.value = _modelValue.copy()
 })
 
 watch([convertedModelValue, locale], ([_modelValue]) => {
-  if (_modelValue !== undefined) {
+  if (!isNullish(_modelValue)) {
     segmentValues.value = { ...syncTimeSegmentValues({ value: _modelValue, formatter }) }
   }
-  else if (Object.values(segmentValues.value).every(value => value === null)) {
+  else if (Object.values(segmentValues.value).every(value => value === null) || isNullish(_modelValue)) {
     segmentValues.value = { ...initialSegments }
   }
 })
