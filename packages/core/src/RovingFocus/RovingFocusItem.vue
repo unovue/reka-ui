@@ -19,7 +19,6 @@ import { useCollection } from '@/Collection'
 
 const props = withDefaults(defineProps<RovingFocusItemProps>(), {
   focusable: true,
-  active: true,
   as: 'span',
 })
 
