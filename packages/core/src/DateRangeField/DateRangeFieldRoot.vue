@@ -246,6 +246,10 @@ watch(modelValue, (_modelValue) => {
     if (!endValue.value || _modelValue.end.compare(endValue.value) !== 0)
       endValue.value = _modelValue.end.copy()
   }
+  if (!_modelValue) {
+    startValue.value = undefined
+    endValue.value = undefined
+  }
 })
 
 watch([startValue, locale], ([_startValue]) => {
