@@ -9,6 +9,13 @@
     'default': 'false'
   },
   {
+    'name': 'ignoreDisabledDatesForContiguity',
+    'description': '<p>When combined with <code>allowNonContiguousRanges = false</code>, determines whether disabled dates should cause a break of contiguity.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
