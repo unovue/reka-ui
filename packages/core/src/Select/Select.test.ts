@@ -33,6 +33,8 @@ describe('given default Select', () => {
 
   it('should show placeholder', () => {
     expect(valueBox.html()).toContain('Please select a fruit')
+    const selectTrigger = wrapper.find('[role="combobox"]')
+    expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
   describe('opening the modal', () => {
@@ -188,6 +190,19 @@ describe('given Select with multiple props', async () => {
           it('should not close the modal', () => {
             const group = wrapper.find('[role=group]')
             expect(group.exists()).toBeTruthy()
+          })
+        })
+
+        describe('after unselecting the value', () => {
+          it('should have data placeholder attribute', async () => {
+            const selection = wrapper.findAll('[role=option]')[1];
+            (selection.element as HTMLElement).focus()
+            await selection.trigger('pointerup')
+            // Needs 2 pointerup because SelectContentImpl prevents accidental pointerup's
+            await fireEvent.pointerUp(selection.element)
+
+            const trigger = wrapper.find('[role="combobox"]')
+            expect(trigger.attributes('data-placeholder')).toBe('')
           })
         })
       })
