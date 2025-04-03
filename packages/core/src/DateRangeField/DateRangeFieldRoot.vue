@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import { type Calendar, type DateValue, GregorianCalendar } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
@@ -77,6 +77,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   id?: string
   /** The reading direction of the date field when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
+  calendar?: Calendar
 }
 
 export type DateRangeFieldRootEmits = {
@@ -106,6 +107,7 @@ const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  calendar: () => new GregorianCalendar(),
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
 const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
@@ -131,6 +133,7 @@ const defaultDate = getDefaultDate({
   granularity: props.granularity,
   defaultValue: modelValue.value?.start,
   locale: props.locale,
+  calendar: props.calendar,
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
