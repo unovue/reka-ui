@@ -68,7 +68,7 @@ const labelText = computed(() => rootContext.formatter.custom(toDate(props.day),
   year: 'numeric',
 }))
 
-const isDisabled = computed(() => rootContext.isDateDisabled(props.day))
+const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || rootContext.disableDaysOutsideCurrentView.value)
 const isUnavailable = computed(() => rootContext.isDateUnavailable?.(props.day) ?? false)
 const isSelectedDate = computed(() => rootContext.isSelected(props.day))
 const isSelectionStart = computed(() => rootContext.isSelectionStart(props.day))
