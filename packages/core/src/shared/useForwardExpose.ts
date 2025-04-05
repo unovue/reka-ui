@@ -9,7 +9,7 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   const currentElement = computedWithControl(() => null, (): HTMLElement => {
     // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
     // @ts-expect-error ignore ts error
-    return ['#text', '#comment'].includes(currentRef.value?.$el.nodeName) ? currentRef.value?.$el.nextElementSibling : unrefElement(currentRef.value)
+    return ['#text', '#comment'].includes(currentRef.value?.$el.nodeName) ? currentRef.value?.$el.nextElementSibling : unrefElement(currentRef)
   })
 
   onUpdated(currentElement.trigger)
