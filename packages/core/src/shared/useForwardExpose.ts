@@ -1,19 +1,16 @@
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
 import { computedWithControl, unrefElement } from '@vueuse/core'
-import { type ComponentPublicInstance, getCurrentInstance, onMounted, onUpdated, ref } from 'vue'
+import { type ComponentPublicInstance, getCurrentInstance, ref } from 'vue'
 
 export function useForwardExpose<T extends ComponentPublicInstance>() {
   const instance = getCurrentInstance()!
 
   const currentRef = ref<Element | T | null>()
-  const currentElement = computedWithControl(() => null, (): HTMLElement => {
+  const currentElement = computedWithControl(currentRef, (): HTMLElement => {
     // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
     // @ts-expect-error ignore ts error
     return ['#text', '#comment'].includes(currentRef.value?.$el.nodeName) ? currentRef.value?.$el.nextElementSibling : unrefElement(currentRef)
   })
-
-  onUpdated(currentElement.trigger)
-  onMounted(currentElement.trigger)
 
   // Do give us credit if you reference our code :D
   // localExpose should only be assigned once else will create infinite loop
