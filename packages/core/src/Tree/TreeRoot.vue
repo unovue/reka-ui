@@ -28,6 +28,8 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   disabled?: boolean
   /** When `true`, selecting parent will select the descendants. */
   propagateSelect?: boolean
+  /** When `true`, selecting children will update the parent state. */
+  bubbleSelect?: boolean
 }
 
 export type TreeRootEmits<T = Record<string, any>> = {
@@ -49,6 +51,7 @@ interface TreeRootContext<T = Record<string, any>> {
   disabled: Ref<boolean>
   dir: Ref<Direction>
   propagateSelect: Ref<boolean>
+  bubbleSelect: Ref<boolean>
   isVirtual: Ref<boolean>
   virtualKeydownHook: EventHook<KeyboardEvent>
 
@@ -94,7 +97,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { items, multiple, disabled, propagateSelect, dir: propDir } = toRefs(props)
+const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props)
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
@@ -186,6 +189,20 @@ function handleKeydownNavigation(event: KeyboardEvent) {
   })
 }
 
+function handleBubbleSelect(item: FlattenedItem<T>) {
+  if (item.parentItem != null && Array.isArray(modelValue.value) && props.multiple) {
+    const parentItem = expandedItems.value.find((i) => {
+      return item.parentItem != null && props.getKey(i.value) === props.getKey(item.parentItem)
+    })
+
+    if (parentItem != null && props.getChildren(parentItem.value)?.every(i => modelValue.value.find((v: any) => props.getKey(v) === props.getKey(i)))) {
+      // TODO: Can we get rid of this as any assertion?
+      modelValue.value = [...modelValue.value, parentItem.value as any]
+      handleBubbleSelect(parentItem)
+    }
+  }
+}
+
 provideTreeRootContext({
   modelValue,
   selectedKeys,
@@ -194,8 +211,19 @@ provideTreeRootContext({
     const exist = props.multiple && Array.isArray(modelValue.value) ? modelValue.value?.findIndex(condition) !== -1 : undefined
     onSelectItem(val, condition)
 
+    if (props.bubbleSelect && props.multiple && Array.isArray(modelValue.value)) {
+      const item = expandedItems.value.find((i) => {
+        return props.getKey(i.value) === props.getKey(val)
+      })
+
+      if (item != null) {
+        handleBubbleSelect(item)
+      }
+    }
+
     if (props.propagateSelect && props.multiple && Array.isArray(modelValue.value)) {
       const children = flatten<U, any>(props.getChildren(val) ?? [])
+
       if (exist) {
         // remove all child
         modelValue.value = [...modelValue.value]
@@ -227,6 +255,7 @@ provideTreeRootContext({
   multiple,
   dir,
   propagateSelect,
+  bubbleSelect,
 
   isVirtual,
   virtualKeydownHook,
