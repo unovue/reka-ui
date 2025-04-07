@@ -3,7 +3,7 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
 import { AnimatePresence, Motion, animate, useMotionValue, useMotionValueEvent, useTransform } from 'motion-v'
 import { useWindowSize } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 
 const inertiaTransition = {
   type: 'inertia' as const,
@@ -20,8 +20,7 @@ const staticTransition = {
 const SHEET_MARGIN = 34
 const SHEET_RADIUS = 12
 
-const root = document.body.firstElementChild as HTMLElement
-
+const root = shallowRef<HTMLElement>()
 const { height, width } = useWindowSize()
 
 const open = ref(false)
@@ -37,16 +36,31 @@ const bodyScale = useTransform(
 const bodyTranslate = useTransform(y, [0, h.value], [SHEET_MARGIN - SHEET_RADIUS, 0])
 const bodyBorderRadius = useTransform(y, [0, h.value], [SHEET_RADIUS, 0])
 
-useMotionValueEvent(bodyScale, 'change', v => root.style.scale = `${v}`)
+onMounted(() => {
+  root.value = document.body.firstElementChild as HTMLElement
+})
+useMotionValueEvent(bodyScale, 'change', (v) => {
+  if (!root.value)
+    return
+  root.value.style.scale = `${v}`
+})
 useMotionValueEvent(
   bodyTranslate,
   'change',
-  v => root.style.translate = `0 ${v}px`,
+  (v) => {
+    if (!root.value)
+      return
+    root.value.style.translate = `0 ${v}px`
+  },
 )
 useMotionValueEvent(
   bodyBorderRadius,
   'change',
-  v => root.style.borderRadius = `${v}px`,
+  (v) => {
+    if (!root.value)
+      return
+    root.value.style.borderRadius = `${v}px`
+  },
 )
 </script>
 
