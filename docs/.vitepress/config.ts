@@ -2,6 +2,7 @@ import { defineConfig, postcssIsolateStyles } from 'vitepress'
 import autoprefixer from 'autoprefixer'
 import anchor from 'markdown-it-anchor'
 import tailwind from 'tailwindcss'
+import llmstxt from 'vitepress-plugin-llms'
 import { version } from '../../package.json'
 import {
   discord,
@@ -423,5 +424,14 @@ export default defineConfig({
         ],
       },
     },
+    plugins: [
+      llmstxt({
+        ignoreFiles: [
+          'meta/*.md',
+          'index.md',
+          'showcase.md',
+        ],
+      }),
+    ],
   },
 })
