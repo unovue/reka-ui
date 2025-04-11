@@ -99,7 +99,7 @@ async function handlePointerMove(event: PointerEvent) {
   else {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
-    (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+    (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
   }
 }
 
