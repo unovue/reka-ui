@@ -80,6 +80,12 @@
     'required': false
   },
   {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is highlightable</p>\n',
+    'type': 'Matcher',
+    'required': false
+  },
+  {
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',
@@ -231,5 +237,10 @@
     'name': 'isDateUnavailable',
     'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher'
-  }
+  },
+  {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is highlightable</p>\n',
+    'type': 'Matcher'
+  },
 ]" />
