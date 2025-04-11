@@ -11,6 +11,7 @@ export type UseRangeCalendarProps = {
   end: Ref<DateValue | undefined>
   isDateDisabled: Matcher
   isDateUnavailable: Matcher
+  isDateHighlightable: Matcher
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
 }
@@ -82,7 +83,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
       }
     }
 
-    const isValid = props.allowNonContiguousRanges.value || areAllDaysBetweenValid(start, end, props.isDateUnavailable, props.isDateDisabled)
+    const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, props.isDateDisabled, props.isDateHighlightable)
     if (isValid) {
       return {
         start,

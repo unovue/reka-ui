@@ -175,19 +175,24 @@ export function areAllDaysBetweenValid(
   end: DateValue,
   isUnavailable: Matcher | undefined,
   isDisabled: Matcher | undefined,
+  isHighlightable?: Matcher | undefined,
 ) {
-  if (isUnavailable === undefined && isDisabled === undefined)
+  if (isUnavailable === undefined && isDisabled === undefined && isHighlightable === undefined)
     return true
 
   let dCurrent = start.add({ days: 1 })
-  if (isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
+  if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
+    && !isHighlightable?.(dCurrent)) {
     return false
+  }
 
   const dEnd = end
   while (dCurrent.compare(dEnd) < 0) {
     dCurrent = dCurrent.add({ days: 1 })
-    if (isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
+    if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
+      && !isHighlightable?.(dCurrent)) {
       return false
+    }
   }
   return true
 }

@@ -15,6 +15,7 @@ const rootContext = injectDateRangePickerRootContext()
       allowNonContiguousRanges: rootContext.allowNonContiguousRanges.value,
       isDateDisabled: rootContext.isDateDisabled,
       isDateUnavailable: rootContext.isDateUnavailable,
+      isDateHighlightable: rootContext.isDateHighlightable,
       locale: rootContext.locale.value,
       disabled: rootContext.disabled.value,
       pagedNavigation: rootContext.pagedNavigation.value,
