@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "reka-ui": "link:../../packages/core",
-    "vue": "3.5.7"
+    "vue": "3.5.13"
   },
   "devDependencies": {
     "@iconify/vue": "^4.3.0",
