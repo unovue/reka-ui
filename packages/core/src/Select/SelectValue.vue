@@ -31,9 +31,7 @@ onMounted(() => {
 const selectedLabel = computed(() => {
   let list: string[] = []
   const options = Array.from(rootContext.optionsSet.value)
-  const getOption = (value?: AcceptableValue) => options.find(option => rootContext.by != null
-    ? valueComparator(value, option.value, rootContext.by)
-    : option.value === value)
+  const getOption = (value?: AcceptableValue) => options.find(option => valueComparator(value, option.value, rootContext.by))
   if (Array.isArray(rootContext.modelValue.value)) {
     list = rootContext.modelValue.value.map(value => getOption(value)?.textContent ?? '')
   }
