@@ -21,7 +21,6 @@ export type UseCalendarProps = {
   pagedNavigation: Ref<boolean>
   isDateDisabled?: Matcher
   isDateUnavailable?: Matcher
-  isDateHighlightable?: Matcher
   calendarLabel: Ref<string | undefined>
   nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
   prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
@@ -182,12 +181,6 @@ export function useCalendar(props: UseCalendarProps) {
     return false
   }
 
-  const isDateHighlightable = (date: DateValue) => {
-    if (props.isDateHighlightable?.(date))
-      return true
-    return false
-  }
-
   const weekdays = computed(() => {
     if (!grid.value.length)
       return []
@@ -343,7 +336,6 @@ export function useCalendar(props: UseCalendarProps) {
   return {
     isDateDisabled,
     isDateUnavailable,
-    isDateHighlightable,
     isNextButtonDisabled,
     isPrevButtonDisabled,
     grid,

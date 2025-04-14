@@ -223,7 +223,6 @@ const {
   headingValue,
   isDateDisabled,
   isDateUnavailable,
-  isDateHighlightable,
   isNextButtonDisabled,
   isPrevButtonDisabled,
   grid,
@@ -245,7 +244,6 @@ const {
   pagedNavigation,
   isDateDisabled: propsIsDateDisabled.value,
   isDateUnavailable: propsIsDateUnavailable.value,
-  isDateHighlightable: propsIsDateHighlightable.value,
   calendarLabel,
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
@@ -254,6 +252,7 @@ const {
 const {
   isInvalid,
   isSelected,
+  isDateHighlightable,
   highlightedRange,
   isSelectionStart,
   isSelectionEnd,
@@ -264,7 +263,7 @@ const {
   end: endValue,
   isDateDisabled,
   isDateUnavailable,
-  isDateHighlightable,
+  isDateHighlightable: propsIsDateHighlightable.value,
   focusedValue,
   allowNonContiguousRanges,
 })
