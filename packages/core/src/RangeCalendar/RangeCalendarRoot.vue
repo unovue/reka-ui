@@ -35,6 +35,7 @@ type RangeCalendarRootContext = {
   isInvalid: Ref<boolean>
   isDateDisabled: Matcher
   isDateUnavailable?: Matcher
+  isDateHighlightable?: Matcher
   isOutsideVisibleView: (date: DateValue) => boolean
   highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
   focusedValue: Ref<DateValue | undefined>
@@ -93,6 +94,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   isDateDisabled?: Matcher
   /** A function that returns whether or not a date is unavailable */
   isDateUnavailable?: Matcher
+  /** A function that returns whether or not a date is hightable */
+  isDateHighlightable?: Matcher
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. */
@@ -134,6 +137,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   placeholder: undefined,
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
@@ -168,6 +172,7 @@ const {
   numberOfMonths,
   preventDeselect,
   isDateUnavailable: propsIsDateUnavailable,
+  isDateHighlightable: propsIsDateHighlightable,
   isDateDisabled: propsIsDateDisabled,
   calendarLabel,
   maxValue,
@@ -247,6 +252,7 @@ const {
 const {
   isInvalid,
   isSelected,
+  isDateHighlightable,
   highlightedRange,
   isSelectionStart,
   isSelectionEnd,
@@ -257,6 +263,7 @@ const {
   end: endValue,
   isDateDisabled,
   isDateUnavailable,
+  isDateHighlightable: propsIsDateHighlightable.value,
   focusedValue,
   allowNonContiguousRanges,
 })
@@ -323,6 +330,7 @@ useEventListener('keydown', (ev) => {
 
 provideRangeCalendarRootContext({
   isDateUnavailable,
+  isDateHighlightable,
   startValue,
   endValue,
   formatter,
