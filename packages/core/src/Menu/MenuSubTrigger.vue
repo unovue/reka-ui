@@ -4,9 +4,9 @@ import type { Side } from './utils'
 
 export interface MenuSubTriggerProps extends MenuItemImplProps {
   /**
-  * Sets the delay for when the submenu is closed.
-  * @default 300
-  */
+   * The delay in milliseconds before the submenu is closed if the stops hovering the trigger.
+   * @default 300
+   */
   grace?: number
 }
 </script>
