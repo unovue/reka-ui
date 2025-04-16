@@ -8,7 +8,7 @@ export interface RovingFocusItemProps extends PrimitiveProps {
    * @defaultValue `true`
    */
   focusable?: boolean
-  /** When `true`, item wil be initially focused. */
+  /** When `true`, item will be initially focused. */
   active?: boolean
   /** When `true`, shift + arrow key will allow focusing on next/previous item. */
   allowShiftKey?: boolean
