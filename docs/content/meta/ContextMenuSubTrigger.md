@@ -21,6 +21,12 @@
     'required': false
   },
   {
+    'name': 'grace',
+    'description': '<p>The delay in milliseconds before the submenu is closed if the stops hovering the trigger.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'textValue',
     'description': '<p>Optional text used for typeahead purposes. By default the typeahead behavior will use the <code>.textContent</code> of the item. &lt;br&gt;\nUse this when the content is complex, or you have non-textual content inside.</p>\n',
     'type': 'string',
