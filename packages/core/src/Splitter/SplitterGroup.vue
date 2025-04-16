@@ -717,6 +717,17 @@ function panelDataHelper(
     pivotIndices,
   }
 }
+
+defineExpose({
+  /** Function to reset the state of the group. */
+  resetGroup: () => {
+    for (const panelData of eagerValuesRef.value.panelDataArray) {
+      unregisterPanel(panelData)
+
+      registerPanel(panelData)
+    }
+  },
+})
 </script>
 
 <template>
