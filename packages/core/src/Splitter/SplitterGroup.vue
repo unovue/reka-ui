@@ -114,6 +114,11 @@ const debounceMap: {
 const { direction } = toRefs(props)
 const groupId = useId(props.id, 'reka-splitter-group')
 const dir = useDirection()
+
+defineExpose({
+  /** Function to reset the state of the group. */
+  resetGroup,
+})
 const { forwardRef, currentElement: panelGroupElementRef } = useForwardExpose()
 
 const dragState = ref<DragState | null>(null)
@@ -669,6 +674,34 @@ function isPanelExpanded(panelData: PanelData) {
   return !collapsible || panelSize > collapsedSize
 }
 
+function resetGroup() {
+  const { layout: prevLayout, panelDataArray } = eagerValuesRef.value
+
+  const unsafeLayout = calculateUnsafeDefaultLayout({
+    panelDataArray,
+  })
+
+  const nextLayout = validatePanelGroupLayout({
+    layout: unsafeLayout,
+    panelConstraints: panelDataArray.map(
+      panelData => panelData.constraints,
+    ),
+  })
+
+  if (!areEqual(prevLayout, nextLayout)) {
+    setLayout(nextLayout)
+
+    eagerValuesRef.value.layout = nextLayout
+    emits('layout', nextLayout)
+
+    callPanelCallbacks(
+      panelDataArray,
+      nextLayout,
+      panelIdToLastNotifiedSizeMapRef.value,
+    )
+  }
+}
+
 providePanelGroupContext({
   direction,
   dragState: dragState.value,
@@ -717,17 +750,6 @@ function panelDataHelper(
     pivotIndices,
   }
 }
-
-defineExpose({
-  /** Function to reset the state of the group. */
-  resetGroup: () => {
-    for (const panelData of eagerValuesRef.value.panelDataArray) {
-      unregisterPanel(panelData)
-
-      registerPanel(panelData)
-    }
-  },
-})
 </script>
 
 <template>
