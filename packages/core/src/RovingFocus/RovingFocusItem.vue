@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 export interface RovingFocusItemProps extends PrimitiveProps {
   tabStopId?: string
   /**
-   * When `false`, item wil be not be focusable.
+   * When `false`, item will not be focusable.
    * @defaultValue `true`
    */
   focusable?: boolean

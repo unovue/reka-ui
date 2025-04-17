@@ -28,7 +28,7 @@
   },
   {
     'name': 'focusable',
-    'description': '<p>When <code>false</code>, item wil be not be focusable.</p>\n',
+    'description': '<p>When <code>false</code>, item will not be focusable.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
