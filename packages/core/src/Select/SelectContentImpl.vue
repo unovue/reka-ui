@@ -4,7 +4,7 @@ import type {
   Ref,
 } from 'vue'
 import type { PopperContentProps } from '@/Popper'
-import type { PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
 import {
   createContext,
   useFocusGuards,
@@ -74,6 +74,18 @@ export interface SelectContentImplProps extends PopperContentProps {
    * @defaultValue true
    */
   bodyLock?: boolean
+  /**
+   * When `true`, hover/focus/click interactions will be disabled on elements outside
+   * the `DismissableLayer`. Users will need to click twice on outside elements to
+   * interact with them: once to close the `DismissableLayer`, and again to trigger the element.
+   */
+  disableOutsidePointerEvents?: DismissableLayerProps['disableOutsidePointerEvents']
+  /**
+   * Whether focus should be trapped within the `SelectContent`
+   * @defaultValue true
+   */
+  trapFocus?: FocusScopeProps['trapped']
+
 }
 
 export const [injectSelectContentContext, provideSelectContentContext]
@@ -91,7 +103,7 @@ import { unrefElement } from '@vueuse/core'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
-import { FocusScope } from '@/FocusScope'
+import { FocusScope, type FocusScopeProps } from '@/FocusScope'
 import { DismissableLayer } from '@/DismissableLayer'
 import { focusFirst } from '@/Menu/utils'
 
@@ -273,6 +285,7 @@ provideSelectContentContext({
   <CollectionSlot>
     <FocusScope
       as-child
+      :trapped="trapFocus"
       @mount-auto-focus.prevent
       @unmount-auto-focus="
         (event) => {
@@ -285,7 +298,7 @@ provideSelectContentContext({
     >
       <DismissableLayer
         as-child
-        disable-outside-pointer-events
+        :disable-outside-pointer-events="disableOutsidePointerEvents"
         @focus-outside.prevent
         @dismiss="rootContext.onOpenChange(false)"
         @escape-key-down="emits('escapeKeyDown', $event)"

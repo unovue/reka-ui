@@ -24,6 +24,12 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   autocomplete?: string
   /** When `true`, prevents the user from interacting with Select */
   disabled?: boolean
+  /**
+   * The modality of the select.
+   *
+   * When set to `true`, interaction with outside elements will be disabled and only menu content will be visible to screen readers.
+   */
+  modal?: boolean
 }
 
 export type SelectRootEmits<T = AcceptableValue> = {
@@ -50,6 +56,7 @@ export interface SelectRootContext<T> {
   triggerPointerDownPosRef: Ref<{ x: number, y: number } | null>
   isEmptyModelValue: Ref<boolean>
   disabled?: Ref<boolean>
+  modal: Ref<boolean>
 
   optionsSet: Ref<Set<SelectOption>>
   onOptionAdd: (option: SelectOption) => void
@@ -75,6 +82,7 @@ defineOptions({
 const props = withDefaults(defineProps<SelectRootProps>(), {
   modelValue: undefined,
   open: undefined,
+  modal: true,
 })
 const emits = defineEmits<SelectRootEmits>()
 
@@ -87,7 +95,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { required, disabled, multiple, dir: propDir } = toRefs(props)
+const { required, disabled, multiple, dir: propDir, modal } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
@@ -167,6 +175,7 @@ provideSelectRootContext({
   triggerPointerDownPosRef,
   disabled,
   isEmptyModelValue,
+  modal,
 
   optionsSet,
   onOptionAdd: option => optionsSet.value.add(option),
