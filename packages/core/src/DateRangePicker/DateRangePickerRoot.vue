@@ -41,9 +41,10 @@ type DateRangePickerRootContext = {
   onStartValueChange: (date: DateValue | undefined) => void
   dir: Ref<Direction>
   allowNonContiguousRanges: Ref<boolean>
+  fixedDate: Ref<'start' | 'end' | undefined>
 }
 
-export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges'>
+export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate'>
 
 export type DateRangePickerRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -112,6 +113,7 @@ const {
   hourCycle,
   dir: propsDir,
   allowNonContiguousRanges,
+  fixedDate,
 } = toRefs(props)
 
 const dir = useDirection(propsDir)
@@ -175,6 +177,7 @@ provideDateRangePickerRootContext({
   hourCycle,
   dateFieldRef,
   dir,
+  fixedDate,
   onStartValueChange(date: DateValue | undefined) {
     emits('update:startValue', date)
   },

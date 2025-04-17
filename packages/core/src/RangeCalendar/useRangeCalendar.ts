@@ -14,6 +14,7 @@ export type UseRangeCalendarProps = {
   isDateHighlightable?: Matcher
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
+  fixedDate: Ref<'start' | 'end' | undefined>
 }
 
 export function useRangeCalendarState(props: UseRangeCalendarProps) {
@@ -73,7 +74,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
   }
 
   const highlightedRange = computed(() => {
-    if (props.start.value && props.end.value)
+    if (props.start.value && props.end.value && !props.fixedDate.value)
       return null
     if (!props.start.value || !props.focusedValue.value)
       return null

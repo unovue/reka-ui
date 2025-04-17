@@ -55,6 +55,12 @@
     'default': 'false'
   },
   {
+    'name': 'fixedDate',
+    'description': '<p>Which part of the range should be fixed</p>\n',
+    'type': '\'start\' | \'end\'',
+    'required': false
+  },
+  {
     'name': 'fixedWeeks',
     'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
     'type': 'boolean',
