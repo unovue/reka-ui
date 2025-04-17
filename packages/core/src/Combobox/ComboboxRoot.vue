@@ -22,6 +22,7 @@ type ComboboxRootContext<T> = {
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   onResetSearchTerm: EventHookOn
+  tiggerResetSearchTerm: EventHookTrigger
   allItems: Ref<Map<string, string>>
   allGroups: Ref<Map<string, Set<string>>>
   filterState: {
@@ -68,7 +69,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
-import { type EventHookOn, createEventHook, useVModel } from '@vueuse/core'
+import { type EventHookOn, type EventHookTrigger, createEventHook, useVModel } from '@vueuse/core'
 import { ListboxRoot } from '@/Listbox'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
@@ -227,6 +228,7 @@ provideComboboxRootContext({
   parentElement,
   resetSearchTermOnSelect,
   onResetSearchTerm: resetSearchTerm.on,
+  tiggerResetSearchTerm: resetSearchTerm.trigger,
   allItems,
   allGroups,
   filterState,
