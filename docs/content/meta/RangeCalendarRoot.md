@@ -54,6 +54,13 @@
     'default': 'false'
   },
   {
+    'name': 'disableDaysOutsideCurrentView',
+    'description': '<p>Whether or not to disable days outside the current view.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'fixedWeeks',
     'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
     'type': 'boolean',

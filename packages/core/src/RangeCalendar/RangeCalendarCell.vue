@@ -21,8 +21,8 @@ const rootContext = injectRangeCalendarRootContext()
     :as-child="asChild"
     role="gridcell"
     :aria-selected="rootContext.isSelected(date) ? true : undefined"
-    :aria-disabled="rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date)"
-    :data-disabled="rootContext.isDateDisabled(date) ? '' : undefined"
+    :aria-disabled="rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date) || rootContext.disableDaysOutsideCurrentView.value"
+    :data-disabled="rootContext.isDateDisabled(date) || rootContext.disableDaysOutsideCurrentView.value ? '' : undefined"
   >
     <slot />
   </Primitive>
