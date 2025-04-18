@@ -273,35 +273,35 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
   :data="[
     {
       keys: ['ArrowRight'],
-      description: '<span> Increments/decrements by the <Code>step</Code> value depending on <Code>orientation</Code>. </span>',
+      description: 'Increases the value by the <Code>step</Code> amount.',
     },
     {
       keys: ['ArrowLeft'],
-      description: '<span> Increments/decrements by the <Code>step</Code> value depending on <Code>orientation</Code>. </span>',
+      description: 'Decreases the value by the <Code>step</Code> amount.',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> Increases the value by the <Code>step</Code> amount. </span>',
+      description: 'Increases the value by the <Code>step</Code> amount.',
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> Decreases the value by the <Code>step</Code> amount. </span>',
+      description: 'Decreases the value by the <Code>step</Code> amount.',
     },
     {
       keys: ['PageUp'],
-      description: '<span> Increases the value by a larger <Code>step</Code>. </span>',
+      description: 'Increases the value by a larger <Code>step</Code>.',
     },
     {
       keys: ['PageDown'],
-      description: '<span> Decreases the value by a larger <Code>step</Code>. </span>',
+      description: 'Decreases the value by a larger <Code>step</Code>.',
     },
     {
       keys: ['Shift + ArrowUp'],
-      description: '<span> Increases the value by a larger <Code>step</Code>. </span>',
+      description: 'Increases the value by a larger <Code>step</Code>.',
     },
     {
       keys: ['Shift + ArrowDown'],
-      description: '<span> Decreases the value by a larger <Code>step</Code>. </span>',
+      description: 'Decreases the value by a larger <Code>step</Code>.',
     },
     {
       keys: ['Home'],
@@ -313,6 +313,13 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
     },
   ]"
 />
+
+#### Inverted sliders
+
+When the slider is <Code>inverted</Code>, some controls are inverted as well, depending on the <Code>orientation</Code>.
+
+- When the slider is <Code>horizontal</Code> (the default), <kbd>ArrowRight</kbd>, <kbd>ArrowLeft</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> are inverted.
+- When the slider is <Code>vertical</Code>, <kbd>ArrowUp</kbd>, <kbd>ArrowDown</kbd>, <kbd>PageUp</kbd>, <kbd>PageDown</kbd>, <kbd>Shift + ArrowUp</kbd>, and <kbd>Shift + ArrowDown</kbd> are inverted.
 
 ## Custom APIs
 
