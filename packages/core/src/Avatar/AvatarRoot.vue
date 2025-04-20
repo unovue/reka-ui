@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { Ref } from 'vue'
 import type { ImageLoadingStatus } from './utils'
 import { createContext, useForwardExpose } from '@/shared'
 
@@ -15,8 +15,8 @@ export const [injectAvatarRootContext, provideAvatarRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Primitive } from '@/Primitive'
+import { ref } from 'vue'
 
 withDefaults(defineProps<AvatarRootProps>(), {
   as: 'span',
@@ -25,7 +25,7 @@ withDefaults(defineProps<AvatarRootProps>(), {
 useForwardExpose()
 
 provideAvatarRootContext({
-  imageLoadingStatus: ref<ImageLoadingStatus>('loading'),
+  imageLoadingStatus: ref<ImageLoadingStatus>('idle'),
 })
 </script>
 

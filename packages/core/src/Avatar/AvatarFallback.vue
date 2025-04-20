@@ -9,8 +9,8 @@ export interface AvatarFallbackProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import { Primitive } from '@/Primitive'
+import { ref, watch } from 'vue'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 
 const props = withDefaults(defineProps<AvatarFallbackProps>(), {
@@ -21,22 +21,24 @@ const props = withDefaults(defineProps<AvatarFallbackProps>(), {
 const rootContext = injectAvatarRootContext()
 useForwardExpose()
 
-const canRender = ref(false)
-let timeout: ReturnType<typeof setTimeout> | undefined
+const canRender = ref(props.delayMs === undefined)
 
-watch(rootContext.imageLoadingStatus, (value) => {
-  if (value === 'loading') {
-    canRender.value = false
-    if (props.delayMs) {
-      timeout = setTimeout(() => {
-        canRender.value = true
-        clearTimeout(timeout)
-      }, props.delayMs)
-    }
-    else {
+watch(rootContext.imageLoadingStatus, (value, _, onCleanup) => {
+  let timerId: ReturnType<typeof setTimeout> | undefined
+  if (props.delayMs !== undefined) {
+    timerId = setTimeout(() => {
       canRender.value = true
-    }
+    }, props.delayMs)
   }
+  else {
+    canRender.value = true
+  }
+
+  onCleanup(() => {
+    if (timerId) {
+      clearTimeout(timerId)
+    }
+  })
 }, { immediate: true })
 </script>
 
