@@ -10,13 +10,14 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { injectTooltipRootContext } from './TooltipRoot.vue'
-import { PopperAnchor, type PopperAnchorProps } from '@/Popper'
+import type { PopperAnchorProps } from '@/Popper'
+import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
 } from '@/Primitive'
+import { computed, onMounted, ref } from 'vue'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
+import { injectTooltipRootContext } from './TooltipRoot.vue'
 
 const props = withDefaults(defineProps<TooltipTriggerProps>(), {
   as: 'button',
@@ -56,6 +57,9 @@ function handlePointerUp() {
 }
 
 function handlePointerDown() {
+  if (rootContext.open) {
+    rootContext.onClose()
+  }
   isPointerDown.value = true
   document.addEventListener('pointerup', handlePointerUp, { once: true })
 }
