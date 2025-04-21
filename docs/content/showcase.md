@@ -73,7 +73,7 @@ projects:
 
   - title: Movie Tracker
     description: Your guide to movies and TV shows. Find movies and shows, create lists, share your thoughts.
-    url: https://github.com/dapzer/movie-tracker
+    url: https://movie-tracker.app/en
     image: https://raw.githubusercontent.com/dapzer/movie-tracker/refs/heads/master/apps/frontend/src/public/ogImageEn.webp
 
 starters:
