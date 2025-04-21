@@ -3,12 +3,10 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
-import SelectContentModal from './SelectContentModal.vue'
-import SelectContentNonModal from './SelectContentNonModal.vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
-export interface SelectContentProps extends Omit<SelectContentImplProps, 'disableOutsidePointerEvents' | 'trapFocus' > {
+export interface SelectContentProps extends SelectContentImplProps {
   /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
@@ -19,6 +17,7 @@ export interface SelectContentProps extends Omit<SelectContentImplProps, 'disabl
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import SelectContentImpl from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
@@ -50,18 +49,11 @@ const renderPresence = computed(() => props.forceMount || rootContext.open.value
     ref="presenceRef"
     :present="true"
   >
-    <SelectContentModal
-      v-if="rootContext.modal.value"
-      v-bind="{ ...forwarded, ...$attrs }"
+    <SelectContentImpl
+      v-bind="{ ...forwarded, ...$attrs, bodyLock: false, trapFocus: false, disableOutsidePointerEvents: false }"
     >
       <slot />
-    </SelectContentModal>
-    <SelectContentNonModal
-      v-else
-      v-bind="{ ...forwarded, ...$attrs }"
-    >
-      <slot />
-    </SelectContentNonModal>
+    </SelectContentImpl>
   </Presence>
 
   <div v-else-if="!presenceRef?.present && fragment">
