@@ -2,8 +2,8 @@
 import { Primitive, type PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
 import { useDateField } from '@/shared/date/useDateField'
-import { injectDateFieldRootContext } from './DateFieldRoot.vue'
 import { computed, ref } from 'vue'
+import { injectDateFieldRootContext } from './DateFieldRoot.vue'
 
 export interface DateFieldInputProps extends PrimitiveProps {
   /** The part of the date to render */
@@ -35,11 +35,67 @@ const {
   readonly: rootContext.readonly,
   focusNext: rootContext.focusNext,
   modelValue: rootContext.modelValue,
+  programmaticContinuation: rootContext.programmaticContinuation,
 })
 
 const disabled = computed(() => rootContext.disabled.value)
 const readonly = computed(() => rootContext.readonly.value)
 const isInvalid = computed(() => rootContext.isInvalid.value)
+
+function handleFocusOut(e: FocusEvent) {
+  if (rootContext.programmaticContinuation.value) {
+    hasLeftFocus.value = false
+  }
+  else {
+    hasLeftFocus.value = true
+  }
+}
+
+function handleFocusIn(e: FocusEvent) {
+  rootContext.setFocusedElement(e.target as HTMLElement)
+  const dayValue = rootContext.segmentValues.value.day
+  const yearValue = rootContext.segmentValues.value.year
+
+  if (rootContext.programmaticContinuation.value) {
+    if (props.part === 'year' && yearValue) {
+      // create key event for keyword with rootContext.segmentValues.value.year
+      const event = new KeyboardEvent('keydown', {
+        key: yearValue.toString(),
+        code: `Digit${yearValue}`,
+        keyCode: 48 + yearValue,
+        which: 48 + yearValue,
+        bubbles: true,
+        cancelable: true,
+      })
+
+      console.log('triggering keydown for year', event)
+
+      hasLeftFocus.value = false
+      handleSegmentKeydown(event)
+      rootContext.programmaticContinuation.value = false
+    }
+    else if (props.part === 'day' && dayValue) {
+      // create key event for keyword with rootContext.segmentValues.value.day
+      const event = new KeyboardEvent('keydown', {
+        key: dayValue.toString(),
+        code: `Digit${dayValue}`,
+        keyCode: 48 + dayValue,
+        which: 48 + dayValue,
+        bubbles: true,
+        cancelable: true,
+      })
+
+      console.log('triggering keydown for day', event)
+
+      hasLeftFocus.value = false
+      handleSegmentKeydown(event)
+      rootContext.programmaticContinuation.value = false
+    }
+  }
+  else {
+    hasLeftFocus.value = true
+  }
+}
 </script>
 
 <template>
@@ -57,10 +113,8 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
     v-on="part !== 'literal' ? {
       mousedown: handleSegmentClick,
       keydown: handleSegmentKeydown,
-      focusout: () => { hasLeftFocus = true },
-      focusin: (e: FocusEvent) => {
-        rootContext.setFocusedElement(e.target as HTMLElement)
-      },
+      focusout: handleFocusOut,
+      focusin: handleFocusIn,
     } : {}"
   >
     <slot />

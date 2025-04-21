@@ -18,7 +18,7 @@
     "docs:build": "pnpm --filter docs docs:build",
     "docs:gen": "pnpm --filter docs docs:gen",
     "docs:contributors": "pnpm --filter docs docs:contributors",
-    "prepare": "pnpm simple-git-hooks",
+    "prepare": "pnpm simple-git-hooks && pnpm build-only",
     "test": "pnpm --filter reka-ui test",
     "test-update": "pnpm --filter reka-ui test-update",
     "lint": "eslint .",

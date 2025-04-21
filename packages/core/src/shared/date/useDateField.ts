@@ -1,9 +1,9 @@
-import { type Formatter, useKbd } from '@/shared'
-import type { AnyExceptLiteral, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import { getDaysInMonth, toDate } from '@/date'
+import { type Formatter, useKbd } from '@/shared'
 import type { CalendarDateTime, CycleTimeOptions, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import { type Ref, computed } from 'vue'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
+import type { AnyExceptLiteral, HourCycle, SegmentPart, SegmentValueObj } from './types'
 
 type MinuteSecondIncrementProps = {
   e: KeyboardEvent
@@ -278,6 +278,7 @@ export type UseDateFieldProps = {
   part: SegmentPart
   modelValue: Ref<DateValue | undefined>
   focusNext: () => void
+  programmaticContinuation: Ref<boolean>
 }
 
 export function useDateField(props: UseDateFieldProps) {
@@ -334,9 +335,13 @@ export function useDateField(props: UseDateFieldProps) {
      * `prev` value so that we can start the segment over again
      * when the user types a number.
      */
-    if (props.hasLeftFocus.value) {
+    if (props.hasLeftFocus.value && !props.programmaticContinuation.value) {
       props.hasLeftFocus.value = false
       prev = null
+    }
+
+    if (props.programmaticContinuation.value) {
+      props.programmaticContinuation.value = false
     }
 
     if (prev === null) {
@@ -384,19 +389,56 @@ export function useDateField(props: UseDateFieldProps) {
      * month, then we will reset the segment as if the user had pressed the
      * backspace key and then typed the number.
      */
-
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * If we're updating months (max === 12) and user types a number
+       * that starts with 1 but would result in an invalid month (13-19),
+       * we keep the 1 as the month value and use the second digit
+       * as the initial value for the next segment (day)
+       */
+      if (max === 12 && prev === 1 && total > max) {
+        console.log('enter 1')
+        props.programmaticContinuation.value = true
+
+        return {
+          moveToNext: true,
+          value: prev,
+          nextSegmentInitialValue: num,
+        }
+      }
+      if (max === 28 || max === 29 || max === 30 || max === 31) {
+        console.log({
+          prev,
+          total,
+        })
+
+        if (prev === 3 && total > max) {
+          props.programmaticContinuation.value = true
+
+          return {
+            moveToNext: true,
+            value: prev,
+            nextSegmentInitialValue: num,
+          }
+        }
+      }
+
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart || total > max) {
-      // move to next
+        console.log('enter 3')
+
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
     }
+
+    console.log('enter 4')
+
     // move to next
     moveToNext = true
     return { value: total, moveToNext }
@@ -570,9 +612,13 @@ export function useDateField(props: UseDateFieldProps) {
      * when the user types a number.
      */
     // probably not implement, kind of weird
-    if (props.hasLeftFocus.value) {
+    if (props.hasLeftFocus.value && !props.programmaticContinuation.value) {
       props.hasLeftFocus.value = false
       prev = null
+    }
+
+    if (props.programmaticContinuation.value) {
+      props.programmaticContinuation.value = false
     }
 
     if (prev === null)
@@ -609,21 +655,23 @@ export function useDateField(props: UseDateFieldProps) {
       props.segmentValues.value.day = dateTimeValueIncrementation({ e, part: 'day', dateRef: props.placeholder.value, prevValue })
       return
     }
-
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
       const segmentMonthValue = props.segmentValues.value.month
-
       const daysInMonth = segmentMonthValue
         ? getDaysInMonth(props.placeholder.value.set({ month: segmentMonthValue }))
         : getDaysInMonth(props.placeholder.value)
 
-      const { value, moveToNext } = updateDayOrMonth(daysInMonth, num, prevValue)
-
+      const { value, moveToNext, nextSegmentInitialValue } = updateDayOrMonth(daysInMonth, num, props.programmaticContinuation.value ? null : prevValue)
       props.segmentValues.value.day = value
 
-      if (moveToNext)
+      if (nextSegmentInitialValue) {
+        props.segmentValues.value.year = nextSegmentInitialValue
+      }
+
+      if (moveToNext) {
         props.focusNext()
+      }
     }
 
     if (e.key === kbd.BACKSPACE) {
@@ -645,9 +693,13 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
-      const { value, moveToNext } = updateDayOrMonth(12, num, prevValue)
+      const { value, moveToNext, nextSegmentInitialValue } = updateDayOrMonth(12, num, prevValue)
 
       props.segmentValues.value.month = value
+
+      if (nextSegmentInitialValue) {
+        props.segmentValues.value.day = nextSegmentInitialValue
+      }
 
       if (moveToNext)
         props.focusNext()
@@ -672,9 +724,10 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
-      const { value, moveToNext } = updateYear(num, prevValue)
-
-      props.segmentValues.value.year = value
+      const { value, moveToNext } = updateYear(num, props.programmaticContinuation.value ? null : prevValue)
+      if (!props.programmaticContinuation.value) {
+        props.segmentValues.value.year = value
+      }
 
       if (moveToNext)
         props.focusNext()
