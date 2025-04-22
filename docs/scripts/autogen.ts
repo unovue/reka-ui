@@ -1,13 +1,13 @@
+import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import _traverse from '@babel/traverse'
 import fg from 'fast-glob'
 import MarkdownIt from 'markdown-it'
-import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
+import { components } from 'reka-ui/constant'
 import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
-import _traverse from '@babel/traverse'
-import { components } from 'reka-ui/constant'
-import { fileURLToPath } from 'node:url'
 import { transformJSDocLinks } from './utils'
 
 // @ts-expect-error ignore

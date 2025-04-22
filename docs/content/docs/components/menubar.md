@@ -559,6 +559,7 @@ Use the `CheckboxItem` part to add an item that can be checked.
 
 ```vue line=3,27-32
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   MenubarCheckboxItem,
   MenubarContent,
@@ -570,7 +571,6 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from 'reka-ui'
-import { Icon } from '@iconify/vue'
 
 const checked = ref(true)
 </script>
@@ -603,6 +603,7 @@ Use the `RadioGroup` and `RadioItem` parts to add an item that can be checked am
 
 ```vue line=9-10,26-39
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   MenubarCheckboxItem,
   MenubarContent,
@@ -616,7 +617,6 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from 'reka-ui'
-import { Icon } from '@iconify/vue'
 
 const color = ref('blue')
 </script>

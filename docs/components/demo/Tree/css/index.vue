@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { TreeItem, TreeRoot } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import { TreeItem, TreeRoot } from 'reka-ui'
 
 const items = [
   {

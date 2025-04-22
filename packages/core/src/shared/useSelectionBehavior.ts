@@ -1,4 +1,5 @@
-import { type Ref, type UnwrapNestedRefs, ref } from 'vue'
+import type { Ref, UnwrapNestedRefs } from 'vue'
+import { ref } from 'vue'
 import { findValuesBetween } from './arrays'
 
 export function useSelectionBehavior<T>(

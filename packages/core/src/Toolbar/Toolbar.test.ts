@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import Toolbar from './story/_Toolbar.vue'
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import Toolbar from './story/_Toolbar.vue'
 
 describe('given default Toolbar', () => {
   let wrapper: VueWrapper<InstanceType<typeof Toolbar>>

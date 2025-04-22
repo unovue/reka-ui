@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { ConfigProvider } from '@/ConfigProvider'
 import { Icon } from '@iconify/vue'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
-import { ConfigProvider } from '@/ConfigProvider'
 </script>
 
 <template>

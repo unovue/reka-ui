@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType } from '@/shared/types'
+import type { ComputedRef, Ref } from 'vue'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface AccordionRootProps<T = string | string[]>

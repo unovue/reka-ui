@@ -34,9 +34,9 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
-import { useVModel } from '@vueuse/core'
 import { PopperRoot } from '@/Popper'
+import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
   defaultOpen: false,

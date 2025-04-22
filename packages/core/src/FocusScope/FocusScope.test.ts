@@ -1,8 +1,9 @@
-import { type RenderResult, render, waitFor } from '@testing-library/vue'
+import type { RenderResult } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { FocusScope } from '.'
-import userEvent from '@testing-library/user-event'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'

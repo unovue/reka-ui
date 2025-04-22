@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type { GenericComponentInstance } from '@/shared/types'
+import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxPortal, ComboboxRoot, ComboboxSeparator, ComboboxTrigger, ComboboxViewport } from '..'
-import { Icon } from '@iconify/vue'
-import type { GenericComponentInstance } from '@/shared/types'
 
 const options = [
   { name: 'Fruit', children: [

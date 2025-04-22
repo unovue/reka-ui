@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, SingleOrMultipleProps } from '../shared/types'
 import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
@@ -39,10 +39,10 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
+import { toRefs } from 'vue'
 
 const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
   loop: true,

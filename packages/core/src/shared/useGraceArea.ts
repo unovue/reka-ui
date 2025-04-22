@@ -1,6 +1,7 @@
-import { type Ref, ref, watchEffect } from 'vue'
 import type { Side } from '@/Popper/utils'
+import type { Ref } from 'vue'
 import { createEventHook, refAutoReset } from '@vueuse/shared'
+import { ref, watchEffect } from 'vue'
 
 export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, containerElement: Ref<HTMLElement | undefined>) {
 // Reset the inTransit state if idle/scrolled.

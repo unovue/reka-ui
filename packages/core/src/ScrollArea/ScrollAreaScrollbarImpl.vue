@@ -11,14 +11,14 @@ export interface ScrollAreaScrollbarImplProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { useResizeObserver } from '@vueuse/core'
-import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
-import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
-import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
-import { toInt } from './utils'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { useResizeObserver } from '@vueuse/core'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
+import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
+import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
+import { toInt } from './utils'
 
 const props = defineProps<ScrollAreaScrollbarImplProps>()
 const emit = defineEmits<ScrollbarAreaScrollbarImplEmits>()
@@ -77,7 +77,7 @@ function handleWheel(event: WheelEvent) {
   const isScrollbarWheel = scrollbar.value?.contains(element)
   const maxScrollPos
     = scrollbarVisibleContext.sizes.value.content
-    - scrollbarVisibleContext.sizes.value.viewport
+      - scrollbarVisibleContext.sizes.value.viewport
   if (isScrollbarWheel)
     scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
 }

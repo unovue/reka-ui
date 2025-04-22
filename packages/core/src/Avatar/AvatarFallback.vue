@@ -9,8 +9,8 @@ export interface AvatarFallbackProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import { Primitive } from '@/Primitive'
+import { ref, watch } from 'vue'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 
 const props = withDefaults(defineProps<AvatarFallbackProps>(), {

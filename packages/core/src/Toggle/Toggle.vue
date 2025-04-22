@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useFormControl, useForwardExpose } from '@/shared'
-import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 import type { FormFieldProps } from '@/shared/types'
+import { useFormControl, useForwardExpose } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
+import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export type ToggleEmits = {
   /** Event handler called when the value of the toggle changes. */
@@ -29,9 +29,10 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
-import { type Ref, computed } from 'vue'
-import { useVModel } from '@vueuse/core'
+import type { Ref } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useVModel } from '@vueuse/core'
+import { computed } from 'vue'
 
 const props = withDefaults(defineProps<ToggleProps>(), {
   modelValue: undefined,

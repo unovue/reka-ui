@@ -1,10 +1,12 @@
 <script lang="ts">
+import type { PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { PopperContentProps } from '@/Popper'
+import type { AcceptableValue } from '@/shared/types'
 import type {
   ComponentPublicInstance,
   Ref,
 } from 'vue'
-import type { PopperContentProps } from '@/Popper'
-import type { PointerDownOutsideEvent } from '@/DismissableLayer'
+import { useCollection } from '@/Collection'
 import {
   createContext,
   useFocusGuards,
@@ -13,9 +15,7 @@ import {
   useTypeahead,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
-import type { AcceptableValue } from '@/shared/types'
 import { valueComparator } from './utils'
-import { useCollection } from '@/Collection'
 
 export interface SelectContentContext {
   content?: Ref<HTMLElement | undefined>
@@ -81,19 +81,19 @@ export const [injectSelectContentContext, provideSelectContentContext]
 </script>
 
 <script setup lang="ts">
+import { DismissableLayer } from '@/DismissableLayer'
+import { FocusScope } from '@/FocusScope'
+import { focusFirst } from '@/Menu/utils'
+import { unrefElement } from '@vueuse/core'
 import {
   computed,
   ref,
   watch,
   watchEffect,
 } from 'vue'
-import { unrefElement } from '@vueuse/core'
-import { injectSelectRootContext } from './SelectRoot.vue'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
-import { FocusScope } from '@/FocusScope'
-import { DismissableLayer } from '@/DismissableLayer'
-import { focusFirst } from '@/Menu/utils'
+import { injectSelectRootContext } from './SelectRoot.vue'
 
 const props = withDefaults(defineProps<SelectContentImplProps>(), {
   align: 'start',

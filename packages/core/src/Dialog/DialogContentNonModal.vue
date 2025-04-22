@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { injectDialogRootContext } from './DialogRoot.vue'
-import DialogContentImpl, { type DialogContentImplEmits, type DialogContentImplProps } from './DialogContentImpl.vue'
+import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { ref } from 'vue'
+import DialogContentImpl from './DialogContentImpl.vue'
+import { injectDialogRootContext } from './DialogRoot.vue'
 
 const props = defineProps<DialogContentImplProps>()
 const emits = defineEmits<DialogContentImplEmits>()

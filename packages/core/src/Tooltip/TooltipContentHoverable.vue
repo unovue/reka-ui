@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import TooltipContentImpl, { type TooltipContentImplProps } from './TooltipContentImpl.vue'
-import { injectTooltipRootContext } from './TooltipRoot.vue'
-import { injectTooltipProviderContext } from './TooltipProvider.vue'
+import type { TooltipContentImplProps } from './TooltipContentImpl.vue'
 import { useForwardExpose, useForwardProps, useGraceArea } from '@/shared'
+import TooltipContentImpl from './TooltipContentImpl.vue'
+import { injectTooltipProviderContext } from './TooltipProvider.vue'
+import { injectTooltipRootContext } from './TooltipRoot.vue'
 
 const props = defineProps<TooltipContentImplProps>()
 const forwardedProps = useForwardProps(props)

@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import { injectAccordionRootContext } from './AccordionRoot.vue'
 import { createContext, useArrowNavigation, useForwardExpose } from '@/shared'
+import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 enum AccordionItemState {
   Open = 'open',

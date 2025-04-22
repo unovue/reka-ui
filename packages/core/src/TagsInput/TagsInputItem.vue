@@ -1,8 +1,10 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import type { ComputedRef, Ref } from 'vue'
+import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import { createContext, useForwardExpose } from '@/shared'
-import { type ComputedRef, type Ref, computed, toRefs } from 'vue'
-import { type AcceptableInputValue, injectTagsInputRootContext } from './TagsInputRoot.vue'
+import { computed, toRefs } from 'vue'
+import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
   /** Value associated with the tags */
@@ -24,8 +26,8 @@ export const [injectTagsInputItemContext, provideTagsInputItemContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
 
 const props = defineProps<TagsInputItemProps>()
 const { value } = toRefs(props)

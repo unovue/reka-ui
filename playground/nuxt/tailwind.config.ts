@@ -1,6 +1,6 @@
+import type { Config } from 'tailwindcss'
 import { blackA, grass, green, indigo, mauve, purple, red, teal, violet } from '@radix-ui/colors'
 import plugin from 'tailwindcss/plugin'
-import type { Config } from 'tailwindcss'
 
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}', '../../docs/components/**/*.{vue,ts}'],

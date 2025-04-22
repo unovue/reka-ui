@@ -12,8 +12,8 @@ export interface AspectRatioProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { computed } from 'vue'
 
 defineOptions({
   inheritAttrs: false,

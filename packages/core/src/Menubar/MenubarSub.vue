@@ -10,9 +10,9 @@ export interface MenubarSubProps extends MenuSubProps {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { MenuSub } from '@/Menu'
 import { useForwardExpose } from '@/shared'
+import { useVModel } from '@vueuse/core'
 
 const props = withDefaults(defineProps<MenubarSubProps>(), {
   open: undefined,

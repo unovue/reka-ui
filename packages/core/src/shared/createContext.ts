@@ -1,4 +1,5 @@
-import { type InjectionKey, inject, provide } from 'vue'
+import type { InjectionKey } from 'vue'
+import { inject, provide } from 'vue'
 
 /**
  * @param providerComponentName - The name(s) of the component(s) providing the context.

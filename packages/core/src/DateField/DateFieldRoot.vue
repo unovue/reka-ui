@@ -1,19 +1,23 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { Matcher } from '@/date'
 
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
-import {
-  type Granularity,
-  type HourCycle,
-  type SegmentPart,
-  type SegmentValueObj,
-  getDefaultDate,
-} from '@/shared/date'
-import { type Matcher, hasTime, isBefore } from '@/date'
-import { createContent, getSegmentElements, initializeSegmentValues, isSegmentNavigationKey, syncSegmentValues } from '@/shared/date'
+import type { Formatter } from '@/shared'
+import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { hasTime, isBefore } from '@/date'
+import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import {
+  createContent,
+  getDefaultDate,
+  getSegmentElements,
+  initializeSegmentValues,
+  isSegmentNavigationKey,
+  syncSegmentValues,
+
+} from '@/shared/date'
 
 type DateFieldRootContext = {
   locale: Ref<string>
@@ -77,10 +81,10 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 defineOptions({
   inheritAttrs: false,

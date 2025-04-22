@@ -17,12 +17,12 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
 </script>
 
 <script setup lang="ts">
+import { Presence } from '@/Presence'
+import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import MenuContentImpl from './MenuContentImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
 import { SUB_CLOSE_KEYS } from './utils'
-import { Presence } from '@/Presence'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 
 const props = withDefaults(defineProps<MenuSubContentProps>(), {
   prioritizePosition: true,

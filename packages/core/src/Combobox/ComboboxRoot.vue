@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
-import { createContext, useDirection, useFilter } from '@/shared'
-import { usePrimitiveElement } from '@/Primitive'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
+import { usePrimitiveElement } from '@/Primitive'
+import { createContext, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
@@ -42,7 +42,7 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
   'update:open': [value: boolean]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' > {
+export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
   /** The controlled open state of the Combobox. Can be binded with with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */

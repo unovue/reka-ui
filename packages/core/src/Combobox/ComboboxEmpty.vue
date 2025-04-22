@@ -6,8 +6,8 @@ export interface ComboboxEmptyProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { Primitive } from '@/Primitive'
+import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = defineProps<ComboboxEmptyProps>()
 const rootContext = injectComboboxRootContext()

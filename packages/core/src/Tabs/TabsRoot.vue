@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
 import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
 import { useVModel } from '@vueuse/core'
@@ -55,8 +55,8 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { ref, toRefs } from 'vue'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
   orientation: 'horizontal',

@@ -1,11 +1,11 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { handleSubmit } from '@/test'
+import { fireEvent } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import Select from './story/_SelectTest.vue'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { fireEvent } from '@testing-library/vue'
-import { handleSubmit } from '@/test'
+import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()

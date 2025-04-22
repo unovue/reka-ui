@@ -1,11 +1,11 @@
 <script lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
-import { useId } from '@/shared'
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import type { AcceptableValue } from '@/shared/types'
-import { injectComboboxGroupContext } from './ComboboxGroup.vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useId } from '@/shared'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { injectComboboxGroupContext } from './ComboboxGroup.vue'
+import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 export { injectListboxItemContext as injectComboboxItemContext } from '@/Listbox'
 

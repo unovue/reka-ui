@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
 import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '..'
-import { Icon } from '@iconify/vue'
 
 export interface TestProps {
   addOnTab?: boolean

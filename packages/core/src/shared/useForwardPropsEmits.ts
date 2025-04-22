@@ -1,4 +1,5 @@
-import { type MaybeRefOrGetter, computed } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
+import { computed } from 'vue'
 import { useEmitAsProps } from './useEmitAsProps'
 import { useForwardProps } from './useForwardProps'
 

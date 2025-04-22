@@ -1,14 +1,14 @@
 <script setup lang="ts">
+import type { DefaultTheme } from 'vitepress/theme'
+import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
 import { Content, useData, useRoute } from 'vitepress'
 import { computed, toRefs } from 'vue'
+import DocCarbonAds from '../components/DocCarbonAds.vue'
+import DocCommunity from '../components/DocCommunity.vue'
+import DocFooter from '../components/DocFooter.vue'
 import DocOutline from '../components/DocOutline.vue'
 import DocSidebar from '../components/DocSidebar.vue'
 import DocTopbar from '../components/DocTopbar.vue'
-import DocFooter from '../components/DocFooter.vue'
-import DocCommunity from '../components/DocCommunity.vue'
-import DocCarbonAds from '../components/DocCarbonAds.vue'
-import type { DefaultTheme } from 'vitepress/theme'
-import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
 import { flatten } from '../functions/flatten'
 
 const { theme, frontmatter } = useData()

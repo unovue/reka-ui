@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { DateFieldInput, DateFieldRoot } from '..'
 import { Label } from '@/Label'
+import { DateFieldInput, DateFieldRoot } from '..'
 </script>
 
 <template>

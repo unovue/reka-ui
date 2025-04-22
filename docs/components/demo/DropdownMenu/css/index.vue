@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
@@ -18,6 +17,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from 'reka-ui'
+import { ref } from 'vue'
 import './styles.css'
 
 const toggleState = ref(false)

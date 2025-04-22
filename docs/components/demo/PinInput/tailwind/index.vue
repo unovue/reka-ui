@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Label, PinInputInput, PinInputRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const value = ref<string[]>([])
 function handleComplete(e: string[]) {

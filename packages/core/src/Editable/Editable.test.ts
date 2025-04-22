@@ -1,10 +1,10 @@
+import type { EditableRootProps } from './EditableRoot.vue'
+import { useTestKbd } from '@/shared'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Editable from './story/_Editable.vue'
-import userEvent from '@testing-library/user-event'
-import type { EditableRootProps } from './EditableRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
 
 const kbd = useTestKbd()
 

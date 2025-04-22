@@ -184,9 +184,9 @@ function handleInputLineHeight(style: CSSStyleDeclaration, computed: CSSStyleDec
     const height = parseInt(computed.height)
     const outerHeight
       = parseInt(computed.paddingTop)
-      + parseInt(computed.paddingBottom)
-      + parseInt(computed.borderTopWidth)
-      + parseInt(computed.borderBottomWidth)
+        + parseInt(computed.paddingBottom)
+        + parseInt(computed.borderTopWidth)
+        + parseInt(computed.borderBottomWidth)
     const targetHeight = outerHeight + parseInt(computed.lineHeight)
     if (height > targetHeight) {
       style.lineHeight = `${height - outerHeight}px`
