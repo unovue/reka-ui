@@ -5,8 +5,8 @@ export interface MenubarGroupProps extends MenuGroupProps {}
 </script>
 
 <script setup lang="ts">
-import { useForwardExpose } from '@/shared'
 import { MenuGroup } from '@/Menu'
+import { useForwardExpose } from '@/shared'
 
 const props = defineProps<MenubarGroupProps>()
 useForwardExpose()

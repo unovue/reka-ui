@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
+import { getActiveElement } from '@/shared'
 import { onBeforeUnmount, ref, watchEffect } from 'vue'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
-import { Primitive } from '@/Primitive'
-import { useCollection } from '@/Collection'
-import { getActiveElement } from '@/shared'
 
 export type SelectScrollButtonImplEmits = {
   autoScroll: []

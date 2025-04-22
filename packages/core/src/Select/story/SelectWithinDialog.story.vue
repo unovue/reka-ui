@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  DialogClose,
+  DialogContent,
+  DialogRoot,
+  DialogTrigger,
+} from '@/Dialog'
 import { Icon } from '@iconify/vue'
 import {
   SelectContent,
@@ -15,12 +21,6 @@ import {
   SelectValue,
   SelectViewport,
 } from '..'
-import {
-  DialogClose,
-  DialogContent,
-  DialogRoot,
-  DialogTrigger,
-} from '@/Dialog'
 
 const options = ['Apple', 'Banana', 'Blueberry', 'Grapes', 'Pineapple']
 </script>

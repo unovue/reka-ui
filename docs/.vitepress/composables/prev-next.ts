@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { useData } from 'vitepress'
+import { computed } from 'vue'
 import { getFlatSideBarLinks, getSidebar, isActive } from './sidebar'
 
 export function usePrevNext() {
@@ -18,11 +18,11 @@ export function usePrevNext() {
 
     const hidePrev
       = (theme.value.docFooter?.prev === false && !frontmatter.value.prev)
-      || frontmatter.value.prev === false
+        || frontmatter.value.prev === false
 
     const hideNext
       = (theme.value.docFooter?.next === false && !frontmatter.value.next)
-      || frontmatter.value.next === false
+        || frontmatter.value.next === false
 
     return {
       prev: hidePrev
@@ -34,8 +34,8 @@ export function usePrevNext() {
                 : typeof frontmatter.value.prev === 'object'
                   ? frontmatter.value.prev.text
                   : undefined)
-                  ?? candidates[index - 1]?.docFooterText
-                  ?? candidates[index - 1]?.text,
+                ?? candidates[index - 1]?.docFooterText
+                ?? candidates[index - 1]?.text,
             link:
               (typeof frontmatter.value.prev === 'object'
                 ? frontmatter.value.prev.link
@@ -50,8 +50,8 @@ export function usePrevNext() {
                 : typeof frontmatter.value.next === 'object'
                   ? frontmatter.value.next.text
                   : undefined)
-                  ?? candidates[index + 1]?.docFooterText
-                  ?? candidates[index + 1]?.text,
+                ?? candidates[index + 1]?.docFooterText
+                ?? candidates[index + 1]?.text,
             link:
               (typeof frontmatter.value.next === 'object'
                 ? frontmatter.value.next.link

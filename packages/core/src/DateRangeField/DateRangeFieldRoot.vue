@@ -1,30 +1,31 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { Matcher } from '@/date'
 
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import type { Formatter } from '@/shared'
+import type { DateRange, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
+import type { Direction, FormFieldProps } from '@/shared/types'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
 import {
-  type DateRange,
-  type Granularity,
-  type HourCycle,
-  type SegmentPart,
-  type SegmentValueObj,
-  createContent,
-  getDefaultDate,
-  getSegmentElements,
-  initializeSegmentValues,
-  isSegmentNavigationKey,
-  syncSegmentValues,
-} from '@/shared/date'
-import {
-  type Matcher,
   areAllDaysBetweenValid,
   hasTime,
   isBefore,
   isBeforeOrSame,
+
 } from '@/date'
-import type { Direction, FormFieldProps } from '@/shared/types'
+import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import {
+  createContent,
+
+  getDefaultDate,
+  getSegmentElements,
+
+  initializeSegmentValues,
+  isSegmentNavigationKey,
+
+  syncSegmentValues,
+} from '@/shared/date'
 
 export type DateRangeType = 'start' | 'end'
 
@@ -91,10 +92,10 @@ export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 defineOptions({
   inheritAttrs: false,

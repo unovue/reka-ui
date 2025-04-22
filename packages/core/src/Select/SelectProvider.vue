@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { AcceptableValue } from '@/shared/types'
 import type { SelectRootContext } from './SelectRoot.vue'
+import { provideSelectContentContext, SelectContentDefaultContextValue } from './SelectContentImpl.vue'
 import { provideSelectRootContext } from './SelectRoot.vue'
-import { SelectContentDefaultContextValue, provideSelectContentContext } from './SelectContentImpl.vue'
 
 defineOptions({
   inheritAttrs: false,

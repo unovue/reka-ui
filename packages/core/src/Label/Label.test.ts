@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
 import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h, nextTick } from 'vue'
 import Label from './Label.vue'
 
 describe('test label functionalities', () => {

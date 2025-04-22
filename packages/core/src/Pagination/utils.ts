@@ -42,17 +42,17 @@ export function getRange(currentPage: number, pageCount: number, siblingCount: n
       // default condition
       = leftSiblingIndex > firstPageIndex + 2
       // if the current page is towards the end of the list
-      && Math.abs(lastPageIndex - itemCount - firstPageIndex + 1) > 2
+        && Math.abs(lastPageIndex - itemCount - firstPageIndex + 1) > 2
       // if the current page is towards the middle of the list
-      && Math.abs(leftSiblingIndex - firstPageIndex) > 2
+        && Math.abs(leftSiblingIndex - firstPageIndex) > 2
 
     const showRightEllipsis
       // default condition
       = rightSiblingIndex < lastPageIndex - 2
       // if the current page is towards the start of the list
-      && Math.abs(lastPageIndex - itemCount) > 2
+        && Math.abs(lastPageIndex - itemCount) > 2
       // if the current page is towards the middle of the list
-      && Math.abs(lastPageIndex - rightSiblingIndex) > 2
+        && Math.abs(lastPageIndex - rightSiblingIndex) > 2
 
     if (!showLeftEllipsis && showRightEllipsis) {
       const leftRange = range(1, itemCount)

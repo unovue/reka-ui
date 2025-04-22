@@ -1,12 +1,13 @@
+import type { DateValue } from '@internationalized/date'
+import type { CalendarRootProps } from './CalendarRoot.vue'
+import { useTestKbd } from '@/shared'
+import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Calendar from './story/_Calendar.vue'
 import CalendarMultiple from './story/_CalendarMultiple.vue'
-import userEvent from '@testing-library/user-event'
-import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
-import type { CalendarRootProps } from './CalendarRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
 const edgeCaseCalendarDate = new CalendarDate(2025, 1, 1)

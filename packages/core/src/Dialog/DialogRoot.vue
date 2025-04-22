@@ -37,8 +37,8 @@ export const [injectDialogRootContext, provideDialogRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 
 defineOptions({
   inheritAttrs: false,

@@ -1,10 +1,10 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { handleSubmit } from '@/test'
+import { mount } from '@vue/test-utils'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
 import Checkbox from './story/_Checkbox.vue'
 import CheckboxGroup from './story/_CheckboxGroup.vue'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { axe } from 'vitest-axe'
-import { handleSubmit } from '@/test'
 
 globalThis.ResizeObserver = class ResizeObserver {
   cb: any

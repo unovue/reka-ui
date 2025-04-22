@@ -1,9 +1,10 @@
 <script lang="ts">
-import { useVModel } from '@vueuse/core'
-import { Primitive, type PrimitiveProps } from '..'
-import { injectListboxRootContext } from './ListboxRoot.vue'
-import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
+import type { PrimitiveProps } from '..'
 import { usePrimitiveElement } from '@/Primitive'
+import { useVModel } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
+import { Primitive } from '..'
+import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxFilterProps extends PrimitiveProps {
   /** The controlled value of the filter. Can be binded with with v-model. */

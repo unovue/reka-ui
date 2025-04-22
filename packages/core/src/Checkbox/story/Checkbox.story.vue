@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
 import { CheckboxIndicator, CheckboxRoot } from '..'
 
 const checkboxOne = ref<boolean | 'indeterminate'>('indeterminate')

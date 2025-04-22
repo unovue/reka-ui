@@ -1,44 +1,26 @@
 export {
-  injectDropdownMenuRootContext,
-  default as DropdownMenuRoot,
-  type DropdownMenuRootProps,
-  type DropdownMenuRootEmits,
-} from './DropdownMenuRoot.vue'
-export {
-  default as DropdownMenuTrigger,
-  type DropdownMenuTriggerProps,
-} from './DropdownMenuTrigger.vue'
-export {
-  default as DropdownMenuPortal,
-  type DropdownMenuPortalProps,
-} from './DropdownMenuPortal.vue'
-export {
-  default as DropdownMenuContent,
-  type DropdownMenuContentProps,
-  type DropdownMenuContentEmits,
-} from './DropdownMenuContent.vue'
-export {
   default as DropdownMenuArrow,
   type DropdownMenuArrowProps,
 } from './DropdownMenuArrow.vue'
 export {
-  default as DropdownMenuItem,
-  type DropdownMenuItemProps,
-  type DropdownMenuItemEmits,
-} from './DropdownMenuItem.vue'
+  default as DropdownMenuCheckboxItem,
+  type DropdownMenuCheckboxItemEmits,
+  type DropdownMenuCheckboxItemProps,
+} from './DropdownMenuCheckboxItem.vue'
+export {
+  default as DropdownMenuContent,
+  type DropdownMenuContentEmits,
+  type DropdownMenuContentProps,
+} from './DropdownMenuContent.vue'
 export {
   default as DropdownMenuGroup,
   type DropdownMenuGroupProps,
 } from './DropdownMenuGroup.vue'
 export {
-  default as DropdownMenuSeparator,
-  type DropdownMenuSeparatorProps,
-} from './DropdownMenuSeparator.vue'
-export {
-  default as DropdownMenuCheckboxItem,
-  type DropdownMenuCheckboxItemProps,
-  type DropdownMenuCheckboxItemEmits,
-} from './DropdownMenuCheckboxItem.vue'
+  default as DropdownMenuItem,
+  type DropdownMenuItemEmits,
+  type DropdownMenuItemProps,
+} from './DropdownMenuItem.vue'
 export {
   default as DropdownMenuItemIndicator,
   type DropdownMenuItemIndicatorProps,
@@ -48,26 +30,44 @@ export {
   type DropdownMenuLabelProps,
 } from './DropdownMenuLabel.vue'
 export {
+  default as DropdownMenuPortal,
+  type DropdownMenuPortalProps,
+} from './DropdownMenuPortal.vue'
+export {
   default as DropdownMenuRadioGroup,
-  type DropdownMenuRadioGroupProps,
   type DropdownMenuRadioGroupEmits,
+  type DropdownMenuRadioGroupProps,
 } from './DropdownMenuRadioGroup.vue'
 export {
   default as DropdownMenuRadioItem,
-  type DropdownMenuRadioItemProps,
   type DropdownMenuRadioItemEmits,
+  type DropdownMenuRadioItemProps,
 } from './DropdownMenuRadioItem.vue'
 export {
+  default as DropdownMenuRoot,
+  type DropdownMenuRootEmits,
+  type DropdownMenuRootProps,
+  injectDropdownMenuRootContext,
+} from './DropdownMenuRoot.vue'
+export {
+  default as DropdownMenuSeparator,
+  type DropdownMenuSeparatorProps,
+} from './DropdownMenuSeparator.vue'
+export {
   default as DropdownMenuSub,
-  type DropdownMenuSubProps,
   type DropdownMenuSubEmits,
+  type DropdownMenuSubProps,
 } from './DropdownMenuSub.vue'
 export {
   default as DropdownMenuSubContent,
-  type DropdownMenuSubContentProps,
   type DropdownMenuSubContentEmits,
+  type DropdownMenuSubContentProps,
 } from './DropdownMenuSubContent.vue'
 export {
   default as DropdownMenuSubTrigger,
   type DropdownMenuSubTriggerProps,
 } from './DropdownMenuSubTrigger.vue'
+export {
+  default as DropdownMenuTrigger,
+  type DropdownMenuTriggerProps,
+} from './DropdownMenuTrigger.vue'

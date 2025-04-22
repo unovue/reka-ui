@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { Ref } from 'vue'
 import { createContext, useForwardExpose } from '@/shared'
 
 type PaginationRootContext = {

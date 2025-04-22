@@ -1,11 +1,11 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { handleSubmit, sleep } from '@/test'
+import { fireEvent } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import RadioGroup from './story/_RadioGroup.vue'
 import Radio from './story/_Radio.vue'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { fireEvent } from '@testing-library/vue'
-import { handleSubmit, sleep } from '@/test'
+import RadioGroup from './story/_RadioGroup.vue'
 
 describe('given a default RadioGroup', () => {
   let wrapper: VueWrapper<InstanceType<typeof RadioGroup>>

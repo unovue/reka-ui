@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type { GenericComponentInstance } from '@/shared/types'
+import { countryList } from '@/shared/constant'
 import { computed, ref } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from '..'
-import { countryList } from '@/shared/constant'
-import type { GenericComponentInstance } from '@/shared/types'
 
 const options = computed(() => countryList.slice(0, 20))
 const singleControl = ref()

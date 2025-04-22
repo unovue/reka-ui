@@ -20,8 +20,8 @@ export interface ToastRootProps extends ToastRootImplProps {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { Presence } from '@/Presence'
+import { useVModel } from '@vueuse/core'
 import ToastRootImpl from './ToastRootImpl.vue'
 
 const props = withDefaults(defineProps<ToastRootProps>(), {
@@ -68,35 +68,43 @@ const open = useVModel(props, 'open', emits, {
       @escape-key-down="emits('escapeKeyDown', $event)"
       @swipe-start="(event) => {
         emits('swipeStart', event);
-        (event.currentTarget as HTMLElement).setAttribute('data-swipe', 'start');
+        if (!event.defaultPrevented) {
+          (event.currentTarget as HTMLElement).setAttribute('data-swipe', 'start');
+        }
       }"
       @swipe-move="(event) => {
         emits('swipeMove', event);
-        const { x, y } = event.detail.delta;
-        const target = event.currentTarget as HTMLElement
-        target.setAttribute('data-swipe', 'move');
-        target.style.setProperty('--reka-toast-swipe-move-x', `${x}px`);
-        target.style.setProperty('--reka-toast-swipe-move-y', `${y}px`);
+        if (!event.defaultPrevented) {
+          const { x, y } = event.detail.delta;
+          const target = event.currentTarget as HTMLElement
+          target.setAttribute('data-swipe', 'move');
+          target.style.setProperty('--reka-toast-swipe-move-x', `${x}px`);
+          target.style.setProperty('--reka-toast-swipe-move-y', `${y}px`);
+        }
       }"
       @swipe-cancel="(event) => {
         emits('swipeCancel', event);
-        const target = event.currentTarget as HTMLElement
-        target.setAttribute('data-swipe', 'cancel');
-        target.style.removeProperty('--reka-toast-swipe-move-x');
-        target.style.removeProperty('--reka-toast-swipe-move-y');
-        target.style.removeProperty('--reka-toast-swipe-end-x');
-        target.style.removeProperty('--reka-toast-swipe-end-y');
+        if (!event.defaultPrevented) {
+          const target = event.currentTarget as HTMLElement
+          target.setAttribute('data-swipe', 'cancel');
+          target.style.removeProperty('--reka-toast-swipe-move-x');
+          target.style.removeProperty('--reka-toast-swipe-move-y');
+          target.style.removeProperty('--reka-toast-swipe-end-x');
+          target.style.removeProperty('--reka-toast-swipe-end-y');
+        }
       }"
       @swipe-end="(event) => {
         emits('swipeEnd', event);
-        const { x, y } = event.detail.delta;
-        const target = event.currentTarget as HTMLElement
-        target.setAttribute('data-swipe', 'end');
-        target.style.removeProperty('--reka-toast-swipe-move-x');
-        target.style.removeProperty('--reka-toast-swipe-move-y');
-        target.style.setProperty('--reka-toast-swipe-end-x', `${x}px`);
-        target.style.setProperty('--reka-toast-swipe-end-y', `${y}px`);
-        open = false;
+        if (!event.defaultPrevented) {
+          const { x, y } = event.detail.delta;
+          const target = event.currentTarget as HTMLElement
+          target.setAttribute('data-swipe', 'end');
+          target.style.removeProperty('--reka-toast-swipe-move-x');
+          target.style.removeProperty('--reka-toast-swipe-move-y');
+          target.style.setProperty('--reka-toast-swipe-end-x', `${x}px`);
+          target.style.setProperty('--reka-toast-swipe-end-y', `${y}px`);
+          open = false;
+        }
       }"
     >
       <slot

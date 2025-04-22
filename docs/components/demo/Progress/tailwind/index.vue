@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { ProgressIndicator, ProgressRoot } from 'reka-ui'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 const progressValue = ref(10)
 const timer = ref()

@@ -1,5 +1,5 @@
-import { mount } from '@vue/test-utils'
 import userEvent from '@testing-library/user-event'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import Button from './story/_Button.vue'
 import ButtonGroup from './story/_ButtonGroup.vue'

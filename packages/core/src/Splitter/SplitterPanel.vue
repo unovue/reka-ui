@@ -62,8 +62,8 @@ export type PanelData = {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { injectPanelGroupContext } from './SplitterGroup.vue'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { injectPanelGroupContext } from './SplitterGroup.vue'
 
 const props = defineProps<SplitterPanelProps>()
 const emits = defineEmits<SplitterPanelEmits>()

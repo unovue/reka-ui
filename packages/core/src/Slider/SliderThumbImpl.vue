@@ -7,13 +7,13 @@ export interface SliderThumbImplProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
-import { useMounted } from '@vueuse/core'
-import { Primitive } from '@/Primitive'
 import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose, useSize } from '@/shared'
+import { useMounted } from '@vueuse/core'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { convertValueToPercentage, getLabel, getThumbInBoundsOffset, injectSliderOrientationContext } from './utils'
-import { useForwardExpose, useSize } from '@/shared'
 
 defineOptions({
   inheritAttrs: false,

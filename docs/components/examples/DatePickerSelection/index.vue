@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type { DateRange } from 'reka-ui'
 import { Icon } from '@iconify/vue'
 import { getLocalTimeZone, today } from '@internationalized/date'
 import { DateRangeFieldInput, DateRangeFieldRoot, RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, useDateFormatter } from 'reka-ui'
-import type { DateRange } from 'reka-ui'
 import { ref } from 'vue'
 
 const formatter = useDateFormatter('en-UK')

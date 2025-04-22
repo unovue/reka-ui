@@ -10,9 +10,10 @@ export interface VisuallyHiddenInputBubbleProps<T> {
 </script>
 
 <script setup lang="ts" generic="T">
+import type { VisuallyHiddenProps } from './VisuallyHidden.vue'
 import { usePrimitiveElement } from '@/Primitive'
-import VisuallyHidden, { type VisuallyHiddenProps } from './VisuallyHidden.vue'
 import { computed, watch } from 'vue'
+import VisuallyHidden from './VisuallyHidden.vue'
 
 defineOptions({
   inheritAttrs: false,

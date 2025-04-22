@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface MenubarRootProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
@@ -37,10 +37,10 @@ export const [injectMenubarRootContext, provideMenubarRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,

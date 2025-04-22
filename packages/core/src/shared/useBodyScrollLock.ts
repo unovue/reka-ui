@@ -1,11 +1,12 @@
+import type { Fn } from '@vueuse/shared'
+import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import {
   createSharedComposable,
   useEventListener,
 } from '@vueuse/core'
-import { type Fn, isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
-import { computed, nextTick, ref, watch } from 'vue'
+import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
-import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
@@ -55,9 +56,9 @@ const useBodyLockStackCount = createSharedComposable(() => {
     const config = context.scrollBody?.value
       ? typeof context.scrollBody.value === 'object'
         ? defu({
-          padding: context.scrollBody.value.padding === true ? verticalScrollbarWidth : context.scrollBody.value.padding,
-          margin: context.scrollBody.value.margin === true ? verticalScrollbarWidth : context.scrollBody.value.margin,
-        }, defaultConfig)
+            padding: context.scrollBody.value.padding === true ? verticalScrollbarWidth : context.scrollBody.value.padding,
+            margin: context.scrollBody.value.margin === true ? verticalScrollbarWidth : context.scrollBody.value.margin,
+          }, defaultConfig)
         : defaultConfig
       : ({ padding: 0, margin: 0 })
 

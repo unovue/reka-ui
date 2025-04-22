@@ -31,7 +31,7 @@
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "bumpp": "^9.11.1",
-    "eslint": "^9.24.0",
+    "eslint": "^9.25.1",
     "lint-staged": "^15.5.1",
     "pnpm": "^9.15.0",
     "rimraf": "^6.0.1",

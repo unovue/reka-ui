@@ -7,10 +7,10 @@ export interface SelectItemTextProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { Primitive } from '@/Primitive'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectItemContext } from './SelectItem.vue'
-import { Primitive } from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,

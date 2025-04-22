@@ -1,41 +1,41 @@
 export {
+  getDefaultDate,
+  getDefaultTime,
   type Granularity,
   type TimeGranularity,
   type TimeValue,
-  getDefaultDate,
-  getDefaultTime,
 } from './comparators'
+export * from './parser'
+
+export {
+  ALL_EXCEPT_LITERAL_PARTS,
+  ALL_SEGMENT_PARTS,
+  DATE_SEGMENT_PARTS,
+  EDITABLE_SEGMENT_PARTS,
+  isAnySegmentPart,
+  isDateSegmentPart,
+  isSegmentPart,
+  NON_EDITABLE_SEGMENT_PARTS,
+  TIME_SEGMENT_PARTS,
+} from './parts'
+export { getPlaceholder, type SupportedLocale } from './placeholders'
+export * from './segment'
+
 export type {
+  AnyExceptLiteral,
+  DateAndTimeSegmentObj,
   DateRange,
+  DateSegmentObj,
+  DateSegmentPart,
   DateValue,
   DayOfWeek,
-  HourCycle,
   DayPeriod,
-  DateSegmentObj,
-  TimeSegmentObj,
-  DateAndTimeSegmentObj,
-  SegmentValueObj,
+  HourCycle,
   SegmentContentObj,
   SegmentPart,
-  AnyExceptLiteral,
-  DateSegmentPart,
+  SegmentValueObj,
+  TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
-
-export { getPlaceholder, type SupportedLocale } from './placeholders'
-export {
-  DATE_SEGMENT_PARTS,
-  TIME_SEGMENT_PARTS,
-  NON_EDITABLE_SEGMENT_PARTS,
-  EDITABLE_SEGMENT_PARTS,
-  ALL_SEGMENT_PARTS,
-  ALL_EXCEPT_LITERAL_PARTS,
-  isAnySegmentPart,
-  isSegmentPart,
-  isDateSegmentPart,
-} from './parts'
-export * from './utils'
-
 export { useDateField } from './useDateField'
-export * from './parser'
-export * from './segment'
+export * from './utils'

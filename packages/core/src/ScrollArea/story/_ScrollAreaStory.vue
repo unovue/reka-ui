@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ScrollAreaRootProps } from '../ScrollAreaRoot.vue'
 import {
   ScrollAreaCorner,
   ScrollAreaRoot,
@@ -6,7 +7,6 @@ import {
   ScrollAreaThumb,
   ScrollAreaViewport,
 } from '..'
-import type { ScrollAreaRootProps } from '../ScrollAreaRoot.vue'
 
 interface Props extends ScrollAreaRootProps {
   animated?: boolean

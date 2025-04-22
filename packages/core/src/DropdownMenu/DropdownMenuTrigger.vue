@@ -9,12 +9,12 @@ export interface DropdownMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { nextTick, onMounted } from 'vue'
-import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
+import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
-import { MenuAnchor } from '@/Menu'
+import { nextTick, onMounted } from 'vue'
+import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 
 const props = withDefaults(defineProps<DropdownMenuTriggerProps>(), {
   as: 'button',

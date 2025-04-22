@@ -13,14 +13,14 @@ export interface NavigationMenuContentProps extends NavigationMenuContentImplPro
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
-import { getOpenState, whenMouse } from './utils'
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 import { isClient, reactiveOmit } from '@vueuse/shared'
+import { computed } from 'vue'
 import NavigationMenuContentImpl from './NavigationMenuContentImpl.vue'
+import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
+import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { getOpenState, whenMouse } from './utils'
 
 defineOptions({
   inheritAttrs: false,
