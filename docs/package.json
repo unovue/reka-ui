@@ -19,7 +19,7 @@
     "motion-v": "0.13.1",
     "reka-ui": "link:../packages/core",
     "vue": "3.5.13",
-    "vue-sonner": "^1.1.3"
+    "vue-sonner": "^1.3.2"
   },
   "devDependencies": {
     "@babel/traverse": "^7.26.7",
@@ -30,7 +30,7 @@
     "@types/hast": "^3.0.4",
     "@types/markdown-it": "^14.1.2",
     "@types/markdown-it-anchor": "^7.0.0",
-    "@vue/tsconfig": "^0.5.1",
+    "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.20",
     "codesandbox": "^2.2.3",
     "fast-glob": "^3.3.3",
@@ -44,7 +44,7 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
     "vitepress": "1.6.3",
-    "vue-component-meta": "^2.1.6"
+    "vue-component-meta": "^2.2.8"
   },
   "postcss": {
     "plugins": {
