@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
 import { Icon } from '@iconify/vue'
-import { defineAsyncComponent, ref } from 'vue'
 import { useMagicKeys, whenever } from '@vueuse/core'
+import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
+import { defineAsyncComponent, ref } from 'vue'
 
 const SearchCommandBox = defineAsyncComponent(() => import('./SearchCommandBox.vue'))
 

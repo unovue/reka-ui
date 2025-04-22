@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
+import { ref } from 'vue'
 
 const sliderValue = ref([50])
 </script>

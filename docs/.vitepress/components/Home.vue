@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import Chip from './Chip.vue'
 import AccordionDemo from '../../components/demo/Accordion/tailwind/index.vue'
-import HoverCardDemo from '../../components/demo/HoverCard/tailwind/index.vue'
-import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
-import TagsInputDemo from '../../components/demo/TagsInput/tailwind/index.vue'
-import NumberFieldDemo from '../../components/demo/NumberField/tailwind/index.vue'
 import CalendarDemo from '../../components/demo/Calendar/tailwind/index.vue'
-import TreeDemo from '../../components/demo/Tree/tailwind/index.vue'
-import SliderDemo from '../../components/demo/Slider/tailwind/index.vue'
+import HoverCardDemo from '../../components/demo/HoverCard/tailwind/index.vue'
+import NumberFieldDemo from '../../components/demo/NumberField/tailwind/index.vue'
 import PinInputDemo from '../../components/demo/PinInput/tailwind/index.vue'
 import ProgressDemo from '../../components/demo/Progress/tailwind/index.vue'
 import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
+import SliderDemo from '../../components/demo/Slider/tailwind/index.vue'
+import TagsInputDemo from '../../components/demo/TagsInput/tailwind/index.vue'
+import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
+import TreeDemo from '../../components/demo/Tree/tailwind/index.vue'
+import Chip from './Chip.vue'
 </script>
 
 <template>

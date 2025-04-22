@@ -1,7 +1,7 @@
 import type { PanelConstraints } from '../SplitterPanel.vue'
-import { PRECISION } from './constants'
 import { assert } from './assert'
 import { fuzzyCompareNumbers } from './compare'
+import { PRECISION } from './constants'
 
 // Panel size must be in percentages; pixel values should be pre-converted
 export function resizePanel({

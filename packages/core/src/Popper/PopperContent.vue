@@ -1,16 +1,16 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
 import type {
   Middleware,
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useSize } from '@/shared'
+import type { Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
+import { createContext, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -162,8 +162,9 @@ export const [injectPopperContentContext, providePopperContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
-import { computedEager } from '@vueuse/core'
+import {
+  Primitive,
+} from '@/Primitive'
 import {
   autoUpdate,
   flip,
@@ -175,15 +176,14 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
+import { computedEager } from '@vueuse/core'
+import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import { injectPopperRootContext } from './PopperRoot.vue'
 import {
   getSideAndAlignFromPlacement,
   isNotNull,
   transformOrigin,
 } from './utils'
-import {
-  Primitive,
-} from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,

@@ -12,13 +12,13 @@ export interface SelectViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, ref, toRefs } from 'vue'
-import { injectSelectContentContext } from './SelectContentImpl.vue'
-import { CONTENT_MARGIN } from './utils'
 import {
   Primitive,
 } from '@/Primitive'
+import { onMounted, ref, toRefs } from 'vue'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectItemAlignedPositionContext } from './SelectItemAlignedPosition.vue'
+import { CONTENT_MARGIN } from './utils'
 
 const props = defineProps<SelectViewportProps>()
 const { nonce: propNonce } = toRefs(props)

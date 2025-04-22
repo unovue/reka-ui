@@ -6,8 +6,8 @@ export interface SliderRangeProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { computed } from 'vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { convertValueToPercentage, injectSliderOrientationContext } from './utils'
 

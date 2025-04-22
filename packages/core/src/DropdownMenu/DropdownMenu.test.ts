@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import DropdownMenu from './story/_DropdownMenu.vue'
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { axe } from 'vitest-axe'
 import { findByRole } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
+import DropdownMenu from './story/_DropdownMenu.vue'
 
 describe('given default DropdownMenu', () => {
   let wrapper: VueWrapper<InstanceType<typeof DropdownMenu>>

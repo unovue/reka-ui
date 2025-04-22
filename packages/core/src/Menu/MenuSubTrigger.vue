@@ -6,14 +6,15 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {}
 </script>
 
 <script setup lang="ts">
-import { type ComponentPublicInstance, nextTick, onUnmounted, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { useId } from '@/shared'
+import { nextTick, onUnmounted, ref } from 'vue'
+import MenuAnchor from './MenuAnchor.vue'
+import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
-import { injectMenuContentContext } from './MenuContentImpl.vue'
-import { useId } from '@/shared'
-import { SUB_OPEN_KEYS, getOpenState, isMouseEvent } from './utils'
-import MenuAnchor from './MenuAnchor.vue'
+import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
 
 const props = defineProps<MenuSubTriggerProps>()
 

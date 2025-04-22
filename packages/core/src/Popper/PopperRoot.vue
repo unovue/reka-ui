@@ -1,14 +1,14 @@
 <script lang="ts">
+import type { ReferenceElement } from '@floating-ui/vue'
 import type { Ref } from 'vue'
 import { createContext } from '@/shared'
-import type { ReferenceElement } from '@floating-ui/vue'
 
 export interface Measurable {
   getBoundingClientRect: () => DOMRect
 }
 
 interface PopperRootContext {
-  anchor: Ref<ReferenceElement | undefined >
+  anchor: Ref<ReferenceElement | undefined>
   onAnchorChange: (element: ReferenceElement | undefined) => void
 }
 

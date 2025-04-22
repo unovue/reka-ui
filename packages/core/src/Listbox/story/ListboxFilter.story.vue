@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { countryList } from '@/shared/constant'
 import { computed, ref } from 'vue'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from '..'
-import { countryList } from '@/shared/constant'
 
 const searchTerm = ref('')
 const options = computed(() => searchTerm.value.trim() ? countryList.slice(0, 20).filter(i => i.toLowerCase().includes(searchTerm.value.toLowerCase().trim())) : countryList.slice(0, 20))

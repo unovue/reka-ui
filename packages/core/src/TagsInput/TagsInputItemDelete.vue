@@ -1,10 +1,10 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { injectTagsInputItemContext } from './TagsInputItem.vue'
-import { injectTagsInputRootContext } from './TagsInputRoot.vue'
-import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
 import { isEqual } from 'ohash'
+import { computed } from 'vue'
+import { injectTagsInputItemContext } from './TagsInputItem.vue'
+import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemDeleteProps extends PrimitiveProps {}
 </script>

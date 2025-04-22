@@ -1,5 +1,6 @@
+import type { ComponentPublicInstance } from 'vue'
 import { unrefElement } from '@vueuse/core'
-import { type ComponentPublicInstance, computed, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 export function usePrimitiveElement<T extends ComponentPublicInstance>() {
   const primitiveElement = ref<T>()

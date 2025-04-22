@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onContentUpdated, useData } from 'vitepress'
+import { ref } from 'vue'
 import DocOutlineItem from '../components/DocOutlineItem.vue'
 import { getHeaders, useActiveAnchor } from '../composables/outline'
-import { ref } from 'vue'
 
 defineProps<{
   collapsible?: boolean

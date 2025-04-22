@@ -1,3 +1,3 @@
-export { injectDateRangeFieldRootContext, type DateRangeFieldRootEmits, type DateRangeFieldRootProps, default as DateRangeFieldRoot } from './DateRangeFieldRoot.vue'
+export { default as DateRangeFieldInput, type DateRangeFieldInputProps } from './DateRangeFieldInput.vue'
 
-export { type DateRangeFieldInputProps, default as DateRangeFieldInput } from './DateRangeFieldInput.vue'
+export { default as DateRangeFieldRoot, type DateRangeFieldRootEmits, type DateRangeFieldRootProps, injectDateRangeFieldRootContext } from './DateRangeFieldRoot.vue'

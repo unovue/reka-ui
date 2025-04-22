@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { axe } from 'vitest-axe'
-import Popover from './story/_Popover.vue'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import Popover from './story/_Popover.vue'
 
 describe('given default Popover', () => {
   let wrapper: VueWrapper<InstanceType<typeof Popover>>

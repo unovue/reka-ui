@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
-import { useVModel } from '@vueuse/core'
 import { usePrimitiveElement } from '@/Primitive'
+import { useVModel } from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
 
 export type ComboboxInputEmits = ListboxFilterEmits
@@ -12,9 +12,9 @@ export interface ComboboxInputProps extends ListboxFilterProps {
 </script>
 
 <script setup lang="ts">
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
-import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { ListboxFilter } from '@/Listbox'
+import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
+import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxInputProps>(), {
   as: 'input',

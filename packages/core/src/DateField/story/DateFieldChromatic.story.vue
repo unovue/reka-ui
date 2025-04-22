@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { CalendarDate, type DateValue } from '@internationalized/date'
-import { DateFieldInput, DateFieldRoot } from '..'
+import type { DateValue } from '@internationalized/date'
+import { CalendarDate } from '@internationalized/date'
 import { ref } from 'vue'
+import { DateFieldInput, DateFieldRoot } from '..'
 
 const modelValue = ref<DateValue>()
 const defaultValue = new CalendarDate(2024, 2, 28)

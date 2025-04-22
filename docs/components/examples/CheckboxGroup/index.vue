@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const values = ref([])
 

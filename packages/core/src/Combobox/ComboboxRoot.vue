@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
-import { createContext, useDirection, useFilter } from '@/shared'
-import { usePrimitiveElement } from '@/Primitive'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
+import type { Ref } from 'vue'
+import { usePrimitiveElement } from '@/Primitive'
+import { createContext, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
@@ -44,7 +44,7 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
   'update:open': [value: boolean]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' > {
+export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
   /** The controlled open state of the Combobox. Can be binded with with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -67,10 +67,11 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
-import { PopperRoot } from '@/Popper'
-import { type EventHookOn, type EventHookTrigger, createEventHook, useVModel } from '@vueuse/core'
+import type { EventHookOn, EventHookTrigger } from '@vueuse/core'
 import { ListboxRoot } from '@/Listbox'
+import { PopperRoot } from '@/Popper'
+import { createEventHook, useVModel } from '@vueuse/core'
+import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,

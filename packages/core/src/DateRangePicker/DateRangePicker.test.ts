@@ -1,12 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import type { DateValue } from '@internationalized/date'
 
+import type { DateRangePickerRootProps } from './DateRangePickerRoot.vue'
+import { useTestKbd } from '@/shared'
+import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import DateRangePicker from './story/_DateRangePicker.vue'
-import userEvent from '@testing-library/user-event'
-import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
-import type { DateRangePickerRootProps } from './DateRangePickerRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
 
 const calendarDate = {
   start: new CalendarDate(2022, 1, 1),

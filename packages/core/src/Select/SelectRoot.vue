@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
+import type { Ref } from 'vue'
+import { useCollection } from '@/Collection'
 import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
 import { compare } from './utils'
-import { useCollection } from '@/Collection'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /** The controlled open state of the Select. Can be bind as `v-model:open`. */
@@ -63,10 +63,10 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { computed, ref, toRefs } from 'vue'
-import BubbleSelect from './BubbleSelect.vue'
 import { PopperRoot } from '@/Popper'
 import { useVModel } from '@vueuse/core'
+import { computed, ref, toRefs } from 'vue'
+import BubbleSelect from './BubbleSelect.vue'
 
 defineOptions({
   inheritAttrs: false,

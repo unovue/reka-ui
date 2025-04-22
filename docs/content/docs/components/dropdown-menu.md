@@ -544,7 +544,6 @@ Use the `CheckboxItem` part to add an item that can be checked.
 ```vue line=5,26-31
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -555,6 +554,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'reka-ui'
+import { ref } from 'vue'
 
 const checked = ref(false)
 </script>
@@ -586,7 +586,6 @@ Use the `RadioGroup` and `RadioItem` parts to add an item that can be checked am
 ```vue line=8-9,22-41
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuItemIndicator,
@@ -596,6 +595,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger,
 } from 'reka-ui'
+import { ref } from 'vue'
 
 const color = ref(false)
 </script>
@@ -911,26 +911,27 @@ import {
 #### Implementation
 
 ```ts
+export { default as DropdownMenuCheckboxItem } from 'DropdownMenuCheckboxItem.vue'
 // your-dropdown-menu.ts
 export { default as DropdownMenuContent } from 'DropdownMenuContent.vue'
-export { default as DropdownMenuCheckboxItem } from 'DropdownMenuCheckboxItem.vue'
 export { default as DropdownMenuRadioItem } from 'DropdownMenuRadioItem.vue'
 
 export {
   DropdownMenuRoot as DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuItem,
   DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from 'reka-ui'
 ```
 
 ```vue
 <!-- DropdownMenuContent.vue -->
 <script setup lang="ts">
-import { DropdownMenuContent, type DropdownMenuContentEmits, type DropdownMenuContentProps, DropdownMenuPortal, useForwardPropsEmits, } from 'reka-ui'
+import type { DropdownMenuContentEmits, DropdownMenuContentProps } from 'reka-ui'
+import { DropdownMenuContent, DropdownMenuPortal, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
@@ -950,8 +951,9 @@ const forwarded = useForwardPropsEmits(props, emits)
 ```vue
 <!-- DropdownMenuCheckboxItem.vue -->
 <script setup lang="ts">
-import { DropdownMenuCheckboxItem, type DropdownMenuCheckboxItemEmits, type DropdownMenuCheckboxItemProps, DropdownMenuItemIndicator, useForwardPropsEmits } from 'reka-ui'
+import type { DropdownMenuCheckboxItemEmits, DropdownMenuCheckboxItemProps } from 'reka-ui'
 import { CheckIcon } from '@radix-icons/vue'
+import { DropdownMenuCheckboxItem, DropdownMenuItemIndicator, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<DropdownMenuCheckboxItemProps>()
 const emits = defineEmits<DropdownMenuCheckboxItemEmits>()
@@ -974,8 +976,9 @@ const forwarded = useForwardPropsEmits(props, emits)
 ```vue
 <!-- DropdownMenuRadioItem.vue -->
 <script setup lang="ts">
-import { DropdownMenuItemIndicator, DropdownMenuRadioItem, type DropdownMenuRadioItemEmits, type DropdownMenuRadioItemProps, useForwardPropsEmits, } from 'reka-ui'
+import type { DropdownMenuRadioItemEmits, DropdownMenuRadioItemProps } from 'reka-ui'
 import { DotFilledIcon } from '@radix-icons/vue'
+import { DropdownMenuItemIndicator, DropdownMenuRadioItem, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<DropdownMenuRadioItemProps>()
 const emits = defineEmits<DropdownMenuRadioItemEmits>()

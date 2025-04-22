@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import HeroContainer from './HeroContainer.vue'
-import HeroCodeGroup from './HeroCodeGroup.vue'
-import { computed } from 'vue'
 import { useStorage } from '@vueuse/core'
+import { computed } from 'vue'
+import HeroCodeGroup from './HeroCodeGroup.vue'
+import HeroContainer from './HeroContainer.vue'
 
 const props = withDefaults(defineProps<{
   name: string
@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
   type?: 'demo' | 'example'
 }>(), { type: 'demo' })
 
-const cssFramework = useStorage<'css' | 'tailwind' | 'pinceau' >('cssFramework', 'tailwind')
+const cssFramework = useStorage<'css' | 'tailwind' | 'pinceau'>('cssFramework', 'tailwind')
 const parsedFiles = computed(() => JSON.parse(decodeURIComponent(props.files ?? ''))[cssFramework.value])
 </script>
 

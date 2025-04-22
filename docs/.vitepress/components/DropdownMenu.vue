@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 
 defineProps<{
   label: string

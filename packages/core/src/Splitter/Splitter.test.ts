@@ -1,8 +1,8 @@
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { mount } from '@vue/test-utils'
-import Splitter from './story/_Splitter.vue'
 import { nextTick } from 'vue'
+import Splitter from './story/_Splitter.vue'
 
 // Simple a11y test for now
 describe('test splitter functionalities', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useNonce } from './useNonce'
 import { ref } from 'vue'
+import { useNonce } from './useNonce'
 
 describe('useNonce', () => {
   vi.mock('@/ConfigProvider/ConfigProvider.vue', async () => {

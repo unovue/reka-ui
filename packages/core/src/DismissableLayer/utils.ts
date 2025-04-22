@@ -1,6 +1,7 @@
-import { isClient } from '@vueuse/shared'
+import type { Ref } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
-import { type Ref, nextTick, ref, watchEffect } from 'vue'
+import { isClient } from '@vueuse/shared'
+import { nextTick, ref, watchEffect } from 'vue'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -29,7 +30,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   if (
     (targetLayer
       && mainLayer === targetLayer)
-      || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer)
+    || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer)
   ) {
     return true
   }

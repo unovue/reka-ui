@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import type { SelectEvent } from './utils'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
+import type { SelectEvent } from './utils'
 
 export type RadioEmits = {
   'update:checked': [value: boolean]
@@ -19,11 +19,11 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
-import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 import { useFormControl, useForwardExpose } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, toRefs } from 'vue'
 import { handleSelect } from './utils'
 
 const props = withDefaults(defineProps<RadioProps>(), {

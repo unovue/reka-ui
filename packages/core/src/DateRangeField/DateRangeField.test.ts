@@ -1,12 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import type { DateValue } from '@internationalized/date'
 
+import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
+import { useTestKbd } from '@/shared'
+import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import DateRangeField from './story/_DateRangeField.vue'
-import userEvent from '@testing-library/user-event'
-import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
-import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
 
 const calendarDate = {
   start: new CalendarDate(2022, 1, 1),

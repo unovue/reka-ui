@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import NumberField from './story/_NumberField.vue'
-import { axe } from 'vitest-axe'
 import type { NumberFieldRootProps } from './NumberFieldRoot.vue'
+import { useKbd } from '@/shared'
+import { handleSubmit } from '@/test'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
-import { useKbd } from '@/shared'
 import { mount } from '@vue/test-utils'
-import { handleSubmit } from '@/test'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
+import NumberField from './story/_NumberField.vue'
 
 function setup(props?: NumberFieldRootProps) {
   const user = userEvent.setup()

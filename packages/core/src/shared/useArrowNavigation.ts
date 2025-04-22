@@ -187,7 +187,7 @@ function findNextFocusableElement(
 
   const isDisabled
     = candidate.hasAttribute('disabled')
-    && candidate.getAttribute('disabled') !== 'false'
+      && candidate.getAttribute('disabled') !== 'false'
   if (isDisabled) {
     return findNextFocusableElement(
       elements,

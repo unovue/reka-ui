@@ -51,6 +51,9 @@ Specially designed to work well with [@internationalized/date](https://react-spe
 ### How to use?
 
 ```ts
+import type { DateValue } from '@internationalized/date'
+import { CalendarDate } from '@internationalized/date'
+
 import {
   createDateRange,
   createDecade,
@@ -70,8 +73,6 @@ import {
   parseStringToDateValue,
   toDate,
 } from 'reka-ui/date'
-
-import { CalendarDate, type DateValue } from '@internationalized/date'
 
 const date = new CalendarDate(1995, 8, 18)
 const minDate = new CalendarDate(1995, 8, 1)

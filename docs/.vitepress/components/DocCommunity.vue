@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
 import { useEditLink } from '../composables/edit-link'
-import { Icon } from '@iconify/vue'
 import { discord, github, sponsor } from '../meta'
 
 const editLink = useEditLink()

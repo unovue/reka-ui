@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { makeStackblitzParams } from '../codeeditor'
 import Tooltip from './Tooltip.vue'
-import { Icon } from '@iconify/vue'
 
 const props = defineProps<{
   name: string
