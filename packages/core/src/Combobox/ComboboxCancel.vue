@@ -19,7 +19,7 @@ const rootContext = injectComboboxRootContext()
 function handleClick() {
   // Reset the search to show all options.
   rootContext.filterState.search = ''
-  rootContext.tiggerResetSearchTerm()
+  rootContext.triggerResetSearchTerm()
 
   if (rootContext.inputElement.value) {
     rootContext.inputElement.value.focus()
