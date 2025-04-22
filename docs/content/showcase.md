@@ -75,6 +75,11 @@ projects:
     url: https://cider.sh
     image: https://cider.sh/og.png
 
+  - title: Movie Tracker
+    description: Your guide to movies and TV shows. Find movies and shows, create lists, share your thoughts.
+    url: https://movie-tracker.app/en
+    image: https://raw.githubusercontent.com/dapzer/movie-tracker/refs/heads/master/apps/frontend/src/public/ogImageEn.webp
+
 starters:
   - title: shadcn-docs
     description: A Nuxt content docs theme built with `shadcn-vue`
