@@ -22,7 +22,7 @@ type ComboboxRootContext<T> = {
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   onResetSearchTerm: EventHookOn
-  tiggerResetSearchTerm: EventHookTrigger
+  triggerResetSearchTerm: EventHookTrigger
   allItems: Ref<Map<string, string>>
   allGroups: Ref<Map<string, Set<string>>>
   filterState: {
@@ -228,7 +228,7 @@ provideComboboxRootContext({
   parentElement,
   resetSearchTermOnSelect,
   onResetSearchTerm: resetSearchTerm.on,
-  tiggerResetSearchTerm: resetSearchTerm.trigger,
+  triggerResetSearchTerm: resetSearchTerm.trigger,
   allItems,
   allGroups,
   filterState,
