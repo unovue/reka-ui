@@ -1,5 +1,5 @@
 import type { ImgHTMLAttributes, Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -49,7 +49,7 @@ export function useImageLoadingStatus(src: Ref<string>, { referrerPolicy, crossO
   onMounted(() => {
     isMounted.value = true
 
-    watch([() => src.value, () => referrerPolicy?.value, () => crossOrigin?.value], ([src, referrerPolicy], _, onCleanup) => {
+    watchEffect((onCleanup) => {
       if (!image.value)
         return
 
@@ -59,16 +59,16 @@ export function useImageLoadingStatus(src: Ref<string>, { referrerPolicy, crossO
       image.value.addEventListener('load', handleLoad)
       image.value.addEventListener('error', handleError)
 
-      if (referrerPolicy)
-        image.value.referrerPolicy = referrerPolicy
-      if (typeof crossOrigin === 'string')
-        image.value.crossOrigin = crossOrigin
+      if (referrerPolicy?.value)
+        image.value.referrerPolicy = referrerPolicy.value
+      if (typeof crossOrigin?.value === 'string')
+        image.value.crossOrigin = crossOrigin.value
 
       onCleanup(() => {
         image.value?.removeEventListener('load', handleLoad)
         image.value?.removeEventListener('error', handleError)
       })
-    }, { immediate: true })
+    })
   })
 
   onUnmounted(() => {
