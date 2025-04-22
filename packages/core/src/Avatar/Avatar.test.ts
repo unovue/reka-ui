@@ -1,10 +1,10 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import Avatar from './story/_Avatar.vue'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } from '@testing-library/vue'
+import Avatar from './story/_Avatar.vue'
 
 const FALLBACK = 'CT'
 const DELAY = 350

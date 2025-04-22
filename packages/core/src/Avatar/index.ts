@@ -1,9 +1,4 @@
 export {
-  injectAvatarRootContext,
-  default as AvatarRoot,
-  type AvatarRootProps,
-} from './AvatarRoot.vue'
-export {
   default as AvatarFallback,
   type AvatarFallbackProps,
 } from './AvatarFallback.vue'
@@ -12,3 +7,8 @@ export {
   type AvatarImageEmits,
   type AvatarImageProps,
 } from './AvatarImage.vue'
+export {
+  default as AvatarRoot,
+  type AvatarRootProps,
+  injectAvatarRootContext,
+} from './AvatarRoot.vue'

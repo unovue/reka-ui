@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { Fragment, computed, defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, Fragment, h, ref } from 'vue'
 
 import { useForwardExpose } from './useForwardExpose'
 

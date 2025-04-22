@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { ComputedRef } from 'vue'
 import type { RadioProps } from './Radio.vue'
-import { createContext, useForwardExpose } from '@/shared'
 import type { SelectEvent } from './utils'
+import { createContext, useForwardExpose } from '@/shared'
 
 export interface RadioGroupItemProps extends Omit<RadioProps, 'checked'> {}
 export type RadioGroupItemEmits = {
@@ -19,12 +19,12 @@ export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import Radio from './Radio.vue'
-import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
 import { RovingFocusItem } from '@/RovingFocus'
 import { useEventListener } from '@vueuse/core'
 import { isEqual } from 'ohash'
+import { computed, ref } from 'vue'
+import Radio from './Radio.vue'
+import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
 
 defineOptions({
   inheritAttrs: false,

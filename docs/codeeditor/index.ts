@@ -1,5 +1,5 @@
-import { getParameters } from 'codesandbox/lib/api/define'
 import sdk from '@stackblitz/sdk'
+import { getParameters } from 'codesandbox/lib/api/define'
 import { version } from '../../package.json'
 
 export function makeCodeSandboxParams(componentName: string, sources: Record<string, string>) {

@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import Tabs from './story/_Tabs.vue'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import Tabs from './story/_Tabs.vue'
 
 describe('given default Tabs', () => {
   let wrapper: VueWrapper<InstanceType<typeof Tabs>>

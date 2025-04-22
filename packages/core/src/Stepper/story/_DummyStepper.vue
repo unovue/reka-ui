@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, type StepperRootEmits, type StepperRootProps, StepperSeparator, StepperTitle, StepperTrigger } from '..'
+import type { StepperRootEmits, StepperRootProps } from '..'
 import { useForwardPropsEmits } from '@/shared'
+import { Icon } from '@iconify/vue'
+import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from '..'
 
 const props = defineProps<StepperRootProps>()
 const emits = defineEmits<StepperRootEmits>()

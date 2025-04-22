@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ComponentPublicInstance } from 'vue'
 import { useCollection } from '@/Collection'
 import { getActiveElement, useForwardExpose } from '@/shared'
 
@@ -21,14 +21,14 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRefs, watchEffect } from 'vue'
-import { Primitive } from '@/Primitive'
-import { injectToastProviderContext } from './ToastProvider.vue'
-import { onKeyStroke, unrefElement } from '@vueuse/core'
-import FocusProxy from './FocusProxy.vue'
-import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
-import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 import { DismissableLayerBranch } from '@/DismissableLayer'
+import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
+import { Primitive } from '@/Primitive'
+import { onKeyStroke, unrefElement } from '@vueuse/core'
+import { computed, onMounted, ref, toRefs, watchEffect } from 'vue'
+import FocusProxy from './FocusProxy.vue'
+import { injectToastProviderContext } from './ToastProvider.vue'
+import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 defineOptions({
   inheritAttrs: false,

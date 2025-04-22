@@ -1,9 +1,9 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { sleep } from '@/test'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import HoverCard from './story/_HoverCard.vue'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { sleep } from '@/test'
 
 describe('given a default HoverCard', () => {
   let wrapper: VueWrapper<InstanceType<typeof HoverCard>>

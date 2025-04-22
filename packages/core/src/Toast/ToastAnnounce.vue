@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { VisuallyHidden } from '@/VisuallyHidden'
+import { useRafFn } from '@vueuse/core'
+import { useTimeout } from '@vueuse/shared'
 import { ref } from 'vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
-import { VisuallyHidden } from '@/VisuallyHidden'
-import { useTimeout } from '@vueuse/shared'
-import { useRafFn } from '@vueuse/core'
 
 const providerContext = injectToastProviderContext()
 

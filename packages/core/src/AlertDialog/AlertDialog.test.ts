@@ -1,10 +1,10 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { findAllByText, findByText, fireEvent } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import AlertDialog from './story/_AlertDialog.vue'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { findAllByText, findByText, fireEvent } from '@testing-library/vue'
+import AlertDialog from './story/_AlertDialog.vue'
 
 describe('given a default Dialog', async () => {
   let wrapper: VueWrapper<InstanceType<typeof AlertDialog>>

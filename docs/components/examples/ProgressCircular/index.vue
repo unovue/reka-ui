@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
 import { ProgressIndicator, ProgressRoot } from 'reka-ui'
+import { computed, onMounted, ref } from 'vue'
 
 const RADIUS = 45
 const circumference = 2 * Math.PI * RADIUS

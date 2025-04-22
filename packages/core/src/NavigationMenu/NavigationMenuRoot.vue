@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { Ref } from 'vue'
-
 import type { PrimitiveProps } from '@/Primitive'
+
+import type { Ref } from 'vue'
 import type { Direction, Orientation } from './utils'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
 import { useCollection } from '@/Collection'
+import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface NavigationMenuRootProps extends PrimitiveProps {
   /** The controlled value of the menu item to activate. Can be used as `v-model`. */
@@ -92,15 +92,15 @@ export const [injectNavigationMenuContext, provideNavigationMenuContext]
 
 <script setup lang="ts">
 import {
+  Primitive,
+} from '@/Primitive'
+import { refAutoReset, useDebounceFn, useVModel } from '@vueuse/core'
+import {
   computed,
   ref,
   toRefs,
   watchEffect,
 } from 'vue'
-import { refAutoReset, useDebounceFn, useVModel } from '@vueuse/core'
-import {
-  Primitive,
-} from '@/Primitive'
 
 const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
   modelValue: undefined,

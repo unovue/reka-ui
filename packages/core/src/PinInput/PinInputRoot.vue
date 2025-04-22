@@ -1,9 +1,10 @@
 <script lang="ts">
-import { type ComputedRef, type Ref, computed, ref, toRefs, watch } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
+import type { ComputedRef, Ref } from 'vue'
+import { createContext, useDirection, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
+import { computed, ref, toRefs, watch } from 'vue'
 
 export type PinInputRootEmits = {
   'update:modelValue': [value: string[]]
@@ -50,8 +51,8 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
+import { useVModel } from '@vueuse/core'
 
 defineOptions({
   inheritAttrs: false,

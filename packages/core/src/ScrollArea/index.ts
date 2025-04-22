@@ -1,12 +1,12 @@
 export {
+  default as ScrollAreaCorner,
+  type ScrollAreaCornerProps,
+} from './ScrollAreaCorner.vue'
+export {
   injectScrollAreaRootContext,
   default as ScrollAreaRoot,
   type ScrollAreaRootProps,
 } from './ScrollAreaRoot.vue'
-export {
-  default as ScrollAreaViewport,
-  type ScrollAreaViewportProps,
-} from './ScrollAreaViewport.vue'
 export {
   injectScrollAreaScrollbarContext,
   default as ScrollAreaScrollbar,
@@ -17,6 +17,6 @@ export {
   type ScrollAreaThumbProps,
 } from './ScrollAreaThumb.vue'
 export {
-  default as ScrollAreaCorner,
-  type ScrollAreaCornerProps,
-} from './ScrollAreaCorner.vue'
+  default as ScrollAreaViewport,
+  type ScrollAreaViewportProps,
+} from './ScrollAreaViewport.vue'

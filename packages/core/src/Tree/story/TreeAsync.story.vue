@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { TreeItemToggleEvent } from '..'
-import { TreeItem, TreeRoot } from '..'
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
+import { TreeItem, TreeRoot } from '..'
 
 interface TreeNode {
   id: string

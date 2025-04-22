@@ -1,8 +1,8 @@
-import { defineComponent } from 'vue'
-import { useIsUsingKeyboard } from './useIsUsingKeyboard'
+import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { fireEvent } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { useIsUsingKeyboard } from './useIsUsingKeyboard'
 
 function setupTestComponent() {
   return defineComponent({

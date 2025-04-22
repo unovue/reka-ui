@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { VNode } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import type { VNode } from 'vue'
 import { useCollection } from '@/Collection'
+import { useForwardExpose } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,15 +11,15 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { refAutoReset, unrefElement } from '@vueuse/core'
-import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
 import {
   Primitive,
 } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { refAutoReset, unrefElement } from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
+import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
+import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { getOpenState, makeContentId, makeTriggerId } from './utils'
 
 defineOptions({
   inheritAttrs: false,

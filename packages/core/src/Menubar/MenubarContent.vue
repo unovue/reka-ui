@@ -8,12 +8,12 @@ export interface MenubarContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { injectMenubarRootContext } from './MenubarRoot.vue'
-import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { MenuContent } from '@/Menu'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
+import { ref } from 'vue'
+import { injectMenubarMenuContext } from './MenubarMenu.vue'
+import { injectMenubarRootContext } from './MenubarRoot.vue'
 
 const props = withDefaults(defineProps<MenubarContentProps>(), {
   align: 'start',

@@ -1,4 +1,5 @@
-import { type MaybeElementRef, toValue, unrefElement } from '@vueuse/core'
+import type { MaybeElementRef } from '@vueuse/core'
+import { toValue, unrefElement } from '@vueuse/core'
 import { computed } from 'vue'
 
 export function useFormControl(el: MaybeElementRef) {

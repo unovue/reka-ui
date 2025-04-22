@@ -1,9 +1,9 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { sleep } from '@/test'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Progress from './story/_Progress.vue'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { sleep } from '@/test'
 
 describe('given a default Progress', () => {
   let wrapper: VueWrapper<InstanceType<typeof Progress>>

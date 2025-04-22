@@ -1,9 +1,9 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { findByText, fireEvent } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Accordion from './story/_Accordion.vue'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { findByText, fireEvent } from '@testing-library/vue'
 
 describe('given a single Accordion', () => {
   let wrapper: VueWrapper<InstanceType<typeof Accordion>>

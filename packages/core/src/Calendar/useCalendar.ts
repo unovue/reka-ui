@@ -2,11 +2,14 @@
   * Adapted from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/builders/calendar/create.ts
 */
 
-import { type DateFields, type DateValue, isEqualMonth, isSameDay } from '@internationalized/date'
-import { type Ref, computed, ref, watch } from 'vue'
-import { type Grid, type Matcher, type WeekDayFormat, createMonths, getDaysInMonth, isAfter, isBefore, toDate } from '@/date'
-import { useDateFormatter } from '@/shared'
+import type { Grid, Matcher, WeekDayFormat } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
+import type { DateFields, DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { createMonths, getDaysInMonth, isAfter, isBefore, toDate } from '@/date'
+import { useDateFormatter } from '@/shared'
+import { isEqualMonth, isSameDay } from '@internationalized/date'
+import { computed, ref, watch } from 'vue'
 
 export type UseCalendarProps = {
   locale: Ref<string>

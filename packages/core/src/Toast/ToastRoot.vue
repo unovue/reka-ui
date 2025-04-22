@@ -20,8 +20,8 @@ export interface ToastRootProps extends ToastRootImplProps {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { Presence } from '@/Presence'
+import { useVModel } from '@vueuse/core'
 import ToastRootImpl from './ToastRootImpl.vue'
 
 const props = withDefaults(defineProps<ToastRootProps>(), {

@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { Ref } from 'vue'
 import { createContext, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaScrollbarProps extends PrimitiveProps {
@@ -33,9 +33,9 @@ import {
   watch,
 } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
+import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
 import ScrollAreaScrollbarHover from './ScrollAreaScrollbarHover.vue'
 import ScrollAreaScrollbarScroll from './ScrollAreaScrollbarScroll.vue'
-import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
 import ScrollAreaScrollbarVisible from './ScrollAreaScrollbarVisible.vue'
 
 defineOptions({

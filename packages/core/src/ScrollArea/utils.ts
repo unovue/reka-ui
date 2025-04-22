@@ -1,5 +1,5 @@
-import { clamp } from '@/shared'
 import type { Direction, Sizes } from './types'
+import { clamp } from '@/shared'
 
 // https://github.com/tmcw-up-for-adoption/simple-linear-scale/blob/master/index.js
 function linearScale(

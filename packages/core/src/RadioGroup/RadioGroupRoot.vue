@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
+import type { Ref } from 'vue'
 import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
@@ -42,11 +42,11 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
-import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { toRefs } from 'vue'
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
   disabled: false,

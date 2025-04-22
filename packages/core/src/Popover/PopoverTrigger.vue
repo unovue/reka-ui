@@ -6,10 +6,10 @@ export interface PopoverTriggerProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { PopperAnchor } from '@/Popper'
+import { Primitive } from '@/Primitive'
 import { onMounted } from 'vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
-import { Primitive } from '@/Primitive'
-import { PopperAnchor } from '@/Popper'
 
 const props = withDefaults(defineProps<PopoverTriggerProps>(), {
   as: 'button',

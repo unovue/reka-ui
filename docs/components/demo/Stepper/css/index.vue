@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import './styles.css'
 import { Icon } from '@iconify/vue'
 import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from 'reka-ui'
+import './styles.css'
 
 const steps = [{
   step: 1,

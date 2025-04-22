@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { CalendarCellTriggerSlot } from '@/Calendar/CalendarCellTrigger.vue'
-import { CalendarCellTrigger, type CalendarCellTriggerProps } from '..'
+import type { CalendarCellTriggerProps } from '..'
+import { CalendarCellTrigger } from '..'
 
 export interface DatePickerCellTriggerProps extends CalendarCellTriggerProps {}
 </script>
