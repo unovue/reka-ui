@@ -17,6 +17,7 @@ export type ToastRootImplEmits = {
   swipeStart: [event: SwipeEvent]
   /** Event handler called during a swipe interaction. It can be prevented by calling `event.preventDefault`. */
   swipeMove: [event: SwipeEvent]
+  /** Event handler called when swipe interaction is cancelled. It can be prevented by calling `event.preventDefault`. */
   swipeCancel: [event: SwipeEvent]
   /** Event handler called at the end of a swipe interaction. It can be prevented by calling `event.preventDefault`. */
   swipeEnd: [event: SwipeEvent]
