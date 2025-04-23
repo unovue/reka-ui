@@ -86,7 +86,7 @@ onUnmounted(() => {
       if (event.defaultPrevented)
         return
 
-      if (!rootContext.multiple.value && !disabled) {
+      if (!rootContext.multiple.value && !disabled && !rootContext.disabled.value) {
         event.preventDefault()
         rootContext.onOpenChange(false)
         rootContext.modelValue.value = props.value
