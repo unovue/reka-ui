@@ -80,7 +80,7 @@ onUnmounted(() => {
     v-bind="props"
     :id="id"
     ref="primitiveElement"
-    :disabled="rootContext.disabled || disabled"
+    :disabled="rootContext.disabled.value || disabled"
     @select="(event) => {
       emits('select', event as any)
       if (event.defaultPrevented)
