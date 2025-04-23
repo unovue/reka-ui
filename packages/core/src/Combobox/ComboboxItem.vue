@@ -80,12 +80,13 @@ onUnmounted(() => {
     v-bind="props"
     :id="id"
     ref="primitiveElement"
+    :disabled="rootContext.disabled || disabled"
     @select="(event) => {
       emits('select', event as any)
       if (event.defaultPrevented)
         return
 
-      if (!rootContext.multiple.value) {
+      if (!rootContext.multiple.value && !disabled) {
         event.preventDefault()
         rootContext.onOpenChange(false)
         rootContext.modelValue.value = props.value
