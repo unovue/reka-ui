@@ -24,6 +24,11 @@ packages:
     url: https://unaui.com/
     image: https://unaui.com/hero.png
 
+  - title: SERP Blocks
+    description 1000+ components, blocks & templates built on RekaUI with TailwindCSS, for React & Nextjs
+    url: https://blocks.serp.co
+    image: https://ph-files.imgix.net/bd4d5c9e-97d8-42e6-bcfb-36101caf900b.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=508&fit=max&frame=1&dpr=2
+
 projects:
   - title: UnInbox
     description: Modern email for teams and professionals.
