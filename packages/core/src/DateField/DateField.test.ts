@@ -223,8 +223,12 @@ describe('dateField', async () => {
   it('allow the maximum day to be 31 when no month field', async () => {
     const { user, day } = setup({
       dateFieldProps: {
-        // Explicitly set the placeholder to avoid using current local time as placeholder
-        placeholder: new CalendarDate(2025, 5, 30),
+        /**
+         * Explicitly set the placeholder to avoid using current local time as placeholder.
+         * And use a month (here is April, 30 days) with less than 31 days to ensure the day can be 31
+         * when user input day segment first.
+         */
+        placeholder: new CalendarDate(2025, 4, 30),
       },
     })
 
