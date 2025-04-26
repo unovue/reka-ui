@@ -46,7 +46,7 @@ function handleInput(event: InputEvent) {
     nextTick(() => {
       if (target.value) {
         rootContext.filterState.search = target.value
-        listboxContext.highlightFirstItem(event)
+        listboxContext.highlightFirstItem()
       }
     })
   }

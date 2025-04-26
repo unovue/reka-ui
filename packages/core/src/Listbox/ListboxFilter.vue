@@ -75,7 +75,7 @@ onUnmounted(() => {
     @keydown.enter="rootContext.onKeydownEnter"
     @input="(event: InputEvent) => {
       modelValue = (event.target as HTMLInputElement).value
-      rootContext.highlightFirstItem(event)
+      rootContext.highlightFirstItem()
     }"
     @compositionstart="rootContext.onCompositionStart"
     @compositionend="rootContext.onCompositionEnd"
