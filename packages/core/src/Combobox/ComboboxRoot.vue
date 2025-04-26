@@ -182,6 +182,7 @@ function filterItems() {
 }
 
 watch([() => filterState.search, () => allItems.value.size], () => {
+  primitiveElement.value?.highlightFirstItem()
   filterItems()
 }, { immediate: true })
 
