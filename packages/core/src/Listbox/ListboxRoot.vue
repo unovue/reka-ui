@@ -33,7 +33,7 @@ type ListboxRootContext<T> = {
   onKeydownTypeAhead: (event: KeyboardEvent) => void
   onCompositionStart: () => void
   onCompositionEnd: () => void
-  highlightFirstItem: (event: InputEvent) => void
+  highlightFirstItem: () => void
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
@@ -161,6 +161,7 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true) {
   if (!el)
     return
 
+  console.log('changeHighlight', el)
   highlightedElement.value = el
   if (focusable.value)
     highlightedElement.value.focus()
