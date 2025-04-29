@@ -14,7 +14,7 @@ const rootContext = injectComboboxRootContext()
 
 const isRender = computed(() => rootContext.ignoreFilter.value
   ? rootContext.allItems.value.size === 0
-  : !!rootContext.filterState.search && rootContext.filterState.filtered.count === 0,
+  : rootContext.filterState.value.count === 0,
 )
 </script>
 

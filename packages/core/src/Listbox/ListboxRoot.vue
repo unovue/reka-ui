@@ -158,7 +158,6 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true) {
   if (!el)
     return
 
-  console.log('changeHighlight', el)
   highlightedElement.value = el
   if (focusable.value)
     highlightedElement.value.focus()
