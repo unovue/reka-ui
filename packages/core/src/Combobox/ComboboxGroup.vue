@@ -22,7 +22,7 @@ const props = defineProps<ComboboxGroupProps>()
 const id = useId(undefined, 'reka-combobox-group')
 const rootContext = injectComboboxRootContext()
 
-const isRender = computed(() => rootContext.ignoreFilter.value ? true : !rootContext.filterState.search ? true : rootContext.filterState.filtered.groups.has(id))
+const isRender = computed(() => rootContext.ignoreFilter.value ? true : !rootContext.filterSearch.value ? true : rootContext.filterState.value.groups.has(id))
 
 const context = provideComboboxGroupContext({
   id,

@@ -45,13 +45,13 @@ function handleInput(event: InputEvent) {
     rootContext.onOpenChange(true)
     nextTick(() => {
       if (target.value) {
-        rootContext.filterState.search = target.value
+        rootContext.filterSearch.value = target.value
         listboxContext.highlightFirstItem()
       }
     })
   }
   else {
-    rootContext.filterState.search = target.value
+    rootContext.filterSearch.value = target.value
   }
 }
 
@@ -85,6 +85,10 @@ watch(rootContext.modelValue, async () => {
   if (!rootContext.isUserInputted.value && rootContext.resetSearchTermOnSelect.value)
     resetSearchTerm()
 }, { immediate: true, deep: true })
+
+watch(rootContext.filterState, () => {
+  listboxContext.highlightFirstItem()
+})
 </script>
 
 <template>
