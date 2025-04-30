@@ -88,7 +88,7 @@ onUnmounted(() => {
     :tabindex="itemContext.isFocusable.value ? 0 : -1"
     :aria-describedby="itemContext.descriptionId"
     :aria-labelledby="itemContext.titleId"
-    @mousedown.left="handleMouseDown"
+    @click="handleMouseDown"
     @keydown.enter.space.left.right.up.down="handleKeyDown"
   >
     <slot />
