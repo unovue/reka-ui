@@ -1,9 +1,9 @@
-import type { ShikiTransformer } from 'shiki'
 import type { Element, Text } from 'hast'
-import { components as componentsObj } from 'reka-ui/constant'
+import type { ShikiTransformer } from 'shiki'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { components as componentsObj } from 'reka-ui/constant'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

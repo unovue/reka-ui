@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
-import { type Ref, ref } from 'vue'
-import { type DateValue, getLocalTimeZone, today } from '@internationalized/date'
-
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
 import CalendarPopover from '@/Calendar/story/_CalendarPopover.vue'
 import { createDecade, createYear, toDate } from '@/date'
+
 import { useDateFormatter } from '@/shared'
+import { Icon } from '@iconify/vue'
+import { getLocalTimeZone, today } from '@internationalized/date'
+import { ref } from 'vue'
+import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 
 const placeholder = ref(today(getLocalTimeZone())) as Ref<DateValue>
 const formatter = useDateFormatter('en')

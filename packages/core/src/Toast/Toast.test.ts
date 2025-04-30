@@ -1,9 +1,9 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { findByText, fireEvent } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { findByText, fireEvent } from '@testing-library/vue'
 import Toast from './story/_Toast.vue'
 
 const CLOSE_TEXT = 'Close'

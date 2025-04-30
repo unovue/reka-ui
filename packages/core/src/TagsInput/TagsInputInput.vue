@@ -13,9 +13,9 @@ export interface TagsInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { Primitive } from '@/Primitive'
 import { nextTick, onMounted, ref } from 'vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
-import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<TagsInputInputProps>(), {
   as: 'input',

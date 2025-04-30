@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { VNode } from 'vue'
-import type { PrimitiveProps } from '@/Primitive'
 import type { PopperContentProps } from '@/Popper'
+import type { PrimitiveProps } from '@/Primitive'
+import type { VNode } from 'vue'
 import { useForwardExpose } from '@/shared'
 
 export type TooltipContentImplEmits = {
@@ -41,13 +41,13 @@ export interface TooltipContentImplProps
 </script>
 
 <script setup lang="ts">
-import { Comment, computed, onMounted, useSlots } from 'vue'
-import { useEventListener } from '@vueuse/core'
-import { TOOLTIP_OPEN } from './utils'
+import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { useEventListener } from '@vueuse/core'
+import { Comment, computed, onMounted, useSlots } from 'vue'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
-import { DismissableLayer } from '@/DismissableLayer'
+import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipContentImplProps>(), {
   side: 'top',

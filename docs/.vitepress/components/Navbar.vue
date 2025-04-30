@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, Separator } from 'reka-ui'
-import ThemeToggle from '../components/ThemeToggle.vue'
-import DropdownMenu from '../components/DropdownMenu.vue'
 import { useData, useRoute } from 'vitepress'
 import { ref, toRefs, watch } from 'vue'
+import DropdownMenu from '../components/DropdownMenu.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 const { path } = toRefs(useRoute())
 const { theme } = useData()

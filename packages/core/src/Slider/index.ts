@@ -1,8 +1,12 @@
 export {
+  default as SliderRange,
+  type SliderRangeProps,
+} from './SliderRange.vue'
+export {
   injectSliderRootContext,
   default as SliderRoot,
-  type SliderRootProps,
   type SliderRootEmits,
+  type SliderRootProps,
 } from './SliderRoot.vue'
 export {
   default as SliderThumb,
@@ -12,7 +16,3 @@ export {
   default as SliderTrack,
   type SliderTrackProps,
 } from './SliderTrack.vue'
-export {
-  default as SliderRange,
-  type SliderRangeProps,
-} from './SliderRange.vue'

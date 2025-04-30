@@ -10,10 +10,10 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import { MenuContent } from '@/Menu'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { ref } from 'vue'
+import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()

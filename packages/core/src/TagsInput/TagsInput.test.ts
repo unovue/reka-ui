@@ -1,11 +1,11 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import userEvent from '@testing-library/user-event'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import TagsInput from './story/_TagsInput.vue'
 import TagsInputObject from './story/_TagsInputObject.vue'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
-import userEvent from '@testing-library/user-event'
 
 describe('given default TagsInput', () => {
   // @ts-expect-error we return empty object
@@ -13,7 +13,7 @@ describe('given default TagsInput', () => {
   let wrapper: VueWrapper<InstanceType<typeof TagsInput>>
   let input: DOMWrapper<HTMLInputElement>
   let tags: DOMWrapper<HTMLElement>[]
-  let rootComponent: Omit< VueWrapper, 'exists'>
+  let rootComponent: Omit<VueWrapper, 'exists'>
 
   beforeEach(() => {
     wrapper = mount(TagsInput, { attachTo: document.body })

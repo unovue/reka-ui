@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection, useFormControl } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
+import { createContext, useDirection, useFormControl } from '@/shared'
 
 type ActivationMode = 'focus' | 'dblclick' | 'none'
 type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
@@ -72,10 +72,11 @@ export const [injectEditableRootContext, provideEditableRootContext]
 </script>
 
 <script setup lang="ts">
-import { type Ref, computed, ref, toRefs, watch } from 'vue'
+import type { Ref } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, ref, toRefs, watch } from 'vue'
 
 defineOptions({
   inheritAttrs: false,

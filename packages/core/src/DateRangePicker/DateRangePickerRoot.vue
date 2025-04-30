@@ -1,13 +1,15 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
-
-import type { Ref } from 'vue'
-import { createContext, useDirection } from '@/shared'
-import { type DateRange, type Granularity, type HourCycle, getDefaultDate } from '@/shared/date'
 import type { Matcher, WeekDayFormat } from '@/date'
 
-import { type DateRangeFieldRoot, type DateRangeFieldRootProps, PopoverRoot, type PopoverRootEmits, type PopoverRootProps, type RangeCalendarRootProps } from '..'
+import type { DateRange, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+
+import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverRootEmits, PopoverRootProps, RangeCalendarRootProps } from '..'
+import { createContext, useDirection } from '@/shared'
+import { getDefaultDate } from '@/shared/date'
+import { PopoverRoot } from '..'
 
 type DateRangePickerRootContext = {
   id: Ref<string | undefined>
@@ -59,8 +61,8 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs, watch } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs, watch } from 'vue'
 
 defineOptions({
   inheritAttrs: false,

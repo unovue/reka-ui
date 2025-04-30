@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
+import type { Ref } from 'vue'
 import { useCollection } from '@/Collection'
+import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -40,6 +40,7 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
+import { Primitive } from '@/Primitive'
 import {
   computed,
   nextTick,
@@ -47,10 +48,9 @@ import {
   ref,
   toRefs,
 } from 'vue'
-import { injectSelectRootContext } from './SelectRoot.vue'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
+import { injectSelectRootContext } from './SelectRoot.vue'
 import { SELECTION_KEYS, valueComparator } from './utils'
-import { Primitive } from '@/Primitive'
 
 const props = defineProps<SelectItemProps>()
 const emits = defineEmits<SelectItemEmits<T>>()

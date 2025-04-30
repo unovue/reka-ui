@@ -61,4 +61,4 @@ interface FormFieldProps {
   required?: boolean
 }
 
-export type { AcceptableValue, ArrayOrWrapped, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType, ScrollBodyOption, StringOrNumber, GenericComponentInstance, FormFieldProps }
+export type { AcceptableValue, ArrayOrWrapped, DataOrientation, Direction, FormFieldProps, GenericComponentInstance, ScrollBodyOption, SingleOrMultipleProps, SingleOrMultipleType, StringOrNumber }

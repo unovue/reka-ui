@@ -1,4 +1,5 @@
-import { type MaybeElementRef, unrefElement } from '@vueuse/core'
+import type { MaybeElementRef } from '@vueuse/core'
+import { unrefElement } from '@vueuse/core'
 import { hideOthers } from 'aria-hidden'
 import { onUnmounted, watch } from 'vue'
 

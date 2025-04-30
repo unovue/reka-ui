@@ -1,18 +1,18 @@
 export {
-  injectRadioGroupRootContext,
-  default as RadioGroupRoot,
-  type RadioGroupRootProps,
-  type RadioGroupRootEmits,
-} from './RadioGroupRoot.vue'
+  default as RadioGroupIndicator,
+  type RadioGroupIndicatorProps,
+} from './RadioGroupIndicator.vue'
 export {
   injectRadioGroupItemContext,
   default as RadioGroupItem,
   type RadioGroupItemProps,
 } from './RadioGroupItem.vue'
 export {
-  default as RadioGroupIndicator,
-  type RadioGroupIndicatorProps,
-} from './RadioGroupIndicator.vue'
+  injectRadioGroupRootContext,
+  default as RadioGroupRoot,
+  type RadioGroupRootEmits,
+  type RadioGroupRootProps,
+} from './RadioGroupRoot.vue'
 export {
   type SelectEvent as RadioGroupItemSelectEvent,
 } from './utils'

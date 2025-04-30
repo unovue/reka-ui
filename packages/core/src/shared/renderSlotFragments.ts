@@ -1,4 +1,5 @@
-import { Fragment, type VNode } from 'vue'
+import type { VNode } from 'vue'
+import { Fragment } from 'vue'
 
 export function renderSlotFragments(children?: VNode[]): VNode[] {
   if (!children)

@@ -1,7 +1,8 @@
 <script lang="ts">
-import { Primitive, type PrimitiveProps } from '..'
-import { injectListboxRootContext } from './ListboxRoot.vue'
+import type { PrimitiveProps } from '..'
 import { refAutoReset } from '@vueuse/shared'
+import { Primitive } from '..'
+import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxContentProps extends PrimitiveProps { }
 </script>

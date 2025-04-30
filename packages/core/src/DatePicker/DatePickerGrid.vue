@@ -1,5 +1,6 @@
 <script lang="ts">
-import { CalendarGrid, type CalendarGridProps } from '..'
+import type { CalendarGridProps } from '..'
+import { CalendarGrid } from '..'
 
 export interface DatePickerGridProps extends CalendarGridProps {}
 </script>

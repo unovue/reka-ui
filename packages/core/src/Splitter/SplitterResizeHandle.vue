@@ -24,13 +24,13 @@ export type SplitterResizeHandleEmits = {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { injectPanelGroupContext } from './SplitterGroup.vue'
-import type { ResizeEvent, ResizeHandler } from './utils/types'
 import type { PointerHitAreaMargins, ResizeHandlerAction } from './utils/registry'
-import { registerResizeHandle } from './utils/registry'
-import { assert } from './utils/assert'
+import type { ResizeEvent, ResizeHandler } from './utils/types'
+import { Primitive } from '@/Primitive'
 import { isBrowser, useForwardExpose, useId } from '@/shared'
+import { injectPanelGroupContext } from './SplitterGroup.vue'
+import { assert } from './utils/assert'
+import { registerResizeHandle } from './utils/registry'
 
 const props = withDefaults(defineProps<SplitterResizeHandleProps>(), {
   tabindex: 0,

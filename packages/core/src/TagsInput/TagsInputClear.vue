@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { useForwardExpose } from '@/shared'
+import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputClearProps extends PrimitiveProps {}
 </script>

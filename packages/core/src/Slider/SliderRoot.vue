@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
-import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -67,12 +67,12 @@ export const [injectSliderRootContext, provideSliderRootContext]
 </script>
 
 <script setup lang="ts">
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, ref, toRaw, toRefs } from 'vue'
 import SliderHorizontal from './SliderHorizontal.vue'
 import SliderVertical from './SliderVertical.vue'
-import { computed, ref, toRaw, toRefs } from 'vue'
-import { useVModel } from '@vueuse/core'
-import { ARROW_KEYS, PAGE_KEYS, getClosestValueIndex, getDecimalCount, getNextSortedValues, hasMinStepsBetweenValues, roundValue } from './utils'
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { ARROW_KEYS, getClosestValueIndex, getDecimalCount, getNextSortedValues, hasMinStepsBetweenValues, PAGE_KEYS, roundValue } from './utils'
 
 defineOptions({
   inheritAttrs: false,

@@ -1,17 +1,18 @@
-import { useMediaQuery } from '@vueuse/core'
 import type { DefaultTheme } from 'vitepress/theme'
+import type { ComputedRef, Ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
+import { useData } from 'vitepress'
 import {
-  type ComputedRef,
-  type Ref,
   computed,
+
   onMounted,
   onUnmounted,
+
   ref,
   watch,
   watchEffect,
   watchPostEffect,
 } from 'vue'
-import { useData } from 'vitepress'
 
 export interface SidebarControl {
   collapsed: Ref<boolean>

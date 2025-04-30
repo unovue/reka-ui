@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { axe } from 'vitest-axe'
-import Menu from './story/_Menu.vue'
 import { findAllByRole } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import Menu from './story/_Menu.vue'
 
 describe('given a default Menu', () => {
   globalThis.ResizeObserver = class ResizeObserver {

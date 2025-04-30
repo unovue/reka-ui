@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { DateValue } from '@internationalized/date'
+import { CalendarDate, isWeekend } from '@internationalized/date'
 import RangeCalendar from './_DummyRangeCalendar.vue'
-import { CalendarDate, type DateValue, isWeekend } from '@internationalized/date'
 
 function isDateUnavailable(date: DateValue) {
   return isWeekend(date, 'en')

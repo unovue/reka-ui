@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { useForwardExpose } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -10,14 +10,14 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { injectMenubarRootContext } from './MenubarRoot.vue'
-import { injectMenubarMenuContext } from './MenubarMenu.vue'
+import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
-import { MenuAnchor } from '@/Menu'
 import { RovingFocusItem } from '@/RovingFocus'
+import { computed, onMounted, ref } from 'vue'
+import { injectMenubarMenuContext } from './MenubarMenu.vue'
+import { injectMenubarRootContext } from './MenubarRoot.vue'
 
 withDefaults(defineProps<MenubarTriggerProps>(), {
   as: 'button',

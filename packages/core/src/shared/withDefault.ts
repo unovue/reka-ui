@@ -1,6 +1,6 @@
-import { h, mergeProps } from 'vue'
 import type { ComponentOptionsBase, DefineComponent, VNodeProps } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { h, mergeProps } from 'vue'
 import { useForwardExpose } from './useForwardExpose'
 
 // TODO: TEST

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import DatePicker from './_DummyDatePicker.vue'
+import type { DateValue } from '@internationalized/date'
+import { CalendarDate, isWeekend } from '@internationalized/date'
 
-import { CalendarDate, type DateValue, isWeekend } from '@internationalized/date'
+import DatePicker from './_DummyDatePicker.vue'
 
 const defaultValue = new CalendarDate(2024, 2, 20)
 

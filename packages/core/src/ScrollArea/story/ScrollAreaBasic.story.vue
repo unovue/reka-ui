@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import ScrollAreaStory from './_ScrollAreaStory.vue'
 import ScrollAreaCopy from './_ScrollAreaCopy.vue'
+import ScrollAreaStory from './_ScrollAreaStory.vue'
 
 type Type = 'auto' | 'always' | 'scroll' | 'hover'
 

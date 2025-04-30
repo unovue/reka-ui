@@ -1,6 +1,6 @@
 import type { Component, VNode } from 'vue'
-import { computed, ref } from 'vue'
 import type { ToastRootProps } from '../ToastRoot.vue'
+import { computed, ref } from 'vue'
 
 export interface ToastProps extends ToastRootProps {
   onOpenChange?: ((value: boolean) => void) | undefined

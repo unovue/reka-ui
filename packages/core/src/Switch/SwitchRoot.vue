@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useFormControl, useForwardExpose } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
+import type { Ref } from 'vue'
+import { createContext, useFormControl, useForwardExpose } from '@/shared'
 
 export interface SwitchRootProps extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -32,10 +32,10 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
-import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useVModel } from '@vueuse/core'
+import { computed, toRefs } from 'vue'
 
 const props = withDefaults(defineProps<SwitchRootProps>(), {
   as: 'button',
