@@ -30,7 +30,7 @@ const useBodyLockStackCount = createSharedComposable(() => {
     document.body.style.paddingRight = ''
     document.body.style.marginRight = ''
     document.body.style.pointerEvents = ''
-    document.body.style.removeProperty('--scrollbar-width')
+    document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
     isIOS && stopTouchMoveListener?.()
 
@@ -65,7 +65,7 @@ const useBodyLockStackCount = createSharedComposable(() => {
     if (verticalScrollbarWidth > 0) {
       document.body.style.paddingRight = typeof config.padding === 'number' ? `${config.padding}px` : String(config.padding)
       document.body.style.marginRight = typeof config.margin === 'number' ? `${config.margin}px` : String(config.margin)
-      document.body.style.setProperty('--scrollbar-width', `${verticalScrollbarWidth}px`)
+      document.documentElement.style.setProperty('--scrollbar-width', `${verticalScrollbarWidth}px`)
       document.body.style.overflow = 'hidden'
     }
 

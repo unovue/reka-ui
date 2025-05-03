@@ -43,7 +43,7 @@ describe('given a default ConfigProvider', async () => {
     expect(document.body.style.paddingRight).toBe('10px')
     expect(document.body.style.marginRight).toBe('0px')
     expect(document.body.style.overflow).toBe('hidden')
-    expect(document.body.style.getPropertyValue('--scrollbar-width')).toBe('10px')
+    expect(document.documentElement.style.getPropertyValue('--scrollbar-width')).toBe('10px')
   })
 })
 
