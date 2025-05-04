@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { PinInputInput, PinInputRoot } from '..'
 
-const value = ref<string[]>([])
+const value = ref<number[]>([])
 </script>
 
 <template>

@@ -6,16 +6,21 @@ import { createContext, useDirection, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 import { computed, ref, toRefs, watch } from 'vue'
 
-export type PinInputRootEmits = {
-  'update:modelValue': [value: string[]]
-  'complete': [value: string[]]
+export type PinInputType = 'text' | 'number'
+
+// Using this complex type to avoid breaking changes - we can simplify it in a major version.
+export type PinInputValue<Type extends PinInputType, Value extends string | number> = Type extends 'number' ? Value extends number ? number[] : string[] : string[]
+
+export type PinInputRootEmits<Type extends PinInputType, Value extends string | number> = {
+  'update:modelValue': [value: PinInputValue<Type, Value>]
+  'complete': [value: PinInputValue<Type, Value>]
 }
 
-export interface PinInputRootProps extends PrimitiveProps, FormFieldProps {
+export interface PinInputRootProps<Type extends PinInputType, Value extends string | number> extends PrimitiveProps, FormFieldProps {
   /** The controlled checked state of the pin input. Can be binded as `v-model`. */
-  modelValue?: string[] | null
+  modelValue?: PinInputValue<Type, Value> | null
   /** The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. */
-  defaultValue?: string[]
+  defaultValue?: PinInputValue<Type, Value>[]
   /** The placeholder character to use for empty pin-inputs. */
   placeholder?: string
   /** When `true`, pin inputs will be treated as password. */
@@ -23,7 +28,7 @@ export interface PinInputRootProps extends PrimitiveProps, FormFieldProps {
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
   otp?: boolean
   /** Input type for the inputs. */
-  type?: 'text' | 'number'
+  type?: PinInputType
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** When `true`, prevents the user from interacting with the pin input */
@@ -32,13 +37,13 @@ export interface PinInputRootProps extends PrimitiveProps, FormFieldProps {
   id?: string
 }
 
-export interface PinInputRootContext {
-  modelValue: Ref<string[]>
-  currentModelValue: ComputedRef<string[]>
+export interface PinInputRootContext<Type extends PinInputType, Value extends string | number> {
+  modelValue: Ref<PinInputValue<Type, Value>>
+  currentModelValue: ComputedRef<PinInputValue<Type, Value>>
   mask: Ref<boolean>
   otp: Ref<boolean>
   placeholder: Ref<string>
-  type: Ref<PinInputRootProps['type']>
+  type: Ref<PinInputType>
   dir: Ref<Direction>
   disabled: Ref<boolean>
   isCompleted: ComputedRef<boolean>
@@ -47,10 +52,10 @@ export interface PinInputRootContext {
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
-  = createContext<PinInputRootContext>('PinInputRoot')
+  = createContext<PinInputRootContext<PinInputType, string | number>>('PinInputRoot')
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="Type extends PinInputType, Value extends string | number">
 import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 
@@ -58,11 +63,11 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PinInputRootProps>(), {
+const props = withDefaults(defineProps<PinInputRootProps<Type, Value>>(), {
   placeholder: '',
   type: 'text',
 })
-const emits = defineEmits<PinInputRootEmits>()
+const emits = defineEmits<PinInputRootEmits<Type, Value>>()
 
 defineSlots<{
   default: (props: {
@@ -76,9 +81,9 @@ const { forwardRef } = useForwardExpose()
 const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue ?? [],
+  defaultValue: props.defaultValue ?? [] as any,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<string[]>
+}) as Ref<PinInputValue<Type, Value>>
 
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
@@ -99,7 +104,7 @@ watch(modelValue, () => {
 
 providePinInputRootContext({
   modelValue,
-  currentModelValue,
+  currentModelValue: currentModelValue as ComputedRef<PinInputValue<Type, Value>>,
   mask,
   otp,
   placeholder,
