@@ -8,19 +8,19 @@ import { computed, ref, toRefs, watch } from 'vue'
 
 export type PinInputType = 'text' | 'number'
 
-// Using this complex type to avoid breaking changes - we can simplify it in a major version.
-export type PinInputValue<Type extends PinInputType, Value extends string | number> = Type extends 'number' ? Value extends number ? number[] : string[] : string[]
+// Using this type to avoid mixed arrays (string | number)[].
+export type PinInputValue<Type extends PinInputType> = Type extends 'number' ? number[] : string[]
 
-export type PinInputRootEmits<Type extends PinInputType, Value extends string | number> = {
-  'update:modelValue': [value: PinInputValue<Type, Value>]
-  'complete': [value: PinInputValue<Type, Value>]
+export type PinInputRootEmits<Type extends PinInputType> = {
+  'update:modelValue': [value: PinInputValue<Type>]
+  'complete': [value: PinInputValue<Type>]
 }
 
-export interface PinInputRootProps<Type extends PinInputType, Value extends string | number> extends PrimitiveProps, FormFieldProps {
+export interface PinInputRootProps<Type extends PinInputType> extends PrimitiveProps, FormFieldProps {
   /** The controlled checked state of the pin input. Can be binded as `v-model`. */
-  modelValue?: PinInputValue<Type, Value> | null
+  modelValue?: PinInputValue<Type> | null
   /** The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. */
-  defaultValue?: PinInputValue<Type, Value>[]
+  defaultValue?: PinInputValue<Type>[]
   /** The placeholder character to use for empty pin-inputs. */
   placeholder?: string
   /** When `true`, pin inputs will be treated as password. */
@@ -37,9 +37,9 @@ export interface PinInputRootProps<Type extends PinInputType, Value extends stri
   id?: string
 }
 
-export interface PinInputRootContext<Type extends PinInputType, Value extends string | number> {
-  modelValue: Ref<PinInputValue<Type, Value>>
-  currentModelValue: ComputedRef<PinInputValue<Type, Value>>
+export interface PinInputRootContext<Type extends PinInputType> {
+  modelValue: Ref<PinInputValue<Type>>
+  currentModelValue: ComputedRef<PinInputValue<Type>>
   mask: Ref<boolean>
   otp: Ref<boolean>
   placeholder: Ref<string>
@@ -52,10 +52,10 @@ export interface PinInputRootContext<Type extends PinInputType, Value extends st
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
-  = createContext<PinInputRootContext<PinInputType, string | number>>('PinInputRoot')
+  = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 </script>
 
-<script setup lang="ts" generic="Type extends PinInputType, Value extends string | number">
+<script setup lang="ts" generic="Type extends PinInputType">
 import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 
@@ -63,11 +63,11 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PinInputRootProps<Type, Value>>(), {
+const props = withDefaults(defineProps<PinInputRootProps<Type>>(), {
   placeholder: '',
   type: 'text' as any,
 })
-const emits = defineEmits<PinInputRootEmits<Type, Value>>()
+const emits = defineEmits<PinInputRootEmits<Type>>()
 
 defineSlots<{
   default: (props: {
@@ -83,7 +83,7 @@ const dir = useDirection(propDir)
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? [] as any,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<PinInputValue<Type, Value>>
+}) as Ref<PinInputValue<Type>>
 
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
@@ -104,7 +104,7 @@ watch(modelValue, () => {
 
 providePinInputRootContext({
   modelValue,
-  currentModelValue: currentModelValue as ComputedRef<PinInputValue<Type, Value>>,
+  currentModelValue: currentModelValue as ComputedRef<PinInputValue<Type>>,
   mask,
   otp,
   placeholder,
