@@ -28,7 +28,7 @@ export interface PinInputRootProps<Type extends PinInputType, Value extends stri
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
   otp?: boolean
   /** Input type for the inputs. */
-  type?: PinInputType
+  type?: Type
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** When `true`, prevents the user from interacting with the pin input */
@@ -65,7 +65,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<PinInputRootProps<Type, Value>>(), {
   placeholder: '',
-  type: 'text',
+  type: 'text' as any,
 })
 const emits = defineEmits<PinInputRootEmits<Type, Value>>()
 
