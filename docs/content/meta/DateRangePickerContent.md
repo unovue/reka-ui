@@ -75,6 +75,12 @@
     'required': false
   },
   {
+    'name': 'portal',
+    'description': '',
+    'type': 'PopoverPortalProps',
+    'required': false
+  },
+  {
     'name': 'positionStrategy',
     'description': '<p>The type of CSS position property to use.</p>\n',
     'type': '\'fixed\' | \'absolute\'',

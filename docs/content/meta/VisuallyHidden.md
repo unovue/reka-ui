@@ -17,7 +17,7 @@
   {
     'name': 'feature',
     'description': '',
-    'type': '\'focusable\' | \'fully-hidden\'',
+    'type': '\'fully-hidden\' | \'focusable\'',
     'required': false,
     'default': '\'focusable\''
   }
