@@ -4,6 +4,9 @@ import { computed } from 'vue'
 import { PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
 
 export interface DatePickerContentProps extends PopoverContentProps {
+  /**
+   * Props to control the portal wrapped around the content.
+   */
   portal?: PopoverPortalProps
 }
 export interface DatePickerContentEmits extends PopoverContentEmits {}

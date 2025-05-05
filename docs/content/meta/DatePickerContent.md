@@ -76,7 +76,7 @@
   },
   {
     'name': 'portal',
-    'description': '',
+    'description': '<p>Props to control the portal wrapped around the content.</p>\n',
     'type': 'PopoverPortalProps',
     'required': false
   },
