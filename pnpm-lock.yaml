@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   vitepress:
-    hash: bqcu3m23uizjurvpczsjagw6py
+    hash: 1a260fedf146bd826c4de179b274675e98be68ead7180bc98fcbcc323e7d86e0
     path: patches/vitepress.patch
 
 importers:
@@ -32,8 +32,8 @@ importers:
         specifier: ^15.5.1
         version: 15.5.1
       pnpm:
-        specifier: ^9.15.0
-        version: 9.15.4
+        specifier: ^10.0.0
+        version: 10.10.0
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -194,7 +194,7 @@ importers:
         version: 4.19.2
       vitepress:
         specifier: 1.6.3
-        version: 1.6.3(patch_hash=bqcu3m23uizjurvpczsjagw6py)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.4.2)
+        version: 1.6.3(patch_hash=1a260fedf146bd826c4de179b274675e98be68ead7180bc98fcbcc323e7d86e0)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.4.2)
       vue-component-meta:
         specifier: ^2.2.8
         version: 2.2.8(typescript@5.4.2)
@@ -5211,8 +5211,8 @@ packages:
   pnpm-workspace-yaml@0.3.1:
     resolution: {integrity: sha512-3nW5RLmREmZ8Pm8MbPsO2RM+99RRjYd25ynj3NV0cFsN7CcEl4sDFzgoFmSyduFwxFQ2Qbu3y2UdCh6HlyUOeA==}
 
-  pnpm@9.15.4:
-    resolution: {integrity: sha512-stwg4vxys+GISEWbNzWaMgZGY+VielHkx0ssKd2OjgSRSDw6u0B4nP1Xi/Ni+2uoJhsF8Dh9dnku1uI+o7G2oA==}
+  pnpm@10.10.0:
+    resolution: {integrity: sha512-1hXbJG/nDyXc/qbY1z3ueCziPiJF48T2+Igkn7VoFJMYY33Kc8LFyO8qTKDVZX+5VnGIv6tH9WbR7mzph4FcOQ==}
     engines: {node: '>=18.12'}
     hasBin: true
 
@@ -12567,7 +12567,7 @@ snapshots:
     dependencies:
       yaml: 2.7.0
 
-  pnpm@9.15.4: {}
+  pnpm@10.10.0: {}
 
   possible-typed-array-names@1.0.0: {}
 
@@ -13942,7 +13942,7 @@ snapshots:
       '@types/node': 20.17.17
       fsevents: 2.3.3
 
-  vitepress@1.6.3(patch_hash=bqcu3m23uizjurvpczsjagw6py)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.4.2):
+  vitepress@1.6.3(patch_hash=1a260fedf146bd826c4de179b274675e98be68ead7180bc98fcbcc323e7d86e0)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.4.2):
     dependencies:
       '@docsearch/css': 3.8.2
       '@docsearch/js': 3.8.2(@algolia/client-search@5.20.0)(search-insights@2.14.0)

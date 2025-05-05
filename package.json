@@ -3,7 +3,7 @@
   "type": "module",
   "version": "2.2.0",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.0.0",
   "license": "MIT",
   "repository": "unovue/reka-ui",
   "workspaces": [
@@ -33,7 +33,7 @@
     "bumpp": "^9.11.1",
     "eslint": "^9.25.1",
     "lint-staged": "^15.5.1",
-    "pnpm": "^9.15.0",
+    "pnpm": "^10.0.0",
     "rimraf": "^6.0.1",
     "simple-git-hooks": "^2.12.1",
     "typescript": "5.3.3"
