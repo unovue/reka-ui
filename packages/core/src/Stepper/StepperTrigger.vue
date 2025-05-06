@@ -8,9 +8,9 @@ export interface StepperTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { injectStepperRootContext } from './StepperRoot.vue'
-import { injectStepperItemContext } from './StepperItem.vue'
 import { Primitive } from '@/Primitive'
+import { injectStepperItemContext } from './StepperItem.vue'
+import { injectStepperRootContext } from './StepperRoot.vue'
 
 withDefaults(defineProps<StepperTriggerProps>(), {
   as: 'button',

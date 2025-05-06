@@ -16,8 +16,8 @@ export interface CalendarNextSlot {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { computed } from 'vue'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarNextProps>(), { as: 'button', step: 'month' })

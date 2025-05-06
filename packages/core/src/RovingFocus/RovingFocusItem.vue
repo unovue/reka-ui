@@ -4,11 +4,11 @@ import type { PrimitiveProps } from '@/Primitive'
 export interface RovingFocusItemProps extends PrimitiveProps {
   tabStopId?: string
   /**
-   * When `false`, item wil be not be focusable.
+   * When `false`, item will not be focusable.
    * @defaultValue `true`
    */
   focusable?: boolean
-  /** When `true`, item wil be initially focused. */
+  /** When `true`, item will be initially focused. */
   active?: boolean
   /** When `true`, shift + arrow key will allow focusing on next/previous item. */
   allowShiftKey?: boolean
@@ -16,12 +16,12 @@ export interface RovingFocusItemProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
+import { useId } from '@/shared'
 import { computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
-import { Primitive } from '@/Primitive'
 import { focusFirst, getFocusIntent, wrapArray } from './utils'
-import { useId } from '@/shared'
-import { useCollection } from '@/Collection'
 
 const props = withDefaults(defineProps<RovingFocusItemProps>(), {
   focusable: true,

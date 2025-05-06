@@ -17,7 +17,8 @@ export interface AvatarImageProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { type ImgHTMLAttributes, toRefs, watch } from 'vue'
+import type { ImgHTMLAttributes } from 'vue'
+import { toRefs, watch } from 'vue'
 import { Primitive } from '../Primitive'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 import { useImageLoadingStatus } from './utils'

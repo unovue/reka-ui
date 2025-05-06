@@ -1,13 +1,14 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import type { CSSProperties, Ref } from 'vue'
+import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { computed, ref, toRefs, watch, watchEffect } from 'vue'
+import { useWindowSplitterPanelGroupBehavior } from './utils/composables/useWindowSplitterPanelGroupBehavior'
 import {
   initializeDefaultStorage,
   loadPanelGroupState,
   savePanelGroupState,
 } from './utils/storage'
-import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
-import { type CSSProperties, type Ref, computed, ref, toRefs, watch, watchEffect } from 'vue'
-import { useWindowSplitterPanelGroupBehavior } from './utils/composables/useWindowSplitterPanelGroupBehavior'
 
 export interface SplitterGroupProps extends PrimitiveProps {
   /** Group id; falls back to `useId` when not provided. */
@@ -71,10 +72,18 @@ export const [injectPanelGroupContext, providePanelGroupContext] = createContext
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-
 import type { PanelConstraints, PanelData } from './SplitterPanel.vue'
+
 import type { Direction, DragState, ResizeEvent, ResizeHandler } from './utils/types'
+import { Primitive } from '@/Primitive'
+import { assert } from './utils/assert'
+import { calculateDeltaPercentage, calculateUnsafeDefaultLayout } from './utils/calculate'
+import { callPanelCallbacks } from './utils/callPanelCallbacks'
+import debounce from './utils/debounce'
+import { getResizeHandleElement } from './utils/dom'
+import { getResizeEventCursorPosition, isKeyDown, isMouseEvent, isTouchEvent } from './utils/events'
+import { adjustLayoutByDelta, compareLayouts } from './utils/layout'
+import { determinePivotIndices } from './utils/pivot'
 import {
   EXCEEDED_HORIZONTAL_MAX,
   EXCEEDED_HORIZONTAL_MIN,
@@ -82,15 +91,7 @@ import {
   EXCEEDED_VERTICAL_MIN,
   reportConstraintsViolation,
 } from './utils/registry'
-import { adjustLayoutByDelta, compareLayouts } from './utils/layout'
-import { assert } from './utils/assert'
-import { calculateDeltaPercentage, calculateUnsafeDefaultLayout } from './utils/calculate'
-import { callPanelCallbacks } from './utils/callPanelCallbacks'
 import { computePanelFlexBoxStyle } from './utils/style'
-import debounce from './utils/debounce'
-import { determinePivotIndices } from './utils/pivot'
-import { getResizeHandleElement } from './utils/dom'
-import { getResizeEventCursorPosition, isKeyDown, isMouseEvent, isTouchEvent } from './utils/events'
 import { validatePanelGroupLayout } from './utils/validation'
 
 const props = withDefaults(defineProps<SplitterGroupProps>(), {
@@ -532,7 +533,7 @@ function collapsePanel(panelData: PanelData) {
 
       const isLastPanel
           = findPanelDataIndex(panelDataArray, panelData)
-          === panelDataArray.length - 1
+            === panelDataArray.length - 1
       const delta = isLastPanel
         ? panelSize - collapsedSize
         : collapsedSize - panelSize
@@ -590,7 +591,7 @@ function expandPanel(panelData: PanelData) {
 
       const isLastPanel
           = findPanelDataIndex(panelDataArray, panelData)
-          === panelDataArray.length - 1
+            === panelDataArray.length - 1
       const delta = isLastPanel ? panelSize - baseSize : baseSize - panelSize
 
       const nextLayout = adjustLayoutByDelta({

@@ -6,10 +6,10 @@ export interface PopoverCloseProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { Primitive } from '@/Primitive'
 import {
   injectPopoverRootContext,
 } from './PopoverRoot.vue'
-import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<PopoverCloseProps>(), {
   as: 'button',

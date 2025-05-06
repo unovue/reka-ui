@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
-import { type Ref, ref } from 'vue'
-import { CalendarDate, type DateValue, getLocalTimeZone, today } from '@internationalized/date'
-
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
 import { createDecade, createYear, toDate } from '@/date'
-
-import CalendarPopover from './_CalendarPopover.vue'
 import { useDateFormatter } from '@/shared'
+import { Icon } from '@iconify/vue'
+
+import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date'
+import { ref } from 'vue'
+
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
+import CalendarPopover from './_CalendarPopover.vue'
 
 const value = ref(new CalendarDate(2024, 3, 20)) as Ref<DateValue>
 

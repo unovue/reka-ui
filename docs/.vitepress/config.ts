@@ -1,8 +1,9 @@
-import { defineConfig, postcssIsolateStyles } from 'vitepress'
 import autoprefixer from 'autoprefixer'
 import anchor from 'markdown-it-anchor'
 import tailwind from 'tailwindcss'
+import { defineConfig, postcssIsolateStyles } from 'vitepress'
 import { version } from '../../package.json'
+import { teamMembers } from './contributors'
 import {
   discord,
   font,
@@ -16,10 +17,9 @@ import {
   rekaShortName,
   releases,
 } from './meta'
-import { teamMembers } from './contributors'
 import ComponentPreviewPlugin from './plugins/ComponentPreview'
-import InstallationTabsPlugin from './plugins/InstallationTabs'
 import { createHoverTransformer } from './plugins/HoverTransformer'
+import InstallationTabsPlugin from './plugins/InstallationTabs'
 
 function BadgeHTML(text: string, translucent = false) {
   return `<div class="inline-flex items-center rounded-full border border-muted px-2 py-[1px] ml-2 text-[11px] transition-colors bg-primary/30 ${translucent ? '!bg-transparent' : ''} text-foreground">
@@ -358,7 +358,7 @@ export default defineConfig({
       provider: 'local',
     },
     editLink: {
-      pattern: 'https://github.com/unovue/reka-ui/edit/main/docs/content/:path',
+      pattern: 'https://github.com/unovue/reka-ui/edit/v2/docs/content/:path',
     },
     carbonAds: {
       code: 'CW7DP2JW',

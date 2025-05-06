@@ -1,9 +1,9 @@
 <script lang="ts">
-import { isClient } from '@vueuse/shared'
 import type { PrimitiveProps } from '@/Primitive'
 import type { SwipeEvent } from './utils'
-import { createContext, getActiveElement, useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { createContext, getActiveElement, useForwardExpose } from '@/shared'
+import { isClient } from '@vueuse/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -17,6 +17,7 @@ export type ToastRootImplEmits = {
   swipeStart: [event: SwipeEvent]
   /** Event handler called during a swipe interaction. It can be prevented by calling `event.preventDefault`. */
   swipeMove: [event: SwipeEvent]
+  /** Event handler called when swipe interaction is cancelled. It can be prevented by calling `event.preventDefault`. */
   swipeCancel: [event: SwipeEvent]
   /** Event handler called at the end of a swipe interaction. It can be prevented by calling `event.preventDefault`. */
   swipeEnd: [event: SwipeEvent]
@@ -46,11 +47,11 @@ export const [injectToastRootContext, provideToastRootContext]
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
-import { injectToastProviderContext } from './ToastProvider.vue'
-import { TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME, getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection } from './utils'
 import { onKeyStroke, useRafFn } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import ToastAnnounce from './ToastAnnounce.vue'
+import { injectToastProviderContext } from './ToastProvider.vue'
+import { getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection, TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 defineOptions({
   inheritAttrs: false,

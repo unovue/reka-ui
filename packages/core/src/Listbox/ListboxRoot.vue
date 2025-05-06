@@ -1,9 +1,10 @@
 <script lang="ts">
+import type { PrimitiveProps } from '@/Primitive'
+import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
+import { usePrimitiveElement } from '@/Primitive'
+import { getFocusIntent } from '@/RovingFocus/utils'
 import { createContext, findValuesBetween, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
 import { Primitive } from '..'
-import { type PrimitiveProps, usePrimitiveElement } from '@/Primitive'
-import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { getFocusIntent } from '@/RovingFocus/utils'
 
 type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
@@ -75,11 +76,13 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { type EventHook, createEventHook, useVModel } from '@vueuse/core'
-import { type Ref, nextTick, ref, toRefs, watch } from 'vue'
-import { compare } from './utils'
+import type { EventHook } from '@vueuse/core'
+import type { Ref } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { createEventHook, useVModel } from '@vueuse/core'
+import { nextTick, ref, toRefs, watch } from 'vue'
+import { compare } from './utils'
 
 const props = withDefaults(defineProps<ListboxRootProps>(), {
   selectionBehavior: 'toggle',

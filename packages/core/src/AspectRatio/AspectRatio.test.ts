@@ -1,8 +1,8 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { AspectRatio } from '.'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 
 describe('given a default AspectRatio', async () => {
   let wrapper: VueWrapper<InstanceType<typeof AspectRatio>>

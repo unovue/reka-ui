@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T">
+import type { VisuallyHiddenInputBubbleProps } from './VisuallyHiddenInputBubble.vue'
 import { computed } from 'vue'
-import VisuallyHiddenInputBubble, { type VisuallyHiddenInputBubbleProps } from './VisuallyHiddenInputBubble.vue'
+import VisuallyHiddenInputBubble from './VisuallyHiddenInputBubble.vue'
 
 defineOptions({
   inheritAttrs: false,

@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils'
+import { reactivePick } from '@vueuse/shared'
 import { describe, expect, it } from 'vitest'
 import { computed, defineComponent, watch } from 'vue'
 import { useForwardProps } from './useForwardProps'
-import { reactivePick } from '@vueuse/shared'
 
 function setupTestComponent(props: Record<string, any>, options = { computed: false }) {
   return defineComponent({

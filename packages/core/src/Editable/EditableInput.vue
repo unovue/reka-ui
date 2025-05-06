@@ -1,14 +1,15 @@
 <script lang="ts">
-import { Primitive, type PrimitiveProps, usePrimitiveElement } from '@/Primitive'
+import type { PrimitiveProps } from '@/Primitive'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 export interface EditableInputProps extends PrimitiveProps {
 }
 </script>
 
 <script setup lang="ts">
+import { useKbd } from '@/shared'
 import { computed, nextTick, onMounted, watch } from 'vue'
 import { injectEditableRootContext } from './EditableRoot.vue'
-import { useKbd } from '@/shared'
 
 const props = withDefaults(defineProps<EditableInputProps>(), {
   as: 'input',

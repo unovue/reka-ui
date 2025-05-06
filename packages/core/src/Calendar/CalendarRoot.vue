@@ -1,14 +1,16 @@
 <script lang="ts">
-import { type DateValue, isEqualDay, isSameDay } from '@internationalized/date'
-
-import type { Ref } from 'vue'
-import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, useDirection, useLocale } from '@/shared'
-
-import { useCalendar, useCalendarState } from './useCalendar'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import type { Grid, Matcher, WeekDayFormat } from '@/date'
+
+import type { PrimitiveProps } from '@/Primitive'
+import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
+
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { createContext, useDirection, useLocale } from '@/shared'
+import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
+import { isEqualDay, isSameDay } from '@internationalized/date'
+import { useCalendar, useCalendarState } from './useCalendar'
 
 type CalendarRootContext = {
   locale: Ref<string>
@@ -16,7 +18,7 @@ type CalendarRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  grid: Ref< Grid<DateValue>[]>
+  grid: Ref<Grid<DateValue>[]>
   weekDays: Ref<string[]>
   weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
   weekdayFormat: Ref<WeekDayFormat>
@@ -117,9 +119,9 @@ export const [injectCalendarRootContext, provideCalendarRootContext]
 </script>
 
 <script setup lang="ts">
-import { onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
+import { onMounted, toRefs, watch } from 'vue'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
   defaultValue: undefined,

@@ -1,6 +1,7 @@
-import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import type { Ref } from 'vue'
 import type { Direction } from './types'
-import { type Ref, computed, ref } from 'vue'
+import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import { computed, ref } from 'vue'
 
 export function useDirection(dir?: Ref<Direction | undefined>) {
   const context = injectConfigProviderContext({

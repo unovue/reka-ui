@@ -1,15 +1,18 @@
 <script lang="ts">
-import { type DateValue, isEqualDay } from '@internationalized/date'
+import type { Grid, Matcher, WeekDayFormat } from '@/date'
 
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, isNullish, useDirection, useKbd, useLocale } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { type Grid, type Matcher, type WeekDayFormat, isBefore } from '@/date'
+import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
-import { useRangeCalendarState } from './useRangeCalendar'
-import { useCalendar } from '@/Calendar/useCalendar'
 import type { Direction } from '@/shared/types'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { useCalendar } from '@/Calendar/useCalendar'
+import { isBefore } from '@/date'
+import { createContext, isNullish, useDirection, useKbd, useLocale } from '@/shared'
+import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
+import { isEqualDay } from '@internationalized/date'
+import { useRangeCalendarState } from './useRangeCalendar'
 
 type RangeCalendarRootContext = {
   modelValue: Ref<DateRange>
@@ -19,7 +22,7 @@ type RangeCalendarRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  grid: Ref< Grid<DateValue>[]>
+  grid: Ref<Grid<DateValue>[]>
   weekDays: Ref<string[]>
   weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
   weekdayFormat: Ref<WeekDayFormat>
@@ -121,9 +124,9 @@ export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { useEventListener, useVModel } from '@vueuse/core'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),

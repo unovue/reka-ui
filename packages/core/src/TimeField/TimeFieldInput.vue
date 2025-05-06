@@ -1,9 +1,10 @@
 <script lang="ts">
-import { Primitive, type PrimitiveProps } from '@/Primitive'
+import type { PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
+import { Primitive } from '@/Primitive'
 import { useDateField } from '@/shared/date/useDateField'
-import { injectTimeFieldRootContext } from './TimeFieldRoot.vue'
 import { computed, ref } from 'vue'
+import { injectTimeFieldRootContext } from './TimeFieldRoot.vue'
 
 export interface TimeFieldInputProps extends PrimitiveProps {
   /** The part of the date to render */

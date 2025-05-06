@@ -1,6 +1,7 @@
 <script lang="ts">
-import DialogOverlayImpl, { type DialogOverlayImplProps } from './DialogOverlayImpl.vue'
+import type { DialogOverlayImplProps } from './DialogOverlayImpl.vue'
 import { useForwardExpose } from '@/shared'
+import DialogOverlayImpl from './DialogOverlayImpl.vue'
 
 export interface DialogOverlayProps extends DialogOverlayImplProps {
   /**
@@ -12,8 +13,8 @@ export interface DialogOverlayProps extends DialogOverlayImplProps {
 </script>
 
 <script setup lang="ts">
-import { injectDialogRootContext } from './DialogRoot.vue'
 import { Presence } from '@/Presence'
+import { injectDialogRootContext } from './DialogRoot.vue'
 
 defineProps<DialogOverlayProps>()
 const rootContext = injectDialogRootContext()

@@ -3,10 +3,11 @@ export interface HoverCardTriggerProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
-import { injectHoverCardRootContext } from './HoverCardRoot.vue'
+import type { PopperAnchorProps } from '@/Popper'
+import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { PopperAnchor, type PopperAnchorProps } from '@/Popper'
 import { useForwardExpose } from '@/shared'
+import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { excludeTouch } from './utils'
 
 withDefaults(defineProps<HoverCardTriggerProps>(), {

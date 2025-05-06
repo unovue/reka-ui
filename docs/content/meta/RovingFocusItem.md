@@ -3,7 +3,7 @@
 <PropsTable :data="[
   {
     'name': 'active',
-    'description': '<p>When <code>true</code>, item wil be initially focused.</p>\n',
+    'description': '<p>When <code>true</code>, item will be initially focused.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -28,7 +28,7 @@
   },
   {
     'name': 'focusable',
-    'description': '<p>When <code>false</code>, item wil be not be focusable.</p>\n',
+    'description': '<p>When <code>false</code>, item will not be focusable.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'

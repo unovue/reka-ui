@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { FocusScope } from '@/FocusScope'
+import { PopperAnchor, PopperArrow, PopperContent, PopperRoot } from '@/Popper'
 import { ref } from 'vue'
 import { DismissableLayer } from '..'
-import { PopperAnchor, PopperArrow, PopperContent, PopperRoot } from '@/Popper'
-import { FocusScope } from '@/FocusScope'
 
 withDefaults(
   defineProps<{

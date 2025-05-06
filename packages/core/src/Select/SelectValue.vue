@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
+import { valueComparator } from './utils'
 
 export interface SelectValueProps extends PrimitiveProps {
   /** The content that will be rendered inside the `SelectValue` when no `value` or `defaultValue` is set. */
@@ -9,10 +10,10 @@ export interface SelectValueProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { injectSelectRootContext } from './SelectRoot.vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { computed, onMounted } from 'vue'
+import { injectSelectRootContext } from './SelectRoot.vue'
 
 const props = withDefaults(defineProps<SelectValueProps>(), {
   as: 'span',
@@ -30,7 +31,7 @@ onMounted(() => {
 const selectedLabel = computed(() => {
   let list: string[] = []
   const options = Array.from(rootContext.optionsSet.value)
-  const getOption = (value?: AcceptableValue) => options.find(option => option.value === value)
+  const getOption = (value?: AcceptableValue) => options.find(option => valueComparator(value, option.value, rootContext.by))
   if (Array.isArray(rootContext.modelValue.value)) {
     list = rootContext.modelValue.value.map(value => getOption(value)?.textContent ?? '')
   }

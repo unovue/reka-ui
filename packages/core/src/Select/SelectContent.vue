@@ -16,12 +16,12 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import SelectContentImpl from './SelectContentImpl.vue'
-import { injectSelectRootContext } from './SelectRoot.vue'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
+import { computed, onMounted, ref } from 'vue'
+import SelectContentImpl from './SelectContentImpl.vue'
 import SelectProvider from './SelectProvider.vue'
+import { injectSelectRootContext } from './SelectRoot.vue'
 
 defineOptions({
   inheritAttrs: false,

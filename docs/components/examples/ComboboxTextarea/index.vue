@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch, watchEffect } from 'vue'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, Label, type ReferenceElement, useFilter } from 'reka-ui'
-import { getAnchorRect, getSearchValue, getTrigger, getTriggerOffset, replaceValue } from './utils'
-import { getList, getValue } from './list'
+import type { ReferenceElement } from 'reka-ui'
 import { computedWithControl } from '@vueuse/core'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, Label, useFilter } from 'reka-ui'
+import { computed, ref, watch, watchEffect } from 'vue'
+import { getList, getValue } from './list'
+import { getAnchorRect, getSearchValue, getTrigger, getTriggerOffset, replaceValue } from './utils'
 
 const { contains } = useFilter({ sensitivity: 'base' })
 

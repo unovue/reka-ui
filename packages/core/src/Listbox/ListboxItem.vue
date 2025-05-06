@@ -25,12 +25,14 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import { injectListboxRootContext } from './ListboxRoot.vue'
-import { type Ref, computed } from 'vue'
-import { Primitive, type PrimitiveProps } from '..'
-import { valueComparator } from './utils'
-import { useCollection } from '@/Collection'
 import type { AcceptableValue } from '@/shared/types'
+import type { Ref } from 'vue'
+import type { PrimitiveProps } from '..'
+import { useCollection } from '@/Collection'
+import { computed } from 'vue'
+import { Primitive } from '..'
+import { injectListboxRootContext } from './ListboxRoot.vue'
+import { valueComparator } from './utils'
 
 const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
   as: 'div',

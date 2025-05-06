@@ -192,8 +192,8 @@ You can control the current page by passing it a reactive value.
 ```vue line=6,10,11
 <script setup lang="ts">
 import { PaginationRoot } from 'reka-ui'
-import { Select } from './custom-select'
 import { ref } from 'vue'
+import { Select } from './custom-select'
 
 const currentPage = ref(1)
 </script>

@@ -1,7 +1,8 @@
-import { type Ref, computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 import { useStateMachine } from '@/shared'
-import { isClient } from '@vueuse/shared'
 import { defaultWindow } from '@vueuse/core'
+import { isClient } from '@vueuse/shared'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 export function usePresence(
   present: Ref<boolean>,

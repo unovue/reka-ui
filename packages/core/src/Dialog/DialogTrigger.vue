@@ -5,10 +5,10 @@ export interface DialogTriggerProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { Primitive } from '@/Primitive'
+import { useForwardExpose, useId } from '@/shared'
 import { onMounted } from 'vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
-import { useForwardExpose, useId } from '@/shared'
-import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<DialogTriggerProps>(), {
   as: 'button',

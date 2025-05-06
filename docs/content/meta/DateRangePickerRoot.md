@@ -98,14 +98,14 @@
     'required': false
   },
   {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
     'type': 'Matcher',
     'required': false
   },
   {
-    'name': 'isDateHighlightable',
-    'description': '<p>A function that returns whether or not a date is highlightable</p>\n',
+    'name': 'isDateUnavailable',
+    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -258,7 +258,7 @@
   },
   {
     'name': 'isDateHighlightable',
-    'description': '<p>A function that returns whether or not a date is highlightable</p>\n',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
     'type': 'Matcher'
-  },
+  }
 ]" />

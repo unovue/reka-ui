@@ -1,22 +1,7 @@
 export {
-  injectPopoverRootContext,
-  default as PopoverRoot,
-  type PopoverRootProps,
-  type PopoverRootEmits,
-} from './PopoverRoot.vue'
-export {
-  default as PopoverTrigger,
-  type PopoverTriggerProps,
-} from './PopoverTrigger.vue'
-export {
-  default as PopoverPortal,
-  type PopoverPortalProps,
-} from './PopoverPortal.vue'
-export {
-  default as PopoverContent,
-  type PopoverContentProps,
-  type PopoverContentEmits,
-} from './PopoverContent.vue'
+  default as PopoverAnchor,
+  type PopoverAnchorProps,
+} from './PopoverAnchor.vue'
 export {
   default as PopoverArrow,
   type PopoverArrowProps,
@@ -26,6 +11,21 @@ export {
   type PopoverCloseProps,
 } from './PopoverClose.vue'
 export {
-  default as PopoverAnchor,
-  type PopoverAnchorProps,
-} from './PopoverAnchor.vue'
+  default as PopoverContent,
+  type PopoverContentEmits,
+  type PopoverContentProps,
+} from './PopoverContent.vue'
+export {
+  default as PopoverPortal,
+  type PopoverPortalProps,
+} from './PopoverPortal.vue'
+export {
+  injectPopoverRootContext,
+  default as PopoverRoot,
+  type PopoverRootEmits,
+  type PopoverRootProps,
+} from './PopoverRoot.vue'
+export {
+  default as PopoverTrigger,
+  type PopoverTriggerProps,
+} from './PopoverTrigger.vue'

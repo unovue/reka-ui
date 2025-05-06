@@ -6,9 +6,9 @@ export interface SliderThumbProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import SliderThumbImpl from './SliderThumbImpl.vue'
 import { useCollection } from '@/Collection'
 import { computed } from 'vue'
+import SliderThumbImpl from './SliderThumbImpl.vue'
 
 const props = withDefaults(defineProps<SliderThumbProps>(), {
   as: 'span',

@@ -66,7 +66,7 @@
   },
   {
     'name': 'swipeCancel',
-    'description': '',
+    'description': '<p>Event handler called when swipe interaction is cancelled. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
     'type': '[event: SwipeEvent]'
   },
   {

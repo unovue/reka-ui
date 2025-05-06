@@ -12,9 +12,9 @@ export interface CheckboxIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { injectCheckboxRootContext } from './CheckboxRoot.vue'
-import { Primitive } from '@/Primitive'
 import { Presence } from '@/Presence'
+import { Primitive } from '@/Primitive'
+import { injectCheckboxRootContext } from './CheckboxRoot.vue'
 import { getState, isIndeterminate } from './utils'
 
 withDefaults(defineProps<CheckboxIndicatorProps>(), {

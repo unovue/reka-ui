@@ -1,6 +1,7 @@
-import { isClient } from '@vueuse/shared'
+import type { Ref } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
-import { type Ref, nextTick, ref, watchEffect } from 'vue'
+import { isClient } from '@vueuse/shared'
+import { nextTick, ref, watchEffect } from 'vue'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -15,7 +16,7 @@ export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   const targetLayer = targetElement.closest(
     '[data-dismissable-layer]',
-  ) as HTMLElement
+  )
 
   const mainLayer = layerElement.dataset.dismissableLayer === ''
     ? layerElement
@@ -26,10 +27,8 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   const nodeList = Array.from(
     layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
   )
-  if (
-    (targetLayer
-      && mainLayer === targetLayer)
-      || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer)
+
+  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
   ) {
     return true
   }
@@ -57,9 +56,9 @@ export function usePointerDownOutside(
     if (!isClient)
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement
+      const target = event.target as HTMLElement | undefined
 
-      if (!element?.value)
+      if (!element?.value || !target)
         return
 
       if (isLayerExist(element.value, target)) {
@@ -158,7 +157,8 @@ export function useFocusOutside(
 
       await nextTick()
       await nextTick()
-      if (!element.value || isLayerExist(element.value, event.target as HTMLElement))
+      const target = event.target as HTMLElement | undefined
+      if (!element.value || !target || isLayerExist(element.value, target))
         return
 
       if (event.target && !isFocusInsideDOMTree.value) {

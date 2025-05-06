@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { MenuEmits, MenuProps } from '@/Menu'
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
-import type { MenuEmits, MenuProps } from '@/Menu'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
@@ -26,9 +26,9 @@ export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
-import { useVModel } from '@vueuse/core'
 import { MenuRoot } from '@/Menu'
+import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,

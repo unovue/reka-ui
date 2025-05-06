@@ -281,8 +281,8 @@ Make sure to set the `displayValue` prop to set the input value on item selectio
 
 ```vue line=12,17,26
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -319,8 +319,8 @@ The `Combobox` component allows you to select multiple values. You can enable th
 
 ```vue line=12,17-18
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ComboboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -350,8 +350,8 @@ However, you may also provide your own custom filtering logic together with sett
 
 ```vue line=15,16,22,28
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, useFilter } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -394,8 +394,8 @@ By default the `Combobox` will use the input contents as the label for screenrea
 
 ```vue line=8,10
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ComboboxInput, ComboboxRoot, Label } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -416,7 +416,6 @@ import { ComboboxInput, ComboboxRoot, Label } from 'reka-ui'
 
 ```vue line=19
 <script setup lang="ts">
-import { ref } from 'vue'
 import {
   ComboboxContent,
   ComboboxInput,
@@ -424,6 +423,7 @@ import {
   ComboboxPortal,
   ComboboxRoot,
 } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -456,7 +456,6 @@ Use the `Separator` part to add a separator between items.
 
 ```vue line=21
 <script setup lang="ts">
-import { ref } from 'vue'
 import {
   ComboboxContent,
   ComboboxInput,
@@ -465,6 +464,7 @@ import {
   ComboboxRoot,
   ComboboxSeparator
 } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -491,7 +491,6 @@ Use the `Group` and `Label` parts to group items in a section.
 
 ```vue line=19,20,24
 <script setup lang="ts">
-import { ref } from 'vue'
 import {
   ComboboxContent,
   ComboboxGroup,
@@ -501,6 +500,7 @@ import {
   ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -526,7 +526,6 @@ You can use custom content in your items.
 
 ```vue line=21
 <script setup lang="ts">
-import { ref } from 'vue'
 import {
   ComboboxContent,
   ComboboxGroup,
@@ -537,6 +536,7 @@ import {
   ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -563,8 +563,8 @@ You can prevent this behavior by preventing default `@select.prevent`.
 
 ```vue line=11
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxPortal, ComboboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -590,8 +590,8 @@ See the [virtualization guide](../guides/virtualization.md) for more general inf
 
 ```vue line=9-10,17,19-28
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport, ComboboxVirtualizer, useFilter } from 'reka-ui'
+import { computed, ref } from 'vue'
 
 const people = Array.from({ length: 100000 }).map((_, id) => ({ id, name: `Person #${id}` }))
 const selectedPeople = ref(people[0])
@@ -694,9 +694,9 @@ export { default as CommandItem } from 'CommandItem.vue'
 ```vue
 <!-- Command.vue -->
 <script setup lang="ts">
+import type { ComboboxRootEmits, ComboboxRootProps } from 'reka-ui'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, } from '@radix-icons/vue'
 import { ComboboxContent, ComboboxInput, ComboboxPortal, ComboboxRoot, useForwardPropsEmits } from 'reka-ui'
-import type { ComboboxRootEmits, ComboboxRootProps } from 'reka-ui'
 
 const props = defineProps<ComboboxRootProps>()
 const emits = defineEmits<ComboboxRootEmits>()
@@ -731,8 +731,9 @@ const forward = useForwardPropsEmits(props, emits)
 ```vue
 <!-- ComboboxItem.vue -->
 <script setup lang="ts">
+import type { ComboboxItemProps } from 'reka-ui'
 import { CheckIcon } from '@radix-icons/vue'
-import { ComboboxItem, type ComboboxItemProps } from 'reka-ui'
+import { ComboboxItem } from 'reka-ui'
 
 const props = defineProps<ComboboxItemProps>()
 </script>
