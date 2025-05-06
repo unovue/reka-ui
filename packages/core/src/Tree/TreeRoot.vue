@@ -220,7 +220,6 @@ provideTreeRootContext({
     const condition = (baseValue: U) => props.getKey(baseValue as any ?? {}) === props.getKey(val)
     const exist = props.multiple && Array.isArray(modelValue.value) ? modelValue.value?.findIndex(condition) !== -1 : undefined
     onSelectItem(val, condition)
-    console.log('bubbleSelect')
 
     if (props.bubbleSelect && props.multiple && Array.isArray(modelValue.value)) {
       const item = expandedItems.value.find((i) => {
