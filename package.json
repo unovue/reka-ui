@@ -36,7 +36,7 @@
     "pnpm": "^10.0.0",
     "rimraf": "^6.0.1",
     "simple-git-hooks": "^2.13.0",
-    "typescript": "5.3.3"
+    "typescript": "5.8.3"
   },
   "commitlint": {
     "extends": [
