@@ -1,17 +1,17 @@
 <script lang="ts">
+import type { PrimitiveProps } from '@/Primitive'
+
+import type {
+  FocusOutsideEvent,
+  PointerDownOutsideEvent,
+} from './utils'
+import { useForwardExpose } from '@/shared'
 import {
   computed,
   nextTick,
   reactive,
   watchEffect,
 } from 'vue'
-
-import type { PrimitiveProps } from '@/Primitive'
-import type {
-  FocusOutsideEvent,
-  PointerDownOutsideEvent,
-} from './utils'
-import { useForwardExpose } from '@/shared'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -61,14 +61,14 @@ export const context = reactive({
 </script>
 
 <script setup lang="ts">
+import {
+  Primitive,
+} from '@/Primitive'
 import { onKeyStroke } from '@vueuse/core'
 import {
   useFocusOutside,
   usePointerDownOutside,
 } from './utils'
-import {
-  Primitive,
-} from '@/Primitive'
 
 const props = withDefaults(defineProps<DismissableLayerProps>(), {
   disableOutsidePointerEvents: false,

@@ -1,4 +1,5 @@
-import { type MaybeRef, computed, unref } from 'vue'
+import type { MaybeRef } from 'vue'
+import { computed, unref } from 'vue'
 
 /**
  * Provides locale-aware string filtering functions.

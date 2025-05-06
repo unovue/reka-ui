@@ -1,9 +1,10 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
-import { clamp, createContext, snapValueToStep, useFormControl, useLocale } from '@/shared'
-import { type HTMLAttributes, type Ref, computed, ref, toRefs } from 'vue'
 import type { FormFieldProps } from '@/shared/types'
+import type { HTMLAttributes, Ref } from 'vue'
+import { clamp, createContext, snapValueToStep, useFormControl, useLocale } from '@/shared'
+import { useVModel } from '@vueuse/core'
+import { computed, ref, toRefs } from 'vue'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   defaultValue?: number
@@ -57,8 +58,8 @@ export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = cre
 
 <script setup lang="ts">
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
 defineOptions({
   inheritAttrs: false,

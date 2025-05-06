@@ -226,8 +226,8 @@ You can add extra decorative elements, such as chevrons, and rotate it when the 
 ```vue line=16
 // index.vue
 <script setup>
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui'
 import './styles.css'
 </script>
 

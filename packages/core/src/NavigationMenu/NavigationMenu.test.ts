@@ -1,15 +1,15 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { sleep } from '@/test'
+import userEvent from '@testing-library/user-event'
+import { fireEvent } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { useDebounceFn } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import NavigationMenu from './story/_NavigationMenu.vue'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
-import { fireEvent } from '@testing-library/vue'
-import { sleep } from '@/test'
 import NavigationMenuItem from './NavigationMenuItem.vue'
 
-import { useDebounceFn } from '@vueuse/core'
+import NavigationMenu from './story/_NavigationMenu.vue'
 
 vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual('@vueuse/core')

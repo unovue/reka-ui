@@ -1,8 +1,9 @@
 <script lang="ts">
-import { injectStepperRootContext } from './StepperRoot.vue'
-import { Separator, type SeparatorProps } from '@/Separator'
+import type { SeparatorProps } from '@/Separator'
+import { Separator } from '@/Separator'
 import { useForwardExpose } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
+import { injectStepperRootContext } from './StepperRoot.vue'
 </script>
 
 <script setup lang="ts">

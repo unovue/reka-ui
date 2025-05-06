@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Label } from '@/Label'
 import { Icon } from '@iconify/vue'
 import {
   DateRangePickerArrow,
@@ -20,7 +21,6 @@ import {
   DateRangePickerRoot,
   DateRangePickerTrigger,
 } from '..'
-import { Label } from '@/Label'
 </script>
 
 <template>

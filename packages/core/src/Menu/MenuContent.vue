@@ -16,11 +16,11 @@ export interface MenuContentProps extends MenuRootContentTypeProps {
 </script>
 
 <script setup lang="ts">
-import MenuRootContentModal from './MenuRootContentModal.vue'
-import MenuRootContentNonModal from './MenuRootContentNonModal.vue'
-import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
+import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
+import MenuRootContentModal from './MenuRootContentModal.vue'
+import MenuRootContentNonModal from './MenuRootContentNonModal.vue'
 
 const props = defineProps<MenuContentProps>()
 const emits = defineEmits<MenuContentImplEmits>()

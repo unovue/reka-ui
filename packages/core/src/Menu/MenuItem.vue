@@ -15,9 +15,9 @@ export interface MenuItemProps extends MenuItemImplProps {}
 
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
+import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuRootContext } from './MenuRoot.vue'
-import { injectMenuContentContext } from './MenuContentImpl.vue'
 import { ITEM_SELECT, SELECTION_KEYS } from './utils'
 
 const props = defineProps<MenuItemProps>()

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
-import { onMounted, ref, useTemplateRef } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { usePointerSwipe } from '@vueuse/core'
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
+import { onMounted, ref, useTemplateRef } from 'vue'
 
 const calendarRef = useTemplateRef('calendarRef')
 const date = ref(new CalendarDate(2023, 1, 1))

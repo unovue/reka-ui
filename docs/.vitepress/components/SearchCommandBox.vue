@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import type { SearchResult } from 'minisearch'
+import type { GenericComponentInstance } from 'reka-ui'
+import type { Ref } from 'vue'
+import { Icon } from '@iconify/vue'
+import { computedAsync, debouncedWatch } from '@vueuse/core'
 // @ts-expect-error ignoring
 import Mark from 'mark.js/src/vanilla.js'
-import MiniSearch, { type SearchResult } from 'minisearch'
+import MiniSearch from 'minisearch'
+import { DialogClose, ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from 'reka-ui'
 import { useData } from 'vitepress'
-import { DialogClose, type GenericComponentInstance, ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from 'reka-ui'
-import { type Ref, markRaw, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
-import { computedAsync, debouncedWatch } from '@vueuse/core'
+import { markRaw, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { LRUCache } from '../functions/cache'
-import { Icon } from '@iconify/vue'
 
 const emits = defineEmits<{
   close: []

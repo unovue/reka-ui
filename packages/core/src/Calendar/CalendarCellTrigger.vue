@@ -1,15 +1,16 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import type { DateValue } from '@internationalized/date'
+import { getDaysInMonth, toDate } from '@/date'
+import { useKbd } from '@/shared'
 import {
-  type DateValue,
+
   getLocalTimeZone,
   isSameDay,
   isSameMonth,
   isToday,
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
-import { useKbd } from '@/shared'
-import { getDaysInMonth, toDate } from '@/date'
 import { getSelectableCells } from './utils'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {

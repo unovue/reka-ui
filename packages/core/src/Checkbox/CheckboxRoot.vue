@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import type { Ref } from 'vue'
-import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
-import type { CheckedState } from './utils'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
+import type { Ref } from 'vue'
+import type { CheckedState } from './utils'
+import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
 import { useVModel } from '@vueuse/core'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
@@ -38,12 +38,12 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
-import { getState, isIndeterminate } from './utils'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { isEqual } from 'ohash'
+import { computed } from 'vue'
+import { getState, isIndeterminate } from './utils'
 
 defineOptions({
   inheritAttrs: false,

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { EditableRootEmits, EditableRootProps } from '@/Editable'
 import {
   EditableArea,
   EditableCancelTrigger,
@@ -6,8 +7,7 @@ import {
   EditableInput,
   EditablePreview,
   EditableRoot,
-  type EditableRootEmits,
-  type EditableRootProps,
+
   EditableSubmitTrigger,
 } from '@/Editable'
 import { useForwardPropsEmits } from '@/shared'

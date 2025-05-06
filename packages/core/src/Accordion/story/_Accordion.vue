@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import type {
   AccordionRootEmits,
   AccordionRootProps,
 } from '..'
+import { useEmitAsProps } from '@/shared'
+import { ref } from 'vue'
 import {
   AccordionContent,
   AccordionHeader,
@@ -11,7 +12,6 @@ import {
   AccordionRoot,
   AccordionTrigger,
 } from '..'
-import { useEmitAsProps } from '@/shared'
 
 withDefaults(defineProps<{ type?: AccordionRootProps['type'] }>(), { type: 'single' })
 const emits = defineEmits<AccordionRootEmits>()

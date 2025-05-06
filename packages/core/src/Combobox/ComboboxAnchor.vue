@@ -3,8 +3,9 @@ export interface ComboboxAnchorProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
+import type { PopperAnchorProps } from '@/Popper'
+import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { PopperAnchor, type PopperAnchorProps } from '@/Popper'
 import { useForwardExpose } from '@/shared'
 
 defineProps<ComboboxAnchorProps>()

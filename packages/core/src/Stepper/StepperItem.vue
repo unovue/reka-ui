@@ -1,10 +1,11 @@
 <script lang="ts">
-import { type Ref, computed, toRefs } from 'vue'
-
-import { injectStepperRootContext } from './StepperRoot.vue'
-import { Primitive } from '@/Primitive'
 import type { PrimitiveProps } from '@/Primitive'
+
+import type { Ref } from 'vue'
+import { Primitive } from '@/Primitive'
 import { createContext, useForwardExpose, useId } from '@/shared'
+import { computed, toRefs } from 'vue'
+import { injectStepperRootContext } from './StepperRoot.vue'
 
 export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
 

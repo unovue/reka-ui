@@ -6,8 +6,8 @@ export interface ListboxItemIndicatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { injectListboxItemContext } from './ListboxItem.vue'
 import { Primitive } from '@/Primitive'
+import { injectListboxItemContext } from './ListboxItem.vue'
 
 const props = withDefaults(defineProps<ListboxItemIndicatorProps>(), {
   as: 'span',

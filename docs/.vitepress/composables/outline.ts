@@ -1,7 +1,8 @@
+import type { DefaultTheme } from 'vitepress/theme'
+import type { Ref } from 'vue'
 // Copied from https://github.com/vuejs/vitepress/blob/97f9469b6d4eb7ba9de9a1111986581d1f704ec3/src/client/theme-default/composables/outline.ts#L4
 import { getScrollOffset } from 'vitepress'
-import type { DefaultTheme } from 'vitepress/theme'
-import { type Ref, onMounted, onUnmounted, onUpdated } from 'vue'
+import { onMounted, onUnmounted, onUpdated } from 'vue'
 
 export interface Header {
   /**
@@ -45,8 +46,8 @@ export function resolveTitle(theme: DefaultTheme.Config) {
     (typeof theme.outline === 'object'
       && !Array.isArray(theme.outline)
       && theme.outline.label)
-      || theme.outlineTitle
-      || 'On this page'
+    || theme.outlineTitle
+    || 'On this page'
   )
 }
 
@@ -119,7 +120,7 @@ export function resolveHeaders(
   }
 
   const ret: MenuItem[] = []
-  // eslint-disable-next-line no-restricted-syntax, no-labels
+  // eslint-disable-next-line no-labels
   outer: for (let i = 0; i < headers.length; i++) {
     const cur = headers[i]
     if (i === 0) {

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { Primitive } from '.'
 import { defineComponent, h, markRaw } from 'vue'
+import { Primitive } from '.'
 
 describe('test Primitive functionalities', () => {
   it('should render div element correctly', () => {

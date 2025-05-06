@@ -1,11 +1,12 @@
-import { type Ref, watchEffect } from 'vue'
+import type { Ref } from 'vue'
 import type { PanelData } from '../../SplitterPanel.vue'
-import { adjustLayoutByDelta } from '../layout'
+import { watchEffect } from 'vue'
 import { assert } from '../assert'
 import { calculateAriaValues } from '../calculate'
-import { determinePivotIndices } from '../pivot'
-import { getPanelGroupElement, getResizeHandleElementsForGroup, getResizeHandlePanelIds } from '../dom'
 import { fuzzyNumbersEqual } from '../compare'
+import { getPanelGroupElement, getResizeHandleElementsForGroup, getResizeHandlePanelIds } from '../dom'
+import { adjustLayoutByDelta } from '../layout'
+import { determinePivotIndices } from '../pivot'
 
 // https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/
 

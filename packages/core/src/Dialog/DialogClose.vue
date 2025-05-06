@@ -5,9 +5,9 @@ export interface DialogCloseProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { injectDialogRootContext } from './DialogRoot.vue'
-import { useForwardExpose } from '@/shared'
 import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
+import { injectDialogRootContext } from './DialogRoot.vue'
 
 const props = withDefaults(defineProps<DialogCloseProps>(), {
   as: 'button',

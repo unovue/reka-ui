@@ -11,12 +11,12 @@ export interface NavigationMenuIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
-import { useResizeObserver } from '@vueuse/core'
-import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { useForwardExpose } from '@/shared'
-import { Primitive } from '@/Primitive'
 import { Presence } from '@/Presence'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
+import { useResizeObserver } from '@vueuse/core'
+import { computed, ref, watchEffect } from 'vue'
+import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 defineOptions({
   inheritAttrs: false,
