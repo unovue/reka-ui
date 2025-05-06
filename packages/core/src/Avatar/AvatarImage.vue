@@ -13,6 +13,7 @@ export type AvatarImageEmits = {
 export interface AvatarImageProps extends PrimitiveProps {
   src: string
   referrerPolicy?: ImgHTMLAttributes['referrerpolicy']
+  crossOrigin?: ImgHTMLAttributes['crossorigin']
 }
 </script>
 
@@ -26,11 +27,11 @@ import { useImageLoadingStatus } from './utils'
 const props = withDefaults(defineProps<AvatarImageProps>(), { as: 'img' })
 const emits = defineEmits<AvatarImageEmits>()
 
-const { src, referrerPolicy } = toRefs(props)
+const { src, referrerPolicy, crossOrigin } = toRefs(props)
 useForwardExpose()
 const rootContext = injectAvatarRootContext()
 
-const imageLoadingStatus = useImageLoadingStatus(src, referrerPolicy)
+const imageLoadingStatus = useImageLoadingStatus(src, { referrerPolicy, crossOrigin })
 
 watch(
   imageLoadingStatus,
