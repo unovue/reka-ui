@@ -114,7 +114,7 @@
     "ohash": "^2.0.11"
   },
   "devDependencies": {
-    "@iconify/vue": "^4.3.0",
+    "@iconify/vue": "^5.0.0",
     "@internationalized/date": "^3.7.0",
     "@internationalized/number": "^3.6.0",
     "@testing-library/dom": "^10.4.0",

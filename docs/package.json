@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@babel/traverse": "^7.26.7",
-    "@iconify/vue": "^4.3.0",
+    "@iconify/vue": "^5.0.0",
     "@radix-ui/colors": "^3.0.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/babel__traverse": "^7.20.6",
