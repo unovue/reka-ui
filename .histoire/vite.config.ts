@@ -19,11 +19,6 @@ export default defineConfig({
       ],
     }),
   ],
-  resolve: {
-    alias: {
-      '@iconify/vue': './node_modules/@iconify/vue/dist/iconify.mjs',
-    },
-  },
   histoire: {
     viteNodeInlineDeps: [/@tanstack/],
     plugins: [{ name: 'builtin:tailwind-tokens' }, HstVue()],
