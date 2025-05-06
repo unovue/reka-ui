@@ -1,10 +1,10 @@
-import EmbedIframe from '../components/EmbedIframe.vue'
-import ComponentPreview from '../components/ComponentPreview.vue'
-import InstallationTabs from '../components/InstallationTabs.vue'
-import './style.css'
 import type { Theme } from 'vitepress'
-
+import ComponentPreview from '../components/ComponentPreview.vue'
+import EmbedIframe from '../components/EmbedIframe.vue'
+import InstallationTabs from '../components/InstallationTabs.vue'
 import Layout from '../custom/Layout.vue'
+
+import './style.css'
 
 const regex = /\/(\w+)\.vue/
 const baseModules = import.meta.glob('../../components/*.vue', { eager: true })

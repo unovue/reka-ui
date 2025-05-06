@@ -1,10 +1,10 @@
+import type { StepperRootProps } from './StepperRoot.vue'
+import { useTestKbd } from '@/shared'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Stepper from './story/_Stepper.vue'
-import userEvent from '@testing-library/user-event'
-import type { StepperRootProps } from './StepperRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
 
 const steps = [{
   step: 1,

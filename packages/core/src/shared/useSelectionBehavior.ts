@@ -1,4 +1,5 @@
-import { type Ref, type UnwrapNestedRefs, ref } from 'vue'
+import type { Ref, UnwrapNestedRefs } from 'vue'
+import { ref } from 'vue'
 import { findValuesBetween } from './arrays'
 
 export function useSelectionBehavior<T>(
@@ -17,9 +18,9 @@ export function useSelectionBehavior<T>(
       else {
         const index = modelValue.value.findIndex(v => condition(v))
         if (index !== -1)
-          modelValue.value.splice(index, 1)
+          modelValue.value = modelValue.value.filter((_, i) => i !== index)
         else
-          modelValue.value.push(val)
+          modelValue.value = [...modelValue.value, val]
       }
     }
     // single select

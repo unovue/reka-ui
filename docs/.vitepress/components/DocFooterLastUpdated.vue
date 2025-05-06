@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useData } from 'vitepress'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 
 const { theme, page, lang } = useData()
 

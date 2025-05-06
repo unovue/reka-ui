@@ -1,4 +1,5 @@
-import { type ImgHTMLAttributes, type Ref, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { ImgHTMLAttributes, Ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded' | 'error'
 

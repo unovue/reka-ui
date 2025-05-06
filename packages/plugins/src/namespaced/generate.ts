@@ -1,5 +1,5 @@
-import { components } from 'reka-ui/constant'
 import { writeFileSync } from 'node:fs'
+import { components } from 'reka-ui/constant'
 
 const excludedComponent = ['configProvider', 'primitive', 'visuallyHidden']
 const filteredComponent = Object.keys(components).filter(i => !excludedComponent.includes(i))

@@ -1,8 +1,8 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { findByText } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { findByText } from '@testing-library/vue'
 import Collapsible from './story/_Collapsible.vue'
 
 const CONTENT_TEXT = 'Content'

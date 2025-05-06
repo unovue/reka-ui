@@ -1,13 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import type { TimeValue } from '@/shared/date'
 
+import type { DateFields, TimeFields } from '@internationalized/date'
+import type { TimeFieldRootProps } from './TimeFieldRoot.vue'
+import { useTestKbd } from '@/shared'
+import { CalendarDateTime, now, parseAbsoluteToLocal, Time, toZoned } from '@internationalized/date'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import TimeField from './story/_TimeField.vue'
-import userEvent from '@testing-library/user-event'
-import { CalendarDateTime, type DateFields, Time, type TimeFields, now, parseAbsoluteToLocal, toZoned } from '@internationalized/date'
-import type { TimeFieldRootProps } from './TimeFieldRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
-import type { TimeValue } from '@/shared/date'
 
 const time = new Time(9, 15, 29)
 const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)

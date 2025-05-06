@@ -2,15 +2,19 @@
   * Adapted from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/builders/range-calendar/create.ts
 */
 
-import { type DateValue, isSameDay } from '@internationalized/date'
-import { type Ref, computed } from 'vue'
-import { type Matcher, areAllDaysBetweenValid, isBefore, isBetween } from '@/date'
+import type { Matcher } from '@/date'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { areAllDaysBetweenValid, isBefore, isBetween } from '@/date'
+import { isSameDay } from '@internationalized/date'
+import { computed } from 'vue'
 
 export type UseRangeCalendarProps = {
   start: Ref<DateValue | undefined>
   end: Ref<DateValue | undefined>
   isDateDisabled: Matcher
   isDateUnavailable: Matcher
+  isDateHighlightable?: Matcher
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
 }
@@ -65,6 +69,12 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return false
   }
 
+  const isDateHighlightable = (date: DateValue) => {
+    if (props.isDateHighlightable?.(date))
+      return true
+    return false
+  }
+
   const highlightedRange = computed(() => {
     if (props.start.value && props.end.value)
       return null
@@ -82,7 +92,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
       }
     }
 
-    const isValid = props.allowNonContiguousRanges.value || areAllDaysBetweenValid(start, end, props.isDateUnavailable, props.isDateDisabled)
+    const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, props.isDateDisabled, props.isDateHighlightable)
     if (isValid) {
       return {
         start,
@@ -107,6 +117,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
   return {
     isInvalid,
     isSelected,
+    isDateHighlightable,
     highlightedRange,
     isSelectionStart,
     isSelectionEnd,

@@ -1,5 +1,5 @@
 export {
   default as Toggle,
-  type ToggleProps,
   type ToggleEmits,
+  type ToggleProps,
 } from './Toggle.vue'

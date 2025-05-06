@@ -374,8 +374,9 @@ export { DialogRoot as Dialog, DialogTrigger } from 'reka-ui'
 ```vue
 <!-- DialogContent.vue -->
 <script setup lang="ts">
-import { DialogClose, DialogContent, type DialogContentEmits, type DialogContentProps, DialogOverlay, DialogPortal, useForwardPropsEmits } from 'reka-ui'
+import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import { Cross2Icon } from '@radix-icons/vue'
+import { DialogClose, DialogContent, DialogOverlay, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<DialogContentProps>()
 const emits = defineEmits<DialogContentEmits>()

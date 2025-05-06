@@ -1,10 +1,10 @@
 export {
-  injectDateFieldRootContext,
+  default as DateFieldInput,
+  type DateFieldInputProps,
+} from './DateFieldInput.vue'
+export {
+  default as DateFieldRoot,
   type DateFieldRootEmits,
   type DateFieldRootProps,
-  default as DateFieldRoot,
+  injectDateFieldRootContext,
 } from './DateFieldRoot.vue'
-export {
-  type DateFieldInputProps,
-  default as DateFieldInput,
-} from './DateFieldInput.vue'

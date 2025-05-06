@@ -14,10 +14,10 @@ export interface MenuRadioItemProps extends MenuItemProps {
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
-import { getCheckedState } from './utils'
 import MenuItem from './MenuItem.vue'
-import { injectMenuRadioGroupContext } from './MenuRadioGroup.vue'
 import { provideMenuItemIndicatorContext } from './MenuItemIndicator.vue'
+import { injectMenuRadioGroupContext } from './MenuRadioGroup.vue'
+import { getCheckedState } from './utils'
 
 const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()

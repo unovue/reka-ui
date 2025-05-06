@@ -13,12 +13,12 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { MenuAnchor } from '@/Menu'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 import { computed, nextTick, onMounted, ref, toRefs } from 'vue'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { isTouchOrPen } from './utils'
-import { useForwardExpose } from '@/shared'
-import { Primitive } from '@/Primitive'
-import { MenuAnchor } from '@/Menu'
 
 defineOptions({
   inheritAttrs: false,

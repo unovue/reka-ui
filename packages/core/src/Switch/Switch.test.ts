@@ -1,9 +1,9 @@
+import { handleSubmit } from '@/test'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { mount } from '@vue/test-utils'
 import Switch from './_Switch.vue'
-import { handleSubmit } from '@/test'
 
 describe('test switch functionalities', () => {
   beforeEach(() => {

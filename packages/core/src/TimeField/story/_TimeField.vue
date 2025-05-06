@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { TimeValue } from '@/shared/date'
 import type { TimeFieldRootProps } from '..'
-import { TimeFieldInput, TimeFieldRoot } from '..'
 import { Label } from '@/Label'
+import { TimeFieldInput, TimeFieldRoot } from '..'
 
 const props = defineProps<{ timeFieldProps?: TimeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: TimeValue) => void } }>()
 </script>

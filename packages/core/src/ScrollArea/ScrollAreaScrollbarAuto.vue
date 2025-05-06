@@ -5,13 +5,13 @@ export interface ScrollAreaScrollbarAutoProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { Presence } from '@/Presence'
+import { useForwardExpose } from '@/shared'
 import { useDebounceFn, useResizeObserver } from '@vueuse/core'
+import { onMounted, ref } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
 import ScrollAreaScrollbarVisible from './ScrollAreaScrollbarVisible.vue'
-import { Presence } from '@/Presence'
-import { useForwardExpose } from '@/shared'
 
 defineProps<ScrollAreaScrollbarAutoProps>()
 
@@ -26,10 +26,10 @@ const handleResize = useDebounceFn(() => {
   if (rootContext.viewport.value) {
     const isOverflowX
       = rootContext.viewport.value.offsetWidth
-      < rootContext.viewport.value.scrollWidth
+        < rootContext.viewport.value.scrollWidth
     const isOverflowY
       = rootContext.viewport.value.offsetHeight
-      < rootContext.viewport.value.scrollHeight
+        < rootContext.viewport.value.scrollHeight
 
     visible.value = scrollbarContext.isHorizontal.value
       ? isOverflowX

@@ -92,6 +92,12 @@
     'required': false
   },
   {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'type': 'Matcher',
+    'required': false
+  },
+  {
     'name': 'isDateUnavailable',
     'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher',
@@ -242,6 +248,11 @@
   {
     'name': 'isDateUnavailable',
     'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
+    'type': 'Matcher'
+  },
+  {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
     'type': 'Matcher'
   }
 ]" />

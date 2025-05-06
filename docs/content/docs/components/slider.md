@@ -344,7 +344,8 @@ export { default as Slider } from 'Slider.vue'
 ```vue
  <!-- Slider.vue -->
 <script setup lang="ts">
-import { SlideRoot, SliderRange, type SliderRootEmits, type SliderRootProps, SliderThumb, SliderTrack, useForwardPropsEmits } from 'reka-ui'
+import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
+import { SlideRoot, SliderRange, SliderThumb, SliderTrack, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<SliderRootProps>()
 const emits = defineEmits<SliderRootEmits>()
@@ -370,7 +371,7 @@ const forward = useForwardPropsEmits(props, emits)
 
 ### Mouse events are not fired
 
-Because of [a limitation](https://github.com/unovue/reka-ui/blob/main/packages/core/src/Slider/SliderImpl.vue#L48-L49) we faced during implementation, the following example won't work as expected and the `@mousedown` and `@mousedown` event handlers won't be fired:
+Because of [a limitation](https://github.com/unovue/reka-ui/blob/v2/packages/core/src/Slider/SliderImpl.vue#L48-L49) we faced during implementation, the following example won't work as expected and the `@mousedown` and `@mousedown` event handlers won't be fired:
 
 ```vue
 <SliderRoot

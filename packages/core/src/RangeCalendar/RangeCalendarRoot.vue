@@ -1,15 +1,18 @@
 <script lang="ts">
-import { type DateValue, isEqualDay } from '@internationalized/date'
+import type { Grid, Matcher, WeekDayFormat } from '@/date'
 
-import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, isNullish, useDirection, useKbd, useLocale } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { type Grid, type Matcher, type WeekDayFormat, isBefore } from '@/date'
+import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
-import { useRangeCalendarState } from './useRangeCalendar'
-import { useCalendar } from '@/Calendar/useCalendar'
 import type { Direction } from '@/shared/types'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { useCalendar } from '@/Calendar/useCalendar'
+import { isBefore } from '@/date'
+import { createContext, isNullish, useDirection, useKbd, useLocale } from '@/shared'
+import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
+import { isEqualDay } from '@internationalized/date'
+import { useRangeCalendarState } from './useRangeCalendar'
 
 type RangeCalendarRootContext = {
   modelValue: Ref<DateRange>
@@ -19,7 +22,7 @@ type RangeCalendarRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  grid: Ref< Grid<DateValue>[]>
+  grid: Ref<Grid<DateValue>[]>
   weekDays: Ref<string[]>
   weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
   weekdayFormat: Ref<WeekDayFormat>
@@ -35,6 +38,7 @@ type RangeCalendarRootContext = {
   isInvalid: Ref<boolean>
   isDateDisabled: Matcher
   isDateUnavailable?: Matcher
+  isDateHighlightable?: Matcher
   isOutsideVisibleView: (date: DateValue) => boolean
   highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
   focusedValue: Ref<DateValue | undefined>
@@ -93,6 +97,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   isDateDisabled?: Matcher
   /** A function that returns whether or not a date is unavailable */
   isDateUnavailable?: Matcher
+  /** A function that returns whether or not a date is hightable */
+  isDateHighlightable?: Matcher
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. */
@@ -115,9 +121,9 @@ export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { useEventListener, useVModel } from '@vueuse/core'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),
@@ -134,6 +140,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   placeholder: undefined,
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
@@ -168,6 +175,7 @@ const {
   numberOfMonths,
   preventDeselect,
   isDateUnavailable: propsIsDateUnavailable,
+  isDateHighlightable: propsIsDateHighlightable,
   isDateDisabled: propsIsDateDisabled,
   calendarLabel,
   maxValue,
@@ -247,6 +255,7 @@ const {
 const {
   isInvalid,
   isSelected,
+  isDateHighlightable,
   highlightedRange,
   isSelectionStart,
   isSelectionEnd,
@@ -257,6 +266,7 @@ const {
   end: endValue,
   isDateDisabled,
   isDateUnavailable,
+  isDateHighlightable: propsIsDateHighlightable.value,
   focusedValue,
   allowNonContiguousRanges,
 })
@@ -323,6 +333,7 @@ useEventListener('keydown', (ev) => {
 
 provideRangeCalendarRootContext({
   isDateUnavailable,
+  isDateHighlightable,
   startValue,
   endValue,
   formatter,

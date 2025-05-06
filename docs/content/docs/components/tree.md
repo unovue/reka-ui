@@ -101,8 +101,8 @@ The `Tree` component allows you to select multiple items. You can enable this by
 
 ```vue line=12,17-18
 <script setup lang="ts">
-import { ref } from 'vue'
 import { TreeRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -132,8 +132,8 @@ See the [virtualization guide](../guides/virtualization.md) for more general inf
 
 ```vue line=8-15
 <script setup lang="ts">
-import { ref } from 'vue'
 import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -158,8 +158,8 @@ We set `propagateSelect` to `true` because we want the parent checkbox to select
 
 ```vue line=10-11,17-25,27-30
 <script setup lang="ts">
-import { ref } from 'vue'
 import { TreeItem, TreeRoot } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -286,8 +286,8 @@ If the node doesn't have any children, `getChildren` should return `undefined` i
 
 ```vue line=22
 <script setup lang="ts">
-import { ref } from 'vue'
 import { TreeRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 interface FileNode {
   title: string

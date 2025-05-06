@@ -15,14 +15,14 @@ export type CollapsibleContentEmits = {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
+import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { Presence } from '@/Presence'
 import { useForwardExpose, useId } from '@/shared'
 import { useEventListener } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 
 defineOptions({
   inheritAttrs: false,

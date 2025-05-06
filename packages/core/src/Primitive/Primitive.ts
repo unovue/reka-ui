@@ -1,4 +1,5 @@
-import { type Component, type PropType, defineComponent, h } from 'vue'
+import type { Component, PropType } from 'vue'
+import { defineComponent, h } from 'vue'
 import { Slot } from './Slot'
 
 export type AsTag =
@@ -53,7 +54,7 @@ export const Primitive = defineComponent({
   },
   setup(props, { attrs, slots }) {
     const asTag = props.asChild ? 'template' : props.as
-    
+
     if (typeof asTag === 'string' && SELF_CLOSING_TAGS.includes(asTag))
       return () => h(asTag, attrs)
 

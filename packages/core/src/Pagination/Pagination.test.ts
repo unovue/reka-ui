@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import Pagination from './story/_Pagination.vue'
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import Pagination from './story/_Pagination.vue'
 
 describe('given default Pagination', () => {
   let wrapper: VueWrapper<InstanceType<typeof Pagination>>

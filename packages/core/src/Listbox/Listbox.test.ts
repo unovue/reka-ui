@@ -1,11 +1,11 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import { useKbd } from '@/shared'
+import { handleSubmit } from '@/test'
+import { mount } from '@vue/test-utils'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import Listbox from './story/_Listbox.vue'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { useKbd } from '@/shared'
 import { nextTick } from 'vue'
-import { handleSubmit } from '@/test'
+import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
   const kbd = useKbd()

@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import Menubar from './story/_Menubar.vue'
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { axe } from 'vitest-axe'
 import { findByRole } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
+import Menubar from './story/_Menubar.vue'
 
 describe('given default Menubar', () => {
   let wrapper: VueWrapper<InstanceType<typeof Menubar>>

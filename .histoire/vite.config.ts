@@ -1,8 +1,8 @@
-import { HstVue } from '@histoire/plugin-vue'
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { HstVue } from '@histoire/plugin-vue'
 import alias from '@rollup/plugin-alias'
+import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite'
 
 const projectRootDir = resolve(__dirname)
 
@@ -19,11 +19,6 @@ export default defineConfig({
       ],
     }),
   ],
-  resolve: {
-    alias: {
-      '@iconify/vue': './node_modules/@iconify/vue/dist/iconify.mjs',
-    },
-  },
   histoire: {
     viteNodeInlineDeps: [/@tanstack/],
     plugins: [{ name: 'builtin:tailwind-tokens' }, HstVue()],

@@ -1,6 +1,6 @@
+import type { CSSProperties } from 'vue'
 import type { PanelData } from '../SplitterPanel.vue'
 import type { DragState } from './types'
-import type { CSSProperties } from 'vue'
 import {
   EXCEEDED_HORIZONTAL_MAX,
   EXCEEDED_HORIZONTAL_MIN,

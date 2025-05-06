@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import PinInput from './story/_PinInput.vue'
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { axe } from 'vitest-axe'
 import userEvent from '@testing-library/user-event'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
+import PinInput from './story/_PinInput.vue'
 
 describe('given default PinInput', () => {
   // @ts-expect-error aXe throwing error complaining getComputedStyle

@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { AcceptableValue } from '@/shared/types'
 import type { ToggleProps } from '@/Toggle'
 import { isValueEqualOrExist, useForwardExpose } from '@/shared'
-import type { AcceptableValue } from '@/shared/types'
 
 export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'required' | 'modelValue' | 'defaultValue'> {
   /**
@@ -12,11 +12,11 @@ export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'requir
 </script>
 
 <script setup lang="ts">
+import { Primitive } from '@/Primitive'
+import { RovingFocusItem } from '@/RovingFocus'
+import { Toggle } from '@/Toggle'
 import { computed } from 'vue'
 import { injectToggleGroupRootContext } from './ToggleGroupRoot.vue'
-import { Toggle } from '@/Toggle'
-import { RovingFocusItem } from '@/RovingFocus'
-import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<ToggleGroupItemProps>(), {
   as: 'button',

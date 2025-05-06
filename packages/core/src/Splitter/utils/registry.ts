@@ -1,9 +1,9 @@
+import type { Ref } from 'vue'
 import type { Direction, ResizeEvent } from './types'
-import { resetGlobalCursorStyle, setGlobalCursorStyle } from './style'
 import { getResizeEventCoordinates } from './events'
 import { intersects } from './rects'
 import { compare } from './stackingOrder'
-import type { Ref } from 'vue'
+import { resetGlobalCursorStyle, setGlobalCursorStyle } from './style'
 
 export type ResizeHandlerAction = 'down' | 'move' | 'up'
 export type SetResizeHandlerState = (
@@ -162,9 +162,9 @@ function recalculateIntersectingHandles({
 
     const eventIntersects
       = x >= left - margin
-      && x <= right + margin
-      && y >= top - margin
-      && y <= bottom + margin
+        && x <= right + margin
+        && y >= top - margin
+        && y <= bottom + margin
 
     if (eventIntersects) {
       // TRICKY

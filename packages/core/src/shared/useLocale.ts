@@ -1,5 +1,6 @@
+import type { Ref } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
-import { type Ref, computed, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 export function useLocale(locale?: Ref<string | undefined>) {
   const context = injectConfigProviderContext({

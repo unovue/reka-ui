@@ -5,11 +5,11 @@ export interface AccordionTriggerProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { CollapsibleTrigger } from '@/Collapsible'
 import { useId } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
-import { injectAccordionRootContext } from './AccordionRoot.vue'
 
-import { CollapsibleTrigger } from '@/Collapsible'
+import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 const props = defineProps<AccordionTriggerProps>()
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { ref } from 'vue'
 import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '..'
-import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 
 const open = ref(false)
 </script>
