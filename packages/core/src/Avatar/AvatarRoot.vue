@@ -25,7 +25,7 @@ withDefaults(defineProps<AvatarRootProps>(), {
 useForwardExpose()
 
 provideAvatarRootContext({
-  imageLoadingStatus: ref<ImageLoadingStatus>('loading'),
+  imageLoadingStatus: ref<ImageLoadingStatus>('idle'),
 })
 </script>
 
