@@ -184,6 +184,7 @@ provideSelectRootContext({
     <BubbleSelect
       v-if="isFormControl"
       :key="nativeSelectKey"
+      v-model:value="modelValue"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"
@@ -191,7 +192,6 @@ provideSelectRootContext({
       :name="name"
       :autocomplete="autocomplete"
       :disabled="disabled"
-      :value="modelValue"
     >
       <option
         v-if="isNullish(modelValue)"
