@@ -44,6 +44,7 @@ type CalendarRootContext = {
   isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
   formatter: Formatter
   dir: Ref<Direction>
+  disableDaysOutsideCurrentView: Ref<boolean>
 }
 
 interface BaseCalendarRootProps extends PrimitiveProps {
@@ -89,6 +90,8 @@ interface BaseCalendarRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: DateValue) => DateValue
+  /** Whether or not to disable days outside the current view. */
+  disableDaysOutsideCurrentView?: boolean
 }
 
 export interface MultipleCalendarRootProps extends BaseCalendarRootProps {
@@ -139,6 +142,7 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   placeholder: undefined,
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  disableDaysOutsideCurrentView: false,
 })
 const emits = defineEmits<CalendarRootEmits>()
 defineSlots<{
@@ -181,6 +185,7 @@ const {
   prevPage: propsPrevPage,
   dir: propDir,
   locale: propLocale,
+  disableDaysOutsideCurrentView,
 } = toRefs(props)
 
 const { primitiveElement, currentElement: parentElement }
@@ -329,6 +334,7 @@ provideCalendarRootContext({
   parentElement,
   onPlaceholderChange,
   onDateChange,
+  disableDaysOutsideCurrentView,
 })
 </script>
 

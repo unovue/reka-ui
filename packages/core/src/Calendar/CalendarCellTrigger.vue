@@ -66,7 +66,7 @@ const labelText = computed(() => {
   })
 })
 
-const isDisabled = computed(() => rootContext.isDateDisabled(props.day))
+const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || rootContext.disableDaysOutsideCurrentView.value)
 const isUnavailable = computed(() =>
   rootContext.isDateUnavailable?.(props.day) ?? false,
 )
