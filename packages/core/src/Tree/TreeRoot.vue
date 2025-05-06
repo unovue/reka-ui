@@ -198,9 +198,16 @@ function handleBubbleSelect(item: FlattenedItem<T>) {
       return item.parentItem != null && props.getKey(i.value) === props.getKey(item.parentItem)
     })
 
-    if (parentItem != null && props.getChildren(parentItem.value)?.every(i => modelValue.value.find((v: any) => props.getKey(v) === props.getKey(i)))) {
-      // TODO: Can we get rid of this as any assertion?
-      modelValue.value = [...modelValue.value, parentItem.value as any]
+    if (parentItem != null) {
+      const areAllChilredOfParentSelected = props.getChildren(parentItem.value)?.every(i => modelValue.value.find((v: any) => props.getKey(v) === props.getKey(i)))
+
+      if (areAllChilredOfParentSelected) {
+        modelValue.value = [...modelValue.value, parentItem.value as any]
+      }
+      else {
+        modelValue.value = modelValue.value.filter((v: any) => props.getKey(v) !== props.getKey(parentItem.value))
+      }
+
       handleBubbleSelect(parentItem)
     }
   }
@@ -213,12 +220,12 @@ provideTreeRootContext({
     const condition = (baseValue: U) => props.getKey(baseValue as any ?? {}) === props.getKey(val)
     const exist = props.multiple && Array.isArray(modelValue.value) ? modelValue.value?.findIndex(condition) !== -1 : undefined
     onSelectItem(val, condition)
+    console.log('bubbleSelect')
 
     if (props.bubbleSelect && props.multiple && Array.isArray(modelValue.value)) {
       const item = expandedItems.value.find((i) => {
         return props.getKey(i.value) === props.getKey(val)
       })
-
       if (item != null) {
         handleBubbleSelect(item)
       }
