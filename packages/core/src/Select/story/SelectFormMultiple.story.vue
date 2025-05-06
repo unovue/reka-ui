@@ -21,20 +21,24 @@ import {
 const options = ['Apple', 'Banana', 'Blueberry', 'Grapes', 'Pineapple']
 const vegetables = ['Aubergine', 'Broccoli', 'Carrot', 'Courgette', 'Leek']
 
-const data = ref({})
+const data = ref<string[]>([])
 
 function handleChange(event: any) {
   const formData = new FormData(event.target)
-  data.value = Object.fromEntries((formData as any).entries())
+
+  data.value = []
+  formData.forEach((value) => {
+    data.value.push(value as string)
+  })
 }
 </script>
 
 <template>
   <Story
-    title="Select/Form"
+    title="Select/Multiple"
     :layout="{ type: 'single', iframe: false }"
   >
-    <Variant title="default">
+    <Variant title="multiple">
       <div class="flex flex-col items-center">
         <form
           class="p-12 flex flex-col items-center"
@@ -42,8 +46,10 @@ function handleChange(event: any) {
         >
           <label for="fruit">Fruit</label>
           <SelectRoot
+            :default-value="['Apple']"
             name="fruit"
-            default-value="Apple"
+            :multiple="true"
+            :required="true"
           >
             <SelectTrigger
               class="min-w-[160px] inline-flex items-center justify-between rounded px-[15px] text-[13px] leading-none h-[35px] gap-[5px] bg-white text-violet11 shadow-[0_2px_10px] shadow-black/10 hover:bg-mauve3 focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-violet9 outline-none"
