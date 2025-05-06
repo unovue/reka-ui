@@ -93,8 +93,7 @@ const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, dir: propDir 
 
 const dir = useDirection(propDir)
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  // @ts-expect-error ignore the type error here
+const modelValue = useVModel(props as ComboboxRootProps<T>, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: (props.modelValue === undefined) as false,
   deep: true,
