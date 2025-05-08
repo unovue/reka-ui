@@ -20,7 +20,7 @@ export interface ProgressRootProps extends PrimitiveProps {
    *
    *  If not provided, the value label will be read as the numeric value as a percentage of the max value.
    */
-  getValueLabel?: (value: number, max: number) => string
+  getValueLabel?: (value: number | null | undefined, max: number) => string | undefined
 }
 
 const DEFAULT_MAX = 100
@@ -75,8 +75,8 @@ import { computed, nextTick, watch } from 'vue'
 
 const props = withDefaults(defineProps<ProgressRootProps>(), {
   max: DEFAULT_MAX,
-  getValueLabel: (value: number, max: number) =>
-    `${Math.round((value / max) * DEFAULT_MAX)}%`,
+  getValueLabel: (value: number | null | undefined, max: number) =>
+    isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined,
 })
 
 const emit = defineEmits<ProgressRootEmits>()
@@ -143,8 +143,8 @@ provideProgressRootContext({
     :aria-valuemax="max"
     :aria-valuemin="0"
     :aria-valuenow="isNumber(modelValue) ? modelValue : undefined"
-    :aria-valuetext="getValueLabel(modelValue!, max)"
-    :aria-label="getValueLabel(modelValue!, max)"
+    :aria-valuetext="getValueLabel(modelValue, max)"
+    :aria-label="getValueLabel(modelValue, max)"
     role="progressbar"
     :data-state="progressState"
     :data-value="modelValue ?? undefined"
