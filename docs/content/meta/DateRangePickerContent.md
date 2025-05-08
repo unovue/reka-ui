@@ -75,6 +75,12 @@
     'required': false
   },
   {
+    'name': 'portal',
+    'description': '<p>Props to control the portal wrapped around the content.</p>\n',
+    'type': 'PopoverPortalProps',
+    'required': false
+  },
+  {
     'name': 'positionStrategy',
     'description': '<p>The type of CSS position property to use.</p>\n',
     'type': '\'fixed\' | \'absolute\'',

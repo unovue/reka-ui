@@ -176,7 +176,7 @@
   {
     'name': 'weekdayFormat',
     'description': '<p>The format to use for the weekday strings provided via the weekdays slot prop</p>\n',
-    'type': '\'long\' | \'short\' | \'narrow\'',
+    'type': '\'narrow\' | \'short\' | \'long\'',
     'required': false,
     'default': '\'narrow\''
   },
