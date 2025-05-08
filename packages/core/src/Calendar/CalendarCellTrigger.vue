@@ -95,10 +95,14 @@ function changeDate(date: DateValue) {
 }
 
 function handleClick() {
+  if (isDisabled.value)
+    return
   changeDate(props.day)
 }
 
 function handleArrowKey(e: KeyboardEvent) {
+  if (isDisabled.value)
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!

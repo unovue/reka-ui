@@ -138,16 +138,20 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
 }
 
 function handleClick(e: MouseEvent) {
+  if (isDisabled.value)
+    return
   changeDate(e, props.day)
 }
 
 function handleFocus() {
-  if (rootContext.isDateDisabled(props.day) || rootContext.isDateUnavailable?.(props.day))
+  if (isDisabled.value || rootContext.isDateUnavailable?.(props.day))
     return
   rootContext.focusedValue.value = props.day.copy()
 }
 
 function handleArrowKey(e: KeyboardEvent) {
+  if (isDisabled.value)
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
