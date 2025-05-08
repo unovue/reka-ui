@@ -90,7 +90,7 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
 
 ## ⭐️ Animating with Motion Vue
 
-[Motion Vue](https://motion.unovue.com/) is the recommended animation library for Reka UI. This lightweight, powerful library integrates seamlessly with components and offers extensive flexibility for creating smooth, performant animations.
+[Motion Vue](https://motion.dev/docs/vue) is the recommended animation library for Reka UI. This lightweight, powerful library integrates seamlessly with components and offers extensive flexibility for creating smooth, performant animations.
 
 ```vue line=3,12,14-18,22-26,29,31
 <script setup lang="ts">
