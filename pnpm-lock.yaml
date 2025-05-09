@@ -75,8 +75,8 @@ importers:
         specifier: ^0.17.17
         version: 0.17.17(histoire@0.17.17(@types/node@20.17.17)(vite@5.4.19(@types/node@20.17.17)))(vite@5.4.19(@types/node@20.17.17))(vue@3.5.13(typescript@5.8.3))
       '@iconify/vue':
-        specifier: ^4.3.0
-        version: 4.3.0(vue@3.5.13(typescript@5.8.3))
+        specifier: ^5.0.0
+        version: 5.0.0(vue@3.5.13(typescript@5.8.3))
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
@@ -133,8 +133,8 @@ importers:
         specifier: ^7.26.7
         version: 7.26.7
       '@iconify/vue':
-        specifier: ^4.3.0
-        version: 4.3.0(vue@3.5.13(typescript@5.8.2))
+        specifier: ^5.0.0
+        version: 5.0.0(vue@3.5.13(typescript@5.8.2))
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
@@ -233,8 +233,8 @@ importers:
         version: 2.0.11
     devDependencies:
       '@iconify/vue':
-        specifier: ^4.3.0
-        version: 4.3.0(vue@3.5.13(typescript@5.8.3))
+        specifier: ^5.0.0
+        version: 5.0.0(vue@3.5.13(typescript@5.8.3))
       '@testing-library/dom':
         specifier: ^10.4.0
         version: 10.4.0
@@ -1302,8 +1302,8 @@ packages:
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
 
-  '@iconify/vue@4.3.0':
-    resolution: {integrity: sha512-Xq0h6zMrHBbrW8jXJ9fISi+x8oDQllg5hTDkDuxnWiskJ63rpJu9CvJshj8VniHVTbsxCg9fVoPAaNp3RQI5OQ==}
+  '@iconify/vue@5.0.0':
+    resolution: {integrity: sha512-C+KuEWIF5nSBrobFJhT//JS87OZ++QDORB6f2q2Wm6fl2mueSTpFBeBsveK0KW9hWiZ4mNiPjsh6Zs4jjdROSg==}
     peerDependencies:
       vue: '>=3'
 
@@ -7833,12 +7833,12 @@ snapshots:
 
   '@iconify/types@2.0.0': {}
 
-  '@iconify/vue@4.3.0(vue@3.5.13(typescript@5.8.2))':
+  '@iconify/vue@5.0.0(vue@3.5.13(typescript@5.8.2))':
     dependencies:
       '@iconify/types': 2.0.0
       vue: 3.5.13(typescript@5.8.2)
 
-  '@iconify/vue@4.3.0(vue@3.5.13(typescript@5.8.3))':
+  '@iconify/vue@5.0.0(vue@3.5.13(typescript@5.8.3))':
     dependencies:
       '@iconify/types': 2.0.0
       vue: 3.5.13(typescript@5.8.3)
