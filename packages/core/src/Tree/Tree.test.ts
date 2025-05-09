@@ -286,3 +286,50 @@ describe('given a Tree with a custom children structure', () => {
     })
   })
 })
+
+describe('given a Tree with bubbleSelect and propagateSelect', () => {
+  const customItems = [
+    {
+      title: 'components',
+      children: [
+        {
+          title: 'Home',
+          children: [
+            { title: 'Card.vue' },
+            { title: 'Button.vue' },
+          ],
+        },
+      ],
+    },
+  ]
+
+  let wrapper: VueWrapper<InstanceType<typeof Tree>>
+  let items: DOMWrapper<Element>[]
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Tree, { props: { items: customItems, expanded: ['components', 'Home'], multiple: true, propagateSelect: true, bubbleSelect: true } })
+    await nextTick()
+    items = wrapper.findAll('[role=treeitem]')
+  })
+
+  it('propagates changes down the tree', async () => {
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'false'])
+    await items[0].trigger('click')
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['true', 'true', 'true', 'true'])
+    await items[0].trigger('click')
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'false'])
+  })
+
+  it('bubbles change up the tree', async () => {
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'false'])
+    await items[2].trigger('click')
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'true', 'false'])
+    await items[3].trigger('click')
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['true', 'true', 'true', 'true'])
+    await items[2].trigger('click')
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'true'])
+    await items[3].trigger('click')
+    expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'false'])
+  })
+})
