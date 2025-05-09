@@ -40,6 +40,6 @@
   {
     'name': 'state',
     'description': '<p>The current state of the stepper item</p>\n',
-    'type': '\'active\' | \'completed\' | \'inactive\''
+    'type': '\'active\' | \'inactive\' | \'completed\''
   }
 ]" />
