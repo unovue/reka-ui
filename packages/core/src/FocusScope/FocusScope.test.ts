@@ -2,7 +2,7 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { FocusScope } from '.'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
@@ -18,6 +18,21 @@ const TestField = ({
       <span>{{ label }}</span>
       <input type="text" :name="label.toLowerCase()" v-bind="$attrs" />
     </label>
+  `,
+})
+
+// Stripped-down version of Teleport.vue and onMounted from @vueuse/core
+const Delay = ({
+  setup() {
+    const isMounted = ref(false)
+    onMounted(() => isMounted.value = true)
+    return {
+      isMounted,
+    }
+  },
+  template: `
+    <div v-if="isMounted">
+    </div>
   `,
 })
 
@@ -131,6 +146,42 @@ describe('focusScope', () => {
       await userEvent.tab({ shift: true })
       await userEvent.tab()
       waitFor(() => expect(handleLastFocusableElementBlur).toHaveBeenCalledTimes(1))
+    })
+  })
+
+  describe('given a FocusScope with inner DOM mutations during onMounted', () => {
+    let rendered: RenderResult
+    let innerInputField: HTMLInputElement
+    let outerButton: HTMLButtonElement
+
+    beforeEach(() => {
+      rendered = render(defineComponent({
+        setup() {
+          const isVisible = ref(false)
+          return {
+            isVisible,
+          }
+        },
+        components: { TestField, FocusScope, Delay },
+        template: `<div>
+          <button @click="isVisible = !isVisible">some outer button</button>
+          <FocusScope v-if="isVisible" asChild loop trapped>
+            <form>
+              <TestField label=${INNER_NAME_INPUT_LABEL} />
+              <Delay></Delay>
+            </form>
+          </FocusScope>
+        </div>`,
+      }))
+      outerButton = rendered.getByRole('button') as HTMLButtonElement
+    })
+
+    it('should focus the first element when activated', async () => {
+      // DOM mutations during initialization shouldn't reset the focus to the container.
+      await userEvent.click(outerButton)
+
+      innerInputField = rendered.getByLabelText(INNER_NAME_INPUT_LABEL) as HTMLInputElement
+      expect(document.activeElement).toBe(innerInputField)
     })
   })
 })
