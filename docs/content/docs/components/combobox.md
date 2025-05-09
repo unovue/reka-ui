@@ -279,7 +279,7 @@ Unlike native HTML form controls which only allow you to provide strings as valu
 
 Make sure to set the `displayValue` prop to set the input value on item selection.
 
-```vue line=12,17,26
+```vue line=12,17,23
 <script setup lang="ts">
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot } from 'reka-ui'
 import { ref } from 'vue'
