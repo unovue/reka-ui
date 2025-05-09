@@ -2,7 +2,13 @@
 import type { MenuItemImplProps } from './MenuItemImpl.vue'
 import type { Side } from './utils'
 
-export interface MenuSubTriggerProps extends MenuItemImplProps {}
+export interface MenuSubTriggerProps extends MenuItemImplProps {
+  /**
+   * The delay in milliseconds before the submenu is closed if the stops hovering the trigger.
+   * @default 300
+   */
+  grace?: number
+}
 </script>
 
 <script setup lang="ts">
@@ -16,7 +22,7 @@ import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
 import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
 
-const props = defineProps<MenuSubTriggerProps>()
+const props = withDefaults(defineProps<MenuSubTriggerProps>(), { grace: 300 })
 
 const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
@@ -85,7 +91,7 @@ async function handlePointerLeave(event: PointerEvent) {
     window.clearTimeout(contentContext.pointerGraceTimerRef.value)
     contentContext.pointerGraceTimerRef.value = window.setTimeout(
       () => contentContext.onPointerGraceIntentChange(null),
-      300,
+      props.grace,
     )
   }
   else {
