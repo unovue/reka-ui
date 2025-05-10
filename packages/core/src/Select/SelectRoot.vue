@@ -28,7 +28,7 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
 
 export type SelectRootEmits<T = AcceptableValue> = {
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: T]
+  'update:modelValue': [value: T | Array<T>]
   /** Event handler called when the open state of the context menu changes. */
   'update:open': [value: boolean]
 }
@@ -72,11 +72,11 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<SelectRootProps>(), {
+const props = withDefaults(defineProps<SelectRootProps<T>>(), {
   modelValue: undefined,
   open: undefined,
 })
-const emits = defineEmits<SelectRootEmits>()
+const emits = defineEmits<SelectRootEmits<T>>()
 
 defineSlots<{
   default: (props: {
