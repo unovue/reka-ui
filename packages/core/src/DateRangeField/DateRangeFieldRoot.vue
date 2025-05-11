@@ -241,15 +241,18 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 })
 
 watch(modelValue, (_modelValue) => {
-  if (_modelValue && _modelValue.start && _modelValue.end) {
-    if (!startValue.value || _modelValue.start.compare(startValue.value) !== 0)
-      startValue.value = _modelValue.start.copy()
-    if (!endValue.value || _modelValue.end.compare(endValue.value) !== 0)
-      endValue.value = _modelValue.end.copy()
+  const isStartChanged = _modelValue?.start && startValue.value
+    ? _modelValue.start.compare(startValue.value) !== 0
+    : _modelValue?.start !== startValue.value
+  if (isStartChanged) {
+    startValue.value = _modelValue?.start?.copy()
   }
-  if (!_modelValue) {
-    startValue.value = undefined
-    endValue.value = undefined
+
+  const isEndChanged = _modelValue?.end && endValue.value
+    ? _modelValue.end.compare(endValue.value) !== 0
+    : _modelValue?.end !== endValue.value
+  if (isEndChanged) {
+    endValue.value = _modelValue?.end?.copy()
   }
 })
 
