@@ -72,11 +72,11 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<SelectRootProps>(), {
+const props = withDefaults(defineProps<SelectRootProps<T>>(), {
   modelValue: undefined,
   open: undefined,
 })
-const emits = defineEmits<SelectRootEmits>()
+const emits = defineEmits<SelectRootEmits<T>>()
 
 defineSlots<{
   default: (props: {
@@ -90,6 +90,7 @@ defineSlots<{
 const { required, disabled, multiple, dir: propDir } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
+  // @ts-expect-error Missing infer for AcceptableValue
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: (props.modelValue === undefined) as false,
   deep: true,
@@ -156,6 +157,7 @@ provideSelectRootContext({
   modelValue,
   // @ts-expect-error Missing infer for AcceptableValue
   onValueChange: handleValueChange,
+  // @ts-expect-error Missing infer for AcceptableValue
   by: props.by,
   open,
   multiple,
