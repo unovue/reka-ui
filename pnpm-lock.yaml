@@ -254,8 +254,8 @@ importers:
         specifier: ^20.17.17
         version: 20.17.17
       '@vitejs/plugin-vue':
-        specifier: ^5.2.3
-        version: 5.2.3(vite@5.4.19(@types/node@20.17.17))(vue@3.5.13(typescript@5.8.3))
+        specifier: ^5.2.4
+        version: 5.2.4(vite@5.4.19(@types/node@20.17.17))(vue@3.5.13(typescript@5.8.3))
       '@vitest/coverage-istanbul':
         specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@20.17.17)(jsdom@25.0.1))
@@ -272,8 +272,8 @@ importers:
         specifier: ^5.4.19
         version: 5.4.19(@types/node@20.17.17)
       vite-plugin-dts:
-        specifier: ^4.5.3
-        version: 4.5.3(@types/node@20.17.17)(rollup@4.40.1)(typescript@5.8.3)(vite@5.4.19(@types/node@20.17.17))
+        specifier: ^4.5.4
+        version: 4.5.4(@types/node@20.17.17)(rollup@4.40.1)(typescript@5.8.3)(vite@5.4.19(@types/node@20.17.17))
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@20.17.17)(jsdom@25.0.1)
@@ -1958,8 +1958,8 @@ packages:
       vite: ^5.0.0 || ^6.0.0
       vue: ^3.2.25
 
-  '@vitejs/plugin-vue@5.2.3':
-    resolution: {integrity: sha512-IYSLEQj4LgZZuoVpdSUCw3dIynTWQgPlaRP6iAvMle4My0HdYwr5g5wQAfwOeHQBmYwEkqF70nRpSilr6PoUDg==}
+  '@vitejs/plugin-vue@5.2.4':
+    resolution: {integrity: sha512-7Yx/SXSOcQq5HiiV3orevHUFn+pmMB4cgbEkDYgnkUWb0WfeQ/wa2yFv6D5ICiCQOVpjA7vYDXrC7AGO8yjDHA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     peerDependencies:
       vite: ^5.0.0 || ^6.0.0
@@ -6515,8 +6515,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite-plugin-dts@4.5.3:
-    resolution: {integrity: sha512-P64VnD00dR+e8S26ESoFELqc17+w7pKkwlBpgXteOljFyT0zDwD8hH4zXp49M/kciy//7ZbVXIwQCekBJjfWzA==}
+  vite-plugin-dts@4.5.4:
+    resolution: {integrity: sha512-d4sOM8M/8z7vRXHHq/ebbblfaxENjogAAekcfcDCCwAyvGqnPrc7f4NZbvItS+g4WTgerW0xDwSz5qz11JT3vg==}
     peerDependencies:
       typescript: '*'
       vite: '*'
@@ -8019,7 +8019,7 @@ snapshots:
 
   '@rollup/plugin-commonjs@25.0.8(rollup@3.29.4)':
     dependencies:
-      '@rollup/pluginutils': 5.1.0(rollup@3.29.4)
+      '@rollup/pluginutils': 5.1.4(rollup@3.29.4)
       commondir: 1.0.1
       estree-walker: 2.0.2
       glob: 8.1.0
@@ -8030,13 +8030,13 @@ snapshots:
 
   '@rollup/plugin-json@6.1.0(rollup@3.29.4)':
     dependencies:
-      '@rollup/pluginutils': 5.1.0(rollup@3.29.4)
+      '@rollup/pluginutils': 5.1.4(rollup@3.29.4)
     optionalDependencies:
       rollup: 3.29.4
 
   '@rollup/plugin-node-resolve@15.2.3(rollup@3.29.4)':
     dependencies:
-      '@rollup/pluginutils': 5.1.0(rollup@3.29.4)
+      '@rollup/pluginutils': 5.1.4(rollup@3.29.4)
       '@types/resolve': 1.20.2
       deepmerge: 4.3.1
       is-builtin-module: 3.2.1
@@ -8047,7 +8047,7 @@ snapshots:
 
   '@rollup/plugin-replace@5.0.7(rollup@3.29.4)':
     dependencies:
-      '@rollup/pluginutils': 5.1.0(rollup@3.29.4)
+      '@rollup/pluginutils': 5.1.4(rollup@3.29.4)
       magic-string: 0.30.17
     optionalDependencies:
       rollup: 3.29.4
@@ -8597,7 +8597,7 @@ snapshots:
       vite: 5.4.19(@types/node@20.17.17)
       vue: 3.5.13(typescript@5.8.2)
 
-  '@vitejs/plugin-vue@5.2.3(vite@5.4.19(@types/node@20.17.17))(vue@3.5.13(typescript@5.8.3))':
+  '@vitejs/plugin-vue@5.2.4(vite@5.4.19(@types/node@20.17.17))(vue@3.5.13(typescript@5.8.3))':
     dependencies:
       vite: 5.4.19(@types/node@20.17.17)
       vue: 3.5.13(typescript@5.8.3)
@@ -14027,7 +14027,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-dts@4.5.3(@types/node@20.17.17)(rollup@4.40.1)(typescript@5.8.3)(vite@5.4.19(@types/node@20.17.17)):
+  vite-plugin-dts@4.5.4(@types/node@20.17.17)(rollup@4.40.1)(typescript@5.8.3)(vite@5.4.19(@types/node@20.17.17)):
     dependencies:
       '@microsoft/api-extractor': 7.52.3(@types/node@20.17.17)
       '@rollup/pluginutils': 5.1.4(rollup@4.40.1)
