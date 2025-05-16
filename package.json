@@ -27,12 +27,12 @@
     "pub:release": "cd packages/core && pnpm pub:release"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^4.12.1",
+    "@antfu/eslint-config": "^4.13.1",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "bumpp": "^9.11.1",
-    "eslint": "^9.26.0",
-    "lint-staged": "^15.5.1",
+    "eslint": "^9.27.0",
+    "lint-staged": "^15.5.2",
     "pnpm": "^10.0.0",
     "rimraf": "^6.0.1",
     "simple-git-hooks": "^2.13.0",
