@@ -35,5 +35,15 @@
     'name': 'modelValue',
     'description': '<p>The current date of the calendar</p>\n',
     'type': 'CalendarDate | CalendarDateTime | ZonedDateTime'
+  },
+  {
+    'name': 'maxDate',
+    'description': '<p>The maximum selected date of the calendar</p>\n',
+    'type': 'CalendarDate | CalendarDateTime | ZonedDateTime | undefined'
+  },
+  {
+    'name': 'minDate',
+    'description': '<p>The minimum selected date of the calendar</p>\n',
+    'type': 'CalendarDate | CalendarDateTime | ZonedDateTime | undefined'
   }
 ]" />
