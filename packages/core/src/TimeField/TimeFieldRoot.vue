@@ -144,9 +144,12 @@ const convertedModelValue = computed({
     return convertValue(modelValue.value)
   },
   set(newValue) {
-    if (newValue)
+    if (newValue) {
       modelValue.value = modelValue.value && 'day' in modelValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, modelValue.value?.millisecond)
-
+    }
+    else {
+      modelValue.value = newValue
+    }
     return newValue
   },
 })
@@ -232,7 +235,8 @@ watch([convertedModelValue, locale], ([_modelValue]) => {
   if (!isNullish(_modelValue)) {
     segmentValues.value = { ...syncTimeSegmentValues({ value: _modelValue, formatter }) }
   }
-  else if (Object.values(segmentValues.value).every(value => value === null) || isNullish(_modelValue)) {
+  // If segment has null value, means that user modified it, thus do not reset the segmentValues
+  else if (Object.values(segmentValues.value).every(value => value !== null) && isNullish(_modelValue)) {
     segmentValues.value = { ...initialSegments }
   }
 })
