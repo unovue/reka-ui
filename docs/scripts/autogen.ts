@@ -93,7 +93,7 @@ function parseTypeFromSchema(schema: PropertyMetaSchema): string {
     else
       return schema.type
   }
-  else if (typeof schema === 'object' && schema.kind === 'object') {
+  else if (typeof schema === 'object' && (schema.kind === 'object' || schema.kind === 'event')) {
     return schema.type
   }
   else if (typeof schema === 'string') {

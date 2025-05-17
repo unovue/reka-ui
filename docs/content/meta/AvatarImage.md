@@ -15,6 +15,12 @@
     'required': false
   },
   {
+    'name': 'crossOrigin',
+    'description': '',
+    'type': '\'\' | \'anonymous\' | \'use-credentials\'',
+    'required': false
+  },
+  {
     'name': 'referrerPolicy',
     'description': '',
     'type': '\'\' | \'no-referrer\' | \'no-referrer-when-downgrade\' | \'origin\' | \'origin-when-cross-origin\' | \'same-origin\' | \'strict-origin\' | \'strict-origin-when-cross-origin\' | \'unsafe-url\'',

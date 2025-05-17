@@ -54,7 +54,7 @@
   {
     'name': 'getKey',
     'description': '<p>This function is passed the index of each item and should return a unique key for that item</p>\n',
-    'type': '(val: Record<string, any>) => string',
+    'type': '(val: Record<string, any>): string',
     'required': true
   },
   {

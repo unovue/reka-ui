@@ -150,17 +150,17 @@
   {
     'name': 'submit',
     'description': '<p>Function to submit the value of the editable</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'cancel',
     'description': '<p>Function to cancel the value of the editable</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'edit',
     'description': '<p>Function to set the editable in edit mode</p>\n',
-    'type': ''
+    'type': '(): void'
   }
 ]" />
 

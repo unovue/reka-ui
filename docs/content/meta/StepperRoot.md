@@ -91,16 +91,16 @@
   {
     'name': 'goToStep',
     'description': '<p>Go to a specific step</p>\n',
-    'type': ''
+    'type': '(step: number): void'
   },
   {
     'name': 'nextStep',
     'description': '<p>Go to the next step</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'prevStep',
     'description': '<p>Go to the previous step</p>\n',
-    'type': ''
+    'type': '(): void'
   }
 ]" />
