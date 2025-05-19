@@ -57,7 +57,7 @@ watch(present, () => {
 
 <template>
   <Presence
-    v-if="renderPresence || presenceRef?.present"
+    v-if="present || renderPresence || presenceRef?.present"
     ref="presenceRef"
     :present="present"
   >
