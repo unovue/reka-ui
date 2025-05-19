@@ -9,14 +9,14 @@ import { computed, ref, toRefs, watch } from 'vue'
 export type PinInputType = 'text' | 'number'
 
 // Using this type to avoid mixed arrays (string | number)[].
-export type PinInputValue<Type extends PinInputType> = Type extends 'number' ? number[] : string[]
+export type PinInputValue<Type extends PinInputType = 'text'> = Type extends 'number' ? number[] : string[]
 
-export type PinInputRootEmits<Type extends PinInputType> = {
+export type PinInputRootEmits<Type extends PinInputType = 'text'> = {
   'update:modelValue': [value: PinInputValue<Type>]
   'complete': [value: PinInputValue<Type>]
 }
 
-export interface PinInputRootProps<Type extends PinInputType> extends PrimitiveProps, FormFieldProps {
+export interface PinInputRootProps<Type extends PinInputType = 'text'> extends PrimitiveProps, FormFieldProps {
   /** The controlled checked state of the pin input. Can be binded as `v-model`. */
   modelValue?: PinInputValue<Type> | null
   /** The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. */
@@ -37,7 +37,7 @@ export interface PinInputRootProps<Type extends PinInputType> extends PrimitiveP
   id?: string
 }
 
-export interface PinInputRootContext<Type extends PinInputType> {
+export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   modelValue: Ref<PinInputValue<Type>>
   currentModelValue: ComputedRef<PinInputValue<Type>>
   mask: Ref<boolean>
@@ -55,7 +55,7 @@ export const [injectPinInputRootContext, providePinInputRootContext]
   = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 </script>
 
-<script setup lang="ts" generic="Type extends PinInputType">
+<script setup lang="ts" generic="Type extends PinInputType = 'text'">
 import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 
