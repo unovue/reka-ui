@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
-import { camelize, computed, getCurrentInstance, toRef } from 'vue'
+import { camelize, computed, getCurrentInstance, toRef, toRefs } from 'vue'
 
 interface PropOptions {
   type?: any
@@ -26,6 +26,7 @@ export function useForwardProps<T extends Record<string, any>>(props: MaybeRefOr
 
   const refProps = toRef(props)
   return computed(() => {
+    const propsAsRefs = toRefs(refProps.value)
     const preservedProps = {} as T
     const assignedProps = vm?.vnode.props ?? {}
 
@@ -35,8 +36,9 @@ export function useForwardProps<T extends Record<string, any>>(props: MaybeRefOr
 
     // Only return value from the props parameter
     return Object.keys({ ...defaultProps, ...preservedProps }).reduce((prev, curr) => {
-      if (refProps.value[curr] !== undefined)
-        prev[curr as keyof T] = refProps.value[curr]
+      const val = propsAsRefs[curr]?.value
+      if (val !== undefined)
+        prev[curr as keyof T] = val
       return prev
     }, {} as T)
   })

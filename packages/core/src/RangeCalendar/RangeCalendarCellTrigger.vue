@@ -132,8 +132,26 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
     rootContext.endValue.value = date.copy()
   }
   else if (rootContext.endValue.value && rootContext.startValue.value) {
-    rootContext.endValue.value = undefined
-    rootContext.startValue.value = date.copy()
+    if (!rootContext.fixedDate.value) {
+      rootContext.endValue.value = undefined
+      rootContext.startValue.value = date.copy()
+    }
+    else if (rootContext.fixedDate.value === 'start') {
+      if (date.compare(rootContext.startValue.value) < 0) {
+        rootContext.startValue.value = date.copy()
+      }
+      else {
+        rootContext.endValue.value = date.copy()
+      }
+    }
+    else if (rootContext.fixedDate.value === 'end') {
+      if (date.compare(rootContext.endValue.value) > 0) {
+        rootContext.endValue.value = date.copy()
+      }
+      else {
+        rootContext.startValue.value = date.copy()
+      }
+    }
   }
 }
 

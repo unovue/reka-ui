@@ -358,7 +358,7 @@ export default defineConfig({
       provider: 'local',
     },
     editLink: {
-      pattern: 'https://github.com/unovue/reka-ui/edit/main/docs/content/:path',
+      pattern: 'https://github.com/unovue/reka-ui/edit/v2/docs/content/:path',
     },
     carbonAds: {
       code: 'CW7DP2JW',

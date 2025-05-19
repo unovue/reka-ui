@@ -18,7 +18,6 @@
     'name': 'delayMs',
     'description': '<p>Useful for delaying rendering so it only appears for those with slower connections.</p>\n',
     'type': 'number',
-    'required': false,
-    'default': '0'
+    'required': false
   }
 ]" />

@@ -19,7 +19,7 @@ const { frontmatter } = useData()
         <a
           class="w-max text-sm mt-4 flex items-center justify-center gap-2 whitespace-nowrap rounded-lg py-2.5 px-4 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
           target="_blank"
-          href="https://github.com/unovue/reka-ui/edit/main/docs/content/showcase.md"
+          href="https://github.com/unovue/reka-ui/edit/v2/docs/content/showcase.md"
         >
           Add Showcase
         </a>

@@ -60,11 +60,11 @@
   {
     'name': 'handleToggle',
     'description': '',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'handleSelect',
     'description': '',
-    'type': ''
+    'type': '(): void'
   }
 ]" />
