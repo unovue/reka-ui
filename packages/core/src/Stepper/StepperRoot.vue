@@ -1,11 +1,11 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type { DataOrientation, Direction } from '../shared/types'
-import { Primitive } from '@/Primitive'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, toRefs, watch } from 'vue'
+import { Primitive } from '@/Primitive'
+import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface StepperRootContext {
   modelValue: Ref<number | undefined>
@@ -73,6 +73,10 @@ defineSlots<{
     nextStep: () => void
     /** Go to the previous step */
     prevStep: () => void
+    /** Whether or not there is a next step */
+    hasNext: () => boolean
+    /** Whether or not there is a previous step */
+    hasPrev: () => boolean
   }) => any
 }>()
 
@@ -111,6 +115,23 @@ function goToStep(step: number) {
 
   modelValue.value = step
 }
+
+function nextStep() {
+  goToStep((modelValue.value ?? 1) + 1)
+}
+
+function prevStep() {
+  goToStep((modelValue.value ?? 1) - 1)
+}
+
+function hasNext() {
+  return (modelValue.value ?? 1) < totalSteps.value
+}
+
+function hasPrev() {
+  return (modelValue.value ?? 1) > 1
+}
+
 const nextStepperItem = ref<HTMLElement | null>(null)
 const prevStepperItem = ref<HTMLElement | null>(null)
 const isNextDisabled = computed(() => nextStepperItem.value ? nextStepperItem.value.getAttribute('disabled') === '' : true)
@@ -139,6 +160,20 @@ provideStepperRootContext({
   linear,
   totalStepperItems,
 })
+
+defineExpose({
+  goToStep,
+  nextStep,
+  prevStep,
+  modelValue,
+  totalSteps,
+  isNextDisabled,
+  isPrevDisabled,
+  isFirstStep,
+  isLastStep,
+  hasNext,
+  hasPrev,
+})
 </script>
 
 <template>
@@ -158,8 +193,10 @@ provideStepperRootContext({
       :is-first-step="isFirstStep"
       :is-last-step="isLastStep"
       :go-to-step="goToStep"
-      :next-step="() => goToStep((modelValue ?? 1) + 1)"
-      :prev-step="() => goToStep((modelValue ?? 1) - 1)"
+      :next-step="nextStep"
+      :prev-step="prevStep"
+      :has-next="hasNext"
+      :has-prev="hasPrev"
     />
 
     <div
