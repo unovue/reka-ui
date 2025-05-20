@@ -15,6 +15,13 @@
     'required': false
   },
   {
+    'name': 'dayStep',
+    'description': '<p>The stepping interval between days</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '1'
+  },
+  {
     'name': 'defaultPlaceholder',
     'description': '<p>The default placeholder date</p>\n',
     'type': 'TimeValue',
@@ -58,6 +65,13 @@
     'required': false
   },
   {
+    'name': 'hourStep',
+    'description': '<p>The stepping interval between hours</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '1'
+  },
+  {
     'name': 'id',
     'description': '<p>Id of the element</p>\n',
     'type': 'string',
@@ -76,6 +90,13 @@
     'required': false
   },
   {
+    'name': 'minuteStep',
+    'description': '<p>The stepping interval between minutes</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '1'
+  },
+  {
     'name': 'minValue',
     'description': '<p>The minimum date that can be selected</p>\n',
     'type': 'TimeValue',
@@ -86,6 +107,13 @@
     'description': '<p>The controlled checked state of the field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'TimeValue | null',
     'required': false
+  },
+  {
+    'name': 'monthStep',
+    'description': '<p>The stepping interval between months</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '1'
   },
   {
     'name': 'name',
@@ -111,6 +139,20 @@
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'secondStep',
+    'description': '<p>The stepping interval between seconds</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '1'
+  },
+  {
+    'name': 'yearStep',
+    'description': '<p>The stepping interval between years</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '1'
   }
 ]" />
 

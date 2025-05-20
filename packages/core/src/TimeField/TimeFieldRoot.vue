@@ -1,11 +1,11 @@
 <script lang="ts">
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-
 import type { Formatter } from '@/shared'
 import type { HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
+import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { isBefore } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -19,7 +19,6 @@ import {
   syncTimeSegmentValues,
 
 } from '@/shared/date'
-import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
@@ -30,6 +29,12 @@ type TimeFieldRootContext = {
   readonly: Ref<boolean>
   formatter: Formatter
   hourCycle: HourCycle
+  yearStep: Ref<number>
+  monthStep: Ref<number>
+  dayStep: Ref<number>
+  hourStep: Ref<number>
+  minuteStep: Ref<number>
+  secondStep: Ref<number>
   segmentValues: Ref<SegmentValueObj>
   segmentContents: Ref<{ part: SegmentPart, value: string }[]>
   elements: Ref<Set<HTMLElement>>
@@ -56,6 +61,18 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   maxValue?: TimeValue
   /** The minimum date that can be selected */
   minValue?: TimeValue
+  /** The stepping interval between years */
+  yearStep?: number
+  /** The stepping interval between months */
+  monthStep?: number
+  /** The stepping interval between days */
+  dayStep?: number
+  /** The stepping interval between hours */
+  hourStep?: number
+  /** The stepping interval between minutes */
+  minuteStep?: number
+  /** The stepping interval between seconds */
+  secondStep?: number
   /** The locale to use for formatting dates */
   locale?: string
   /** Whether or not the time field is disabled */
@@ -88,10 +105,10 @@ function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { VisuallyHidden } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { VisuallyHidden } from '@/VisuallyHidden'
 
 defineOptions({
   inheritAttrs: false,
@@ -103,6 +120,12 @@ const props = withDefaults(defineProps<TimeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  yearStep: 1,
+  monthStep: 1,
+  dayStep: 1,
+  hourStep: 1,
+  minuteStep: 1,
+  secondStep: 1,
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
@@ -116,7 +139,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale, yearStep, monthStep, dayStep, hourStep, minuteStep, secondStep } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
@@ -289,6 +312,12 @@ provideTimeFieldRootContext({
   disabled,
   formatter,
   hourCycle: props.hourCycle,
+  yearStep,
+  monthStep,
+  dayStep,
+  hourStep,
+  minuteStep,
+  secondStep,
   readonly,
   segmentValues,
   isInvalid,
