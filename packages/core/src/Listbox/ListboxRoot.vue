@@ -10,6 +10,7 @@ type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
   onValueChange: (val: T) => void
   multiple: Ref<boolean>
+  max: Ref<number>
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   disabled: Ref<boolean>
@@ -46,6 +47,14 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   defaultValue?: T | Array<T>
   /** Whether multiple options can be selected or not. */
   multiple?: boolean
+  /**
+   * Maximum number of options that can be selected.
+   * Only applies when `multiple` is `true`.
+   * When `0`, there is no limit.
+   *
+   * @defaultValue 0
+   */
+  max?: number
   /** The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) */
   orientation?: DataOrientation
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
@@ -72,19 +81,22 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   'entryFocus': [event: CustomEvent]
   /** Event handler called when the mouse leave the container */
   'leave': [event: Event]
+  /** Event handler called when the value is invalid */
+  'invalid': [payload: T]
 }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { useCollection } from '@/Collection'
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { nextTick, ref, toRefs, watch } from 'vue'
+import { useCollection } from '@/Collection'
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { compare } from './utils'
 
 const props = withDefaults(defineProps<ListboxRootProps>(), {
+  max: 0,
   selectionBehavior: 'toggle',
   orientation: 'vertical',
 })
@@ -97,7 +109,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { multiple, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
+const { multiple, max, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
 const { getItems } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -121,7 +133,16 @@ function onValueChange(val: T) {
     const modelArray = Array.isArray(modelValue.value) ? [...modelValue.value] : []
     const index = modelArray.findIndex(i => compare(i, val, props.by))
     if (props.selectionBehavior === 'toggle') {
-      index === -1 ? modelArray.push(val) : modelArray.splice(index, 1)
+      if (index === -1) {
+        if (max.value && modelArray.length >= max.value) {
+          emits('invalid', val)
+          return
+        }
+        modelArray.push(val)
+      }
+      else {
+        modelArray.splice(index, 1)
+      }
       modelValue.value = modelArray
     }
     else {
