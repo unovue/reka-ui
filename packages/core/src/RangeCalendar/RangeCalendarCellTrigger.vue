@@ -79,6 +79,7 @@ const isHighlightEnd = computed(() => rootContext.isHighlightedEnd(props.day))
 const isHighlighted = computed(() => rootContext.highlightedRange.value
   ? isBetweenInclusive(props.day, rootContext.highlightedRange.value.start, rootContext.highlightedRange.value.end)
   : false)
+const allowNonContiguousRanges = computed(() => rootContext.allowNonContiguousRanges.value)
 
 const isDateToday = computed(() => {
   return isToday(props.day, getLocalTimeZone())
@@ -279,14 +280,14 @@ function handleArrowKey(e: KeyboardEvent) {
     role="button"
     :aria-label="labelText"
     data-reka-calendar-cell-trigger
-    :aria-selected="isSelectedDate && !isUnavailable ? true : undefined"
+    :aria-selected="isSelectedDate && (allowNonContiguousRanges || !isUnavailable) ? true : undefined"
     :aria-disabled="isDisabled || isUnavailable ? true : undefined"
-    :data-highlighted="isHighlighted && !isUnavailable ? '' : undefined"
+    :data-highlighted="isHighlighted && (allowNonContiguousRanges || !isUnavailable) ? '' : undefined"
     :data-selection-start="isSelectionStart ? true : undefined"
     :data-selection-end="isSelectionEnd ? true : undefined"
     :data-highlighted-start="isHighlightStart ? true : undefined"
     :data-highlighted-end="isHighlightEnd ? true : undefined"
-    :data-selected="isSelectedDate && !isUnavailable ? true : undefined"
+    :data-selected="isSelectedDate && (allowNonContiguousRanges || !isUnavailable) ? true : undefined"
     :data-outside-visible-view="isOutsideVisibleView ? '' : undefined"
     :data-value="day.toString()"
     :data-disabled="isDisabled ? '' : undefined"
@@ -308,7 +309,7 @@ function handleArrowKey(e: KeyboardEvent) {
       :outside-view="isOutsideView"
       :outside-visible-view="isOutsideVisibleView"
       :unavailable="isUnavailable"
-      :highlighted="isHighlighted && !isUnavailable"
+      :highlighted="isHighlighted && (allowNonContiguousRanges || !isUnavailable)"
       :highlighted-start="isHighlightStart"
       :highlighted-end="isHighlightEnd"
       :selection-start="isSelectionStart"
