@@ -1,12 +1,12 @@
 <script lang="ts">
-import type { Matcher } from '@/date'
+import type { DateValue } from '@internationalized/date'
 
+import type { Ref } from 'vue'
+import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
 import { hasTime, isBefore } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -81,10 +81,10 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { VisuallyHidden } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { VisuallyHidden } from '@/VisuallyHidden'
 
 defineOptions({
   inheritAttrs: false,
@@ -99,7 +99,7 @@ const props = withDefaults(defineProps<DateFieldRootProps>(), {
 })
 const emits = defineEmits<DateFieldRootEmits>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** The current date of the field */
     modelValue: DateValue | undefined
     /** The date field segment contents */

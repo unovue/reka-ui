@@ -1,9 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
-import { getSelectableCells } from '@/Calendar/utils'
-import { getDaysInMonth, isBetweenInclusive, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import {
 
   getLocalTimeZone,
@@ -12,6 +9,9 @@ import {
   isToday,
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
+import { getSelectableCells } from '@/Calendar/utils'
+import { getDaysInMonth, isBetweenInclusive, toDate } from '@/date'
+import { useKbd } from '@/shared'
 
 export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
   day: DateValue
@@ -19,7 +19,7 @@ export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
 }
 
 export interface RangeCalendarCellTriggerSlot {
-  default: (props: {
+  default?: (props: {
     /** Current day */
     dayValue: string
     /** Current disable state */

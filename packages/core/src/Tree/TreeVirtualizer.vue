@@ -13,19 +13,19 @@ export interface TreeVirtualizerProps {
 import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { Ref } from 'vue'
 import type { FlattenedItem } from './TreeRoot.vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
+import { refAutoReset, useParentElement } from '@vueuse/core'
+import { cloneVNode, computed, nextTick, useSlots } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { getActiveElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
-import { useVirtualizer } from '@tanstack/vue-virtual'
-import { refAutoReset, useParentElement } from '@vueuse/core'
-import { cloneVNode, computed, nextTick, useSlots } from 'vue'
 import { injectTreeRootContext } from './TreeRoot.vue'
 
 const props = defineProps<TreeVirtualizerProps>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     item: FlattenedItem<Record<string, any>>
     virtualizer: Virtualizer<Element | Window, Element>
     virtualItem: VirtualItem

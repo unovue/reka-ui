@@ -1,15 +1,15 @@
 <script lang="ts">
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { DateValue } from '@internationalized/date'
 
+import type { Ref } from 'vue'
+import type { Grid, Matcher, WeekDayFormat } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
+
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
+import { isEqualDay, isSameDay } from '@internationalized/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { isEqualDay, isSameDay } from '@internationalized/date'
 import { useCalendar, useCalendarState } from './useCalendar'
 
 type CalendarRootContext = {
@@ -119,9 +119,9 @@ export const [injectCalendarRootContext, provideCalendarRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { onMounted, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
   defaultValue: undefined,
@@ -142,7 +142,7 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
 })
 const emits = defineEmits<CalendarRootEmits>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of dates */

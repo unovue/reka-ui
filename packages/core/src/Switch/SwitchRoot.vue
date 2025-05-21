@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import type { Ref } from 'vue'
 import { createContext, useFormControl, useForwardExpose } from '@/shared'
 
 export interface SwitchRootProps extends PrimitiveProps, FormFieldProps {
@@ -32,10 +32,10 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
+import { Primitive } from '@/Primitive'
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<SwitchRootProps>(), {
   as: 'button',
@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<SwitchRootProps>(), {
 const emit = defineEmits<SwitchRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current value */
     modelValue: typeof modelValue.value
   }) => any

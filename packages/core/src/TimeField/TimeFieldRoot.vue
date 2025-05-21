@@ -1,11 +1,12 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
+import type { DateValue } from '@internationalized/date'
 
+import type { Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
+import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { isBefore } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -19,7 +20,6 @@ import {
   syncTimeSegmentValues,
 
 } from '@/shared/date'
-import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
@@ -88,10 +88,10 @@ function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { VisuallyHidden } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { VisuallyHidden } from '@/VisuallyHidden'
 
 defineOptions({
   inheritAttrs: false,
@@ -106,7 +106,7 @@ const props = withDefaults(defineProps<TimeFieldRootProps>(), {
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** The current time of the field */
     modelValue: TimeValue | undefined
     /** The time field segment contents */

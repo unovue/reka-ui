@@ -76,14 +76,14 @@ export const [injectTreeRootContext, provideTreeRootContext] = createContext<Tre
 </script>
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
-import type { PrimitiveProps } from '@/Primitive'
 import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
+import { createEventHook, useVModel } from '@vueuse/core'
+import { computed, nextTick, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
-import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs } from 'vue'
 
 const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
   as: 'ul',
@@ -93,7 +93,7 @@ const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
 const emits = defineEmits<TreeRootEmits<U, M>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     flattenItems: FlattenedItem<T>[]
     modelValue: M extends true ? U[] : U
     expanded: typeof expanded.value
