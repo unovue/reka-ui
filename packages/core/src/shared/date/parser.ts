@@ -1,9 +1,9 @@
-import type { Formatter } from '@/shared'
-import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
 import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
+import type { Formatter } from '@/shared'
+import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
 import { isZonedDateTime, toDate } from '@/date'
-import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, TIME_SEGMENT_PARTS } from '@/shared/date'
+import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle, TIME_SEGMENT_PARTS } from '@/shared/date'
 
 const calendarDateTimeGranularities = ['hour', 'minute', 'second']
 
@@ -108,11 +108,11 @@ function createContentObj(props: CreateContentObjProps) {
          */
         if (part === 'day' && segmentValues.month !== null) {
           return formatter.part(props.dateRef.set({ [part as keyof DateFields]: value, month: segmentValues.month }), part, {
-            hourCycle: props.hourCycle === 24 ? 'h23' : undefined,
+            hourCycle: normalizeHourCycle(props.hourCycle),
           })
         }
         return formatter.part(props.dateRef.set({ [part]: value }), part, {
-          hourCycle: props.hourCycle === 24 ? 'h23' : undefined,
+          hourCycle: normalizeHourCycle(props.hourCycle),
         })
       }
       else {
