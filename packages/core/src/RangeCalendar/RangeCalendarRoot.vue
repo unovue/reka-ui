@@ -1,17 +1,17 @@
 <script lang="ts">
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { DateValue } from '@internationalized/date'
 
+import type { Ref } from 'vue'
+import type { Grid, Matcher, WeekDayFormat } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
+import { isEqualDay } from '@internationalized/date'
 import { useCalendar } from '@/Calendar/useCalendar'
 import { isBefore } from '@/date'
 import { createContext, isNullish, useDirection, useKbd, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { isEqualDay } from '@internationalized/date'
 import { useRangeCalendarState } from './useRangeCalendar'
 
 type RangeCalendarRootContext = {
@@ -40,6 +40,7 @@ type RangeCalendarRootContext = {
   isDateUnavailable?: Matcher
   isDateHighlightable?: Matcher
   isOutsideVisibleView: (date: DateValue) => boolean
+  allowNonContiguousRanges: Ref<boolean>
   highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
   focusedValue: Ref<DateValue | undefined>
   lastPressedDateValue: Ref<DateValue | undefined>
@@ -54,6 +55,7 @@ type RangeCalendarRootContext = {
   isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
   formatter: Formatter
   dir: Ref<Direction>
+  disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
 }
 
@@ -106,6 +108,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: DateValue) => DateValue
+  /** Whether or not to disable days outside the current view. */
+  disableDaysOutsideCurrentView?: boolean
   /** Which part of the range should be fixed */
   fixedDate?: 'start' | 'end'
 }
@@ -124,9 +128,9 @@ export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { useEventListener, useVModel } from '@vueuse/core'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),
@@ -145,6 +149,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   isDateUnavailable: undefined,
   isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
+  disableDaysOutsideCurrentView: false,
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
 
@@ -188,6 +193,7 @@ const {
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
   allowNonContiguousRanges,
+  disableDaysOutsideCurrentView,
   fixedDate,
 } = toRefs(props)
 
@@ -359,6 +365,7 @@ provideRangeCalendarRootContext({
   headingValue,
   isInvalid,
   isDateDisabled,
+  allowNonContiguousRanges,
   highlightedRange,
   focusedValue,
   lastPressedDateValue,
@@ -376,6 +383,7 @@ provideRangeCalendarRootContext({
   dir,
   isHighlightedStart,
   isHighlightedEnd,
+  disableDaysOutsideCurrentView,
   fixedDate,
 })
 

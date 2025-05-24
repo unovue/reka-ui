@@ -48,6 +48,4 @@ export {
   type CalendarRootEmits,
   type CalendarRootProps,
   injectCalendarRootContext,
-  type MultipleCalendarRootProps,
-  type SingleCalendarRootProps,
 } from './CalendarRoot.vue'

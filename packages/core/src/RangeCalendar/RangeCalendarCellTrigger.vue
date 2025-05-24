@@ -1,9 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
-import { getSelectableCells } from '@/Calendar/utils'
-import { getDaysInMonth, isBetweenInclusive, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import {
 
   getLocalTimeZone,
@@ -12,6 +9,9 @@ import {
   isToday,
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
+import { getSelectableCells } from '@/Calendar/utils'
+import { getDaysInMonth, isBetweenInclusive, toDate } from '@/date'
+import { useKbd } from '@/shared'
 
 export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
   day: DateValue
@@ -69,7 +69,6 @@ const labelText = computed(() => rootContext.formatter.custom(toDate(props.day),
   year: 'numeric',
 }))
 
-const isDisabled = computed(() => rootContext.isDateDisabled(props.day))
 const isUnavailable = computed(() => rootContext.isDateUnavailable?.(props.day) ?? false)
 const isSelectedDate = computed(() => rootContext.isSelected(props.day))
 const isSelectionStart = computed(() => rootContext.isSelectionStart(props.day))
@@ -79,6 +78,7 @@ const isHighlightEnd = computed(() => rootContext.isHighlightedEnd(props.day))
 const isHighlighted = computed(() => rootContext.highlightedRange.value
   ? isBetweenInclusive(props.day, rootContext.highlightedRange.value.start, rootContext.highlightedRange.value.end)
   : false)
+const allowNonContiguousRanges = computed(() => rootContext.allowNonContiguousRanges.value)
 
 const isDateToday = computed(() => {
   return isToday(props.day, getLocalTimeZone())
@@ -89,6 +89,8 @@ const isOutsideView = computed(() => {
 const isOutsideVisibleView = computed(() =>
   rootContext.isOutsideVisibleView(props.day),
 )
+
+const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || (rootContext.disableDaysOutsideCurrentView.value && isOutsideView.value))
 
 const dayValue = computed(() => props.day.day.toLocaleString(rootContext.locale.value))
 
@@ -156,16 +158,20 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
 }
 
 function handleClick(e: MouseEvent) {
+  if (isDisabled.value)
+    return
   changeDate(e, props.day)
 }
 
 function handleFocus() {
-  if (rootContext.isDateDisabled(props.day) || rootContext.isDateUnavailable?.(props.day))
+  if (isDisabled.value || rootContext.isDateUnavailable?.(props.day))
     return
   rootContext.focusedValue.value = props.day.copy()
 }
 
 function handleArrowKey(e: KeyboardEvent) {
+  if (isDisabled.value)
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
@@ -279,14 +285,14 @@ function handleArrowKey(e: KeyboardEvent) {
     role="button"
     :aria-label="labelText"
     data-reka-calendar-cell-trigger
-    :aria-selected="isSelectedDate && !isUnavailable ? true : undefined"
+    :aria-selected="isSelectedDate && (allowNonContiguousRanges || !isUnavailable) ? true : undefined"
     :aria-disabled="isDisabled || isUnavailable ? true : undefined"
-    :data-highlighted="isHighlighted && !isUnavailable ? '' : undefined"
+    :data-highlighted="isHighlighted && (allowNonContiguousRanges || !isUnavailable) ? '' : undefined"
     :data-selection-start="isSelectionStart ? true : undefined"
     :data-selection-end="isSelectionEnd ? true : undefined"
     :data-highlighted-start="isHighlightStart ? true : undefined"
     :data-highlighted-end="isHighlightEnd ? true : undefined"
-    :data-selected="isSelectedDate && !isUnavailable ? true : undefined"
+    :data-selected="isSelectedDate && (allowNonContiguousRanges || !isUnavailable) ? true : undefined"
     :data-outside-visible-view="isOutsideVisibleView ? '' : undefined"
     :data-value="day.toString()"
     :data-disabled="isDisabled ? '' : undefined"
@@ -308,7 +314,7 @@ function handleArrowKey(e: KeyboardEvent) {
       :outside-view="isOutsideView"
       :outside-visible-view="isOutsideVisibleView"
       :unavailable="isUnavailable"
-      :highlighted="isHighlighted && !isUnavailable"
+      :highlighted="isHighlighted && (allowNonContiguousRanges || !isUnavailable)"
       :highlighted-start="isHighlightStart"
       :highlighted-end="isHighlightEnd"
       :selection-start="isSelectionStart"

@@ -1,8 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
-import { getDaysInMonth, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import {
 
   getLocalTimeZone,
@@ -11,6 +9,8 @@ import {
   isToday,
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
+import { getDaysInMonth, toDate } from '@/date'
+import { useKbd } from '@/shared'
 import { getSelectableCells } from './utils'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {
@@ -66,7 +66,6 @@ const labelText = computed(() => {
   })
 })
 
-const isDisabled = computed(() => rootContext.isDateDisabled(props.day))
 const isUnavailable = computed(() =>
   rootContext.isDateUnavailable?.(props.day) ?? false,
 )
@@ -76,9 +75,12 @@ const isDateToday = computed(() => {
 const isOutsideView = computed(() => {
   return !isSameMonth(props.day, props.month)
 })
+
 const isOutsideVisibleView = computed(() =>
   rootContext.isOutsideVisibleView(props.day),
 )
+
+const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || (rootContext.disableDaysOutsideCurrentView.value && isOutsideView.value))
 
 const isFocusedDate = computed(() => {
   return !rootContext.disabled.value && isSameDay(props.day, rootContext.placeholder.value)
@@ -95,10 +97,14 @@ function changeDate(date: DateValue) {
 }
 
 function handleClick() {
+  if (isDisabled.value)
+    return
   changeDate(props.day)
 }
 
 function handleArrowKey(e: KeyboardEvent) {
+  if (isDisabled.value)
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
