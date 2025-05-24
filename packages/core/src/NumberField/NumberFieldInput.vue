@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { getActiveElement } from '@/shared'
 import { onMounted, ref, watch } from 'vue'
+import { getActiveElement } from '@/shared'
 import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 
 export interface NumberFieldInputProps extends PrimitiveProps {
@@ -35,9 +35,9 @@ function handleWheelEvent(event: WheelEvent) {
 
   event.preventDefault()
   if (event.deltaY > 0)
-    rootContext.handleIncrease()
-  else if (event.deltaY < 0)
     rootContext.handleDecrease()
+  else if (event.deltaY < 0)
+    rootContext.handleIncrease()
 }
 
 onMounted(() => {
