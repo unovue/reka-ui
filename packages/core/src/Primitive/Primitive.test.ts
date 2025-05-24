@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, markRaw } from 'vue'
+import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import { Primitive } from '.'
 
 describe('test Primitive functionalities', () => {
@@ -113,6 +113,47 @@ describe('test Primitive functionalities', () => {
       expect(element.attributes('class')).toBe(
         'parent-class child-class more-child-class',
       )
+    })
+
+    it('should merge child\'s class after update', async () => {
+      const Container = defineComponent({
+        components: { Primitive },
+        template: `
+          <Primitive as="template" class="parent-class">
+            <slot />
+          </Primitive>
+        `,
+      })
+      const TestComponent = defineComponent({
+        components: { Container },
+        setup() {
+          const isActive = ref(true)
+          const toggleActive = () => isActive.value = !isActive.value
+          return { isActive, toggleActive }
+        },
+        template: `
+          <section :data-active="isActive" @click="toggleActive">
+            <Container>
+              <div class="child-class more-child-class">
+                <slot>Slot Fallback</slot>
+              </div>
+            </Container>
+          </section>
+        `,
+      })
+
+      const wrapper = mount(TestComponent)
+      const element = wrapper.find('div')
+
+      expect(element.attributes('class')).toBe('parent-class child-class more-child-class')
+
+      await element.trigger('click')
+      await nextTick()
+      expect(element.attributes('class')).toBe('parent-class child-class more-child-class')
+
+      await element.trigger('click')
+      await nextTick()
+      expect(element.attributes('class')).toBe('parent-class child-class more-child-class')
     })
 
     it('should render the Component that passed in as', () => {
