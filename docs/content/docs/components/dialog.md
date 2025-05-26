@@ -313,6 +313,38 @@ When providing an icon (or font icon), remember to label it correctly for screen
 </template>
 ```
 
+### Close using slot props
+
+Alternatively, you can use the `close` method provided by the `DialogRoot` slot props to programmatically close the dialog.
+
+```vue line=4,8,16-20
+<script setup>
+import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <DialogRoot v-slot="{ close }">
+    <DialogTrigger>Open</DialogTrigger>
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogContent>
+        <form>
+          <!-- some inputs -->
+          <button type="submit" @click="close">
+            Submit
+          </button>
+        </form>
+      </DialogContent>
+      <DialogFooter>
+        <button type="submit" @click="close">
+          Submit
+        </button>
+      </DialogFooter>
+    </DialogPortal>
+  </DialogRoot>
+</template>
+```
+
 ### Keyboard Interactions
 
 <KeyboardTable

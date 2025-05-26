@@ -55,6 +55,8 @@ defineSlots<{
   default?: (props: {
     /** Current open state */
     open: typeof open.value
+    /** Close the dialog */
+    close: () => void
   }) => any
 }>()
 
@@ -88,5 +90,8 @@ provideDialogRootContext({
 </script>
 
 <template>
-  <slot :open="open" />
+  <slot
+    :open="open"
+    :close="() => open = false"
+  />
 </template>
