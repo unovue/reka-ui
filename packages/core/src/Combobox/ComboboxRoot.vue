@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
-import type { Ref } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFilter } from '@/shared'
 
@@ -67,10 +67,10 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHookOn } from '@vueuse/core'
-import { ListboxRoot } from '@/Listbox'
-import { PopperRoot } from '@/Popper'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { ListboxRoot } from '@/Listbox'
+import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,
@@ -80,7 +80,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
     /** Current active value */

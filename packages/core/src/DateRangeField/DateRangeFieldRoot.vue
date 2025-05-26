@@ -1,12 +1,12 @@
 <script lang="ts">
-import type { Matcher } from '@/date'
+import type { DateValue } from '@internationalized/date'
 
+import type { Ref } from 'vue'
+import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
-import type { DateRange, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
+import type { DateRange, DateStep, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
 import {
   areAllDaysBetweenValid,
   hasTime,
@@ -23,6 +23,7 @@ import {
 
   initializeSegmentValues,
   isSegmentNavigationKey,
+  normalizeDateStep,
 
   syncSegmentValues,
 } from '@/shared/date'
@@ -40,6 +41,7 @@ type DateRangeFieldRootContext = {
   readonly: Ref<boolean>
   formatter: Formatter
   hourCycle: HourCycle
+  step: Ref<DateStep>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
   segmentContents: Ref<{ start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }>
   elements: Ref<Set<HTMLElement>>
@@ -58,6 +60,8 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   modelValue?: DateRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
+  /** The stepping interval for the time fields. Defaults to `1`. */
+  step?: DateStep
   /** The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: Granularity
   /** Whether or not to hide the time zone segment of the field */
@@ -92,10 +96,10 @@ export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { VisuallyHidden } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { VisuallyHidden } from '@/VisuallyHidden'
 
 defineOptions({
   inheritAttrs: false,
@@ -138,6 +142,8 @@ const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
   passive: (props.placeholder === undefined) as false,
 }) as Ref<DateValue>
+
+const step = computed(() => normalizeDateStep(props))
 
 const inferredGranularity = computed(() => {
   if (props.granularity)
@@ -342,6 +348,7 @@ provideDateRangeFieldRootContext({
   disabled,
   formatter,
   hourCycle: props.hourCycle,
+  step,
   readonly,
   segmentValues: { start: startSegmentValues, end: endSegmentValues },
   isInvalid,

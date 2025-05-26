@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { CalendarPrevSlot } from '@/Calendar/CalendarPrev.vue'
 import type { CalendarPrevProps } from '..'
+import type { CalendarPrevSlot } from '@/Calendar/CalendarPrev.vue'
 import { CalendarPrev } from '..'
 
 export interface DatePickerPrevProps extends CalendarPrevProps {}

@@ -40,13 +40,13 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { CollapsibleRoot } from '@/Collapsible'
 import { computed } from 'vue'
+import { CollapsibleRoot } from '@/Collapsible'
 
 const props = defineProps<AccordionItemProps>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any

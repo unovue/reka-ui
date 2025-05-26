@@ -13,6 +13,16 @@ export type DayOfWeek = {
   daysOfWeek: (typeof daysOfWeek)[number][]
 }
 
+export type DateStep = {
+  year?: number
+  month?: number
+  day?: number
+  hour?: number
+  minute?: number
+  second?: number
+  millisecond?: number
+}
+
 export type DateRange = {
   start: DateValue | undefined
   end: DateValue | undefined

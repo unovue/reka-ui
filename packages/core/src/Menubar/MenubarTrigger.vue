@@ -10,12 +10,12 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
-import { computed, onMounted, ref } from 'vue'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
 

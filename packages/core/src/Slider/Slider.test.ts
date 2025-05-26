@@ -1,9 +1,9 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type SliderImpl from './SliderImpl.vue'
-import { handleSubmit } from '@/test'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { handleSubmit } from '@/test'
 import Slider from './story/_Slider.vue'
 
 describe('given default Slider', () => {

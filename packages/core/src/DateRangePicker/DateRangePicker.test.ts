@@ -1,12 +1,12 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { DateRangePickerRootProps } from './DateRangePickerRoot.vue'
-import { useTestKbd } from '@/shared'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import DateRangePicker from './story/_DateRangePicker.vue'
 
 const calendarDate = {

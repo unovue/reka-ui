@@ -1,12 +1,12 @@
 import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
 
 import type { DateFieldRootProps } from './DateFieldRoot.vue'
-import { useTestKbd } from '@/shared'
 import { CalendarDate, CalendarDateTime, now, parseAbsoluteToLocal, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import DateField from './story/_DateField.vue'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
@@ -218,6 +218,24 @@ describe('dateField', async () => {
     await user.click(second)
     await user.keyboard(kbd.ARROW_DOWN)
     expect(second).toHaveTextContent(cycle('second'))
+  })
+
+  it('allow the maximum day to be 31 when no month field', async () => {
+    const { user, day } = setup({
+      dateFieldProps: {
+        /**
+         * Explicitly set the placeholder to avoid using current local time as placeholder.
+         * And use a month (here is April, 30 days) with less than 31 days to ensure the day can be 31
+         * when user input day segment first.
+         */
+        placeholder: new CalendarDate(2025, 4, 30),
+      },
+    })
+
+    await user.click(day)
+    await user.keyboard(kbd.ARROW_UP)
+    await user.keyboard(kbd.ARROW_UP)
+    expect(day).toHaveTextContent('31')
   })
 
   it('navigates segments using the arrow keys', async () => {

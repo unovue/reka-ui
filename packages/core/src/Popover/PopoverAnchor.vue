@@ -6,8 +6,8 @@ export interface PopoverAnchorProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
-import { PopperAnchor } from '@/Popper'
 import { onBeforeMount, onUnmounted } from 'vue'
+import { PopperAnchor } from '@/Popper'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = defineProps<PopoverAnchorProps>()

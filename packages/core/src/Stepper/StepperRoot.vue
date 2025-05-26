@@ -54,7 +54,7 @@ const props = withDefaults(defineProps<StepperRootProps>(), {
 const emits = defineEmits<StepperRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current step */
     modelValue: number | undefined
     /** Total number of steps */

@@ -17,7 +17,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state.</p>\n',
-    'type': 'string[]',
+    'type': '(string[] | number[])[]',
     'required': false
   },
   {
@@ -47,7 +47,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled checked state of the pin input. Can be binded as <code>v-model</code>.</p>\n',
-    'type': 'string[] | null',
+    'type': 'string[] | number[] | null',
     'required': false
   },
   {
@@ -80,7 +80,7 @@
     'description': '<p>Input type for the inputs.</p>\n',
     'type': '\'number\' | \'text\'',
     'required': false,
-    'default': '\'text\''
+    'default': '\'text\' as any'
   }
 ]" />
 
@@ -88,12 +88,12 @@
   {
     'name': 'complete',
     'description': '',
-    'type': '[value: string[]]'
+    'type': '[value: string[] | number[]]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: string[]]'
+    'type': '[value: string[] | number[]]'
   }
 ]" />
 
@@ -101,6 +101,6 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string[]'
+    'type': 'string[] | number[]'
   }
 ]" />

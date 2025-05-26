@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
-import { Slot, usePrimitiveElement } from '@/Primitive'
 import { computed, defineComponent, h, inject, markRaw, provide, ref, watch, watchEffect } from 'vue'
+import { Slot, usePrimitiveElement } from '@/Primitive'
 
 interface CollectionContext<ItemData = {}> {
   collectionRef: Ref<HTMLElement | undefined>

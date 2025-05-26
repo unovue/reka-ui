@@ -8,10 +8,10 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
+import { computed, onMounted } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId, useTypeahead } from '@/shared'
-import { computed, onMounted } from 'vue'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'

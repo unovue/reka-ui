@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
-import type { Ref } from 'vue'
 
 import { createContext, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
@@ -26,11 +26,11 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { ListboxContent } from '@/Listbox'
 import { PopperContent } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxContentImplProps>(), {

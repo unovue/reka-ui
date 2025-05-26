@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
-import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import type { Ref } from 'vue'
 import type { CheckedState } from './utils'
-import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
+import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps extends PrimitiveProps, FormFieldProps {
@@ -38,11 +38,11 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 </script>
 
 <script setup lang="ts">
+import { isEqual } from 'ohash'
+import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { isEqual } from 'ohash'
-import { computed } from 'vue'
 import { getState, isIndeterminate } from './utils'
 
 defineOptions({
@@ -57,7 +57,7 @@ const props = withDefaults(defineProps<CheckboxRootProps>(), {
 const emits = defineEmits<CheckboxRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current value */
     modelValue: typeof modelValue.value
     /** Current state */

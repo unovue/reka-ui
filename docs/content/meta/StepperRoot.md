@@ -102,5 +102,43 @@
     'name': 'prevStep',
     'description': '<p>Go to the previous step</p>\n',
     'type': '(): void'
+  },
+  {
+    'name': 'hasNext',
+    'description': '<p>Whether or not there is a next step</p>\n',
+    'type': '(): boolean'
+  },
+  {
+    'name': 'hasPrev',
+    'description': '<p>Whether or not there is a previous step</p>\n',
+    'type': '(): boolean'
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'goToStep',
+    'description': '',
+    'type': '(step: number) => void'
+  },
+  {
+    'name': 'nextStep',
+    'description': '',
+    'type': '() => void'
+  },
+  {
+    'name': 'prevStep',
+    'description': '',
+    'type': '() => void'
+  },
+  {
+    'name': 'hasNext',
+    'description': '',
+    'type': '() => boolean'
+  },
+  {
+    'name': 'hasPrev',
+    'description': '',
+    'type': '() => boolean'
   }
 ]" />

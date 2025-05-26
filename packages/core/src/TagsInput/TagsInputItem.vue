@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
-import { createContext, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
+import { createContext, useForwardExpose } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
