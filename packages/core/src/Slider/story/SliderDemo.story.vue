@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForwardExpose } from '@/shared'
 import { ref } from 'vue'
+import { useForwardExpose } from '@/shared'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from '..'
 
 const sliderValue = ref([50])

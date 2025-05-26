@@ -1,10 +1,10 @@
 <script lang="ts">
+import type { HTMLAttributes, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import type { HTMLAttributes, Ref } from 'vue'
-import { clamp, createContext, snapValueToStep, useFormControl, useLocale } from '@/shared'
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs } from 'vue'
+import { clamp, createContext, snapValueToStep, useFormControl, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   defaultValue?: number

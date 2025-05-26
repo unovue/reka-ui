@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { MenuSubEmits, MenuSubProps } from '@/Menu'
 import type { Ref } from 'vue'
+import type { MenuSubEmits, MenuSubProps } from '@/Menu'
 
 export type DropdownMenuSubEmits = MenuSubEmits
 export interface DropdownMenuSubProps extends MenuSubProps {
@@ -10,9 +10,9 @@ export interface DropdownMenuSubProps extends MenuSubProps {
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
 import { MenuSub } from '@/Menu'
 import { useForwardExpose } from '@/shared'
-import { useVModel } from '@vueuse/core'
 
 const props = withDefaults(defineProps<DropdownMenuSubProps>(), {
   open: undefined,
@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<DropdownMenuSubProps>(), {
 const emit = defineEmits<DropdownMenuSubEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any

@@ -12,24 +12,24 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import type { AcceptableValue } from '@/shared/types'
 import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { Ref, VNode } from 'vue'
-import { useCollection } from '@/Collection'
-import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
-import { findValuesBetween, getActiveElement } from '@/shared'
-import { getNextMatch } from '@/shared/useTypeahead'
+import type { AcceptableValue } from '@/shared/types'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
 import { cloneVNode, computed, Fragment, useSlots } from 'vue'
+import { useCollection } from '@/Collection'
+import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
+import { findValuesBetween, getActiveElement } from '@/shared'
+import { getNextMatch } from '@/shared/useTypeahead'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { compare, queryCheckedElement } from './utils'
 
 const props = defineProps<ListboxVirtualizerProps<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     option: T
     virtualizer: Virtualizer<HTMLElement, Element>
     virtualItem: VirtualItem

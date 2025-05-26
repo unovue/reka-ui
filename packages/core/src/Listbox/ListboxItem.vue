@@ -25,11 +25,11 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import type { AcceptableValue } from '@/shared/types'
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
-import { useCollection } from '@/Collection'
+import type { AcceptableValue } from '@/shared/types'
 import { computed } from 'vue'
+import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { valueComparator } from './utils'

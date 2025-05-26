@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { SwipeEvent } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
+import { isClient } from '@vueuse/shared'
 import { useCollection } from '@/Collection'
 import { createContext, getActiveElement, useForwardExpose } from '@/shared'
-import { isClient } from '@vueuse/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -46,9 +46,9 @@ export const [injectToastRootContext, provideToastRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { onKeyStroke, useRafFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import { Primitive } from '@/Primitive'
 import ToastAnnounce from './ToastAnnounce.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection, TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'

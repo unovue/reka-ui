@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
-import { handleAndDispatchCustomEvent } from '@/shared'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, watchEffect } from 'vue'
+import { handleAndDispatchCustomEvent } from '@/shared'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent

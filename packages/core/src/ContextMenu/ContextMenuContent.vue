@@ -19,8 +19,8 @@ export interface ContextMenuContentProps
 </script>
 
 <script setup lang="ts">
-import { MenuContent } from '@/Menu'
 import { ref } from 'vue'
+import { MenuContent } from '@/Menu'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 
 const props = withDefaults(defineProps<ContextMenuContentProps>(), {

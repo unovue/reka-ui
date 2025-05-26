@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '..'
-import { usePrimitiveElement } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
+import { usePrimitiveElement } from '@/Primitive'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 
@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<ListboxFilterProps>(), {
 const emits = defineEmits<ListboxFilterEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

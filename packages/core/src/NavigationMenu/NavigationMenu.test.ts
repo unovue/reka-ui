@@ -1,5 +1,4 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { sleep } from '@/test'
 import userEvent from '@testing-library/user-event'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
@@ -7,6 +6,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import { sleep } from '@/test'
 import NavigationMenuItem from './NavigationMenuItem.vue'
 
 import NavigationMenu from './story/_NavigationMenu.vue'

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ListboxGroupProps } from '@/Listbox'
-import { createContext, useId } from '@/shared'
 import { computed, onMounted, onUnmounted } from 'vue'
+import { createContext, useId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 export interface ComboboxGroupProps extends ListboxGroupProps {}

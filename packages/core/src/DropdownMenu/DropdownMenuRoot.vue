@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { MenuEmits, MenuProps } from '@/Menu'
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
+import type { MenuEmits, MenuProps } from '@/Menu'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
@@ -26,9 +26,9 @@ export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { MenuRoot } from '@/Menu'
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
+import { MenuRoot } from '@/Menu'
 
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
 const emit = defineEmits<DropdownMenuRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any

@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { createContext, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
 
@@ -30,8 +30,8 @@ export const [injectNavigationMenuItemContext, provideNavigationMenuItemContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { ref } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
   focusFirst,

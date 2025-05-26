@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type {
   Middleware,
   Placement,
@@ -10,6 +9,7 @@ import type {
   Align,
   Side,
 } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { createContext, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
@@ -163,9 +163,6 @@ export const [injectPopperContentContext, providePopperContentContext]
 
 <script setup lang="ts">
 import {
-  Primitive,
-} from '@/Primitive'
-import {
   autoUpdate,
   flip,
   arrow as floatingUIarrow,
@@ -178,6 +175,9 @@ import {
 } from '@floating-ui/vue'
 import { computedEager } from '@vueuse/core'
 import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import {
+  Primitive,
+} from '@/Primitive'
 import { injectPopperRootContext } from './PopperRoot.vue'
 import {
   getSideAndAlignFromPlacement,

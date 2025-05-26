@@ -1,12 +1,12 @@
 import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
-import { useTestKbd } from '@/shared'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import RangeCalendar from './story/_RangeCalendar.vue'
 
 it('should pass axe accessibility tests', async () => {

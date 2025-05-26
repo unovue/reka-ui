@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
+import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: Ref<StringOrNumber | undefined>
@@ -55,8 +55,8 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { Primitive } from '@/Primitive'
 import { ref, toRefs } from 'vue'
+import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
   orientation: 'horizontal',
@@ -66,7 +66,7 @@ const props = withDefaults(defineProps<TabsRootProps<T>>(), {
 const emits = defineEmits<TabsRootEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

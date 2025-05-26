@@ -2,9 +2,9 @@
 import type {
   DropdownMenuItemEmits,
 } from '..'
-import { useEmitAsProps } from '@/shared'
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
+import { useEmitAsProps } from '@/shared'
 import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,

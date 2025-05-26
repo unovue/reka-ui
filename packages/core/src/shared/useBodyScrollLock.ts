@@ -1,5 +1,4 @@
 import type { Fn } from '@vueuse/shared'
-import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import {
   createSharedComposable,
   useEventListener,
@@ -7,6 +6,7 @@ import {
 import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
 import { computed, nextTick, ref, watch } from 'vue'
+import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
