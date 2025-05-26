@@ -129,6 +129,23 @@ describe('numberField', () => {
       await fireEvent.wheel(input, {
         deltaY: 100, // Positive value for scrolling down
       })
+      expect(input.value).toBe('11')
+      await fireEvent.wheel(input, {
+        deltaY: -100, // Negative value for scrolling up
+      })
+      expect(input.value).toBe('10')
+    })
+
+    it('should invert update value when `invertWheelChange` is `true`', async () => {
+      const { input } = setup({
+        defaultValue: 10,
+        invertWheelChange: true,
+      })
+      input.focus()
+      expect(input.value).toBe('10')
+      await fireEvent.wheel(input, {
+        deltaY: 100, // Positive value for scrolling down
+      })
       expect(input.value).toBe('9')
       await fireEvent.wheel(input, {
         deltaY: -100, // Negative value for scrolling up
