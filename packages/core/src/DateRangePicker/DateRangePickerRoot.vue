@@ -1,12 +1,12 @@
 <script lang="ts">
-import type { Matcher, WeekDayFormat } from '@/date'
-
-import type { DateRange, Granularity, HourCycle } from '@/shared/date'
-import type { Direction } from '@/shared/types'
 import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
 
+import type { Ref } from 'vue'
 import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverRootEmits, PopoverRootProps, RangeCalendarRootProps } from '..'
+import type { Matcher, WeekDayFormat } from '@/date'
+import type { DateRange, Granularity, HourCycle } from '@/shared/date'
+
+import type { Direction } from '@/shared/types'
 import { createContext, useDirection } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'

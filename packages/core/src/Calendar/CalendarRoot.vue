@@ -44,14 +44,15 @@ type CalendarRootContext = {
   isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
   formatter: Formatter
   dir: Ref<Direction>
+  disableDaysOutsideCurrentView: Ref<boolean>
 }
 
-interface BaseCalendarRootProps extends PrimitiveProps {
+export interface CalendarRootProps extends PrimitiveProps {
   /** The default value for the calendar */
   defaultValue?: DateValue
   /** The default placeholder date */
   defaultPlaceholder?: DateValue
-  /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
+  /** The placeholder date, which is used to determine what month to display when no date is selected */
   placeholder?: DateValue
   /** This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month */
   pagedNavigation?: boolean
@@ -73,9 +74,9 @@ interface BaseCalendarRootProps extends PrimitiveProps {
   locale?: string
   /** The number of months to display at once */
   numberOfMonths?: number
-  /** Whether or not the calendar is disabled */
+  /** Whether the calendar is disabled */
   disabled?: boolean
-  /** Whether or not the calendar is readonly */
+  /** Whether the calendar is readonly */
   readonly?: boolean
   /** If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted */
   initialFocus?: boolean
@@ -89,23 +90,13 @@ interface BaseCalendarRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: DateValue) => DateValue
+  /** The controlled checked state of the calendar */
+  modelValue?: DateValue | DateValue[] | undefined
+  /** Whether multiple dates can be selected */
+  multiple?: boolean
+  /** Whether or not to disable days outside the current view. */
+  disableDaysOutsideCurrentView?: boolean
 }
-
-export interface MultipleCalendarRootProps extends BaseCalendarRootProps {
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
-  modelValue?: DateValue[] | undefined
-  /** Whether or not multiple dates can be selected */
-  multiple: true
-}
-
-export interface SingleCalendarRootProps extends BaseCalendarRootProps {
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
-  modelValue?: DateValue | undefined
-  /** Whether or not multiple dates can be selected */
-  multiple?: false
-}
-
-export type CalendarRootProps = MultipleCalendarRootProps | SingleCalendarRootProps
 
 export type CalendarRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -139,6 +130,7 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   placeholder: undefined,
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  disableDaysOutsideCurrentView: false,
 })
 const emits = defineEmits<CalendarRootEmits>()
 defineSlots<{
@@ -156,7 +148,7 @@ defineSlots<{
     /** Whether or not to always display 6 weeks in the calendar */
     fixedWeeks: boolean
     /** The current date of the calendar */
-    modelValue: DateValue | undefined
+    modelValue: DateValue | DateValue[] | undefined
   }) => any
 }>()
 
@@ -181,6 +173,7 @@ const {
   prevPage: propsPrevPage,
   dir: propDir,
   locale: propLocale,
+  disableDaysOutsideCurrentView,
 } = toRefs(props)
 
 const { primitiveElement, currentElement: parentElement }
@@ -329,6 +322,7 @@ provideCalendarRootContext({
   parentElement,
   onPlaceholderChange,
   onDateChange,
+  disableDaysOutsideCurrentView,
 })
 </script>
 

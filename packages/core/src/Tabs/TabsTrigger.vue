@@ -12,9 +12,9 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
-import { computed } from 'vue'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { makeContentId, makeTriggerId } from './utils'
 

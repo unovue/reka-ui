@@ -1,15 +1,15 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { nextTick, ref, watch } from 'vue'
+import { useForwardExpose } from '@/shared'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
 export interface TabsIndicatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { useResizeObserver } from '@vueuse/core'
+import { Primitive } from '@/Primitive'
 
 const props = defineProps<TabsIndicatorProps>()
 const context = injectTabsRootContext()

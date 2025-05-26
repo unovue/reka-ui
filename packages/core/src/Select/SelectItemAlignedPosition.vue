@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
+import { useResizeObserver } from '@vueuse/core'
 import { useCollection } from '@/Collection'
 import { clamp, createContext, useForwardExpose } from '@/shared'
-import { useResizeObserver } from '@vueuse/core'
 
 interface SelectItemAlignedPositionContext {
   contentWrapper?: Ref<HTMLElement | undefined>
@@ -18,8 +18,8 @@ export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPo
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { nextTick, onMounted, ref } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { CONTENT_MARGIN } from './utils'

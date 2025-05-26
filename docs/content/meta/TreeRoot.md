@@ -15,6 +15,12 @@
     'required': false
   },
   {
+    'name': 'bubbleSelect',
+    'description': '<p>When <code>true</code>, selecting children will update the parent state.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'defaultExpanded',
     'description': '<p>The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree</p>\n',
     'type': 'string[]',
@@ -99,7 +105,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
-    'type': '[val: Record<string, any>]'
+    'type': '[val: Record<string, any> | Record<string, any>[]]'
   }
 ]" />
 

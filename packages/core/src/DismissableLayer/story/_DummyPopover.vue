@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { FocusScope } from '@/FocusScope'
 import { PopperAnchor, PopperArrow, PopperContent, PopperRoot } from '@/Popper'
-import { ref } from 'vue'
 import { DismissableLayer } from '..'
 
 withDefaults(

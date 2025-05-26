@@ -6,8 +6,8 @@ export interface AlertDialogCancelProps extends DialogCloseProps {}
 </script>
 
 <script setup lang="ts">
-import { DialogClose } from '@/Dialog'
 import { onMounted } from 'vue'
+import { DialogClose } from '@/Dialog'
 import { injectAlertDialogContentContext } from './AlertDialogContent.vue'
 
 const props = withDefaults(defineProps<AlertDialogCancelProps>(), { as: 'button' })

@@ -1,9 +1,9 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { handleSubmit, sleep } from '@/test'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import { handleSubmit, sleep } from '@/test'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 

@@ -1,10 +1,10 @@
-import type { Formatter } from '@/shared'
 import type { CalendarDateTime, CycleTimeOptions, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { AnyExceptLiteral, HourCycle, SegmentPart, SegmentValueObj } from './types'
+import type { Formatter } from '@/shared'
+import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
 import { useKbd } from '@/shared'
-import { computed } from 'vue'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 type MinuteSecondIncrementProps = {
@@ -322,8 +322,21 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     const cycleArgs: [keyof DateFields, number] = [part as keyof DateFields, sign]
-    if (part === 'day' && props.segmentValues.value.month !== null)
-      return dateRef.set({ [part as keyof DateValue]: prevValue, month: props.segmentValues.value.month }).cycle(...cycleArgs)[part as keyof Omit<DateFields, 'era'>]
+    if (part === 'day') {
+      return dateRef.set({
+        [part as keyof DateValue]: prevValue,
+        /**
+         * Edge case for the day field:
+         *
+         * 1. If the month is filled,
+         *   we need to ensure that the day snaps to the maximum value of that month.
+         * 2. If the month is not filled,
+         *   we default to the month with the maximum number of days (here just using January, 31 days),
+         *   so that user can input any possible day.
+         */
+        month: props.segmentValues.value.month ?? 1,
+      }).cycle(...cycleArgs)[part as keyof Omit<DateFields, 'era'>]
+    }
 
     return dateRef.set({ [part as keyof DateValue]: prevValue }).cycle(...cycleArgs)[part as keyof Omit<DateFields, 'era'>]
   }
@@ -618,7 +631,9 @@ export function useDateField(props: UseDateFieldProps) {
 
       const daysInMonth = segmentMonthValue
         ? getDaysInMonth(props.placeholder.value.set({ month: segmentMonthValue }))
-        : getDaysInMonth(props.placeholder.value)
+        // if the month is not set, we default to the maximum number of days in a month
+        // so that user can input any possible day
+        : 31
 
       const { value, moveToNext } = updateDayOrMonth(daysInMonth, num, prevValue)
 

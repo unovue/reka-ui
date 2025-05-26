@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForwardExpose } from '@/shared'
 import { computed, onMounted } from 'vue'
+import { useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarImpl from './ScrollAreaScrollbarImpl.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'

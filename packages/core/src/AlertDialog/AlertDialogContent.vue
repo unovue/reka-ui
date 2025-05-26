@@ -17,8 +17,8 @@ export interface AlertDialogContentProps extends DialogContentProps {}
 </script>
 
 <script setup lang="ts">
-import { DialogContent } from '@/Dialog'
 import { nextTick, ref } from 'vue'
+import { DialogContent } from '@/Dialog'
 
 const props = defineProps<AlertDialogContentProps>()
 const emits = defineEmits<AlertDialogContentEmits>()

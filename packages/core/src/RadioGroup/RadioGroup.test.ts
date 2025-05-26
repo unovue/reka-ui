@@ -1,9 +1,9 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { handleSubmit, sleep } from '@/test'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { handleSubmit, sleep } from '@/test'
 import Radio from './story/_Radio.vue'
 import RadioGroup from './story/_RadioGroup.vue'
 

@@ -1,13 +1,13 @@
-import type { TimeValue } from '@/shared/date'
-
 import type { DateFields, TimeFields } from '@internationalized/date'
+
 import type { TimeFieldRootProps } from './TimeFieldRoot.vue'
-import { useTestKbd } from '@/shared'
+import type { TimeValue } from '@/shared/date'
 import { CalendarDateTime, now, parseAbsoluteToLocal, Time, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import TimeField from './story/_TimeField.vue'
 
 const time = new Time(9, 15, 29)

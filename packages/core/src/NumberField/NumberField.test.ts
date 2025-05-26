@@ -1,11 +1,11 @@
 import type { NumberFieldRootProps } from './NumberFieldRoot.vue'
-import { useKbd } from '@/shared'
-import { handleSubmit } from '@/test'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useKbd } from '@/shared'
+import { handleSubmit } from '@/test'
 import NumberField from './story/_NumberField.vue'
 
 function setup(props?: NumberFieldRootProps) {

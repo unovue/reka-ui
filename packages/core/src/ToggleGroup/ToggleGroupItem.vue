@@ -12,10 +12,10 @@ export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'requir
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { Toggle } from '@/Toggle'
-import { computed } from 'vue'
 import { injectToggleGroupRootContext } from './ToggleGroupRoot.vue'
 
 const props = withDefaults(defineProps<ToggleGroupItemProps>(), {
