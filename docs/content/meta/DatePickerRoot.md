@@ -175,7 +175,7 @@
   },
   {
     'name': 'step',
-    'description': '<p>The stepping interval for the time field. Defaults to <code>1</code>.</p>\n',
+    'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
     'type': 'DateStep',
     'required': false
   },

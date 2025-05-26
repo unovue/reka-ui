@@ -49,7 +49,7 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   modelValue?: TimeValue | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
-  /** The stepping interval for the time field. Defaults to `1`. */
+  /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
   /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
