@@ -179,6 +179,44 @@ describe('timeField', async () => {
     expect(second).toHaveTextContent(cycle('second'))
   })
 
+  it('increase/decrease segments with step', async () => {
+    const step = 2
+    const { user, hour, getByTestId } = setup({
+      timeFieldProps: {
+        modelValue: zonedDateTime,
+        granularity: 'second',
+        step: { minute: step, second: step },
+      },
+    })
+
+    function cycle(segment: keyof TimeFields, sign: number) {
+      return String(zonedDateTime.cycle(segment, sign)[segment])
+    }
+
+    const minute = getByTestId('minute')
+    const second = getByTestId('second')
+
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_DOWN)
+    expect(hour).toHaveTextContent(cycle('hour', -1))
+    await user.keyboard(kbd.ARROW_UP)
+    expect(hour).toHaveTextContent(cycle('hour', 0))
+
+    await user.click(minute)
+    await user.keyboard(kbd.ARROW_DOWN)
+    expect(minute).toHaveTextContent(cycle('minute', -step))
+    await user.keyboard(kbd.ARROW_UP)
+    await user.keyboard(kbd.ARROW_UP)
+    expect(minute).toHaveTextContent(cycle('minute', step))
+
+    await user.click(second)
+    await user.keyboard(kbd.ARROW_DOWN)
+    expect(second).toHaveTextContent(cycle('second', -step))
+    await user.keyboard(kbd.ARROW_UP)
+    await user.keyboard(kbd.ARROW_UP)
+    expect(second).toHaveTextContent(cycle('second', step))
+  })
+
   it('navigates segments using the arrow keys', async () => {
     const { getByTestId, user, hour } = setup({
       timeFieldProps: {

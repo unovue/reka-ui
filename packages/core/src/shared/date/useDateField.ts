@@ -1,6 +1,6 @@
 import type { CalendarDateTime, CycleTimeOptions, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { AnyExceptLiteral, HourCycle, SegmentPart, SegmentValueObj } from './types'
+import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
@@ -12,7 +12,6 @@ type MinuteSecondIncrementProps = {
   part: keyof TimeFields
   dateRef: DateValue
   prevValue: number | null
-  step?: number
 }
 
 type DateTimeValueIncrementation = {
@@ -21,7 +20,6 @@ type DateTimeValueIncrementation = {
   dateRef: DateValue
   prevValue: number | null
   hourCycle?: HourCycle
-  step?: number
 }
 
 type SegmentAttrProps = {
@@ -275,12 +273,7 @@ export type UseDateFieldProps = {
   lastKeyZero: Ref<boolean>
   placeholder: Ref<DateValue>
   hourCycle: HourCycle
-  yearStep?: Ref<number>
-  monthStep?: Ref<number>
-  dayStep?: Ref<number>
-  hourStep?: Ref<number>
-  minuteStep?: Ref<number>
-  secondStep?: Ref<number>
+  step: Ref<DateStep>
   formatter: Formatter
   segmentValues: Ref<SegmentValueObj>
   disabled: Ref<boolean>
@@ -293,7 +286,8 @@ export type UseDateFieldProps = {
 export function useDateField(props: UseDateFieldProps) {
   const kbd = useKbd()
 
-  function minuteSecondIncrementation({ e, part, dateRef, prevValue, step = 1 }: MinuteSecondIncrementProps): number {
+  function minuteSecondIncrementation({ e, part, dateRef, prevValue }: MinuteSecondIncrementProps): number {
+    const step = props.step.value[part] ?? 1
     const sign = e.key === kbd.ARROW_UP ? step : -step
     const min = 0
     const max = 59
@@ -318,7 +312,8 @@ export function useDateField(props: UseDateFieldProps) {
 
     return Number.parseInt(str.slice(0, -1))
   }
-  function dateTimeValueIncrementation({ e, part, dateRef, prevValue, hourCycle, step = 1 }: DateTimeValueIncrementation): number {
+  function dateTimeValueIncrementation({ e, part, dateRef, prevValue, hourCycle }: DateTimeValueIncrementation): number {
+    const step = props.step.value[part] ?? 1
     const sign = e.key === kbd.ARROW_UP ? step : -step
 
     if (prevValue === null)
@@ -629,7 +624,7 @@ export function useDateField(props: UseDateFieldProps) {
     const prevValue = props.segmentValues.value.day
 
     if (e.key === kbd.ARROW_DOWN || e.key === kbd.ARROW_UP) {
-      props.segmentValues.value.day = dateTimeValueIncrementation({ e, part: 'day', dateRef: props.placeholder.value, prevValue, step: props.dayStep?.value })
+      props.segmentValues.value.day = dateTimeValueIncrementation({ e, part: 'day', dateRef: props.placeholder.value, prevValue })
       return
     }
 
@@ -664,7 +659,7 @@ export function useDateField(props: UseDateFieldProps) {
     const prevValue = props.segmentValues.value.month
 
     if (e.key === kbd.ARROW_DOWN || e.key === kbd.ARROW_UP) {
-      props.segmentValues.value.month = dateTimeValueIncrementation({ e, part: 'month', dateRef: props.placeholder.value, prevValue, step: props.monthStep?.value })
+      props.segmentValues.value.month = dateTimeValueIncrementation({ e, part: 'month', dateRef: props.placeholder.value, prevValue })
       return
     }
 
@@ -691,7 +686,7 @@ export function useDateField(props: UseDateFieldProps) {
     const prevValue = props.segmentValues.value.year
 
     if (e.key === kbd.ARROW_DOWN || e.key === kbd.ARROW_UP) {
-      props.segmentValues.value.year = dateTimeValueIncrementation({ e, part: 'year', dateRef: props.placeholder.value, prevValue, step: props.yearStep?.value })
+      props.segmentValues.value.year = dateTimeValueIncrementation({ e, part: 'year', dateRef: props.placeholder.value, prevValue })
       return
     }
 
@@ -721,7 +716,7 @@ export function useDateField(props: UseDateFieldProps) {
     const hourCycle = props.hourCycle
 
     if (e.key === kbd.ARROW_UP || e.key === kbd.ARROW_DOWN) {
-      props.segmentValues.value.hour = dateTimeValueIncrementation({ e, part: 'hour', dateRef: props.placeholder.value, prevValue, hourCycle, step: props.hourStep?.value })
+      props.segmentValues.value.hour = dateTimeValueIncrementation({ e, part: 'hour', dateRef: props.placeholder.value, prevValue, hourCycle })
 
       if ('dayPeriod' in props.segmentValues.value) {
         if (props.segmentValues.value.hour < 12)
@@ -762,7 +757,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     const prevValue = props.segmentValues.value.minute
 
-    props.segmentValues.value.minute = minuteSecondIncrementation({ e, part: 'minute', dateRef: props.placeholder.value, prevValue, step: props.minuteStep?.value })
+    props.segmentValues.value.minute = minuteSecondIncrementation({ e, part: 'minute', dateRef: props.placeholder.value, prevValue })
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
@@ -789,7 +784,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     const prevValue = props.segmentValues.value.second
 
-    props.segmentValues.value.second = minuteSecondIncrementation({ e, part: 'second', dateRef: props.placeholder.value, prevValue, step: props.secondStep?.value })
+    props.segmentValues.value.second = minuteSecondIncrementation({ e, part: 'second', dateRef: props.placeholder.value, prevValue })
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)

@@ -32,6 +32,7 @@ const {
   lastKeyZero,
   placeholder: rootContext.placeholder,
   hourCycle: rootContext.hourCycle,
+  step: rootContext.step,
   segmentValues: rootContext.segmentValues[props.type],
   formatter: rootContext.formatter,
   part: props.part,
