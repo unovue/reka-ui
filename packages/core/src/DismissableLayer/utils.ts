@@ -57,7 +57,6 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      console.log('pointer down')
       const target = event.target as HTMLElement | undefined
 
       if (!element?.value || !target)
