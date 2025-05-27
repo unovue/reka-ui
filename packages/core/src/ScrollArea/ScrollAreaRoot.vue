@@ -120,6 +120,8 @@ defineExpose({
   scrollTop,
   /** Scroll viewport to top-left */
   scrollTopLeft,
+  /** Scroll viewport to top-right */
+  scrollTopRight,
   /** Scroll viewport to bottom */
   scrollBottom,
   /** Scroll viewport to bottom-right */
