@@ -1,10 +1,10 @@
 <script lang="ts">
+import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
-import { computed, ref, toRefs, watch } from 'vue'
 
 export type PinInputType = 'text' | 'number'
 
@@ -56,8 +56,8 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType = 'text'">
-import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
+import { Primitive } from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,
@@ -70,7 +70,7 @@ const props = withDefaults(defineProps<PinInputRootProps<Type>>(), {
 const emits = defineEmits<PinInputRootEmits<Type>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

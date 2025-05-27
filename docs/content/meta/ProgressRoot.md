@@ -16,10 +16,16 @@
   },
   {
     'name': 'getValueLabel',
-    'description': '<p>A function to get the accessible label text representing the current value in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
-    'type': '((value: number | null | undefined, max: number) => string | undefined)',
+    'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
+    'type': '((value: number | null, max: number) => string)',
     'required': false,
-    'default': '`${Math.round((value / max) * DEFAULT_MAX)}%`'
+    'default': 'isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined'
+  },
+  {
+    'name': 'getValueText',
+    'description': '<p>A function to get the accessible value text representing the current value in a human-readable format.</p>\n',
+    'type': '((value: number | null, max: number) => string)',
+    'required': false
   },
   {
     'name': 'max',
@@ -60,7 +66,7 @@
 <MethodsTable :data="[
   {
     'name': 'getValueLabel',
-    'description': '<p>A function to get the accessible label text representing the current value in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
+    'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
     'type': '(value: number | null | undefined, max: number) => string | undefined'
   }
 ]" />

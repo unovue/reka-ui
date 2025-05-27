@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   DialogClose,
   DialogContent,
   DialogRoot,
   DialogTrigger,
 } from '@/Dialog'
-import { Icon } from '@iconify/vue'
 import {
   SelectContent,
   SelectGroup,

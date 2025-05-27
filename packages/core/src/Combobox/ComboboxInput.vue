@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
-import { usePrimitiveElement } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
+import { usePrimitiveElement } from '@/Primitive'
 
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {

@@ -2,7 +2,6 @@ import type {
   SlotsType,
   VNode,
 } from 'vue'
-import { renderSlotFragments } from '@/shared'
 import { unrefElement } from '@vueuse/core'
 import {
   defineComponent,
@@ -11,6 +10,7 @@ import {
   ref,
   toRefs,
 } from 'vue'
+import { renderSlotFragments } from '@/shared'
 import { usePresence } from './usePresence'
 
 export interface PresenceProps {

@@ -194,6 +194,12 @@
     'required': false
   },
   {
+    'name': 'step',
+    'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
+    'type': 'DateStep',
+    'required': false
+  },
+  {
     'name': 'weekdayFormat',
     'description': '<p>The format to use for the weekday strings provided via the weekdays slot prop</p>\n',
     'type': '\'narrow\' | \'short\' | \'long\'',

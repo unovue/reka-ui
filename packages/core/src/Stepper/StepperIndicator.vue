@@ -12,7 +12,7 @@ export interface StepperIndicatorProps extends PrimitiveProps { }
 const props = defineProps<StepperIndicatorProps>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current step */
     step: number
   }) => any

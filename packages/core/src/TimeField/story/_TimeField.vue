@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { TimeValue } from '@/shared/date'
 import type { TimeFieldRootProps } from '..'
+import type { TimeValue } from '@/shared/date'
 import { Label } from '@/Label'
 import { TimeFieldInput, TimeFieldRoot } from '..'
 

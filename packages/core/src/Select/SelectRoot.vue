@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import type { Ref } from 'vue'
+import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
 import { compare } from './utils'
@@ -63,9 +63,9 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { PopperRoot } from '@/Popper'
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs } from 'vue'
+import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
 
 defineOptions({
@@ -79,7 +79,7 @@ const props = withDefaults(defineProps<SelectRootProps<T>>(), {
 const emits = defineEmits<SelectRootEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
     /** Current open state */

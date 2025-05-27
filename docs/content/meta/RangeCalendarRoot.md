@@ -54,6 +54,13 @@
     'default': 'false'
   },
   {
+    'name': 'disableDaysOutsideCurrentView',
+    'description': '<p>Whether or not to disable days outside the current view.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'fixedDate',
     'description': '<p>Which part of the range should be fixed</p>\n',
     'type': '\'start\' | \'end\'',

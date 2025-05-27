@@ -25,6 +25,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   disabled?: boolean
   /** When `true`, prevents the value from changing on wheel scroll. */
   disableWheelChange?: boolean
+  /** When `true`, inverts the direction of the wheel change. */
+  invertWheelChange?: boolean
   /** Id of the element */
   id?: string
 }
@@ -46,6 +48,7 @@ interface NumberFieldRootContext {
   applyInputValue: (val: string) => void
   disabled: Ref<boolean>
   disableWheelChange: Ref<boolean>
+  invertWheelChange: Ref<boolean>
   max: Ref<number | undefined>
   min: Ref<number | undefined>
   isDecreaseDisabled: Ref<boolean>
@@ -72,7 +75,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   stepSnapping: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, disableWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -198,6 +201,7 @@ provideNumberFieldRootContext({
   applyInputValue,
   disabled,
   disableWheelChange,
+  invertWheelChange,
   max,
   min,
   isDecreaseDisabled,

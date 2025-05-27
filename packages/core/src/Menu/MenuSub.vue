@@ -26,12 +26,12 @@ export type MenuSubEmits = {
 </script>
 
 <script setup lang="ts">
-import { PopperRoot } from '@/Popper'
 import { useVModel } from '@vueuse/core'
 import {
   ref,
   watchEffect,
 } from 'vue'
+import { PopperRoot } from '@/Popper'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {

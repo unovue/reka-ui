@@ -17,12 +17,12 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useResizeObserver } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { useResizeObserver } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { getOpenState, whenMouse } from './utils'
 

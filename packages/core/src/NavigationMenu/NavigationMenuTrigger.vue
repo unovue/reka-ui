@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { VNode } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { useForwardExpose } from '@/shared'
 
@@ -11,12 +11,12 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { refAutoReset, unrefElement } from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
-import { refAutoReset, unrefElement } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { getOpenState, makeContentId, makeTriggerId } from './utils'

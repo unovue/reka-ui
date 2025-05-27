@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type { ImageLoadingStatus } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { createContext, useForwardExpose } from '@/shared'
 
 export interface AvatarRootProps extends PrimitiveProps {}
@@ -15,8 +15,8 @@ export const [injectAvatarRootContext, provideAvatarRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { ref } from 'vue'
+import { Primitive } from '@/Primitive'
 
 withDefaults(defineProps<AvatarRootProps>(), {
   as: 'span',

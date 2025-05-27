@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type {
   Direction,
   Orientation,
 } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { createContext, useDirection } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
@@ -57,10 +57,10 @@ export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
 </script>
 
 <script setup lang="ts">
-import { useCollection } from '@/Collection'
-import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
+import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
 import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst } from './utils'
 
 const props = withDefaults(defineProps<RovingFocusGroupProps>(), {

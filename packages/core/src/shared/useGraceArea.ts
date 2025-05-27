@@ -1,5 +1,5 @@
-import type { Side } from '@/Popper/utils'
 import type { Ref } from 'vue'
+import type { Side } from '@/Popper/utils'
 import { createEventHook, refAutoReset } from '@vueuse/shared'
 import { ref, watchEffect } from 'vue'
 

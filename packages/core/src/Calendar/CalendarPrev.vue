@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
+import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarPrevProps extends PrimitiveProps {
   /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `CalendarRoot`. */
@@ -8,7 +8,7 @@ export interface CalendarPrevProps extends PrimitiveProps {
 }
 
 export interface CalendarPrevSlot {
-  default: (props: {
+  default?: (props: {
     /** Current disable state */
     disabled: boolean
   }) => any
@@ -16,8 +16,8 @@ export interface CalendarPrevSlot {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { computed } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarPrevProps>(), { as: 'button', step: 'month' })

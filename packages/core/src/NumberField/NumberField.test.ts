@@ -1,11 +1,11 @@
 import type { NumberFieldRootProps } from './NumberFieldRoot.vue'
-import { useKbd } from '@/shared'
-import { handleSubmit } from '@/test'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useKbd } from '@/shared'
+import { handleSubmit } from '@/test'
 import NumberField from './story/_NumberField.vue'
 
 function setup(props?: NumberFieldRootProps) {
@@ -130,6 +130,27 @@ describe('numberField', () => {
         deltaY: 100, // Positive value for scrolling down
       })
       expect(input.value).toBe('11')
+      await fireEvent.wheel(input, {
+        deltaY: -100, // Negative value for scrolling up
+      })
+      expect(input.value).toBe('10')
+    })
+
+    it('should invert update value when `invertWheelChange` is `true`', async () => {
+      const { input } = setup({
+        defaultValue: 10,
+        invertWheelChange: true,
+      })
+      input.focus()
+      expect(input.value).toBe('10')
+      await fireEvent.wheel(input, {
+        deltaY: 100, // Positive value for scrolling down
+      })
+      expect(input.value).toBe('9')
+      await fireEvent.wheel(input, {
+        deltaY: -100, // Negative value for scrolling up
+      })
+      expect(input.value).toBe('10')
     })
 
     it('should not update value when `disableWheelChange` is `true`', async () => {

@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { Direction, ScrollBodyOption } from '@/shared/types'
 import type { Ref } from 'vue'
+import type { Direction, ScrollBodyOption } from '@/shared/types'
 import { createContext } from '@/shared'
 
 interface ConfigProviderContextValue {
