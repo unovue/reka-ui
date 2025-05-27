@@ -78,6 +78,41 @@ function scrollTopLeft() {
   })
 }
 
+function scrollTopRight() {
+  if (viewport.value) {
+    viewport.value.scrollTo({
+      top: 0,
+      left: viewport.value.scrollWidth,
+    })
+  }
+}
+
+function scrollBottom() {
+  if (viewport.value) {
+    viewport.value.scrollTo({
+      top: viewport.value.scrollHeight,
+    })
+  }
+}
+
+function scrollBottomRight() {
+  if (viewport.value) {
+    viewport.value.scrollTo({
+      top: viewport.value.scrollHeight,
+      left: viewport.value.scrollWidth,
+    })
+  }
+}
+
+function scrollBottomLeft() {
+  if (viewport.value) {
+    viewport.value.scrollTo({
+      top: viewport.value.scrollHeight,
+      left: 0,
+    })
+  }
+}
+
 defineExpose({
   /** Viewport element within ScrollArea */
   viewport,
@@ -85,6 +120,12 @@ defineExpose({
   scrollTop,
   /** Scroll viewport to top-left */
   scrollTopLeft,
+  /** Scroll viewport to bottom */
+  scrollBottom,
+  /** Scroll viewport to bottom-right */
+  scrollBottomRight,
+  /** Scroll viewport to bottom-left */
+  scrollBottomLeft,
 })
 
 const { forwardRef, currentElement: scrollArea } = useForwardExpose()
