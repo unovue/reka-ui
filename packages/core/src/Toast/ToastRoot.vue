@@ -20,8 +20,8 @@ export interface ToastRootProps extends ToastRootImplProps {
 </script>
 
 <script setup lang="ts">
-import { Presence } from '@/Presence'
 import { useVModel } from '@vueuse/core'
+import { Presence } from '@/Presence'
 import ToastRootImpl from './ToastRootImpl.vue'
 
 const props = withDefaults(defineProps<ToastRootProps>(), {
@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<ToastRootProps>(), {
 const emits = defineEmits<ToastRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
     /** Remaining time (in ms) */

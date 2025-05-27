@@ -3,8 +3,8 @@ import type {
   AccordionRootEmits,
   AccordionRootProps,
 } from '..'
-import { useEmitAsProps } from '@/shared'
 import { ref } from 'vue'
+import { useEmitAsProps } from '@/shared'
 import {
   AccordionContent,
   AccordionHeader,

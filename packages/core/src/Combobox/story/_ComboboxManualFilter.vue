@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { ComboboxInputProps, ComboboxRootProps } from '..'
-import { useFilter } from '@/shared'
 import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
+import { useFilter } from '@/shared'
 import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '..'
 
 const props = defineProps<ComboboxRootProps & { input?: ComboboxInputProps }>()

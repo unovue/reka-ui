@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
+import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
@@ -67,9 +67,9 @@ export const [injectSliderRootContext, provideSliderRootContext]
 </script>
 
 <script setup lang="ts">
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRaw, toRefs } from 'vue'
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import SliderHorizontal from './SliderHorizontal.vue'
 import SliderVertical from './SliderVertical.vue'
 import { ARROW_KEYS, getClosestValueIndex, getDecimalCount, getNextSortedValues, hasMinStepsBetweenValues, PAGE_KEYS, roundValue } from './utils'
@@ -93,7 +93,7 @@ const props = withDefaults(defineProps<SliderRootProps>(), {
 const emits = defineEmits<SliderRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current slider values */
     modelValue: typeof modelValue.value
   }) => any

@@ -1,7 +1,7 @@
+import * as vue from 'vue'
 // Inspired from https://github.com/tailwindlabs/headlessui/issues/2913
 // as the alternative, and a fallback for Vue version < 3.5
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
-import * as vue from 'vue'
 
 let count = 0
 /**
@@ -19,7 +19,7 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
   const configProviderContext = injectConfigProviderContext({ useId: undefined })
 
   if (Object.hasOwn(vue, 'useId')) {
-    return `${prefix}-${vue['useId']?.()}`
+    return `${prefix}-${vue.useId?.()}`
   }
   else if (configProviderContext.useId) {
     return `${prefix}-${configProviderContext.useId()}`

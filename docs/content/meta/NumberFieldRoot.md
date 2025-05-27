@@ -45,6 +45,12 @@
     'required': false
   },
   {
+    'name': 'invertWheelChange',
+    'description': '<p>When <code>true</code>, inverts the direction of the wheel change.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',

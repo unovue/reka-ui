@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
-import { useForwardExpose } from '@/shared'
 import { computed, ref, toRefs } from 'vue'
+import { useForwardExpose } from '@/shared'
 import SliderImpl from './SliderImpl.vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'

@@ -15,9 +15,9 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 </script>
 
 <script setup lang="ts">
+import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
-import { computed, ref, watchEffect } from 'vue'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {

@@ -61,15 +61,15 @@ export type PanelData = {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectPanelGroupContext } from './SplitterGroup.vue'
 
 const props = defineProps<SplitterPanelProps>()
 const emits = defineEmits<SplitterPanelEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Is the panel collapsed */
     isCollapsed: typeof isCollapsed.value
     /** Is the panel expanded */

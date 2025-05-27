@@ -2,12 +2,12 @@
   * Adapted from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/builders/range-calendar/create.ts
 */
 
-import type { Matcher } from '@/date'
 import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import { areAllDaysBetweenValid, isBefore, isBetween } from '@/date'
+import type { Matcher } from '@/date'
 import { isSameDay } from '@internationalized/date'
 import { computed } from 'vue'
+import { areAllDaysBetweenValid, isBefore, isBetween } from '@/date'
 
 export type UseRangeCalendarProps = {
   start: Ref<DateValue | undefined>
@@ -18,6 +18,7 @@ export type UseRangeCalendarProps = {
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
+  maximumDays?: Ref<number | undefined>
 }
 
 export function useRangeCalendarState(props: UseRangeCalendarProps) {
@@ -70,6 +71,21 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return false
   }
 
+  // Check if a date exceeds maximum days limit from the start date
+  const rangeIsDateDisabled = (date: DateValue) => {
+    if (props.isDateDisabled(date))
+      return true
+
+    if (!props.maximumDays?.value || !props.start.value || props.end.value || isSameDay(props.start.value, date))
+      return false
+
+    // Check if exceeds maximum days limit
+    if (Math.abs(date.compare(props.start.value)) > props.maximumDays.value)
+      return true
+
+    return false
+  }
+
   const isDateHighlightable = (date: DateValue) => {
     if (props.isDateHighlightable?.(date))
       return true
@@ -93,7 +109,21 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
       }
     }
 
-    const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, props.isDateDisabled, props.isDateHighlightable)
+    // If maximum days is set and the range exceeds it, limit the highlight
+    // We only apply this when we're in the middle of a selection (no end date yet)
+    if (props.maximumDays?.value && !props.end.value && Math.abs(end.compare(start)) > props.maximumDays.value) {
+      // Determine the direction of selection and limit to maximum days
+      const cappedEnd = isStartBeforeFocused
+        ? start.add({ days: props.maximumDays.value })
+        : start.subtract({ days: props.maximumDays.value })
+
+      return {
+        start,
+        end: cappedEnd,
+      }
+    }
+
+    const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, rangeIsDateDisabled, props.isDateHighlightable)
     if (isValid) {
       return {
         start,
@@ -124,5 +154,6 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     isSelectionEnd,
     isHighlightedStart,
     isHighlightedEnd,
+    isDateDisabled: rangeIsDateDisabled,
   }
 }

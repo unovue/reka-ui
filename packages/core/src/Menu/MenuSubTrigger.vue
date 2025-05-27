@@ -7,8 +7,8 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {}
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { useId } from '@/shared'
 import { nextTick, onUnmounted, ref } from 'vue'
+import { useId } from '@/shared'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'

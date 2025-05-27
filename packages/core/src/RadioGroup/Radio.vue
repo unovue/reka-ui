@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { SelectEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import type { SelectEvent } from './utils'
 
 export type RadioEmits = {
   'update:checked': [value: boolean]
@@ -19,11 +19,11 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
+import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useFormControl, useForwardExpose } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
 import { handleSelect } from './utils'
 
 const props = withDefaults(defineProps<RadioProps>(), {
@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<RadioProps>(), {
 const emits = defineEmits<RadioEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current checked state */
     checked: typeof checked.value
   }) => any

@@ -38,8 +38,8 @@ console.log(contains('hello', 'ell')) // true
 
 ```vue
 <script setup>
-import { useFilter } from '@/composables/useFilter'
 import { ref } from 'vue'
+import { useFilter } from '@/composables/useFilter'
 
 const { contains } = useFilter()
 const searchQuery = ref('')

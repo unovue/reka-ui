@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { RangeCalendarPrevSlot } from '@/RangeCalendar/RangeCalendarPrev.vue'
 import type { RangeCalendarPrevProps } from '..'
+import type { RangeCalendarPrevSlot } from '@/RangeCalendar/RangeCalendarPrev.vue'
 import { RangeCalendarPrev } from '..'
 
 export interface DateRangePickerPrevProps extends RangeCalendarPrevProps {}

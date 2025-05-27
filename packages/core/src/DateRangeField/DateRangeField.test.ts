@@ -1,12 +1,12 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
-import { useTestKbd } from '@/shared'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import DateRangeField from './story/_DateRangeField.vue'
 
 const calendarDate = {
