@@ -46,5 +46,25 @@
     'name': 'scrollTopLeft',
     'description': '<p>Scroll viewport to top-left</p>\n',
     'type': '() => void'
+  },
+  {
+    'name': 'scrollTopRight',
+    'description': '<p>Scroll viewport to top-right</p>\n',
+    'type': '() => void'
+  },
+  {
+    'name': 'scrollBottom',
+    'description': '<p>Scroll viewport to bottom</p>\n',
+    'type': '() => void'
+  },
+  {
+    'name': 'scrollBottomLeft',
+    'description': '<p>Scroll viewport to bottom-left</p>\n',
+    'type': '() => void'
+  },
+  {
+    'name': 'scrollBottomRight',
+    'description': '<p>Scroll viewport to bottom-right</p>\n',
+    'type': '() => void'
   }
 ]" />
