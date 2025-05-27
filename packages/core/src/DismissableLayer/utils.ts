@@ -133,7 +133,11 @@ export function usePointerDownOutside(
   })
 
   return {
-    onPointerDownCapture: () => (isPointerInsideDOMTree.value = true),
+    onPointerDownCapture: () => {
+      if (!toValue(enabled))
+        return
+      isPointerInsideDOMTree.value = true
+    },
   }
 }
 
