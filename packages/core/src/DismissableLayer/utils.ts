@@ -1,6 +1,6 @@
-import type { Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
-import { nextTick, ref, watchEffect } from 'vue'
+import { nextTick, ref, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
 
 export type PointerDownOutsideEvent = CustomEvent<{
@@ -45,6 +45,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
 export function usePointerDownOutside(
   onPointerDownOutside?: (event: PointerDownOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
@@ -53,9 +54,10 @@ export function usePointerDownOutside(
   const handleClickRef = ref(() => {})
 
   watchEffect((cleanupFn) => {
-    if (!isClient)
+    if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
+      console.log('pointer down')
       const target = event.target as HTMLElement | undefined
 
       if (!element?.value || !target)

@@ -180,7 +180,7 @@ function handleDismiss() {
   }
 }
 
-const pointerDownOutside = usePointerDownOutside(() => handleDismiss(), currentElement)
+const pointerDownOutside = usePointerDownOutside(() => handleDismiss(), currentElement, isEditing)
 const focusOutside = useFocusOutside(() => handleDismiss(), currentElement)
 const isEmpty = computed(() => modelValue.value === '')
 
