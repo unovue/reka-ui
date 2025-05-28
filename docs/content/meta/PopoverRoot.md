@@ -36,5 +36,10 @@
     'name': 'open',
     'description': '<p>Current open state</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'close',
+    'description': '<p>Close the popover</p>\n',
+    'type': '(): void'
   }
 ]" />
