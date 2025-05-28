@@ -108,7 +108,6 @@ onMounted(() => {
     :data-disabled="disabled ? '' : undefined"
     :style="{
       WebkitTouchCallout: 'none',
-      pointerEvents: 'auto',
     }"
     v-bind="$attrs"
     @contextmenu="handleContextMenu"
