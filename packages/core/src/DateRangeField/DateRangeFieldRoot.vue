@@ -24,6 +24,7 @@ import {
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
+  normalizeHourCycle,
 
   syncSegmentValues,
 } from '@/shared/date'
@@ -117,7 +118,9 @@ const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: prop
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value)
+const formatter = useDateFormatter(locale.value, {
+  hourCycle: normalizeHourCycle(props.hourCycle),
+})
 const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())

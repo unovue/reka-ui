@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { Formatter } from '@/shared'
 import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
 import { isZonedDateTime, toDate } from '@/date'
-import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, TIME_SEGMENT_PARTS } from '@/shared/date'
+import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, TIME_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle } from '@/shared/date'
 
 const calendarDateTimeGranularities = ['hour', 'minute', 'second']
 
@@ -116,10 +116,10 @@ function createContentObj(props: CreateContentObjProps) {
              *   so that user can input any possible day.
              */
             month: segmentValues.month ?? 1,
-          }), part, { hourCycle: props.hourCycle === 24 ? 'h23' : undefined })
+          }), part, { hourCycle: normalizeHourCycle(props.hourCycle) })
         }
         return formatter.part(props.dateRef.set({ [part]: value }), part, {
-          hourCycle: props.hourCycle === 24 ? 'h23' : undefined,
+          hourCycle: normalizeHourCycle(props.hourCycle),
         })
       }
       else {

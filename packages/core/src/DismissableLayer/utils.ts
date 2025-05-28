@@ -45,6 +45,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
 export function usePointerDownOutside(
   onPointerDownOutside?: (event: PointerDownOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
@@ -53,7 +54,7 @@ export function usePointerDownOutside(
   const handleClickRef = ref(() => {})
 
   watchEffect((cleanupFn) => {
-    if (!isClient)
+    if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
       const target = event.target as HTMLElement | undefined
@@ -132,7 +133,11 @@ export function usePointerDownOutside(
   })
 
   return {
-    onPointerDownCapture: () => (isPointerInsideDOMTree.value = true),
+    onPointerDownCapture: () => {
+      if (!toValue(enabled))
+        return
+      isPointerInsideDOMTree.value = true
+    },
   }
 }
 

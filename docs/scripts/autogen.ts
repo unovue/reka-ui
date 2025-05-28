@@ -1,5 +1,5 @@
 import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import _traverse from '@babel/traverse'
@@ -181,8 +181,8 @@ function getEventFromComponentPath(dir: string) {
   const files = readdirSync(resolve(__dirname, '../../packages/core/src', dir), { withFileTypes: true }).filter(file => file.name.includes('.vue'))
 
   files.forEach((file) => {
-    const { name, path } = file
-    const source = readFileSync(join(path, name), { encoding: 'utf8' })
+    const { name, parentPath } = file
+    const source = readFileSync(join(parentPath, name), { encoding: 'utf8' })
     const { descriptor } = sfcParse(source, {
       filename: name,
     })

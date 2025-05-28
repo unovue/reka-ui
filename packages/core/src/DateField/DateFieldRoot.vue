@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
-
 import type { Ref } from 'vue'
 import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
@@ -16,6 +15,7 @@ import {
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
+  normalizeHourCycle,
   syncSegmentValues,
 } from '@/shared/date'
 
@@ -116,7 +116,9 @@ const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, granulari
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value)
+const formatter = useDateFormatter(locale.value, {
+  hourCycle: normalizeHourCycle(props.hourCycle),
+})
 const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())

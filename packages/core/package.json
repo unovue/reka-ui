@@ -1,7 +1,7 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",

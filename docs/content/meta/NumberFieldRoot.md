@@ -114,7 +114,7 @@
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'number'
+    'type': 'number | undefined'
   },
   {
     'name': 'textValue',

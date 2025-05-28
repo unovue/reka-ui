@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
+import { Time, getLocalTimeZone, isEqualDay, toCalendarDateTime, today } from '@internationalized/date'
 import { isBefore } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -16,6 +16,7 @@ import {
   initializeTimeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
+  normalizeHourCycle,
 
   syncTimeSegmentValues,
 
@@ -123,7 +124,9 @@ const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: 
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value)
+const formatter = useDateFormatter(locale.value, {
+  hourCycle: normalizeHourCycle(props.hourCycle),
+})
 const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())

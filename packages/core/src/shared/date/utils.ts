@@ -11,8 +11,8 @@ export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCy
     minute: '2-digit',
     second: '2-digit',
     timeZoneName: 'short',
-    hourCycle: hourCycle === 24 ? 'h23' : undefined,
-    hour12: hourCycle === 24 ? false : undefined,
+    hourCycle: normalizeHourCycle(hourCycle),
+    hour12: normalizeHour12(hourCycle),
   }
   if (isTimeValue) {
     delete opts.year
@@ -65,4 +65,20 @@ export function handleCalendarInitialFocus(calendar: HTMLElement) {
   const firstDay = calendar.querySelector<HTMLElement>('[data-reka-calendar-day]')
   if (firstDay)
     return firstDay.focus()
+}
+
+export function normalizeHourCycle(hourCycle: HourCycle) {
+  if (hourCycle === 24)
+    return 'h23'
+  if (hourCycle === 12)
+    return 'h11'
+  return undefined
+}
+
+export function normalizeHour12(hourCycle: HourCycle) {
+  if (hourCycle === 24)
+    return false
+  if (hourCycle === 12)
+    return true
+  return undefined
 }
