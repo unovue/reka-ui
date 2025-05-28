@@ -109,6 +109,40 @@ The corner where both vertical and horizontal scrollbars meet.
 
 <!-- @include: @/meta/ScrollAreaCorner.md -->
 
+## Examples
+### Custom Scroll 
+Use the exposed `viewport` to modify / or set the scroll position outside default methods 
+```vue line=4,18
+<script setup lang="ts">
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui'
+
+const scrollArea = useTemplateRef('scrollArea')
+const scrollToBottom = () => {
+  const viewport = scrollArea.value?.viewport
+  if (viewport) {
+    const top = scrollArea.value?.$el.scrollHeight
+    container.scrollTo({
+      top,
+      behavior: 'smooth'
+    })
+  }
+}
+</script>
+
+<template>
+  <ScrollAreaRoot ref="scrollArea">
+    <ScrollAreaViewport />
+    <ScrollAreaScrollbar orientation="horizontal">
+      <ScrollAreaThumb />
+    </ScrollAreaScrollbar>
+    <ScrollAreaScrollbar orientation="vertical">
+      <ScrollAreaThumb />
+    </ScrollAreaScrollbar>
+    <ScrollAreaCorner />
+  </ScrollAreaRoot>
+</template>
+```
+
 ## Accessibility
 
 In most cases, it's best to rely on native scrolling and work with the customization options available in CSS. When that isn't enough, `ScrollArea` provides additional customizability while maintaining the browser's native scroll behavior (as well as accessibility features, like keyboard scrolling).
