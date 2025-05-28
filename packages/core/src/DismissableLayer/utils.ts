@@ -1,6 +1,6 @@
-import type { Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
-import { nextTick, ref, watchEffect } from 'vue'
+import { nextTick, ref, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
 
 export type PointerDownOutsideEvent = CustomEvent<{
@@ -143,13 +143,14 @@ export function usePointerDownOutside(
 export function useFocusOutside(
   onFocusOutside?: (event: FocusOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
 
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
-    if (!isClient)
+    if (!isClient || !toValue(enabled))
       return
     const handleFocus = async (event: FocusEvent) => {
       if (!element?.value)
@@ -177,8 +178,18 @@ export function useFocusOutside(
   })
 
   return {
-    onFocusCapture: () => (isFocusInsideDOMTree.value = true),
-    onBlurCapture: () => (isFocusInsideDOMTree.value = false),
+    onFocusCapture: () => {
+      if (!toValue(enabled))
+        return
+
+      isFocusInsideDOMTree.value = true
+    },
+    onBlurCapture: () => {
+      if (!toValue(enabled))
+        return
+
+      isFocusInsideDOMTree.value = false
+    },
   }
 }
 
