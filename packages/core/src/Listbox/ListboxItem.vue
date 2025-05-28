@@ -82,7 +82,7 @@ provideListboxItemContext({
       :aria-selected="isSelected"
       :as="as"
       :as-child="asChild"
-      :disabled="disabled ? '' : undefined"
+      :aria-disabled="disabled || undefined"
       :data-disabled="disabled ? '' : undefined"
       :data-highlighted="isHighlighted ? '' : undefined"
       :data-state="isSelected ? 'checked' : 'unchecked'"
