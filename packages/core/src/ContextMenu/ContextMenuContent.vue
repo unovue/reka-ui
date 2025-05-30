@@ -42,7 +42,7 @@ const hasInteractedOutside = ref(false)
 
 function handlePointerDownOutside(event: PointerDownOutsideEvent) {
   // Only handle `contextmenu` click events
-  if (event.detail.originalEvent.button !== 2) {
+  if (!rootContext.open.value || event.detail.originalEvent.button !== 2) {
     return
   }
 
@@ -57,6 +57,10 @@ function handlePointerDownOutside(event: PointerDownOutsideEvent) {
 }
 
 function handleContextMenuOutside(event: ContextMenuOutsideEvent) {
+  if (!rootContext.open.value) {
+    return
+  }
+
   const rect = rootContext.triggerElement.value?.getBoundingClientRect()
 
   if (isPointerInRect(event.detail.originalEvent, rect)) {
