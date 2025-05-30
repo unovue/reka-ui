@@ -1,8 +1,10 @@
 <script lang="ts">
+import type { ContextMenuOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer/utils'
 import type {
   MenuContentEmits,
   MenuContentProps,
 } from '@/Menu'
+import { isPointerInRect } from '@/Menu/utils'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 
 export type ContextMenuContentEmits = MenuContentEmits
@@ -37,6 +39,36 @@ const forwarded = useForwardPropsEmits(props, emits)
 useForwardExpose()
 const rootContext = injectContextMenuRootContext()
 const hasInteractedOutside = ref(false)
+
+function handlePointerDownOutside(event: PointerDownOutsideEvent) {
+  // Only handle `contextmenu` click events
+  if (event.detail.originalEvent.button !== 2) {
+    return
+  }
+
+  const rect = rootContext.triggerElement.value?.getBoundingClientRect()
+
+  // If the `contextmenu` click occurs within the trigger element's bounding rect,
+  // we prevent the default behavior to avoid closing the menu,
+  // because that would cause the flash of closing and opening the menu.
+  if (isPointerInRect(event.detail.originalEvent, rect)) {
+    event.preventDefault()
+  }
+}
+
+function handleContextMenuOutside(event: ContextMenuOutsideEvent) {
+  const rect = rootContext.triggerElement.value?.getBoundingClientRect()
+
+  if (isPointerInRect(event.detail.originalEvent, rect)) {
+    // Prevent the default context menu from appearing
+    event.detail.originalEvent.preventDefault()
+    // Move the menu to the current pointer position
+    rootContext.triggerPoint.value = {
+      x: event.detail.originalEvent.clientX,
+      y: event.detail.originalEvent.clientY,
+    }
+  }
+}
 </script>
 
 <template>
@@ -76,6 +108,8 @@ const hasInteractedOutside = ref(false)
           hasInteractedOutside = true;
       }
     "
+    @pointer-down-outside="handlePointerDownOutside"
+    @context-menu-outside="handleContextMenuOutside"
   >
     <slot />
   </MenuContent>

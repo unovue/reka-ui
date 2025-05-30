@@ -55,7 +55,6 @@ export function useContextMenuOutside(
     = element?.value?.ownerDocument ?? globalThis?.document
 
   const isPointerInsideDOMTree = ref(false)
-  const handleClickRef = ref(() => {})
 
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))

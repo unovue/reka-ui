@@ -109,7 +109,16 @@ const isPointerEventsEnabled = computed(() => {
 })
 
 const contextMenuOutside = useContextMenuOutside(
-  event => emits('contextMenuOutside', event),
+  (event) => {
+    const isPointerDownOnBranch = [...context.branches].some(branch =>
+      branch?.contains(event.target as HTMLElement),
+    )
+
+    if (!isPointerEventsEnabled.value || isPointerDownOnBranch)
+      return
+
+    emits('contextMenuOutside', event)
+  },
   layerElement,
 )
 
