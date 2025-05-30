@@ -352,7 +352,7 @@ export { default as Slider } from 'Slider.vue'
  <!-- Slider.vue -->
 <script setup lang="ts">
 import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
-import { SlideRoot, SliderRange, SliderThumb, SliderTrack, useForwardPropsEmits } from 'reka-ui'
+import { SliderRoot, SliderRange, SliderThumb, SliderTrack, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<SliderRootProps>()
 const emits = defineEmits<SliderRootEmits>()
