@@ -1,12 +1,12 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { Grid, Matcher, WeekDayFormat } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay } from '@internationalized/date'
+import { isEqualDay, startOfWeek, startOfYear } from '@internationalized/date'
 import { useCalendar } from '@/Calendar/useCalendar'
 import { isBefore } from '@/date'
 import {
@@ -67,6 +67,7 @@ type RangeCalendarRootContext = {
   disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays: Ref<number | undefined>
+  startingWeekNumberPerMonth: ComputedRef<number[][]>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -124,6 +125,7 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   disableDaysOutsideCurrentView?: boolean
   /** Which part of the range should be fixed */
   fixedDate?: 'start' | 'end'
+
 }
 
 export type RangeCalendarRootEmits = {
@@ -372,6 +374,23 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   }
 })
 
+const startingWeekNumberPerMonth = computed((): number[][] => {
+  return Array.from({ length: grid.value.length }).fill(null).map((_, index) => {
+    const firstDayOfMonth = startOfWeek(grid.value[index].rows[0][0], locale.value)
+
+    return Array.from({ length: grid.value[0].rows.length })
+      .fill(null)
+      .map((_, idx) => {
+        const firstDayOfWeek = firstDayOfMonth.add({ weeks: idx })
+
+        const thursday = firstDayOfWeek.add({ days: 3 })
+        const firstDayOfYear = startOfYear(thursday)
+
+        return ((thursday.compare(firstDayOfYear) / 7) | 0) + 1
+      })
+  })
+})
+
 const kbd = useKbd()
 useEventListener('keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
@@ -425,6 +444,7 @@ provideRangeCalendarRootContext({
   disableDaysOutsideCurrentView,
   fixedDate,
   maximumDays,
+  startingWeekNumberPerMonth,
 })
 
 onMounted(() => {
