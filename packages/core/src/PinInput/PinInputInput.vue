@@ -145,7 +145,21 @@ function removeTrailingEmptyStrings(input: PinInputValue<typeof context.type.val
 
 function updateModelValueAt(index: number, value: string) {
   const tempModelValue = [...context.currentModelValue.value] as PinInputValue<typeof context.type.value>
-  tempModelValue[index] = isNumericMode.value ? +value : value
+
+  if (isNumericMode.value) {
+    const num = +value
+
+    if (value === '' || isNaN(num)) {
+      delete tempModelValue[index]
+    }
+    else {
+      tempModelValue[index] = num
+    }
+  }
+  else {
+    tempModelValue[index] = value
+  }
+
   context.modelValue.value = removeTrailingEmptyStrings(tempModelValue)
 }
 
