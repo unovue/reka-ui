@@ -61,7 +61,8 @@ import {
   CalendarHeading,
   CalendarNext,
   CalendarPrev,
-  CalendarRoot
+  CalendarRoot,
+  CalendarWeek
 } from 'reka-ui'
 </script>
 
@@ -80,6 +81,7 @@ import {
       </CalendarGridHead>
       <CalendarGridBody>
         <CalendarGridRow>
+          <CalendarWeek />
           <CalendarCell>
             <CalendarCellTrigger />
           </CalendarCell>
@@ -267,6 +269,12 @@ Interactable container for displaying the cell dates. Clicking it selects the da
   ]"
 />
 
+### Calendar Weeks
+
+Container for wrapping the week numbers.
+
+<!-- @include: @/meta/CalendarWeek.md -->
+
 ## Examples
 
 ### Calendar with Year Incrementation
@@ -286,6 +294,12 @@ This example showcases some of the available locales and how the calendar system
 This component demonstrates intuitive calendar navigation using touch-based swipe gestures, user-friendly way to browse through months.
 
 <ComponentPreview name="CalendarSwipe" />
+
+### Calendar week number
+
+This example showcases usage of the CalendarWeek component used to display the number of the week.
+
+<ComponentPreview name="CalendarWeeks" />
 
 ## Accessibility
 
