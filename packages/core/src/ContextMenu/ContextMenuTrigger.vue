@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { Point } from '@/Menu/utils'
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface ContextMenuTriggerProps extends PrimitiveProps {
@@ -32,17 +31,16 @@ const { disabled } = toRefs(props)
 
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectContextMenuRootContext()
-const point = ref<Point>({ x: 0, y: 0 })
 const virtualEl = computed(() => ({
   getBoundingClientRect: () =>
     ({
       width: 0,
       height: 0,
-      left: point.value.x,
-      right: point.value.x,
-      top: point.value.y,
-      bottom: point.value.y,
-      ...point.value,
+      left: rootContext.triggerPoint.value.x,
+      right: rootContext.triggerPoint.value.x,
+      top: rootContext.triggerPoint.value.y,
+      bottom: rootContext.triggerPoint.value.y,
+      ...rootContext.triggerPoint.value,
     } as DOMRect),
 }))
 
@@ -52,7 +50,7 @@ function clearLongPress() {
 }
 
 function handleOpen(event: MouseEvent | PointerEvent) {
-  point.value = { x: event.clientX, y: event.clientY }
+  rootContext.triggerPoint.value = { x: event.clientX, y: event.clientY }
   rootContext.onOpenChange(true)
 }
 

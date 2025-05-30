@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { MenuEmits, MenuProps } from '@/Menu'
+import type { Point } from '@/Menu/utils'
 import type { Direction } from '@/shared/types'
+import { ref, toRefs, watch } from 'vue'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 type ContextMenuRootContext = {
@@ -9,6 +11,7 @@ type ContextMenuRootContext = {
   onOpenChange: (open: boolean) => void
   modal: Ref<boolean>
   dir: Ref<Direction>
+  triggerPoint: Ref<Point>
   triggerElement: Ref<HTMLElement | undefined>
 }
 
@@ -20,7 +23,6 @@ export const [injectContextMenuRootContext, provideContextMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs, watch } from 'vue'
 import { MenuRoot } from '@/Menu'
 
 defineOptions({
@@ -37,6 +39,7 @@ const dir = useDirection(propDir)
 
 const open = ref(false)
 const triggerElement = ref<HTMLElement>()
+const triggerPoint = ref<Point>({ x: 0, y: 0 })
 
 provideContextMenuRootContext({
   open,
@@ -45,6 +48,7 @@ provideContextMenuRootContext({
   },
   dir,
   modal,
+  triggerPoint,
   triggerElement,
 })
 

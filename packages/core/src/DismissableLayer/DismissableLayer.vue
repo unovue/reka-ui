@@ -1,5 +1,6 @@
 <script lang="ts">
 import type {
+  ContextMenuOutsideEvent,
   FocusOutsideEvent,
   PointerDownOutsideEvent,
 } from './utils'
@@ -34,6 +35,11 @@ export type DismissableLayerEmits = {
    */
   pointerDownOutside: [event: PointerDownOutsideEvent]
   /**
+   * Event handler called when a `contextmenu` event happens outside of the `DismissableLayer`.
+   * Can be prevented.
+   */
+  contextMenuOutside: [event: ContextMenuOutsideEvent]
+  /**
    * Event handler called when the focus moves outside of the `DismissableLayer`.
    * Can be prevented.
    */
@@ -66,6 +72,7 @@ import {
   Primitive,
 } from '@/Primitive'
 import {
+  useContextMenuOutside,
   useFocusOutside,
   usePointerDownOutside,
 } from './utils'
@@ -100,6 +107,11 @@ const isPointerEventsEnabled = computed(() => {
 
   return index.value >= highestLayerWithOutsidePointerEventsDisabledIndex
 })
+
+const contextMenuOutside = useContextMenuOutside(
+  event => emits('contextMenuOutside', event),
+  layerElement,
+)
 
 const pointerDownOutside = usePointerDownOutside(async (event) => {
   const isPointerDownOnBranch = [...context.branches].some(branch =>
@@ -186,6 +198,7 @@ watchEffect((cleanupFn) => {
     @focus.capture="focusOutside.onFocusCapture"
     @blur.capture="focusOutside.onBlurCapture"
     @pointerdown.capture="pointerDownOutside.onPointerDownCapture"
+    @contextmenu.capture="contextMenuOutside.onContextMenuCapture"
   >
     <slot />
   </Primitive>

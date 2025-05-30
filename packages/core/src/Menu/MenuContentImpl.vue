@@ -281,6 +281,7 @@ provideMenuContentContext({
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
+      @context-menu-outside="emits('contextMenuOutside', $event)"
       @focus-outside="emits('focusOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
       @dismiss="emits('dismiss')"

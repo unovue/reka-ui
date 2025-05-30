@@ -6,11 +6,15 @@ import { handleAndDispatchCustomEvent } from '@/shared'
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
 }>
+export type ContextMenuOutsideEvent = CustomEvent<{
+  originalEvent: MouseEvent
+}>
 export type FocusOutsideEvent = CustomEvent<{ originalEvent: FocusEvent }>
 
 export const DISMISSABLE_LAYER_NAME = 'DismissableLayer'
 export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
+export const CONTEXT_MENU_OUTSIDE = 'dismissableLayer.contextMenuOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
@@ -34,6 +38,78 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   }
   else {
     return false
+  }
+}
+
+/**
+ * Listens for `contextmenu` outside a DOM subtree.
+ * to mimic layer dismissing behaviour present in OS.
+ * Returns props to pass to the node we want to check for outside events.
+ */
+export function useContextMenuOutside(
+  onContextMenuOutside?: (event: ContextMenuOutsideEvent) => void,
+  element?: Ref<HTMLElement | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  const ownerDocument: Document
+    = element?.value?.ownerDocument ?? globalThis?.document
+
+  const isPointerInsideDOMTree = ref(false)
+  const handleClickRef = ref(() => {})
+
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled))
+      return
+
+    const handleContextMenu = async (event: MouseEvent) => {
+      const target = event.target as HTMLElement | undefined
+
+      if (!element?.value || !target)
+        return
+
+      if (isLayerExist(element.value, target)) {
+        isPointerInsideDOMTree.value = false
+        return
+      }
+
+      if (event.target && !isPointerInsideDOMTree.value) {
+        handleAndDispatchCustomEvent(
+          CONTEXT_MENU_OUTSIDE,
+          onContextMenuOutside,
+          { originalEvent: event },
+        )
+      }
+      isPointerInsideDOMTree.value = false
+    }
+    /**
+     * if this hook executes in a component that mounts via a `pointerdown` event, the event
+     * would bubble up to the document and trigger a `pointerDownOutside` event. We avoid
+     * this by delaying the event listener registration on the document.
+     * This is how the DOM works, ie:
+     * ```
+     * button.addEventListener('pointerdown', () => {
+     *   console.log('I will log');
+     *   document.addEventListener('pointerdown', () => {
+     *     console.log('I will also log');
+     *   })
+     * });
+     */
+    const timerId = window.setTimeout(() => {
+      ownerDocument.addEventListener('contextmenu', handleContextMenu)
+    }, 0)
+
+    cleanupFn(() => {
+      window.clearTimeout(timerId)
+      ownerDocument.removeEventListener('contextmenu', handleContextMenu)
+    })
+  })
+
+  return {
+    onContextMenuCapture: () => {
+      if (!toValue(enabled))
+        return
+      isPointerInsideDOMTree.value = true
+    },
   }
 }
 
