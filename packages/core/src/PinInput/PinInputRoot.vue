@@ -49,6 +49,7 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
   onInputElementChange: (el: HTMLInputElement) => void
+  isNumericMode: ComputedRef<boolean>
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
@@ -92,8 +93,9 @@ function onInputElementChange(el: HTMLInputElement) {
   inputElements.value.add(el)
 }
 
+const isNumericMode = computed(() => props.type === 'number')
 const isCompleted = computed(() => {
-  const modelValues = currentModelValue.value.filter(i => !!i)
+  const modelValues = currentModelValue.value.filter(i => !!i || (isNumericMode.value && i === 0))
   return modelValues.length === inputElements.value.size
 })
 
@@ -114,6 +116,7 @@ providePinInputRootContext({
   isCompleted,
   inputElements,
   onInputElementChange,
+  isNumericMode,
 })
 </script>
 

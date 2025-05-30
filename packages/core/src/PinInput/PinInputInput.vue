@@ -38,7 +38,7 @@ function handleInput(event: InputEvent) {
     return
   }
 
-  if (isNumericMode.value && !/^\d*$/.test(target.value)) {
+  if (context.isNumericMode.value && !/^\d*$/.test(target.value)) {
     target.value = target.value.replace(/\D/g, '')
     return
   }
@@ -122,7 +122,7 @@ function handleMultipleCharacter(values: string) {
   for (let i = initialIndex; i < lastIndex; i++) {
     const input = inputElements.value[i]
     const value = values[i - initialIndex]
-    if (isNumericMode.value && !/^\d*$/.test(value))
+    if (context.isNumericMode.value && !/^\d*$/.test(value))
       continue
 
     tempModelValue[i] = value
@@ -146,7 +146,7 @@ function removeTrailingEmptyStrings(input: PinInputValue<typeof context.type.val
 function updateModelValueAt(index: number, value: string) {
   const tempModelValue = [...context.currentModelValue.value] as PinInputValue<typeof context.type.value>
 
-  if (isNumericMode.value) {
+  if (context.isNumericMode.value) {
     const num = +value
 
     if (value === '' || isNaN(num)) {
@@ -185,8 +185,8 @@ onUnmounted(() => {
     :as-child="asChild"
     :autocomplete="isOtpMode ? 'one-time-code' : 'false'"
     :type="isPasswordMode ? 'password' : 'text'"
-    :inputmode="isNumericMode ? 'numeric' : 'text'"
-    :pattern="isNumericMode ? '[0-9]*' : undefined"
+    :inputmode="context.isNumericMode.value ? 'numeric' : 'text'"
+    :pattern="context.isNumericMode.value ? '[0-9]*' : undefined"
     :placeholder="context.placeholder.value"
     :value="currentValue"
     :disabled="disabled"
