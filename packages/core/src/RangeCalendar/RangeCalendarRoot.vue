@@ -375,10 +375,10 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 })
 
 const startingWeekNumberPerMonth = computed((): number[][] => {
-  return Array.from({ length: grid.value.length }).fill(null).map((_, index) => {
-    const firstDayOfMonth = startOfWeek(grid.value[index].rows[0][0], locale.value)
+  return grid.value.map((month) => {
+    const firstDayOfMonth = startOfWeek(month.rows[0][0], locale.value)
 
-    return Array.from({ length: grid.value[0].rows.length })
+    return Array.from({ length: month.rows.length })
       .fill(null)
       .map((_, idx) => {
         const firstDayOfWeek = firstDayOfMonth.add({ weeks: idx })
