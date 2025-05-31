@@ -269,7 +269,7 @@ Interactable container for displaying the cell dates. Clicking it selects the da
   ]"
 />
 
-### Calendar Weeks
+### Calendar Week
 
 Container for wrapping the week numbers.
 
@@ -295,7 +295,7 @@ This component demonstrates intuitive calendar navigation using touch-based swip
 
 <ComponentPreview name="CalendarSwipe" />
 
-### Calendar week number
+### Calendar week numbers
 
 This example showcases usage of the CalendarWeek component used to display the number of the week.
 

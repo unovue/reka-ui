@@ -30,10 +30,6 @@ export {
   default as CalendarHeader,
   type CalendarHeaderProps,
 } from './CalendarHeader.vue'
-export {
-  default as CalendarWeek,
-  type CalendarWeekProps,
-} from './CalendarWeek.vue'
 
 export {
   default as CalendarHeading,
@@ -53,3 +49,7 @@ export {
   type CalendarRootProps,
   injectCalendarRootContext,
 } from './CalendarRoot.vue'
+export {
+  default as CalendarWeek,
+  type CalendarWeekProps,
+} from './CalendarWeek.vue'
