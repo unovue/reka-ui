@@ -8,6 +8,7 @@ import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import Calendar from './story/_Calendar.vue'
 import CalendarMultiple from './story/_CalendarMultiple.vue'
+import CalendarWeek from './story/_CalendarWeek.vue'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
 const edgeCaseCalendarDate = new CalendarDate(2025, 1, 1)
@@ -33,6 +34,14 @@ function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:m
 function setupMulti(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue[]) => void } } = { }) {
   const user = userEvent.setup()
   const returned = render(CalendarMultiple, { props: { ...props, multiple: true } })
+  const calendar = returned.getByTestId('calendar')
+  expect(calendar).toBeVisible()
+  return { ...returned, user, calendar }
+}
+
+function setupWeeks(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue[]) => void } } = {}) {
+  const user = userEvent.setup()
+  const returned = render(CalendarWeek, { props })
   const calendar = returned.getByTestId('calendar')
   expect(calendar).toBeVisible()
   return { ...returned, user, calendar }
@@ -897,5 +906,76 @@ describe('calendar - edge cases', () => {
 
     await user.keyboard(kbd.ARROW_LEFT)
     expect(getByTestId('date-0-1-31')).toHaveFocus()
+  })
+})
+
+describe('calendar - weeks', () => {
+  it('renders the correct number of weeks', async () => {
+    const { user, getByTestId, queryAllByTestId } = setupWeeks({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(queryAllByTestId(/^week-/)).toHaveLength(5);
+    [1, 2, 3, 4, 5].forEach((value, index) => {
+      const week = getByTestId(`week-${index}`)
+      expect(week).toHaveTextContent(String(value))
+    })
+
+    const nextBtn = getByTestId('next-button')
+    await user.click(nextBtn)
+
+    expect(queryAllByTestId(/^week-/)).toHaveLength(5);
+    [5, 6, 7, 8, 9].forEach((value, index) => {
+      const week = getByTestId(`week-${index}`)
+      expect(week).toHaveTextContent(String(value))
+    })
+  })
+
+  it('updates the weeks when navigating to the next month', async () => {
+    const { user, getByTestId, queryAllByTestId } = setupWeeks({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(queryAllByTestId(/^week-/)).toHaveLength(5);
+    [1, 2, 3, 4, 5].forEach((value, index) => {
+      const week = getByTestId(`week-${index}`)
+      expect(week).toHaveTextContent(String(value))
+    })
+
+    const nextBtn = getByTestId('next-button')
+    await user.click(nextBtn)
+
+    expect(queryAllByTestId(/^week-/)).toHaveLength(5);
+    [5, 6, 7, 8, 9].forEach((value, index) => {
+      const week = getByTestId(`week-${index}`)
+      expect(week).toHaveTextContent(String(value))
+    })
+  })
+
+  it('updates the weeks when navigating to the previous month', async () => {
+    const { user, getByTestId, queryAllByTestId } = setupWeeks({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(queryAllByTestId(/^week-/)).toHaveLength(5);
+    [1, 2, 3, 4, 5].forEach((value, index) => {
+      const week = getByTestId(`week-${index}`)
+      expect(week).toHaveTextContent(String(value))
+    })
+
+    const prevBtn = getByTestId('prev-button')
+    await user.click(prevBtn)
+
+    expect(queryAllByTestId(/^week-/)).toHaveLength(6);
+    [48, 49, 50, 51, 52, 1].forEach((value, index) => {
+      const week = getByTestId(`week-${index}`)
+      expect(week).toHaveTextContent(String(value))
+    })
   })
 })
