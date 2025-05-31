@@ -256,7 +256,7 @@ watch(modelValue, (_modelValue) => {
 const startingWeekNumber = computed(() => {
   const firstDayOfGrid = startOfWeek(grid.value[0].rows[0][0], locale.value)
 
-  return Array(grid.value[0].rows.length)
+  return Array.from({ length: grid.value[0].rows.length })
     .fill(null)
     .map((_, idx) => {
       const firstDayOfWeek = firstDayOfGrid.add({ weeks: idx })

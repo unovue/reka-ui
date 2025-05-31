@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { computed } from 'vue'
+import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 export interface CalendarWeekProps extends PrimitiveProps {
   rowIndex: number
