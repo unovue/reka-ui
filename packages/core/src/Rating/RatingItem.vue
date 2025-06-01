@@ -80,7 +80,7 @@ watchEffect((onCleanup) => {
       :as="as"
       :aria-checked="rating <= rootContext.modelValue.value"
       :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value || rootContext.hoveredRating.value === 0 && rating <= rootContext.modelValue.value ? 'active' : undefined"
-      :aria-disabled="rootContext.disabled"
+      :aria-disabled="rootContext.disabled.value"
       role="radio"
       @mouseenter="handleMouseEnter"
       @mousedown.left="handleMouseDown"
