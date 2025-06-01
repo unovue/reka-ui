@@ -7,11 +7,11 @@ export interface SliderThumbImplProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useMounted } from '@vueuse/core'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useSize } from '@/shared'
-import { useMounted } from '@vueuse/core'
-import { computed, onMounted, onUnmounted } from 'vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { convertValueToPercentage, getLabel, getThumbInBoundsOffset, injectSliderOrientationContext } from './utils'
 
@@ -37,7 +37,7 @@ const thumbInBoundsOffset = computed(() => {
     return 0
   }
   else {
-    return getThumbInBoundsOffset(orientationSize.value, percent.value, orientation!.direction)
+    return getThumbInBoundsOffset(orientationSize.value, percent.value, orientation!.direction.value)
   }
 })
 
@@ -70,7 +70,7 @@ onUnmounted(() => {
       :style="{
         transform: 'var(--reka-slider-thumb-transform)',
         position: 'absolute',
-        [orientation!.startEdge]: `calc(${percent}% + ${thumbInBoundsOffset}px)`,
+        [orientation!.startEdge.value]: `calc(${percent}% + ${thumbInBoundsOffset}px)`,
         /**
          * There will be no value on initial render while we work out the index so we hide thumbs
          * without a value, otherwise SSR will render them in the wrong position before they

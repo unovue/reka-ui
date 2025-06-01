@@ -71,9 +71,9 @@ export const [injectTooltipRootContext, provideTooltipRootContext]
 </script>
 
 <script setup lang="ts">
-import { PopperRoot } from '@/Popper'
 import { useTimeoutFn, useVModel } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { PopperRoot } from '@/Popper'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
 
@@ -90,7 +90,7 @@ const props = withDefaults(defineProps<TooltipRootProps>(), {
 const emit = defineEmits<TooltipRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any

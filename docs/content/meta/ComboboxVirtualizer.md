@@ -31,7 +31,7 @@
   {
     'name': 'option',
     'description': '',
-    'type': 'null | string | number | Record<string, any>'
+    'type': 'null | string | number | bigint | Record<string, any>'
   },
   {
     'name': 'virtualizer',

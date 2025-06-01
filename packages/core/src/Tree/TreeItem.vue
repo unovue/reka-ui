@@ -22,11 +22,11 @@ const TREE_TOGGLE = 'tree.toggle'
 
 <script setup lang="ts" generic="T extends Record<string, any>">
 import type { PrimitiveProps } from '@/Primitive'
+import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { getActiveElement, handleAndDispatchCustomEvent } from '@/shared'
-import { computed } from 'vue'
 import { injectTreeRootContext } from './TreeRoot.vue'
 import { flatten } from './utils'
 
@@ -41,7 +41,7 @@ const props = withDefaults(defineProps<TreeItemProps<T>>(), {
 const emits = defineEmits<TreeItemEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     isExpanded: boolean
     isSelected: boolean
     isIndeterminate: boolean | undefined
@@ -65,7 +65,13 @@ const isSelected = computed(() => {
 })
 
 const isIndeterminate = computed(() => {
-  if (rootContext.propagateSelect.value && isSelected.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
+  if (rootContext.bubbleSelect.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
+    const children = flatten<T, any>(rootContext.getChildren(props.value) || [])
+
+    return children.some(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
+      && !children.every(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
+  }
+  else if (rootContext.propagateSelect.value && isSelected.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
     const children = flatten<T, any>(rootContext.getChildren(props.value) || [])
 
     return !children.every(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))

@@ -61,19 +61,25 @@ export type PanelData = {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectPanelGroupContext } from './SplitterGroup.vue'
 
 const props = defineProps<SplitterPanelProps>()
 const emits = defineEmits<SplitterPanelEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Is the panel collapsed */
     isCollapsed: typeof isCollapsed.value
     /** Is the panel expanded */
     isExpanded: typeof isExpanded.value
+    /** If panel is `collapsible`, collapse it fully. */
+    collapse: typeof collapse
+    /** If panel is currently collapsed, expand it to its most recent size. */
+    expand: typeof expand
+    /** Resize panel to the specified percentage (1 - 100). */
+    resize: typeof resize
   }) => any
 }>()
 
@@ -134,23 +140,29 @@ const style = computed(() => getPanelStyle(panelDataRef.value, props.defaultSize
 const isCollapsed = computed(() => isPanelCollapsed(panelDataRef.value))
 const isExpanded = computed(() => !isCollapsed.value)
 
+function collapse() {
+  collapsePanel(panelDataRef.value)
+}
+
+function expand() {
+  expandPanel(panelDataRef.value)
+}
+
+function resize(size: number) {
+  resizePanel(panelDataRef.value, size)
+}
+
 defineExpose({
   /** If panel is `collapsible`, collapse it fully. */
-  collapse: () => {
-    collapsePanel(panelDataRef.value)
-  },
+  collapse,
   /** If panel is currently collapsed, expand it to its most recent size. */
-  expand: () => {
-    expandPanel(panelDataRef.value)
-  },
+  expand,
   /** Gets the current size of the panel as a percentage (1 - 100). */
   getSize() {
     return getPanelSize(panelDataRef.value)
   },
   /** Resize panel to the specified percentage (1 - 100). */
-  resize: (size: number) => {
-    resizePanel(panelDataRef.value, size)
-  },
+  resize,
   /** Returns `true` if the panel is currently collapsed */
   isCollapsed,
   /** Returns `true` if the panel is currently not collapsed */
@@ -174,6 +186,9 @@ defineExpose({
     <slot
       :is-collapsed="isCollapsed"
       :is-expanded="isExpanded"
+      :expand="expand"
+      :collapse="collapse"
+      :resize="resize"
     />
   </Primitive>
 </template>

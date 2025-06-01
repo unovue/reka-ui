@@ -6,9 +6,9 @@ export interface ScrollAreaThumbProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { watchOnce } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
 import { addUnlinkedScrollListener } from './utils'

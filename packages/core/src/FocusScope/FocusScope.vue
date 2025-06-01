@@ -34,9 +34,9 @@ export interface FocusScopeProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
 import { nextTick, reactive, ref, watchEffect } from 'vue'
+import { Primitive } from '@/Primitive'
 import { createFocusScopesStack, removeLinks } from './stack'
 import {
   AUTOFOCUS_ON_MOUNT,

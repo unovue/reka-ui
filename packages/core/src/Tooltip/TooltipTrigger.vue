@@ -11,11 +11,11 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
+import { computed, onMounted, ref } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
 } from '@/Primitive'
-import { computed, onMounted, ref } from 'vue'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 

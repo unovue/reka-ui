@@ -181,8 +181,8 @@ function getEventFromComponentPath(dir: string) {
   const files = readdirSync(resolve(__dirname, '../../packages/core/src', dir), { withFileTypes: true }).filter(file => file.name.includes('.vue'))
 
   files.forEach((file) => {
-    const { name, path } = file
-    const source = readFileSync(join(path, name), { encoding: 'utf8' })
+    const { name, parentPath } = file
+    const source = readFileSync(join(parentPath, name), { encoding: 'utf8' })
     const { descriptor } = sfcParse(source, {
       filename: name,
     })

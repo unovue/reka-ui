@@ -1,12 +1,12 @@
 import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
-import { useTestKbd } from '@/shared'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import RangeCalendar from './story/_RangeCalendar.vue'
 
 it('should pass axe accessibility tests', async () => {
@@ -713,5 +713,78 @@ describe('numberOfMonths > 1', () => {
     await user.click(getByTestId('date-1-26'))
     expect(getByTestId('date-1-26')).toHaveAttribute('data-selection-start')
     expect(getByTestId('date-1-27')).toHaveAttribute('data-selection-end')
+  })
+})
+
+describe('handles maximumDays', () => {
+  it('limits the maximum number of days that can be selected', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 15),
+        maximumDays: 5,
+      },
+    })
+
+    const startDay = getByTestId('date-1-15')
+    const maximumDay = getByTestId('date-1-20') // 5 days ahead
+    const beyondMaximumDay = getByTestId('date-1-21') // 6 days ahead
+
+    await user.click(startDay)
+    expect(startDay).toHaveAttribute('data-selection-start')
+
+    // Attempt to select an end date beyond the maximum days (more than 5 days ahead)
+    await user.click(beyondMaximumDay)
+
+    expect(beyondMaximumDay).toHaveAttribute('data-disabled')
+    expect(beyondMaximumDay).not.toHaveAttribute('data-selected')
+
+    // Should be limited to 5 days
+    expect(getByTestId('date-1-20')).not.toHaveAttribute('data-disabled')
+
+    await user.click(maximumDay)
+
+    // Check that all days within the maximum range are selected
+    for (let day = 15; day <= 20; day++) {
+      expect(getByTestId(`date-1-${day}`)).toHaveAttribute('data-selected')
+    }
+  })
+
+  it('dynamically updates disabled dates based on the selection and clears constraints after completing a range', async () => {
+    const { getByTestId, user, rerender } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 10),
+        maximumDays: 3,
+      },
+      emits: { 'onUpdate:modelValue': data => rerender({ calendarProps: { placeholder: new CalendarDate(1980, 1, 10), maximumDays: 3, modelValue: data } }) },
+    })
+
+    // No dates should be disabled due to maximumDays
+    expect(getByTestId('date-1-14')).not.toHaveAttribute('aria-disabled', 'true')
+    expect(getByTestId('date-1-20')).not.toHaveAttribute('aria-disabled', 'true')
+
+    // Select a start date (10th of January)
+    const startDay = getByTestId('date-1-10')
+    await user.click(startDay)
+    expect(startDay).toHaveAttribute('data-selection-start')
+
+    // Days beyond the maximum limit are now disabled
+    expect(getByTestId('date-1-14')).toHaveAttribute('aria-disabled', 'true')
+
+    // Days within the limit should not be disabled
+    expect(getByTestId('date-1-13')).not.toHaveAttribute('aria-disabled', 'true')
+
+    // Complete the range selection with a date within the limit
+    await user.click(getByTestId('date-1-13'))
+
+    // Distant dates should no longer be disabled
+    expect(getByTestId('date-1-20')).not.toHaveAttribute('aria-disabled', 'true')
+
+    // Select a new range
+    await user.click(getByTestId('date-1-15'))
+    expect(getByTestId('date-1-15')).toHaveAttribute('data-selection-start')
+
+    // Days beyond the maximum limit from the new start date should be disabled
+    expect(getByTestId('date-1-19')).toHaveAttribute('aria-disabled', 'true')
+    expect(getByTestId('date-1-18')).not.toHaveAttribute('aria-disabled', 'true')
   })
 })

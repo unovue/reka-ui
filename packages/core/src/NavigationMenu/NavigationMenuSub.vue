@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type { Orientation } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 
 export type NavigationMenuSubEmits = {
@@ -24,12 +24,12 @@ export interface NavigationMenuSubProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
+import { ref, watchEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
-import { useVModel } from '@vueuse/core'
-import { ref, watchEffect } from 'vue'
 import { injectNavigationMenuContext, provideNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
 const emits = defineEmits<NavigationMenuSubEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

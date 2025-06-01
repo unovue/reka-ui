@@ -3,11 +3,11 @@ import type { Direction } from '@/shared/types'
 import { createContext, getActiveElement, useDirection, useSelectionBehavior, useTypeahead } from '@/shared'
 import { flatten } from './utils'
 
-export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>> extends PrimitiveProps {
+export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
   /** The controlled value of the tree. Can be binded with with `v-model`. */
-  modelValue?: U | U[]
+  modelValue?: M extends true ? U[] : U
   /** The value of the tree when initially rendered. Use when you do not need to control the state of the tree */
-  defaultValue?: U | U[]
+  defaultValue?: M extends true ? U[] : U
   /** List of items */
   items?: T[]
   /** The controlled value of the expanded item. Can be binded with with `v-model`. */
@@ -21,17 +21,19 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   /** How multiple selection should behave in the collection. */
   selectionBehavior?: 'toggle' | 'replace'
   /** Whether multiple options can be selected or not.  */
-  multiple?: boolean
+  multiple?: M
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** When `true`, prevents the user from interacting with tree  */
   disabled?: boolean
   /** When `true`, selecting parent will select the descendants. */
   propagateSelect?: boolean
+  /** When `true`, selecting children will update the parent state. */
+  bubbleSelect?: boolean
 }
 
-export type TreeRootEmits<T = Record<string, any>> = {
-  'update:modelValue': [val: T]
+export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = {
+  'update:modelValue': [val: M extends true ? T[] : T]
   'update:expanded': [val: string[]]
 }
 
@@ -49,6 +51,7 @@ interface TreeRootContext<T = Record<string, any>> {
   disabled: Ref<boolean>
   dir: Ref<Direction>
   propagateSelect: Ref<boolean>
+  bubbleSelect: Ref<boolean>
   isVirtual: Ref<boolean>
   virtualKeydownHook: EventHook<KeyboardEvent>
 
@@ -72,32 +75,32 @@ export type FlattenedItem<T> = {
 export const [injectTreeRootContext, provideTreeRootContext] = createContext<TreeRootContext<any>>('TreeRoot')
 </script>
 
-<script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>">
-import type { PrimitiveProps } from '@/Primitive'
+<script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
 import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
+import { createEventHook, useVModel } from '@vueuse/core'
+import { computed, nextTick, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
-import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs } from 'vue'
 
-const props = withDefaults(defineProps<TreeRootProps<T, U>>(), {
+const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
   as: 'ul',
   selectionBehavior: 'toggle',
   getChildren: (val: T) => val.children,
 })
-const emits = defineEmits<TreeRootEmits<U>>()
+const emits = defineEmits<TreeRootEmits<U, M>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     flattenItems: FlattenedItem<T>[]
-    modelValue: typeof modelValue.value
+    modelValue: M extends true ? U[] : U
     expanded: typeof expanded.value
   }) => any
 }>()
 
-const { items, multiple, disabled, propagateSelect, dir: propDir } = toRefs(props)
+const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props)
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
@@ -189,6 +192,27 @@ function handleKeydownNavigation(event: KeyboardEvent) {
   })
 }
 
+function handleBubbleSelect(item: FlattenedItem<T>) {
+  if (item.parentItem != null && Array.isArray(modelValue.value) && props.multiple) {
+    const parentItem = expandedItems.value.find((i) => {
+      return item.parentItem != null && props.getKey(i.value) === props.getKey(item.parentItem)
+    })
+
+    if (parentItem != null) {
+      const areAllChilredOfParentSelected = props.getChildren(parentItem.value)?.every(i => modelValue.value.find((v: any) => props.getKey(v) === props.getKey(i)))
+
+      if (areAllChilredOfParentSelected) {
+        modelValue.value = [...modelValue.value, parentItem.value as any]
+      }
+      else {
+        modelValue.value = modelValue.value.filter((v: any) => props.getKey(v) !== props.getKey(parentItem.value))
+      }
+
+      handleBubbleSelect(parentItem)
+    }
+  }
+}
+
 provideTreeRootContext({
   modelValue,
   selectedKeys,
@@ -197,8 +221,18 @@ provideTreeRootContext({
     const exist = props.multiple && Array.isArray(modelValue.value) ? modelValue.value?.findIndex(condition) !== -1 : undefined
     onSelectItem(val, condition)
 
+    if (props.bubbleSelect && props.multiple && Array.isArray(modelValue.value)) {
+      const item = expandedItems.value.find((i) => {
+        return props.getKey(i.value) === props.getKey(val)
+      })
+      if (item != null) {
+        handleBubbleSelect(item)
+      }
+    }
+
     if (props.propagateSelect && props.multiple && Array.isArray(modelValue.value)) {
       const children = flatten<U, any>(props.getChildren(val) ?? [])
+
       if (exist) {
         // remove all child
         modelValue.value = [...modelValue.value]
@@ -230,6 +264,7 @@ provideTreeRootContext({
   multiple,
   dir,
   propagateSelect,
+  bubbleSelect,
 
   isVirtual,
   virtualKeydownHook,
@@ -254,7 +289,7 @@ provideTreeRootContext({
     >
       <slot
         :flatten-items="expandedItems"
-        :model-value="modelValue"
+        :model-value="modelValue as M extends true ? U[] : U"
         :expanded="expanded"
       />
     </Primitive>

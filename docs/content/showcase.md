@@ -38,7 +38,7 @@ projects:
   - title: UnInbox
     description: Modern email for teams and professionals.
     url: https://uninbox.com/
-    image: https://uninbox.com/__og-image__/image/og.png
+    image: https://uninbox.com/opengraph-image.jpg
 
   - title: Twir
     description: Powerful and useful Twitch bot that helps manage chat on big channels.

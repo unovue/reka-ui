@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SelectRootEmits, SelectRootProps } from '..'
-import { useForwardPropsEmits } from '@/shared'
 import { Icon } from '@iconify/vue'
+import { useForwardPropsEmits } from '@/shared'
 import {
   SelectContent,
   SelectGroup,

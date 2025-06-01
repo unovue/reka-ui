@@ -17,6 +17,7 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
 import SelectContentImpl from './SelectContentImpl.vue'

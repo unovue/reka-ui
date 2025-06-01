@@ -1,9 +1,9 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { Ref } from 'vue'
-import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import { computed, ref, toRefs } from 'vue'
+import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export type AcceptableInputValue = string | Record<string, any>
 
@@ -69,10 +69,10 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
+import { useFocusWithin, useVModel } from '@vueuse/core'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { useFocusWithin, useVModel } from '@vueuse/core'
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
   defaultValue: () => [],
@@ -83,7 +83,7 @@ const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
 const emits = defineEmits<TagsInputRootEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

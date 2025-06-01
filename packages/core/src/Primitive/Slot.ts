@@ -1,5 +1,5 @@
-import { renderSlotFragments } from '@/shared'
 import { cloneVNode, Comment, defineComponent, mergeProps } from 'vue'
+import { renderSlotFragments } from '@/shared'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
@@ -19,23 +19,14 @@ export const Slot = defineComponent({
       // Remove props ref from being inferred
       delete firstNonCommentChildren.props?.ref
 
+      // Manually merge props to ensure `firstNonCommentChildren.props`
+      // has higher priority than `attrs` and can override `attrs`.
+      // Otherwise `cloneVNode(firstNonCommentChildren, attrs)` will
+      // prioritize `attrs` and override `firstNonCommentChildren.props`.
       const mergedProps = firstNonCommentChildren.props
         ? mergeProps(attrs, firstNonCommentChildren.props)
         : attrs
-      // Remove class to prevent duplicated
-      if (attrs.class && firstNonCommentChildren.props?.class)
-        delete firstNonCommentChildren.props.class
-      const cloned = cloneVNode(firstNonCommentChildren, mergedProps)
-
-      // Explicitly override props starting with `on`.
-      // It seems cloneVNode from Vue doesn't like overriding `onXXX` props.
-      // So we have to do it manually.
-      for (const prop in mergedProps) {
-        if (prop.startsWith('on')) {
-          cloned.props ||= {}
-          cloned.props[prop] = mergedProps[prop]
-        }
-      }
+      const cloned = cloneVNode({ ...firstNonCommentChildren, props: {} }, mergedProps)
 
       if (childrens.length === 1)
         return cloned

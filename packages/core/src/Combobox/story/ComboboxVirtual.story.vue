@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useFilter } from '@/shared'
-import { countryList } from '@/shared/constant'
 import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
+import { useFilter } from '@/shared'
+import { countryList } from '@/shared/constant'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '..'
 
 const { startsWith } = useFilter({ sensitivity: 'base' })

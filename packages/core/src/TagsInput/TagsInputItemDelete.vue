@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { isEqual } from 'ohash'
 import { computed } from 'vue'
+import { useForwardExpose } from '@/shared'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 

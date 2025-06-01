@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
 import type { AcceptableValue } from '@/shared/types'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
 import { useId } from '@/shared'
-import { computed, onMounted, onUnmounted } from 'vue'
 import { injectComboboxGroupContext } from './ComboboxGroup.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { CSSProperties, Ref } from 'vue'
-import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, toRefs, watch, watchEffect } from 'vue'
+import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
 import { useWindowSplitterPanelGroupBehavior } from './utils/composables/useWindowSplitterPanelGroupBehavior'
 import {
   initializeDefaultStorage,
@@ -102,7 +102,7 @@ const props = withDefaults(defineProps<SplitterGroupProps>(), {
 const emits = defineEmits<SplitterGroupEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current size of layout */
     layout: typeof layout.value
   }) => any

@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ComputedRef, Ref } from 'vue'
+import type { PrimitiveProps } from '@/Primitive'
 import { createContext, isNullish, useForwardExpose } from '@/shared'
 
 export type ProgressRootEmits = {
@@ -16,11 +16,15 @@ export interface ProgressRootProps extends PrimitiveProps {
   /** The maximum progress value. */
   max?: number
   /**
-   * A function to get the accessible label text representing the current value in a human-readable format.
+   * A function to get the accessible label text in a human-readable format.
    *
    *  If not provided, the value label will be read as the numeric value as a percentage of the max value.
    */
-  getValueLabel?: (value: number, max: number) => string
+  getValueLabel?: (value: number | null | undefined, max: number) => string | undefined
+  /**
+   * A function to get the accessible value text representing the current value in a human-readable format.
+   */
+  getValueText?: (value: number | null | undefined, max: number) => string | undefined
 }
 
 const DEFAULT_MAX = 100
@@ -69,20 +73,20 @@ function validateMax(max: number): number {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { computed, nextTick, watch } from 'vue'
+import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<ProgressRootProps>(), {
   max: DEFAULT_MAX,
-  getValueLabel: (value: number, max: number) =>
-    `${Math.round((value / max) * DEFAULT_MAX)}%`,
+  getValueLabel: (value: number | null | undefined, max: number) =>
+    isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined,
 })
 
 const emit = defineEmits<ProgressRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any
@@ -143,8 +147,8 @@ provideProgressRootContext({
     :aria-valuemax="max"
     :aria-valuemin="0"
     :aria-valuenow="isNumber(modelValue) ? modelValue : undefined"
-    :aria-valuetext="getValueLabel(modelValue!, max)"
-    :aria-label="getValueLabel(modelValue!, max)"
+    :aria-valuetext="getValueText?.(modelValue, max)"
+    :aria-label="getValueLabel(modelValue, max)"
     role="progressbar"
     :data-state="progressState"
     :data-value="modelValue ?? undefined"

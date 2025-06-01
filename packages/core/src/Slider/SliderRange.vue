@@ -6,8 +6,8 @@ export interface SliderRangeProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { computed } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { convertValueToPercentage, injectSliderOrientationContext } from './utils'
 
@@ -31,8 +31,8 @@ const offsetEnd = computed(() => 100 - Math.max(...percentages.value, 0))
     :as-child="asChild"
     :as="as"
     :style="{
-      [orientation!.startEdge]: `${offsetStart}%`,
-      [orientation!.endEdge]: `${offsetEnd}%`,
+      [orientation!.startEdge.value]: `${offsetStart}%`,
+      [orientation!.endEdge.value]: `${offsetEnd}%`,
     }"
   >
     <slot />

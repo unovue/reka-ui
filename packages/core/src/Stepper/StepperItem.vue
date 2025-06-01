@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
-
 import type { Ref } from 'vue'
+
+import type { PrimitiveProps } from '@/Primitive'
+import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, useForwardExpose, useId } from '@/shared'
-import { computed, toRefs } from 'vue'
 import { injectStepperRootContext } from './StepperRoot.vue'
 
 export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<StepperItemProps>(), {
 })
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** The current state of the stepper item */
     state: StepperState
   }) => any

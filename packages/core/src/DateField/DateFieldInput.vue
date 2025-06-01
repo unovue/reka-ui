@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
+import { computed, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useDateField } from '@/shared/date/useDateField'
-import { computed, ref } from 'vue'
 import { injectDateFieldRootContext } from './DateFieldRoot.vue'
 
 export interface DateFieldInputProps extends PrimitiveProps {
@@ -29,6 +29,7 @@ const {
   lastKeyZero,
   placeholder: rootContext.placeholder,
   hourCycle: rootContext.hourCycle,
+  step: rootContext.step,
   segmentValues: rootContext.segmentValues,
   formatter: rootContext.formatter,
   part: props.part,

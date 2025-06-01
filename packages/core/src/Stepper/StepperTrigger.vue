@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 import { computed, onMounted, onUnmounted } from 'vue'
+import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
 }

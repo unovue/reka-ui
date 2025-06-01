@@ -215,7 +215,7 @@ describe('give PinInput type=number', async () => {
     })
 
     it('should emit \'complete\' with the result', () => {
-      expect(wrapper.emitted('complete')?.[0]?.[0]).toStrictEqual(['1', '2', '3', '4', '5'])
+      expect(wrapper.emitted('complete')?.[0]?.[0]).toStrictEqual([1, 2, 3, 4, 5])
     })
   })
 })

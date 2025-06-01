@@ -1,11 +1,11 @@
 import type { DateValue } from '@internationalized/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
-import { useTestKbd } from '@/shared'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import Calendar from './story/_Calendar.vue'
 import CalendarMultiple from './story/_CalendarMultiple.vue'
 
