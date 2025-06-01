@@ -14,6 +14,7 @@ export interface RatingRootContext {
   ratingItems: Ref<Set<HTMLElement>>
   dir: ComputedRef<Direction>
   orientation: Ref<DataOrientation>
+  step: Ref<number>
   changeModelValue: (rating: number) => void
   changeHoveredRating: (rating: number) => void
 }
@@ -40,6 +41,7 @@ export interface RatingRootProps extends PrimitiveProps, FormFieldProps {
   length?: number
   clearable?: boolean
   hoverable?: boolean
+  step?: 1 | 0.5 | 0.25 | 0.1
 
 }
 export type RatingRootEmits = {
@@ -59,17 +61,19 @@ import { Primitive } from '@/Primitive'
 const props = withDefaults(defineProps<RatingRootProps>(), {
   orientation: 'horizontal',
   length: 5,
+  step: 1,
 })
 const emits = defineEmits<RatingRootEmits>()
 
 defineSlots<{
   default?: (props: {
     modelValue: number | undefined
-    ratings: number[]
+    groups: number[]
+    items: number[]
   }) => any
 }>()
 
-const { orientation, dir: propDir, length, disabled, clearable, hoverable } = toRefs(props)
+const { orientation, dir: propDir, length, disabled, clearable, hoverable, step } = toRefs(props)
 const dir = useDirection(propDir)
 const ratingItems = ref<Set<HTMLElement>>(new Set())
 useForwardExpose()
@@ -79,7 +83,7 @@ const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>
   passive: (props.modelValue === undefined) as false,
 }) as Ref<number>
 
-const ratings = computed(() => {
+const groups = computed(() => {
   return Array.from({ length: length.value }, (_, i) => i + 1)
 })
 
@@ -107,12 +111,13 @@ function changeHoveredRating(rating: number) {
 
 provideRatingRootContext({
   modelValue,
-  ratings,
+  ratings: groups,
   hoveredRating,
   disabled,
   ratingItems,
   dir,
   orientation,
+  step,
   changeModelValue,
   changeHoveredRating,
 })
@@ -135,7 +140,8 @@ provideRatingRootContext({
     >
       <slot
         :model-value="modelValue"
-        :ratings="ratings"
+        :groups="groups"
+        :items="groups"
       />
 
       <VisuallyHiddenInput
