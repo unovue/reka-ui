@@ -19,13 +19,14 @@ const value = ref(3)
         <RatingRoot
           v-slot="{ ratings }"
           v-model="value"
+          clearable
           class="flex gap-2"
         >
           <RatingItem
             v-for="rating in ratings"
             :key="rating"
             :rating="rating"
-            class="data-[state=active]:text-yellow-500 data-[state=checked]:text-yellow-500 text-gray-400"
+            class=" data-[state=active]:text-yellow-500 text-gray-400"
           >
             <Icon icon="radix-icons:star" />
           </RatingItem>

@@ -33,11 +33,8 @@ function handleMouseEnter() {
   rootContext.hoveredRating.value = props.rating
 }
 
-function handleMouseDown(event: MouseEvent) {
-  if (rootContext.disabled.value)
-    return
-
-  rootContext.modelValue.value = props.rating
+function handleMouseDown() {
+  rootContext.changeModelValue(props.rating)
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -48,7 +45,7 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 
   if ((event.key === kbd.ENTER || event.key === kbd.SPACE) && !event.ctrlKey && !event.shiftKey) {
-    rootContext.modelValue.value = props.rating
+    rootContext.changeModelValue(props.rating)
   }
 
   if ([kbd.ARROW_LEFT, kbd.ARROW_RIGHT, kbd.ARROW_UP, kbd.ARROW_DOWN].includes(event.key)) {
@@ -82,7 +79,7 @@ watchEffect((onCleanup) => {
       as-child
       :as="as"
       :aria-checked="rating <= rootContext.modelValue.value"
-      :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value ? 'active' : rootContext.hoveredRating.value === -1 && rating <= rootContext.modelValue.value ? 'checked' : undefined"
+      :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value || rootContext.hoveredRating.value === 0 && rating <= rootContext.modelValue.value ? 'active' : undefined"
       :aria-disabled="rootContext.disabled"
       role="radio"
       @mouseenter="handleMouseEnter"

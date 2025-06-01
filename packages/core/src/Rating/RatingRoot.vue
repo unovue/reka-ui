@@ -14,6 +14,7 @@ export interface RatingRootContext {
   ratingItems: Ref<Set<HTMLElement>>
   dir: ComputedRef<Direction>
   orientation: Ref<DataOrientation>
+  changeModelValue: (rating: number) => void
 }
 
 export interface RatingRootProps extends PrimitiveProps, FormFieldProps {
@@ -36,6 +37,7 @@ export interface RatingRootProps extends PrimitiveProps, FormFieldProps {
   id?: string
   disabled?: boolean
   length?: number
+  clearable?: boolean
 
 }
 export type RatingRootEmits = {
@@ -66,7 +68,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { orientation, dir: propDir, length, disabled } = toRefs(props)
+const { orientation, dir: propDir, length, disabled, clearable } = toRefs(props)
 const dir = useDirection(propDir)
 const ratingItems = ref<Set<HTMLElement>>(new Set())
 useForwardExpose()
@@ -80,7 +82,20 @@ const ratings = computed(() => {
   return Array.from({ length: props.length }, (_, i) => i + 1)
 })
 
-const hoveredRating = ref<number>(-1)
+const hoveredRating = ref<number>(0)
+
+function changeModelValue(rating: number) {
+  if (disabled.value)
+    return
+
+  if (clearable.value && modelValue.value === rating) {
+    hoveredRating.value = 0
+    modelValue.value = 0
+  }
+  else {
+    modelValue.value = rating
+  }
+}
 
 provideRatingRootContext({
   modelValue,
@@ -90,6 +105,7 @@ provideRatingRootContext({
   ratingItems,
   dir,
   orientation,
+  changeModelValue,
 })
 </script>
 
@@ -106,7 +122,7 @@ provideRatingRootContext({
       :as="as"
       role="radiogroup"
       :aria-orientation="orientation"
-      @mouseleave="hoveredRating = -1"
+      @mouseleave="hoveredRating = 0"
     >
       <slot
         :model-value="modelValue"
