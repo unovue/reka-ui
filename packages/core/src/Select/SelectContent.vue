@@ -17,7 +17,6 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
 import SelectContentImpl from './SelectContentImpl.vue'
@@ -46,7 +45,7 @@ const present = computed(() => props.forceMount || rootContext.open.value)
 const renderPresence = ref(present.value)
 
 watch(present, () => {
-  // Toggle render presence after a delay
+  // Toggle render presence after a delay (nextTick is not enough)
   // to allow children to re-render with the latest state.
   // Otherwise, they would remain in the old state during the transition,
   // which would prevent the animation that depend on state (e.g., data-[state=closed])
