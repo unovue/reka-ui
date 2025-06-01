@@ -26,6 +26,20 @@ const rootContext = injectRatingRootContext()
 const kbd = useKbd()
 const { currentElement, forwardRef } = useForwardExpose()
 
+function handleMouseEnter() {
+  if (rootContext.disabled.value)
+    return
+
+  rootContext.hoveredRating.value = props.rating
+}
+
+function handleMouseDown(event: MouseEvent) {
+  if (rootContext.disabled.value)
+    return
+
+  rootContext.modelValue.value = props.rating
+}
+
 function handleKeyDown(event: KeyboardEvent) {
   event.preventDefault()
 
@@ -71,8 +85,8 @@ watchEffect((onCleanup) => {
       :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value ? 'active' : rootContext.hoveredRating.value === -1 && rating <= rootContext.modelValue.value ? 'checked' : undefined"
       :aria-disabled="rootContext.disabled"
       role="radio"
-      @mouseenter="rootContext.hoveredRating.value = rating"
-      @click="rootContext.modelValue.value = rating"
+      @mouseenter="handleMouseEnter"
+      @mousedown.left="handleMouseDown"
       @keydown.enter.space.left.right.up.down="handleKeyDown"
     >
       <slot />
