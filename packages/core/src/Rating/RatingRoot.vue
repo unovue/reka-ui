@@ -2,6 +2,7 @@
 import type { DataOrientation, Direction, FormFieldProps, StringOrNumber } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
+import RovingFocusGroup from '@/RovingFocus/RovingFocusGroup.vue'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -93,30 +94,36 @@ provideRatingRootContext({
 </script>
 
 <template>
-  <Primitive
+  <RovingFocusGroup
+    as-child
+    :orientation="orientation"
     :dir="dir"
-    :data-orientation="orientation"
-    :as-child="asChild"
-    :as="as"
-    role="radiogroup"
-    :aria-orientation="orientation"
-    @mouseleave="hoveredRating = -1"
   >
-    <slot
-      :model-value="modelValue"
-      :ratings="ratings"
-    />
+    <Primitive
+      :dir="dir"
+      :data-orientation="orientation"
+      :as-child="asChild"
+      :as="as"
+      role="radiogroup"
+      :aria-orientation="orientation"
+      @mouseleave="hoveredRating = -1"
+    >
+      <slot
+        :model-value="modelValue"
+        :ratings="ratings"
+      />
 
-    <VisuallyHiddenInput
-      :id="id"
-      as="input"
-      feature="focusable"
-      tabindex="-1"
-      :value="modelValue"
-      :name="name ?? ''"
-      :disabled="disabled"
-      :required="required"
-      @focus="Array.from(ratingItems)?.[0]?.focus()"
-    />
-  </Primitive>
+      <VisuallyHiddenInput
+        :id="id"
+        as="input"
+        feature="focusable"
+        tabindex="-1"
+        :value="modelValue"
+        :name="name ?? ''"
+        :disabled="disabled"
+        :required="required"
+        @focus="Array.from(ratingItems)?.[0]?.focus()"
+      />
+    </Primitive>
+  </RovingFocusGroup>
 </template>

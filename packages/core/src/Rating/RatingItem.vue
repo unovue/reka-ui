@@ -1,19 +1,17 @@
 <script lang="ts">
-import type { StringOrNumber } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { watchEffect } from 'vue'
+import RovingFocusItem from '@/RovingFocus/RovingFocusItem.vue'
 import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
 export interface RatingItemProps extends Omit<PrimitiveProps, 'asChild'> {
   rating: number
 }
-export type RatingItemEmits = {
-
-}
+export type RatingItemEmits = {}
 </script>
 
-<script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
+<script setup lang="ts">
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
@@ -60,19 +58,24 @@ watchEffect((onCleanup) => {
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
+  <RovingFocusItem
+    :disabled="rootContext.disabled.value"
     as-child
-    :as="as"
-    :aria-checked="rating <= rootContext.modelValue.value"
-    :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value ? 'active' : rootContext.hoveredRating.value === -1 && rating <= rootContext.modelValue.value ? 'checked' : undefined"
-    :aria-disabled="rootContext.disabled"
-    role="radio"
-    :tabindex="rootContext.disabled.value ? -1 : 0"
-    @mouseenter="rootContext.hoveredRating.value = rating"
-    @click="rootContext.modelValue.value = rating"
-    @keydown.enter.space.left.right.up.down="handleKeyDown"
+    :focusable="!rootContext.disabled.value"
   >
-    <slot />
-  </Primitive>
+    <Primitive
+      :ref="forwardRef"
+      as-child
+      :as="as"
+      :aria-checked="rating <= rootContext.modelValue.value"
+      :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value ? 'active' : rootContext.hoveredRating.value === -1 && rating <= rootContext.modelValue.value ? 'checked' : undefined"
+      :aria-disabled="rootContext.disabled"
+      role="radio"
+      @mouseenter="rootContext.hoveredRating.value = rating"
+      @click="rootContext.modelValue.value = rating"
+      @keydown.enter.space.left.right.up.down="handleKeyDown"
+    >
+      <slot />
+    </Primitive>
+  </RovingFocusItem>
 </template>
