@@ -62,7 +62,6 @@ const emits = defineEmits<RatingRootEmits>()
 
 defineSlots<{
   default?: (props: {
-    /** Current input values */
     modelValue: number | undefined
     ratings: number[]
   }) => any
@@ -79,7 +78,7 @@ const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>
 }) as Ref<number>
 
 const ratings = computed(() => {
-  return Array.from({ length: props.length }, (_, i) => i + 1)
+  return Array.from({ length: length.value }, (_, i) => i + 1)
 })
 
 const hoveredRating = ref<number>(0)

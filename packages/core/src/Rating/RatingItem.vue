@@ -8,14 +8,12 @@ import { injectRatingRootContext } from './RatingRoot.vue'
 export interface RatingItemProps extends Omit<PrimitiveProps, 'asChild'> {
   rating: number
 }
-export type RatingItemEmits = {}
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
-const emits = defineEmits<RatingItemEmits>()
 
 defineSlots<{
   default?: (props: {
@@ -70,8 +68,8 @@ watchEffect((onCleanup) => {
 
 <template>
   <RovingFocusItem
-    :disabled="rootContext.disabled.value"
     as-child
+    :disabled="rootContext.disabled.value"
     :focusable="!rootContext.disabled.value"
   >
     <Primitive
@@ -79,8 +77,8 @@ watchEffect((onCleanup) => {
       as-child
       :as="as"
       :aria-checked="rating <= rootContext.modelValue.value"
-      :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value || rootContext.hoveredRating.value === 0 && rating <= rootContext.modelValue.value ? 'active' : undefined"
       :aria-disabled="rootContext.disabled.value"
+      :data-state="rootContext.hoveredRating.value > 0 && rating <= rootContext.hoveredRating.value || rootContext.hoveredRating.value === 0 && rating <= rootContext.modelValue.value ? 'active' : undefined"
       role="radio"
       @mouseenter="handleMouseEnter"
       @mousedown.left="handleMouseDown"
