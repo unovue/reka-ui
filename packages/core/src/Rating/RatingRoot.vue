@@ -15,6 +15,7 @@ export interface RatingRootContext {
   dir: ComputedRef<Direction>
   orientation: Ref<DataOrientation>
   changeModelValue: (rating: number) => void
+  changeHoveredRating: (rating: number) => void
 }
 
 export interface RatingRootProps extends PrimitiveProps, FormFieldProps {
@@ -38,6 +39,7 @@ export interface RatingRootProps extends PrimitiveProps, FormFieldProps {
   disabled?: boolean
   length?: number
   clearable?: boolean
+  hoverable?: boolean
 
 }
 export type RatingRootEmits = {
@@ -67,7 +69,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { orientation, dir: propDir, length, disabled, clearable } = toRefs(props)
+const { orientation, dir: propDir, length, disabled, clearable, hoverable } = toRefs(props)
 const dir = useDirection(propDir)
 const ratingItems = ref<Set<HTMLElement>>(new Set())
 useForwardExpose()
@@ -96,6 +98,13 @@ function changeModelValue(rating: number) {
   }
 }
 
+function changeHoveredRating(rating: number) {
+  if (disabled.value || !hoverable.value)
+    return
+
+  hoveredRating.value = rating
+}
+
 provideRatingRootContext({
   modelValue,
   ratings,
@@ -105,6 +114,7 @@ provideRatingRootContext({
   dir,
   orientation,
   changeModelValue,
+  changeHoveredRating,
 })
 </script>
 

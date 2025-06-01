@@ -25,10 +25,7 @@ const kbd = useKbd()
 const { currentElement, forwardRef } = useForwardExpose()
 
 function handleMouseEnter() {
-  if (rootContext.disabled.value)
-    return
-
-  rootContext.hoveredRating.value = props.rating
+  rootContext.changeHoveredRating(props.rating)
 }
 
 function handleMouseDown() {
