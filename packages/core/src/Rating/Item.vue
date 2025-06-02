@@ -5,11 +5,11 @@ import { computed } from 'vue'
 import { createContext } from '@/shared'
 
 interface RatingItemContext {
-  item: ComputedRef<number>
+  rating: ComputedRef<number>
 }
 
 export interface RatingItemProps extends PrimitiveProps {
-  item: number
+  rating: number
 }
 
 export const [injectRatingItemContext, provideRatingItemContext]
@@ -18,7 +18,7 @@ export const [injectRatingItemContext, provideRatingItemContext]
 
 <script setup lang="ts">
 const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
-provideRatingItemContext({ item: computed(() => props.item) })
+provideRatingItemContext({ rating: computed(() => props.rating) })
 </script>
 
 <template>

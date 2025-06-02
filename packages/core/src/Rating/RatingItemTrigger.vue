@@ -29,32 +29,32 @@ const { currentElement, forwardRef } = useForwardExpose()
 const activeElement = useActiveElement()
 
 const isActive = computed(() => {
-  return (rootContext.hoveredRating.value > 0 && itemContext.item.value <= rootContext.hoveredRating.value) || (rootContext.hoveredRating.value === 0 && itemContext.item.value <= rootContext.modelValue.value)
+  return (rootContext.hoveredRating.value > 0 && itemContext.rating.value <= rootContext.hoveredRating.value) || (rootContext.hoveredRating.value === 0 && itemContext.rating.value <= rootContext.modelValue.value)
 })
 
 const isVisible = computed(() => {
-  return activeElement.value === currentElement.value || rootContext.step.value === 1 || itemContext.item.value % 1 === 0 || itemContext.item.value === rootContext.hoveredRating.value || itemContext.item.value === rootContext.modelValue.value
+  return activeElement.value === currentElement.value || rootContext.step.value === 1 || itemContext.rating.value % 1 === 0 || itemContext.rating.value === rootContext.hoveredRating.value || itemContext.rating.value === rootContext.modelValue.value
 })
 
 const itemStyle = computed(() => {
-  if (rootContext.step.value !== 1 && itemContext.item.value % 1 !== 0) {
+  if (rootContext.step.value !== 1 && itemContext.rating.value % 1 !== 0) {
     return {
       position: 'absolute',
-      width: `${((itemContext.item.value % 1) * 100)}%`,
+      width: `${((itemContext.rating.value % 1) * 100)}%`,
       overflow: 'hidden',
       opacity: isVisible.value ? 1 : 0,
-      zIndex: Math.ceil((1 - (itemContext.item.value % 1)) * 10),
+      zIndex: Math.ceil((1 - (itemContext.rating.value % 1)) * 10),
     }
   }
   return undefined
 })
 
 function handleMouseEnter() {
-  rootContext.changeHoveredRating(itemContext.item.value)
+  rootContext.changeHoveredRating(itemContext.rating.value)
 }
 
 function handleMouseDown() {
-  rootContext.changeModelValue(itemContext.item.value)
+  rootContext.changeModelValue(itemContext.rating.value)
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -65,7 +65,7 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 
   if ((event.key === kbd.ENTER || event.key === kbd.SPACE) && !event.ctrlKey && !event.shiftKey) {
-    rootContext.changeModelValue(itemContext.item.value)
+    rootContext.changeModelValue(itemContext.rating.value)
   }
 
   if ([kbd.ARROW_LEFT, kbd.ARROW_RIGHT, kbd.ARROW_UP, kbd.ARROW_DOWN].includes(event.key)) {
@@ -96,7 +96,7 @@ watchEffect((onCleanup) => {
   >
     <Primitive
       :ref="forwardRef"
-      :aria-checked="itemContext.item.value <= rootContext.modelValue.value"
+      :aria-checked="itemContext.rating.value <= rootContext.modelValue.value"
       :aria-disabled="rootContext.disabled.value"
       :data-state="isActive ? 'active' : undefined"
       role="radio"

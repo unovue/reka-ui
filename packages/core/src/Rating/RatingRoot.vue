@@ -8,7 +8,7 @@ import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface RatingRootContext {
   modelValue: Ref<number>
-  ratings: ComputedRef<number[]>
+  items: ComputedRef<number[]>
   hoveredRating: Ref<number>
   disabled: Ref<boolean>
   ratingItems: Ref<Set<HTMLElement>>
@@ -68,7 +68,7 @@ const emits = defineEmits<RatingRootEmits>()
 defineSlots<{
   default?: (props: {
     modelValue: number | undefined
-    ratings: number[]
+    items: number[]
   }) => any
 }>()
 
@@ -82,7 +82,7 @@ const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>
   passive: (props.modelValue === undefined) as false,
 }) as Ref<number>
 
-const ratings = computed(() => {
+const items = computed(() => {
   return Array.from({ length: length.value }, (_, i) => i + 1)
 })
 
@@ -110,7 +110,7 @@ function changeHoveredRating(rating: number) {
 
 provideRatingRootContext({
   modelValue,
-  ratings,
+  items,
   hoveredRating,
   disabled,
   ratingItems,
@@ -139,7 +139,7 @@ provideRatingRootContext({
     >
       <slot
         :model-value="modelValue"
-        :ratings="ratings"
+        :items="items"
       />
 
       <VisuallyHiddenInput

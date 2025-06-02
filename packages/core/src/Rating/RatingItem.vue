@@ -5,7 +5,7 @@ import Item from './Item.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
 export interface RatingItemProps extends PrimitiveProps {
-  rating: number
+  item: number
 }
 </script>
 
@@ -15,9 +15,9 @@ import { Primitive } from '@/Primitive'
 const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
 const rootContext = injectRatingRootContext()
 
-const items = computed(() => {
-  const groupStartValue = (props.rating - 1)
-  const groupEndValue = props.rating
+const ratings = computed(() => {
+  const groupStartValue = (props.item - 1)
+  const groupEndValue = props.item
   const stepSize = rootContext.step.value
 
   const numberOfSteps = Math.ceil((groupEndValue - groupStartValue) / stepSize)
@@ -34,9 +34,9 @@ const items = computed(() => {
     :style="rootContext.step.value !== 1 ? { position: 'relative' } : undefined"
   >
     <Item
-      v-for="item of items"
-      :key="item"
-      :item="item"
+      v-for="rating of ratings"
+      :key="rating"
+      :rating="rating"
       as-child
     >
       <slot />

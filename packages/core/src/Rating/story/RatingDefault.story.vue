@@ -17,14 +17,17 @@ const value = ref(3)
         <span class="text-2xl">{{ value }}</span>
 
         <RatingRoot
-          v-slot="{ ratings }"
+          v-slot="{ items }"
           v-model="value"
+          :step="0.5"
+          clearable
+          hoverable
           class="flex gap-2"
         >
           <RatingItem
-            v-for="rating in ratings"
-            :key="rating"
-            :rating="rating"
+            v-for="item in items"
+            :key="item"
+            :item="item"
           >
             <RatingItemTrigger class="data-[state=active]:text-yellow-500 text-gray-400">
               <Icon
