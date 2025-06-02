@@ -68,8 +68,7 @@ const emits = defineEmits<RatingRootEmits>()
 defineSlots<{
   default?: (props: {
     modelValue: number | undefined
-    groups: number[]
-    items: number[]
+    ratings: number[]
   }) => any
 }>()
 
@@ -83,7 +82,7 @@ const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>
   passive: (props.modelValue === undefined) as false,
 }) as Ref<number>
 
-const groups = computed(() => {
+const ratings = computed(() => {
   return Array.from({ length: length.value }, (_, i) => i + 1)
 })
 
@@ -111,7 +110,7 @@ function changeHoveredRating(rating: number) {
 
 provideRatingRootContext({
   modelValue,
-  ratings: groups,
+  ratings,
   hoveredRating,
   disabled,
   ratingItems,
@@ -140,8 +139,7 @@ provideRatingRootContext({
     >
       <slot
         :model-value="modelValue"
-        :groups="groups"
-        :items="groups"
+        :ratings="ratings"
       />
 
       <VisuallyHiddenInput

@@ -1,13 +1,11 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useActiveElement } from '@vueuse/core'
-import { computed, watchEffect } from 'vue'
-import RovingFocusItem from '@/RovingFocus/RovingFocusItem.vue'
-import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
+import { computed } from 'vue'
+import Item from './Item.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
 export interface RatingItemProps extends PrimitiveProps {
-  item: number
+  rating: number
 }
 </script>
 
@@ -15,97 +13,33 @@ export interface RatingItemProps extends PrimitiveProps {
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
-
-defineSlots<{
-  default?: (props: {
-  }) => any
-}>()
-
 const rootContext = injectRatingRootContext()
-const kbd = useKbd()
-const { currentElement, forwardRef } = useForwardExpose()
-const activeElement = useActiveElement()
 
-const isActive = computed(() => {
-  return (rootContext.hoveredRating.value > 0 && props.item <= rootContext.hoveredRating.value) || (rootContext.hoveredRating.value === 0 && props.item <= rootContext.modelValue.value)
-})
+const items = computed(() => {
+  const groupStartValue = (props.rating - 1)
+  const groupEndValue = props.rating
+  const stepSize = rootContext.step.value
 
-const isVisible = computed(() => {
-  return activeElement.value === currentElement.value || rootContext.step.value === 1 || props.item % 1 === 0 || props.item === rootContext.hoveredRating.value || props.item === rootContext.modelValue.value
-})
+  const numberOfSteps = Math.ceil((groupEndValue - groupStartValue) / stepSize)
 
-const itemStyle = computed(() => {
-  if (rootContext.step.value !== 1 && props.item % 1 !== 0) {
-    return {
-      position: 'absolute',
-      width: `${((props.item % 1) * 100)}%`,
-      overflow: 'hidden',
-      opacity: isVisible.value ? 1 : 0,
-      zIndex: Math.ceil((1 - (props.item % 1)) * 10),
-    }
-  }
-  return undefined
-})
-
-function handleMouseEnter() {
-  rootContext.changeHoveredRating(props.item)
-}
-
-function handleMouseDown() {
-  rootContext.changeModelValue(props.item)
-}
-
-function handleKeyDown(event: KeyboardEvent) {
-  event.preventDefault()
-
-  if (rootContext.disabled.value) {
-    return
-  }
-
-  if ((event.key === kbd.ENTER || event.key === kbd.SPACE) && !event.ctrlKey && !event.shiftKey) {
-    rootContext.changeModelValue(props.item)
-  }
-
-  if ([kbd.ARROW_LEFT, kbd.ARROW_RIGHT, kbd.ARROW_UP, kbd.ARROW_DOWN].includes(event.key)) {
-    useArrowNavigation(event, getActiveElement() as HTMLElement, undefined, {
-      itemsArray: Array.from(rootContext.ratingItems.value),
-      focus: true,
-      loop: false,
-      arrowKeyOptions: rootContext.orientation.value,
-      dir: rootContext.dir.value,
-    })
-  }
-}
-
-watchEffect((onCleanup) => {
-  rootContext.ratingItems.value.add(currentElement.value)
-
-  onCleanup(() => {
-    rootContext.ratingItems.value.delete(currentElement.value)
-  })
+  return Array.from({ length: numberOfSteps }, (_, index) =>
+    Number((groupStartValue + (index + 1) * stepSize).toFixed(2)))
 })
 </script>
 
 <template>
-  <RovingFocusItem
-    as-child
-    :disabled="rootContext.disabled.value"
-    :focusable="!rootContext.disabled.value"
+  <Primitive
+    :as="as"
+    :as-child="asChild"
+    :style="rootContext.step.value !== 1 ? { position: 'relative' } : undefined"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      :aria-checked="item <= rootContext.modelValue.value"
-      :aria-disabled="rootContext.disabled.value"
-      :data-state="isActive ? 'active' : undefined"
-      role="radio"
-      :style="itemStyle"
-      @mouseenter="handleMouseEnter"
-      @mousedown.left="handleMouseDown"
-      @keydown.enter.space.left.right.up.down="handleKeyDown"
+    <Item
+      v-for="item of items"
+      :key="item"
+      :item="item"
+      as-child
     >
       <slot />
-    </Primitive>
-  </RovingFocusItem>
+    </Item>
+  </Primitive>
 </template>
