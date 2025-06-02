@@ -19,9 +19,6 @@ const value = ref(3)
         <RatingRoot
           v-slot="{ items }"
           v-model="value"
-          :step="0.5"
-          clearable
-          hoverable
           class="flex gap-2"
         >
           <RatingItem
