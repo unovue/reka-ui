@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useActiveElement } from '@vueuse/core'
 import { computed, watchEffect } from 'vue'
 import { RadioGroupIndicator, RadioGroupItem } from '@/RadioGroup'
-import { useForwardExpose, useKbd } from '@/shared'
+import { useForwardExpose } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
@@ -13,10 +13,9 @@ export interface RatingItemProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
+const props = defineProps<RatingItemProps>()
 
 const rootContext = injectRatingRootContext()
-const kbd = useKbd()
 const { currentElement, forwardRef } = useForwardExpose()
 const activeElement = useActiveElement()
 const itemContext = injectRatingItemContext()
