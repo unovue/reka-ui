@@ -1,21 +1,34 @@
 <script lang="ts">
+import type { ComputedRef } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
-import Item from './Item.vue'
+import { Primitive } from '@/Primitive'
+import { createContext } from '@/shared'
 import { injectRatingRootContext } from './RatingRoot.vue'
+
+interface RatingItemContext {
+  steps: ComputedRef<number[]>
+}
 
 export interface RatingItemProps extends PrimitiveProps {
   item: number
 }
+
+export const [injectRatingItemContext, provideRatingItemContext]
+  = createContext<RatingItemContext>('RatingItem')
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+const props = withDefaults(defineProps<RatingItemProps>(), { as: 'label' })
+defineSlots<{
+  default?: (props: {
+    steps: number[]
+  }) => any
+}>()
 
-const props = withDefaults(defineProps<RatingItemProps>(), { as: 'span' })
 const rootContext = injectRatingRootContext()
 
-const ratings = computed(() => {
+const steps = computed(() => {
   const groupStartValue = (props.item - 1)
   const groupEndValue = props.item
   const stepSize = rootContext.step.value
@@ -25,21 +38,15 @@ const ratings = computed(() => {
   return Array.from({ length: numberOfSteps }, (_, index) =>
     Number((groupStartValue + (index + 1) * stepSize).toFixed(2)))
 })
+
+provideRatingItemContext({ steps })
 </script>
 
 <template>
   <Primitive
     :as="as"
     :as-child="asChild"
-    :style="rootContext.step.value !== 1 ? { position: 'relative' } : undefined"
   >
-    <Item
-      v-for="rating of ratings"
-      :key="rating"
-      :rating="rating"
-      as-child
-    >
-      <slot />
-    </Item>
+    <slot :steps="steps" />
   </Primitive>
 </template>

@@ -2,9 +2,8 @@
 import type { DataOrientation, Direction, FormFieldProps, StringOrNumber } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
-import RovingFocusGroup from '@/RovingFocus/RovingFocusGroup.vue'
+import { RadioGroupRoot } from '@/RadioGroup'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
-import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface RatingRootContext {
   modelValue: Ref<number>
@@ -56,7 +55,6 @@ export const [injectRatingRootContext, provideRatingRootContext]
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import type { ComputedRef, Ref } from 'vue'
 import { computed, ref, toRefs } from 'vue'
-import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<RatingRootProps>(), {
   orientation: 'horizontal',
@@ -123,36 +121,14 @@ provideRatingRootContext({
 </script>
 
 <template>
-  <RovingFocusGroup
-    as-child
-    :orientation="orientation"
-    :dir="dir"
+  <RadioGroupRoot
+    v-bind="props"
+    v-model="modelValue"
+    :disabled="disabled"
   >
-    <Primitive
-      :dir="dir"
-      :data-orientation="orientation"
-      :as-child="asChild"
-      :as="as"
-      role="radiogroup"
-      :aria-orientation="orientation"
-      @mouseleave="hoveredRating = 0"
-    >
-      <slot
-        :model-value="modelValue"
-        :items="items"
-      />
-
-      <VisuallyHiddenInput
-        :id="id"
-        as="input"
-        feature="focusable"
-        tabindex="-1"
-        :value="modelValue"
-        :name="name ?? ''"
-        :disabled="disabled"
-        :required="required"
-        @focus="Array.from(ratingItems)?.[0]?.focus()"
-      />
-    </Primitive>
-  </RovingFocusGroup>
+    <slot
+      :items="items"
+      :model-value="modelValue"
+    />
+  </RadioGroupRoot>
 </template>
