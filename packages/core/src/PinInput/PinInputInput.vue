@@ -26,7 +26,6 @@ const currentValue = computed(() => context.currentModelValue.value[props.index]
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 const isOtpMode = computed(() => context.otp.value)
-const isNumericMode = computed(() => context.type.value === 'number')
 const isPasswordMode = computed(() => context.mask.value)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
