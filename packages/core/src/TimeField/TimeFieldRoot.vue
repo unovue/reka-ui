@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { Time, getLocalTimeZone, isEqualDay, toCalendarDateTime, today } from '@internationalized/date'
+import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { isBefore } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {

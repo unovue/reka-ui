@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useWindowSize } from '@vueuse/core'
-import { AnimatePresence, Motion, animate, useMotionValue, useMotionValueEvent, useTransform } from 'motion-v'
+import { animate, AnimatePresence, Motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion-v'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 

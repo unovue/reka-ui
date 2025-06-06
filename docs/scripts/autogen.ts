@@ -1,5 +1,5 @@
 import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import _traverse from '@babel/traverse'
