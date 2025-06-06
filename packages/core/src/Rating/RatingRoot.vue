@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { DataOrientation, Direction, FormFieldProps, StringOrNumber } from '../shared/types'
+import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useForwardExpose } from '@/shared'
 
 export interface RatingRootContext {
   modelValue: Ref<number>
@@ -11,8 +11,6 @@ export interface RatingRootContext {
   hoveredRating: Ref<number>
   disabled: Ref<boolean>
   ratingItems: Ref<Set<HTMLElement>>
-  dir: ComputedRef<Direction>
-  orientation: Ref<DataOrientation>
   step: Ref<number>
   changeModelValue: (rating: number) => void
   changeHoveredRating: (rating: number) => void
@@ -52,7 +50,7 @@ export const [injectRatingRootContext, provideRatingRootContext]
   = createContext<RatingRootContext>('RatingRoot')
 </script>
 
-<script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
+<script setup lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import { computed, ref, toRefs } from 'vue'
 
@@ -70,8 +68,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { orientation, dir: propDir, length, disabled, clearable, hoverable, step } = toRefs(props)
-const dir = useDirection(propDir)
+const { length, disabled, clearable, hoverable, step } = toRefs(props)
+
 const ratingItems = ref<Set<HTMLElement>>(new Set())
 useForwardExpose()
 
@@ -112,8 +110,6 @@ provideRatingRootContext({
   hoveredRating,
   disabled,
   ratingItems,
-  dir,
-  orientation,
   step,
   changeModelValue,
   changeHoveredRating,
