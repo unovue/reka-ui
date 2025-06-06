@@ -120,6 +120,7 @@ const contextMenuOutside = useContextMenuOutside(
     emits('contextMenuOutside', event)
   },
   layerElement,
+  true,
 )
 
 const pointerDownOutside = usePointerDownOutside(async (event) => {

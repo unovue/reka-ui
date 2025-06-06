@@ -49,7 +49,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
 export function useContextMenuOutside(
   onContextMenuOutside?: (event: ContextMenuOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
-  enabled: MaybeRefOrGetter<boolean> = true,
+  enabled: MaybeRefOrGetter<boolean> = false,
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
