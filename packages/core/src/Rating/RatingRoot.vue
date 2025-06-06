@@ -123,7 +123,6 @@ provideRatingRootContext({
 <template>
   <RadioGroupRoot
     v-bind="props"
-    v-model="modelValue"
     :disabled="disabled"
   >
     <slot

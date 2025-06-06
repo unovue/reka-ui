@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import Rating from './_Rating.vue'
-
-const controlled = ref(2)
 </script>
 
 <template>

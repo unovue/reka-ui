@@ -55,6 +55,7 @@ watchEffect((onCleanup) => {
     :value="step"
     :data-state="isActive ? 'active' : undefined"
     :disabled="rootContext.disabled.value"
+    @select="rootContext.changeModelValue(step)"
     @mouseenter="handleMouseEnter"
   >
     <RadioGroupIndicator
