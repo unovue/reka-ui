@@ -4,7 +4,7 @@ import type {
   MenuContentEmits,
   MenuContentProps,
 } from '@/Menu'
-import { isPointerInRect } from '@/Menu/utils'
+import { isMouseInRect } from '@/Menu/utils'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 
 export type ContextMenuContentEmits = MenuContentEmits
@@ -51,7 +51,7 @@ function handlePointerDownOutside(event: PointerDownOutsideEvent) {
   // If the `contextmenu` click occurs within the trigger element's bounding rect,
   // we prevent the default behavior to avoid closing the menu,
   // because that would cause the flash of closing and opening the menu.
-  if (isPointerInRect(event.detail.originalEvent, rect)) {
+  if (isMouseInRect(event.detail.originalEvent, rect)) {
     event.preventDefault()
   }
 }
@@ -63,7 +63,7 @@ function handleContextMenuOutside(event: ContextMenuOutsideEvent) {
 
   const rect = rootContext.triggerElement.value?.getBoundingClientRect()
 
-  if (isPointerInRect(event.detail.originalEvent, rect)) {
+  if (isMouseInRect(event.detail.originalEvent, rect)) {
     // Prevent the default context menu from appearing
     event.detail.originalEvent.preventDefault()
     // Move the menu to the current pointer position

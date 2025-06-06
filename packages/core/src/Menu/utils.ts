@@ -89,7 +89,7 @@ export function isMouseEvent(event: PointerEvent) {
   return event.pointerType === 'mouse'
 }
 
-export function isPointerInRect(event: PointerEvent, rect?: DOMRect) {
+export function isMouseInRect(event: MouseEvent, rect?: DOMRect) {
   if (!rect) {
     return false
   }
