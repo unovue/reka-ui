@@ -1,6 +1,5 @@
 <script lang="ts">
-import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
-import type { PrimitiveProps } from '@/Primitive'
+import type { RadioGroupRootProps } from '@/RadioGroup'
 import { useVModel } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
 import { createContext, useForwardExpose } from '@/shared'
@@ -16,25 +15,13 @@ export interface RatingRootContext {
   changeHoveredRating: (rating: number) => void
 }
 
-export interface RatingRootProps extends PrimitiveProps, FormFieldProps {
+export interface RatingRootProps extends Omit<RadioGroupRootProps, 'modelValue' | 'defaultValue'> {
   /**
    * The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs
    */
   defaultValue?: number
   /** The controlled value of the tab to activate. Can be bind as `v-model`. */
   modelValue?: number
-  /**
-   * The orientation the rating is laid out.
-   * Mainly so arrow navigation is done accordingly (left & right vs. up & down)
-   * @defaultValue horizontal
-   */
-  orientation?: DataOrientation
-  /**
-   * The reading direction of the rating when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
-   */
-  dir?: Direction
-  id?: string
-  disabled?: boolean
   length?: number
   clearable?: boolean
   hoverable?: boolean
