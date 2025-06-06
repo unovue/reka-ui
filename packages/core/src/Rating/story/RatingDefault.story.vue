@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
-import { RatingItem, RatingItemStep, RatingRoot } from '../'
+import { RatingItem, RatingItemIndicator, RatingRoot } from '../'
 
 const value = ref(3)
 </script>
@@ -30,7 +30,7 @@ const value = ref(3)
             :item="item"
             class="relative size-14"
           >
-            <RatingItemStep
+            <RatingItemIndicator
               v-for="step in steps"
               :key="step"
               :step="step"
@@ -40,7 +40,7 @@ const value = ref(3)
                 icon="radix-icons:star"
                 class="size-14"
               />
-            </RatingItemStep>
+            </RatingItemIndicator>
           </RatingItem>
         </RatingRoot>
       </div>

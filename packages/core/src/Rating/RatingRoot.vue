@@ -9,7 +9,6 @@ export interface RatingRootContext {
   items: ComputedRef<number[]>
   hoveredRating: Ref<number>
   disabled: Ref<boolean>
-  ratingItems: Ref<Set<HTMLElement>>
   step: Ref<number>
   changeModelValue: (rating: number) => void
   changeHoveredRating: (rating: number) => void
@@ -57,7 +56,6 @@ defineSlots<{
 
 const { length, disabled, clearable, hoverable, step } = toRefs(props)
 
-const ratingItems = ref<Set<HTMLElement>>(new Set())
 useForwardExpose()
 
 const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>(props, 'modelValue', emits, {
@@ -96,7 +94,6 @@ provideRatingRootContext({
   items,
   hoveredRating,
   disabled,
-  ratingItems,
   step,
   changeModelValue,
   changeHoveredRating,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RatingRootProps } from '..'
 import { Icon } from '@iconify/vue'
-import { RatingItem, RatingItemStep, RatingRoot } from '..'
+import { RatingItem, RatingItemIndicator, RatingRoot } from '..'
 
 const props = defineProps<RatingRootProps>()
 </script>
@@ -19,7 +19,7 @@ const props = defineProps<RatingRootProps>()
       :item="item"
       class="relative size-8"
     >
-      <RatingItemStep
+      <RatingItemIndicator
         v-for="step in steps"
         :key="step"
         :step="step"
@@ -30,7 +30,7 @@ const props = defineProps<RatingRootProps>()
           icon="radix-icons:star"
           class="size-8"
         />
-      </RatingItemStep>
+      </RatingItemIndicator>
     </RatingItem>
   </RatingRoot>
 </template>

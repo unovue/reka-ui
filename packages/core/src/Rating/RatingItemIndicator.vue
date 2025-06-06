@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useActiveElement } from '@vueuse/core'
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { RadioGroupIndicator, RadioGroupItem } from '@/RadioGroup'
 import { useForwardExpose } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
@@ -31,14 +31,6 @@ const isVisible = computed(() => {
 function handleMouseEnter() {
   rootContext.changeHoveredRating(props.step)
 }
-
-watchEffect((onCleanup) => {
-  rootContext.ratingItems.value.add(currentElement.value)
-
-  onCleanup(() => {
-    rootContext.ratingItems.value.delete(currentElement.value)
-  })
-})
 </script>
 
 <template>
