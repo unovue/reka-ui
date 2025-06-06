@@ -78,7 +78,7 @@ export function isPointInPolygon(point: Point, polygon: Polygon) {
   return inside
 }
 
-export function isPointerInGraceArea(event: MouseEvent, area?: Polygon) {
+export function isPointerInGraceArea(event: PointerEvent, area?: Polygon) {
   if (!area)
     return false
   const cursorPos = { x: event.clientX, y: event.clientY }
@@ -89,7 +89,7 @@ export function isMouseEvent(event: PointerEvent) {
   return event.pointerType === 'mouse'
 }
 
-export function isPointerInRect(event: MouseEvent, rect?: DOMRect) {
+export function isPointerInRect(event: PointerEvent, rect?: DOMRect) {
   if (!rect) {
     return false
   }
