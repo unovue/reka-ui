@@ -86,12 +86,23 @@ const contentChangeState = reactive({
       auto-props-disabled
       title="Animated"
     >
-      <ScrollAreaStory animated>
+      <ScrollAreaStory
+        animated
+        :type="state.type"
+      >
         <ScrollAreaCopy
           v-for="i in 30"
           :key="i"
         />
       </ScrollAreaStory>
+
+      <template #controls>
+        <HstSelect
+          v-model="state.type"
+          title="type"
+          :options="['auto', 'always', 'scroll', 'hover']"
+        />
+      </template>
     </Variant>
   </Story>
 </template>
