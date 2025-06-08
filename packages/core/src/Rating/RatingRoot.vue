@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { RadioGroupRootProps } from '@/RadioGroup'
-import { useVModel } from '@vueuse/core'
+import { reactiveOmit, useVModel } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
 import { createContext, useForwardExpose } from '@/shared'
 
@@ -102,7 +102,7 @@ provideRatingRootContext({
 
 <template>
   <RadioGroupRoot
-    v-bind="props"
+    v-bind="reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step')"
     :disabled="disabled"
   >
     <slot
