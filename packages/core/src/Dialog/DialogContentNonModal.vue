@@ -19,7 +19,6 @@ const hasPointerDownOutsideRef = ref(false)
 <template>
   <DialogContentImpl
     v-bind="{ ...props, ...emitsAsProps }"
-    :trap-focus="false"
     :disable-outside-pointer-events="false"
     @close-auto-focus="
       (event) => {
