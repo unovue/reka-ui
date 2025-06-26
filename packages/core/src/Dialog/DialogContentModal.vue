@@ -19,7 +19,6 @@ useHideOthers(currentElement)
   <DialogContentImpl
     v-bind="{ ...props, ...emitsAsProps }"
     :ref="forwardRef"
-    :trap-focus="rootContext.open.value"
     :disable-outside-pointer-events="true"
     @close-auto-focus="
       (event) => {
