@@ -27,7 +27,7 @@
     "eslint": "^9.27.0",
     "histoire": "^0.17.17",
     "postcss": "^8.5.1",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "1.0.7"
   }
 }
