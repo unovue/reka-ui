@@ -117,6 +117,12 @@
     'default': '\'en\''
   },
   {
+    'name': 'maximumDays',
+    'description': '<p>The maximum number of days that can be selected in a range</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'maxValue',
     'description': '<p>The maximum date that can be selected</p>\n',
     'type': 'DateValue',
