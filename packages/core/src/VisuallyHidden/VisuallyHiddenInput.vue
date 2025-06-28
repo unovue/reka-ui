@@ -30,16 +30,16 @@ const parsedValue = computed(() => {
     return props.value.flatMap((obj, index) => {
       // if item in array is object
       if (typeof obj === 'object')
-        return Object.entries(obj).map(([key, value]) => ({ name: `[${props.name}][${index}][${key}]`, value }))
+        return Object.entries(obj).map(([key, value]) => ({ name: `${props.name}[${index}][${key}]`, value }))
       // if item in array is not object, may be primitive
       else
-        return ({ name: `[${props.name}][${index}]`, value: obj })
+        return ({ name: `${props.name}[${index}]`, value: obj })
     })
   }
 
   // if object value
   else if (props.value !== null && typeof props.value === 'object' && !Array.isArray(props.value)) {
-    return Object.entries(props.value as object).map(([key, value]) => ({ name: `[${props.name}][${key}]`, value }))
+    return Object.entries(props.value as object).map(([key, value]) => ({ name: `${props.name}[${key}]`, value }))
   }
 
   return []
