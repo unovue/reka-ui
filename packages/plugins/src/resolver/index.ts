@@ -1,3 +1,4 @@
+import type { Components } from 'reka-ui/constant'
 import type { ComponentResolver } from 'unplugin-vue-components'
 import { components } from 'reka-ui/constant'
 
@@ -18,10 +19,14 @@ export default function (options: ResolverOptions = {}): ComponentResolver {
     resolve: (name: string) => {
       if (name.toLowerCase().startsWith(prefix.toLowerCase())) {
         const componentName = name.substring(prefix.length)
-        if (Object.values(components).flat().includes(componentName)) {
-          return {
-            name: componentName,
-            from: 'reka-ui',
+        let groupName: keyof Components
+        for (groupName in components) {
+          const groupComponents: readonly string[] = components[groupName]
+          if (groupComponents.includes(componentName)) {
+            return {
+              name: componentName,
+              from: 'reka-ui',
+            }
           }
         }
       }

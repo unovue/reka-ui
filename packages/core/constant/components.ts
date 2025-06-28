@@ -475,3 +475,5 @@ export const utilities = {
     'createContext',
   ] as const,
 }
+
+export type Components = typeof components
