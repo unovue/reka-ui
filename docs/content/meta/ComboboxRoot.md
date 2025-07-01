@@ -57,6 +57,13 @@
     'required': false
   },
   {
+    'name': 'max',
+    'description': '<p>Maximum number of options that can be selected.\nOnly applies when <code>multiple</code> is <code>true</code>.\nWhen <code>0</code>, there is no limit.</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '0'
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the listbox. Can be binded with with <code>v-model</code>.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
@@ -107,6 +114,11 @@
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
     'type': '[payload: { ref: HTMLElement; value: AcceptableValue; }]'
+  },
+  {
+    'name': 'invalid',
+    'description': '<p>Event handler called when the value is invalid</p>\n',
+    'type': '[payload: AcceptableValue]'
   },
   {
     'name': 'update:modelValue',

@@ -8,6 +8,7 @@ import { createContext, useDirection, useFilter } from '@/shared'
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
   multiple: Ref<boolean>
+  max: Ref<number>
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
@@ -41,6 +42,8 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean]
+  /** Event handler called when the value is invalid */
+  'invalid': [payload: T]
 }
 
 export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
@@ -73,6 +76,7 @@ import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
+  max: 0,
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
@@ -89,7 +93,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, dir: propDir } = toRefs(props)
+const { multiple, max, disabled, ignoreFilter, resetSearchTermOnSelect, dir: propDir } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -213,6 +217,7 @@ defineExpose({
 provideComboboxRootContext({
   modelValue,
   multiple,
+  max,
   disabled,
   open,
   onOpenChange,
@@ -247,11 +252,13 @@ provideComboboxRootContext({
       :as-child="asChild"
       :dir="dir"
       :multiple="multiple"
+      :max="max"
       :name="name"
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="true"
       :by="props.by as any"
+      @invalid="emits('invalid', $event as T)"
       @highlight="emits('highlight', $event as any)"
     >
       <slot
