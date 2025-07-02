@@ -105,7 +105,7 @@ watch(rootContext.filterState, () => {
     :aria-controls="rootContext.contentId"
     aria-autocomplete="list"
     role="combobox"
-    autocomplete="false"
+    autocomplete="off"
     @input="handleInput"
     @keydown.down.up.prevent="handleKeyDown"
   >
