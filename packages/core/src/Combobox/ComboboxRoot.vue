@@ -25,8 +25,7 @@ type ComboboxRootContext<T> = {
   allItems: Ref<Map<string, string>>
   allGroups: Ref<Map<string, Set<string>>>
   filterSearch: Ref<string>
-  filterState:
-  ComputedRef<{ count: number, items: Map<string, number>, groups: Set<string> }>
+  filterState: ComputedRef<{ count: number, items: Map<string, number>, groups: Set<string> }>
   ignoreFilter: Ref<boolean>
 }
 
@@ -192,7 +191,7 @@ onMounted(() => {
 })
 
 defineExpose({
-  filtered: computed(() => filterState.value),
+  filtered: filterState,
   highlightedElement,
   highlightItem: primitiveElement.value?.highlightItem,
   highlightFirstItem: primitiveElement.value?.highlightFirstItem,

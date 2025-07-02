@@ -87,7 +87,10 @@ watch(rootContext.modelValue, async () => {
 }, { immediate: true, deep: true })
 
 watch(rootContext.filterState, () => {
-  listboxContext.highlightFirstItem()
+  // we exclude virtualized list as the state would be constantly updated
+  if (!rootContext.isVirtual.value) {
+    listboxContext.highlightFirstItem()
+  }
 })
 </script>
 
