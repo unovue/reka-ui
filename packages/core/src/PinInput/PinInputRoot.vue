@@ -10,7 +10,7 @@ export type PinInputType = 'text' | 'number'
 
 // Using this type to avoid mixed arrays (string | number)[].
 // The value type can be number[] only when the type is explicitly set to 'number'
-export type PinInputValue<Type extends PinInputType> = 'number' extends Type ? number[] : string[]
+export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? number[] : string[]
 
 // provide the mixed arrays because the `type` is dynamic in the context
 export type PinInputContextValue<Type extends PinInputType = 'text'> =
