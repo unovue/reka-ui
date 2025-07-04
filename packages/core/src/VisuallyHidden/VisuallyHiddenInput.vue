@@ -21,7 +21,7 @@ const isFormArrayEmptyAndRequired = computed(() =>
 
 const parsedValue = computed(() => {
   // if primitive value
-  if (typeof props.value === 'string' || typeof props.value === 'number' || typeof props.value === 'boolean') {
+  if (typeof props.value === 'string' || typeof props.value === 'number' || typeof props.value === 'boolean' || props.value === null || props.value === undefined) {
     return [{ name: props.name, value: props.value }]
   }
 
