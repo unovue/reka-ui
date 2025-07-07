@@ -76,6 +76,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   defaultValue?: DateRange
   /** The controlled checked state of the calendar. Can be bound as `v-model`. */
   modelValue?: DateRange | null
+  /** The controlled unchecked state of the calendar. */
+  rawModelValue?: DateRange
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
   /** When combined with `isDateUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. */
@@ -129,6 +131,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
 export type RangeCalendarRootEmits = {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
+  /** Event handler called whenever the rawModel value changes */
+  'update:rawModelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
   /** Event handler called whenever the start value changes */
@@ -146,6 +150,7 @@ import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),
+  rawModelValue: () => ({ start: undefined, end: undefined }),
   as: 'div',
   pagedNavigation: false,
   preventDeselect: false,
@@ -251,6 +256,11 @@ function onPlaceholderChange(value: DateValue) {
   placeholder.value = value.copy()
 }
 
+const rawModelValue = useVModel(props, 'rawModelValue', emits, {
+  defaultValue: props.defaultValue ?? { start: undefined, end: undefined },
+  passive: (props.modelValue === undefined) as false,
+}) as Ref<DateRange>
+
 const {
   fullCalendarLabel,
   headingValue,
@@ -324,6 +334,26 @@ watch(modelValue, (_modelValue, _prevValue) => {
   }
 })
 
+watch(rawModelValue, (_rawModelValue, _prevValue) => {
+  if (
+    (!_prevValue?.start && _rawModelValue?.start)
+    || !_rawModelValue
+    || !_rawModelValue.start
+    || (startValue.value && !isEqualDay(_rawModelValue.start, startValue.value))
+  ) {
+    startValue.value = _rawModelValue?.start?.copy?.()
+  }
+
+  if (
+    (!_prevValue?.end && _rawModelValue.end)
+    || !_rawModelValue
+    || !_rawModelValue.end
+    || (endValue.value && !isEqualDay(_rawModelValue.end, endValue.value))
+  ) {
+    endValue.value = _rawModelValue?.end?.copy?.()
+  }
+})
+
 watch(startValue, (_startValue) => {
   if (_startValue && !isEqualDay(_startValue, placeholder.value))
     onPlaceholderChange(_startValue)
@@ -333,6 +363,9 @@ watch(startValue, (_startValue) => {
 
 watch([startValue, endValue], ([_startValue, _endValue]) => {
   const value = currentModelValue.value
+
+  rawModelValue.value.start = startValue.value?.copy()
+  rawModelValue.value.end = endValue.value?.copy()
 
   if (
     value
