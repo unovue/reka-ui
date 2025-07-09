@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   vitepress:
-    hash: bqcu3m23uizjurvpczsjagw6py
+    hash: 1a260fedf146bd826c4de179b274675e98be68ead7180bc98fcbcc323e7d86e0
     path: patches/vitepress.patch
 
 importers:
@@ -194,7 +194,7 @@ importers:
         version: 4.19.2
       vitepress:
         specifier: 1.6.3
-        version: 1.6.3(patch_hash=bqcu3m23uizjurvpczsjagw6py)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.8.2)
+        version: 1.6.3(patch_hash=1a260fedf146bd826c4de179b274675e98be68ead7180bc98fcbcc323e7d86e0)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.8.2)
       vue-component-meta:
         specifier: ^2.2.10
         version: 2.2.10(typescript@5.8.2)
@@ -13551,7 +13551,7 @@ snapshots:
       '@types/node': 20.17.17
       fsevents: 2.3.3
 
-  vitepress@1.6.3(patch_hash=bqcu3m23uizjurvpczsjagw6py)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.8.2):
+  vitepress@1.6.3(patch_hash=1a260fedf146bd826c4de179b274675e98be68ead7180bc98fcbcc323e7d86e0)(@algolia/client-search@5.20.0)(@types/node@20.17.17)(postcss@8.5.1)(search-insights@2.14.0)(typescript@5.8.2):
     dependencies:
       '@docsearch/css': 3.8.2
       '@docsearch/js': 3.8.2(@algolia/client-search@5.20.0)(search-insights@2.14.0)
