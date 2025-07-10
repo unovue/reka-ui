@@ -241,8 +241,7 @@ function updateCursor() {
     else
       intersectsVertical = true
 
-    if (intersectsHorizontal || intersectsVertical)
-      nonce = _nonce.value
+    nonce = _nonce.value
   })
 
   let constraintFlags = 0
