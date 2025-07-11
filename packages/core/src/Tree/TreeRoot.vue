@@ -80,7 +80,7 @@ import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
@@ -269,12 +269,6 @@ provideTreeRootContext({
   isVirtual,
   virtualKeydownHook,
   handleMultipleReplace,
-})
-
-watch(() => modelValue.value, (value) => {
-  console.log(value)
-}, {
-  deep: true,
 })
 </script>
 
