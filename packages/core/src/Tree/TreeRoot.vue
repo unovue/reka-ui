@@ -80,7 +80,7 @@ import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs } from 'vue'
+import { computed, nextTick, ref, toRefs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
@@ -112,14 +112,14 @@ const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error idk
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
-  passive: (props.modelValue === undefined) as false,
+  passive: true,
   deep: true,
 }) as Ref<U | U[]>
 
 const expanded = useVModel(props, 'expanded', emits, {
   // @ts-expect-error idk
   defaultValue: props.defaultExpanded ?? [],
-  passive: (props.expanded === undefined) as false,
+  passive: true,
   deep: true,
 }) as Ref<string[]>
 
@@ -269,6 +269,12 @@ provideTreeRootContext({
   isVirtual,
   virtualKeydownHook,
   handleMultipleReplace,
+})
+
+watch(() => modelValue.value, (value) => {
+  console.log(value)
+}, {
+  deep: true,
 })
 </script>
 
