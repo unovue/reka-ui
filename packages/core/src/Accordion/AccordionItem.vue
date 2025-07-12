@@ -95,7 +95,7 @@ function handleArrowKey(e: KeyboardEvent) {
 
   useArrowNavigation(
     e,
-    currentElement.value,
+    target,
     rootContext.parentElement.value!,
     {
       arrowKeyOptions: rootContext.orientation,

@@ -757,7 +757,9 @@ export function useDateField(props: UseDateFieldProps) {
 
     const prevValue = props.segmentValues.value.minute
 
-    props.segmentValues.value.minute = minuteSecondIncrementation({ e, part: 'minute', dateRef: props.placeholder.value, prevValue })
+    if (e.key === kbd.ARROW_UP || e.key === kbd.ARROW_DOWN) {
+      props.segmentValues.value.minute = minuteSecondIncrementation({ e, part: 'minute', dateRef: props.placeholder.value, prevValue })
+    }
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
@@ -784,7 +786,9 @@ export function useDateField(props: UseDateFieldProps) {
 
     const prevValue = props.segmentValues.value.second
 
-    props.segmentValues.value.second = minuteSecondIncrementation({ e, part: 'second', dateRef: props.placeholder.value, prevValue })
+    if (e.key === kbd.ARROW_UP || e.key === kbd.ARROW_DOWN) {
+      props.segmentValues.value.second = minuteSecondIncrementation({ e, part: 'second', dateRef: props.placeholder.value, prevValue })
+    }
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)

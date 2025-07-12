@@ -25,12 +25,6 @@
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
     'required': false
-  },
-  {
-    'name': 'trapFocus',
-    'description': '<p>When <code>true</code>, focus cannot escape the <code>Content</code> via keyboard,\npointer, or a programmatic focus.</p>\n',
-    'type': 'boolean',
-    'required': false
   }
 ]" />
 

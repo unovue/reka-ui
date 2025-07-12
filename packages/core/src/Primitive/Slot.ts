@@ -9,12 +9,12 @@ export const Slot = defineComponent({
       if (!slots.default)
         return null
 
-      const childrens = renderSlotFragments(slots.default())
-      const firstNonCommentChildrenIndex = childrens.findIndex(child => child.type !== Comment)
+      const children = renderSlotFragments(slots.default())
+      const firstNonCommentChildrenIndex = children.findIndex(child => child.type !== Comment)
       if (firstNonCommentChildrenIndex === -1)
-        return childrens
+        return children
 
-      const firstNonCommentChildren = childrens[firstNonCommentChildrenIndex]
+      const firstNonCommentChildren = children[firstNonCommentChildrenIndex]
 
       // Remove props ref from being inferred
       delete firstNonCommentChildren.props?.ref
@@ -28,11 +28,11 @@ export const Slot = defineComponent({
         : attrs
       const cloned = cloneVNode({ ...firstNonCommentChildren, props: {} }, mergedProps)
 
-      if (childrens.length === 1)
+      if (children.length === 1)
         return cloned
 
-      childrens[firstNonCommentChildrenIndex] = cloned
-      return childrens
+      children[firstNonCommentChildrenIndex] = cloned
+      return children
     }
   },
 })

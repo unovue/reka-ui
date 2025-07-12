@@ -1,13 +1,13 @@
 ---
 title: Inject Context
-description: Utilize `injectContext` to enhances component composition in Reka UI, enabling powerful and flexible UI development.
+description: Utilize `injectContext` to enhance component composition in Reka UI, enabling powerful and flexible UI development.
 ---
 
 # Inject Context
 
 <Description>
 
-Utilize `injectContext` to enhances component composition in Reka UI, enabling powerful and flexible UI development.
+Utilize `injectContext` to enhance component composition in Reka UI, enabling powerful and flexible UI development.
 
 </Description>
 

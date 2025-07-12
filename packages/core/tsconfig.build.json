@@ -23,6 +23,7 @@
   },
   "include": [
     "env.d.ts",
+    "constant/*",
     "src/**/*",
     "src/**/*.ts",
     "src/**/*.tsx",

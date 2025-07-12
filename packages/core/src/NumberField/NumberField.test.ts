@@ -119,6 +119,28 @@ describe('numberField', () => {
     expect(input.value).toBe('0')
   })
 
+  it('should not be changed when readonly', async () => {
+    const { root, input, increment, decrement } = setup({ defaultValue: 0, readonly: true })
+
+    expect(root.getAttribute('data-readonly')).toBe('')
+    expect(input.getAttribute('data-readonly')).toBe('')
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+    expect(input.value).toBe('0')
+    await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+    expect(input.value).toBe('0')
+    await userEvent.click(increment)
+    expect(input.value).toBe('0')
+    await userEvent.click(decrement)
+    expect(input.value).toBe('0')
+  })
+
+  it('should be be focusable when readonly', async () => {
+    const { input } = setup({ defaultValue: 0, readonly: true })
+
+    await userEvent.tab()
+    expect(input).toBe(document.activeElement)
+  })
+
   describe('with disable wheel change option', () => {
     it('should update value when scroll by default', async () => {
       const { input } = setup({

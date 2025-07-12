@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
@@ -24,10 +24,8 @@ type ComboboxRootContext<T> = {
   onResetSearchTerm: EventHookOn
   allItems: Ref<Map<string, string>>
   allGroups: Ref<Map<string, Set<string>>>
-  filterState: {
-    search: string
-    filtered: { count: number, items: Map<string, number>, groups: Set<string> }
-  }
+  filterSearch: Ref<string>
+  filterState: ComputedRef<{ count: number, items: Map<string, number>, groups: Set<string> }>
   ignoreFilter: Ref<boolean>
 }
 
@@ -68,7 +66,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 
@@ -106,7 +104,7 @@ const open = useVModel(props, 'open', emits, {
 
 async function onOpenChange(val: boolean) {
   open.value = val
-  filterState.search = ''
+  filterSearch.value = ''
 
   if (val) {
     // make sure dom is ready then only highlight the selected
@@ -137,33 +135,31 @@ const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
 
 const { contains } = useFilter({ sensitivity: 'base' })
-const filterState = reactive({
-  search: '',
-  filtered: {
-    /** The count of all visible items. */
-    count: 0,
-    /** Map from visible item id to its search score. */
-    items: new Map() as Map<string, number>,
-    /** Set of groups with at least one visible item. */
-    groups: new Set() as Set<string>,
-  },
-})
 
-function filterItems() {
-  if (!filterState.search || props.ignoreFilter || isVirtual.value) {
-    filterState.filtered.count = allItems.value.size
+const filterSearch = ref('')
+
+const filterState = computed<{
+  count: number
+  items: Map<string, number>
+  groups: Set<string>
+}>((oldValue) => {
+  if (!filterSearch.value || props.ignoreFilter || isVirtual.value) {
     // Do nothing, each item will know to show itself because search is empty
-    return
+    return {
+      count: allItems.value.size,
+      items: oldValue?.items ?? new Map(),
+      groups: oldValue?.groups ?? new Set(allGroups.value.keys()),
+    }
   }
 
-  // Reset the groups
-  filterState.filtered.groups = new Set()
   let itemCount = 0
+  const filteredItems = new Map<string, number>()
+  const filteredGroups = new Set<string>()
 
   // Check which items should be included
   for (const [id, value] of allItems.value) {
-    const score = contains(value, filterState.search)
-    filterState.filtered.items.set(id, score ? 1 : 0)
+    const score = contains(value, filterSearch.value)
+    filteredItems.set(id, score ? 1 : 0)
     if (score)
       itemCount++
   }
@@ -171,27 +167,19 @@ function filterItems() {
   // Check which groups have at least 1 item shown
   for (const [groupId, group] of allGroups.value) {
     for (const itemId of group) {
-      if (filterState.filtered.items.get(itemId)! > 0) {
-        filterState.filtered.groups.add(groupId)
+      if (filteredItems.get(itemId)! > 0) {
+        filteredGroups.add(groupId)
         break
       }
     }
   }
 
-  filterState.filtered.count = itemCount
-}
-
-watch([() => filterState.search, () => allItems.value.size], () => {
-  filterItems()
-}, { immediate: true })
-
-watch(() => open.value, () => {
-  // nextTick to allow multiple items to be mounted first
-  nextTick(() => {
-    if (open.value)
-      filterItems()
-  })
-}, { flush: 'post' })
+  return {
+    count: itemCount,
+    items: filteredItems,
+    groups: filteredGroups,
+  }
+})
 
 const inst = getCurrentInstance()
 onMounted(() => {
@@ -203,7 +191,7 @@ onMounted(() => {
 })
 
 defineExpose({
-  filtered: computed(() => filterState.filtered),
+  filtered: filterState,
   highlightedElement,
   highlightItem: primitiveElement.value?.highlightItem,
   highlightFirstItem: primitiveElement.value?.highlightFirstItem,
@@ -229,6 +217,7 @@ provideComboboxRootContext({
   onResetSearchTerm: resetSearchTerm.on,
   allItems,
   allGroups,
+  filterSearch,
   filterState,
   ignoreFilter,
 })

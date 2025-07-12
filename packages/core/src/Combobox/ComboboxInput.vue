@@ -45,13 +45,13 @@ function handleInput(event: InputEvent) {
     rootContext.onOpenChange(true)
     nextTick(() => {
       if (target.value) {
-        rootContext.filterState.search = target.value
-        listboxContext.highlightFirstItem(event)
+        rootContext.filterSearch.value = target.value
+        listboxContext.highlightFirstItem()
       }
     })
   }
   else {
-    rootContext.filterState.search = target.value
+    rootContext.filterSearch.value = target.value
   }
 }
 
@@ -86,14 +86,12 @@ watch(rootContext.modelValue, async () => {
     resetSearchTerm()
 }, { immediate: true, deep: true })
 
-watch(
-  () => props.modelValue,
-  () => {
-    if (props.modelValue !== undefined) {
-      rootContext.filterState.search = props.modelValue
-    }
-  },
-)
+watch(rootContext.filterState, () => {
+  // we exclude virtualized list as the state would be constantly updated
+  if (!rootContext.isVirtual.value) {
+    listboxContext.highlightFirstItem()
+  }
+})
 </script>
 
 <template>

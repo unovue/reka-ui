@@ -29,6 +29,7 @@ const rootContext = injectDateRangePickerRootContext()
       maxValue: rootContext.maxValue.value,
       dir: rootContext.dir.value,
       fixedDate: rootContext.fixedDate.value,
+      maximumDays: rootContext.maximumDays?.value,
     }"
     initial-focus
     :model-value="rootContext.modelValue.value"

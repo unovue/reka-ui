@@ -6,7 +6,7 @@ import type {
 
 export type DialogContentEmits = DialogContentImplEmits
 
-export interface DialogContentProps extends DialogContentImplProps {
+export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFocus'> {
   /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.

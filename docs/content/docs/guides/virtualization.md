@@ -7,7 +7,7 @@ description: Learn how to efficiently render large datasets with Reka UI, powere
 
 <Description>
 
-Learn how to efficiently render large datasets with Reka UI, powered by `@tanstack/virtual`.
+Learn how to efficiently render large datasets with Reka UI, powered by `@tanstack/vue-virtual`.
 
 </Description>
 
