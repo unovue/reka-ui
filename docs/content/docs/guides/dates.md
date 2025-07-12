@@ -61,6 +61,7 @@ import {
   createYear,
   createYearRange,
   getDaysInMonth,
+  getWeekNumber,
   hasTime,
   isAfter,
   isAfterOrSame,
@@ -84,6 +85,7 @@ isCalendarDateTime(date) // returns false
 isZonedDateTime(date) // returns false
 hasTime(date) // returns false
 getDaysInMonth(date) // returns 31
+getWeekNumber(new CalendarDate(1995, 8, 18), 'en-US', 'sun') // returns 33
 isAfter(date, minDate) // returns true
 isBeforeOrSame(date, maxDate) // returns true
 isAfterOrSame(date, minDate) // returns true
