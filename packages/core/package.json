@@ -56,13 +56,14 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "src",
+    "dist",
     "!src/**/*.story.vue",
     "!src/**/*.test.*",
+    "!src/**/_*.vue",
     "!src/**/__snapshots__",
     "!src/**/stories",
-    "!src/**/story",
-    "dist",
-    "src"
+    "!src/**/story"
   ],
   "scripts": {
     "build": "pnpm type-check && pnpm build-only",
