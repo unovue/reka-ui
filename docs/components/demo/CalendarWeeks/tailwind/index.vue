@@ -1,46 +1,12 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
-import { usePointerSwipe } from '@vueuse/core'
-import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, CalendarWeek } from 'reka-ui'
-import { onMounted, ref, useTemplateRef } from 'vue'
-
-const calendarRef = useTemplateRef('calendarRef')
-const date = ref(new CalendarDate(2023, 1, 1))
-
-function nextPage() {
-  date.value = date.value.add({ months: 1 }).copy()
-}
-
-function prevPage() {
-  date.value = date.value.subtract({ months: 1 }).copy()
-}
-
-onMounted(() => {
-  if (calendarRef.value) {
-    usePointerSwipe(calendarRef.value.$el, {
-      onSwipeEnd(_e, direction) {
-        if (direction === 'none') {
-          // eslint-disable-next-line no-useless-return
-          return
-        }
-        else if (['down', 'right'].includes(direction)) {
-          prevPage()
-        }
-        else {
-          nextPage()
-        }
-      },
-    })
-  }
-})
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
+import { getWeekNumber } from 'reka-ui/date'
 </script>
 
 <template>
   <CalendarRoot
-    ref="calendarRef"
     v-slot="{ weekDays, grid }"
-    v-model:placeholder="date"
     class="mt-6 rounded-xl bg-white p-4 shadow-sm border"
     fixed-weeks
   >
@@ -94,10 +60,11 @@ onMounted(() => {
             :key="`weekDate-${index}`"
             class="grid grid-cols-8"
           >
-            <CalendarWeek
+            <div
               class="text-sm flex justify-center items-center"
-              :row-index="index"
-            />
+            >
+              {{ getWeekNumber(weekDates[0]) }}
+            </div>
             <CalendarCell
               v-for="weekDate in weekDates"
               :key="weekDate.toString()"
