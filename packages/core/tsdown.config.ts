@@ -22,7 +22,7 @@ export default defineConfig({
     },
   },
   outputOptions: {
-    minifyInternalExports: true,
+    minifyInternalExports: false,
 
     // Don't rely on unbundle: it creates a lot of unwanted files because of the multiple sections of SFC files
     advancedChunks: {
