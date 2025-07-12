@@ -16,5 +16,3 @@ export { default as RangeCalendarNext, type RangeCalendarNextProps } from './Ran
 export { default as RangeCalendarPrev, type RangeCalendarPrevProps } from './RangeCalendarPrev.vue'
 
 export { injectRangeCalendarRootContext, default as RangeCalendarRoot, type RangeCalendarRootEmits, type RangeCalendarRootProps } from './RangeCalendarRoot.vue'
-
-export { default as RangeCalendarWeek, type RangeCalendarWeekProps } from './RangeCalendarWeek.vue'

@@ -42,7 +42,6 @@ export const components = {
     'CalendarGridBody',
     'CalendarGridRow',
     'CalendarCellTrigger',
-    'CalendarWeek',
   ] as const,
 
   checkbox: [
@@ -302,7 +301,6 @@ export const components = {
     'RangeCalendarGridBody',
     'RangeCalendarGridRow',
     'RangeCalendarCellTrigger',
-    'RangeCalendarWeek',
   ] as const,
 
   scrollArea: [

@@ -49,7 +49,3 @@ export {
   type CalendarRootProps,
   injectCalendarRootContext,
 } from './CalendarRoot.vue'
-export {
-  default as CalendarWeek,
-  type CalendarWeekProps,
-} from './CalendarWeek.vue'

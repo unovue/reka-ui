@@ -62,7 +62,6 @@ import {
   CalendarNext,
   CalendarPrev,
   CalendarRoot,
-  CalendarWeek
 } from 'reka-ui'
 </script>
 
@@ -81,7 +80,6 @@ import {
       </CalendarGridHead>
       <CalendarGridBody>
         <CalendarGridRow>
-          <CalendarWeek />
           <CalendarCell>
             <CalendarCellTrigger />
           </CalendarCell>
@@ -268,12 +266,6 @@ Interactable container for displaying the cell dates. Clicking it selects the da
     }
   ]"
 />
-
-### Calendar Week
-
-Container for wrapping the week numbers.
-
-<!-- @include: @/meta/CalendarWeek.md -->
 
 ## Examples
 
