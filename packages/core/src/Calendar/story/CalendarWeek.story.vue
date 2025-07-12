@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, CalendarWeek } from '..'
+import { getWeekNumber } from '@/date'
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 </script>
 
 <template>
@@ -66,7 +67,7 @@ import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, Cale
                 :key="`weekDate-${index}`"
                 class="grid grid-cols-8"
               >
-                <CalendarWeek :row-index="index" />
+                <div>{{ getWeekNumber(weekDates[0]) }}</div>
                 <CalendarCell
                   v-for="weekDate in weekDates"
                   :key="weekDate.toString()"
