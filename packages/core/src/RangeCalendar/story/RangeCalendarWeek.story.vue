@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, RangeCalendarWeek } from '..'
+import { getWeekNumber } from '@/date'
+import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 </script>
 
 <template>
@@ -38,7 +39,7 @@ import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCa
           class="flex flex-col space-y-4 pt-4 sm:flex-row sm:space-x-4 sm:space-y-0"
         >
           <RangeCalendarGrid
-            v-for="(month, monthIndex) in grid"
+            v-for="(month) in grid"
             :key="month.value.toString()"
             class="w-full border-collapse select-none space-y-1"
           >
@@ -65,11 +66,9 @@ import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCa
                 :key="`weekDate-${index}`"
                 class="grid grid-cols-8"
               >
-                <RangeCalendarWeek
-                  class="flex items-center justify-center text-black !p-0 text-center text-sm w-10 h-10"
-                  :row-index="index"
-                  :month-index="monthIndex"
-                />
+                <div class="flex items-center justify-center text-black !p-0 text-center text-sm w-10 h-10">
+                  {{ getWeekNumber(weekDates[0]) }}
+                </div>
                 <RangeCalendarCell
                   v-for="weekDate in weekDates"
                   :key="weekDate.toString()"
