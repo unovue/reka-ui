@@ -29,7 +29,6 @@
     "@types/babel__traverse": "^7.20.6",
     "@types/hast": "^3.0.4",
     "@types/markdown-it": "^14.1.2",
-    "@types/markdown-it-anchor": "^7.0.0",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.20",
     "codesandbox": "^2.2.3",
