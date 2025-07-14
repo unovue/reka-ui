@@ -20,6 +20,7 @@ type DateRangePickerRootContext = {
   granularity: Ref<Granularity | undefined>
   hideTimeZone: Ref<boolean>
   required: Ref<boolean>
+  initialFocus: Ref<boolean>
   locale: Ref<string>
   dateFieldRef: Ref<InstanceType<typeof DateRangeFieldRoot> | undefined>
   modelValue: Ref<{ start: DateValue | undefined, end: DateValue | undefined }>
@@ -47,7 +48,7 @@ type DateRangePickerRootContext = {
   maximumDays?: Ref<number | undefined>
 }
 
-export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'>
+export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays' | 'initialFocus'>
 
 export type DateRangePickerRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -96,6 +97,7 @@ const {
   locale,
   disabled,
   readonly,
+  initialFocus,
   pagedNavigation,
   weekStartsOn,
   weekdayFormat,
@@ -166,6 +168,7 @@ provideDateRangePickerRootContext({
   fixedWeeks,
   numberOfMonths,
   readonly,
+  initialFocus,
   preventDeselect,
   modelValue,
   placeholder,

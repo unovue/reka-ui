@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PopoverContentEmits, PopoverContentProps, PopoverPortalProps } from '..'
 import { computed } from 'vue'
-import { PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
+import { injectDatePickerRootContext, PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
 
 export interface DatePickerContentProps extends PopoverContentProps {
   /**
@@ -16,6 +16,8 @@ export interface DatePickerContentEmits extends PopoverContentEmits {}
 const props = defineProps<DatePickerContentProps>()
 const emits = defineEmits<DatePickerContentEmits>()
 
+const rootContext = injectDatePickerRootContext()
+
 const propsToForward = computed(() => ({
   ...props,
   portal: undefined,
@@ -27,6 +29,13 @@ const forwarded = useForwardPropsEmits(propsToForward, emits)
   <PopoverPortal v-bind="portal">
     <PopoverContent
       v-bind="{ ...forwarded, ...$attrs }"
+      @open-auto-focus="event => {
+        emits('openAutoFocus', event)
+
+        if (!rootContext.initialFocus.value) {
+          event.preventDefault()
+        }
+      }"
     >
       <slot />
     </PopoverContent>
