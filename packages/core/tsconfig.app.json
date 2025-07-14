@@ -15,8 +15,9 @@
     "skipLibCheck": true
   },
   "vueCompilerOptions": {
+    // TODO: enable; currently makes documentation codegen not ideal and might be a too-drastic change (#2043)
     // Necessary to allow downstream users to enable and benefit from strict typechecking features of Vue
-    "fallthroughAttributes": true
+    // "fallthroughAttributes": true
   },
   "include": [
     "env.d.ts",
