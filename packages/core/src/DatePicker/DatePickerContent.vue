@@ -1,7 +1,8 @@
 <script lang="ts">
 import type { PopoverContentEmits, PopoverContentProps, PopoverPortalProps } from '..'
 import { computed } from 'vue'
-import { injectDatePickerRootContext, PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
+import { PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
+import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 
 export interface DatePickerContentProps extends PopoverContentProps {
   /**
