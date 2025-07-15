@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { ref, toRefs, watch, watchEffect } from 'vue'
+import { useNonce } from '@/shared/useNonce'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
 export interface SplitterResizeHandleProps extends PrimitiveProps {
@@ -12,6 +13,10 @@ export interface SplitterResizeHandleProps extends PrimitiveProps {
   tabindex?: number
   /** Disable drag handle */
   disabled?: boolean
+  /**
+   * Will add `nonce` attribute to the style tag which can be used by Content Security Policy. <br> If omitted, inherits globally from `ConfigProvider`.
+   */
+  nonce?: string
 }
 
 export type PanelResizeHandleOnDragging = (isDragging: boolean) => void
@@ -60,6 +65,8 @@ const resizeHandleId = useId(props.id, 'reka-splitter-resize-handle')
 const state = ref<ResizeHandlerState>('inactive')
 const isFocused = ref(false)
 const resizeHandler = ref<ResizeHandler | null>(null)
+const { nonce: propNonce } = toRefs(props)
+const nonce = useNonce(propNonce)
 
 watch(disabled, () => {
   if (!isBrowser)
@@ -125,6 +132,7 @@ watchEffect((onCleanup) => {
       // Fine inputs (e.g. mouse)
       fine: props.hitAreaMargins?.fine ?? 5,
     },
+    nonce,
     setResizeHandlerState,
   ))
 })

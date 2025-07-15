@@ -18,7 +18,7 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
 
   const configProviderContext = injectConfigProviderContext({ useId: undefined })
 
-  if (Object.hasOwn(vue, 'useId')) {
+  if ('useId' in vue) {
     return `${prefix}-${vue.useId?.()}`
   }
   else if (configProviderContext.useId) {

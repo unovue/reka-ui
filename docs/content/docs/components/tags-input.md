@@ -36,7 +36,7 @@ Import all parts and piece them together.
 
 ```vue
 <script setup>
-import { TagsInputClear, TagsInputDelete, TagsInputInput, TagsInputItem, TagsInputRoot, TagsInputText } from 'reka-ui'
+import { TagsInputClear, TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from 'reka-ui'
 </script>
 
 <template>

@@ -9,7 +9,16 @@ import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 export type PinInputType = 'text' | 'number'
 
 // Using this type to avoid mixed arrays (string | number)[].
-export type PinInputValue<Type extends PinInputType = 'text'> = Type extends 'number' ? number[] : string[]
+// The value type can be number[] only when the type is explicitly set to 'number'
+export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? number[] : string[]
+
+// provide the mixed arrays because the `type` is dynamic in the context
+export type PinInputContextValue<Type extends PinInputType = 'text'> =
+  Type extends 'number'
+    ? Type extends 'string'
+      ? string[] | number[]
+      : number[]
+    : string[]
 
 export type PinInputRootEmits<Type extends PinInputType = 'text'> = {
   'update:modelValue': [value: PinInputValue<Type>]
@@ -38,8 +47,8 @@ export interface PinInputRootProps<Type extends PinInputType = 'text'> extends P
 }
 
 export interface PinInputRootContext<Type extends PinInputType = 'text'> {
-  modelValue: Ref<PinInputValue<Type>>
-  currentModelValue: ComputedRef<PinInputValue<Type>>
+  modelValue: Ref<PinInputContextValue<Type>>
+  currentModelValue: ComputedRef<PinInputContextValue<Type>>
   mask: Ref<boolean>
   otp: Ref<boolean>
   placeholder: Ref<string>
@@ -56,7 +65,7 @@ export const [injectPinInputRootContext, providePinInputRootContext]
   = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 </script>
 
-<script setup lang="ts" generic="Type extends PinInputType = 'text'">
+<script setup lang="ts" generic="Type extends PinInputType">
 import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 

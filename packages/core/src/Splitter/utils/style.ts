@@ -69,6 +69,7 @@ export function resetGlobalCursorStyle() {
 export function setGlobalCursorStyle(
   state: CursorState,
   constraintFlags: number,
+  nonce?: string,
 ) {
   const style = getCursorStyle(state, constraintFlags)
 
@@ -79,7 +80,8 @@ export function setGlobalCursorStyle(
 
   if (styleElement === null) {
     styleElement = document.createElement('style')
-
+    if (nonce)
+      styleElement.nonce = nonce
     document.head.appendChild(styleElement)
   }
 
