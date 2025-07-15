@@ -93,6 +93,9 @@ function handleClick() {
       modelValueArray.splice(index, 1)
     }
     else {
+      if (checkboxGroupContext?.max.value !== undefined && modelValueArray.length >= checkboxGroupContext?.max.value) {
+        return
+      }
       modelValueArray.push(props.value)
     }
     checkboxGroupContext.modelValue.value = modelValueArray
