@@ -32,7 +32,6 @@ type DatePickerRootContext = {
   numberOfMonths: Ref<number>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
-  initialFocus: Ref<boolean>
   isDateDisabled?: Matcher
   isDateUnavailable?: Matcher
   defaultOpen: Ref<boolean>
@@ -43,7 +42,7 @@ type DatePickerRootContext = {
   dir: Ref<Direction>
 }
 
-export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'initialFocus'>
+export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'>
 
 export type DatePickerRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -75,7 +74,6 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
-  initialFocus: false,
   placeholder: undefined,
   locale: 'en',
   isDateDisabled: undefined,
@@ -86,7 +84,6 @@ const {
   locale,
   disabled,
   readonly,
-  initialFocus,
   pagedNavigation,
   weekStartsOn,
   weekdayFormat,
@@ -152,7 +149,6 @@ provideDatePickerRootContext({
   fixedWeeks,
   numberOfMonths,
   readonly,
-  initialFocus,
   preventDeselect,
   modelValue,
   placeholder,

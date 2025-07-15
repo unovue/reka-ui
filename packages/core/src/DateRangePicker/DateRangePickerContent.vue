@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PopoverContentEmits, PopoverContentProps, PopoverPortalProps } from '..'
 import { computed } from 'vue'
+import { handleCalendarInitialFocus } from '@/shared/date'
 import { PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
-import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 
 export interface DateRangePickerContentProps extends PopoverContentProps {
   /**
@@ -16,8 +16,6 @@ export interface DateRangePickerContentEmits extends PopoverContentEmits {}
 <script setup lang="ts">
 const props = defineProps<DateRangePickerContentProps>()
 const emits = defineEmits<DateRangePickerContentEmits>()
-
-const rootContext = injectDateRangePickerRootContext()
 
 const propsToForward = computed(() => ({
   ...props,
@@ -33,7 +31,8 @@ const forwarded = useForwardPropsEmits(propsToForward, emits)
       @open-auto-focus="event => {
         emits('openAutoFocus', event)
 
-        if (!rootContext.initialFocus.value) {
+        if (!event.defaultPrevented && event.target) {
+          handleCalendarInitialFocus(event.target as HTMLElement)
           event.preventDefault()
         }
       }"
