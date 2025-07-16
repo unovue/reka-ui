@@ -18,7 +18,7 @@
     "@vueuse/core": "^12.5.0",
     "motion-v": "1.3.1",
     "reka-ui": "link:../packages/core",
-    "vue": "3.5.13",
+    "vue": "3.5.17",
     "vue-sonner": "^1.3.2"
   },
   "devDependencies": {
@@ -42,7 +42,7 @@
     "shiki": "^1.29.2",
     "tailwindcss": "^3.4.17",
     "vitepress": "1.6.3",
-    "vue-component-meta": "^2.2.10"
+    "vue-component-meta": "^2.2.12"
   },
   "postcss": {
     "plugins": {
