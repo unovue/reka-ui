@@ -51,7 +51,7 @@ function onCompositionStart() {
   isComposing.value = true
 }
 function onCompositionEnd() {
-  requestAnimationFrame(() => {
+  nextTick(() => {
     isComposing.value = false
   })
 }

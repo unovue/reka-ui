@@ -15,8 +15,10 @@ import { createContext, useForwardExpose, useSize } from '@/shared'
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
   sideOffset: 0,
+  sideFlip: true,
   align: 'center' as Align,
   alignOffset: 0,
+  alignFlip: true,
   arrowPadding: 0,
   avoidCollisions: true,
   collisionBoundary: () => [],
@@ -46,6 +48,13 @@ export interface PopperContentProps extends PrimitiveProps {
   sideOffset?: number
 
   /**
+   * Flip to the opposite side when colliding with boundary.
+   *
+   * @defaultValue true
+   */
+  sideFlip?: boolean
+
+  /**
    * The preferred alignment against the trigger.
    * May change when collisions occur.
    *
@@ -59,6 +68,14 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   alignOffset?: number
+
+  /**
+   * Flip alignment when colliding with boundary.
+   * May only occur when `prioritizePosition` is true.
+   *
+   * @defaultValue true
+   */
+  alignFlip?: boolean
 
   /**
    * When `true`, overrides the side and align preferences
@@ -231,6 +248,13 @@ const detectOverflowOptions = computed(() => {
   }
 })
 
+const flipOptions = computed(() => {
+  return {
+    mainAxis: props.sideFlip,
+    crossAxis: props.alignFlip,
+  }
+})
+
 const computedMiddleware = computedEager(() => {
   return [
     offset({
@@ -241,6 +265,7 @@ const computedMiddleware = computedEager(() => {
     && props.avoidCollisions
     && flip({
       ...detectOverflowOptions.value,
+      ...flipOptions.value,
     }),
     props.avoidCollisions
     && shift({
@@ -253,6 +278,7 @@ const computedMiddleware = computedEager(() => {
     && props.avoidCollisions
     && flip({
       ...detectOverflowOptions.value,
+      ...flipOptions.value,
     }),
     size({
       ...detectOverflowOptions.value,

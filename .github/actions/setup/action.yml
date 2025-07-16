@@ -8,13 +8,13 @@ runs:
     - name: Setup Node.js environment
       uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: 22
         registry-url: 'https://registry.npmjs.org'
 
     - uses: pnpm/action-setup@v2
       name: Install pnpm
       with:
-        version: 9
+        version: 10
         run_install: false
 
     - name: Get pnpm store directory

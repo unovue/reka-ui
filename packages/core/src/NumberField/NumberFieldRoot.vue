@@ -23,6 +23,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   locale?: string
   /** When `true`, prevents the user from interacting with the Number Field. */
   disabled?: boolean
+  /** When `true`, the Number Field is read-only. */
+  readonly?: boolean
   /** When `true`, prevents the value from changing on wheel scroll. */
   disableWheelChange?: boolean
   /** When `true`, inverts the direction of the wheel change. */
@@ -47,6 +49,7 @@ interface NumberFieldRootContext {
   validate: (val: string) => boolean
   applyInputValue: (val: string) => void
   disabled: Ref<boolean>
+  readonly: Ref<boolean>
   disableWheelChange: Ref<boolean>
   invertWheelChange: Ref<boolean>
   max: Ref<number | undefined>
@@ -75,7 +78,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   stepSnapping: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -107,9 +110,9 @@ const isIncreaseDisabled = computed(() => (
 
 function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
   inputEl.value?.focus()
-  const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
-  if (props.disabled)
+  if (props.disabled || props.readonly)
     return
+  const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
     modelValue.value = min.value ?? 0
   }
@@ -200,6 +203,7 @@ provideNumberFieldRootContext({
   validate,
   applyInputValue,
   disabled,
+  readonly,
   disableWheelChange,
   invertWheelChange,
   max,
@@ -218,6 +222,7 @@ provideNumberFieldRootContext({
     :as="as"
     :as-child="asChild"
     :data-disabled="disabled ? '' : undefined"
+    :data-readonly="readonly ? '' : undefined"
   >
     <slot
       :model-value="modelValue"
@@ -230,6 +235,7 @@ provideNumberFieldRootContext({
       :value="modelValue"
       :name="name"
       :disabled="disabled"
+      :readonly="readonly"
       :required="required"
     />
   </Primitive>

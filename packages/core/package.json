@@ -27,73 +27,49 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./constant": {
+      "import": "./dist/constant.js",
+      "require": "./dist/constant.cjs"
+    },
     "./date": {
-      "import": {
-        "types": "./dist/date.d.ts",
-        "default": "./dist/date.js"
-      },
-      "require": {
-        "types": "./dist/date.d.ts",
-        "default": "./dist/date.cjs"
-      }
+      "import": "./dist/date.js",
+      "require": "./dist/date.cjs"
     },
     "./namespaced": {
-      "import": {
-        "types": "./dist/namespaced/index.d.mts",
-        "default": "./dist/namespaced/index.mjs"
-      },
-      "require": {
-        "types": "./dist/namespaced/index.d.cts",
-        "default": "./dist/namespaced/index.cjs"
-      }
+      "import": "./dist/namespaced/index.mjs",
+      "require": "./dist/namespaced/index.cjs"
     },
     "./nuxt": {
-      "import": {
-        "types": "./dist/nuxt/index.d.mts",
-        "default": "./dist/nuxt/index.mjs"
-      },
-      "require": {
-        "types": "./dist/nuxt/index.d.cts",
-        "default": "./dist/nuxt/index.cjs"
-      }
+      "import": "./dist/nuxt/index.mjs",
+      "require": "./dist/nuxt/index.cjs"
     },
     "./resolver": {
-      "import": {
-        "types": "./dist/resolver/index.d.mts",
-        "default": "./dist/resolver/index.mjs"
-      },
-      "require": {
-        "types": "./dist/resolver/index.d.cts",
-        "default": "./dist/resolver/index.cjs"
-      }
+      "import": "./dist/resolver/index.mjs",
+      "require": "./dist/resolver/index.cjs"
     },
-    "./constant": {
-      "import": {
-        "default": "./dist/constant.js"
-      },
-      "require": {
-        "default": "./dist/constant.cjs"
-      }
-    }
+    "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "typings": "./dist/index.d.ts",
   "files": [
-    "./LICENSE",
-    "./dist"
+    "src",
+    "dist",
+    "!src/**/*.story.vue",
+    "!src/**/*.test.*",
+    "!src/**/_*.vue",
+    "!src/**/__snapshots__",
+    "!src/**/stories",
+    "!src/**/story"
   ],
   "scripts": {
     "build": "pnpm type-check && pnpm build-only",
-    "build-only": "vite build",
-    "watch": "vite build --watch",
+    "build-only": "tsdown && tsx scripts/postbuild.ts",
+    "watch": "tsdown --watch",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
-    "type-gen": "vue-tsc --declaration  --emitDeclarationOnly",
     "test": "vitest",
     "test-update": "vitest -u",
     "pub:release": "pnpm publish --no-git-checks --access public"
@@ -122,19 +98,20 @@
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/vue": "^8.1.0",
     "@tsconfig/node18": "^18.2.4",
-    "@types/node": "^20.17.17",
-    "@vitejs/plugin-vue": "^5.2.4",
-    "@vitest/coverage-istanbul": "^2.1.9",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^24.0.13",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "@vitest/coverage-istanbul": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",
-    "jsdom": "^25.0.1",
-    "vite": "^5.4.19",
-    "vite-plugin-dts": "^4.5.4",
-    "vitest": "^2.1.9",
+    "jsdom": "^26.1.0",
+    "tsdown": "^0.12.9",
+    "vite": "^7.0.4",
+    "vitest": "^3.2.4",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^0.3.3",
-    "vue": "3.5.13",
-    "vue-component-type-helpers": "^2.2.10",
-    "vue-tsc": "2.2.10"
+    "vue": "3.5.17",
+    "vue-component-type-helpers": "^3.0.1",
+    "vue-tsc": "2.2.12"
   }
 }

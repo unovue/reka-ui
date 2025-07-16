@@ -1,25 +1,23 @@
 {
-  // This tsconfig is for development. Allowing *.story.vue, and __test__/*.vue to have types support
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
-    "target": "esnext",
-    "jsx": "preserve",
-    "lib": ["esnext", "dom"],
-    "baseUrl": ".",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["./src/*"],
       "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
     },
-    "resolveJsonModule": true,
-    "types": ["node", "jsdom", "@testing-library/jest-dom"],
-    "strict": true,
-    "declaration": false,
-    "outDir": "dist",
-    "sourceMap": true,
-    "esModuleInterop": true,
+    // TODO: set skipLibCheck to false (#2043)
+    // Ideally we should set this to false, but histoire and vueuse are being difficult...
+    // For now, keep it disabled...
     "skipLibCheck": true
+  },
+  "vueCompilerOptions": {
+    // TODO: enable; currently makes documentation codegen not ideal and might be a too-drastic change (#2043)
+    // Necessary to allow downstream users to enable and benefit from strict typechecking features of Vue
+    // "fallthroughAttributes": true
   },
   "include": [
     "env.d.ts",

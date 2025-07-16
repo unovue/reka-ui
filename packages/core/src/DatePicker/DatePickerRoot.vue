@@ -74,7 +74,6 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
-  initialFocus: false,
   placeholder: undefined,
   locale: 'en',
   isDateDisabled: undefined,

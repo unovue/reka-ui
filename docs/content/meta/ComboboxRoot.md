@@ -99,6 +99,20 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'openOnFocus',
+    'description': '<p>Whether to open the Combobox when the input is focused</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
+    'name': 'openOnClick',
+    'description': '<p>Whether to open the Combobox when the input is clicked</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 

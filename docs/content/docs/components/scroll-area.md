@@ -110,14 +110,14 @@ The corner where both vertical and horizontal scrollbars meet.
 <!-- @include: @/meta/ScrollAreaCorner.md -->
 
 ## Examples
-### Custom Scroll 
-Use the exposed `viewport` to modify / or set the scroll position outside default methods 
+### Custom Scroll
+Use the exposed `viewport` to modify / or set the scroll position outside default methods
 ```vue line=4,18
 <script setup lang="ts">
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui'
 
 const scrollArea = useTemplateRef('scrollArea')
-const scrollToBottom = () => {
+function scrollToBottom() {
   const viewport = scrollArea.value?.viewport
   if (viewport) {
     const top = scrollArea.value?.$el.scrollHeight

@@ -12,7 +12,7 @@ exports[`give default Popper > should render correctly and match snapshot 1`] = 
   </div>
   <div
     data-reka-popper-content-wrapper=""
-    style="position: fixed; left: 0px; top: 0px; transform: translate(0, -200%); min-width: max-content; --reka-popper-transform-origin:  ;"
+    style="position: fixed; left: 0px; top: 0px; transform: translate(0, -200%); min-width: max-content;"
   >
     <div
       data-align="center"

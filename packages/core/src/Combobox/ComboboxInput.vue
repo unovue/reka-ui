@@ -55,6 +55,16 @@ function handleInput(event: InputEvent) {
   }
 }
 
+function handleFocus() {
+  if (rootContext.openOnFocus.value && !rootContext.open.value)
+    rootContext.onOpenChange(true)
+}
+
+function handleClick() {
+  if (rootContext.openOnClick.value && !rootContext.open.value)
+    rootContext.onOpenChange(true)
+}
+
 function resetSearchTerm() {
   const rootModelValue = rootContext.modelValue.value
 
@@ -101,13 +111,16 @@ watch(rootContext.filterState, () => {
     :as="as"
     :as-child="asChild"
     :auto-focus="autoFocus"
+    :disabled="disabled"
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.contentId"
     aria-autocomplete="list"
     role="combobox"
-    autocomplete="false"
+    autocomplete="off"
+    @click="handleClick"
     @input="handleInput"
     @keydown.down.up.prevent="handleKeyDown"
+    @focus="handleFocus"
   >
     <slot />
   </ListboxFilter>

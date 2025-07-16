@@ -49,6 +49,7 @@ onMounted(() => {
           :id="menuContext.triggerId"
           :ref="forwardRef"
           :as="as"
+          :as-child="asChild"
           :type="as === 'button' ? 'button' : undefined"
           role="menuitem"
           aria-haspopup="menu"
