@@ -17,7 +17,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -62,12 +62,12 @@
   {
     'name': 'modelValue',
     'description': '<p>The value of the editable field</p>\n',
-    'type': 'string',
+    'type': 'string | null',
     'required': false
   },
   {
     'name': 'name',
-    'description': '<p>The name of the field</p>\n',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
     'required': false
   },
@@ -117,7 +117,7 @@
   {
     'name': 'submit',
     'description': '<p>Event handler called when a value is submitted</p>\n',
-    'type': '[value: string]'
+    'type': '[value: string | null]'
   },
   {
     'name': 'update:modelValue',
@@ -140,7 +140,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The value of the editable field</p>\n',
-    'type': 'string | undefined'
+    'type': 'string | null | undefined'
   },
   {
     'name': 'isEmpty',
@@ -150,17 +150,17 @@
   {
     'name': 'submit',
     'description': '<p>Function to submit the value of the editable</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'cancel',
     'description': '<p>Function to cancel the value of the editable</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'edit',
     'description': '<p>Function to set the editable in edit mode</p>\n',
-    'type': ''
+    'type': '(): void'
   }
 ]" />
 

@@ -10,7 +10,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -33,5 +33,35 @@
     'name': 'dayValue',
     'description': '<p>Current day</p>\n',
     'type': 'string'
+  },
+  {
+    'name': 'disabled',
+    'description': '<p>Current disable state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'selected',
+    'description': '<p>Current selected state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'today',
+    'description': '<p>Current today state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'outsideView',
+    'description': '<p>Current outside view state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'outsideVisibleView',
+    'description': '<p>Current outside visible view state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'unavailable',
+    'description': '<p>Current unavailable state</p>\n',
+    'type': 'boolean'
   }
 ]" />

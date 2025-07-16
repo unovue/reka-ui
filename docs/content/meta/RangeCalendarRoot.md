@@ -2,6 +2,13 @@
 
 <PropsTable :data="[
   {
+    'name': 'allowNonContiguousRanges',
+    'description': '<p>When combined with <code>isDateUnavailable</code>, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -10,7 +17,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -47,6 +54,19 @@
     'default': 'false'
   },
   {
+    'name': 'disableDaysOutsideCurrentView',
+    'description': '<p>Whether or not to disable days outside the current view.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
+    'name': 'fixedDate',
+    'description': '<p>Which part of the range should be fixed</p>\n',
+    'type': '\'start\' | \'end\'',
+    'required': false
+  },
+  {
     'name': 'fixedWeeks',
     'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
     'type': 'boolean',
@@ -67,6 +87,12 @@
     'required': false
   },
   {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'type': 'Matcher',
+    'required': false
+  },
+  {
     'name': 'isDateUnavailable',
     'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher',
@@ -76,8 +102,13 @@
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',
-    'required': false,
-    'default': '\'en\''
+    'required': false
+  },
+  {
+    'name': 'maximumDays',
+    'description': '<p>The maximum number of days that can be selected in a range</p>\n',
+    'type': 'number',
+    'required': false
   },
   {
     'name': 'maxValue',
@@ -94,7 +125,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
-    'type': 'DateRange',
+    'type': 'DateRange | null',
     'required': false
   },
   {
@@ -207,5 +238,28 @@
     'name': 'fixedWeeks',
     'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'modelValue',
+    'description': '<p>The current date range</p>\n',
+    'type': 'DateRange'
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'isDateDisabled',
+    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
+    'type': 'Matcher'
+  },
+  {
+    'name': 'isDateUnavailable',
+    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
+    'type': 'Matcher'
+  },
+  {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'type': 'Matcher'
   }
 ]" />

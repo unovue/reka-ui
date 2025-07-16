@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AspectRatio } from 'radix-vue'
+import { AspectRatio } from 'reka-ui'
 
 defineProps<{
   title: string
@@ -10,19 +10,19 @@ defineProps<{
 </script>
 
 <template>
-  <div>
+  <div class="h-full">
     <a
-      class="flex flex-col bg-[var(--vp-c-bg-soft)] hover:bg-[var(--vp-c-bg-alt)] transition duration-300 rounded-xl p-4"
+      class="flex flex-col bg-card rounded-2xl p-4 border border-muted hover:border-primary h-full"
       target="_blank"
       :href="url"
     >
       <h5 class="font-bold">{{ title }}</h5>
-      <p class="my-1 text-sm text-[var(--vp-c-text-2)]">{{ description }}</p>
+      <p class="flex-1 my-1 text-sm text-muted-foreground">{{ description }}</p>
 
       <AspectRatio
         v-if="image"
         :ratio="16 / 9"
-        class="rounded-md mt-2 overflow-hidden  "
+        class="rounded-lg mt-2 overflow-hidden border border-muted"
       >
         <img
           class="w-full h-full object-cover"

@@ -10,7 +10,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -91,16 +91,54 @@
   {
     'name': 'goToStep',
     'description': '<p>Go to a specific step</p>\n',
-    'type': ''
+    'type': '(step: number): void'
   },
   {
     'name': 'nextStep',
     'description': '<p>Go to the next step</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'prevStep',
     'description': '<p>Go to the previous step</p>\n',
-    'type': ''
+    'type': '(): void'
+  },
+  {
+    'name': 'hasNext',
+    'description': '<p>Whether or not there is a next step</p>\n',
+    'type': '(): boolean'
+  },
+  {
+    'name': 'hasPrev',
+    'description': '<p>Whether or not there is a previous step</p>\n',
+    'type': '(): boolean'
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'goToStep',
+    'description': '',
+    'type': '(step: number) => void'
+  },
+  {
+    'name': 'nextStep',
+    'description': '',
+    'type': '() => void'
+  },
+  {
+    'name': 'prevStep',
+    'description': '',
+    'type': '() => void'
+  },
+  {
+    'name': 'hasNext',
+    'description': '',
+    'type': '() => boolean'
+  },
+  {
+    'name': 'hasPrev',
+    'description': '',
+    'type': '() => boolean'
   }
 ]" />

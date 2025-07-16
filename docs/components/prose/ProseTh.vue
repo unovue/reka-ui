@@ -1,12 +1,5 @@
 <template>
-  <th class="h-10 pb-1 [&:not(:first-child)]:pl-4 text-left">
+  <th class="py-3 px-4 text-left text-sm text-muted-foreground bg-card first:rounded-l-xl last:rounded-r-xl">
     <slot />
   </th>
 </template>
-
-<style>
-th > * {
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-</style>

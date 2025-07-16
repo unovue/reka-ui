@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   DialogClose,
   DialogContent,
@@ -8,8 +9,7 @@ import {
   DialogRoot,
   DialogTitle,
   DialogTrigger,
-} from 'radix-vue'
-import { Icon } from '@iconify/vue'
+} from 'reka-ui'
 import './styles.css'
 </script>
 

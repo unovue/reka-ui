@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'reka-ui'
 import { ref } from 'vue'
-import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'radix-vue'
 import './styles.css'
 
 const hoverState = ref(false)
@@ -10,13 +10,13 @@ const hoverState = ref(false)
   <HoverCardRoot v-model:open="hoverState">
     <HoverCardTrigger
       class="ImageTrigger"
-      href="https://twitter.com/radix_ui"
+      href="https://twitter.com/unovue"
       target="_blank"
       rel="noreferrer noopener"
     >
       <img
         class="Image normal"
-        src="https://pbs.twimg.com/profile_images/1337055608613253126/r_eiMp2H_400x400.png"
+        src="https://pbs.twimg.com/profile_images/1833445381986045952/jwoHkIIq_400x400.jpg"
         alt="Radix UI"
       >
     </HoverCardTrigger>
@@ -28,7 +28,7 @@ const hoverState = ref(false)
         <div :style="{ display: 'flex', flexDirection: 'column', gap: 7 }">
           <img
             class="Image large"
-            src="https://pbs.twimg.com/profile_images/1337055608613253126/r_eiMp2H_400x400.png"
+            src="https://pbs.twimg.com/profile_images/1833445381986045952/jwoHkIIq_400x400.jpg"
             alt="Radix UI"
           >
           <div :style="{ display: 'flex', flexDirection: 'column', gap: 15 }">

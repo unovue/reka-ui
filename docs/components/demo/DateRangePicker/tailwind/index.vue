@@ -20,22 +20,24 @@ import {
   DateRangePickerRoot,
   DateRangePickerTrigger,
   Label,
-} from 'radix-vue'
+} from 'reka-ui'
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
     <Label
-      class="text-sm text-gray9"
-      for="date-field"
-    >Birthday</Label>
+      class="text-sm text-stone-700 dark:text-white"
+      for="booking"
+    >
+      Booking
+    </Label>
     <DateRangePickerRoot
-      id="date-field"
+      id="booking"
       :is-date-unavailable="date => date.day === 19"
     >
       <DateRangePickerField
         v-slot="{ segments }"
-        class="flex select-none bg-white items-center rounded-lg text-center text-green10 border border-transparent p-1 data-[invalid]:border-red-500"
+        class="flex select-none bg-white items-center rounded-lg text-center text-green10 border shadow-sm p-1 data-[invalid]:border-red-500"
       >
         <template
           v-for="item in segments.start"
@@ -82,40 +84,40 @@ import {
           </DateRangePickerInput>
         </template>
 
-        <DateRangePickerTrigger class="ml-4 focus:shadow-[0_0_0_2px] focus:shadow-black">
+        <DateRangePickerTrigger class="ml-4 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none rounded p-1">
           <Icon
             icon="radix-icons:calendar"
-            class="w-6 h-6"
+            class="w-4 h-4"
           />
         </DateRangePickerTrigger>
       </DateRangePickerField>
 
       <DateRangePickerContent
         :side-offset="4"
-        class="rounded-xl bg-white shadow-[0_10px_38px_-10px_hsla(206,22%,7%,.35),0_10px_20px_-15px_hsla(206,22%,7%,.2)] focus:shadow-[0_10px_38px_-10px_hsla(206,22%,7%,.35),0_10px_20px_-15px_hsla(206,22%,7%,.2),0_0_0_2px_theme(colors.green7)] will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
+        class="rounded-xl bg-white border shadow-sm will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
       >
-        <DateRangePickerArrow class="fill-white" />
+        <DateRangePickerArrow class="fill-white stroke-gray-300" />
         <DateRangePickerCalendar
           v-slot="{ weekDays, grid }"
           class="p-4"
         >
           <DateRangePickerHeader class="flex items-center justify-between">
             <DateRangePickerPrev
-              class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
+              class="inline-flex items-center cursor-pointer text-black justify-center rounded-md bg-transparent w-7 h-7 hover:bg-stone-100 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
             >
               <Icon
                 icon="radix-icons:chevron-left"
-                class="w-6 h-6"
+                class="w-4 h-4"
               />
             </DateRangePickerPrev>
 
-            <DateRangePickerHeading class="text-[15px] text-black font-medium" />
+            <DateRangePickerHeading class="text-sm text-black font-medium" />
             <DateRangePickerNext
-              class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
+              class="inline-flex items-center cursor-pointer text-black justify-center rounded-md bg-transparent w-7 h-7 hover:bg-stone-100 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
             >
               <Icon
                 icon="radix-icons:chevron-right"
-                class="w-6 h-6"
+                class="w-4 h-4"
               />
             </DateRangePickerNext>
           </DateRangePickerHeader>

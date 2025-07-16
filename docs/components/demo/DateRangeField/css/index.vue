@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DateRangeFieldInput, DateRangeFieldRoot, Label } from 'radix-vue'
+import { DateRangeFieldInput, DateRangeFieldRoot, Label } from 'reka-ui'
 import './styles.css'
 </script>
 

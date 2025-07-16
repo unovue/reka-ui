@@ -2,6 +2,13 @@
 
 <PropsTable :data="[
   {
+    'name': 'allowNonContiguousRanges',
+    'description': '<p>When combined with <code>isDateUnavailable</code>, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -10,7 +17,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -46,6 +53,12 @@
     'type': 'boolean',
     'required': false,
     'default': 'false'
+  },
+  {
+    'name': 'fixedDate',
+    'description': '<p>Which part of the range should be fixed</p>\n',
+    'type': '\'start\' | \'end\'',
+    'required': false
   },
   {
     'name': 'fixedWeeks',
@@ -85,6 +98,12 @@
     'required': false
   },
   {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'type': 'Matcher',
+    'required': false
+  },
+  {
     'name': 'isDateUnavailable',
     'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher',
@@ -96,6 +115,12 @@
     'type': 'string',
     'required': false,
     'default': '\'en\''
+  },
+  {
+    'name': 'maximumDays',
+    'description': '<p>The maximum number of days that can be selected in a range</p>\n',
+    'type': 'number',
+    'required': false
   },
   {
     'name': 'maxValue',
@@ -119,12 +144,12 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
-    'type': 'DateRange',
+    'type': 'DateRange | null',
     'required': false
   },
   {
     'name': 'name',
-    'description': '<p>The name of the date field. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
     'required': false
   },
@@ -170,8 +195,14 @@
   },
   {
     'name': 'required',
-    'description': '<p>When <code>true</code>, indicates that the user must check the date field before the owning form can be submitted.</p>\n',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'step',
+    'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
+    'type': 'DateStep',
     'required': false
   },
   {
@@ -210,5 +241,36 @@
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
     'type': '[date: DateValue]'
+  }
+]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'modelValue',
+    'description': '',
+    'type': 'DateRange'
+  },
+  {
+    'name': 'open',
+    'description': '',
+    'type': 'boolean'
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'isDateDisabled',
+    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
+    'type': 'Matcher'
+  },
+  {
+    'name': 'isDateUnavailable',
+    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
+    'type': 'Matcher'
+  },
+  {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'type': 'Matcher'
   }
 ]" />

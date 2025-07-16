@@ -1,12 +1,12 @@
 {
   "name": "plugins",
   "type": "module",
-  "version": "1.9.16",
+  "version": "2.3.2",
   "description": "Nuxt module for Radix Vue",
   "license": "MIT",
   "keywords": [
     "radix",
-    "radix-vue",
+    "reka-ui",
     "nuxt-module",
     "nuxt",
     "nuxt3"
@@ -18,11 +18,10 @@
     "stub": "unbuild --stub"
   },
   "dependencies": {
-    "@nuxt/kit": "^3.12.2",
-    "@nuxt/schema": "^3.12.2",
-    "radix-vue": "link:../radix-vue",
-    "tsx": "^4.16.0",
+    "@nuxt/kit": "^3.15.4",
+    "@nuxt/schema": "^3.15.4",
+    "reka-ui": "link:../core",
     "unbuild": "^2.0.0",
-    "unplugin-vue-components": "^0.27.2"
+    "unplugin-vue-components": "^0.28.0"
   }
 }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ProseCodeInline, ProseTable, ProseTd, ProseTh, ProseTr } from '../prose'
-import { Icon } from '@iconify/vue'
+import { ProseCodeInline, ProseTable, ProseTbody, ProseTd, ProseTh, ProseThead, ProseTr } from '../prose'
 
 type PropDef = {
   name?: string
@@ -18,11 +17,11 @@ const props = defineProps<EmitsTableProps>()
 
 <template>
   <ProseTable>
-    <div class="absolute top-0 right-2 w-8 h-8 rounded-full border flex items-center justify-center text-[var(--vp-c-text-2)] bg-[var(--vp-button-alt-bg)] border-[var(--vp-c-gray-soft)]">
+    <!-- <div class="absolute top-0 right-2 w-8 h-8 rounded-full border flex items-center justify-center text-[var(--vp-c-text-2)] bg-[var(--vp-button-alt-bg)] border-[var(--vp-c-gray-soft)]">
       <Icon icon="ph:function" />
-    </div>
-    <thead class="">
-      <ProseTr class="">
+    </div> -->
+    <ProseThead>
+      <ProseTr>
         <ProseTh class="w-1/3">
           <span>Methods</span>
         </ProseTh>
@@ -30,15 +29,15 @@ const props = defineProps<EmitsTableProps>()
           <span>Type</span>
         </ProseTh>
       </ProseTr>
-    </thead>
-    <tbody>
+    </ProseThead>
+    <ProseTbody>
       <ProseTr
-        v-for="(prop, index) in props.data"
+        v-for="(prop, index) in data"
         :key="`${prop.name}-${index}`"
       >
         <ProseTd>
           <div class="flex h-full items-start gap-1">
-            <ProseCodeInline class=" !text-[13px]">
+            <ProseCodeInline>
               {{ prop.name }}{{ prop.required ? "*" : null }}
             </ProseCodeInline>
           </div>
@@ -48,11 +47,11 @@ const props = defineProps<EmitsTableProps>()
             {{ prop.type }}
           </ProseCodeInline>
           <div
-            class="vp-raw [&_a]:underline flex flex-col gap-2  mt-2 text-sm dark:text-neutral-300"
+            class="[&_p]:mt-0 [&_p]:mb-2 flex flex-col gap-2  mt-2 text-sm text-muted-foreground"
             v-html="prop.description"
           />
         </ProseTd>
       </ProseTr>
-    </tbody>
+    </ProseTbody>
   </ProseTable>
 </template>

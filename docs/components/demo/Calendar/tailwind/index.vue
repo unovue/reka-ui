@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import type { CalendarRootProps } from 'reka-ui'
 import { Icon } from '@iconify/vue'
-import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, type CalendarRootProps } from 'radix-vue'
+import { CalendarDate } from '@internationalized/date'
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
+
+const date = new CalendarDate(2024, 10, 3)
 
 const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
   return date.day === 17 || date.day === 18
@@ -11,26 +15,27 @@ const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
   <CalendarRoot
     v-slot="{ weekDays, grid }"
     :is-date-unavailable="isDateUnavailable"
-    class="mt-6 rounded-xl bg-white p-4 shadow-md"
+    :default-value="date"
+    class="mt-6 rounded-xl bg-white p-4 shadow-sm border"
     fixed-weeks
   >
     <CalendarHeader class="flex items-center justify-between">
       <CalendarPrev
-        class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
+        class="inline-flex items-center cursor-pointer text-black justify-center rounded-md bg-transparent w-7 h-7 hover:bg-stone-50 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
       >
         <Icon
           icon="radix-icons:chevron-left"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarPrev>
-      <CalendarHeading class="text-[15px] text-black font-medium" />
+      <CalendarHeading class="text-sm text-black font-medium" />
 
       <CalendarNext
-        class="inline-flex items-center cursor-pointer justify-center text-black rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
+        class="inline-flex items-center cursor-pointer justify-center text-black rounded-md bg-transparent w-7 h-7 hover:bg-stone-50 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
       >
         <Icon
           icon="radix-icons:chevron-right"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarNext>
     </CalendarHeader>

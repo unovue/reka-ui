@@ -10,7 +10,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -40,7 +40,14 @@
   },
   {
     'name': 'disabled',
-    'description': '<p>Whether or not the calendar is disabled</p>\n',
+    'description': '<p>Whether the calendar is disabled</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
+    'name': 'disableDaysOutsideCurrentView',
+    'description': '<p>Whether or not to disable days outside the current view.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -75,8 +82,7 @@
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',
-    'required': false,
-    'default': '\'en\''
+    'required': false
   },
   {
     'name': 'maxValue',
@@ -92,13 +98,13 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled checked state of the calendar</p>\n',
     'type': 'DateValue | DateValue[]',
     'required': false
   },
   {
     'name': 'multiple',
-    'description': '<p>Whether or not multiple dates can be selected</p>\n',
+    'description': '<p>Whether multiple dates can be selected</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -125,7 +131,7 @@
   },
   {
     'name': 'placeholder',
-    'description': '<p>The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view</p>\n',
+    'description': '<p>The placeholder date, which is used to determine what month to display when no date is selected</p>\n',
     'type': 'DateValue',
     'required': false
   },
@@ -144,7 +150,7 @@
   },
   {
     'name': 'readonly',
-    'description': '<p>Whether or not the calendar is readonly</p>\n',
+    'description': '<p>Whether the calendar is readonly</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -208,5 +214,23 @@
     'name': 'fixedWeeks',
     'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'modelValue',
+    'description': '<p>The current date of the calendar</p>\n',
+    'type': 'DateValue | DateValue[] | undefined'
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'isDateDisabled',
+    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
+    'type': 'Matcher'
+  },
+  {
+    'name': 'isDateUnavailable',
+    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
+    'type': 'Matcher'
   }
 ]" />

@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { DateRangeFieldInput, DateRangeFieldRoot, Label } from 'radix-vue'
+import { DateRangeFieldInput, DateRangeFieldRoot, Label } from 'reka-ui'
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
     <Label
-      for="date-field"
-      class="text-white"
-    >Booking</Label>
+      for="booking"
+      class="text-stone-700 dark:text-white"
+    >
+      Booking
+    </Label>
 
     <DateRangeFieldRoot
-      id="date-field"
+      id="booking"
       v-slot="{ segments }"
       :is-date-unavailable="date => date.day === 19"
 
-      class="flex select-none bg-white items-center rounded-lg text-center text-green10 border border-transparent p-1 data-[invalid]:border-red-500"
+      class="flex select-none bg-white items-center rounded-lg text-center text-green10 border shadow-sm p-1 data-[invalid]:border-red-500"
     >
       <template
         v-for="item in segments.start"
@@ -30,7 +32,7 @@ import { DateRangeFieldInput, DateRangeFieldRoot, Label } from 'radix-vue'
         <DateRangeFieldInput
           v-else
           :part="item.part"
-          class="rounded-md p-0.5  focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-green9"
+          class="rounded p-0.5  focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-green9"
           type="start"
         >
           {{ item.value }}
@@ -54,7 +56,7 @@ import { DateRangeFieldInput, DateRangeFieldRoot, Label } from 'radix-vue'
         <DateRangeFieldInput
           v-else
           :part="item.part"
-          class="rounded-md p-0.5  focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-green9"
+          class="rounded p-0.5  focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-green9"
           type="end"
         >
           {{ item.value }}

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   DialogClose,
   DialogContent,
@@ -8,14 +9,13 @@ import {
   DialogRoot,
   DialogTitle,
   DialogTrigger,
-} from 'radix-vue'
-import { Icon } from '@iconify/vue'
+} from 'reka-ui'
 </script>
 
 <template>
   <DialogRoot>
     <DialogTrigger
-      class="text-grass11 font-semibold shadow-blackA7 hover:bg-mauve3 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none"
+      class="text-grass11 font-semibold hover:bg-mauve3 inline-flex h-[35px] items-center justify-center rounded-md bg-white px-[15px] leading-none shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-black dark:focus:shadow-green8 focus:outline-none border"
     >
       Edit profile
     </DialogTrigger>
@@ -27,35 +27,35 @@ import { Icon } from '@iconify/vue'
         <DialogTitle class="text-mauve12 m-0 text-[17px] font-semibold">
           Edit profile
         </DialogTitle>
-        <DialogDescription class="text-mauve11 mt-[10px] mb-5 text-[15px] leading-normal">
+        <DialogDescription class="text-mauve11 mt-[10px] mb-5 text-sm leading-normal">
           Make changes to your profile here. Click save when you're done.
         </DialogDescription>
         <fieldset class="mb-[15px] flex items-center gap-5">
           <label
-            class="text-grass11 w-[90px] text-right text-[15px]"
+            class="text-grass11 w-[90px] text-right text-sm"
             for="name"
           > Name </label>
           <input
             id="name"
-            class="text-grass11 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-[4px] px-[10px] text-[15px] leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
+            class="text-grass11 bg-stone-50 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-lg px-[10px] text-sm leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
             defaultValue="Pedro Duarte"
           >
         </fieldset>
         <fieldset class="mb-[15px] flex items-center gap-5">
           <label
-            class="text-grass11 w-[90px] text-right text-[15px]"
+            class="text-grass11 w-[90px] text-right text-sm"
             for="username"
           > Username </label>
           <input
             id="username"
-            class="text-grass11 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-[4px] px-[10px] text-[15px] leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
+            class="text-grass11 bg-stone-50 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-lg px-[10px] text-sm leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
             defaultValue="@peduarte"
           >
         </fieldset>
         <div class="mt-[25px] flex justify-end">
           <DialogClose as-child>
             <button
-              class="bg-green4 text-green11 hover:bg-green5 focus:shadow-green7 inline-flex h-[35px] items-center justify-center rounded-[4px] px-[15px] font-semibold leading-none focus:shadow-[0_0_0_2px] focus:outline-none"
+              class="bg-green4 text-green11 text-sm hover:bg-green5 focus:shadow-green7 inline-flex h-[35px] items-center justify-center rounded-lg px-[15px] font-semibold leading-none focus:shadow-[0_0_0_2px] focus:outline-none"
             >
               Save changes
             </button>

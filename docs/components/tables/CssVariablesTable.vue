@@ -30,7 +30,7 @@ const props = defineProps<DataAttributesTableProps>()
         :key="`${prop.cssVariable}-${index}`"
       >
         <ProseTd>
-          <ProseCodeInline class="!whitespace-normal py-1">
+          <ProseCodeInline class="!whitespace-normal py-1 text-[13px]">
             {{ prop.cssVariable }}
           </ProseCodeInline>
         </ProseTd>

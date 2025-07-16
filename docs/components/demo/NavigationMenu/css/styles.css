@@ -115,7 +115,7 @@ p {
   border-radius: 6px;
   overflow: hidden;
   box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;
-  height: var(--radix-navigation-menu-viewport-height);
+  height: var(--reka-navigation-menu-viewport-height);
   transition: width, height, 300ms ease;
 }
 .NavigationMenuViewport[data-state='open'] {
@@ -126,7 +126,7 @@ p {
 }
 @media only screen and (min-width: 600px) {
   .NavigationMenuViewport {
-    width: var(--radix-navigation-menu-viewport-width);
+    width: var(--reka-navigation-menu-viewport-width);
   }
 }
 

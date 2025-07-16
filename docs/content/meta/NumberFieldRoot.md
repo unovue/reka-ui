@@ -10,7 +10,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -27,6 +27,12 @@
     'required': false
   },
   {
+    'name': 'disableWheelChange',
+    'description': '<p>When <code>true</code>, prevents the value from changing on wheel scroll.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'formatOptions',
     'description': '<p>Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user.</p>\n',
     'type': 'NumberFormatOptions',
@@ -39,11 +45,16 @@
     'required': false
   },
   {
+    'name': 'invertWheelChange',
+    'description': '<p>When <code>true</code>, inverts the direction of the wheel change.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',
-    'required': false,
-    'default': '\'en-US\''
+    'required': false
   },
   {
     'name': 'max',
@@ -60,13 +71,19 @@
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'number',
+    'type': 'number | null',
     'required': false
   },
   {
     'name': 'name',
-    'description': '<p>The name of the number field. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
+    'required': false
+  },
+  {
+    'name': 'readonly',
+    'description': '<p>When <code>true</code>, the Number Field is read-only.</p>\n',
+    'type': 'boolean',
     'required': false
   },
   {
@@ -81,6 +98,13 @@
     'type': 'number',
     'required': false,
     'default': '1'
+  },
+  {
+    'name': 'stepSnapping',
+    'description': '<p>When <code>false</code>, prevents the value from snapping to the nearest increment of the step value</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -96,7 +120,7 @@
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'number'
+    'type': 'number | undefined'
   },
   {
     'name': 'textValue',

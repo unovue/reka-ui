@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from 'radix-vue'
+import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from 'reka-ui'
 
 const steps = [{
   step: 1,
@@ -28,10 +28,10 @@ const steps = [{
     <StepperItem
       v-for="item in steps"
       :key="item.step"
-      class="w-full flex justify-center gap-2 cursor-pointer group data-[disabled]:pointer-events-none relative px-4"
+      class="w-full flex justify-center gap-2 cursor-pointer group relative px-4"
       :step="item.step"
     >
-      <StepperTrigger class="inline-flex items-center group-data-[disabled]:text-gray-400 group-data-[state=active]:bg-green11 group-data-[state=active]:text-white justify-center rounded-full text-gray-400 w-10 h-10 shrink-0 bg-gray-300 group-data-[state=completed]:bg-white group-data-[state=completed]:text-green10 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none">
+      <StepperTrigger class="inline-flex border-2 shadow-sm items-center text-white bg-green9 border-green9 group-data-[state=inactive]:border-gray-200 group-data-[state=inactive]:bg-white group-data-[state=inactive]:text-stone-700 group-data-[disabled]:opacity-50 group-data-[disabled]:cursor-not-allowed justify-center rounded-full w-10 h-10 shrink-0 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none">
         <StepperIndicator>
           <Icon
             :icon="item.icon"
@@ -42,10 +42,10 @@ const steps = [{
 
       <StepperSeparator
         v-if="item.step !== steps[steps.length - 1].step"
-        class="absolute block top-5 left-[calc(50%+30px)] right-[calc(-50%+20px)] h-0.5 rounded-full group-data-[disabled]:bg-gray-300 bg-gray-300 group-data-[state=completed]:bg-white bg-green5 shrink-0"
+        class="absolute block top-5 left-[calc(50%+30px)] right-[calc(-50%+20px)] h-0.5 rounded-full bg-stone-300/50 shrink-0"
       />
 
-      <div class="absolute text-center top-full left-0 w-full mt-2 text-white group-data-[state=inactive]:text-gray-300">
+      <div class="absolute text-center top-full left-0 w-full mt-2 text-stone-700 dark:text-white group-data-[disabled]:opacity-50">
         <StepperTitle class="font-medium">
           {{ item.title }}
         </StepperTitle>

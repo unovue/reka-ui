@@ -9,6 +9,13 @@
     'default': '\'ltr\''
   },
   {
+    'name': 'locale',
+    'description': '<p>The global locale of your application. This will be inherited by all primitives.</p>\n',
+    'type': 'string',
+    'required': false,
+    'default': '\'en\''
+  },
+  {
     'name': 'nonce',
     'description': '<p>The global <code>nonce</code> value of your application. This will be inherited by the related primitives.</p>\n',
     'type': 'string',
@@ -26,5 +33,13 @@
     'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
     'type': '(() => string)',
     'required': false
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'useId',
+    'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
+    'type': '() => string'
   }
 ]" />

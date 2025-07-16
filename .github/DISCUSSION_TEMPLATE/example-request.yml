@@ -1,0 +1,25 @@
+title: '[Example]: '
+labels: [Example Request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thanks for taking the time to create an example request! Please search open/closed requests before submitting, as the block or a similar one may have already been requested.
+
+  - type: textarea
+    id: example-description
+    attributes:
+      label: Description
+      description: Tell us about your example request
+      placeholder: A modal with tooltip
+    validations:
+      required: true
+
+  - type: input
+    id: example-url
+    attributes:
+      label: Example
+      description: Link to an example
+      placeholder: ex. https://example.com
+    validations:
+      required: false

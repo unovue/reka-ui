@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   NavigationMenuContent,
   NavigationMenuIndicator,
@@ -10,10 +9,11 @@ import {
   NavigationMenuRoot,
   NavigationMenuTrigger,
   NavigationMenuViewport,
-} from 'radix-vue'
-import './styles.css'
-
+} from 'reka-ui'
+import { ref } from 'vue'
 import NavigationMenuListItem from './NavigationMenuListItem.vue'
+
+import './styles.css'
 
 const currentTrigger = ref('')
 </script>
@@ -44,8 +44,8 @@ const currentTrigger = ref('')
                   class="Callout"
                   href="/"
                 >
-                  <img src="https://www.radix-vue.com/logo.svg">
-                  <div class="CalloutHeading">Radix Primitives</div>
+                  <img src="https://reka-ui.com/logo.svg">
+                  <div class="CalloutHeading">Reka UI</div>
                   <p class="CalloutText">Unstyled, accessible components for Vue.</p>
                 </a>
               </NavigationMenuLink>
@@ -64,7 +64,7 @@ const currentTrigger = ref('')
               Beautiful, thought-out palettes with auto dark mode.
             </NavigationMenuListItem>
             <NavigationMenuListItem
-              href="https://icons.radix-ui.com/"
+              href="https://lucide.dev/icons/"
               title="Icons"
             >
               A crisp set of 15x15 icons, balanced and consistent.
@@ -95,7 +95,7 @@ const currentTrigger = ref('')
               title="Getting started"
               href="/docs/primitives/overview/getting-started"
             >
-              A quick tutorial to get you up and running with Radix Primitives.
+              A quick tutorial to get you up and running with Reka UI.
             </NavigationMenuListItem>
             <NavigationMenuListItem
               title="Styling"
@@ -119,7 +119,7 @@ const currentTrigger = ref('')
               title="Releases"
               href="/docs/primitives/overview/releases"
             >
-              Radix Primitives releases and their changelogs.
+              Reka UI releases and their changelogs.
             </NavigationMenuListItem>
           </ul>
         </NavigationMenuContent>
@@ -128,7 +128,7 @@ const currentTrigger = ref('')
       <NavigationMenuItem>
         <NavigationMenuLink
           class="NavigationMenuLink"
-          href="https://github.com/unovue/radix-vue"
+          href="https://github.com/unovue/reka-ui"
         >
           Github
         </NavigationMenuLink>

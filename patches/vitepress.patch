@@ -1,0 +1,35 @@
+diff --git a/dist/node/chunk-Zsoi3j4v.js b/dist/node/chunk-Zsoi3j4v.js
+index 8cfe39e30b9e866566716751deb57a58555b7bf8..71aecd26099f5b8df57827d3f56ed5b0fff9f378 100644
+--- a/dist/node/chunk-Zsoi3j4v.js
++++ b/dist/node/chunk-Zsoi3j4v.js
+@@ -35093,11 +35093,12 @@ function preWrapperPlugin(md, options) {
+   md.renderer.rules.fence = (...args) => {
+     const [tokens, idx] = args;
+     const token = tokens[idx];
++    const title = extractTitle(token.info);
+     token.info = token.info.replace(/\[.*\]/, "");
+     const active = / active( |$)/.test(token.info) ? " active" : "";
+     token.info = token.info.replace(/ active$/, "").replace(/ active /, " ");
+     const lang = extractLang(token.info);
+-    return `<div class="language-${lang}${getAdaptiveThemeMarker(options)}${active}"><button title="${options.codeCopyButtonTitle}" class="copy"></button><span class="lang">${lang}</span>` + fence(...args) + "</div>";
++    return `<div name="${title}" class="language-${lang}${getAdaptiveThemeMarker(options)}${active}"><button title="${options.codeCopyButtonTitle}" class="copy"></button><span class="lang">${lang}</span>` + fence(...args) + "</div>";
+   };
+ }
+ function getAdaptiveThemeMarker(options) {
+diff --git a/types/default-theme.d.ts b/types/default-theme.d.ts
+index 10681a847be1df591c649c1cf1645db774b3a3b4..cbe5c0cde3f1eb0da98f779121cf1c76710fb388 100644
+--- a/types/default-theme.d.ts
++++ b/types/default-theme.d.ts
+@@ -272,6 +272,12 @@ export namespace DefaultTheme {
+      * Customize text that appears on the footer of previous/next page.
+      */
+     docFooterText?: string
++    
++
++    /**
++     * Icon for the item
++     */
++    icon?: string
+ 
+     rel?: string
+     target?: string

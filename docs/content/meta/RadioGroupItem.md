@@ -10,7 +10,7 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -29,20 +29,46 @@
   },
   {
     'name': 'name',
-    'description': '',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
     'required': false
   },
   {
     'name': 'required',
-    'description': '<p>When <code>true</code>, indicates that the user must check the radio item before the owning form can be submitted.</p>\n',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'value',
     'description': '<p>The value given as data when submitted with a <code>name</code>.</p>\n',
-    'type': 'string',
+    'type': 'AcceptableValue',
     'required': false
+  }
+]" />
+
+<EmitsTable :data="[
+  {
+    'name': 'select',
+    'description': '<p>Event handler called when the user selects a link (via mouse or keyboard).</p>\n<p>Calling <code>event.preventDefault</code> in this handler will prevent the navigation menu from closing when selecting that link.</p>\n',
+    'type': '[event: SelectEvent]'
+  }
+]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'checked',
+    'description': '<p>Current checked state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'required',
+    'description': '<p>Required state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'disabled',
+    'description': '<p>Disabled state</p>\n',
+    'type': 'boolean'
   }
 ]" />

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
@@ -17,7 +16,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from 'radix-vue'
+} from 'reka-ui'
+import { ref } from 'vue'
 import './styles.css'
 
 const toggleState = ref(false)
@@ -275,7 +275,7 @@ function handleClick() {
         </DropdownMenuSub>
         <DropdownMenuSeparator class="DropdownMenuSeparator" />
         <DropdownMenuCheckboxItem
-          v-model:checked="checkboxOne"
+          v-model="checkboxOne"
           class="DropdownMenuItem"
         >
           <DropdownMenuItemIndicator class="DropdownMenuItemIndicator">
@@ -289,7 +289,7 @@ function handleClick() {
           </div>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
-          v-model:checked="checkboxTwo"
+          v-model="checkboxTwo"
           class="DropdownMenuItem"
         >
           <DropdownMenuItemIndicator class="DropdownMenuItemIndicator">

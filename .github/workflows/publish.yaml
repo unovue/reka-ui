@@ -4,9 +4,6 @@ on:
   push:
     paths:
       - 'docs/**'
-  pull_request:
-    paths:
-      - 'docs/**'
 
 jobs:
   publish:
@@ -16,39 +13,14 @@ jobs:
       deployments: write
     name: Publish to Cloudflare Pages
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Run a build step here
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
 
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        with:
-          version: 9
-          run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - uses: actions/cache@v4
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm i --frozen-lockfile
-
-      - name: Build Radix Vue
-        run: pnpm --filter radix-vue build
+      - name: Build Reka UI
+        run: pnpm --filter reka-ui build
 
       - name: Build Docs
         run: pnpm docs:build
@@ -57,15 +29,16 @@ jobs:
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1.5.0
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: radix-vue
+          apiToken: ${{ secrets.CLOUDFLARE_UNOVUE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_UNOVUE_ACCOUNT_ID }}
+          projectName: reka-ui
           directory: .vitepress/dist
           # Optional: Enable this if you want to have GitHub Deployments triggered
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           # Optional: Switch what branch you are publishing to.
           # By default this will be the branch which triggered this workflow
-          # branch: main
+          # TODO: remove the following branch target after merging to main
+          branch: main
           # Optional: Change the working directory
           workingDirectory: docs
           wranglerVersion: '3'

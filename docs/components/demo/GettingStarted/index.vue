@@ -6,7 +6,7 @@ import {
   PopoverPortal,
   PopoverRoot,
   PopoverTrigger,
-} from 'radix-vue'
+} from 'reka-ui'
 import './styles.css'
 </script>
 

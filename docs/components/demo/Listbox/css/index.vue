@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ListboxContent, ListboxItem, ListboxRoot } from 'radix-vue'
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
 </script>
 
 <template>

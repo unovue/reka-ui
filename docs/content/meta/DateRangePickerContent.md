@@ -28,13 +28,13 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'avoidCollisions',
-    'description': '<p>When <code>true</code>, overrides the side andalign preferences\nto prevent collisions with boundary edges.</p>\n',
+    'description': '<p>When <code>true</code>, overrides the side and align preferences\nto prevent collisions with boundary edges.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -57,6 +57,12 @@
     'required': false
   },
   {
+    'name': 'disableUpdateOnLayoutShift',
+    'description': '<p>Whether to disable the update position for the content when the layout shifted.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'forceMount',
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
@@ -69,9 +75,27 @@
     'required': false
   },
   {
+    'name': 'portal',
+    'description': '<p>Props to control the portal wrapped around the content.</p>\n',
+    'type': 'PopoverPortalProps',
+    'required': false
+  },
+  {
+    'name': 'positionStrategy',
+    'description': '<p>The type of CSS position property to use.</p>\n',
+    'type': '\'fixed\' | \'absolute\'',
+    'required': false
+  },
+  {
     'name': 'prioritizePosition',
     'description': '<p>Force content to be position within the viewport.</p>\n<p>Might overlap the reference element, which may not be desired.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'reference',
+    'description': '<p>The custom element or virtual element that will be set as the reference\nto position the floating element.</p>\n<p>If provided, it will replace the default anchor element.</p>\n',
+    'type': 'ReferenceElement',
     'required': false
   },
   {
@@ -90,12 +114,6 @@
     'name': 'sticky',
     'description': '<p>The sticky behavior on the align axis. <code>partial</code> will keep the\ncontent in the boundary as long as the trigger is at least partially\nin the boundary whilst &quot;always&quot; will keep the content in the boundary\nregardless.</p>\n',
     'type': '\'partial\' | \'always\'',
-    'required': false
-  },
-  {
-    'name': 'trapFocus',
-    'description': '<p>Whether focus should be trapped within the <code>MenuContent</code></p>\n',
-    'type': 'boolean',
     'required': false
   },
   {
@@ -134,7 +152,7 @@
   },
   {
     'name': 'pointerDownOutside',
-    'description': '<p>Event handler called when the a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
+    'description': '<p>Event handler called when a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
     'type': '[event: PointerDownOutsideEvent]'
   }
 ]" />

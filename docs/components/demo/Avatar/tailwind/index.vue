@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AvatarFallback, AvatarImage, AvatarRoot } from 'radix-vue'
+import { AvatarFallback, AvatarImage, AvatarRoot } from 'reka-ui'
 </script>
 
 <template>
@@ -11,7 +11,7 @@ import { AvatarFallback, AvatarImage, AvatarRoot } from 'radix-vue'
         alt="Colm Tuite"
       />
       <AvatarFallback
-        class="text-grass11 leading-1 flex h-full w-full items-center justify-center bg-white text-[15px] font-medium"
+        class="text-grass11 dark:text-stone-300 leading-1 flex h-full w-full items-center justify-center bg-white dark:bg-stone-800 text-sm font-medium"
         :delay-ms="600"
       >
         CT
@@ -24,14 +24,14 @@ import { AvatarFallback, AvatarImage, AvatarRoot } from 'radix-vue'
         alt="Pedro Duarte"
       />
       <AvatarFallback
-        class="text-grass11 leading-1 flex h-full w-full items-center justify-center bg-white text-[15px] font-medium"
+        class="text-grass11 dark:text-stone-300 leading-1 flex h-full w-full items-center justify-center bg-white dark:bg-stone-800 text-sm font-medium"
         :delay-ms="600"
       >
         JD
       </AvatarFallback>
     </AvatarRoot>
-    <AvatarRoot class="bg-blackA3 inline-flex h-[45px] w-[45px] select-none items-center justify-center overflow-hidden rounded-full align-middle">
-      <AvatarFallback class="text-grass11 leading-1 flex h-full w-full items-center justify-center bg-white text-[15px] font-medium">
+    <AvatarRoot class="bg-blackA3 inline-flex h-[45px] w-[45px] select-none items-center justify-center overflow-hidden rounded-full align-middle border dark:border-stone-700">
+      <AvatarFallback class=" text-grass11 dark:text-stone-300 leading-1 flex h-full w-full items-center justify-center bg-white dark:bg-stone-800 text-sm font-medium">
         PD
       </AvatarFallback>
     </AvatarRoot>

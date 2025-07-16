@@ -1,5 +1,5 @@
-import { components } from '../../../radix-vue/constant/components'
 import { writeFileSync } from 'node:fs'
+import { components } from 'reka-ui/constant'
 
 const excludedComponent = ['configProvider', 'primitive', 'visuallyHidden']
 const filteredComponent = Object.keys(components).filter(i => !excludedComponent.includes(i))
@@ -29,7 +29,7 @@ const namespaced = filteredComponent.map((curr: keyof typeof components) => {
 })
 
 const template = `
-import { ${flattenComponents.join(', ')} } from 'radix-vue'
+import { ${flattenComponents.join(', ')} } from 'reka-ui'
 
 ${namespaced.map(component => component).join('\n\n')}
 `

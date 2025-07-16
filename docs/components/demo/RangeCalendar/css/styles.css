@@ -67,7 +67,7 @@
   width: 100%;
 }
 
-.CalendarGridRow[data-radix-vue-calendar-month-view] {
+.CalendarGridRow[data-reka-calendar-month-view] {
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 

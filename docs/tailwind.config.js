@@ -1,4 +1,5 @@
-const { blackA, green, grass, mauve, violet, slate, red, teal, cyan, indigo, purple } = require('@radix-ui/colors')
+import { blackA, cyan, grass, green, indigo, mauve, purple, red, slate, teal, violet } from '@radix-ui/colors'
+import { fontFamily } from 'tailwindcss/defaultTheme'
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -6,7 +7,46 @@ module.exports = {
   content: ['.vitepress/**/*.{js,ts,vue}', './docs/**/*.md', './components/**/*.{vue,js}'],
   theme: {
     extend: {
+      fontFamily: {
+        inter: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+        sans: ['var(--font-geist-sans)', ...fontFamily.sans],
+        mono: ['var(--font-geist-mono)', ...fontFamily.mono],
+      },
       colors: {
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        code: 'hsl(var(--code))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
         ...blackA,
         ...mauve,
         ...violet,
@@ -19,6 +59,10 @@ module.exports = {
         ...purple,
         ...slate,
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      },
+
       keyframes: {
         overlayShow: {
           from: { opacity: 0 },
@@ -46,10 +90,10 @@ module.exports = {
         },
         slideDown: {
           from: { height: 0 },
-          to: { height: 'var(--radix-collapsible-content-height)' },
+          to: { height: 'var(--reka-collapsible-content-height)' },
         },
         slideUp: {
-          from: { height: 'var(--radix-collapsible-content-height)' },
+          from: { height: 'var(--reka-collapsible-content-height)' },
           to: { height: 0 },
         },
         enterFromRight: {
@@ -93,7 +137,7 @@ module.exports = {
           to: { transform: 'translateX(0)' },
         },
         swipeOut: {
-          from: { transform: 'translateX(var(--radix-toast-swipe-end-x))' },
+          from: { transform: 'translateX(var(--reka-toast-swipe-end-x))' },
           to: { transform: 'translateX(calc(100% + var(--viewport-padding)))' },
         },
         text: {
@@ -105,6 +149,10 @@ module.exports = {
             'background-size': '200% 200%',
             'background-position': 'right center',
           },
+        },
+        progress: {
+          '0%': { backgroundPosition: '0 0' },
+          '100%': { backgroundPosition: '30px 30px' },
         },
       },
       animation: {
@@ -128,7 +176,37 @@ module.exports = {
         slideIn: 'slideIn 150ms cubic-bezier(0.16, 1, 0.3, 1)',
         swipeOut: 'swipeOut 100ms ease-out',
         text: 'text 5s ease infinite',
+        progress: 'progress 1s infinite linear',
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            'a': {
+              'textDecoration': 'none',
+              'fontWeight': 600,
+              'borderBottom': '1px solid hsl(var(--primary))',
+              '&:hover': {
+                borderBottomWidth: '2px',
+              },
+            },
+            'code': {
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '0.375rem',
+              padding: '0.25rem',
+              lineHeight: '1rem',
+            },
+            'code::before': {
+              content: 'normal',
+            },
+            'code::after': {
+              content: 'normal',
+            },
+          },
+        },
       },
     },
   },
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }

@@ -1,5 +1,5 @@
 name: 🐞 Bug report
-description: Create a report to help us improve radix-vue.
+description: Create a report to help us improve reka-ui.
 title: '[Bug]: '
 labels: [bug]
 body:
@@ -11,9 +11,9 @@ body:
         This form is only for submitting bug reports. If you have a usage question
         or are unsure if this is really a bug, make sure to:
 
-        - Read the [docs](https://radix-vue.com/)
-        - Ask on [Discord Chat](https://chat.radix-vue.com/)
-        - Ask on [GitHub Discussions](https://github.com/unovue/radix-vue/discussions)
+        - Read the [docs](https://reka-ui.com/)
+        - Ask on [Discord Chat](https://chat.unovue.com/)
+        - Ask on [GitHub Discussions](https://github.com/unovue/reka-ui/discussions)
 
         Also try to search for your issue - it may have already been answered or even fixed.
         However, if you find that an old, closed issue still persists in the latest version,
@@ -27,7 +27,7 @@ body:
         Developement/Production OS: Windows 10 19043.1110
         Node version: 16.0.0
         Package manager: pnpm@8.6.0
-        Radix Vue version: 1.0.0
+        Reka UI version: 2.0.0
         Vue version: 3.0.0
         Nuxt version: 3.0.0
         Nuxt mode: universal

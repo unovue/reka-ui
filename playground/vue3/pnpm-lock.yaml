@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   radix-vue:
-    specifier: link:../../packages/radix-vue
-    version: link:../../packages/radix-vue
+    specifier: link:../../packages/core
+    version: link:../../packages/core
   vue:
     specifier: ^3.2.47
     version: 3.2.47

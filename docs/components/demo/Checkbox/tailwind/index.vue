@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { CheckboxIndicator, CheckboxRoot } from 'radix-vue'
 import { Icon } from '@iconify/vue'
+import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const checkboxOne = ref(true)
 </script>
@@ -10,17 +10,17 @@ const checkboxOne = ref(true)
   <div class="flex flex-col gap-2.5">
     <label class="flex flex-row gap-4 items-center [&>.checkbox]:hover:bg-neutral-100">
       <CheckboxRoot
-        v-model:checked="checkboxOne"
-        class="shadow-blackA7 hover:bg-green3 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none focus-within:shadow-[0_0_0_2px_black]"
+        v-model="checkboxOne"
+        class="hover:bg-stone-50 flex h-5 w-5 appearance-none items-center justify-center rounded-md bg-white shadow-sm border outline-none focus-within:shadow-[0_0_0_2px_black]"
       >
         <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
           <Icon
             icon="radix-icons:check"
-            class="h-3.5 w-3.5 text-grass11"
+            class="h-5 w-5 text-grass9"
           />
         </CheckboxIndicator>
       </CheckboxRoot>
-      <span class="select-none text-white">Accept terms and conditions.</span>
+      <span class="select-none text-stone-700 text-sm dark:text-white">Accept terms and conditions.</span>
     </label>
   </div>
 </template>

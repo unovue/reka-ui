@@ -9,16 +9,16 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@internationalized/date": "^3.5.6",
-    "radix-vue": "link:../../packages/radix-vue"
+    "@internationalized/date": "^3.7.0",
+    "@internationalized/number": "^3.6.0",
+    "reka-ui": "file:../../packages/core"
   },
   "devDependencies": {
-    "@floating-ui/vue": "^1.1.5",
-    "@iconify/vue": "^4.1.2",
+    "@iconify/vue": "^4.3.0",
     "@nuxt/devtools": "latest",
-    "@nuxtjs/tailwindcss": "^6.12.1",
+    "@nuxtjs/tailwindcss": "^6.13.1",
     "@radix-ui/colors": "^3.0.0",
-    "@types/node": "^22.7.4",
-    "nuxt": "^3.13.2"
+    "@types/node": "^22.13.5",
+    "nuxt": "^3.16.0"
   }
 }

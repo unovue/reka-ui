@@ -20,22 +20,24 @@ import {
   DatePickerRoot,
   DatePickerTrigger,
   Label,
-} from 'radix-vue'
+} from 'reka-ui'
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
     <Label
-      class="text-sm text-white"
-      for="date-field"
-    >Birthday</Label>
+      class="text-sm text-stone-700 dark:text-white"
+      for="birthday"
+    >
+      Birthday
+    </Label>
     <DatePickerRoot
-      id="date-field"
+      id="birthday"
       :is-date-unavailable="date => date.day === 19"
     >
       <DatePickerField
         v-slot="{ segments }"
-        class="flex select-none bg-white items-center justify-between rounded-lg text-center text-green10 border border-transparent p-1 w-40 data-[invalid]:border-red-500"
+        class="w-36 flex select-none bg-white items-center rounded-lg shadow-sm text-center justify-between text-green10 border p-1 data-[invalid]:border-red-500"
       >
         <div class="flex items-center">
           <template
@@ -51,44 +53,47 @@ import {
             <DatePickerInput
               v-else
               :part="item.part"
-              class="rounded-md p-0.5 focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-green9 "
+              class="rounded p-0.5 focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-green9"
             >
               {{ item.value }}
             </DatePickerInput>
           </template>
         </div>
 
-        <DatePickerTrigger class="focus:shadow-[0_0_0_2px] rounded-md text-xl p-1 focus:shadow-black">
-          <Icon icon="radix-icons:calendar" />
+        <DatePickerTrigger class="focus:shadow-[0_0_0_2px] rounded p-1 focus:shadow-black">
+          <Icon
+            icon="radix-icons:calendar"
+            class="text-base"
+          />
         </DatePickerTrigger>
       </DatePickerField>
 
       <DatePickerContent
         :side-offset="4"
-        class="rounded-xl bg-white shadow-[0_10px_38px_-10px_hsla(206,22%,7%,.35),0_10px_20px_-15px_hsla(206,22%,7%,.2)] focus:shadow-[0_10px_38px_-10px_hsla(206,22%,7%,.35),0_10px_20px_-15px_hsla(206,22%,7%,.2),0_0_0_2px_theme(colors.green7)] will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
+        class="rounded-xl bg-white border shadow-sm will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
       >
-        <DatePickerArrow class="fill-white" />
+        <DatePickerArrow class="fill-white stroke-gray-300" />
         <DatePickerCalendar
           v-slot="{ weekDays, grid }"
           class="p-4"
         >
           <DatePickerHeader class="flex items-center justify-between">
             <DatePickerPrev
-              class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
+              class="inline-flex items-center cursor-pointer text-black justify-center rounded-md bg-transparent w-7 h-7 hover:bg-stone-50 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
             >
               <Icon
                 icon="radix-icons:chevron-left"
-                class="w-6 h-6"
+                class="w-4 h-4"
               />
             </DatePickerPrev>
 
             <DatePickerHeading class="text-black font-medium" />
             <DatePickerNext
-              class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
+              class="inline-flex items-center cursor-pointer text-black justify-center rounded-md bg-transparent w-7 h-7 hover:bg-stone-50 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
             >
               <Icon
                 icon="radix-icons:chevron-right"
-                class="w-6 h-6"
+                class="w-4 h-4"
               />
             </DatePickerNext>
           </DatePickerHeader>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { Label, PinInputInput, PinInputRoot } from 'reka-ui'
 import { ref } from 'vue'
-import { Label, PinInputInput, PinInputRoot } from 'radix-vue'
 
 const value = ref<string[]>([])
 function handleComplete(e: string[]) {
@@ -12,11 +12,13 @@ function handleComplete(e: string[]) {
 <template>
   <div>
     <Label
-      for="pin-input"
-      class="text-white"
-    >Pin Input</Label>
+      for="otp"
+      class="text-stone-700 dark:text-white"
+    >
+      Pin Input
+    </Label>
     <PinInputRoot
-      id="pin-input"
+      id="otp"
       v-model="value"
       placeholder="○"
       class="flex gap-2 items-center mt-1"
@@ -26,7 +28,7 @@ function handleComplete(e: string[]) {
         v-for="(id, index) in 5"
         :key="id"
         :index="index"
-        class="w-10 h-10 bg-white rounded text-center shadow-lg text-green10 placeholder:text-mauve8 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-white"
+        class="w-10 h-10 bg-white rounded-lg text-center shadow-sm border text-green10 placeholder:text-mauve8 focus:shadow-[0_0_0_2px] focus:shadow-stone-800 outline-none"
       />
     </PinInputRoot>
   </div>

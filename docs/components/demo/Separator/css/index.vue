@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Separator } from 'radix-vue'
+import { Separator } from 'reka-ui'
 import './styles.css'
 </script>
 
 <template>
   <div :style="{ width: '100%', maxWidth: 300, margin: '0 15px' }">
     <div class="Text">
-      Radix Primitives
+      Reka UI
     </div>
     <div
       class="Text"

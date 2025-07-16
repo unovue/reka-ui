@@ -8,8 +8,14 @@
     'required': false
   },
   {
+    'name': 'overscan',
+    'description': '<p>Number of items rendered outside the visible area</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'textContent',
-    'description': '<p>text content for each item to achieve type-ahead feature</p>\n',
+    'description': '<p>Text content for each item to achieve type-ahead feature</p>\n',
     'type': '((item: Record<string, any>) => string)',
     'required': false
   }
@@ -29,6 +35,6 @@
   {
     'name': 'virtualItem',
     'description': '',
-    'type': 'VirtualItem<Element>'
+    'type': 'VirtualItem'
   }
 ]" />

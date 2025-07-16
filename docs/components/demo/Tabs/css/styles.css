@@ -24,14 +24,14 @@ input {
   position: relative;
 }
 
-.TagsIndicator {
+.TabsIndicator {
   position: absolute;
   padding-left: 2rem;
   left: 0;
   height: 2px;
   bottom: 0;
-  width: var(--radix-tabs-indicator-size);
-  transform: translateX(var(--radix-tabs-indicator-position));
+  width: var(--reka-tabs-indicator-size);
+  transform: translateX(var(--reka-tabs-indicator-position));
   border-radius: 9999px; /* rounded-full equivalent */
   transition-property: width, transform;
   transition-duration: 300ms;

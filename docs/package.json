@@ -1,7 +1,7 @@
 {
   "name": "docs",
   "type": "module",
-  "version": "1.9.16",
+  "version": "2.3.2",
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
@@ -13,29 +13,36 @@
     "typescript": "*"
   },
   "dependencies": {
-    "@internationalized/date": "^3.5.4",
-    "@stackblitz/sdk": "^1.10.0",
-    "@vueuse/core": "^10.11.0",
-    "radix-vue": "link:../packages/radix-vue",
-    "vue": "3.4.31",
-    "vue-sonner": "^1.1.3"
+    "@internationalized/date": "^3.7.0",
+    "@stackblitz/sdk": "^1.11.0",
+    "@vueuse/core": "^12.5.0",
+    "motion-v": "1.3.1",
+    "reka-ui": "link:../packages/core",
+    "vue": "3.5.13",
+    "vue-sonner": "^1.3.2"
   },
   "devDependencies": {
-    "@babel/traverse": "^7.24.7",
-    "@iconify/vue": "^4.1.2",
+    "@babel/traverse": "^7.26.7",
+    "@iconify/vue": "^4.3.0",
     "@radix-ui/colors": "^3.0.0",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/babel__traverse": "^7.20.6",
-    "@types/markdown-it": "^14.1.1",
-    "@vue/tsconfig": "^0.5.1",
-    "autoprefixer": "^10.4.19",
+    "@types/hast": "^3.0.4",
+    "@types/markdown-it": "^14.1.2",
+    "@vue/tsconfig": "^0.7.0",
+    "autoprefixer": "^10.4.20",
     "codesandbox": "^2.2.3",
-    "fast-glob": "^3.3.2",
+    "fast-glob": "^3.3.3",
+    "hast": "^1.0.0",
+    "mark.js": "^8.11.1",
     "markdown-it": "^14.1.0",
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.4",
-    "tsx": "^4.16.0",
-    "vitepress": "1.2.3",
-    "vue-component-meta": "^2.0.24"
+    "markdown-it-anchor": "^9.2.0",
+    "minisearch": "^6.3.0",
+    "postcss": "^8.5.1",
+    "shiki": "^1.29.2",
+    "tailwindcss": "^3.4.17",
+    "vitepress": "1.6.3",
+    "vue-component-meta": "^2.2.10"
   },
   "postcss": {
     "plugins": {

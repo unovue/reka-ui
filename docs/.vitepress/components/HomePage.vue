@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VPTeamMembers } from 'vitepress/theme-without-fonts'
+// import { VPTeamMembers } from 'vitepress/theme-without-fonts'
 import { teamMembers } from '../contributors'
 import Contributors from './Contributors.vue'
 </script>
@@ -31,7 +31,7 @@ import Contributors from './Contributors.vue'
             <Contributors />
             <br>
             <a
-              href="https://chat.radix-vue.com"
+              href="https://chat.unovue.com"
               rel="noopener noreferrer"
             >Join the community</a> and get involved!
           </p>

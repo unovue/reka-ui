@@ -10,8 +10,14 @@
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'by',
+    'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
+    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) => boolean)',
     'required': false
   },
   {
@@ -22,37 +28,37 @@
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The value of the combobox when initially rendered. Use when you do not need to control the state of the Combobox</p>\n',
+    'description': '<p>The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
   {
     'name': 'dir',
-    'description': '<p>The reading direction of the combobox when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
+    'description': '<p>The reading direction of the listbox when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
     'type': '\'ltr\' | \'rtl\'',
     'required': false
   },
   {
     'name': 'disabled',
-    'description': '<p>When <code>true</code>, prevents the user from interacting with Combobox</p>\n',
+    'description': '<p>When <code>true</code>, prevents the user from interacting with listbox</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
-    'name': 'displayValue',
-    'description': '<p>The display value of input for selected item. Does not work with <code>multiple</code>.</p>\n',
-    'type': '((val: AcceptableValue) => string)',
+    'name': 'highlightOnHover',
+    'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
+    'type': 'boolean',
     'required': false
   },
   {
-    'name': 'filterFunction',
-    'description': '<p>The custom filter function for filtering <code>ComboboxItem</code>.</p>\n',
-    'type': '((val: string[] | number[] | false[] | true[] | Record<string, any>[], term: string) => string[] | number[] | false[] | true[] | Record<string, any>[])',
+    'name': 'ignoreFilter',
+    'description': '<p>When <code>true</code>, disable the default filters</p>\n',
+    'type': 'boolean',
     'required': false
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the Combobox. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the listbox. Can be binded with with <code>v-model</code>.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
@@ -64,13 +70,19 @@
   },
   {
     'name': 'name',
-    'description': '<p>The name of the Combobox. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
     'required': false
   },
   {
     'name': 'open',
     'description': '<p>The controlled open state of the Combobox. Can be binded with with <code>v-model:open</code>.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'required',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -89,20 +101,27 @@
     'default': 'true'
   },
   {
-    'name': 'searchTerm',
-    'description': '<p>The controlled search term of the Combobox. Can be binded with with v-model:searchTerm.</p>\n',
-    'type': 'string',
-    'required': false
+    'name': 'openOnFocus',
+    'description': '<p>Whether to open the Combobox when the input is focused</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   },
   {
-    'name': 'selectedValue',
-    'description': '<p>The current highlighted value of the COmbobox. Can be binded with <code>v-model:selectedValue</code>.</p>\n',
-    'type': 'AcceptableValue',
-    'required': false
+    'name': 'openOnClick',
+    'description': '<p>Whether to open the Combobox when the input is clicked</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 
 <EmitsTable :data="[
+  {
+    'name': 'highlight',
+    'description': '<p>Event handler when highlighted element changes.</p>\n',
+    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; }]'
+  },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
@@ -112,16 +131,6 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the combobox changes.</p>\n',
     'type': '[value: boolean]'
-  },
-  {
-    'name': 'update:searchTerm',
-    'description': '<p>Event handler called when the searchTerm of the combobox changes.</p>\n',
-    'type': '[value: string]'
-  },
-  {
-    'name': 'update:selectedValue',
-    'description': '<p>Event handler called when the highlighted value of the combobox changes</p>\n',
-    'type': '[value: AcceptableValue]'
   }
 ]" />
 

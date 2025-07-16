@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { TreeItem, TreeRoot } from 'radix-vue'
 import { Icon } from '@iconify/vue'
+import { TreeItem, TreeRoot } from 'reka-ui'
 
 const items = [
   {
@@ -33,12 +33,12 @@ const items = [
 <template>
   <TreeRoot
     v-slot="{ flattenItems }"
-    class="list-none select-none w-56 bg-white text-blackA11 rounded-lg p-2 text-sm font-medium"
+    class="list-none select-none w-56 bg-white text-stone-700 rounded-lg border shadow-sm p-2 text-sm font-medium"
     :items="items"
     :get-key="(item) => item.title"
     :default-expanded="['components']"
   >
-    <h2 class="font-semibold !text-base text-blackA11 px-2 pt-1">
+    <h2 class="font-semibold text-sm text-stone-400 px-2 pt-1 pb-3">
       Directory Structure
     </h2>
     <TreeItem

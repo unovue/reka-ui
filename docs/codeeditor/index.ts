@@ -1,5 +1,5 @@
-import { getParameters } from 'codesandbox/lib/api/define'
 import sdk from '@stackblitz/sdk'
+import { getParameters } from 'codesandbox/lib/api/define'
 import { version } from '../../package.json'
 
 export function makeCodeSandboxParams(componentName: string, sources: Record<string, string>) {
@@ -17,7 +17,7 @@ export function makeStackblitzParams(componentName: string, sources: Record<stri
         files[`${k}`] = typeof v.content === 'object' ? JSON.stringify(v.content, null, 2) : v.content
     })
   return sdk.openProject({
-    title: `${componentName} - Radix Vue`,
+    title: `${componentName} - Reka UI`,
     files,
     template: 'node',
   }, {
@@ -58,7 +58,7 @@ export default defineConfig({
 function constructFiles(componentName: string, sources: Record<string, string>) {
   const dependencies = {
     'vue': 'latest',
-    'radix-vue': version,
+    'reka-ui': version,
     '@radix-ui/colors': 'latest',
     '@iconify/vue': 'latest',
   }
@@ -84,7 +84,7 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
   const files = {
     'package.json': {
       content: {
-        name: `radix-vue-${componentName.toLowerCase().replace(/ /g, '-')}`,
+        name: `reka-ui-${componentName.toLowerCase().replace(/ /g, '-')}`,
         scripts: { start: 'vite' },
         dependencies,
         devDependencies,

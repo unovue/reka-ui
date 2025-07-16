@@ -22,3 +22,16 @@
     'type': '[value: boolean]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'open',
+    'description': '<p>Current open state</p>\n',
+    'type': 'boolean'
+  },
+  {
+    'name': 'close',
+    'description': '<p>Close the dialog</p>\n',
+    'type': '(): void'
+  }
+]" />

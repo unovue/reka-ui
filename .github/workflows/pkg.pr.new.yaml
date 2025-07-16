@@ -1,49 +1,20 @@
-name: Publish Merged PR
-on:
-  pull_request:
-    types: [closed]
-    paths:
-      - 'packages/**'
+name: Publish Any Commit (v2)
+on: [push, pull_request]
 
 jobs:
-  after_merge:
-    if: github.event.pull_request.merged == true
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
 
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        with:
-          version: 9
-          run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - uses: actions/cache@v4
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm i --frozen-lockfile
-
-      - name: Build Radix Vue and plugins
+      - name: Build Reka UI and plugins
         run: pnpm run build
 
-      - run: pnpm dlx pkg-pr-new publish --compact ./packages/radix-vue
+      - run: pnpm dlx pkg-pr-new publish --compact ./packages/core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

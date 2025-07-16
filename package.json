@@ -1,40 +1,41 @@
 {
-  "name": "radix-vue",
-  "version": "1.9.16",
+  "name": "reka-ui",
+  "type": "module",
+  "version": "2.3.2",
   "private": true,
-  "packageManager": "pnpm@9.4.0",
+  "packageManager": "pnpm@10.13.1",
   "license": "MIT",
-  "repository": "unovue/radix-vue",
+  "repository": "unovue/reka-ui",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "story:dev": "pnpm --filter histoire story:dev --open",
-    "build": "rimraf packages/radix-vue/dist  && pnpm run --filter radix-vue build && pnpm run --filter plugins build",
-    "build-only": "rimraf packages/radix-vue/dist  && pnpm run -r build-only",
+    "build": "pnpm run --filter reka-ui build && pnpm run --filter plugins build",
+    "build-only": "pnpm run -r build-only",
     "docs:install": "pnpm --filter docs install",
     "docs:dev": "pnpm --filter docs docs:dev",
     "docs:build": "pnpm --filter docs docs:build",
     "docs:gen": "pnpm --filter docs docs:gen",
     "docs:contributors": "pnpm --filter docs docs:contributors",
     "prepare": "pnpm simple-git-hooks",
-    "test": "pnpm --filter radix-vue test",
-    "lint": "eslint . --cache",
-    "lint:fix": "eslint . --cache --fix",
+    "test": "pnpm --filter reka-ui test",
+    "test-update": "pnpm --filter reka-ui test-update",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "bumpp": "bumpp package.json packages/*/package.json docs/package.json",
-    "pub:release": "cd packages/radix-vue && pnpm pub:release"
+    "pub:release": "cd packages/core && pnpm pub:release"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^2.27.3",
-    "@commitlint/cli": "^19.3.0",
-    "@commitlint/config-conventional": "^19.2.2",
-    "bumpp": "^9.4.1",
-    "eslint": "^9.10.0",
-    "lint-staged": "^15.2.10",
-    "pnpm": "^9.4.0",
-    "rimraf": "^6.0.1",
-    "simple-git-hooks": "^2.11.1",
-    "typescript": "5.3.3"
+    "@antfu/eslint-config": "^4.13.1",
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
+    "bumpp": "^10.1.1",
+    "eslint": "^9.27.0",
+    "lint-staged": "^15.5.2",
+    "simple-git-hooks": "^2.13.0",
+    "tsx": "^4.20.3",
+    "typescript": "5.8.3"
   },
   "commitlint": {
     "extends": [
@@ -43,8 +44,13 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "vitepress@1.2.3": "patches/vitepress@1.2.3.patch"
-    }
+      "vitepress": "patches/vitepress.patch"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "simple-git-hooks",
+      "unrs-resolver"
+    ]
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
