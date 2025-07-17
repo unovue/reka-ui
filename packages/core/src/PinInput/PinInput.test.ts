@@ -30,6 +30,25 @@ describe('given default PinInput', () => {
     expect(inputs[4].element.placeholder).toBe('*')
   })
 
+  describe('caret handling', () => {
+    it('should handle caret at the start of the input', async () => {
+      await userEvent.keyboard('a')
+      inputs[0].element.focus()
+      inputs[0].element.setSelectionRange(0, 0)
+      await userEvent.keyboard('b')
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['b', '', '', '', ''])
+      expect(inputs[1].element).toBe(document.activeElement)
+    })
+
+    it('should handle caret at the end of the input (default focus)', async () => {
+      await userEvent.keyboard('a')
+      inputs[0].element.focus()
+      await userEvent.keyboard('b')
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['b', '', '', '', ''])
+      expect(inputs[1].element).toBe(document.activeElement)
+    })
+  })
+
   describe('after user input', () => {
     beforeEach(async () => {
       await userEvent.keyboard('test')
