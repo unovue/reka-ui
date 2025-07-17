@@ -4,7 +4,7 @@ import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootEmits, PopoverRootProps } from '..'
 import type { Matcher, WeekDayFormat } from '@/date'
-import type { Granularity, HourCycle } from '@/shared/date'
+import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRefs, watch } from 'vue'
 import { createContext, useDirection } from '@/shared'
@@ -40,6 +40,7 @@ type DatePickerRootContext = {
   onDateChange: (date: DateValue | undefined) => void
   onPlaceholderChange: (date: DateValue) => void
   dir: Ref<Direction>
+  step: Ref<DateStep | undefined>
 }
 
 export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'>
@@ -104,6 +105,7 @@ const {
   hourCycle,
   defaultValue,
   dir: propDir,
+  step,
 } = toRefs(props)
 
 const dir = useDirection(propDir)
@@ -165,6 +167,7 @@ provideDatePickerRootContext({
   hourCycle,
   dateFieldRef,
   dir,
+  step,
   onDateChange(date: DateValue | undefined) {
     if (!date || !modelValue.value) {
       modelValue.value = date?.copy() ?? undefined
