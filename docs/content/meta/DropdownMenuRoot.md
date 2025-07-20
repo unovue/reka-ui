@@ -25,6 +25,13 @@
     'description': '<p>The controlled open state of the menu. Can be used as <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When <code>true</code>, the element will be unmounted on closed state.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 

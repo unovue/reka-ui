@@ -12,6 +12,7 @@ export type DropdownMenuRootEmits = MenuEmits
 
 export interface DropdownMenuRootContext {
   open: Readonly<Ref<boolean>>
+  unmountOnHide: Ref<boolean>
   onOpenChange: (open: boolean) => void
   onOpenToggle: () => void
   triggerId: string
@@ -33,6 +34,7 @@ import { MenuRoot } from '@/Menu'
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,
   open: undefined,
+  unmountOnHide: true,
 })
 const emit = defineEmits<DropdownMenuRootEmits>()
 
@@ -51,10 +53,11 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 
-const { modal, dir: propDir } = toRefs(props)
+const { modal, dir: propDir, unmountOnHide } = toRefs(props)
 const dir = useDirection(propDir)
 provideDropdownMenuRootContext({
   open,
+  unmountOnHide,
   onOpenChange: (value) => {
     open.value = value
   },
@@ -74,6 +77,7 @@ provideDropdownMenuRootContext({
     v-model:open="open"
     :dir="dir"
     :modal="modal"
+    :unmount-on-hide="unmountOnHide"
   >
     <slot :open="open" />
   </MenuRoot>
