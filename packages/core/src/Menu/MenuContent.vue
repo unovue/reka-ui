@@ -31,15 +31,21 @@ const rootContext = injectMenuRootContext()
 </script>
 
 <template>
-  <Presence :present="forceMount || menuContext.open.value">
+  <Presence
+    v-slot="{ present }"
+    :present="forceMount || menuContext.open.value"
+    :force-mount="forceMount || !rootContext.unmountOnHide.value"
+  >
     <MenuRootContentModal
       v-if="rootContext.modal.value"
+      v-show="present"
       v-bind="{ ...$attrs, ...forwarded }"
     >
       <slot />
     </MenuRootContentModal>
     <MenuRootContentNonModal
       v-else
+      v-show="present"
       v-bind="{ ...$attrs, ...forwarded }"
     >
       <slot />

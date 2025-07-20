@@ -16,6 +16,7 @@ export interface MenuRootContext {
   dir: Ref<Direction>
   isUsingKeyboardRef: Ref<boolean>
   modal: Ref<boolean>
+  unmountOnHide: Ref<boolean>
 }
 
 export interface MenuProps {
@@ -33,6 +34,12 @@ export interface MenuProps {
    * When set to `true`, interaction with outside elements will be disabled and only menu content will be visible to screen readers.
    */
   modal?: boolean
+  /**
+   * When `true`, the element will be unmounted on closed state.
+   *
+   * @defaultValue `true`
+   */
+  unmountOnHide?: boolean
 }
 
 export type MenuEmits = {
@@ -57,9 +64,10 @@ import { PopperRoot } from '@/Popper'
 const props = withDefaults(defineProps<MenuProps>(), {
   open: false,
   modal: true,
+  unmountOnHide: true,
 })
 const emits = defineEmits<MenuEmits>()
-const { modal, dir: propDir } = toRefs(props)
+const { modal, dir: propDir, unmountOnHide } = toRefs(props)
 const dir = useDirection(propDir)
 
 const open = useVModel(props, 'open', emits)
@@ -85,6 +93,7 @@ provideMenuRootContext({
   isUsingKeyboardRef,
   dir,
   modal,
+  unmountOnHide,
 })
 </script>
 
