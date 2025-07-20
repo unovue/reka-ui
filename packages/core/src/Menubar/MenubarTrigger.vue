@@ -10,7 +10,7 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
@@ -67,14 +67,17 @@ onMounted(() => {
               rootContext.onMenuOpen(menuContext.value);
               // prevent trigger focusing when opening
               // this allows the content to be given focus without competition
-              if (!open) event.preventDefault();
+              const menubarOpen = Boolean(rootContext.modelValue.value);
+              if (menubarOpen && !open) event.preventDefault();
             }
           }"
           @pointerenter="() => {
             const menubarOpen = Boolean(rootContext.modelValue.value);
             if (menubarOpen && !open) {
               rootContext.onMenuOpen(menuContext.value);
-              triggerElement?.focus()
+              nextTick(() => {
+                triggerElement?.focus()
+              })
             }
           }"
           @keydown.enter.space.arrow-down="(event) => {

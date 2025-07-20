@@ -17,6 +17,13 @@ export interface MenubarRootProps {
   dir?: Direction
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
   loop?: boolean
+
+  /**
+   * When `true`, the element will be unmounted on closed state.
+   *
+   * @defaultValue `true`
+   */
+  unmountOnHide?: boolean
 }
 export type MenubarRootEmits = {
   /** Event handler called when the value changes. */
@@ -27,6 +34,7 @@ export interface MenubarRootContext {
   modelValue: Ref<string>
   dir: Ref<Direction>
   loop: Ref<boolean>
+  unmountOnHide: Ref<boolean>
   onMenuOpen: (value: string) => void
   onMenuClose: () => void
   onMenuToggle: (value: string) => void
@@ -44,6 +52,7 @@ import { RovingFocusGroup } from '@/RovingFocus'
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
+  unmountOnHide: true,
 })
 const emit = defineEmits<MenubarRootEmits>()
 
@@ -64,12 +73,13 @@ const modelValue = useVModel(props, 'modelValue', emit, {
 
 const currentTabStopId = ref<string | null>(null)
 
-const { dir: propDir, loop } = toRefs(props)
+const { dir: propDir, loop, unmountOnHide } = toRefs(props)
 const dir = useDirection(propDir)
 provideMenubarRootContext({
   modelValue,
   dir,
   loop,
+  unmountOnHide,
   onMenuOpen: (value) => {
     modelValue.value = value
     currentTabStopId.value = value

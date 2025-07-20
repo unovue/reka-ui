@@ -58,6 +58,7 @@ provideMenubarMenuContext({
     :open="open"
     :modal="false"
     :dir="rootContext.dir.value"
+    :unmount-on-hide="rootContext.unmountOnHide.value"
     @update:open="
       (value) => {
         // Menu only calls `@update:open` when dismissing so we
