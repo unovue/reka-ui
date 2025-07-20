@@ -106,7 +106,7 @@
     "@vue/tsconfig": "^0.7.0",
     "jsdom": "^26.1.0",
     "tsdown": "^0.12.9",
-    "vite": "^7.0.4",
+    "vite": "^7.0.5",
     "vitest": "^3.2.4",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^0.3.3",
