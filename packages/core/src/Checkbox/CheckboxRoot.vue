@@ -74,7 +74,14 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<CheckedState>
 
-const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
+const disabled = computed(() =>
+  checkboxGroupContext?.disabled.value
+  || props.disabled
+  || (
+    !isNullish(checkboxGroupContext?.max.value)
+    && !isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
+    && (checkboxGroupContext.modelValue.value?.length || 0) >= checkboxGroupContext?.max.value),
+)
 
 const checkboxState = computed<CheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
