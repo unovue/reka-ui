@@ -19,9 +19,9 @@ const models = ref([])
         class="list-none select-none w-64 bg-white text-blackA11 rounded-lg p-2 text-sm font-medium"
         :items="items"
         :get-key="(item) => item.title"
-        :multiple="true"
-        :propagate-select="true"
-        :bubble-select="true"
+        multiple
+        propagate-select
+        bubble-select
       >
         <TreeItem
           v-for="item in flattenItems"

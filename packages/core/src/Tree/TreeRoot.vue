@@ -21,7 +21,7 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   /** How multiple selection should behave in the collection. */
   selectionBehavior?: 'toggle' | 'replace'
   /** Whether multiple options can be selected or not.  */
-  multiple?: M
+  multiple?: M | boolean
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** When `true`, prevents the user from interacting with tree  */
@@ -119,7 +119,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 const expanded = useVModel(props, 'expanded', emits, {
   // @ts-expect-error idk
   defaultValue: props.defaultExpanded ?? [],
-  passive: true,
+  passive: (props.expanded === undefined) as false,
   deep: true,
 }) as Ref<string[]>
 
