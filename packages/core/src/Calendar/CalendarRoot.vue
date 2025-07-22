@@ -1,13 +1,13 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 
-import type { ComputedRef, Ref } from 'vue'
+import type { Ref } from 'vue'
 import type { Grid, Matcher, WeekDayFormat } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { isEqualDay, isSameDay, startOfWeek, startOfYear } from '@internationalized/date'
+import { isEqualDay, isSameDay } from '@internationalized/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useCalendar, useCalendarState } from './useCalendar'
@@ -45,7 +45,6 @@ type CalendarRootContext = {
   formatter: Formatter
   dir: Ref<Direction>
   disableDaysOutsideCurrentView: Ref<boolean>
-  startingWeekNumber: ComputedRef<number[]>
 }
 
 export interface CalendarRootProps extends PrimitiveProps {
@@ -112,7 +111,7 @@ export const [injectCalendarRootContext, provideCalendarRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, onMounted, toRefs, watch } from 'vue'
+import { onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
@@ -253,21 +252,6 @@ watch(modelValue, (_modelValue) => {
   }
 })
 
-const startingWeekNumber = computed(() => {
-  const firstDayOfGrid = startOfWeek(grid.value[0].rows[0][0], locale.value)
-
-  return Array.from({ length: grid.value[0].rows.length })
-    .fill(null)
-    .map((_, idx) => {
-      const firstDayOfWeek = firstDayOfGrid.add({ weeks: idx })
-
-      const thursday = firstDayOfWeek.add({ days: 3 })
-      const firstDayOfYear = startOfYear(thursday)
-
-      return ((thursday.compare(firstDayOfYear) / 7) | 0) + 1
-    })
-})
-
 function onDateChange(value: DateValue) {
   if (!multiple.value) {
     if (!modelValue.value) {
@@ -339,7 +323,6 @@ provideCalendarRootContext({
   onPlaceholderChange,
   onDateChange,
   disableDaysOutsideCurrentView,
-  startingWeekNumber,
 })
 </script>
 

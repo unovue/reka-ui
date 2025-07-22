@@ -1,12 +1,12 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
-import type { ComputedRef, Ref } from 'vue'
+import type { Ref } from 'vue'
 import type { Grid, Matcher, WeekDayFormat } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay, startOfWeek, startOfYear } from '@internationalized/date'
+import { isEqualDay } from '@internationalized/date'
 import { useCalendar } from '@/Calendar/useCalendar'
 import { isBefore } from '@/date'
 import {
@@ -67,7 +67,6 @@ type RangeCalendarRootContext = {
   disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays: Ref<number | undefined>
-  startingWeekNumberPerMonth: ComputedRef<number[][]>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -374,23 +373,6 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   }
 })
 
-const startingWeekNumberPerMonth = computed((): number[][] => {
-  return grid.value.map((month) => {
-    const firstDayOfMonth = startOfWeek(month.rows[0][0], locale.value)
-
-    return Array.from({ length: month.rows.length })
-      .fill(null)
-      .map((_, idx) => {
-        const firstDayOfWeek = firstDayOfMonth.add({ weeks: idx })
-
-        const thursday = firstDayOfWeek.add({ days: 3 })
-        const firstDayOfYear = startOfYear(thursday)
-
-        return ((thursday.compare(firstDayOfYear) / 7) | 0) + 1
-      })
-  })
-})
-
 const kbd = useKbd()
 useEventListener('keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
@@ -444,7 +426,6 @@ provideRangeCalendarRootContext({
   disableDaysOutsideCurrentView,
   fixedDate,
   maximumDays,
-  startingWeekNumberPerMonth,
 })
 
 onMounted(() => {
