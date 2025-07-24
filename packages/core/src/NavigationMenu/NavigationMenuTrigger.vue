@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { VNode } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { useForwardExpose } from '@/shared'
@@ -11,11 +11,12 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { refAutoReset, unrefElement } from '@vueuse/core'
+import { refAutoReset } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
+import { getElement, isHTMLElement } from '@/shared/elementUtils'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -115,9 +116,13 @@ function handleKeydown(ev: KeyboardEvent) {
   }
 }
 
-function setFocusProxyRef(node: VNode) {
-  // @ts-expect-error unrefElement expect MaybeRef, but also support Vnode
-  itemContext.focusProxyRef.value = unrefElement(node)
+function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
+  const element = getElement(node)
+  if (isHTMLElement(element))
+    itemContext.focusProxyRef.value = element
+  else
+    console.warn('focus proxy is not an HTMLElement', element)
+
   return undefined
 }
 

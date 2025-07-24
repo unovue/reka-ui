@@ -17,6 +17,7 @@ export interface PopperArrowProps extends ArrowProps, PrimitiveProps {}
 import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
 import Arrow from '@/shared/component/Arrow.vue'
+import { isHTMLElement } from '@/shared/elementUtils'
 import { injectPopperContentContext } from './PopperContent.vue'
 
 defineOptions({
@@ -36,8 +37,9 @@ const baseSide = computed(() => OPPOSITE_SIDE[contentContext.placedSide.value])
 
 <template>
   <span
-    :ref="(el: HTMLElement) => {
-      contentContext.onArrowChange(el)
+    :ref="(el) => {
+      if (isHTMLElement(el))
+        contentContext.onArrowChange(el)
       return undefined
     }"
     :style="{

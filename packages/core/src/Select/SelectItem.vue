@@ -4,6 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { isHTMLElement } from '@/shared/elementUtils'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -169,8 +170,9 @@ provideSelectItemContext({
       @focus="isFocused = true"
       @blur="isFocused = false"
       @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event) => {
-        (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+      @pointerdown="(event: PointerEvent) => {
+        if (isHTMLElement(event.currentTarget))
+          event.currentTarget.focus({ preventScroll: true })
       }"
       @touchend.prevent.stop
       @pointermove="handlePointerMove"

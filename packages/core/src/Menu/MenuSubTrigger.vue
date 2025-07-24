@@ -6,9 +6,9 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {}
 </script>
 
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
 import { nextTick, onUnmounted, ref } from 'vue'
 import { useId } from '@/shared'
+import { isElement, isHTMLElement } from '@/shared/elementUtils'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
@@ -121,9 +121,9 @@ async function handleKeyDown(event: KeyboardEvent) {
       v-bind="props"
       :id="subContext.triggerId"
       :ref="
-        (vnode: ComponentPublicInstance) => {
-          // @ts-ignore
-          subContext?.onTriggerChange(vnode?.$el);
+        (vnode) => {
+          if (!isElement(vnode))
+            subContext?.onTriggerChange(vnode?.$el);
           return undefined
         }
       "
@@ -132,14 +132,15 @@ async function handleKeyDown(event: KeyboardEvent) {
       :aria-controls="subContext.contentId"
       :data-state="getOpenState(menuContext.open.value)"
       @click="
-        async (event) => {
+        async (event: MouseEvent) => {
           if (props.disabled || event.defaultPrevented) return;
           /**
            * We manually focus because iOS Safari doesn't always focus on click (e.g. buttons)
            * and we rely heavily on `onFocusOutside` for submenus to close when switching
            * between separate submenus.
            */
-          event.currentTarget.focus();
+          if (isHTMLElement(event.currentTarget))
+            event.currentTarget.focus();
           if (!menuContext.open.value) menuContext.onOpenChange(true);
         }
       "

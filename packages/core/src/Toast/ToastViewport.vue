@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { getActiveElement, useForwardExpose } from '@/shared'
+import { getElement, isHTMLElement } from '@/shared/elementUtils'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -21,7 +21,7 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, unrefElement } from '@vueuse/core'
+import { onKeyStroke } from '@vueuse/core'
 import { computed, onMounted, ref, toRefs, watchEffect } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
@@ -172,8 +172,10 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
   >
     <FocusProxy
       v-if="hasToasts"
-      :ref="(node: ComponentPublicInstance) => {
-        headFocusProxyRef = unrefElement(node) as HTMLElement
+      :ref="(node) => {
+        const element = getElement(node)
+        if (isHTMLElement(element))
+          headFocusProxyRef = element
         return undefined
       }"
       @focus-from-outside-viewport="() => {
@@ -196,8 +198,10 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
     </CollectionSlot>
     <FocusProxy
       v-if="hasToasts"
-      :ref="(node: ComponentPublicInstance) => {
-        tailFocusProxyRef = unrefElement(node) as HTMLElement
+      :ref="(node) => {
+        const element = getElement(node)
+        if (isHTMLElement(element))
+          tailFocusProxyRef = element
         return undefined
       }"
       @focus-from-outside-viewport="() => {

@@ -1,8 +1,5 @@
 <script lang="ts">
-import type {
-  ComponentPublicInstance,
-  Ref,
-} from 'vue'
+import type { Ref } from 'vue'
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
@@ -81,7 +78,6 @@ export const [injectSelectContentContext, provideSelectContentContext]
 </script>
 
 <script setup lang="ts">
-import { unrefElement } from '@vueuse/core'
 import {
   computed,
   ref,
@@ -91,6 +87,7 @@ import {
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focusFirst } from '@/Menu/utils'
+import { getElement, isHTMLElement } from '@/shared/elementUtils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -159,7 +156,7 @@ watchEffect((cleanupFn) => {
     }
     else {
       // otherwise, if the event was outside the content, close.
-      if (!content.value?.contains(event.target as HTMLElement))
+      if (isHTMLElement(event.target) && !content.value?.contains(event.target))
         onOpenChange(false)
     }
     document.removeEventListener('pointermove', handlePointerMove)
@@ -300,14 +297,15 @@ provideSelectContentContext({
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="
-            (vnode: ComponentPublicInstance) => {
-              const el = unrefElement(vnode) as HTMLElement | undefined
+            (vnode) => {
+              const el = getElement(vnode)
+              if (!el)
+                return undefined
               // special case for PopperContent
-              if (el?.hasAttribute('data-reka-popper-content-wrapper'))
+              else if (el?.hasAttribute('data-reka-popper-content-wrapper'))
                 content = el.firstElementChild as HTMLElement
               else
                 content = el
-              return undefined
             }
           "
           role="listbox"

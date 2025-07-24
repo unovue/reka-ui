@@ -88,7 +88,7 @@ provideListboxItemContext({
       :data-state="isSelected ? 'checked' : 'unchecked'"
       @click="handleSelectCustomEvent"
       @keydown.space.prevent="handleSelectCustomEvent"
-      @pointermove="(event) => {
+      @pointermove="() => {
         if (rootContext.highlightedElement.value === currentElement)
           return
 

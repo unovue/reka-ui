@@ -18,6 +18,7 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
+import { isHTMLElement } from '@/shared/elementUtils'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
@@ -165,7 +166,10 @@ function handleKeydown(ev: KeyboardEvent) {
       // If we can't focus that means we're at the edges
       // so focus the proxy and let browser handle
       // tab/shift+tab keypress on the proxy instead
-      itemContext.focusProxyRef.value?.focus()
+      if (isHTMLElement(itemContext.focusProxyRef.value))
+        itemContext.focusProxyRef.value.focus()
+      else
+        console.warn('proxy is not an HTMLElement', itemContext.focusProxyRef.value)
       return
     }
   }

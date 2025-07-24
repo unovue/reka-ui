@@ -78,14 +78,14 @@ async function handlePointerLeave(event: PointerEvent) {
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @focus="
-        async (event) => {
+        async (event: FocusEvent) => {
           await nextTick();
           if (event.defaultPrevented || disabled) return;
           isFocused = true;
         }
       "
       @blur="
-        async (event) => {
+        async (event: FocusEvent) => {
           await nextTick();
           if (event.defaultPrevented) return;
           isFocused = false;

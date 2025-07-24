@@ -29,12 +29,12 @@ const isClickFocus = refAutoReset(false, 10)
       :aria-multiselectable="!!rootContext.multiple.value"
       :data-orientation="rootContext.orientation.value"
       @mousedown.left="isClickFocus = true"
-      @focus="(ev) => {
+      @focus="(ev: FocusEvent) => {
         if (isClickFocus)
           return
         rootContext.onEnter(ev)
       }"
-      @keydown.down.up.left.right.home.end.prevent="(event) => {
+      @keydown.down.up.left.right.home.end.prevent="(event: KeyboardEvent) => {
         rootContext.focusable.value ? rootContext.onKeydownNavigation(event) : undefined
       }"
       @keydown.enter="rootContext.onKeydownEnter"

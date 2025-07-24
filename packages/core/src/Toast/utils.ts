@@ -1,3 +1,5 @@
+import { isHTMLElement } from '@/shared/elementUtils'
+
 export const TOAST_SWIPE_START = 'toast.swipeStart'
 export const TOAST_SWIPE_MOVE = 'toast.swipeMove'
 export const TOAST_SWIPE_CANCEL = 'toast.swipeCancel'
@@ -45,10 +47,6 @@ export function isDeltaInDirection(delta: { x: number, y: number }, direction: S
     return isDeltaX && deltaX > threshold
   else
     return !isDeltaX && deltaY > threshold
-}
-
-export function isHTMLElement(node: any): node is HTMLElement {
-  return node.nodeType === node.ELEMENT_NODE
 }
 
 export function getAnnounceTextContent(container: HTMLElement) {
