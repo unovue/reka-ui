@@ -14,6 +14,17 @@ export default defineConfig({
   sourcemap: true,
   hash: false,
 
+  /**
+   * Quick fix for tsdown not convert "import.meta" for non-esm output.
+   * When tsdown resolves the issue, this can be removed.
+   *
+   * @see https://github.com/rolldown/tsdown/issues/370
+   */
+  define: {
+    'import.meta.env.DEV': 'undefined',
+    'import.meta.env.MODE': 'undefined',
+  },
+
   inputOptions: {
     preserveEntrySignatures: 'allow-extension',
     experimental: {
