@@ -11,7 +11,6 @@ import { useCalendar } from '@/Calendar/useCalendar'
 import { isBefore } from '@/date'
 import {
   createContext,
-  isNullish,
   useDirection,
   useKbd,
   useLocale,
@@ -76,8 +75,6 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   defaultValue?: DateRange
   /** The controlled checked state of the calendar. Can be bound as `v-model`. */
   modelValue?: DateRange | null
-  /** The controlled unchecked state of the calendar. */
-  rawModelValue?: DateRange
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
   /** When combined with `isDateUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. */
@@ -131,8 +128,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
 export type RangeCalendarRootEmits = {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
-  /** Event handler called whenever the rawModel value changes */
-  'update:rawModelValue': [date: DateRange]
+  /** Event handler called whenever there is a new validModel */
+  'update:validModelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
   /** Event handler called whenever the start value changes */
@@ -145,12 +142,11 @@ export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
 
 <script setup lang="ts">
 import { useEventListener, useVModel } from '@vueuse/core'
-import { computed, onMounted, ref, toRefs, watch } from 'vue'
+import { onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),
-  rawModelValue: () => ({ start: undefined, end: undefined }),
   as: 'div',
   pagedNavigation: false,
   preventDeselect: false,
@@ -230,22 +226,22 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<DateRange>
 
-const currentModelValue = computed(() =>
-  isNullish(modelValue.value)
-    ? { start: undefined, end: undefined }
-    : modelValue.value,
-)
+const validModelValue = ref(modelValue.value) as Ref<DateRange>
+
+watch(validModelValue, (value) => {
+  emits('update:validModelValue', value)
+})
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
-  defaultValue: currentModelValue.value.start,
+  defaultValue: modelValue.value.start,
   locale: props.locale,
 })
 
-const startValue = ref(currentModelValue.value.start) as Ref<
+const startValue = ref(modelValue.value.start) as Ref<
   DateValue | undefined
 >
-const endValue = ref(currentModelValue.value.end) as Ref<DateValue | undefined>
+const endValue = ref(modelValue.value.end) as Ref<DateValue | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
@@ -255,11 +251,6 @@ const placeholder = useVModel(props, 'placeholder', emits, {
 function onPlaceholderChange(value: DateValue) {
   placeholder.value = value.copy()
 }
-
-const rawModelValue = useVModel(props, 'rawModelValue', emits, {
-  defaultValue: props.defaultValue ?? { start: undefined, end: undefined },
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<DateRange>
 
 const {
   fullCalendarLabel,
@@ -334,26 +325,6 @@ watch(modelValue, (_modelValue, _prevValue) => {
   }
 })
 
-watch(rawModelValue, (_rawModelValue, _prevValue) => {
-  if (
-    (!_prevValue?.start && _rawModelValue?.start)
-    || !_rawModelValue
-    || !_rawModelValue.start
-    || (startValue.value && !isEqualDay(_rawModelValue.start, startValue.value))
-  ) {
-    startValue.value = _rawModelValue?.start?.copy?.()
-  }
-
-  if (
-    (!_prevValue?.end && _rawModelValue.end)
-    || !_rawModelValue
-    || !_rawModelValue.end
-    || (endValue.value && !isEqualDay(_rawModelValue.end, endValue.value))
-  ) {
-    endValue.value = _rawModelValue?.end?.copy?.()
-  }
-})
-
 watch(startValue, (_startValue) => {
   if (_startValue && !isEqualDay(_startValue, placeholder.value))
     onPlaceholderChange(_startValue)
@@ -362,10 +333,7 @@ watch(startValue, (_startValue) => {
 })
 
 watch([startValue, endValue], ([_startValue, _endValue]) => {
-  const value = currentModelValue.value
-
-  rawModelValue.value.start = startValue.value?.copy()
-  rawModelValue.value.end = endValue.value?.copy()
+  const value = modelValue.value
 
   if (
     value
@@ -380,16 +348,7 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   }
 
   isEditing.value = true
-  if (_startValue && _endValue) {
-    isEditing.value = false
-    if (
-      value.start
-      && value.end
-      && isEqualDay(value.start, _startValue)
-      && isEqualDay(value.end, _endValue)
-    ) {
-      return
-    }
+  if (_endValue && _startValue) {
     if (isBefore(_endValue, _startValue)) {
       modelValue.value = {
         start: _endValue.copy(),
@@ -402,6 +361,23 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
         end: _endValue.copy(),
       }
     }
+
+    isEditing.value = false
+    validModelValue.value = { start: modelValue.value.start?.copy(), end: modelValue.value.end?.copy() }
+  }
+  else {
+    if (_startValue) {
+      modelValue.value = {
+        start: _startValue.copy(),
+        end: undefined,
+      }
+    }
+    else {
+      modelValue.value = {
+        start: _endValue?.copy(),
+        end: undefined,
+      }
+    }
   }
 })
 
@@ -409,8 +385,8 @@ const kbd = useKbd()
 useEventListener('keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     // Abort start and end selection
-    startValue.value = modelValue.value.start?.copy()
-    endValue.value = modelValue.value.end?.copy()
+    startValue.value = validModelValue.value.start?.copy()
+    endValue.value = validModelValue.value.end?.copy()
   }
 })
 

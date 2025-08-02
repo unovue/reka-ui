@@ -168,13 +168,6 @@
     'required': false
   },
   {
-    'name': 'rawModelValue',
-    'description': '<p>The controlled unchecked state of the calendar.</p>\n',
-    'type': 'DateRange',
-    'required': false,
-    'default': '{ start: undefined, end: undefined }'
-  },
-  {
     'name': 'readonly',
     'description': '<p>Whether or not the calendar is readonly</p>\n',
     'type': 'boolean',
@@ -209,15 +202,15 @@
     'type': '[date: DateValue]'
   },
   {
-    'name': 'update:rawModelValue',
-    'description': '<p>Event handler called whenever the rawModel value changes</p>\n',
-    'type': '[date: DateRange]'
-  },
-  {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
     'type': '[date: DateValue]'
-  }
+  },
+  {
+    'name': 'update:validModelValue',
+    'description': '<p>Event handler called whenever the rawModel value changes</p>\n',
+    'type': '[date: DateRange]'
+  },
 ]" />
 
 <SlotsTable :data="[
