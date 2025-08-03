@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { createContext, findValuesBetween, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
+import { createContext, findValuesBetween, getActiveElement, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
 import { Primitive } from '..'
 
 type ListboxRootContext<T> = {
@@ -162,7 +162,7 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true) {
     return
 
   highlightedElement.value = el
-  if (focusable.value)
+  if (focusable.value && currentElement.value?.contains(getActiveElement()))
     highlightedElement.value.focus()
   if (scrollIntoView)
     highlightedElement.value.scrollIntoView({ block: 'nearest' })
