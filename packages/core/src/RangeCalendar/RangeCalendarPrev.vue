@@ -30,8 +30,9 @@ const rootContext = injectRangeCalendarRootContext()
 
 <template>
   <Primitive
-    v-bind="props"
     aria-label="Previous page"
+    :as="props.as"
+    :as-child="props.asChild"
     :type="as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
