@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
-import { compare } from './utils'
+import { compare, valueComparator } from './utils'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /** The controlled open state of the Select. Can be bind as `v-model:open`. */
@@ -144,6 +144,11 @@ function handleValueChange(value: T) {
   }
 }
 
+function getOption(value: SelectOption['value']) {
+  return Array.from(optionsSet.value)
+    .find(option => valueComparator(value, option.value, props.by))
+}
+
 provideSelectRootContext({
   triggerElement,
   onTriggerChange: (node) => {
@@ -171,8 +176,20 @@ provideSelectRootContext({
   isEmptyModelValue,
 
   optionsSet,
-  onOptionAdd: option => optionsSet.value.add(option),
-  onOptionRemove: option => optionsSet.value.delete(option),
+  onOptionAdd: (option) => {
+    const existingOption = getOption(option.value)
+    if (existingOption) {
+      optionsSet.value.delete(existingOption)
+    }
+
+    optionsSet.value.add(option)
+  },
+  onOptionRemove: (option) => {
+    const existingOption = getOption(option.value)
+    if (existingOption) {
+      optionsSet.value.delete(existingOption)
+    }
+  },
 })
 </script>
 
