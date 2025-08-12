@@ -250,4 +250,40 @@ describe('datePicker', async () => {
     await user.click(targetCell)
     expect(calendar.querySelector('[data-selected]')).not.toBeInTheDocument()
   })
+
+  it('should close the picker on select when `closeOnSelect` is true', async () => {
+    const { user, trigger, getByTestId } = setup({
+      datePickerProps: {
+        defaultValue: calendarDate,
+        closeOnSelect: true,
+      },
+    })
+
+    await user.click(trigger)
+
+    const popoverContent = getByTestId('popover-content')
+    expect(popoverContent).toBeVisible()
+
+    const day = getByTestId('date-1-1')
+    await user.click(day)
+    expect(popoverContent).not.toBeVisible()
+  })
+
+  it('should not close the picker on select when `closeOnSelect` is true', async () => {
+    const { user, trigger, getByTestId } = setup({
+      datePickerProps: {
+        defaultValue: calendarDate,
+        closeOnSelect: false,
+      },
+    })
+
+    await user.click(trigger)
+
+    const popoverContent = getByTestId('popover-content')
+    expect(popoverContent).toBeVisible()
+
+    const day = getByTestId('date-1-1')
+    await user.click(day)
+    expect(popoverContent).toBeVisible()
+  })
 })
