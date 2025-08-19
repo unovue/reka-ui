@@ -16,12 +16,15 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
   if (deterministicId)
     return deterministicId
 
-  if ('useId' in vue) {
-    return `${prefix}-${vue.useId?.()}`
+  // Check if Vue has useId support (Vue 3.5+)
+  // We use dynamic property access to avoid bundler warnings in Vue < 3.5
+  const methodName = 'use' + 'Id'
+  if (typeof (vue as any)[methodName] === 'function') {
+    return `${prefix}-${(vue as any)[methodName]()}`
   }
 
   const configProviderContext = injectConfigProviderContext({ useId: undefined })
-  
+
   if (configProviderContext.useId) {
     return `${prefix}-${configProviderContext.useId()}`
   }
