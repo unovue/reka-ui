@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { onBeforeUnmount, shallowRef } from 'vue'
 
 export type SliderImplEmits = {
   slideStart: [event: PointerEvent]
@@ -15,6 +16,7 @@ export interface SliderImplProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { getHTMLElement } from '@/shared/elementUtils'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { ARROW_KEYS, PAGE_KEYS } from './utils'
 
@@ -23,6 +25,9 @@ const props = withDefaults(defineProps<SliderImplProps>(), {
 })
 const emits = defineEmits<SliderImplEmits>()
 const rootContext = injectSliderRootContext()
+const targetCaptureEl = shallowRef<HTMLElement>()
+
+onBeforeUnmount(() => targetCaptureEl.value = undefined)
 </script>
 
 <template>
@@ -47,29 +52,28 @@ const rootContext = injectSliderRootContext()
       }
     }"
     @pointerdown="(event: PointerEvent) => {
-      const target = event.target as HTMLElement;
-      target.setPointerCapture(event.pointerId);
+      targetCaptureEl = getHTMLElement(event.target)
+      targetCaptureEl?.setPointerCapture(event.pointerId);
       // Prevent browser focus behaviour because we focus a thumb manually when values change.
       event.preventDefault();
       // Touch devices have a delay before focusing so won't focus if touch immediately moves
       // away from target (sliding). We want thumb to focus regardless.
-      if (rootContext.thumbElements.value.includes(target)) {
-        target.focus();
+      if (targetCaptureEl && rootContext.thumbElements.value.includes(targetCaptureEl)) {
+        targetCaptureEl.focus();
       }
       else {
         emits('slideStart', event)
       }
     }"
     @pointermove="(event: PointerEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.hasPointerCapture(event.pointerId)) emits('slideMove', event);
+      if (targetCaptureEl?.hasPointerCapture(event.pointerId)) emits('slideMove', event);
     }"
     @pointerup="(event: PointerEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.hasPointerCapture(event.pointerId)) {
-        target.releasePointerCapture(event.pointerId);
+      if (targetCaptureEl?.hasPointerCapture(event.pointerId)) {
+        targetCaptureEl.releasePointerCapture(event.pointerId);
         emits('slideEnd', event)
       }
+      targetCaptureEl = undefined
     }"
   >
     <slot />

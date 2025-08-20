@@ -1,8 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
-import { getActiveElement, useForwardExpose } from '@/shared'
-import { getElement, isHTMLElement } from '@/shared/elementUtils'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -22,10 +19,13 @@ export interface ToastViewportProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { onKeyStroke } from '@vueuse/core'
-import { computed, onMounted, ref, toRefs, watchEffect } from 'vue'
+import { computed, onMounted, toRefs, useTemplateRef, watchEffect } from 'vue'
+import { useCollection } from '@/Collection'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
 import { Primitive } from '@/Primitive'
+import { getActiveElement, useForwardExpose } from '@/shared'
+import { getHTMLElement } from '@/shared/elementUtils'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
@@ -45,8 +45,12 @@ const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionSlot, getItems } = useCollection()
 const providerContext = injectToastProviderContext()
 const hasToasts = computed(() => providerContext.toastCount.value > 0)
-const headFocusProxyRef = ref<HTMLElement>()
-const tailFocusProxyRef = ref<HTMLElement>()
+
+const headFocusProxyRef = useTemplateRef('headFocusProxyRef')
+const headFocusElement = computed(() => getHTMLElement(headFocusProxyRef.value?.$el))
+
+const tailFocusProxyRef = useTemplateRef('tailFocusProxyRef')
+const tailFocusElement = computed(() => getHTMLElement(tailFocusProxyRef.value?.$el))
 
 const hotkeyMessage = computed(() => hotkey.value.join('+').replace(/Key/g, '').replace(/Digit/g, ''))
 
@@ -104,7 +108,7 @@ watchEffect((cleanupFn) => {
         // If we're back tabbing after jumping to the viewport then we simply
         // proxy focus out to the preceding document
         if (targetIsViewport && isTabbingBackwards) {
-          headFocusProxyRef.value?.focus()
+          headFocusElement.value?.focus()
           return
         }
 
@@ -119,8 +123,8 @@ watchEffect((cleanupFn) => {
           // proxy to the corresponding exit point and let the browser handle
           // tab/shift+tab keypress and implicitly pass focus to the next valid element in the document
           isTabbingBackwards
-            ? headFocusProxyRef.value?.focus()
-            : tailFocusProxyRef.value?.focus()
+            ? headFocusElement.value?.focus()
+            : tailFocusElement.value?.focus()
         }
       }
     }
@@ -172,12 +176,7 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
   >
     <FocusProxy
       v-if="hasToasts"
-      :ref="(node) => {
-        const element = getElement(node)
-        if (isHTMLElement(element))
-          headFocusProxyRef = element
-        return undefined
-      }"
+      ref="headFocusProxyRef"
       @focus-from-outside-viewport="() => {
         const tabbableCandidates = getSortedTabbableCandidates({
           tabbingDirection: 'forwards',
@@ -198,12 +197,7 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
     </CollectionSlot>
     <FocusProxy
       v-if="hasToasts"
-      :ref="(node) => {
-        const element = getElement(node)
-        if (isHTMLElement(element))
-          tailFocusProxyRef = element
-        return undefined
-      }"
+      ref="tailFocusProxyRef"
       @focus-from-outside-viewport="() => {
         const tabbableCandidates = getSortedTabbableCandidates({
           tabbingDirection: 'backwards',

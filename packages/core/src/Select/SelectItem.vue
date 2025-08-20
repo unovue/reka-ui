@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
-import { isHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElement } from '@/shared/elementUtils'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -100,7 +100,7 @@ async function handlePointerMove(event: PointerEvent) {
   else {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
-    (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
+    getHTMLElement(event.currentTarget)?.focus({ preventScroll: true })
   }
 }
 
@@ -171,8 +171,7 @@ provideSelectItemContext({
       @blur="isFocused = false"
       @pointerup="handleSelectCustomEvent"
       @pointerdown="(event: PointerEvent) => {
-        if (isHTMLElement(event.currentTarget))
-          event.currentTarget.focus({ preventScroll: true })
+        getHTMLElement(event.currentTarget)?.focus({ preventScroll: true })
       }"
       @touchend.prevent.stop
       @pointermove="handlePointerMove"

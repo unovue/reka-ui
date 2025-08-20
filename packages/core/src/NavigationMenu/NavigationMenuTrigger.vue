@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { useForwardExpose } from '@/shared'
@@ -12,11 +11,11 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { refAutoReset } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watchEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
-import { getElement, isHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElement } from '@/shared/elementUtils'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -116,16 +115,6 @@ function handleKeydown(ev: KeyboardEvent) {
   }
 }
 
-function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
-  const element = getElement(node)
-  if (isHTMLElement(element))
-    itemContext.focusProxyRef.value = element
-  else
-    console.warn('focus proxy is not an HTMLElement', element)
-
-  return undefined
-}
-
 function handleVisuallyHiddenFocus(ev: FocusEvent) {
   const content = document.getElementById(itemContext.contentId)
   const prevFocusedElement = ev.relatedTarget as HTMLElement | null
@@ -136,6 +125,11 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
   if (wasTriggerFocused || !wasFocusFromContent)
     itemContext.onFocusProxyEnter(wasTriggerFocused ? 'start' : 'end')
 }
+
+const focusProxyRef = useTemplateRef('focusProxyRef')
+watchEffect(() => {
+  itemContext.focusProxyRef.value = getHTMLElement(focusProxyRef.value?.$el)
+})
 </script>
 
 <template>
@@ -161,10 +155,9 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       <slot />
     </Primitive>
   </CollectionItem>
-
   <template v-if="open">
     <VisuallyHidden
-      :ref="setFocusProxyRef"
+      ref="focusProxyRef"
       aria-hidden="true"
       :tabindex="0"
       @focus="handleVisuallyHiddenFocus"

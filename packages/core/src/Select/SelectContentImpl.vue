@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
@@ -15,15 +15,15 @@ import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { valueComparator } from './utils'
 
 export interface SelectContentContext {
-  content?: Ref<HTMLElement | undefined>
-  viewport?: Ref<HTMLElement | undefined>
+  content?: ShallowRef<HTMLElement | undefined>
+  viewport?: ShallowRef<HTMLElement | undefined>
   onViewportChange: (node: HTMLElement | undefined) => void
   itemRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
     disabled: boolean
   ) => void
-  selectedItem?: Ref<HTMLElement | undefined>
+  selectedItem?: ShallowRef<HTMLElement | undefined>
   onItemLeave?: () => void
   itemTextRefCallback: (
     node: HTMLElement | undefined,
@@ -31,7 +31,7 @@ export interface SelectContentContext {
     disabled: boolean
   ) => void
   focusSelectedItem?: () => void
-  selectedItemText?: Ref<HTMLElement | undefined>
+  selectedItemText?: ShallowRef<HTMLElement | undefined>
   position?: 'item-aligned' | 'popper'
   isPositioned?: Ref<boolean>
   searchRef?: Ref<string>
@@ -81,13 +81,15 @@ export const [injectSelectContentContext, provideSelectContentContext]
 import {
   computed,
   ref,
+  shallowRef,
+  useTemplateRef,
   watch,
   watchEffect,
 } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focusFirst } from '@/Menu/utils'
-import { getElement, isHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElement } from '@/shared/elementUtils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -105,14 +107,22 @@ useFocusGuards()
 useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
-const content = ref<HTMLElement>()
+const popperEl = useTemplateRef('popperEl')
+const content = computed(() => {
+  const el = getHTMLElement(popperEl.value?.$el)
+  // special case for PopperContent
+  if (el?.hasAttribute('data-reka-popper-content-wrapper'))
+    return el.firstElementChild as HTMLElement
+  else
+    return el
+})
 useHideOthers(content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
 
-const viewport = ref<HTMLElement>()
-const selectedItem = ref<HTMLElement>()
-const selectedItemText = ref<HTMLElement>()
+const viewport = shallowRef<HTMLElement>()
+const selectedItem = shallowRef<HTMLElement>()
+const selectedItemText = shallowRef<HTMLElement>()
 const isPositioned = ref(false)
 const firstValidItemFoundRef = ref(false)
 const firstSelectedItemInArrayFoundRef = ref(false)
@@ -156,8 +166,9 @@ watchEffect((cleanupFn) => {
     }
     else {
       // otherwise, if the event was outside the content, close.
-      if (isHTMLElement(event.target) && !content.value?.contains(event.target))
+      if (!content.value?.contains(getHTMLElement(event.target) ?? null)) {
         onOpenChange(false)
+      }
     }
     document.removeEventListener('pointermove', handlePointerMove)
     triggerPointerDownPosRef.value = null
@@ -296,18 +307,7 @@ provideSelectContentContext({
           "
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
-          :ref="
-            (vnode) => {
-              const el = getElement(vnode)
-              if (!isHTMLElement(el))
-                return undefined
-              // special case for PopperContent
-              else if (el?.hasAttribute('data-reka-popper-content-wrapper') && isHTMLElement(el.firstElementChild))
-                content = el.firstElementChild
-              else
-                content = el
-            }
-          "
+          ref="popperEl"
           role="listbox"
           :data-state="rootContext.open.value ? 'open' : 'closed'"
           :dir="rootContext.dir.value"

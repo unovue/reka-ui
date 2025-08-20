@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { createContext, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
@@ -16,8 +16,8 @@ export interface NavigationMenuItemProps extends PrimitiveProps {
 export type NavigationMenuItemContext = {
   value: string
   contentId: string
-  triggerRef: Ref<HTMLElement | undefined>
-  focusProxyRef: Ref<HTMLElement | undefined>
+  triggerRef: ShallowRef<HTMLElement | undefined>
+  focusProxyRef: ShallowRef<HTMLElement | undefined>
   wasEscapeCloseRef: Ref<boolean>
   onEntryKeyDown: () => void
   onFocusProxyEnter: (side: 'start' | 'end') => void
@@ -30,7 +30,7 @@ export const [injectNavigationMenuItemContext, provideNavigationMenuItemContext]
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
@@ -50,8 +50,8 @@ const { getItems } = useCollection({ key: 'NavigationMenu' })
 const context = injectNavigationMenuContext()
 
 const value = useId(props.value)
-const triggerRef = ref<HTMLElement>()
-const focusProxyRef = ref<HTMLElement>()
+const triggerRef = shallowRef<HTMLElement>()
+const focusProxyRef = shallowRef<HTMLElement>()
 
 const contentId = makeContentId(context.baseId, value)
 
