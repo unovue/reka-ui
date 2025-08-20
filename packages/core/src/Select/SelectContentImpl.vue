@@ -299,11 +299,11 @@ provideSelectContentContext({
           :ref="
             (vnode) => {
               const el = getElement(vnode)
-              if (!el)
+              if (!isHTMLElement(el))
                 return undefined
               // special case for PopperContent
-              else if (el?.hasAttribute('data-reka-popper-content-wrapper'))
-                content = el.firstElementChild as HTMLElement
+              else if (el?.hasAttribute('data-reka-popper-content-wrapper') && isHTMLElement(el.firstElementChild))
+                content = el.firstElementChild
               else
                 content = el
             }
