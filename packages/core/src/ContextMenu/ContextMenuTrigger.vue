@@ -74,7 +74,10 @@ async function handlePointerDown(event: PointerEvent) {
     if (isTouchOrPen(event) && !event.defaultPrevented) {
       // clear the long press here in case there's multiple touch points
       clearLongPress()
-      longPressTimer.value = window.setTimeout(() => handleOpen(event), 700)
+      longPressTimer.value = window.setTimeout(
+        () => handleOpen(event),
+        rootContext.pressOpenDelay.value,
+      )
     }
   }
 }
