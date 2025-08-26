@@ -112,7 +112,7 @@ const content = computed(() => {
   const el = unrefElement(popperEl)
   // special case for PopperContent
   if (el?.hasAttribute('data-reka-popper-content-wrapper'))
-    return el.firstElementChild as HTMLElement
+    return getHTMLElement(el.firstElementChild)
   else
     return getHTMLElement(el)
 })
