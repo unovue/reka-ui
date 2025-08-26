@@ -1,8 +1,9 @@
 <script lang="ts">
-import type { Ref, ShallowRef } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
+import { unrefElement } from '@vueuse/core'
 import { useCollection } from '@/Collection'
 import {
   createContext,
@@ -15,15 +16,15 @@ import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { valueComparator } from './utils'
 
 export interface SelectContentContext {
-  content?: ShallowRef<HTMLElement | undefined>
-  viewport?: ShallowRef<HTMLElement | undefined>
+  content?: Ref<HTMLElement | undefined>
+  viewport?: Ref<HTMLElement | undefined>
   onViewportChange: (node: HTMLElement | undefined) => void
   itemRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
     disabled: boolean
   ) => void
-  selectedItem?: ShallowRef<HTMLElement | undefined>
+  selectedItem?: Ref<HTMLElement | undefined>
   onItemLeave?: () => void
   itemTextRefCallback: (
     node: HTMLElement | undefined,
@@ -31,7 +32,7 @@ export interface SelectContentContext {
     disabled: boolean
   ) => void
   focusSelectedItem?: () => void
-  selectedItemText?: ShallowRef<HTMLElement | undefined>
+  selectedItemText?: Ref<HTMLElement | undefined>
   position?: 'item-aligned' | 'popper'
   isPositioned?: Ref<boolean>
   searchRef?: Ref<string>
@@ -81,7 +82,6 @@ export const [injectSelectContentContext, provideSelectContentContext]
 import {
   computed,
   ref,
-  shallowRef,
   useTemplateRef,
   watch,
   watchEffect,
@@ -107,22 +107,22 @@ useFocusGuards()
 useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
-const popperEl = useTemplateRef('popperEl')
+const popperEl = useTemplateRef<ComponentPublicInstance>('popperEl')
 const content = computed(() => {
-  const el = getHTMLElement(popperEl.value?.$el)
+  const el = unrefElement(popperEl)
   // special case for PopperContent
   if (el?.hasAttribute('data-reka-popper-content-wrapper'))
     return el.firstElementChild as HTMLElement
   else
-    return el
+    return getHTMLElement(el)
 })
 useHideOthers(content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
 
-const viewport = shallowRef<HTMLElement>()
-const selectedItem = shallowRef<HTMLElement>()
-const selectedItemText = shallowRef<HTMLElement>()
+const viewport = ref<HTMLElement>()
+const selectedItem = ref<HTMLElement>()
+const selectedItemText = ref<HTMLElement>()
 const isPositioned = ref(false)
 const firstValidItemFoundRef = ref(false)
 const firstSelectedItemInArrayFoundRef = ref(false)

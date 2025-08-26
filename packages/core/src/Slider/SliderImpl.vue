@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { onBeforeUnmount, shallowRef } from 'vue'
 
 export type SliderImplEmits = {
   slideStart: [event: PointerEvent]
@@ -25,9 +24,6 @@ const props = withDefaults(defineProps<SliderImplProps>(), {
 })
 const emits = defineEmits<SliderImplEmits>()
 const rootContext = injectSliderRootContext()
-const targetCaptureEl = shallowRef<HTMLElement>()
-
-onBeforeUnmount(() => targetCaptureEl.value = undefined)
 </script>
 
 <template>
@@ -52,28 +48,29 @@ onBeforeUnmount(() => targetCaptureEl.value = undefined)
       }
     }"
     @pointerdown="(event: PointerEvent) => {
-      targetCaptureEl = getHTMLElement(event.target)
-      targetCaptureEl?.setPointerCapture(event.pointerId);
+      const target = getHTMLElement(event.target)
+      target?.setPointerCapture(event.pointerId);
       // Prevent browser focus behaviour because we focus a thumb manually when values change.
       event.preventDefault();
       // Touch devices have a delay before focusing so won't focus if touch immediately moves
       // away from target (sliding). We want thumb to focus regardless.
-      if (targetCaptureEl && rootContext.thumbElements.value.includes(targetCaptureEl)) {
-        targetCaptureEl.focus();
+      if (target && rootContext.thumbElements.value.includes(target)) {
+        target.focus();
       }
       else {
         emits('slideStart', event)
       }
     }"
     @pointermove="(event: PointerEvent) => {
-      if (targetCaptureEl?.hasPointerCapture(event.pointerId)) emits('slideMove', event);
+      const target = getHTMLElement(event.target)
+      if (target?.hasPointerCapture(event.pointerId)) emits('slideMove', event)
     }"
     @pointerup="(event: PointerEvent) => {
-      if (targetCaptureEl?.hasPointerCapture(event.pointerId)) {
-        targetCaptureEl.releasePointerCapture(event.pointerId);
+      const target = getHTMLElement(event.target)
+      if (target?.hasPointerCapture(event.pointerId)) {
+        target.releasePointerCapture(event.pointerId);
         emits('slideEnd', event)
       }
-      targetCaptureEl = undefined
     }"
   >
     <slot />

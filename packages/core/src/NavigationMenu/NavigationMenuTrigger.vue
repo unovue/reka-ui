@@ -1,7 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -10,11 +8,11 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { refAutoReset } from '@vueuse/core'
+import { refAutoReset, unrefElement } from '@vueuse/core'
 import { computed, onMounted, ref, useTemplateRef, watchEffect } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 import { getHTMLElement } from '@/shared/elementUtils'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
@@ -128,7 +126,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
 
 const focusProxyRef = useTemplateRef('focusProxyRef')
 watchEffect(() => {
-  itemContext.focusProxyRef.value = getHTMLElement(focusProxyRef.value?.$el)
+  itemContext.focusProxyRef.value = getHTMLElement(unrefElement(focusProxyRef))
 })
 </script>
 

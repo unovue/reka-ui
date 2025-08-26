@@ -18,7 +18,8 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke } from '@vueuse/core'
+import type { ComponentPublicInstance } from 'vue'
+import { onKeyStroke, unrefElement } from '@vueuse/core'
 import { computed, onMounted, toRefs, useTemplateRef, watchEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { DismissableLayerBranch } from '@/DismissableLayer'
@@ -46,11 +47,11 @@ const { CollectionSlot, getItems } = useCollection()
 const providerContext = injectToastProviderContext()
 const hasToasts = computed(() => providerContext.toastCount.value > 0)
 
-const headFocusProxyRef = useTemplateRef('headFocusProxyRef')
-const headFocusElement = computed(() => getHTMLElement(headFocusProxyRef.value?.$el))
+const headFocusProxyRef = useTemplateRef<ComponentPublicInstance>('headFocusProxyRef')
+const headFocusElement = computed(() => getHTMLElement(unrefElement(headFocusProxyRef)))
 
-const tailFocusProxyRef = useTemplateRef('tailFocusProxyRef')
-const tailFocusElement = computed(() => getHTMLElement(tailFocusProxyRef.value?.$el))
+const tailFocusProxyRef = useTemplateRef<ComponentPublicInstance>('tailFocusProxyRef')
+const tailFocusElement = computed(() => getHTMLElement(unrefElement(headFocusProxyRef)))
 
 const hotkeyMessage = computed(() => hotkey.value.join('+').replace(/Key/g, '').replace(/Digit/g, ''))
 
