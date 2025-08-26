@@ -24,8 +24,7 @@ import { useCollection } from '@/Collection'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
 import { Primitive } from '@/Primitive'
-import { getActiveElement, useForwardExpose } from '@/shared'
-import { getHTMLElementFromVNode } from '@/shared/elementUtils'
+import { getActiveElement, getHTMLElementFromVNode, useForwardExpose } from '@/shared'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
@@ -175,7 +174,6 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
       v-if="hasToasts"
       :ref="(node) => {
         headFocusProxyRef = getHTMLElementFromVNode(node)
-        return undefined
       }"
       @focus-from-outside-viewport="() => {
         const tabbableCandidates = getSortedTabbableCandidates({
@@ -199,7 +197,6 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
       v-if="hasToasts"
       :ref="(node) => {
         tailFocusProxyRef = getHTMLElementFromVNode(node)
-        return undefined
       }"
       @focus-from-outside-viewport="() => {
         const tabbableCandidates = getSortedTabbableCandidates({

@@ -13,8 +13,7 @@ import { refAutoReset } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
-import { getHTMLElementFromVNode } from '@/shared/elementUtils'
+import { getHTMLElementFromVNode, useForwardExpose } from '@/shared'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -116,7 +115,6 @@ function handleKeydown(ev: KeyboardEvent) {
 
 function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
   itemContext.focusProxyRef.value = getHTMLElementFromVNode(node)
-  return undefined
 }
 
 function handleVisuallyHiddenFocus(ev: FocusEvent) {

@@ -15,7 +15,7 @@ export interface SliderImplProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { getHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElement } from '@/shared'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { ARROW_KEYS, PAGE_KEYS } from './utils'
 

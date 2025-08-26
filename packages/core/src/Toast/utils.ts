@@ -1,4 +1,4 @@
-import { isHTMLElement } from '@/shared/elementUtils'
+import { isHTMLElement } from '@/shared'
 
 export const TOAST_SWIPE_START = 'toast.swipeStart'
 export const TOAST_SWIPE_MOVE = 'toast.swipeMove'

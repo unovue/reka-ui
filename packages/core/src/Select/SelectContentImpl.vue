@@ -6,6 +6,8 @@ import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
   createContext,
+  getHTMLElement,
+  getHTMLElementFromVNode,
   useFocusGuards,
   useForwardProps,
   useHideOthers,
@@ -87,7 +89,6 @@ import {
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focusFirst } from '@/Menu/utils'
-import { getHTMLElement, getHTMLElementFromVNode } from '@/shared/elementUtils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -305,7 +306,6 @@ provideSelectContentContext({
                 content = getHTMLElement(el.firstElementChild)
               else
                 content = el
-              return undefined
             }
           "
           role="listbox"

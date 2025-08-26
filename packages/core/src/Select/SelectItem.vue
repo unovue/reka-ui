@@ -3,8 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
-import { getHTMLElement } from '@/shared/elementUtils'
+import { createContext, getActiveElement, getHTMLElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
