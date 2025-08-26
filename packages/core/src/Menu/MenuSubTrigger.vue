@@ -6,9 +6,9 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {}
 </script>
 
 <script setup lang="ts">
-import { nextTick, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
+import { nextTick, onUnmounted, ref } from 'vue'
 import { useId } from '@/shared'
-import { getHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElement, getHTMLElementFromVNode } from '@/shared/elementUtils'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
@@ -113,11 +113,6 @@ async function handleKeyDown(event: KeyboardEvent) {
     event.preventDefault()
   }
 }
-
-const itemImplEl = useTemplateRef('itemImplEl')
-watchEffect(() => {
-  subContext?.onTriggerChange(itemImplEl.value?.$el)
-})
 </script>
 
 <template>
@@ -125,7 +120,12 @@ watchEffect(() => {
     <MenuItemImpl
       v-bind="props"
       :id="subContext.triggerId"
-      ref="itemImplEl"
+      :ref="
+        (vnode) => {
+          subContext?.onTriggerChange(getHTMLElementFromVNode(vnode));
+          return undefined
+        }
+      "
       aria-haspopup="menu"
       :aria-expanded="menuContext.open.value"
       :aria-controls="subContext.contentId"

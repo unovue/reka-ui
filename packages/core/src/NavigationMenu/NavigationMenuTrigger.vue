@@ -8,12 +8,13 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { refAutoReset, unrefElement } from '@vueuse/core'
-import { computed, onMounted, ref, useTemplateRef, watchEffect } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { refAutoReset } from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
-import { getHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElementFromVNode } from '@/shared/elementUtils'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -113,6 +114,11 @@ function handleKeydown(ev: KeyboardEvent) {
   }
 }
 
+function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
+  itemContext.focusProxyRef.value = getHTMLElementFromVNode(node)
+  return undefined
+}
+
 function handleVisuallyHiddenFocus(ev: FocusEvent) {
   const content = document.getElementById(itemContext.contentId)
   const prevFocusedElement = ev.relatedTarget as HTMLElement | null
@@ -123,11 +129,6 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
   if (wasTriggerFocused || !wasFocusFromContent)
     itemContext.onFocusProxyEnter(wasTriggerFocused ? 'start' : 'end')
 }
-
-const focusProxyRef = useTemplateRef('focusProxyRef')
-watchEffect(() => {
-  itemContext.focusProxyRef.value = getHTMLElement(unrefElement(focusProxyRef))
-})
 </script>
 
 <template>
@@ -155,7 +156,7 @@ watchEffect(() => {
   </CollectionItem>
   <template v-if="open">
     <VisuallyHidden
-      ref="focusProxyRef"
+      :ref="setFocusProxyRef"
       aria-hidden="true"
       :tabindex="0"
       @focus="handleVisuallyHiddenFocus"

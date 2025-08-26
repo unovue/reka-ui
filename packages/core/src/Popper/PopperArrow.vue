@@ -14,9 +14,10 @@ export interface PopperArrowProps extends ArrowProps, PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed, useTemplateRef, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
 import Arrow from '@/shared/component/Arrow.vue'
+import { getHTMLElementFromVNode } from '@/shared/elementUtils'
 import { injectPopperContentContext } from './PopperContent.vue'
 
 defineOptions({
@@ -31,16 +32,14 @@ withDefaults(
 const { forwardRef } = useForwardExpose()
 const contentContext = injectPopperContentContext()
 const baseSide = computed(() => OPPOSITE_SIDE[contentContext.placedSide.value])
-
-const arrowEl = useTemplateRef('arrowEl')
-watchEffect(() => {
-  contentContext.onArrowChange(arrowEl.value ?? undefined)
-})
 </script>
 
 <template>
   <span
-    ref="arrowEl"
+    :ref="(el) => {
+      contentContext.onArrowChange(getHTMLElementFromVNode(el))
+      return undefined
+    }"
     :style="{
       position: 'absolute',
       left: contentContext.arrowX?.value ? `${contentContext.arrowX?.value}px` : undefined,

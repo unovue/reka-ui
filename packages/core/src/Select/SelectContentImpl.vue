@@ -1,9 +1,8 @@
 <script lang="ts">
-import type { ComponentPublicInstance, Ref } from 'vue'
+import type { Ref } from 'vue'
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
-import { unrefElement } from '@vueuse/core'
 import { useCollection } from '@/Collection'
 import {
   createContext,
@@ -82,14 +81,13 @@ export const [injectSelectContentContext, provideSelectContentContext]
 import {
   computed,
   ref,
-  useTemplateRef,
   watch,
   watchEffect,
 } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focusFirst } from '@/Menu/utils'
-import { getHTMLElement } from '@/shared/elementUtils'
+import { getHTMLElement, getHTMLElementFromVNode } from '@/shared/elementUtils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -107,15 +105,7 @@ useFocusGuards()
 useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
-const popperEl = useTemplateRef<ComponentPublicInstance>('popperEl')
-const content = computed(() => {
-  const el = unrefElement(popperEl)
-  // special case for PopperContent
-  if (el?.hasAttribute('data-reka-popper-content-wrapper'))
-    return getHTMLElement(el.firstElementChild)
-  else
-    return getHTMLElement(el)
-})
+const content = ref<HTMLElement>()
 useHideOthers(content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
@@ -307,7 +297,17 @@ provideSelectContentContext({
           "
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
-          ref="popperEl"
+          :ref="
+            (vnode) => {
+              const el = getHTMLElementFromVNode(vnode)
+              // special case for PopperContent
+              if (el?.hasAttribute('data-reka-popper-content-wrapper'))
+                content = getHTMLElement(el.firstElementChild)
+              else
+                content = el
+              return undefined
+            }
+          "
           role="listbox"
           :data-state="rootContext.open.value ? 'open' : 'closed'"
           :dir="rootContext.dir.value"
