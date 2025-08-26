@@ -1,7 +1,7 @@
 import type { ComponentPublicInstance } from 'vue'
 
 /**
- * Check if the target is an HTMLElement
+ * Check if the target is a HTMLElement
  * @param target - The target to check
  * @returns True if the target is a HTMLElement, false otherwise
  */
