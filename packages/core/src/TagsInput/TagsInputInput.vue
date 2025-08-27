@@ -86,6 +86,11 @@ function handleInput(event: InputEvent) {
     const target = event.target as HTMLInputElement
     target.value = target.value.replace(delimiter, '')
 
+    if (target.value.trim() === '') {
+      target.value = ''
+      return
+    }
+
     const isAdded = context.onAddValue(target.value)
     if (isAdded)
       target.value = ''
