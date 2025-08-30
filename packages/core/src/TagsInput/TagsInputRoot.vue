@@ -33,6 +33,8 @@ export interface TagsInputRootProps<T = AcceptableInputValue> extends PrimitiveP
   convertValue?: (value: string) => T
   /** Display the value of the tag. Useful when you want to apply modifications to the value like adding a suffix or when using object as values */
   displayValue?: (value: T) => string
+  //* * Allow empty tags*/
+  allowEmptyTags?: boolean
 }
 
 export type TagsInputRootEmits<T = AcceptableInputValue> = {
@@ -62,6 +64,7 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
   max: Ref<number>
   id: Ref<string | undefined> | undefined
   displayValue: (value: T) => string
+  allowEmptyTags: Ref<boolean>
 }
 
 export const [injectTagsInputRootContext, provideTagsInputRootContext]
@@ -79,6 +82,7 @@ const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
   delimiter: ',',
   max: 0,
   displayValue: (value: T) => value.toString(),
+
 })
 const emits = defineEmits<TagsInputRootEmits<T>>()
 
@@ -89,7 +93,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { addOnPaste, disabled, delimiter, max, id, dir: propDir, addOnBlur, addOnTab } = toRefs(props)
+const { addOnPaste, disabled, delimiter, max, id, dir: propDir, addOnBlur, addOnTab, allowEmptyTags } = toRefs(props)
 const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -233,6 +237,7 @@ provideTagsInputRootContext({
   max,
   id,
   displayValue: props.displayValue as (value: AcceptableInputValue) => string,
+  allowEmptyTags,
 })
 </script>
 

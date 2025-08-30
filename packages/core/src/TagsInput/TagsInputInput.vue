@@ -23,7 +23,24 @@ const props = withDefaults(defineProps<TagsInputInputProps>(), {
 
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
-
+function handleTagAdd(value: string) {
+  if (context.allowEmptyTags.value) {
+    const isAdded = context.onAddValue(value)
+    if (isAdded)
+      value = ''
+  }
+  else {
+    if (value && value.trim()) {
+      const isAdded = context.onAddValue(value)
+      if (isAdded)
+        value = ''
+    }
+    else {
+      value = ''
+    }
+  }
+  return value
+}
 function handleBlur(event: Event) {
   context.selectedElement.value = undefined
 
@@ -33,10 +50,7 @@ function handleBlur(event: Event) {
   const target = event.target as HTMLInputElement
   if (!target.value)
     return
-
-  const isAdded = context.onAddValue(target.value)
-  if (isAdded)
-    target.value = ''
+  target.value = handleTagAdd(target.value)
 }
 
 function handleTab(event: Event) {
@@ -66,10 +80,7 @@ async function handleCustomKeydown(event: Event) {
   const target = event.target as HTMLInputElement
   if (!target.value)
     return
-
-  const isAdded = context.onAddValue(target.value)
-  if (isAdded)
-    target.value = ''
+  target.value = handleTagAdd(target.value)
 
   // prevent reloading when using inside of form
   event.preventDefault()
@@ -79,16 +90,12 @@ function handleInput(event: InputEvent) {
   context.isInvalidInput.value = false
   if (event.data === null)
     return
-
   const delimiter = context.delimiter.value
   const matchesDelimiter = delimiter === event.data || (delimiter instanceof RegExp && delimiter.test(event.data))
   if (matchesDelimiter) {
     const target = event.target as HTMLInputElement
     target.value = target.value.replace(delimiter, '')
-
-    const isAdded = context.onAddValue(target.value)
-    if (isAdded)
-      target.value = ''
+    target.value = handleTagAdd(target.value)
   }
 }
 
@@ -103,7 +110,8 @@ function handlePaste(event: ClipboardEvent) {
     if (context.delimiter.value) {
       const splitValue = value.split(context.delimiter.value)
       splitValue.forEach((v) => {
-        context.onAddValue(v)
+        handleTagAdd(v)
+        // context.onAddValue(v)
       })
     }
     else {
