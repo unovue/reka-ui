@@ -20,7 +20,7 @@ withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusab
     :data-hidden="feature === 'fully-hidden' ? '' : undefined"
     :tabindex="feature === 'fully-hidden' ? '-1' : undefined"
     :style="{
-      // See: https://github.com/twbs/bootstrap/blob/a360960b8dfdb4bf48f87539c2243458fa0366f7/scss/mixins/_visually-hidden.scss#L14
+      // See: https://github.com/twbs/bootstrap/blob/a360960b8dfdb4bf48f87539c2243458fa0366f7/scss/mixins/_visually-hidden.scss
       position: 'absolute',
       border: 0,
       width: '1px',
