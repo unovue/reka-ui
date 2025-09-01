@@ -6,7 +6,7 @@ import type { ComponentPublicInstance } from 'vue'
  * @returns True if the target is a HTMLElement, false otherwise
  */
 export function isHTMLElement(target: unknown): target is HTMLElement {
-  return !!target && target instanceof HTMLElement
+  return target instanceof HTMLElement
 }
 
 /**
