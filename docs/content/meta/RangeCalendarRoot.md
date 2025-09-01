@@ -208,9 +208,9 @@
   },
   {
     'name': 'update:validModelValue',
-    'description': '<p>Event handler called whenever the rawModel value changes</p>\n',
+    'description': '<p>Event handler called whenever there is a new validModel</p>\n',
     'type': '[date: DateRange]'
-  },
+  }
 ]" />
 
 <SlotsTable :data="[
