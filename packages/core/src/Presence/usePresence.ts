@@ -1,8 +1,8 @@
 import type { Ref } from 'vue'
+import { useStateMachine } from '@/shared'
 import { defaultWindow } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { useStateMachine } from '@/shared'
 
 export function usePresence(
   present: Ref<boolean>,
@@ -93,7 +93,7 @@ export function usePresence(
   const handleAnimationEnd = (event: AnimationEvent) => {
     const currentAnimationName = getAnimationName(node.value)
     const isCurrentAnimation = currentAnimationName.includes(
-      event.animationName,
+      CSS.escape(event.animationName),
     )
     const directionName = state.value === 'mounted' ? 'enter' : 'leave'
     if (event.target === node.value && isCurrentAnimation) {
