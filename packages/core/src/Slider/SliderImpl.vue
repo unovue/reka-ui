@@ -15,6 +15,7 @@ export interface SliderImplProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { getHTMLElement } from '@/shared'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { ARROW_KEYS, PAGE_KEYS } from './utils'
 
@@ -29,7 +30,7 @@ const rootContext = injectSliderRootContext()
   <Primitive
     data-slider-impl
     v-bind="props"
-    @keydown="(event) => {
+    @keydown="(event: KeyboardEvent) => {
       if (event.key === 'Home') {
         emits('homeKeyDown', event)
         // Prevent scrolling to page start
@@ -46,27 +47,27 @@ const rootContext = injectSliderRootContext()
         event.preventDefault();
       }
     }"
-    @pointerdown="(event) => {
-      const target = event.target as HTMLElement;
-      target.setPointerCapture(event.pointerId);
+    @pointerdown="(event: PointerEvent) => {
+      const target = getHTMLElement(event.target)
+      target?.setPointerCapture(event.pointerId);
       // Prevent browser focus behaviour because we focus a thumb manually when values change.
       event.preventDefault();
       // Touch devices have a delay before focusing so won't focus if touch immediately moves
       // away from target (sliding). We want thumb to focus regardless.
-      if (rootContext.thumbElements.value.includes(target)) {
+      if (target && rootContext.thumbElements.value.includes(target)) {
         target.focus();
       }
       else {
         emits('slideStart', event)
       }
     }"
-    @pointermove="(event) => {
-      const target = event.target as HTMLElement;
-      if (target.hasPointerCapture(event.pointerId)) emits('slideMove', event);
+    @pointermove="(event: PointerEvent) => {
+      const target = getHTMLElement(event.target)
+      if (target?.hasPointerCapture(event.pointerId)) emits('slideMove', event)
     }"
-    @pointerup="(event) => {
-      const target = event.target as HTMLElement;
-      if (target.hasPointerCapture(event.pointerId)) {
+    @pointerup="(event: PointerEvent) => {
+      const target = getHTMLElement(event.target)
+      if (target?.hasPointerCapture(event.pointerId)) {
         target.releasePointerCapture(event.pointerId);
         emits('slideEnd', event)
       }

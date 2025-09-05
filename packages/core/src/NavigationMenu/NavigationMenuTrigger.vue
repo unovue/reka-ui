@@ -1,8 +1,5 @@
 <script lang="ts">
-import type { VNode } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,11 +8,12 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { refAutoReset, unrefElement } from '@vueuse/core'
+import type { ComponentPublicInstance } from 'vue'
+import { refAutoReset } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
+import { getHTMLElementFromVNode, useForwardExpose } from '@/shared'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -115,10 +113,8 @@ function handleKeydown(ev: KeyboardEvent) {
   }
 }
 
-function setFocusProxyRef(node: VNode) {
-  // @ts-expect-error unrefElement expect MaybeRef, but also support Vnode
-  itemContext.focusProxyRef.value = unrefElement(node)
-  return undefined
+function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
+  itemContext.focusProxyRef.value = getHTMLElementFromVNode(node)
 }
 
 function handleVisuallyHiddenFocus(ev: FocusEvent) {
@@ -156,7 +152,6 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       <slot />
     </Primitive>
   </CollectionItem>
-
   <template v-if="open">
     <VisuallyHidden
       :ref="setFocusProxyRef"

@@ -1,14 +1,13 @@
 <script lang="ts">
-import type {
-  ComponentPublicInstance,
-  Ref,
-} from 'vue'
+import type { Ref } from 'vue'
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
   createContext,
+  getHTMLElement,
+  getHTMLElementFromVNode,
   useFocusGuards,
   useForwardProps,
   useHideOthers,
@@ -81,7 +80,6 @@ export const [injectSelectContentContext, provideSelectContentContext]
 </script>
 
 <script setup lang="ts">
-import { unrefElement } from '@vueuse/core'
 import {
   computed,
   ref,
@@ -159,8 +157,9 @@ watchEffect((cleanupFn) => {
     }
     else {
       // otherwise, if the event was outside the content, close.
-      if (!content.value?.contains(event.target as HTMLElement))
+      if (!content.value?.contains(getHTMLElement(event.target) ?? null)) {
         onOpenChange(false)
+      }
     }
     document.removeEventListener('pointermove', handlePointerMove)
     triggerPointerDownPosRef.value = null
@@ -300,14 +299,13 @@ provideSelectContentContext({
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="
-            (vnode: ComponentPublicInstance) => {
-              const el = unrefElement(vnode) as HTMLElement | undefined
+            (vnode) => {
+              const el = getHTMLElementFromVNode(vnode)
               // special case for PopperContent
               if (el?.hasAttribute('data-reka-popper-content-wrapper'))
-                content = el.firstElementChild as HTMLElement
+                content = getHTMLElement(el.firstElementChild)
               else
                 content = el
-              return undefined
             }
           "
           role="listbox"

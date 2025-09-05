@@ -6,9 +6,8 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {}
 </script>
 
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
 import { nextTick, onUnmounted, ref } from 'vue'
-import { useId } from '@/shared'
+import { getHTMLElement, getHTMLElementFromVNode, useId } from '@/shared'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
@@ -113,6 +112,19 @@ async function handleKeyDown(event: KeyboardEvent) {
     event.preventDefault()
   }
 }
+
+async function handleClick(event: MouseEvent) {
+  if (props.disabled || event.defaultPrevented)
+    return
+  /**
+   * We manually focus because iOS Safari doesn't always focus on click (e.g. buttons)
+   * and we rely heavily on `onFocusOutside` for submenus to close when switching
+   * between separate submenus.
+   */
+  getHTMLElement(event.currentTarget)?.focus()
+  if (!menuContext.open.value)
+    menuContext.onOpenChange(true)
+}
 </script>
 
 <template>
@@ -121,28 +133,15 @@ async function handleKeyDown(event: KeyboardEvent) {
       v-bind="props"
       :id="subContext.triggerId"
       :ref="
-        (vnode: ComponentPublicInstance) => {
-          // @ts-ignore
-          subContext?.onTriggerChange(vnode?.$el);
-          return undefined
+        (vnode) => {
+          subContext?.onTriggerChange(getHTMLElementFromVNode(vnode));
         }
       "
       aria-haspopup="menu"
       :aria-expanded="menuContext.open.value"
       :aria-controls="subContext.contentId"
       :data-state="getOpenState(menuContext.open.value)"
-      @click="
-        async (event) => {
-          if (props.disabled || event.defaultPrevented) return;
-          /**
-           * We manually focus because iOS Safari doesn't always focus on click (e.g. buttons)
-           * and we rely heavily on `onFocusOutside` for submenus to close when switching
-           * between separate submenus.
-           */
-          event.currentTarget.focus();
-          if (!menuContext.open.value) menuContext.onOpenChange(true);
-        }
-      "
+      @click="handleClick"
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @keydown="handleKeyDown"

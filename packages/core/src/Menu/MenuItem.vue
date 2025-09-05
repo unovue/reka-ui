@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { MenuItemImplProps } from './MenuItemImpl.vue'
-import { useForwardExpose } from '@/shared'
 
 export type MenuItemEmits = {
   /**
@@ -15,6 +14,7 @@ export interface MenuItemProps extends MenuItemImplProps {}
 
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
+import { getHTMLElement, useForwardExpose } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuRootContext } from './MenuRoot.vue'
@@ -44,6 +44,28 @@ async function handleSelect() {
     else rootContext.onClose()
   }
 }
+
+function handlePointerDown() {
+  isPointerDownRef.value = true
+}
+
+async function handlePointerUp(event: PointerEvent) {
+  await nextTick()
+  if (event.defaultPrevented)
+    return
+  if (!isPointerDownRef.value)
+    getHTMLElement(event.currentTarget)?.click()
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  const isTypingAhead = contentContext.searchRef.value !== ''
+  if (props.disabled || (isTypingAhead && event.key === ' '))
+    return
+  if (SELECTION_KEYS.includes(event.key)) {
+    getHTMLElement(event.currentTarget)?.click()
+    event.preventDefault()
+  }
+}
 </script>
 
 <template>
@@ -51,37 +73,9 @@ async function handleSelect() {
     v-bind="props"
     :ref="forwardRef"
     @click="handleSelect"
-    @pointerdown="
-      () => {
-        isPointerDownRef = true;
-      }
-    "
-    @pointerup="
-      async (event) => {
-        await nextTick();
-        if (event.defaultPrevented) return;
-        // Pointer down can move to a different menu item which should activate it on pointer up.
-        // We dispatch a click for selection to allow composition with click based triggers and to
-        // prevent Firefox from getting stuck in text selection mode when the menu closes.
-        if (!isPointerDownRef) event.currentTarget?.click();
-      }
-    "
-    @keydown="
-      async (event) => {
-        const isTypingAhead = contentContext.searchRef.value !== '';
-        if (disabled || (isTypingAhead && event.key === ' ')) return;
-        if (SELECTION_KEYS.includes(event.key)) {
-          event.currentTarget.click();
-          /**
-           * We prevent default browser behaviour for selection keys as they should trigger
-           * a selection only:
-           * - prevents space from scrolling the page.
-           * - if keydown causes focus to move, prevents keydown from firing on the new target.
-           */
-          event.preventDefault();
-        }
-      }
-    "
+    @pointerdown="handlePointerDown"
+    @pointerup="handlePointerUp"
+    @keydown="handleKeydown"
   >
     <slot />
   </MenuItemImpl>

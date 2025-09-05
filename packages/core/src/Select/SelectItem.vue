@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, getHTMLElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -99,7 +99,7 @@ async function handlePointerMove(event: PointerEvent) {
   else {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
-    (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
+    getHTMLElement(event.currentTarget)?.focus({ preventScroll: true })
   }
 }
 
@@ -169,8 +169,8 @@ provideSelectItemContext({
       @focus="isFocused = true"
       @blur="isFocused = false"
       @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event) => {
-        (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+      @pointerdown="(event: PointerEvent) => {
+        getHTMLElement(event.currentTarget)?.focus({ preventScroll: true })
       }"
       @touchend.prevent.stop
       @pointermove="handlePointerMove"
