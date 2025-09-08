@@ -22,16 +22,6 @@ defineProps<{
       value="file=src/App.vue"
     >
     <input
-      type="hidden"
-      name="environment"
-      value="server"
-    >
-    <input
-      type="hidden"
-      name="hidedevtools"
-      value="1"
-    >
-    <input
       :key="name"
       type="hidden"
       name="parameters"

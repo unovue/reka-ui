@@ -49,7 +49,8 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "simple-git-hooks",
-      "unrs-resolver"
+      "unrs-resolver",
+      "vue-demi"
     ]
   },
   "simple-git-hooks": {

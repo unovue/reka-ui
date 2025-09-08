@@ -3,8 +3,15 @@ import { getParameters } from 'codesandbox/lib/api/define'
 import { version } from '../../package.json'
 
 export function makeCodeSandboxParams(componentName: string, sources: Record<string, string>) {
-  let files = {}
+  let files: Record<string, any> = {}
   files = constructFiles(componentName, sources)
+  files['.codesandbox/Dockerfile'] = {
+    content: [
+      'FROM node:20',
+      'ENV COREPACK_ENABLE_DOWNLOAD_PROMPT = 0',
+      'RUN corepack enable',
+    ].join('\n'),
+  }
   return getParameters({ files, template: 'node' })
 }
 
@@ -41,13 +48,12 @@ export default defineConfig({
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Vite + Vue + TS</title>
       </head>
       <body>
         <div id="app"></div>
-        <script type="module" src="/src/main.ts"></script>
+        <script type="module" src="./src/main.ts"></script>
       </body>
     </html>
     `,
@@ -70,6 +76,7 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     'tailwindcss': '^3.4.13',
     'postcss': 'latest',
     'autoprefixer': 'latest',
+    'typescript': 'latest',
   }
 
   const componentFiles = Object.keys(sources).filter(key => key.endsWith('.vue') && key !== 'index.vue')
@@ -85,7 +92,13 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     'package.json': {
       content: {
         name: `reka-ui-${componentName.toLowerCase().replace(/ /g, '-')}`,
-        scripts: { start: 'vite' },
+        private: true,
+        version: '0.0.0',
+        type: 'module',
+        scripts: {
+          start: 'vite',
+          dev: 'vite',
+        },
         dependencies,
         devDependencies,
       },
