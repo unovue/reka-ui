@@ -7,10 +7,11 @@ export function makeCodeSandboxParams(componentName: string, sources: Record<str
   files = constructFiles(componentName, sources)
   files['.codesandbox/Dockerfile'] = {
     content: [
-      'FROM node:20',
+      'FROM node:23',
       'ENV COREPACK_ENABLE_DOWNLOAD_PROMPT = 0',
       'RUN corepack enable',
     ].join('\n'),
+    isBinary: false,
   }
   return getParameters({ files, template: 'node' })
 }
@@ -34,11 +35,18 @@ export function makeStackblitzParams(componentName: string, sources: Record<stri
 }
 
 const viteConfig = {
-  'vite.config.js': {
+  'vite.config.ts': {
     content: `import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwind from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
 export default defineConfig({
+  css: {
+    postcss: {
+      plugins: [tailwind(), autoprefixer()],
+    }
+  },
   plugins: [vue()],
 })`,
     isBinary: false,
@@ -92,12 +100,14 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     'package.json': {
       content: {
         name: `reka-ui-${componentName.toLowerCase().replace(/ /g, '-')}`,
+        description: `Demo project for ${componentName} from Reka UI`,
+        keywords: [],
         private: true,
         version: '0.0.0',
-        type: 'module',
         scripts: {
           start: 'vite',
           dev: 'vite',
+          serve: 'vite',
         },
         dependencies,
         devDependencies,
@@ -106,16 +116,7 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     },
     ...viteConfig,
     'tailwind.config.cjs': sources['tailwind.config.js'] && {
-      content: sources['tailwind.config.js'],
-      isBinary: false,
-    },
-    'postcss.config.cjs': sources['tailwind.config.js'] && {
-      content: `module.exports = {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  }
-}`,
+      content: sources['tailwind.config.js'].replace('content: [\'./**/*.vue\']', 'content: [\'./src/**/*.{vue,ts,js}\', \'./index.html\']'),
       isBinary: false,
     },
     'src/main.ts': {

@@ -28,7 +28,10 @@ defineProps<{
       :value="makeCodeSandboxParams(name, sources)"
     >
 
-    <Tooltip :content="`Open ${name} in CodeSandbox`">
+    <Tooltip
+      :content="`Open ${name} in CodeSandbox <br/><br/> (TailwindCSS is not working in sandbox)`"
+      class="break-words max-w-6"
+    >
       <button
         type="submit"
         aria-label="Open on CodeSandbox"
