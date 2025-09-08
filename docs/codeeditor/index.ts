@@ -105,11 +105,11 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
       isBinary: false,
     },
     ...viteConfig,
-    'tailwind.config.js': sources['tailwind.config.js'] && {
+    'tailwind.config.cjs': sources['tailwind.config.js'] && {
       content: sources['tailwind.config.js'],
       isBinary: false,
     },
-    'postcss.config.js': sources['tailwind.config.js'] && {
+    'postcss.config.cjs': sources['tailwind.config.js'] && {
       content: `module.exports = {
   plugins: {
     tailwindcss: {},
