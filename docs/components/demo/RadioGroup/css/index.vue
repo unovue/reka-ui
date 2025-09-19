@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'radix-vue'
+import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 import { ref } from 'vue'
 import './styles.css'
 

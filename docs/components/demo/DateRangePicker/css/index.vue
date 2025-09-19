@@ -20,7 +20,7 @@ import {
   DateRangePickerRoot,
   DateRangePickerTrigger,
   Label,
-} from 'radix-vue'
+} from 'reka-ui'
 
 import './styles.css'
 </script>

@@ -10,11 +10,11 @@ const props = withDefaults(defineProps<ProseCodeInlineProps>(), {
 
 <template>
   <code
-    class="py-0.5 px-1 rounded-none inline"
+    class="px-2"
     :class="`${
       props.variant === 'primary'
-        ? 'dark:!bg-[#0F291E] dark:!text-[#4CC38A]'
-        : 'dark:!bg-neutral-600/30 dark:!text-neutral-400'
+        ? 'text-primary bg-primary/10 border-none text-[13px] md:text-[14px]'
+        : 'text-foreground'
     }`"
   >
     <slot />

@@ -1,13 +1,13 @@
+import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import _traverse from '@babel/traverse'
 import fg from 'fast-glob'
 import MarkdownIt from 'markdown-it'
-import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
-import { createComponentMetaChecker } from 'vue-component-meta'
+import { components } from 'reka-ui/constant'
+import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
-import _traverse from '@babel/traverse'
-import { components } from '../../packages/radix-vue/constant/components'
-import { fileURLToPath } from 'node:url'
 import { transformJSDocLinks } from './utils'
 
 // @ts-expect-error ignore
@@ -22,8 +22,8 @@ const checkerOptions: MetaCheckerOptions = {
   printer: { newLine: 1 },
 }
 
-const tsconfigChecker = createComponentMetaChecker(
-  resolve(__dirname, '../../packages/radix-vue/tsconfig.json'),
+const tsconfigChecker = createChecker(
+  resolve(__dirname, '../../packages/core/tsconfig.app.json'),
   checkerOptions,
 )
 
@@ -32,12 +32,15 @@ const depTree = new Map<string, string[]>()
 let prevDeps: string[] = []
 
 const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
-  cwd: resolve(__dirname, '../../packages/radix-vue'),
+  cwd: resolve(__dirname, '../../packages/core'),
   absolute: true,
 })
 
 const listOfComponents = Object.values(components).flatMap(i => i)
-const primitiveComponents = allComponents.filter(i => listOfComponents.includes(parse(i).name))
+const primitiveComponents = allComponents.filter((i) => {
+  // @ts-expect-error: complains because name is a string; completely fine and *actually* intended.
+  return listOfComponents.includes(parse(i).name)
+})
 
 // 1. Generate all the dependencies for each components
 allComponents.forEach((i) => {
@@ -60,8 +63,7 @@ primitiveComponents.forEach((componentPath) => {
 
   const metaDirPath = resolve(__dirname, '../content/meta')
   // if meta dir doesn't exist create
-  if (!existsSync(metaDirPath))
-    mkdirSync(metaDirPath)
+  mkdirSync(metaDirPath, { recursive: true })
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
@@ -93,7 +95,7 @@ function parseTypeFromSchema(schema: PropertyMetaSchema): string {
     else
       return schema.type
   }
-  else if (typeof schema === 'object' && schema.kind === 'object') {
+  else if (typeof schema === 'object' && (schema.kind === 'object' || schema.kind === 'event')) {
     return schema.type
   }
   else if (typeof schema === 'string') {
@@ -178,11 +180,11 @@ function parseMeta(meta: ComponentMeta) {
 }
 
 function getEventFromComponentPath(dir: string) {
-  const files = readdirSync(resolve(__dirname, '../../packages/radix-vue/src', dir), { withFileTypes: true }).filter(file => file.name.includes('.vue'))
+  const files = readdirSync(resolve(__dirname, '../../packages/core/src', dir), { withFileTypes: true }).filter(file => file.name.includes('.vue'))
 
   files.forEach((file) => {
-    const { name, path } = file
-    const source = readFileSync(join(path, name), { encoding: 'utf8' })
+    const { name, parentPath } = file
+    const source = readFileSync(join(parentPath, name), { encoding: 'utf8' })
     const { descriptor } = sfcParse(source, {
       filename: name,
     })

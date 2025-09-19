@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'radix-vue'
+import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import './styles.css'
 </script>
 
@@ -12,7 +12,7 @@ import './styles.css'
       class="TabsList"
       aria-label="Manage your account"
     >
-      <TabsIndicator class="TagsIndicator ">
+      <TabsIndicator class="TabsIndicator">
         <div
           style="width: 100%; height: 100%"
           class="bg-grass8 w-full h-full"

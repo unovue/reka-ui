@@ -158,6 +158,9 @@ import DemoContainer from './DemoContainer.vue'
     <DemoContainer title="tags input">
       <TagsInputDemo />
     </DemoContainer>
+    <DemoContainer title="time field">
+      <TimeFieldDemo />
+    </DemoContainer>
     <DemoContainer title="toast">
       <ToastDemo />
     </DemoContainer>

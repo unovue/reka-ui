@@ -34,7 +34,6 @@ const props = defineProps<DataAttributesTableProps>()
             <kbd
               v-for="(key, propIndex) in prop.keys"
               :key="`${key}-${propIndex}`"
-              class="font-sans rounded-md border bg-gray-100 dark:bg-neutral-900 dark:border-neutral-700 border-b-2 px-1.5 py-[1px]"
             >
               {{ key }}
             </kbd>

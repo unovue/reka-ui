@@ -1,17 +1,18 @@
-import { addComponent, defineNuxtModule } from '@nuxt/kit'
-
 import type { } from '@nuxt/schema' // workaround for TS bug with "phantom" deps
-import { components as allComponents } from '../../../radix-vue/constant/components'
+
+import type { Components } from 'reka-ui/constant'
+import { addComponent, defineNuxtModule } from '@nuxt/kit'
+import { components as allComponents } from 'reka-ui/constant'
 
 export interface ModuleOptions {
-  components: Partial<Record<keyof typeof allComponents, boolean>> | boolean
+  components: Partial<Record<keyof Components, boolean>> | boolean
   prefix: string
 }
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
-    name: '@radix-vue/nuxt',
-    configKey: 'radix',
+    name: '@reka-ui/nuxt',
+    configKey: 'reka',
     compatibility: {
       nuxt: '>=3.0.0',
     },
@@ -20,26 +21,22 @@ export default defineNuxtModule<ModuleOptions>({
     prefix: '',
     components: true,
   },
-  setup(options) {
-    function getComponents() {
-      if (typeof options.components === 'object') {
-        return Object.entries(allComponents)
-          .filter(([name]) => (options.components as Record<string, boolean>)[name])
-          .flatMap(([_, components]) => components)
-      }
-
-      if (options.components)
-        return Object.values(allComponents).flat()
-
-      return []
+  setup({ prefix, components }) {
+    if (components === false) {
+      return
     }
 
-    for (const component of getComponents()) {
-      addComponent({
-        name: `${options.prefix}${component}`,
-        export: component,
-        filePath: 'radix-vue',
-      })
+    let groupName: keyof Components
+    for (groupName in allComponents) {
+      if (components === true || components[groupName]) {
+        for (const component of allComponents[groupName]) {
+          addComponent({
+            name: `${prefix}${component}`,
+            export: component,
+            filePath: 'reka-ui',
+          })
+        }
+      }
     }
   },
 })

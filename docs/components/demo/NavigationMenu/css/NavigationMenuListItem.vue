@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NavigationMenuLink } from 'radix-vue'
+import { NavigationMenuLink } from 'reka-ui'
 
 const props = defineProps({
   title: String,

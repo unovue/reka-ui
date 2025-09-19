@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ProseCodeInline, ProseTable, ProseTd, ProseTh, ProseTr } from '../prose'
 import { Icon } from '@iconify/vue'
+import { ProseCodeInline, ProseTable, ProseTbody, ProseTd, ProseTh, ProseThead, ProseTr } from '../prose'
 
 type PropDef = {
   name?: string
@@ -19,11 +19,12 @@ const props = defineProps<PropsTableProps>()
 
 <template>
   <ProseTable>
-    <div class="absolute top-0 right-2 w-8 h-8 rounded-full border flex items-center justify-center text-[var(--vp-c-text-2)] bg-[var(--vp-button-alt-bg)] border-[var(--vp-c-gray-soft)]">
+    <!-- <div class="absolute top-0 right-2 w-8 h-8 rounded-full border flex items-center justify-center">
       <Icon icon="ph:sliders-light" />
-    </div>
-    <thead class="">
-      <ProseTr class="">
+    </div> -->
+
+    <ProseThead>
+      <ProseTr>
         <ProseTh class="w-1/6">
           <span>Prop</span>
         </ProseTh>
@@ -34,16 +35,16 @@ const props = defineProps<PropsTableProps>()
           <span>Type</span>
         </ProseTh>
       </ProseTr>
-    </thead>
+    </ProseThead>
 
-    <tbody>
+    <ProseTbody>
       <ProseTr
-        v-for="(prop, index) in props.data"
+        v-for="(prop, index) in data"
         :key="`${prop.name}-${index}`"
       >
         <ProseTd>
           <div class="flex h-full items-start gap-1">
-            <ProseCodeInline class="!text-[13px]">
+            <ProseCodeInline>
               {{ prop.name }}{{ prop.required ? "*" : null }}
             </ProseCodeInline>
           </div>
@@ -69,19 +70,20 @@ const props = defineProps<PropsTableProps>()
         </ProseTd>
 
         <ProseTd>
-          <div class="flex items-center gap-1">
-            <div>
-              <ProseCodeInline variant="secondary">
-                {{ prop.typeSimple ? prop.typeSimple : prop.type }}
-              </ProseCodeInline>
-              <div
-                class="vp-raw [&_a]:underline flex flex-col gap-2 mt-2 text-sm dark:text-neutral-300"
-                v-html="prop.description"
-              />
-            </div>
+          <div class="flex flex-col">
+            <ProseCodeInline
+              variant="secondary"
+              class="w-max"
+            >
+              {{ prop.typeSimple ? prop.typeSimple : prop.type }}
+            </ProseCodeInline>
+            <div
+              class="[&_p]:mt-0 [&_p]:mb-0 flex flex-col gap-2 mt-2 text-sm text-muted-foreground"
+              v-html="prop.description"
+            />
           </div>
         </ProseTd>
       </ProseTr>
-    </tbody>
+    </ProseTbody>
   </ProseTable>
 </template>

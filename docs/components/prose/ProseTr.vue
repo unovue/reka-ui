@@ -1,5 +1,5 @@
 <template>
-  <tr class="rounded-md overflow-hidden dark:!bg-[var(--vp-code-block-bg)]">
+  <tr class="border-x-none !border-muted">
     <slot />
   </tr>
 </template>

@@ -5,5 +5,5 @@
       "@iconify/vue": ["node_modules/@iconify/vue/dist/iconify.mjs"]
     }
   },
-  "includes": ["../packages/radix-vue/src/**/*.vue", "../packages/radix-vue/src/**/*.ts"]
+  "includes": ["../packages/core/src/**/*.vue", "../packages/core/src/**/*.ts"]
 }

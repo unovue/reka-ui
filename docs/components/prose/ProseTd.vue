@@ -1,5 +1,5 @@
 <template>
-  <td class="h-12 pb-1 [&:not(:first-child)]:pl-4 text-left">
+  <td class="py-2 px-4">
     <slot />
   </td>
 </template>

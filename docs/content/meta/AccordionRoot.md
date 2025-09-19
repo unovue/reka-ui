@@ -3,14 +3,14 @@
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwrite by <code>asChild</code></p>\n',
+    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -55,9 +55,16 @@
   },
   {
     'name': 'type',
-    'description': '<p>Determines whether a &quot;single&quot; or &quot;multiple&quot; items can be pressed at a time.</p>\n<p>This prop will be ignored if any of <code>v-model</code> or <code>defaultValue</code> is defined, as the type will be inferred from the value.</p>\n',
+    'description': '<p>Determines whether a &quot;single&quot; or &quot;multiple&quot; items can be selected at a time.</p>\n<p>This prop will overwrite the inferred type from <code>modelValue</code> and <code>defaultValue</code>.</p>\n',
     'type': '\'single\' | \'multiple\'',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When <code>true</code>, the element will be unmounted on closed state.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -73,6 +80,6 @@
   {
     'name': 'modelValue',
     'description': '<p>Current active value</p>\n',
-    'type': 'string | string[] | undefined'
+    'type': 'AcceptableValue | AcceptableValue[] | undefined'
   }
 ]" />

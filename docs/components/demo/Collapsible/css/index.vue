@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'radix-vue'
 import { Icon } from '@iconify/vue'
+import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
+import { ref } from 'vue'
 import './styles.css'
 
 const open = ref(false)
@@ -29,7 +29,7 @@ const open = ref(false)
     </div>
 
     <div class="Repository">
-      <span class="Text">@unovue/radix-vue</span>
+      <span class="Text">@unovue/reka-ui</span>
     </div>
 
     <CollapsibleContent>

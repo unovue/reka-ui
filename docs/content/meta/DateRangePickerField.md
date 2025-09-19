@@ -9,6 +9,6 @@
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'DateRange'
+    'type': 'DateRange | null'
   }
 ]" />

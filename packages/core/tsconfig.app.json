@@ -1,0 +1,29 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+
+    "paths": {
+      "@/*": ["./src/*"],
+      "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
+    },
+    // TODO: set skipLibCheck to false (#2043)
+    // Ideally we should set this to false, but histoire and vueuse are being difficult...
+    // For now, keep it disabled...
+    "skipLibCheck": true
+  },
+  "vueCompilerOptions": {
+    // TODO: enable; currently makes documentation codegen not ideal and might be a too-drastic change (#2043)
+    // Necessary to allow downstream users to enable and benefit from strict typechecking features of Vue
+    // "fallthroughAttributes": true
+  },
+  "include": [
+    "env.d.ts",
+    "src/**/*",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue"
+  ]
+}

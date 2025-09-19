@@ -3,14 +3,20 @@
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwrite by <code>asChild</code></p>\n',
+    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'ul\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'bubbleSelect',
+    'description': '<p>When <code>true</code>, selecting children will update the parent state.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -54,7 +60,7 @@
   {
     'name': 'getKey',
     'description': '<p>This function is passed the index of each item and should return a unique key for that item</p>\n',
-    'type': '(val: Record<string, any>) => string',
+    'type': '(val: Record<string, any>): string',
     'required': true
   },
   {
@@ -84,7 +90,7 @@
   {
     'name': 'selectionBehavior',
     'description': '<p>How multiple selection should behave in the collection.</p>\n',
-    'type': '\'toggle\' | \'replace\'',
+    'type': '\'replace\' | \'toggle\'',
     'required': false,
     'default': '\'toggle\''
   }
@@ -98,8 +104,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[val: Record<string, any>]'
+    'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
+    'type': '[val: Record<string, any> | Record<string, any>[]]'
   }
 ]" />
 

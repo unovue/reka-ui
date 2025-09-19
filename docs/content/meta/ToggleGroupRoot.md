@@ -3,21 +3,21 @@
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwrite by <code>asChild</code></p>\n',
+    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'defaultValue',
     'description': '<p>The default active value of the item(s).</p>\n<p>Use when you do not need to control the state of the item(s).</p>\n',
-    'type': 'string | string[]',
+    'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
   {
@@ -43,13 +43,25 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the active item(s).</p>\n<p>Use this when you need to control the state of the items. Can be binded with <code>v-model</code></p>\n',
-    'type': 'string | string[]',
+    'type': 'AcceptableValue | AcceptableValue[]',
+    'required': false
+  },
+  {
+    'name': 'name',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'type': 'string',
     'required': false
   },
   {
     'name': 'orientation',
     'description': '<p>The orientation of the component, which determines how focus moves: <code>horizontal</code> for left/right arrows and <code>vertical</code> for up/down arrows.</p>\n',
     'type': '\'vertical\' | \'horizontal\'',
+    'required': false
+  },
+  {
+    'name': 'required',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
+    'type': 'boolean',
     'required': false
   },
   {
@@ -61,7 +73,7 @@
   },
   {
     'name': 'type',
-    'description': '<p>Determines whether a &quot;single&quot; or &quot;multiple&quot; items can be pressed at a time.</p>\n<p>This prop will be ignored if any of <code>v-model</code> or <code>defaultValue</code> is defined, as the type will be inferred from the value.</p>\n',
+    'description': '<p>Determines whether a &quot;single&quot; or &quot;multiple&quot; items can be selected at a time.</p>\n<p>This prop will overwrite the inferred type from <code>modelValue</code> and <code>defaultValue</code>.</p>\n',
     'type': '\'single\' | \'multiple\'',
     'required': false
   }
@@ -70,8 +82,8 @@
 <EmitsTable :data="[
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[payload: string | string[]]'
+    'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
+    'type': '[payload: AcceptableValue | AcceptableValue[]]'
   }
 ]" />
 
@@ -79,6 +91,6 @@
   {
     'name': 'modelValue',
     'description': '<p>Current toggle values</p>\n',
-    'type': 'string | string[] | undefined'
+    'type': 'AcceptableValue | AcceptableValue[] | undefined'
   }
 ]" />

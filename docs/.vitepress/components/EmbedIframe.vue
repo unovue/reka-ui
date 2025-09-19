@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AspectRatio } from 'radix-vue'
+import { AspectRatio } from 'reka-ui'
 import { onMounted, ref } from 'vue'
 
 defineOptions({

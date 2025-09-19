@@ -21,14 +21,14 @@
   },
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwrite by <code>asChild</code></p>\n',
+    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'div\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -47,8 +47,8 @@
   },
   {
     'name': 'delimiter',
-    'description': '<p>The character to trigger the addition of a new tag. Also used to split tags for <code>@paste</code> event</p>\n',
-    'type': 'string',
+    'description': '<p>The character or regular expression to trigger the addition of a new tag. Also used to split tags for <code>@paste</code> event</p>\n',
+    'type': 'string | RegExp',
     'required': false,
     'default': '\',\''
   },
@@ -93,18 +93,18 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the tags input. Can be bind as <code>v-model</code>.</p>\n',
-    'type': 'AcceptableInputValue[]',
+    'type': 'AcceptableInputValue[] | null',
     'required': false
   },
   {
     'name': 'name',
-    'description': '<p>The name of the tags input submitted with its owning form as part of a name/value pair.</p>\n',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
     'required': false
   },
   {
     'name': 'required',
-    'description': '<p>When <code>true</code>, indicates that the user must add the tags input before the owning form can be submitted.</p>\n',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
   }
@@ -112,8 +112,18 @@
 
 <EmitsTable :data="[
   {
+    'name': 'addTag',
+    'description': '<p>Event handler called when tag is added</p>\n',
+    'type': '[payload: AcceptableInputValue]'
+  },
+  {
     'name': 'invalid',
     'description': '<p>Event handler called when the value is invalid</p>\n',
+    'type': '[payload: AcceptableInputValue]'
+  },
+  {
+    'name': 'removeTag',
+    'description': '<p>Event handler called when tag is removed</p>\n',
     'type': '[payload: AcceptableInputValue]'
   },
   {

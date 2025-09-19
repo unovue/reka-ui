@@ -53,9 +53,9 @@ const plainTeamMembers: CoreTeam[] = [
     sponsor: 'https://github.com/sponsors/zernonia',
   },
   {
-    avatar: contributorsAvatars.khairulhaaziq,
+    avatar: contributorsAvatars.k11q,
     name: 'Khairul Haaziq',
-    github: 'khairulhaaziq',
+    github: 'k11q',
     twitter: 'khairulhaaziq',
     desc: 'Core team member of Radix Vue',
   },

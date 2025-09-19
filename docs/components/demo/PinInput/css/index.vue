@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { Label, PinInputInput, PinInputRoot } from 'reka-ui'
 import { ref } from 'vue'
-import { Label, PinInputInput, PinInputRoot } from 'radix-vue'
 import './styles.css'
 
 const value = ref<string[]>([])

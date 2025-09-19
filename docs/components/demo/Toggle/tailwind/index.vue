@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Toggle } from 'radix-vue'
 import { Icon } from '@iconify/vue'
+import { Toggle } from 'reka-ui'
 import { ref } from 'vue'
 
 const toggleState = ref(false)
@@ -8,9 +8,9 @@ const toggleState = ref(false)
 
 <template>
   <Toggle
-    v-model:pressed="toggleState"
+    v-model="toggleState"
     aria-label="Toggle italic"
-    class="hover:bg-green3 text-mauve11 data-[state=on]:bg-green6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+    class="hover:bg-stone-50 text-stone-700 data-[state=on]:bg-stone-100 shadow-sm flex h-[35px] w-[35px] items-center justify-center rounded-lg border bg-white text-base leading-4 focus-within:outline-none focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
   >
     <Icon
       icon="radix-icons:font-italic"

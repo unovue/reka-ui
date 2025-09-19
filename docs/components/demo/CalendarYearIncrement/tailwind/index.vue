@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import type { DateValue } from '@internationalized/date'
-import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, type CalendarRootProps } from 'radix-vue'
+import type { CalendarRootProps } from 'reka-ui'
+import { Icon } from '@iconify/vue'
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
 
 const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
   return date.day === 17 || date.day === 18
@@ -28,7 +29,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:double-arrow-left"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarPrev>
       <CalendarPrev
@@ -36,17 +37,17 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:chevron-left"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarPrev>
-      <CalendarHeading class="text-[15px] text-black font-medium" />
+      <CalendarHeading class="text-sm text-black font-medium" />
 
       <CalendarNext
         class="inline-flex items-center cursor-pointer justify-center text-black rounded-[9px] bg-transparent w-8 h-8 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
       >
         <Icon
           icon="radix-icons:chevron-right"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarNext>
 
@@ -56,7 +57,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       >
         <Icon
           icon="radix-icons:double-arrow-right"
-          class="w-6 h-6"
+          class="w-4 h-4"
         />
       </CalendarNext>
     </CalendarHeader>
@@ -94,7 +95,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
               <CalendarCellTrigger
                 :day="weekDate"
                 :month="month.value"
-                class="relative flex items-center justify-center rounded-full whitespace-nowrap text-sm font-normal text-black w-8 h-8 outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[disabled]:text-black/30 data-[selected]:!bg-green10 data-[selected]:text-white hover:bg-green5 data-[highlighted]:bg-green5 data-[unavailable]:pointer-events-none data-[unavailable]:text-black/30 data-[unavailable]:line-through before:absolute before:top-[5px] before:hidden before:rounded-full before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-green9 "
+                class="relative flex items-center justify-center rounded-full whitespace-nowrap text-sm font-normal text-black w-8 h-8 outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[outside-view]:text-black/30 data-[selected]:!bg-green10 data-[selected]:text-white hover:bg-green5 data-[highlighted]:bg-green5 data-[unavailable]:pointer-events-none data-[unavailable]:text-black/30 data-[unavailable]:line-through before:absolute before:top-[5px] before:hidden before:rounded-full before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-green9 "
               />
             </CalendarCell>
           </CalendarGridRow>

@@ -1,0 +1,56 @@
+@import "@radix-ui/colors/black-alpha.css";
+@import "@radix-ui/colors/mauve.css";
+@import "@radix-ui/colors/grass.css";
+
+.TimeFieldWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.TimeFieldLabel {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--gray-9);
+}
+
+.TimeField {
+    display: flex;
+    padding: 0.5rem;
+    align-items: center;
+    border-radius: 0.25rem;
+    border-width: 1px;
+    text-align: center;
+    background-color: #ffffff;
+    user-select: none;
+    color: var(--green-10);
+    border: 1px solid var(--gray-9);
+}
+
+.TimeField::placeholder {
+    color: var(--mauve-5);
+}
+
+.TimeField[data-invalid] {
+    border: 1px solid var(--red-500);
+}
+
+.TimeFieldLiteral {
+    padding: 0.25rem;
+}
+
+.TimeFieldSegment {
+    padding: 0.25rem;
+}
+
+.TimeFieldSegment:hover {
+    background-color: var(--grass-4);
+}
+
+.TimeFieldSegment:focus {
+    background-color: var(--grass-2);
+}
+
+.TimeFieldSegment:[aria-valuetext='Empty'] {
+    color: var(--grass-6);
+}

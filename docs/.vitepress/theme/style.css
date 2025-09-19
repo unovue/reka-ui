@@ -1,156 +1,233 @@
-/**
- * Customize default theme styling by overriding CSS variables:
- * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/**
- * Colors
- * -------------------------------------------------------------------------- */
-
-:root {
-  --vp-c-brand-1: #10b981;
-  --vp-c-brand-light: #25a677;
-  --vp-c-brand-lighter: #34d399;
-  --vp-c-brand-lightest: #a7f3d0;
-  --vp-c-brand-2: #059669;
-  --vp-c-brand-darker: #047857;
-  --vp-c-brand-dimm: rgba(100, 108, 255, 0.08);
-  --vp-c-tip-soft: #5bb98c;
-  --vp-c-tip-1: var(--vp-c-brand-darker);
-
-  --vp-code-color: rgba(60, 60, 67);
-  --vp-code-block-bg: #292b30;
-  --vp-code-block-bg-light: #1e1e20;
-  --vp-code-block-divider-color: #000000;
-  --vp-custom-block-tip-bg: #40644d29;
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist[wght].ttf");
+}
+@font-face {
+  font-family: "GeistMono";
+  src: url("/fonts/GeistMono[wght].ttf");
 }
 
-.dark {
-  --vp-c-bg: #1e1e20;
-  --vp-c-bg-alt: #161618;
-  --vp-c-bg-soft: #252529;
-  --vp-code-block-bg: #161618;
-  --vp-c-tip-1: white;
+@layer base {
+   :root {
+		--font-geist-sans: "Geist";
+		--font-geist-mono: "GeistMono";
+
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 60 8% 97%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 40 6% 91%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --code: 24 9.8% 10%; /*  0 0% 4%; */
+    --border:240 5.9% 90%;
+    --input:240 5.9% 90%;
+    --ring:142.1 76.2% 36.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background:141 17% 5%;
+    --foreground:0 0% 95%;
+
+    --card:24 9.8% 10%;
+    --card-foreground:0 0% 95%;
+
+    --popover:0 0% 9%;
+    --popover-foreground:0 0% 95%;
+
+    --primary: 151 62% 59%;
+    --primary-foreground:144.9 80.4% 10%;
+
+    --secondary:240 3.7% 15.9%;
+    --secondary-foreground:0 0% 98%;
+
+    --muted:0 0% 15%;
+    --muted-foreground:168 2.6% 62.9%;
+
+    --accent:12 6.5% 15.1%;
+    --accent-foreground:0 0% 98%;
+
+    --destructive:0 62.8% 30.6%;
+    --destructive-foreground:0 85.7% 97.3%;
+
+    --border:240 3.7% 15.9%;
+    --input:240 3.7% 15.9%;
+    --ring:142.4 71.8% 29.2%;
+  }
+
+	html {
+		-webkit-text-size-adjust: 100%;
+		font-variation-settings: normal;
+	}
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+	body {
+		@apply bg-background text-foreground min-h-screen antialiased;
+		/* font-feature-settings: "rlig" 1, "calt" 1; */
+		font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+	}
+
+	/* Mobile tap highlight */
+	/* https://developer.mozilla.org/en-US/docs/Web/CSS/-webkit-tap-highlight-color */
+	html {
+		-webkit-tap-highlight-color: rgba(128, 128, 128, 0.5);
+	}
+
+  *:focus-visible {
+    @apply outline-primary;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+  }
+
 
 }
-/* --vp-c-bg-elv: #252529;
---vp-c-bg-elv-up: #313136;
---vp-c-bg-elv-down: #1e1e20;
---vp-c-bg-elv-mute: #313136;
---vp-c-bg-soft-up: #313136;
---vp-c-bg-soft-down: #1e1e20;
---vp-c-bg-soft-mute: #313136; */
 
-/**
- * Component: Button
- * -------------------------------------------------------------------------- */
 
-:root {
-  --vp-button-brand-border: var(--vp-c-brand-light);
-  --vp-button-brand-text: var(--vp-c-white);
-  --vp-button-brand-bg: var(--vp-c-brand);
-  --vp-button-brand-hover-border: var(--vp-c-brand-light);
-  --vp-button-brand-hover-text: var(--vp-c-white);
-  --vp-button-brand-hover-bg: var(--vp-c-brand-light);
-  --vp-button-brand-active-border: var(--vp-c-brand-light);
-  --vp-button-brand-active-text: var(--vp-c-white);
-  --vp-button-brand-active-bg: var(--vp-button-brand-bg);
-}
+@layer utilities {
+	.step {
+		counter-increment: step;
+	}
 
-/**
- * Component: Home
- * -------------------------------------------------------------------------- */
+	.step:before {
+		@apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px border-4 border-background;
+		@apply -ml-[50px] -mt-1;
+		content: counter(step);
+	}
 
-:root {
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #11b981 30%, #6ff4cc);
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 
-  --vp-home-hero-image-background-image: linear-gradient(180deg, #8600c5 0%, #00f0ff 100%);
-  --vp-home-hero-image-filter: blur(50px);
-}
-
-@media (min-width: 640px) {
-  :root {
-    --vp-home-hero-image-filter: blur(56px);
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 }
 
-@media (min-width: 960px) {
-  :root {
-    --vp-home-hero-image-filter: blur(72px);
+@media (max-width: 640px) {
+	.container {
+		@apply px-4;
+	}
+}
+
+.custom .vp-code {
+  @apply border-none rounded-none;
+}
+.vp-code {
+  @apply px-6 py-4 my-0 bg-[hsl(24_9.8%_10%)] border border-[hsl(0_0%_15%)] rounded-lg;
+
+  .diff {
+    @apply inline-block w-[calc(100%_+_48px)] px-6 -mx-6
+  }
+  .diff:before {
+    @apply absolute left-2.5
+  }
+
+  .diff.remove {
+    @apply bg-red-500/20 opacity-70
+  }
+  .diff.remove:before {
+    content: "-";
+    @apply text-red-500/80
+  }
+
+  .diff.add {
+    @apply bg-green-600/15
+  }
+  .diff.add:before {
+    content: "+";
+    @apply text-green-600/80
+  }
+
+  .highlighted {
+    @apply inline-block w-[calc(100%_+_48px)] px-6 -mx-6 bg-[hsl(0_0%_15%)]
+  }
+
+  code {
+    @apply w-fit block min-w-full
   }
 }
 
 
-/* Fix the layout shift for Vitepress https://github.com/vuejs/vitepress/pull/1844/files */
-@media (min-width: 768px) {
-  .VPContent, .VPLocalNav, .VPNav, .VPHome {
-    width: 100vw !important;
+
+.custom-block {
+  @apply rounded-xl p-6 border border-muted;
+}
+
+input {
+  @apply bg-foreground;
+}
+
+kbd {
+  @apply font-sans rounded-md px-1.5 py-[1px];
+}
+
+mark {
+  @apply bg-transparent text-foreground font-semibold;
+}
+
+[class*="language"] {
+  @apply relative mb-4;
+
+  & .lang {
+    @apply hidden;
   }
-  .VPFooter {
-    width: 100vw !important;
-    padding: 32px !important;
+
+  /* Better impl for custom copy button */
+  & .copy {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='rgba(128,128,128,1)' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'%3E%3Crect width='8' height='4' x='8' y='2' rx='1' ry='1'/%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3C/svg%3E");
+    background-size: 16px;
+    background-position: 50% center;
+    background-repeat: no-repeat;
+    transition: border-color 0.25s ease 0s, background-color 0.25s ease 0s, opacity 0.25s ease 0s;
+    @apply absolute top-2 right-2 w-9 h-9 rounded-lg;
+  }
+
+  & .copied {
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzg4ODg4OCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIGQ9Ik0yMCA2TDkgMTdsLTUtNSIvPjwvc3ZnPg==");
   }
 }
-@media (min-width: 1440px) {
-  .VPSidebar {
-    padding-left: max(32px, calc((100vw - (var(--vp-layout-max-width) - 64px)) / 2)) !important;
-    width: calc((100vw - (var(--vp-layout-max-width) - 64px)) / 2 + var(--vp-sidebar-width) - 32px) !important;
-  }
-}
 
-body {
-  overflow-x: hidden;
-}
+@layer utilities {
+	.step {
+		counter-increment: step;
+	}
 
-/**
- * Component: Algolia
- * -------------------------------------------------------------------------- */
-
-.DocSearch {
-  --docsearch-primary-color: var(--vp-c-brand) !important;
-}
-
-.blocks {
-  max-height: 80vh;
-  overflow: scroll;
-}
-
-.vp-code-group {
-  margin-top: 0px;
-  color: var(--vp-code-block-color);
-  border-radius: 0px;
-}
-
-.vp-doc h2 {
-  @apply mb-2 md:mb-2.5 text-xl md:text-2xl;
-}
-
-.vp-doc h3 {
-  @apply text-[17px] md:text-xl;
-  font-weight: 600;
-  margin-top: 40px;
-}
-
-.vp-doc :not(pre) > code {
-  font-size: max(12px, 85%);
-  @apply dark:text-[var(--vp-c-brand)]  dark:bg-[#0F291E];
-}
-
-.vp-doc div[class*='language-']:not(:where(.custom, .custom *)) {
-  @apply  border border-neutral-700/40;
-}
-
-.VPSidebarItem.is-active .indicator {
-  @apply bg-[var(--vp-c-brand-1)]
-}
-
-.content-container {
-  @apply !max-w-[720px];
-}
-
-li > span {
-  @apply text-[15px] md:text-base;
+	.step:before {
+		@apply absolute w-9 h-9 bg-muted rounded-lg font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px border-4 border-background;
+		@apply -ml-[50px] -mt-1;
+		content: counter(step);
+	}
 }
 
 .image-bg {
@@ -161,10 +238,6 @@ li > span {
 .custom-justify-center:after {
   content: "";
   flex: 1;
-}
-
-button:focus-visible {
-  @apply !outline-none;
 }
 
 .fade-enter-active,

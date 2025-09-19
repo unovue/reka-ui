@@ -39,9 +39,5 @@
     "json",
     "jsonc",
     "yaml"
-  ],
-
-  "tailwindCSS.experimental.configFile": {
-    "./.histoire/tailwind.config.js": "./packages/radix-vue/**/*.story.vue"
-  }
+  ]
 }

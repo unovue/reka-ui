@@ -1,11 +1,11 @@
 import { blackA, grass, green, indigo, mauve, purple, red, slate, teal, violet } from '@radix-ui/colors'
-import plugin from 'tailwindcss/plugin'
 import animate from 'tailwindcss-animate'
+import plugin from 'tailwindcss/plugin'
 
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
-  content: ['../packages/radix-vue/src/**/*.vue'],
+  content: ['../packages/core/src/**/*.vue'],
   theme: {
     extend: {
       colors: {
@@ -59,10 +59,10 @@ export default {
         },
         slideDown: {
           from: { height: 0 },
-          to: { height: 'var(--radix-collapsible-content-height)' },
+          to: { height: 'var(--reka-collapsible-content-height)' },
         },
         slideUp: {
-          from: { height: 'var(--radix-collapsible-content-height)' },
+          from: { height: 'var(--reka-collapsible-content-height)' },
           to: { height: 0 },
         },
         enterFromRight: {
@@ -103,14 +103,14 @@ export default {
             height: 0,
           },
           to: {
-            width: 'var(--radix-accordion-content-width)',
-            height: 'var(--radix-accordion-content-height)',
+            width: 'var(--reka-accordion-content-width)',
+            height: 'var(--reka-accordion-content-height)',
           },
         },
         close2D: {
           from: {
-            width: 'var(--radix-accordion-content-width)',
-            height: 'var(--radix-accordion-content-height)',
+            width: 'var(--reka-accordion-content-width)',
+            height: 'var(--reka-accordion-content-height)',
           },
           to: {
             width: 0,
@@ -126,7 +126,7 @@ export default {
           to: { transform: 'translateX(0)' },
         },
         swipeOut: {
-          from: { transform: 'translateX(var(--radix-toast-swipe-end-x))' },
+          from: { transform: 'translateX(var(--reka-toast-swipe-end-x))' },
           to: { transform: 'translateX(calc(100% + var(--viewport-padding)))' },
         },
       },
@@ -155,6 +155,9 @@ export default {
         hide: 'hide 100ms ease-in',
         slideIn: 'slideIn 150ms cubic-bezier(0.16, 1, 0.3, 1)',
         swipeOut: 'swipeOut 100ms ease-out',
+      },
+      transitionDuration: {
+        250: '250ms',
       },
     },
   },

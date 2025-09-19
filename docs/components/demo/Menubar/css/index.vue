@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   MenubarCheckboxItem,
   MenubarContent,
@@ -16,7 +15,8 @@ import {
   MenubarSubContent,
   MenubarSubTrigger,
   MenubarTrigger,
-} from 'radix-vue'
+} from 'reka-ui'
+import { ref } from 'vue'
 import './styles.css'
 
 const currentMenu = ref('')

@@ -2,8 +2,20 @@ import antfu from '@antfu/eslint-config'
 
 export default antfu(
   {
-    vue: true,
+    vue: {
+      overrides: {
+        'vue/max-attributes-per-line': ['error', {
+          singleline: 1,
+          multiline: 1,
+        }],
+      },
+    },
     typescript: true,
+    markdown: {
+      overrides: {
+        'vue/max-attributes-per-line': 'off', // in documentation we allow more attributes per line
+      },
+    },
   },
   {
     ignores: ['*.js'],
@@ -29,20 +41,19 @@ export default antfu(
     },
   },
   {
-    files: ['**/*.vue'],
-    rules: {
-      'vue/max-attributes-per-line': ['error', {
-        singleline: 1,
-        multiline: 1,
-      }],
-    },
-  },
-  {
     files: ['*.story.vue'],
     rules: {
       'no-console': 'off',
       'no-alert': 'off',
       'unused-imports/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['**/package.json'],
+    rules: {
+      // Wrecks the order of `files` otherwise, and breaks the exclusion patterns
+      // pnpm has no issues with that, but npm does and doesn't apply the correct config
+      'jsonc/sort-array-values': 'off',
     },
   },
 )

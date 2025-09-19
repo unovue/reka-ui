@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'radix-vue'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 </script>
 
 <template>
-  <div class="w-full h-64 px-8 text-green9 font-medium text-sm">
+  <div class="w-full h-64 px-8 md:px-16 text-green9 font-semibold text-sm">
     <SplitterGroup
       id="splitter-group-1"
       direction="horizontal"
@@ -11,7 +11,7 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'radix-vue'
       <SplitterPanel
         id="splitter-group-1-panel-1"
         :min-size="20"
-        class="bg-white rounded-xl flex items-center justify-center"
+        class="bg-white border rounded-xl flex items-center justify-center"
       >
         Panel A
       </SplitterPanel>
@@ -30,7 +30,7 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'radix-vue'
           <SplitterPanel
             id="splitter-group-2-panel-1"
             :min-size="20"
-            class="bg-white rounded-xl flex items-center justify-center"
+            class="bg-white border rounded-xl flex items-center justify-center"
           >
             Panel B
           </SplitterPanel>
@@ -41,7 +41,7 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'radix-vue'
           <SplitterPanel
             id="splitter-group-2-panel-2"
             :min-size="20"
-            class="bg-white rounded-xl flex items-center justify-center"
+            class="bg-white border rounded-xl flex items-center justify-center"
           >
             Panel C
           </SplitterPanel>

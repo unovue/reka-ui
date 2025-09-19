@@ -21,7 +21,7 @@ module.exports = {
           to: { transform: 'translateX(0)' },
         },
         swipeOut: {
-          from: { transform: 'translateX(var(--radix-toast-swipe-end-x))' },
+          from: { transform: 'translateX(var(--reka-toast-swipe-end-x))' },
           to: { transform: 'translateX(calc(100% + var(--viewport-padding)))' },
         },
       },

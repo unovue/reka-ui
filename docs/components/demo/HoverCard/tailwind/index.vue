@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'reka-ui'
 import { ref } from 'vue'
-import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from 'radix-vue'
 
 const hoverState = ref(false)
 </script>
@@ -8,54 +8,54 @@ const hoverState = ref(false)
 <template>
   <HoverCardRoot v-model:open="hoverState">
     <HoverCardTrigger
-      class="inline-block cursor-pointer rounded-full shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] outline-none focus:shadow-[0_0_0_2px_white]"
-      href="https://twitter.com/radix_ui"
+      class="inline-block cursor-pointer rounded-full outline-none focus:shadow-[0_0_0_2px] focus:shadow-green8 shadow-sm"
+      href="https://twitter.com/unovue"
       target="_blank"
       rel="noreferrer noopener"
     >
       <img
         class="block h-[45px] w-[45px] rounded-full"
-        src="https://pbs.twimg.com/profile_images/1337055608613253126/r_eiMp2H_400x400.png"
-        alt="Radix UI"
+        src="https://pbs.twimg.com/profile_images/1833445381986045952/jwoHkIIq_400x400.jpg"
+        alt="Unovue"
       >
     </HoverCardTrigger>
     <HoverCardPortal>
       <HoverCardContent
-        class="data-[side=bottom]:animate-slideUpAndFade data-[side=right]:animate-slideLeftAndFade data-[side=left]:animate-slideRightAndFade data-[side=top]:animate-slideDownAndFade w-[300px] rounded-md bg-white p-5 shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] data-[state=open]:transition-all"
+        class="data-[side=bottom]:animate-slideUpAndFade data-[side=right]:animate-slideLeftAndFade data-[side=left]:animate-slideRightAndFade data-[side=top]:animate-slideDownAndFade w-[300px] rounded-xl bg-white p-5 data-[state=open]:transition-all border shadow-sm z-10"
         :side-offset="5"
       >
         <div class="flex flex-col gap-[7px]">
           <img
             class="block h-[60px] w-[60px] rounded-full"
-            src="https://pbs.twimg.com/profile_images/1337055608613253126/r_eiMp2H_400x400.png"
-            alt="Radix UI"
+            src="https://pbs.twimg.com/profile_images/1833445381986045952/jwoHkIIq_400x400.jpg"
+            alt="Unovue"
           >
           <div class="flex flex-col gap-[15px]">
             <div>
-              <div class="text-mauve12 m-0 text-[15px] font-medium leading-[1.5]">
-                Radix
+              <div class="text-mauve12 m-0 text-sm font-medium leading-[1.5]">
+                Unovue
               </div>
-              <div class="text-mauve10 m-0 text-[15px] leading-[1.5]">
-                @radix_ui
+              <div class="text-mauve10 m-0 text-sm leading-[1.5]">
+                @unovue
               </div>
             </div>
-            <div class="text-mauve12 m-0 text-[15px] leading-[1.5]">
+            <div class="text-mauve12 m-0 text-sm leading-[1.5]">
               Components, icons, colors, and templates for building high-quality, accessible UI. Free and open-source.
             </div>
             <div class="flex gap-[15px]">
               <div class="flex gap-[5px]">
-                <div class="text-mauve12 m-0 text-[15px] font-medium leading-[1.5]">
+                <div class="text-mauve12 m-0 text-sm font-medium leading-[1.5]">
                   0
                 </div>
-                <div class="text-mauve10 m-0 text-[15px] leading-[1.5]">
+                <div class="text-mauve10 m-0 text-sm leading-[1.5]">
                   Following
                 </div>
               </div>
               <div class="flex gap-[5px]">
-                <div class="text-mauve12 m-0 text-[15px] font-medium leading-[1.5]">
+                <div class="text-mauve12 m-0 text-sm font-medium leading-[1.5]">
                   2,900
                 </div>
-                <div class="text-mauve10 m-0 text-[15px] leading-[1.5]">
+                <div class="text-mauve10 m-0 text-sm leading-[1.5]">
                   Followers
                 </div>
               </div>
@@ -64,8 +64,9 @@ const hoverState = ref(false)
         </div>
 
         <HoverCardArrow
-          class="fill-white"
-          :width="8"
+          class="fill-white stroke-gray-300 -mt-[1px]"
+          :width="12"
+          :height="6"
         />
       </HoverCardContent>
     </HoverCardPortal>

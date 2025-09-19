@@ -1,8 +1,8 @@
-import { HstVue } from '@histoire/plugin-vue'
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { HstVue } from '@histoire/plugin-vue'
 import alias from '@rollup/plugin-alias'
+import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite'
 
 const projectRootDir = resolve(__dirname)
 
@@ -14,21 +14,16 @@ export default defineConfig({
       entries: [
         {
           find: '@',
-          replacement: resolve(projectRootDir, '../packages/radix-vue/src'),
+          replacement: resolve(projectRootDir, '../packages/core/src'),
         },
       ],
     }),
   ],
-  resolve: {
-    alias: {
-      '@iconify/vue': './node_modules/@iconify/vue/dist/iconify.mjs',
-    },
-  },
   histoire: {
     viteNodeInlineDeps: [/@tanstack/],
     plugins: [{ name: 'builtin:tailwind-tokens' }, HstVue()],
     setupFile: './setup.ts',
-    storyMatch: [resolve(projectRootDir, '../packages/radix-vue/src/**/*.story.vue')],
+    storyMatch: [resolve(projectRootDir, '../packages/core/src/**/*.story.vue')],
     outDir: './dist',
     tree: {
       groups: [
@@ -37,7 +32,7 @@ export default defineConfig({
       ],
     },
     theme: {
-      title: 'Radix Vue',
+      title: 'Reka UI',
       logo: {
         square: '../docs/content/public/logo.svg',
         light: '../docs/content/public/logo.svg',

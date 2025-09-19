@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from 'radix-vue'
+import { EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from 'reka-ui'
 import './styles.css'
 </script>
 
@@ -9,7 +9,7 @@ import './styles.css'
       v-slot="{ isEditing }"
       placeholder="Enter text..."
       class="EditableRoot"
-      default-value="Click to edit 'Radix Vue'"
+      default-value="Click to edit 'Reka UI'"
       auto-resize
     >
       <EditableArea class="EditableArea">

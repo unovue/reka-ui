@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 import { ref } from 'vue'
-import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'radix-vue'
 
 const sliderValue = ref([50])
 </script>
@@ -12,11 +12,11 @@ const sliderValue = ref([50])
     :max="100"
     :step="1"
   >
-    <SliderTrack class="bg-blackA10 relative grow rounded-full h-[3px]">
-      <SliderRange class="absolute bg-white rounded-full h-full" />
+    <SliderTrack class="bg-stone-500/30 relative grow rounded-full h-2">
+      <SliderRange class="absolute bg-grass8 rounded-full h-full" />
     </SliderTrack>
     <SliderThumb
-      class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus:outline-none focus:shadow-[0_0_0_5px] focus:shadow-blackA8"
+      class="block w-6 h-6 bg-white rounded-full hover:bg-stone-50 shadow-sm focus:outline-none focus:shadow-[0_0_0_2px] focus:shadow-grass9"
       aria-label="Volume"
     />
   </SliderRoot>

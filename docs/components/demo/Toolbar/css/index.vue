@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   ToolbarButton,
   ToolbarLink,
@@ -6,8 +7,7 @@ import {
   ToolbarSeparator,
   ToolbarToggleGroup,
   ToolbarToggleItem,
-} from 'radix-vue'
-import { Icon } from '@iconify/vue'
+} from 'reka-ui'
 import { ref } from 'vue'
 import './styles.css'
 

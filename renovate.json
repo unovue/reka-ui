@@ -31,13 +31,6 @@
       ]
     },
     {
-      "groupName": "playground",
-      "matchFileNames": [
-        "playground/nuxt/package.json",
-        "playground/vue3/package.json"
-      ]
-    },
-    {
       "groupName": "build",
       "matchPackageNames": [
         "vite"
@@ -75,8 +68,13 @@
     }
   ],
   "ignoreDeps": [
-    "radix-vue",
+    "reka-ui",
     "node",
     "typescript"
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "playground/**"
   ]
 }

@@ -3,25 +3,19 @@
 <PropsTable :data="[
   {
     'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwrite by <code>asChild</code></p>\n',
+    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
     'default': '\'button\''
   },
   {
     'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.radix-vue.com/guides/composition.html\'>Composition</a> guide for more details.</p>\n',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
-    'name': 'checked',
-    'description': '<p>The controlled state of the switch. Can be bind as <code>v-model:checked</code>.</p>\n',
-    'type': 'boolean',
-    'required': false
-  },
-  {
-    'name': 'defaultChecked',
+    'name': 'defaultValue',
     'description': '<p>The state of the switch when it is initially rendered. Use when you do not need to control its state.</p>\n',
     'type': 'boolean',
     'required': false
@@ -39,14 +33,20 @@
     'required': false
   },
   {
+    'name': 'modelValue',
+    'description': '<p>The controlled state of the switch. Can be bind as <code>v-model</code>.</p>\n',
+    'type': 'boolean | null',
+    'required': false
+  },
+  {
     'name': 'name',
-    'description': '<p>The name of the switch. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
     'type': 'string',
     'required': false
   },
   {
     'name': 'required',
-    'description': '<p>When <code>true</code>, indicates that the user must check the switch before the owning form can be submitted.</p>\n',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -61,16 +61,16 @@
 
 <EmitsTable :data="[
   {
-    'name': 'update:checked',
-    'description': '<p>Event handler called when the checked state of the switch changes.</p>\n',
+    'name': 'update:modelValue',
+    'description': '<p>Event handler called when the value of the switch changes.</p>\n',
     'type': '[payload: boolean]'
   }
 ]" />
 
 <SlotsTable :data="[
   {
-    'name': 'checked',
-    'description': '<p>Current checked state</p>\n',
+    'name': 'modelValue',
+    'description': '<p>Current value</p>\n',
     'type': 'boolean'
   }
 ]" />
