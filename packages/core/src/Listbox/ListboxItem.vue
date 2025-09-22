@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createContext, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createContext, handleAndDispatchCustomEvent, useForwardExpose, useId, valueComparator } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
@@ -32,7 +32,6 @@ import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { valueComparator } from './utils'
 
 const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
   as: 'div',
