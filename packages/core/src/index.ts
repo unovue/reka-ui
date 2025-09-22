@@ -18,6 +18,7 @@ export { type FocusOutsideEvent, type PointerDownOutsideEvent } from './Dismissa
 export * from './DropdownMenu'
 export * from './Editable'
 export * from './FocusScope'
+export * from './Gridbox'
 export * from './HoverCard'
 export * from './Label'
 export * from './Listbox'
