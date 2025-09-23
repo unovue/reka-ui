@@ -224,32 +224,32 @@ function onKeydownNavigation(event: KeyboardEvent) {
   let targetCol = currentCell.col
 
   switch (event.key) {
-    case 'ArrowRight':
+    case kbd.ARROW_RIGHT:
       targetCol = Math.min(targetCol + 1, grid[targetRow]?.length - 1 || 0)
       if (targetCol === currentCell.col && targetRow < grid.length - 1) {
         targetRow++
         targetCol = 0
       }
       break
-    case 'ArrowLeft':
+    case kbd.ARROW_LEFT:
       targetCol = Math.max(targetCol - 1, 0)
       if (targetCol === currentCell.col && targetRow > 0) {
         targetRow--
         targetCol = grid[targetRow]?.length - 1 || 0
       }
       break
-    case 'ArrowDown':
+    case kbd.ARROW_DOWN:
       targetRow = Math.min(targetRow + 1, grid.length - 1)
       targetCol = Math.min(targetCol, grid[targetRow]?.length - 1 || 0)
       break
-    case 'ArrowUp':
+    case kbd.ARROW_UP:
       targetRow = Math.max(targetRow - 1, 0)
       targetCol = Math.min(targetCol, grid[targetRow]?.length - 1 || 0)
       break
-    case 'Home':
+    case kbd.HOME:
       targetCol = 0
       break
-    case 'End':
+    case kbd.END:
       targetCol = grid[targetRow]?.length - 1 || 0
       break
     default:
