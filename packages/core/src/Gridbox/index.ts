@@ -4,6 +4,10 @@ export {
   injectGridboxCellContext,
 } from './GridboxCell.vue'
 export {
+  default as GridboxCellIndicator,
+  type GridboxCellIndicatorProps,
+} from './GridboxCellIndicator.vue'
+export {
   default as GridboxContent,
   type GridboxContentProps,
 } from './GridboxContent.vue'
