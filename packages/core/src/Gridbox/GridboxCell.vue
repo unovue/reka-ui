@@ -58,6 +58,8 @@ function handleClick(event: PointerEvent) {
   if (disabled.value)
     return
 
+  rootContext.changeHighlight(currentElement.value!)
+
   const selectEvent = new CustomEvent(GRIDBOX_SELECT, {
     bubbles: false,
     cancelable: true,
@@ -69,6 +71,12 @@ function handleClick(event: PointerEvent) {
   if (!selectEvent.defaultPrevented) {
     rootContext.onValueChange(props.value)
   }
+}
+
+function handleMouseEnter() {
+  if (disabled.value || !rootContext.highlightOnHover.value)
+    return
+  rootContext.changeHighlight(currentElement.value!)
 }
 
 onMounted(() => {
@@ -98,9 +106,10 @@ provideGridboxCellContext({
       :as-child="asChild"
       :disabled="disabled"
       :data-disabled="disabled ? '' : undefined"
-      :data-state="isSelected ? 'checked' : 'uncheked'"
+      :data-state="isSelected ? 'checked' : 'unchecked'"
       :data-highlighted="isHighlighted ? '' : undefined"
       @click.left="handleClick"
+      @mouseenter="handleMouseEnter"
       @focus="() => rootContext.changeHighlight(currentElement!)"
     >
       <slot />

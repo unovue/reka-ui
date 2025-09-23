@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFormControl, useKbd, useTypeahead, valueComparator } from '@/shared'
+import { createContext, useDirection, useFormControl, useKbd, valueComparator } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 type GridboxRootContext<T> = {
@@ -92,7 +92,6 @@ defineSlots<{
 const { multiple, disabled, selectionBehavior, highlightOnHover, dir: propDir } = toRefs(props)
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const { getItems } = useCollection<{ value: T, row: number, col: number }>({ isProvider: true })
-const { handleTypeaheadSearch } = useTypeahead()
 const kbd = useKbd()
 const dir = useDirection(propDir)
 
@@ -201,12 +200,6 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
     event.preventDefault()
     if (collection.length) {
       changeHighlight(collection[collection.length - 1].ref)
-    }
-  }
-  else if (!isMetaKey) {
-    const el = handleTypeaheadSearch(event.key, getItems())
-    if (el) {
-      changeHighlight(el)
     }
   }
 

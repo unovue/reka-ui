@@ -13,6 +13,7 @@ export {
 } from './GridboxContent.vue'
 export {
   default as GridboxRoot,
+  type GridboxRootEmits,
   type GridboxRootProps,
   injectGridboxRootContext,
 } from './GridboxRoot.vue'
