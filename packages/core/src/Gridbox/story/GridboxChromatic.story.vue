@@ -1,0 +1,300 @@
+<script setup lang="ts">
+import type { GenericComponentInstance } from '@/shared/types'
+import { computed, ref } from 'vue'
+import { standardColorsList } from '@/shared/constant'
+import { GridboxCell, GridboxContent, GridboxRoot, GridboxRow } from '..'
+
+const singleControl = ref()
+const multipleControl = ref()
+
+const gridboxRef = ref<GenericComponentInstance<typeof GridboxRoot>>()
+
+const colorsGrid = computed(() => {
+  const grid: string[][] = []
+  const colsPerRow = 2
+
+  for (let i = 0; i < standardColorsList.length; i += colsPerRow) {
+    grid.push(standardColorsList.slice(i, i + colsPerRow))
+  }
+
+  return grid
+})
+</script>
+
+<template>
+  <Story
+    title="Gridbox/Chromatic"
+    :layout="{ type: 'grid', iframe: false, width: '50%' }"
+  >
+    <Variant title="Uncontrolled (Single)">
+      <GridboxRoot class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto">
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Uncontrolled (Multiple)">
+      <GridboxRoot
+        :multiple="true"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Controlled (Single)">
+      <GridboxRoot
+        v-model="singleControl"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Controlled (Multiple)">
+      <GridboxRoot
+        v-model="multipleControl"
+        :multiple="true"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Object (Single)">
+      <GridboxRoot class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto">
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid.map(row => row.map(color => ({ label: color, value: color.toLowerCase() })))"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(colorObj, colIdx) in rowColors"
+              :key="colorObj.value"
+              :value="colorObj"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': colorObj.label }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ colorObj.label }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Object (Multiple)">
+      <GridboxRoot
+        by="value"
+        :multiple="true"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid.map(row => row.map(color => ({ label: color, value: color.toLowerCase() })))"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(colorObj, colIdx) in rowColors"
+              :key="colorObj.value"
+              :value="colorObj"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': colorObj.label }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ colorObj.label }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Replace behavior (Single)">
+      <GridboxRoot
+        default-value="red"
+        selection-behavior="replace"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Replace behavior (Multiple)">
+      <GridboxRoot
+        multiple
+        selection-behavior="replace"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Highlight on hover">
+      <GridboxRoot
+        highlight-on-hover
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+
+    <Variant title="Highlight imperative">
+      <button @click="gridboxRef?.highlightFirstItem()">
+        Highlight First
+      </button>
+      <GridboxRoot
+        ref="gridboxRef"
+        class="w-48 p-2 rounded-lg bg-neutral-400 mx-auto"
+      >
+        <GridboxContent class="space-y-2">
+          <GridboxRow
+            v-for="(rowColors, rowIdx) in colorsGrid"
+            :key="rowIdx"
+            class="flex gap-x-2"
+          >
+            <GridboxCell
+              v-for="(color, colIdx) in rowColors"
+              :key="color"
+              :value="color"
+              :row="rowIdx"
+              :col="colIdx"
+              :style="{ 'background-color': color }"
+              class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+            >
+              <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
+            </GridboxCell>
+          </GridboxRow>
+        </GridboxContent>
+      </GridboxRoot>
+    </Variant>
+  </Story>
+</template>

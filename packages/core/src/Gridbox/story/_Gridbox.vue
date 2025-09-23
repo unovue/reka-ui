@@ -40,10 +40,10 @@ const colorsGrid = computed(() => {
           :value="color"
           :row="rowIdx"
           :col="colIdx"
-          :style="{ 'background-color': color, '-webkit-text-stroke': '1px white' }"
-          class="w-full py-1 px-2 rounded-md text-lg text-black font-black text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500"
+          :style="{ 'background-color': color }"
+          class="w-full p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
         >
-          {{ color }}
+          <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
         </GridboxCell>
       </GridboxRow>
     </GridboxContent>

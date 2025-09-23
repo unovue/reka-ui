@@ -163,20 +163,6 @@ function getGridStructure() {
   return { grid, cellMap }
 }
 
-function changeHighlight(el: HTMLElement, scrollIntoView = true) {
-  if (!el)
-    return
-
-  highlightedElement.value = el
-  if (focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
-    highlightedElement.value.scrollIntoView({ block: 'nearest' })
-
-  const highlightedItem = getItems().find(i => i.ref === el)
-  emits('highlight', highlightedItem)
-}
-
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
     event.preventDefault()
@@ -264,15 +250,6 @@ function onKeydownNavigation(event: KeyboardEvent) {
   }
 }
 
-function highlightFirstItem() {
-  nextTick(() => {
-    const items = getCollectionItems()
-    if (items.length) {
-      changeHighlight(items[0])
-    }
-  })
-}
-
 function onLeave(event: Event) {
   const el = highlightedElement.value
 
@@ -301,6 +278,29 @@ function onEnter(event: Event) {
   }
 }
 
+function changeHighlight(el: HTMLElement, scrollIntoView = true) {
+  if (!el)
+    return
+
+  highlightedElement.value = el
+  if (focusable.value)
+    highlightedElement.value.focus()
+  if (scrollIntoView)
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+
+  const highlightedItem = getItems().find(i => i.ref === el)
+  emits('highlight', highlightedItem)
+}
+
+function highlightFirstItem() {
+  nextTick(() => {
+    const items = getCollectionItems()
+    if (items.length) {
+      changeHighlight(items[0])
+    }
+  })
+}
+
 async function highlightSelected() {
   await nextTick()
   const collection = getCollectionItems()
@@ -319,6 +319,12 @@ watch(modelValue, () => {
     })
   }
 }, { immediate: true, deep: true })
+
+defineExpose({
+  highlightedElement,
+  highlightFirstItem,
+  highlightSelected,
+})
 
 provideGridboxRootContext({
   modelValue,
