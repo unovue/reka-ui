@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { standardColorsList } from '@/shared/constant'
+import { colorList } from '@/shared/constant'
 import { GridboxCell, GridboxContent, GridboxRoot, GridboxRow } from '..'
 
 const selectedColor = ref<string>('blue')
 
+const options = colorList.slice(0, 12).map(color => color.toLowerCase())
 const colorsGrid = computed(() => {
   const grid: string[][] = []
   const colsPerRow = 2
 
-  for (let i = 0; i < standardColorsList.length; i += colsPerRow) {
-    grid.push(standardColorsList.slice(i, i + colsPerRow))
+  for (let i = 0; i < options.length; i += colsPerRow) {
+    grid.push(options.slice(i, i + colsPerRow))
   }
 
   return grid

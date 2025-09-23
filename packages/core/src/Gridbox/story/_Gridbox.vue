@@ -2,7 +2,7 @@
 import type { GridboxRootEmits, GridboxRootProps } from '..'
 import { computed } from 'vue'
 import { useForwardPropsEmits } from '@/shared'
-import { standardColorsList } from '@/shared/constant'
+import { colorList } from '@/shared/constant'
 import { GridboxCell, GridboxContent, GridboxRoot, GridboxRow } from '..'
 
 const props = defineProps<GridboxRootProps>()
@@ -10,13 +10,13 @@ const emits = defineEmits<GridboxRootEmits>()
 
 const forwarded = useForwardPropsEmits(props, emits)
 
-// Use the same grid structure as the demo - 2 colors per row
+const options = colorList.slice(0, 12).map(color => color.toLowerCase())
 const colorsGrid = computed(() => {
   const grid: string[][] = []
   const colsPerRow = 2
 
-  for (let i = 0; i < standardColorsList.length; i += colsPerRow) {
-    grid.push(standardColorsList.slice(i, i + colsPerRow))
+  for (let i = 0; i < options.length; i += colsPerRow) {
+    grid.push(options.slice(i, i + colsPerRow))
   }
 
   return grid
