@@ -9,7 +9,7 @@ import {
   isToday,
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
-import { getDaysInMonth, toDate } from '@/date'
+import { getDaysInMonth, parseStringToDateValue, toDate } from '@/date'
 import { useKbd } from '@/shared'
 import { getSelectableCells } from './utils'
 
@@ -140,6 +140,8 @@ function handleArrowKey(e: KeyboardEvent) {
       if (allCollectionItems[newIndex].hasAttribute('data-disabled')) {
         shiftFocus(allCollectionItems[newIndex], add)
       }
+      const newDate = allCollectionItems[newIndex].getAttribute('data-value')
+      rootContext.onPlaceholderChange(parseStringToDateValue(newDate!, rootContext.placeholder.value))
       allCollectionItems[newIndex].focus()
       return
     }
@@ -159,15 +161,20 @@ function handleArrowKey(e: KeyboardEvent) {
           if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
             shiftFocus(newCollectionItems[computedIndex], add)
           }
+          const newDate = newCollectionItems[computedIndex].getAttribute('data-value')
           newCollectionItems[
             computedIndex
           ].focus()
+
+          rootContext.onPlaceholderChange(parseStringToDateValue(newDate!, rootContext.placeholder.value))
           return
         }
         const computedIndex = newCollectionItems.length - Math.abs(newIndex)
         if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
           shiftFocus(newCollectionItems[computedIndex], add)
         }
+        const newDate = newCollectionItems[computedIndex].getAttribute('data-value')
+        rootContext.onPlaceholderChange(parseStringToDateValue(newDate!, rootContext.placeholder.value))
         newCollectionItems[
           computedIndex
         ].focus()
@@ -195,6 +202,8 @@ function handleArrowKey(e: KeyboardEvent) {
           if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
             shiftFocus(newCollectionItems[computedIndex], add)
           }
+          const newDate = newCollectionItems[computedIndex].getAttribute('data-value')
+          rootContext.onPlaceholderChange(parseStringToDateValue(newDate!, rootContext.placeholder.value))
           newCollectionItems[computedIndex].focus()
           return
         }
@@ -203,6 +212,9 @@ function handleArrowKey(e: KeyboardEvent) {
         if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
           shiftFocus(newCollectionItems[computedIndex], add)
         }
+
+        const newDate = newCollectionItems[computedIndex].getAttribute('data-value')
+        rootContext.onPlaceholderChange(parseStringToDateValue(newDate!, rootContext.placeholder.value))
 
         newCollectionItems[computedIndex].focus()
       })

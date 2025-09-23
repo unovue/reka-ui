@@ -899,3 +899,64 @@ describe('calendar - edge cases', () => {
     expect(getByTestId('date-0-1-31')).toHaveFocus()
   })
 })
+
+describe('calendar - tabindex states', () => {
+  it('sets tabindex to 0 for focused date', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const focusedDay = getByTestId('date-1-20')
+    expect(focusedDay).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to -1 for non-focused dates in current view', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const nonFocusedDay = getByTestId('date-1-15')
+    expect(nonFocusedDay).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('sets tabindex to undefined for dates outside current view', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const outsideViewDay = getByTestId('date-12-31')
+    expect(outsideViewDay).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to undefined for disabled dates', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+    })
+
+    const disabledDay = getByTestId('date-1-15')
+    expect(disabledDay).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to undefined for dates outside visible view', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        numberOfMonths: 1,
+      },
+    })
+
+    // Dates outside visible view have data-outside-visible-view
+    const outsideVisibleDay = getByTestId('date-0-12-30')
+    expect(outsideVisibleDay).toHaveAttribute('data-outside-visible-view')
+    expect(outsideVisibleDay).not.toHaveAttribute('tabindex')
+  })
+})
