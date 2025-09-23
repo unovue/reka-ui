@@ -7,24 +7,24 @@ import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 type GridboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
+  onValueChange: (val: T) => void
   multiple: Ref<boolean>
-  disabled: Ref<boolean>
-  by?: string | ((a: T, b: T) => boolean)
-
-  // Navigation state
-  focusedElement: Ref<HTMLElement | null>
-  selectionBehavior: Ref<'toggle' | 'replace'>
   dir: Ref<Direction>
+  disabled: Ref<boolean>
+  highlightOnHover: Ref<boolean>
+  highlightedElement: Ref<HTMLElement | null>
+  by?: string | ((a: T, b: T) => boolean)
+  firstValue?: Ref<T | undefined>
+  selectionBehavior?: Ref<'toggle' | 'replace'>
+
   focusable: Ref<boolean>
 
-  // Navigation methods
-  onValueChange: (val: T) => void
-  changeFocus: (el: HTMLElement, scrollIntoView?: boolean) => void
+  onLeave: (event: Event) => void
+  onEnter: (event: Event) => void
+  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean) => void
   onKeydownNavigation: (event: KeyboardEvent) => void
   onKeydownEnter: (event: KeyboardEvent) => void
   onKeydownTypeAhead: (event: KeyboardEvent) => void
-  onEnter: (event: Event) => void
-  onLeave: (event: Event) => void
   highlightFirstItem: () => void
 }
 
@@ -34,7 +34,10 @@ export const [injectGridboxRootContext, provideGridboxRootContext]
 export interface GridboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the gridbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
-  /** The value of the gridbox when initially rendered. Use when you do not need to control the state of the gridbox. */
+  /**
+   * The value of the gridbox when initially rendered.
+   * Use when you do not need to control the state of the gridbox.
+   */
   defaultValue?: T | Array<T>
   /** Whether multiple options can be selected or not. */
   multiple?: boolean
@@ -42,20 +45,28 @@ export interface GridboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   disabled?: boolean
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
   by?: string | ((a: T, b: T) => boolean)
-  /** How multiple selection should behave in the collection. @defaultValue 'toggle' */
+  /**
+   * How multiple selection should behave in the collection.
+   * @defaultValue 'toggle'
+   */
   selectionBehavior?: 'toggle' | 'replace'
-  /** The reading direction when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR. */
+  /** When `true`, hover over item will trigger highlight */
+  highlightOnHover?: boolean
+  /**
+   * The reading direction when applicable.
+   * If omitted, inherits globally from `ConfigProvider` or assumes LTR.
+   */
   dir?: Direction
 }
 
 export type GridboxRootEmits<T = AcceptableValue> = {
   /** Event handler called when the value changes. */
   'update:modelValue': [value: T]
-  /** Event handler when focused element changes. */
-  'focus': [payload: { ref: HTMLElement, value: T } | undefined]
+  /** Event handler when highlighted element changes. */
+  'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when container is being focused. Can be prevented. */
   'entryFocus': [event: CustomEvent]
-  /** Event handler called when the mouse leave the container */
+  /** Event handler called when the mouse leave the container. */
   'leave': [event: Event]
 }
 </script>
@@ -78,7 +89,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { multiple, disabled, selectionBehavior, dir: propDir } = toRefs(props)
+const { multiple, disabled, selectionBehavior, highlightOnHover, dir: propDir } = toRefs(props)
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const { getItems } = useCollection<{ value: T, row: number, col: number }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
@@ -86,11 +97,11 @@ const kbd = useKbd()
 const dir = useDirection(propDir)
 
 const isFormControl = useFormControl(currentElement)
-const focusedElement = ref<HTMLElement | null>(null)
+const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isUserAction = ref(false)
 const focusable = ref(true)
-const isComposing = ref(false)
+const firstValue = ref<T>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
@@ -137,15 +148,12 @@ function getGridStructure() {
   const cellMap = new Map<HTMLElement, { row: number, col: number, value: T }>()
 
   let currentRow = -1
-  let currentCol = 0
-
   items.forEach((item) => {
     const row = Number(item.ref.dataset.row) || 0
     const col = Number(item.ref.dataset.col) || 0
 
     if (row !== currentRow) {
       currentRow = row
-      currentCol = 0
       grid[row] = grid[row] || []
     }
 
@@ -156,30 +164,26 @@ function getGridStructure() {
   return { grid, cellMap }
 }
 
-function changeFocus(el: HTMLElement, scrollIntoView = true) {
+function changeHighlight(el: HTMLElement, scrollIntoView = true) {
   if (!el)
     return
 
-  focusedElement.value = el
-  if (focusable.value) {
-    focusedElement.value.focus()
-  }
-  if (scrollIntoView) {
-    focusedElement.value.scrollIntoView({ block: 'nearest' })
-  }
+  highlightedElement.value = el
+  if (focusable.value)
+    highlightedElement.value.focus()
+  if (scrollIntoView)
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
 
-  const focusedItem = getItems().find(i => i.ref === el)
-  emits('focus', focusedItem)
+  const highlightedItem = getItems().find(i => i.ref === el)
+  emits('highlight', highlightedItem)
 }
 
 function onKeydownEnter(event: KeyboardEvent) {
-  if (focusedElement.value && focusedElement.value.isConnected) {
+  if (highlightedElement.value && highlightedElement.value.isConnected) {
     event.preventDefault()
     event.stopPropagation()
 
-    if (!isComposing.value) {
-      focusedElement.value.click()
-    }
+    highlightedElement.value.click()
   }
 }
 
@@ -196,13 +200,13 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
     modelValue.value = [...values]
     event.preventDefault()
     if (collection.length) {
-      changeFocus(collection[collection.length - 1].ref)
+      changeHighlight(collection[collection.length - 1].ref)
     }
   }
   else if (!isMetaKey) {
     const el = handleTypeaheadSearch(event.key, getItems())
     if (el) {
-      changeFocus(el)
+      changeHighlight(el)
     }
   }
 
@@ -212,11 +216,11 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
 }
 
 function onKeydownNavigation(event: KeyboardEvent) {
-  if (!focusedElement.value)
+  if (!highlightedElement.value)
     return
 
   const { grid, cellMap } = getGridStructure()
-  const currentCell = cellMap.get(focusedElement.value)
+  const currentCell = cellMap.get(highlightedElement.value)
   if (!currentCell)
     return
 
@@ -262,7 +266,7 @@ function onKeydownNavigation(event: KeyboardEvent) {
       valueComparator(i.value.value, targetValue, props.by),
     )
     if (targetItem) {
-      changeFocus(targetItem.ref)
+      changeHighlight(targetItem.ref)
     }
   }
 }
@@ -271,17 +275,19 @@ function highlightFirstItem() {
   nextTick(() => {
     const items = getCollectionItems()
     if (items.length) {
-      changeFocus(items[0])
+      changeHighlight(items[0])
     }
   })
 }
 
 function onLeave(event: Event) {
-  const el = focusedElement.value
-  if (el?.isConnected) {
+  const el = highlightedElement.value
+
+  if ((el as Node)?.isConnected) {
     previousElement.value = el
   }
-  focusedElement.value = null
+
+  highlightedElement.value = null
   emits('leave', event)
 }
 
@@ -294,55 +300,54 @@ function onEnter(event: Event) {
     return
 
   if (previousElement.value) {
-    changeFocus(previousElement.value)
+    changeHighlight(previousElement.value)
   }
   else {
-    const items = getCollectionItems()
-    if (items.length) {
-      changeFocus(items[0])
-    }
+    const el = getCollectionItems()?.[0]
+    changeHighlight(el)
   }
 }
 
-function focusSelected(event?: Event) {
-  nextTick(() => {
-    const items = getCollectionItems()
-    const selectedItem = items.find(i => i.dataset.state === 'checked')
-    if (selectedItem) {
-      changeFocus(selectedItem)
-    }
-    else if (items.length) {
-      changeFocus(items[0])
-    }
-  })
+async function highlightSelected() {
+  await nextTick()
+  const collection = getCollectionItems()
+  const item = collection.find(i => i.dataset.state === 'checked')
+  if (item)
+    changeHighlight(item)
+  else if (collection.length)
+    changeHighlight(collection[0])
 }
 
 // Watch for programmatic changes
 watch(modelValue, () => {
   if (!isUserAction.value) {
     nextTick(() => {
-      focusSelected()
+      highlightSelected()
     })
   }
 }, { immediate: true, deep: true })
 
 provideGridboxRootContext({
   modelValue,
-  multiple,
-  disabled,
-  by: props.by,
-  focusedElement,
-  selectionBehavior,
-  dir,
-  focusable,
   // @ts-expect-error Ignore generic types mismatch.
   onValueChange,
-  changeFocus,
+  multiple,
+  dir,
+  disabled,
+  highlightOnHover,
+  highlightedElement,
+  by: props.by,
+  firstValue,
+  selectionBehavior,
+
+  focusable,
+
+  onLeave,
+  onEnter,
+  changeHighlight,
   onKeydownNavigation,
   onKeydownEnter,
   onKeydownTypeAhead,
-  onEnter,
-  onLeave,
   highlightFirstItem,
 })
 </script>
@@ -358,7 +363,7 @@ provideGridboxRootContext({
     @focusout="async (event: FocusEvent) => {
       const target = (event.relatedTarget || event.target) as HTMLElement | null
       await nextTick()
-      if (focusedElement && currentElement && !currentElement.contains(target)) {
+      if (highlightedElement && currentElement && !currentElement.contains(target)) {
         onLeave(event)
       }
     }"

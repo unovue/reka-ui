@@ -50,7 +50,7 @@ const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectGridboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value === rootContext.focusedElement.value)
+const isHighlighted = computed(() => currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
 
@@ -101,7 +101,7 @@ provideGridboxCellContext({
       :data-state="isSelected ? 'checked' : 'uncheked'"
       :data-highlighted="isHighlighted ? '' : undefined"
       @click.left="handleClick"
-      @focus="() => rootContext.changeFocus(currentElement!)"
+      @focus="() => rootContext.changeHighlight(currentElement!)"
     >
       <slot />
     </Primitive>
