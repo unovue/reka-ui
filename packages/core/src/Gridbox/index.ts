@@ -21,3 +21,7 @@ export {
   default as GridboxRow,
   type GridboxRowProps,
 } from './GridboxRow.vue'
+export {
+  default as GridboxVirtualizer,
+  type GridboxVirtualizerProps,
+} from './GridboxVirtualizer.vue'

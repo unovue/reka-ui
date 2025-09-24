@@ -43,7 +43,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -71,7 +71,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -99,7 +99,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -128,7 +128,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -153,7 +153,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': colorObj.label }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ colorObj.label }}</span>
             </GridboxCell>
@@ -182,7 +182,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': colorObj.label }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ colorObj.label }}</span>
             </GridboxCell>
@@ -211,7 +211,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -240,7 +240,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -268,7 +268,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>
@@ -299,7 +299,7 @@ const colorsGrid = computed(() => {
               :row="rowIdx"
               :col="colIdx"
               :style="{ 'background-color': color }"
-              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative"
+              class="p-2 rounded-md text-center data-[highlighted]:ring-2 data-[highlighted]:ring-white data-[state=checked]:ring-2 data-[state=checked]:ring-red-500 relative cursor-pointer"
             >
               <span class="bg-white px-1 py-0.5 rounded text-sm text-black">{{ color }}</span>
             </GridboxCell>

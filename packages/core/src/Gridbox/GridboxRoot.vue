@@ -13,6 +13,10 @@ type GridboxRootContext<T> = {
   disabled: Ref<boolean>
   highlightOnHover: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
+  isVirtual: Ref<boolean>
+  virtualFocusHook: EventHook<Event | null | undefined>
+  virtualKeydownHook: EventHook<KeyboardEvent>
+  virtualHighlightHook: EventHook<any>
   by?: string | ((a: T, b: T) => boolean)
   firstValue?: Ref<T | undefined>
   selectionBehavior?: Ref<'toggle' | 'replace'>
@@ -72,8 +76,9 @@ export type GridboxRootEmits<T = AcceptableValue> = {
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
+import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { useVModel } from '@vueuse/core'
+import { createEventHook, useVModel } from '@vueuse/core'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 
@@ -101,6 +106,10 @@ const previousElement = ref<HTMLElement | null>(null)
 const isUserAction = ref(false)
 const focusable = ref(true)
 const firstValue = ref<T>()
+const isVirtual = ref(false)
+const virtualFocusHook = createEventHook<Event | null | undefined>()
+const virtualKeydownHook = createEventHook<KeyboardEvent>()
+const virtualHighlightHook = createEventHook<T>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
@@ -177,15 +186,20 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
     return
 
   isUserAction.value = true
-  const isMetaKey = event.altKey || event.ctrlKey || event.metaKey
+  if (isVirtual.value) {
+    virtualKeydownHook.trigger(event)
+  }
+  else {
+    const isMetaKey = event.altKey || event.ctrlKey || event.metaKey
 
-  if (isMetaKey && event.key === 'a' && multiple.value) {
-    const collection = getItems()
-    const values = collection.map(i => i.value.value)
-    modelValue.value = [...values]
-    event.preventDefault()
-    if (collection.length) {
-      changeHighlight(collection[collection.length - 1].ref)
+    if (isMetaKey && event.key === 'a' && multiple.value) {
+      const collection = getItems()
+      const values = collection.map(i => i.value.value)
+      modelValue.value = [...values]
+      event.preventDefault()
+      if (collection.length) {
+        changeHighlight(collection[collection.length - 1].ref)
+      }
     }
   }
 
@@ -195,6 +209,10 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
 }
 
 function onKeydownNavigation(event: KeyboardEvent) {
+  if (isVirtual.value) {
+    return virtualKeydownHook.trigger(event)
+  }
+
   if (!highlightedElement.value)
     return
 
@@ -292,6 +310,19 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true) {
   emits('highlight', highlightedItem)
 }
 
+function highlightItem(value: T) {
+  if (isVirtual.value) {
+    virtualHighlightHook.trigger(value)
+  }
+  else {
+    const item = getItems().find(i => valueComparator(i.value.value, value, props.by))
+    if (item) {
+      highlightedElement.value = item.ref
+      changeHighlight(item.ref)
+    }
+  }
+}
+
 function highlightFirstItem() {
   nextTick(() => {
     const items = getCollectionItems()
@@ -301,14 +332,20 @@ function highlightFirstItem() {
   })
 }
 
-async function highlightSelected() {
+async function highlightSelected(event?: Event) {
   await nextTick()
-  const collection = getCollectionItems()
-  const item = collection.find(i => i.dataset.state === 'checked')
-  if (item)
-    changeHighlight(item)
-  else if (collection.length)
-    changeHighlight(collection[0])
+  if (isVirtual.value) {
+    // Trigger on nextTick for Virtualizer to be mounted
+    virtualFocusHook.trigger(event)
+  }
+  else {
+    const collection = getCollectionItems()
+    const item = collection.find(i => i.dataset.state === 'checked')
+    if (item)
+      changeHighlight(item)
+    else if (collection.length)
+      changeHighlight(collection[0])
+  }
 }
 
 // Watch for programmatic changes
@@ -322,6 +359,7 @@ watch(modelValue, () => {
 
 defineExpose({
   highlightedElement,
+  highlightItem,
   highlightFirstItem,
   highlightSelected,
 })
@@ -335,6 +373,10 @@ provideGridboxRootContext({
   disabled,
   highlightOnHover,
   highlightedElement,
+  isVirtual,
+  virtualFocusHook,
+  virtualKeydownHook,
+  virtualHighlightHook,
   by: props.by,
   firstValue,
   selectionBehavior,
