@@ -41,9 +41,13 @@ type DatePickerRootContext = {
   onPlaceholderChange: (date: DateValue) => void
   dir: Ref<Direction>
   step: Ref<DateStep | undefined>
+  closeOnSelect: Ref<boolean>
 }
 
-export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'>
+export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
+  /** Whether or not to close the popover on date select */
+  closeOnSelect?: boolean
+}
 
 export type DatePickerRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -79,6 +83,7 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   locale: 'en',
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  closeOnSelect: false,
 })
 const emits = defineEmits<DatePickerRootEmits & PopoverRootEmits>()
 const {
@@ -106,6 +111,7 @@ const {
   defaultValue,
   dir: propDir,
   step,
+  closeOnSelect,
 } = toRefs(props)
 
 const dir = useDirection(propDir)
@@ -137,6 +143,9 @@ const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()
 watch(modelValue, (value) => {
   if (value && value.compare(placeholder.value) !== 0) {
     placeholder.value = value.copy()
+  }
+  if (closeOnSelect.value) {
+    open.value = false
   }
 })
 
@@ -182,6 +191,7 @@ provideDatePickerRootContext({
   onPlaceholderChange(date: DateValue) {
     placeholder.value = date.copy()
   },
+  closeOnSelect,
 })
 </script>
 

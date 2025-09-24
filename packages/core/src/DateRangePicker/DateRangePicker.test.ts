@@ -205,4 +205,44 @@ describe('dateRangePicker', async () => {
       }
     }
   })
+
+  it('should close the picker on select when `closeOnSelect` is true', async () => {
+    const { user, trigger, getByTestId } = setup({
+      dateFieldProps: {
+        defaultValue: calendarDate,
+        closeOnSelect: true,
+      },
+    })
+
+    await user.click(trigger)
+
+    const popoverContent = getByTestId('popover-content')
+    expect(popoverContent).toBeVisible()
+
+    const startDay = getByTestId('date-1-1')
+    const endDay = getByTestId('date-1-10')
+    await user.click(startDay)
+    await user.click(endDay)
+    expect(popoverContent).not.toBeVisible()
+  })
+
+  it('should not close the picker on select when `closeOnSelect` is true', async () => {
+    const { user, trigger, getByTestId } = setup({
+      dateFieldProps: {
+        defaultValue: calendarDate,
+        closeOnSelect: false,
+      },
+    })
+
+    await user.click(trigger)
+
+    const popoverContent = getByTestId('popover-content')
+    expect(popoverContent).toBeVisible()
+
+    const startDay = getByTestId('date-1-1')
+    const endDay = getByTestId('date-1-10')
+    await user.click(startDay)
+    await user.click(endDay)
+    expect(popoverContent).toBeVisible()
+  })
 })

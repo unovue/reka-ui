@@ -46,9 +46,13 @@ type DateRangePickerRootContext = {
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays?: Ref<number | undefined>
   step: Ref<DateStep | undefined>
+  closeOnSelect?: Ref<boolean>
 }
 
-export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'>
+export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
+  /** Whether or not to close the popover on range select */
+  closeOnSelect?: boolean
+}
 
 export type DateRangePickerRootEmits = {
   /** Event handler called whenever the model value changes */
@@ -90,6 +94,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
   maximumDays: undefined,
+  closeOnSelect: false,
 })
 const emits = defineEmits<DateRangePickerRootEmits & PopoverRootEmits>()
 const {
@@ -120,6 +125,7 @@ const {
   fixedDate,
   maximumDays,
   step,
+  closeOnSelect,
 } = toRefs(props)
 
 const dir = useDirection(propsDir)
@@ -151,6 +157,12 @@ const dateFieldRef = ref<InstanceType<typeof DateRangeFieldRoot> | undefined>()
 watch(modelValue, (value) => {
   if (value && value.start && value.start.compare(placeholder.value) !== 0) {
     placeholder.value = value.start.copy()
+  }
+
+  if (value.start && value.end) {
+    if (closeOnSelect.value) {
+      open.value = false
+    }
   }
 })
 
@@ -195,6 +207,7 @@ provideDateRangePickerRootContext({
   onPlaceholderChange(date: DateValue) {
     placeholder.value = date.copy()
   },
+  closeOnSelect,
 })
 </script>
 

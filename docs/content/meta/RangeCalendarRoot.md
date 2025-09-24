@@ -205,6 +205,11 @@
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
     'type': '[date: DateValue]'
+  },
+  {
+    'name': 'update:validModelValue',
+    'description': '<p>Event handler called whenever there is a new validModel</p>\n',
+    'type': '[date: DateRange]'
   }
 ]" />
 

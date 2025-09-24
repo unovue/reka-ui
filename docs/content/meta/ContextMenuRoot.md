@@ -13,6 +13,13 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'pressOpenDelay',
+    'description': '<p>The duration from when the trigger is pressed until the menu openes.</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '700'
   }
 ]" />
 

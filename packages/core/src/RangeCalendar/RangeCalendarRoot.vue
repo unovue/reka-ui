@@ -11,7 +11,6 @@ import { useCalendar } from '@/Calendar/useCalendar'
 import { isBefore } from '@/date'
 import {
   createContext,
-  isNullish,
   useDirection,
   useKbd,
   useLocale,
@@ -130,6 +129,8 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
 export type RangeCalendarRootEmits = {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
+  /** Event handler called whenever there is a new validModel */
+  'update:validModelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
   /** Event handler called whenever the start value changes */
@@ -142,7 +143,7 @@ export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
 
 <script setup lang="ts">
 import { useEventListener, useVModel } from '@vueuse/core'
-import { computed, onMounted, ref, toRefs, watch } from 'vue'
+import { onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
@@ -226,22 +227,22 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<DateRange>
 
-const currentModelValue = computed(() =>
-  isNullish(modelValue.value)
-    ? { start: undefined, end: undefined }
-    : modelValue.value,
-)
+const validModelValue = ref(modelValue.value) as Ref<DateRange>
+
+watch(validModelValue, (value) => {
+  emits('update:validModelValue', value)
+})
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
-  defaultValue: currentModelValue.value.start,
+  defaultValue: modelValue.value.start,
   locale: props.locale,
 })
 
-const startValue = ref(currentModelValue.value.start) as Ref<
+const startValue = ref(modelValue.value.start) as Ref<
   DateValue | undefined
 >
-const endValue = ref(currentModelValue.value.end) as Ref<DateValue | undefined>
+const endValue = ref(modelValue.value.end) as Ref<DateValue | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
@@ -333,7 +334,7 @@ watch(startValue, (_startValue) => {
 })
 
 watch([startValue, endValue], ([_startValue, _endValue]) => {
-  const value = currentModelValue.value
+  const value = modelValue.value
 
   if (
     value
@@ -348,16 +349,7 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   }
 
   isEditing.value = true
-  if (_startValue && _endValue) {
-    isEditing.value = false
-    if (
-      value.start
-      && value.end
-      && isEqualDay(value.start, _startValue)
-      && isEqualDay(value.end, _endValue)
-    ) {
-      return
-    }
+  if (_endValue && _startValue) {
     if (isBefore(_endValue, _startValue)) {
       modelValue.value = {
         start: _endValue.copy(),
@@ -370,6 +362,23 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
         end: _endValue.copy(),
       }
     }
+
+    isEditing.value = false
+    validModelValue.value = { start: modelValue.value.start?.copy(), end: modelValue.value.end?.copy() }
+  }
+  else {
+    if (_startValue) {
+      modelValue.value = {
+        start: _startValue.copy(),
+        end: undefined,
+      }
+    }
+    else {
+      modelValue.value = {
+        start: _endValue?.copy(),
+        end: undefined,
+      }
+    }
   }
 })
 
@@ -377,8 +386,8 @@ const kbd = useKbd()
 useEventListener('keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     // Abort start and end selection
-    startValue.value = modelValue.value.start?.copy()
-    endValue.value = modelValue.value.end?.copy()
+    startValue.value = validModelValue.value.start?.copy()
+    endValue.value = validModelValue.value.end?.copy()
   }
 })
 

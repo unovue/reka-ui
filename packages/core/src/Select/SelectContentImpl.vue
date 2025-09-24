@@ -301,7 +301,12 @@ provideSelectContentContext({
           :id="rootContext.contentId"
           :ref="
             (vnode: ComponentPublicInstance) => {
-              content = unrefElement(vnode) as HTMLElement
+              const el = unrefElement(vnode) as HTMLElement | undefined
+              // special case for PopperContent
+              if (el?.hasAttribute('data-reka-popper-content-wrapper'))
+                content = el.firstElementChild as HTMLElement
+              else
+                content = el
               return undefined
             }
           "

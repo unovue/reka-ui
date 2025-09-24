@@ -20,7 +20,7 @@ withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusab
     :data-hidden="feature === 'fully-hidden' ? '' : undefined"
     :tabindex="feature === 'fully-hidden' ? '-1' : undefined"
     :style="{
-      // See: https://github.com/twbs/bootstrap/blob/master/scss/mixins/_screen-reader.scss
+      // See: https://github.com/twbs/bootstrap/blob/a360960b8dfdb4bf48f87539c2243458fa0366f7/scss/mixins/_visually-hidden.scss
       position: 'absolute',
       border: 0,
       width: '1px',
@@ -32,6 +32,11 @@ withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusab
       clipPath: 'inset(50%)',
       whiteSpace: 'nowrap',
       wordWrap: 'normal',
+
+      // Prevent causing unnecessary container scroll
+      // @see https://github.com/unovue/reka-ui/issues/2127
+      top: '-1px',
+      left: '-1px',
     }"
   >
     <slot />
