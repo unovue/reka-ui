@@ -281,7 +281,8 @@ function handleArrowKey(e: KeyboardEvent) {
 <template>
   <Primitive
     ref="primitiveElement"
-    v-bind="props"
+    :as="as"
+    :as-child="asChild"
     role="button"
     :aria-label="labelText"
     data-reka-calendar-cell-trigger
