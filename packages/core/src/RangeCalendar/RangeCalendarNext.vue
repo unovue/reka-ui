@@ -1,8 +1,6 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { reactiveOmit } from '@vueuse/shared'
-import { useForwardProps } from '@/shared'
 
 export interface RangeCalendarNextProps extends PrimitiveProps {
   /** The function to be used for the next page. Overwrites the `nextPage` function set on the `RangeCalendarRoot`. */
@@ -25,10 +23,6 @@ import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 const props = withDefaults(defineProps<RangeCalendarNextProps>(), { as: 'button' })
 defineSlots<RangeCalendarNextSlot>()
 
-const delegatedProps = reactiveOmit(props, ['nextPage'])
-
-const forwarded = useForwardProps(delegatedProps)
-
 const disabled = computed(() => rootContext.disabled.value || rootContext.isNextButtonDisabled(props.nextPage))
 
 const rootContext = injectRangeCalendarRootContext()
@@ -36,7 +30,8 @@ const rootContext = injectRangeCalendarRootContext()
 
 <template>
   <Primitive
-    v-bind="forwarded"
+    :as="as"
+    :as-child="asChild"
     aria-label="Next page"
     :type="as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"

@@ -26,7 +26,6 @@ import { getCheckedState, isIndeterminate } from './utils'
 const props = withDefaults(defineProps<MenuCheckboxItemProps>(), {
   modelValue: false,
 })
-
 const emits = defineEmits<MenuCheckboxItemEmits>()
 
 defineSlots<{
@@ -37,7 +36,6 @@ defineSlots<{
 }>()
 
 const delegatedProps = reactiveOmit(props, ['modelValue'])
-
 const forwarded = useForwardProps(delegatedProps)
 
 const modelValue = useVModel(props, 'modelValue', emits)

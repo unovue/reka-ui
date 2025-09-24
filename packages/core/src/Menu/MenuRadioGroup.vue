@@ -29,7 +29,6 @@ import MenuGroup from './MenuGroup.vue'
 const props = withDefaults(defineProps<MenuRadioGroupProps>(), {
   modelValue: '',
 })
-
 const emits = defineEmits<MenuRadioGroupEmits>()
 
 defineSlots<{
@@ -40,7 +39,6 @@ defineSlots<{
 }>()
 
 const delegatedProps = reactiveOmit(props, ['modelValue'])
-
 const forwarded = useForwardProps(delegatedProps)
 
 const modelValue = useVModel(props, 'modelValue', emits)

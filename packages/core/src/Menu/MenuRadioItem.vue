@@ -25,7 +25,6 @@ const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()
 
 const delegatedProps = reactiveOmit(props, ['value'])
-
 const forwarded = useForwardProps(delegatedProps)
 
 const { value } = toRefs(props)
