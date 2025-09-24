@@ -137,11 +137,17 @@ function handleArrowKey(e: KeyboardEvent) {
     const newIndex = index + add
 
     if (newIndex >= 0 && newIndex < allCollectionItems.length) {
+      const newDate = allCollectionItems[newIndex].getAttribute('data-value')
+      const newDateValue = parseStringToDateValue(newDate!, rootContext.placeholder.value)
+      const minValue = rootContext.minValue.value
+      const maxValue = rootContext.maxValue.value
+      if ((minValue && newDateValue.compare(minValue) < 0) || (maxValue && newDateValue.compare(maxValue) > 0))
+        return
+
       if (allCollectionItems[newIndex].hasAttribute('data-disabled')) {
         shiftFocus(allCollectionItems[newIndex], add)
       }
-      const newDate = allCollectionItems[newIndex].getAttribute('data-value')
-      rootContext.onPlaceholderChange(parseStringToDateValue(newDate!, rootContext.placeholder.value))
+      rootContext.onPlaceholderChange(newDateValue)
       allCollectionItems[newIndex].focus()
       return
     }
