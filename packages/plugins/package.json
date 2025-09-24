@@ -18,8 +18,8 @@
     "stub": "unbuild --stub"
   },
   "dependencies": {
-    "@nuxt/kit": "^3.15.4",
-    "@nuxt/schema": "^3.15.4",
+    "@nuxt/kit": "^4.1.2",
+    "@nuxt/schema": "^4.1.2",
     "reka-ui": "link:../core",
     "unbuild": "^2.0.0",
     "unplugin-vue-components": "^29.0.0"
