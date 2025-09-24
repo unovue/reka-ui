@@ -22,10 +22,9 @@ import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
 import { cloneVNode, computed, Fragment, useSlots } from 'vue'
 import { useCollection } from '@/Collection'
-import { getActiveElement, useKbd, valueComparator } from '@/shared'
+import { getActiveElement, queryCheckedElement, useKbd, valueComparator } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
 import { injectGridboxRootContext } from './GridboxRoot.vue'
-import { queryCheckedElement } from './utils'
 
 const props = defineProps<GridboxVirtualizerProps<T>>()
 

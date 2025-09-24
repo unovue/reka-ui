@@ -21,10 +21,9 @@ import { refAutoReset } from '@vueuse/shared'
 import { cloneVNode, computed, Fragment, useSlots } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
-import { compare, findValuesBetween, getActiveElement } from '@/shared'
+import { compare, findValuesBetween, getActiveElement, queryCheckedElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { queryCheckedElement } from './utils'
 
 const props = defineProps<ListboxVirtualizerProps<T>>()
 
