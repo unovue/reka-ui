@@ -2,8 +2,7 @@
 import type { Ref } from 'vue'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
-import { compare, valueComparator } from './utils'
+import { compare, createContext, isNullish, useDirection, useFormControl, valueComparator } from '@/shared'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /** The controlled open state of the Select. Can be bind as `v-model:open`. */

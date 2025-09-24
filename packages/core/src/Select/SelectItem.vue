@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId, valueComparator } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -50,7 +50,7 @@ import {
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
-import { SELECTION_KEYS, valueComparator } from './utils'
+import { SELECTION_KEYS } from './utils'
 
 const props = defineProps<SelectItemProps>()
 const emits = defineEmits<SelectItemEmits<T>>()

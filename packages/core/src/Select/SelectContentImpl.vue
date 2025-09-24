@@ -13,9 +13,9 @@ import {
   useForwardProps,
   useHideOthers,
   useTypeahead,
+  valueComparator,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
-import { valueComparator } from './utils'
 
 export interface SelectContentContext {
   content?: Ref<HTMLElement | undefined>
