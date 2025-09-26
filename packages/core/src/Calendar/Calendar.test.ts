@@ -889,6 +889,7 @@ describe('calendar - edge cases', () => {
     expect(heading).toHaveTextContent('January - April 2025')
 
     await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('heading')).toHaveTextContent('February - May 2025')
     expect(getByTestId('date-3-5-1')).toHaveFocus()
 
     const firstDayOfMonth = getByTestId('date-0-2-1')
