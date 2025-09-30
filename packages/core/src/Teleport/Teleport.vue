@@ -29,18 +29,41 @@ export interface TeleportProps {
 
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
+import { computed, getCurrentInstance } from 'vue'
+import { getElementContainer } from '@/shared'
 
-withDefaults(defineProps<TeleportProps>(), {
+const props = withDefaults(defineProps<TeleportProps>(), {
   to: 'body',
 })
 
 const isMounted = useMounted()
+
+// Make teleport shadow DOM-aware
+const teleportTo = computed(() => {
+  // If an explicit target is provided, use it
+  if (props.to !== 'body') {
+    return props.to
+  }
+
+  // If default 'body' target, detect the appropriate container
+  const instance = getCurrentInstance()
+  if (instance && instance.vnode.el) {
+    const container = getElementContainer(instance.vnode.el)
+    if (container instanceof ShadowRoot) {
+      // For shadow DOM, use the shadow root as the container
+      return container as any
+    }
+  }
+
+  // Fall back to document.body for regular DOM
+  return 'body'
+})
 </script>
 
 <template>
   <Teleport
     v-if="isMounted || forceMount"
-    :to="to"
+    :to="teleportTo"
     :disabled="disabled"
     :defer="defer"
   >
