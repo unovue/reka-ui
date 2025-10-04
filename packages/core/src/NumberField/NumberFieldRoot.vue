@@ -109,7 +109,8 @@ const isIncreaseDisabled = computed(() => (
 )
 
 function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
-  inputEl.value?.focus()
+  if (!/iphone|ipad|ipod/i.test(navigator.userAgent))
+    inputEl.value?.focus()
   if (props.disabled || props.readonly)
     return
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
