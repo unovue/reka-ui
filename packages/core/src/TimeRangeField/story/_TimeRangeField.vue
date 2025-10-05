@@ -4,7 +4,7 @@ import type { TimeValue } from '@/shared/date'
 import { Label } from '@/Label'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from '..'
 
-const props = defineProps<{ timeFieldProps?: TimeRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: TimeValue) => void } }>()
+const props = defineProps<{ timeRangeFieldProps?: TimeRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: TimeValue) => void } }>()
 </script>
 
 <template>
@@ -14,7 +14,7 @@ const props = defineProps<{ timeFieldProps?: TimeRangeFieldRootProps, emits?: { 
   >
     Label</Label>
   <TimeRangeFieldRoot
-    v-bind="props.timeFieldProps"
+    v-bind="props.timeRangeFieldProps"
     id="time-field"
     v-slot="{ segments, modelValue }"
     data-testid="input"
