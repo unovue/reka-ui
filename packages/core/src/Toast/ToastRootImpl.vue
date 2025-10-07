@@ -203,12 +203,17 @@ provideToastRootContext({ onClose: handleClose })
         :as-child="asChild"
         :data-state="open ? 'open' : 'closed'"
         :data-swipe-direction="providerContext.swipeDirection.value"
-        :style="{ userSelect: 'none', touchAction: 'none' }"
+        :style="providerContext.disableSwipe.value
+          ? undefined
+          : { userSelect: 'none', touchAction: 'none' }"
         @pointerdown.left="(event: PointerEvent) => {
+          if (providerContext.disableSwipe.value) return;
+
           pointerStartRef = { x: event.clientX, y: event.clientY };
         }"
         @pointermove="(event: PointerEvent) => {
-          if (!pointerStartRef) return;
+          if (providerContext.disableSwipe.value || !pointerStartRef) return;
+
           const x = event.clientX - pointerStartRef.x;
           const y = event.clientY - pointerStartRef.y;
           const hasSwipeMoveStarted = Boolean(swipeDeltaRef);
@@ -237,6 +242,8 @@ provideToastRootContext({ onClose: handleClose })
           }
         }"
         @pointerup="(event: PointerEvent) => {
+          if (providerContext.disableSwipe.value) return;
+
           const delta = swipeDeltaRef;
           const target = event.target as HTMLElement;
           if (target.hasPointerCapture(event.pointerId)) {
