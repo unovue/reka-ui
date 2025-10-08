@@ -192,6 +192,10 @@ export default defineConfig({
                 text: `Time Field ${BadgeHTML('Alpha', true)}`,
                 link: '/docs/components/time-field',
               },
+              {
+                text: `Time Range Field ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/time-range-field',
+              },
             ],
           },
           {
