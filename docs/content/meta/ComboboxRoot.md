@@ -101,6 +101,13 @@
     'required': false
   },
   {
+    'name': 'resetModelValueOnClear',
+    'description': '<p>When <code>true</code> the <code>modelValue</code> will be reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>)</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'resetSearchTermOnBlur',
     'description': '<p>Whether to reset the searchTerm when the Combobox input blurred</p>\n',
     'type': 'boolean',

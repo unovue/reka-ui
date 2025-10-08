@@ -23,6 +23,9 @@ function handleClick() {
   if (rootContext.inputElement.value) {
     rootContext.inputElement.value.value = ''
     rootContext.inputElement.value.focus()
+    if (rootContext.resetModelValueOnClear?.value) {
+      rootContext.modelValue.value = rootContext.multiple.value ? [] : null
+    }
   }
 }
 </script>

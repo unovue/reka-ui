@@ -29,6 +29,7 @@ type ComboboxRootContext<T> = {
   ignoreFilter: Ref<boolean>
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
+  resetModelValueOnClear: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -72,6 +73,10 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * When `true`, disable the default filters
    */
   ignoreFilter?: boolean
+  /**
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   */
+  resetModelValueOnClear?: boolean
 }
 </script>
 
@@ -88,6 +93,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   resetSearchTermOnSelect: true,
   openOnFocus: false,
   openOnClick: false,
+  resetModelValueOnClear: false,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -101,7 +107,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -236,6 +242,7 @@ provideComboboxRootContext({
   ignoreFilter,
   openOnFocus,
   openOnClick,
+  resetModelValueOnClear,
 })
 </script>
 
