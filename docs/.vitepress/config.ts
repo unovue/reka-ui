@@ -134,6 +134,8 @@ export default defineConfig({
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
+
+          { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
         ],
       },
       {
@@ -420,7 +422,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [llmstxt({
-      ignoreFiles: ['releases/*', 'examples/*', 'showcase/*'],
+      ignoreFiles: ['releases/*', 'examples/*', 'showcase.md', 'examples.md', 'meta/*'],
     })],
     css: {
       postcss: {
