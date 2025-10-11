@@ -92,7 +92,8 @@ const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? [] as any,
-  passive: (props.modelValue === undefined) as false,
+  passive: true,
+  deep: true,
 }) as Ref<PinInputValue<Type>>
 
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
