@@ -94,6 +94,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   openOnFocus: false,
   openOnClick: false,
   resetModelValueOnClear: false,
+  highlightOnHover: true,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -107,7 +108,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -262,7 +263,7 @@ provideComboboxRootContext({
       :name="name"
       :required="required"
       :disabled="disabled"
-      :highlight-on-hover="true"
+      :highlight-on-hover="highlightOnHover"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >
