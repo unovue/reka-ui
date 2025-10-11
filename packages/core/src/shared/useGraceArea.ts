@@ -19,7 +19,7 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
     const currentTarget = event.currentTarget as HTMLElement
     const exitPoint = { x: event.clientX, y: event.clientY }
     const exitSide = getExitSideFromRect(exitPoint, currentTarget.getBoundingClientRect())
-    const paddedExitPoints = getPaddedExitPoints(exitPoint, exitSide)
+    const paddedExitPoints = getPaddedExitPoints(exitPoint, exitSide, 1)
     const hoverTargetPoints = getPointsFromRect(hoverTarget.getBoundingClientRect())
     const graceArea = getHull([...paddedExitPoints, ...hoverTargetPoints])
     pointerGraceArea.value = graceArea
@@ -74,7 +74,7 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 }
 
 interface Point { x: number, y: number }
-  type Polygon = Point[]
+type Polygon = Point[]
 
 function getExitSideFromRect(point: Point, rect: DOMRect): Side {
   const top = Math.abs(rect.top - point.y)
