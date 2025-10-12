@@ -98,7 +98,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/vue": "^8.1.0",
     "@tsconfig/node18": "^18.2.4",
-    "@types/jsdom": "^21.1.7",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^24.0.13",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/coverage-istanbul": "^3.2.4",
