@@ -258,6 +258,14 @@ export default defineConfig({
                 link: '/docs/utilities/use-date-formatter',
               },
               {
+                text: 'useDirection',
+                link: '/docs/utilities/use-direction',
+              },
+              {
+                text: 'useLocale',
+                link: '/docs/utilities/use-locale',
+              },
+              {
                 text: 'useEmitAsProps',
                 link: '/docs/utilities/use-emit-as-props',
               },

@@ -471,6 +471,8 @@ export const utilities = {
     'useStateMachine',
     'useBodyScrollLock',
     'useDateFormatter',
+    'useDirection',
+    'useLocale',
     'withDefault',
     'createContext',
   ] as const,
