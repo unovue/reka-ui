@@ -193,9 +193,6 @@ provideSelectRootContext({
       :open="open"
     />
 
-    <kbd>{{ `multiple: ${multiple}` }}</kbd>
-    <kbd>{{ `required: ${required}` }}</kbd>
-
     <BubbleSelect
       v-if="isFormControl"
       :key="nativeSelectKey"

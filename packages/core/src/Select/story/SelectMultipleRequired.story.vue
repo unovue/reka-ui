@@ -23,9 +23,10 @@ const vegetables = ['Aubergine', 'Broccoli', 'Carrot', 'Courgette', 'Leek']
 
 const data = ref({})
 
-function handleChange(event: any) {
-  const formData = new FormData(event.target)
-  data.value = Object.fromEntries((formData as any).entries())
+const selected = ref([])
+
+function handleSubmit(event: any) {
+  data.value = selected.value
 }
 </script>
 
@@ -38,11 +39,12 @@ function handleChange(event: any) {
       <div class="flex flex-col items-center">
         <form
           class="p-12 flex flex-col items-center"
-          @submit.prevent="handleChange"
+          @submit.prevent="handleSubmit"
           @change="console.log('form change')"
         >
           <label for="fruit">Fruit</label>
           <SelectRoot
+            v-model="selected"
             multiple
             required
             name="fruit"

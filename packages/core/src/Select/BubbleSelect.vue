@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reactiveOmit } from '@vueuse/shared'
 import { ref, watch } from 'vue'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -16,31 +17,33 @@ interface BubbleSelectProps {
 }
 
 const props = defineProps<BubbleSelectProps>()
+
+const delegated = reactiveOmit(props, 'value')
+
 const selectElement = ref<HTMLElement>()
 const rootContext = injectSelectRootContext()
 
-// This would bubble "change" event to form, with the target as Select element.
-watch(() => props.value, (cur, prev) => {
-  const selectProto = window.HTMLSelectElement.prototype
-  const descriptor = Object.getOwnPropertyDescriptor(
-    selectProto,
-    'value',
-  ) as PropertyDescriptor
-  const setValue = descriptor.set
-  if (cur !== prev && setValue && selectElement.value) {
-    const event = new Event('change', { bubbles: true })
-    setValue.call(selectElement.value, cur)
-    selectElement.value.dispatchEvent(event)
-  }
-})
+const customValue = ref<any>(props.value)
 
-/**
- * Form autofill will trigger an `input` event on the `select` element.
- * We listen to that event and update our internal state to support it.
- */
-function handleInput(event: Event) {
-  rootContext.onValueChange((event.target as HTMLSelectElement).value)
-}
+watch(
+  customValue,
+  (cur, prev) => {
+    const selectProto = window.HTMLSelectElement.prototype
+    const descriptor = Object.getOwnPropertyDescriptor(
+      selectProto,
+      'value',
+    ) as PropertyDescriptor
+
+    const setValue = descriptor.set
+    if (cur !== prev && setValue && selectElement.value) {
+      const event = new Event('change', { bubbles: true })
+      setValue.call(selectElement.value, cur)
+      selectElement.value.dispatchEvent(event)
+
+      rootContext.onValueChange(cur)
+    }
+  },
+)
 
 /**
  * We purposefully use a `select` here to support form autofill as much
@@ -58,8 +61,8 @@ function handleInput(event: Event) {
   <VisuallyHidden as-child>
     <select
       ref="selectElement"
-      v-bind="props"
-      @input="handleInput"
+      v-bind="delegated"
+      v-model="customValue"
     >
       <slot />
     </select>
