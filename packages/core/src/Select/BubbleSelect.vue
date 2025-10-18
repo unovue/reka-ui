@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { reactiveOmit } from '@vueuse/shared'
 import { ref, watch } from 'vue'
-import { VisuallyHidden } from '@/VisuallyHidden'
-import { injectSelectRootContext } from './SelectRoot.vue'
 
 interface BubbleSelectProps {
   autocomplete?: string
@@ -21,26 +19,45 @@ const props = defineProps<BubbleSelectProps>()
 const delegated = reactiveOmit(props, 'value')
 
 const selectElement = ref<HTMLElement>()
-const rootContext = injectSelectRootContext()
 
 const customValue = ref<any>(props.value)
 
+function haveSameElements<T extends unknown[]>(a: T, b: T): boolean {
+  if (a.length !== b.length)
+    return false
+
+  const setA = new Set(a)
+  const setB = new Set(b)
+  if (setA.size !== setB.size)
+    return false
+
+  for (const value of setA) {
+    if (!setB.has(value))
+      return false
+  }
+
+  return true
+}
+
 watch(
-  customValue,
+  () => props.value,
   (cur, prev) => {
-    const selectProto = window.HTMLSelectElement.prototype
-    const descriptor = Object.getOwnPropertyDescriptor(
-      selectProto,
-      'value',
-    ) as PropertyDescriptor
+    const areArrays = Array.isArray(cur) && Array.isArray(prev)
+    const changed = areArrays ? !haveSameElements(cur, prev) : cur !== prev
 
-    const setValue = descriptor.set
-    if (cur !== prev && setValue && selectElement.value) {
-      const event = new Event('change', { bubbles: true })
-      setValue.call(selectElement.value, cur)
-      selectElement.value.dispatchEvent(event)
+    if (changed) {
+      const selectProto = window.HTMLSelectElement.prototype
+      const descriptor = Object.getOwnPropertyDescriptor(
+        selectProto,
+        'value',
+      ) as PropertyDescriptor
 
-      rootContext.onValueChange(cur)
+      const setValue = descriptor.set
+      if (cur !== prev && setValue && selectElement.value) {
+        const event = new Event('change', { bubbles: true })
+        setValue.call(selectElement.value, cur)
+        selectElement.value.dispatchEvent(event)
+      }
     }
   },
 )
@@ -58,13 +75,13 @@ watch(
 </script>
 
 <template>
-  <VisuallyHidden as-child>
-    <select
-      ref="selectElement"
-      v-bind="delegated"
-      v-model="customValue"
-    >
-      <slot />
-    </select>
-  </VisuallyHidden>
+  <!-- <VisuallyHidden as-child> -->
+  <select
+    ref="selectElement"
+    v-bind="delegated"
+    v-model="customValue"
+  >
+    <slot />
+  </select>
+  <!-- </VisuallyHidden> -->
 </template>
