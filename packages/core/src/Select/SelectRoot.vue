@@ -177,18 +177,11 @@ provideSelectRootContext({
 
   optionsSet,
   onOptionAdd: (option) => {
-    const existingOption = getOption(option.value)
-    if (existingOption) {
-      optionsSet.value.delete(existingOption)
-    }
-
     optionsSet.value.add(option)
   },
+
   onOptionRemove: (option) => {
-    const existingOption = getOption(option.value)
-    if (existingOption) {
-      optionsSet.value.delete(existingOption)
-    }
+    optionsSet.value.delete(option)
   },
 })
 </script>
