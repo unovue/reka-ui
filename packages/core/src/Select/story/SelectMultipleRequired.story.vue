@@ -21,12 +21,12 @@ import {
 const options = ['Apple', 'Banana', 'Blueberry', 'Grapes', 'Pineapple']
 const vegetables = ['Aubergine', 'Broccoli', 'Carrot', 'Courgette', 'Leek']
 
-const data = ref([])
-
-const selected = ref([])
+const data = ref({})
 
 function handleSubmit(event: any) {
-  data.value = selected.value
+  const formData = new FormData(event.target)
+
+  data.value = formData.getAll('fruits')
 }
 </script>
 
@@ -40,11 +40,13 @@ function handleSubmit(event: any) {
         <form
           class="p-12 flex flex-col items-center"
           @submit.prevent="handleSubmit"
+          @change="console.log('Form change')"
         >
           <label for="fruit">Fruit</label>
           <SelectRoot
             multiple
             required
+            name="fruits"
             :default-value="['Apple']"
           >
             <SelectTrigger
@@ -63,6 +65,8 @@ function handleSubmit(event: any) {
                 class="min-w-[160px] bg-white overflow-hidden rounded shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
                 :side-offset="5"
                 position="popper"
+                align="start"
+                side="right"
               >
                 <SelectScrollUpButton
                   class="flex items-center justify-center h-[25px] bg-white text-violet11 cursor-default"

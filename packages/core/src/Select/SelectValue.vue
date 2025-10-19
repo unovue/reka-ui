@@ -10,7 +10,7 @@ export interface SelectValueProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -28,21 +28,34 @@ onMounted(() => {
   rootContext.valueElement = currentElement
 })
 
+watch(
+  () => rootContext.optionsMap.value.size,
+  (map) => {
+    console.log(map)
+  },
+)
+
 const selectedLabel = computed(() => {
   let list: string[] = []
-  const options = Array.from(rootContext.optionsSet.value)
-  const getOption = (value?: AcceptableValue) => options.find(option => valueComparator(value, option.value, rootContext.by))
+
+  const getOption = (value?: AcceptableValue) => [...rootContext.optionsMap.value.entries()]
+    .find(([, option]) => valueComparator(value, option.value, rootContext.by))
+    ?.[1]
+
   if (Array.isArray(rootContext.modelValue.value)) {
     list = rootContext.modelValue.value.map(value => getOption(value)?.textContent ?? '')
   }
   else {
     list = [getOption(rootContext.modelValue.value)?.textContent ?? '']
   }
+
   return list.filter(Boolean)
 })
 
 const slotText = computed(() => {
-  return selectedLabel.value.length ? selectedLabel.value.join(', ') : props.placeholder
+  return selectedLabel.value.length
+    ? selectedLabel.value.join(', ')
+    : props.placeholder
 })
 </script>
 
