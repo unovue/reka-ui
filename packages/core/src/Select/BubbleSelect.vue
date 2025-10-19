@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactiveOmit } from '@vueuse/shared'
 import { ref, watch } from 'vue'
+import VisuallyHidden from '@/VisuallyHidden/VisuallyHidden.vue'
 
 interface BubbleSelectProps {
   autocomplete?: string
@@ -75,13 +76,13 @@ watch(
 </script>
 
 <template>
-  <!-- <VisuallyHidden as-child> -->
-  <select
-    ref="selectElement"
-    v-bind="delegated"
-    v-model="customValue"
-  >
-    <slot />
-  </select>
-  <!-- </VisuallyHidden> -->
+  <VisuallyHidden as-child>
+    <select
+      ref="selectElement"
+      v-bind="delegated"
+      v-model="customValue"
+    >
+      <slot />
+    </select>
+  </VisuallyHidden>
 </template>
