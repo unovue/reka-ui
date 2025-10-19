@@ -51,7 +51,7 @@ export interface SelectRootContext<T> {
   isEmptyModelValue: Ref<boolean>
   disabled?: Ref<boolean>
 
-  optionsSet: Ref<Map<AcceptableValue, SelectOption>>
+  optionsMap: Ref<Map<AcceptableValue, SelectOption>>
   onOptionAdd: (option: SelectOption) => void
   onOptionRemove: (option: SelectOption) => void
 }
@@ -59,7 +59,7 @@ export interface SelectRootContext<T> {
 export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
-interface SelectOption { value: any, disabled?: boolean, textContent: string }
+interface SelectOption { value: any, disabled?: boolean, textContent: string, selected?: boolean }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
@@ -119,7 +119,7 @@ useCollection({ isProvider: true })
 const dir = useDirection(propDir)
 
 const isFormControl = useFormControl(triggerElement)
-const optionsSet = ref<Map<AcceptableValue, SelectOption>>(new Map())
+const optionsMap = ref<Map<AcceptableValue, SelectOption>>(new Map())
 
 // The native `select` only associates the correct default value if the corresponding
 // `option` is rendered as a child **at the same time** as itself.
@@ -127,7 +127,7 @@ const optionsSet = ref<Map<AcceptableValue, SelectOption>>(new Map())
 // the native `option`(s), we generate a key on the `select` to make sure Vue re-builds it
 // each time the options change.
 const nativeSelectKey = computed(() => {
-  return [...optionsSet.value.keys()]
+  return [...optionsMap.value.keys()]
     .join(';')
 })
 
@@ -169,15 +169,15 @@ provideSelectRootContext({
   disabled,
   isEmptyModelValue,
 
-  optionsSet,
+  optionsMap,
   onOptionAdd: (option) => {
     console.log('adding options')
-    optionsSet.value.set(option.value, option)
+    optionsMap.value.set(option.value, option)
   },
 
   onOptionRemove: (option) => {
     console.log('removing options')
-    optionsSet.value.delete(option.value)
+    optionsMap.value.delete(option.value)
   },
 })
 </script>
@@ -206,7 +206,7 @@ provideSelectRootContext({
         value=""
       />
       <option
-        v-for="([, option]) in [...optionsSet.entries()]"
+        v-for="([, option]) in [...optionsMap.entries()]"
         :key="option.value ?? ''"
         v-bind="option"
       />

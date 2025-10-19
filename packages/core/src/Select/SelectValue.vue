@@ -29,7 +29,7 @@ onMounted(() => {
 })
 
 watch(
-  () => rootContext.optionsSet.value.size,
+  () => rootContext.optionsMap.value.size,
   (map) => {
     console.log(map)
   },
@@ -38,7 +38,7 @@ watch(
 const selectedLabel = computed(() => {
   let list: string[] = []
 
-  const getOption = (value?: AcceptableValue) => [...rootContext.optionsSet.value.entries()]
+  const getOption = (value?: AcceptableValue) => [...rootContext.optionsMap.value.entries()]
     .find(([, option]) => valueComparator(value, option.value, rootContext.by))
     ?.[1]
 
