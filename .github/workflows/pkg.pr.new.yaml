@@ -3,6 +3,9 @@ on: [push, pull_request]
 
 jobs:
   build:
+    if: |
+      (github.event_name == 'push' && !contains(github.event.head_commit.message, 'docs:')) ||
+      (github.event_name == 'pull_request' && !contains(github.event.pull_request.title, 'docs:'))
     runs-on: ubuntu-latest
 
     steps:

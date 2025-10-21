@@ -127,11 +127,11 @@ watch(() => panelDataRef.value.constraints, (constraints, prevConstraints) => {
 }, { deep: true })
 
 onMounted(() => {
-  const panelData = panelDataRef.value
-  registerPanel(panelData)
-  onUnmounted(() => {
-    unregisterPanel(panelData)
-  })
+  registerPanel(panelDataRef.value)
+})
+
+onUnmounted(() => {
+  unregisterPanel(panelDataRef.value)
 })
 
 const style = computed(() => getPanelStyle(panelDataRef.value, props.defaultSize))
