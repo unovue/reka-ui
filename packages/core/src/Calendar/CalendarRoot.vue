@@ -45,6 +45,8 @@ type CalendarRootContext = {
   formatter: Formatter
   dir: Ref<Direction>
   disableDaysOutsideCurrentView: Ref<boolean>
+  minValue: Ref<DateValue | undefined>
+  maxValue: Ref<DateValue | undefined>
 }
 
 export interface CalendarRootProps extends PrimitiveProps {
@@ -323,6 +325,8 @@ provideCalendarRootContext({
   onPlaceholderChange,
   onDateChange,
   disableDaysOutsideCurrentView,
+  minValue,
+  maxValue,
 })
 </script>
 
@@ -331,7 +335,6 @@ provideCalendarRootContext({
     ref="primitiveElement"
     :as="as"
     :as-child="asChild"
-    role="application"
     :aria-label="fullCalendarLabel"
     :data-readonly="readonly ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"

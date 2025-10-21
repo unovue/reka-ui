@@ -2,6 +2,12 @@
 
 <PropsTable :data="[
   {
+    'name': 'disableSwipe',
+    'description': '<p>Whether to disable the ability to swipe to close the toast.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'duration',
     'description': '<p>Time in milliseconds that each toast should remain visible for.</p>\n',
     'type': 'number',
