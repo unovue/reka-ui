@@ -7,11 +7,11 @@ import { useVModel } from '@vueuse/core'
 import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
-export interface CheckboxRootProps<T extends CheckedState = CheckedState> extends PrimitiveProps, FormFieldProps {
+export interface CheckboxRootProps<TCheckedState extends CheckedState = CheckedState> extends PrimitiveProps, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
-  defaultValue?: T
+  defaultValue?: TCheckedState
   /** The controlled value of the checkbox. Can be binded with v-model. */
-  modelValue?: T | null
+  modelValue?: TCheckedState | null
   /** When `true`, prevents the user from interacting with the checkbox */
   disabled?: boolean
   /**
@@ -23,9 +23,9 @@ export interface CheckboxRootProps<T extends CheckedState = CheckedState> extend
   id?: string
 }
 
-export type CheckboxRootEmits<T extends CheckedState = CheckedState> = {
+export type CheckboxRootEmits<TCheckedState extends CheckedState = CheckedState> = {
   /** Event handler called when the value of the checkbox changes. */
-  'update:modelValue': [value: T]
+  'update:modelValue': [value: TCheckedState]
 }
 
 interface CheckboxRootContext {
@@ -37,7 +37,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
   = createContext<CheckboxRootContext>('CheckboxRoot')
 </script>
 
-<script setup lang="ts" generic="T extends CheckedState = CheckedState">
+<script setup lang="ts" generic="TCheckedState extends CheckedState = CheckedState">
 import { isEqual } from 'ohash'
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
@@ -49,12 +49,12 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<CheckboxRootProps<T>>(), {
+const props = withDefaults(defineProps<CheckboxRootProps<TCheckedState>>(), {
   modelValue: undefined,
   value: 'on',
   as: 'button',
 })
-const emits = defineEmits<CheckboxRootEmits<T>>()
+const emits = defineEmits<CheckboxRootEmits<TCheckedState>>()
 
 defineSlots<{
   default?: (props: {
@@ -69,19 +69,19 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 
-const modelValue = useVModel<CheckboxRootProps<T>, 'modelValue', 'update:modelValue'>(props, 'modelValue', emits, {
+const modelValue = useVModel<CheckboxRootProps<TCheckedState>, 'modelValue', 'update:modelValue'>(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<T>
+}) as Ref<TCheckedState>
 
 const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
 
-const checkboxState = computed<T>(() => {
+const checkboxState = computed<TCheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value) as T
+    return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value) as TCheckedState
   }
   else {
-    return modelValue.value === 'indeterminate' ? 'indeterminate' as T : modelValue.value
+    return modelValue.value === 'indeterminate' ? 'indeterminate' as TCheckedState : modelValue.value
   }
 })
 
@@ -98,7 +98,7 @@ function handleClick() {
     checkboxGroupContext.modelValue.value = modelValueArray
   }
   else {
-    modelValue.value = isIndeterminate(modelValue.value) ? true as T : !modelValue.value as T
+    modelValue.value = isIndeterminate(modelValue.value) ? true as TCheckedState : !modelValue.value as TCheckedState
   }
 }
 
@@ -123,7 +123,7 @@ provideCheckboxRootContext({
     :as-child="asChild"
     :as="as"
     :type="as === 'button' ? 'button' : undefined"
-    :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState"
+    :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState === true ? 'true' : 'false'"
     :aria-required="required"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :data-state="getState(checkboxState)"
