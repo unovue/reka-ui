@@ -11,6 +11,7 @@ export interface SelectContentProps extends SelectContentImplProps {
   /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
+   *
    */
   forceMount?: boolean
 }
@@ -28,13 +29,11 @@ defineOptions({
 })
 
 const props = defineProps<SelectContentProps>()
-
 const emits = defineEmits<SelectContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-
 const rootContext = injectSelectRootContext()
-
 const fragment = ref<DocumentFragment>()
+
 onMounted(() => {
   fragment.value = new DocumentFragment()
 })
@@ -52,7 +51,6 @@ onMounted(() => {
     >
       <slot />
     </SelectContentImpl>
-
     <Teleport
       v-else-if="fragment && !present"
       :to="fragment"
