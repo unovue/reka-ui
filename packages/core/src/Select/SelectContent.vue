@@ -12,8 +12,6 @@ export interface SelectContentProps extends SelectContentImplProps {
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    *
-   * @deprecated Because we use force-mount in <Presence> to keep it alive and thus drive the state transitions of its children, this prop no longer takes effect.
-   *
    */
   forceMount?: boolean
 }
@@ -44,7 +42,7 @@ onMounted(() => {
 <template>
   <Presence
     v-slot="{ present }"
-    :present="rootContext.open.value"
+    :present="forceMount || rootContext.open.value"
     force-mount
   >
     <SelectContentImpl
