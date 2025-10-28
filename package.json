@@ -37,7 +37,8 @@
     "nuxt": "catalog:",
     "simple-git-hooks": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:"
   },
   "commitlint": {
     "extends": [
