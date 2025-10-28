@@ -11,7 +11,7 @@ export interface ModuleOptions {
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
-    name: '@reka-ui/nuxt',
+    name: 'reka-ui/nuxt',
     configKey: 'reka',
     compatibility: {
       nuxt: '>=3.0.0',

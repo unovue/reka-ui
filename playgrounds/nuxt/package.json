@@ -14,7 +14,8 @@
     "@internationalized/number": "catalog:",
     "nuxt": "catalog:",
     "reka-ui": "workspace:*",
-    "tailwindcss": "catalog:"
+    "tailwindcss": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@iconify/vue": "catalog:",
