@@ -2,7 +2,7 @@ packages:
   - packages/*
   - docs
   - .histoire
-  - playground/*
+  - playgrounds/*
 
 catalog:
   '@antfu/eslint-config': 4.19.0

@@ -75,6 +75,6 @@
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",
-    "playground/**"
+    "playgrounds/**"
   ]
 }
