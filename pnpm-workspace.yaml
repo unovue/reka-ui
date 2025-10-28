@@ -87,3 +87,5 @@ catalogs:
 
 ignoredBuiltDependencies:
   - '@parcel/watcher'
+
+verifyDepsBeforeRun: install
