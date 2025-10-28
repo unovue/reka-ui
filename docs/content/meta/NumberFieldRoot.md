@@ -52,7 +52,7 @@
   },
   {
     'name': 'locale',
-    'description': '<p>The locale to use for formatting dates</p>\n',
+    'description': '<p>The locale to use for formatting dates and currencies.</p>\n',
     'type': 'string',
     'required': false
   },
