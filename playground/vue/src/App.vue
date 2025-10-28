@@ -6,88 +6,88 @@
   <div class="w-full flex flex-col items-center">
     <div class="max-w-6xl w-full grid grid-cols-3 gap-4 pt-40 pb-40">
       <Card>
-        <Accordion />
+        <AccordionTailwind />
       </Card>
       <Card>
-        <AlertDialog />
+        <AlertDialogTailwind />
       </Card>
       <Card>
-        <AspectRatio />
+        <AspectRatioTailwind />
       </Card>
       <Card class="col-span-2">
-        <NavigationMenu />
+        <NavigationMenuTailwind />
       </Card>
       <Card>
-        <Collapsible />
+        <CollapsibleTailwind />
       </Card>
       <Card>
-        <Avatar />
+        <AvatarTailwind />
       </Card>
       <Card>
-        <Checkbox />
+        <CheckboxTailwind />
       </Card>
       <Card>
-        <Combobox />
+        <ComboboxTailwind />
       </Card>
       <Card>
-        <ScrollArea />
+        <ScrollAreaTailwind />
       </Card>
       <Card class="col-span-2">
-        <ContextMenu />
+        <ContextMenuTailwind />
       </Card>
       <Card class="col-span-2">
-        <Dialog />
+        <DialogTailwind />
       </Card>
       <Card>
-        <DropdownMenu />
+        <DropdownMenuTailwind />
       </Card>
       <Card>
-        <Menubar />
+        <MenubarTailwind />
       </Card>
       <Card>
-        <HoverCard />
+        <HoverCardTailwind />
       </Card>
       <Card>
-        <Label />
+        <LabelTailwind />
       </Card>
       <Card>
-        <Popover />
+        <PopoverTailwind />
       </Card>
       <Card>
-        <Progress />
+        <ProgressTailwind />
       </Card>
       <Card>
-        <RadioGroup />
+        <RadioGroupTailwind />
       </Card>
       <Card>
-        <Select />
+        <SelectTailwind />
       </Card>
       <!-- <Card>
         <SelectMultiple />
       </Card> -->
       <Card>
-        <Separator />
+        <SeparatorTailwind />
       </Card>
       <Card>
-        <Slider />
+        <SliderTailwind />
       </Card>
       <Card>
-        <Switch />
+        <SwitchTailwind />
       </Card>
       <Card>
-        <Tabs />
+        <TabsTailwind />
       </Card>
       <Card>
-        <Toggle />
+        <ToggleTailwind />
       </Card>
       <Card>
-        <ToggleGroup />
+        <ToggleGroupTailwind />
       </Card>
       <Card class="col-span-2">
-        <Toolbar />
+        <ToolbarTailwind />
       </Card>
       <Card>
-        <Tooltip />
+        <TooltipTailwind />
       </Card>
     </div>
   </div>

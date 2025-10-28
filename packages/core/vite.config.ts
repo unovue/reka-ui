@@ -10,7 +10,20 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
-
+  optimizeDeps: {
+    include: [
+      '@iconify/vue',
+      '@vueuse/core',
+      '@vueuse/shared',
+      'defu',
+      'ohash',
+      '@internationalized/date',
+      'aria-hidden',
+      '@floating-ui/vue',
+      '@tanstack/vue-virtual',
+      '@internationalized/number',
+    ],
+  },
   test: {
     environment: 'jsdom',
     globals: true,

@@ -13,8 +13,8 @@ export type PinInputType = 'text' | 'number'
 export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? number[] : string[]
 
 // provide the mixed arrays because the `type` is dynamic in the context
-export type PinInputContextValue<Type extends PinInputType = 'text'> =
-  Type extends 'number'
+export type PinInputContextValue<Type extends PinInputType = 'text'>
+  = Type extends 'number'
     ? Type extends 'string'
       ? string[] | number[]
       : number[]

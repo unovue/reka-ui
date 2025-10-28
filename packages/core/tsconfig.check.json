@@ -1,5 +1,5 @@
 {
-  // tsconfig for type-check only
+  // tsconfig for typecheck only
   "extends": "./tsconfig.app.json",
   "exclude": [
     "**/*.test.ts",

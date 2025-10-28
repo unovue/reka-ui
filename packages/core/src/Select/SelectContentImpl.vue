@@ -24,14 +24,14 @@ export interface SelectContentContext {
   itemRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
-    disabled: boolean
+    disabled: boolean,
   ) => void
   selectedItem?: Ref<HTMLElement | undefined>
   onItemLeave?: () => void
   itemTextRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
-    disabled: boolean
+    disabled: boolean,
   ) => void
   focusSelectedItem?: () => void
   selectedItemText?: Ref<HTMLElement | undefined>

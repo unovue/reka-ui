@@ -3,7 +3,11 @@ const plugin = require('tailwindcss/plugin')
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}', '../../docs/components/**/*.{vue,ts}'],
+  content: [
+    './index.html',
+    './src/**/*.{vue,js,ts,jsx,tsx}',
+    '../../docs/components/**/*.{vue,ts}',
+  ],
   theme: {
     extend: {
       colors: {

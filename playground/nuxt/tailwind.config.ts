@@ -3,7 +3,11 @@ import { blackA, grass, green, indigo, mauve, purple, red, teal, violet } from '
 import plugin from 'tailwindcss/plugin'
 
 export default {
-  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}', '../../docs/components/**/*.{vue,ts}'],
+  content: [
+    './index.html',
+    './src/**/*.{vue,js,ts,jsx,tsx}',
+    '../../docs/components/**/*.{vue,ts}',
+  ],
   theme: {
     extend: {
       colors: {

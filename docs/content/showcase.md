@@ -20,7 +20,7 @@ packages:
     image: https://ui-thing.behonbaker.com/cover.png
 
   - title: Origin UI Vue
-    description: Beautiful UI components built with Tailwind CSS and Radix Vue
+    description: Beautiful UI components built with Tailwind CSS and Reka UI
     url: https://originui-vue.pages.dev/
     image: /showcase/origin.png
 

@@ -49,7 +49,7 @@ const plainTeamMembers: CoreTeam[] = [
     name: 'Zernonia',
     github: 'zernonia',
     twitter: 'zernonia',
-    desc: 'Core team member of Radix Vue',
+    desc: 'Core team member of Reka UI',
     sponsor: 'https://github.com/sponsors/zernonia',
   },
   {
@@ -57,33 +57,33 @@ const plainTeamMembers: CoreTeam[] = [
     name: 'Khairul Haaziq',
     github: 'k11q',
     twitter: 'khairulhaaziq',
-    desc: 'Core team member of Radix Vue',
+    desc: 'Core team member of Reka UI',
   },
   {
     avatar: contributorsAvatars.mujahidfa,
     name: 'Mujahid Anuar',
     github: 'mujahidfa',
     twitter: 'mujahid_fa',
-    desc: 'Core team member of Radix Vue',
+    desc: 'Core team member of Reka UI',
   },
   {
     avatar: contributorsAvatars.onmax,
     name: 'Max',
     github: 'onmax',
     twitter: 'iam_mad_max',
-    desc: 'Core team member of Radix Vue',
+    desc: 'Core team member of Reka UI',
   },
   {
     avatar: contributorsAvatars.MellKam,
     name: 'Artem Melnyk',
     github: 'MellKam',
-    desc: 'Core team member of Radix Vue',
+    desc: 'Core team member of Reka UI',
   },
   {
     avatar: contributorsAvatars.epr3,
     name: 'Eduard Predescu',
     github: 'epr3',
-    desc: 'Core team member of Radix Vue',
+    desc: 'Core team member of Reka UI',
   },
 ]
 

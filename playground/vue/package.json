@@ -1,0 +1,28 @@
+{
+  "name": "vue-playground",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "reka-ui": "workspace:*",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@iconify/vue": "catalog:",
+    "@radix-ui/colors": "catalog:",
+    "@rollup/plugin-alias": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "autoprefixer": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "unplugin-vue-components": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

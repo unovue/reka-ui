@@ -2,7 +2,7 @@
   "name": "plugins",
   "type": "module",
   "version": "2.6.0",
-  "description": "Nuxt module for Radix Vue",
+  "description": "Nuxt module for Reka UI",
   "license": "MIT",
   "keywords": [
     "radix",
@@ -18,10 +18,10 @@
     "stub": "unbuild --stub"
   },
   "dependencies": {
-    "@nuxt/kit": "^4.1.2",
-    "@nuxt/schema": "^4.1.2",
-    "reka-ui": "link:../core",
-    "unbuild": "^2.0.0",
-    "unplugin-vue-components": "^29.0.0"
+    "@nuxt/kit": "catalog:",
+    "@nuxt/schema": "catalog:",
+    "reka-ui": "workspace:*",
+    "unbuild": "catalog:",
+    "unplugin-vue-components": "catalog:"
   }
 }

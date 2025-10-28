@@ -41,7 +41,7 @@ export function withDefault<
   P extends ComponentProps<C> = ComponentProps<C>,
 >(
   originalComponent: T,
-  options?: MountingOptions<P>
+  options?: MountingOptions<P>,
 ): T
 
 export function withDefault<T extends ComponentOptionsBase<{}, {}, {}, any, any, any, any, any>>(WrappedComponent: T, options?: MountingOptions<any>) {

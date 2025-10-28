@@ -1,13 +1,6 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
-
-  // components: [
-  //   {
-  //     path: '../../docs/components/demo',
-  //   },
-  // ],
   hooks: {
     'components:dirs': (dirs) => {
       dirs.unshift({
@@ -29,6 +22,5 @@ export default defineNuxtConfig({
       })
     },
   },
-
-  compatibilityDate: '2024-09-17',
+  compatibilityDate: '2025-07-15',
 })
