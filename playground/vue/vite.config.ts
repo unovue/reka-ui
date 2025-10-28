@@ -18,4 +18,18 @@ export default defineConfig({
       exclude: [/\.md$/],
     }),
   ],
+  optimizeDeps: {
+    include: [
+      '@iconify/vue',
+      '@vueuse/core',
+      '@vueuse/shared',
+      'defu',
+      'ohash',
+      '@internationalized/date',
+      'aria-hidden',
+      '@floating-ui/vue',
+      '@tanstack/vue-virtual',
+      '@internationalized/number',
+    ],
+  },
 })
