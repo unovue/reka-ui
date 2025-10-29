@@ -171,6 +171,8 @@ function handleKeyDown(event: KeyboardEvent) {
     = target.closest('[data-reka-menu-content]') === event.currentTarget
   const isKeyDownInTextField
     = target.closest('input, textarea') === event.currentTarget
+  // eslint-disable-next-line no-console
+  console.log({ isKeyDownInTextField, isKeyDownInside, target, 'event.currentTarget': event.currentTarget })
   const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
   const isCharacterKey = event.key.length === 1
 
