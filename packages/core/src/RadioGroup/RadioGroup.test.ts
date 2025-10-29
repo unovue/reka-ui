@@ -101,6 +101,10 @@ describe('given radio in a form', async () => {
     props: { handleSubmit },
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
   it('should have hidden input field', async () => {
     expect(wrapper.find('[type="Radio"]').exists()).toBe(true)
   })
