@@ -2,6 +2,9 @@ import type { CalendarDateTime, CycleTimeOptions, DateFields, DateValue, TimeFie
 import type { Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
+import {
+  DateFormatter
+} from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
 import { useKbd } from '@/shared'
@@ -499,8 +502,7 @@ export function useDateField(props: UseDateFieldProps) {
     return { value: total, moveToNext }
   }
 
-  function updateHour(num: number, prev: number | null) {
-    const max = 24
+  function updateHour(max: number, num: number, prev: number | null) {
     let moveToNext = false
     const maxStart = Math.floor(max / 10)
 
@@ -706,6 +708,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
   }
 
+  function uses12HourFormat(locale: string): boolean {
+    const hourCycle = new DateFormatter(locale, { hour: 'numeric' }).resolvedOptions().hourCycle
+    return hourCycle === 'h11' || hourCycle === 'h12'
+  }
+
   function handleHourSegmentKeydown(e: KeyboardEvent) {
     const dateRef = props.placeholder.value
     if (!isAcceptableSegmentKey(e.key) || isSegmentNavigationKey(e.key) || !('hour' in dateRef) || !('hour' in props.segmentValues.value))
@@ -730,14 +737,29 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
-      const { value, moveToNext } = updateHour(num, prevValue)
+      const is12Hour = uses12HourFormat(props.formatter.getLocale())
+      const max = is12Hour ? 12 : 24
 
-      if ('dayPeriod' in props.segmentValues.value && value && value > 12)
-        props.segmentValues.value.dayPeriod = 'PM'
-      else if ('dayPeriod' in props.segmentValues.value && value)
-        props.segmentValues.value.dayPeriod = 'AM'
+      let displayPrev = prevValue
+      if (is12Hour && prevValue !== null) {
+        displayPrev = prevValue === 0 ? 12 : (prevValue > 12 ? prevValue - 12 : prevValue)
+      }
 
-      props.segmentValues.value.hour = value
+      const { value, moveToNext } = updateHour(max, num, displayPrev)
+
+      // Convert display hour back to internal 24-hour format
+      let internalValue = value
+      if (is12Hour && value !== null) {
+        const period = props.segmentValues.value.dayPeriod || 'AM'
+        if (value === 12) {
+          internalValue = period === 'AM' ? 0 : 12
+        }
+        else {
+          internalValue = period === 'PM' ? value + 12 : value
+        }
+      }
+
+      props.segmentValues.value.hour = internalValue
 
       if (moveToNext)
         props.focusNext()
