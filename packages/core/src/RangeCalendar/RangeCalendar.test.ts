@@ -125,6 +125,37 @@ describe('rangeCalendar', () => {
     const seventhDayInMonth = getByTestId('date-1-7')
     await user.click(seventhDayInMonth)
     expect(getSelectedDays(calendar)).toHaveLength(3)
+
+    // Allow select the same day as both start and end.
+    const eighthDayInMonth = getByTestId('date-1-8')
+    await user.click(eighthDayInMonth)
+    await user.click(eighthDayInMonth)
+    expect(getSelectedDays(calendar)).toHaveLength(1)
+    expect(calendar.querySelector('[data-selection-start]')).toBeInTheDocument()
+    expect(calendar.querySelector('[data-selection-end]')).toBeInTheDocument()
+
+    // Allow deselect
+    await user.click(eighthDayInMonth)
+    expect(getSelectedDays(calendar)).toHaveLength(0)
+    expect(calendar.querySelector('[data-selection-start]')).not.toBeInTheDocument()
+    expect(calendar.querySelector('[data-selection-end]')).not.toBeInTheDocument()
+
+    // Allow re-select the start day as new start day
+    await user.click(seventhDayInMonth)
+    await user.click(eighthDayInMonth)
+    expect(getSelectedDays(calendar)).toHaveLength(2)
+    await user.click(seventhDayInMonth)
+    expect(getSelectedDays(calendar)).toHaveLength(1)
+    expect(calendar.querySelector('[data-selection-start]')).toBeInTheDocument()
+    expect(calendar.querySelector('[data-selection-end]')).not.toBeInTheDocument()
+
+    // Allow re-select the end day as new start day
+    await user.click(eighthDayInMonth)
+    expect(getSelectedDays(calendar)).toHaveLength(2)
+    await user.click(eighthDayInMonth)
+    expect(getSelectedDays(calendar)).toHaveLength(1)
+    expect(calendar.querySelector('[data-selection-start]')).toBeInTheDocument()
+    expect(calendar.querySelector('[data-selection-end]')).not.toBeInTheDocument()
   })
 
   it('resets range selection when pressing Escape', async () => {
