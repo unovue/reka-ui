@@ -103,6 +103,10 @@ watch(rootContext.filterState, () => {
     listboxContext.highlightFirstItem()
   }
 })
+
+watch(() => props.autoFocus, () => {
+  rootContext.isInputAutoFocus.value = props.autoFocus
+}, { immediate: true })
 </script>
 
 <template>

@@ -16,6 +16,7 @@ type ComboboxRootContext<T> = {
   contentId: string
   inputElement: Ref<HTMLInputElement | undefined>
   onInputElementChange: (el: HTMLInputElement) => void
+  isInputAutoFocus: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerElementChange: (el: HTMLElement) => void
   highlightedElement: Ref<HTMLElement | undefined>
@@ -137,7 +138,9 @@ async function onOpenChange(val: boolean) {
     isUserInputted.value = false
   }
 
-  inputElement.value?.focus()
+  if (isInputAutoFocus.value) {
+    inputElement.value?.focus()
+  }
   setTimeout(() => {
     if (!val && props.resetSearchTermOnBlur)
       resetSearchTerm.trigger()
@@ -148,6 +151,7 @@ const resetSearchTerm = createEventHook()
 const isUserInputted = ref(false)
 const isVirtual = ref(false)
 const inputElement = ref<HTMLInputElement>()
+const isInputAutoFocus = ref(false)
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
@@ -230,6 +234,7 @@ provideComboboxRootContext({
   isVirtual,
   inputElement,
   highlightedElement,
+  isInputAutoFocus,
   onInputElementChange: val => inputElement.value = val,
   triggerElement,
   onTriggerElementChange: val => triggerElement.value = val,

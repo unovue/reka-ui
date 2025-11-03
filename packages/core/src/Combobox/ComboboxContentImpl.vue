@@ -73,7 +73,7 @@ const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
     isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
-    if (isInputWithinContent.value) {
+    if (rootContext.isInputAutoFocus.value && isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }
   }
