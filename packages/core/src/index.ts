@@ -41,6 +41,7 @@ export {
   type DateRange,
   type DateValue,
   type Formatter,
+  type SegmentPart,
   useBodyScrollLock,
   useDateFormatter,
   useDirection,
