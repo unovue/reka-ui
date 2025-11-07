@@ -98,6 +98,12 @@ function handleFocus(event: FocusEvent) {
 
   if (!target.value)
     target.placeholder = ''
+
+  // #2266, check again after DOM flushes
+  setTimeout(() => {
+    if (!target.value)
+      target.placeholder = ''
+  })
 }
 
 function handleBlur(event: FocusEvent) {
