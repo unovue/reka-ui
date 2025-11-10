@@ -31,7 +31,7 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "bumpp": "^10.1.1",
-    "eslint": "^9.36.0",
+    "eslint": "^9.39.1",
     "lint-staged": "^15.5.2",
     "simple-git-hooks": "^2.13.1",
     "tsx": "^4.20.3",
