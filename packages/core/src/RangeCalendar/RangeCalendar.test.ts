@@ -818,4 +818,24 @@ describe('handles maximumDays', () => {
     expect(getByTestId('date-1-18')).toHaveAttribute('aria-disabled', 'true')
     expect(getByTestId('date-1-17')).not.toHaveAttribute('aria-disabled', 'true')
   })
+
+  it('highlights dates within the maximum range identical to disabled dates range', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 15),
+        maximumDays: 4,
+      },
+    })
+    const startDay = getByTestId('date-1-15')
+    const secondDay = getByTestId('date-1-16') // same day
+    const maximumDay = getByTestId('date-1-18') // 4 days ahead
+    const beyondMaximumDay = getByTestId('date-1-19') // 5 days ahead
+    await user.click(startDay)
+    await user.hover(secondDay)
+    expect(startDay).toHaveAttribute('data-selection-start')
+    expect(secondDay).toHaveAttribute('data-highlighted')
+    expect(maximumDay).toHaveAttribute('data-highlighted-end')
+    expect(maximumDay).toHaveAttribute('data-highlighted')
+    expect(beyondMaximumDay).not.toHaveAttribute('data-highlighted')
+  })
 })
