@@ -149,6 +149,11 @@
     'name': 'segments',
     'description': '',
     'type': '{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }'
+  },
+  {
+    'name': 'isInvalid',
+    'description': '<p>Value if the input is invalid</p>\n',
+    'type': 'boolean'
   }
 ]" />
 
