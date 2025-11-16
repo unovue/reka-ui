@@ -303,12 +303,15 @@ defineExpose({
     <VisuallyHidden
       :id="id"
       as="input"
+      type="date"
       feature="focusable"
       tabindex="-1"
       :value="modelValue ? modelValue.toString() : ''"
       :name="name"
       :disabled="disabled"
       :required="required"
+      :max="maxValue"
+      :min="minValue"
       @focus="Array.from(segmentElements)?.[0]?.focus()"
     />
   </Primitive>
