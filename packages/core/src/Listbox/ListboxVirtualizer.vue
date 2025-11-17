@@ -5,7 +5,7 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */
-  estimateSize?: number
+  estimateSize?: number | ((index: number) => number)
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (option: T) => string
 }
@@ -64,7 +64,10 @@ const virtualizer = useVirtualizer(
     get scrollPaddingEnd() { return padding.value.end },
     get count() { return props.options.length },
     get horizontal() { return rootContext.orientation.value === 'horizontal' },
-    estimateSize() {
+    estimateSize(index) {
+      if (typeof props.estimateSize === 'function')
+        return props.estimateSize(index)
+
       return props.estimateSize ?? 28
     },
     getScrollElement() { return parentEl.value },
