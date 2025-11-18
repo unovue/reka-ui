@@ -98,8 +98,8 @@ watch(rootContext.modelValue, async () => {
 
 watch(rootContext.filterState, () => {
   // we exclude virtualized list as the state would be constantly updated,
-  // and only change highlight when there is no highlighted item
-  if (!rootContext.isVirtual.value && !rootContext.highlightedElement.value) {
+  // and only change highlight when previously there were no items displayed
+  if (!rootContext.isVirtual.value && (oldValue.count === 0)) {
     listboxContext.highlightFirstItem()
   }
 })
