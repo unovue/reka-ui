@@ -46,7 +46,15 @@ function commonSegmentAttrs(props: SegmentAttrProps) {
 function daySegmentAttrs(props: SegmentAttrProps) {
   const { segmentValues, placeholder } = props
   const isEmpty = segmentValues.day === null
-  const date = segmentValues.day ? placeholder.set({ day: segmentValues.day }) : placeholder
+
+  // Include month from segmentValues to ensure correct max days calculation
+  const dateFields: { day?: number, month?: number } = {}
+  if (segmentValues.day)
+    dateFields.day = segmentValues.day
+  if (segmentValues.month)
+    dateFields.month = segmentValues.month
+
+  const date = Object.keys(dateFields).length > 0 ? placeholder.set(dateFields) : placeholder
 
   const valueNow = date.day
   const valueMin = 1
@@ -864,12 +872,9 @@ export function useDateField(props: UseDateFieldProps) {
       if (Object.values(props.segmentValues.value).every(item => item !== null)) {
         const updateObject = { ...props.segmentValues.value as Record<AnyExceptLiteral, number> }
 
-        let dateRef = props.placeholder.value.copy()
-
-        Object.keys(updateObject).forEach((part) => {
-          const value = updateObject[part as AnyExceptLiteral]
-          dateRef = dateRef.set({ [part]: value })
-        })
+        // Set all date fields at once to avoid order-dependent constraints
+        // (e.g., setting day: 31 before month: 3 would incorrectly constrain the day)
+        const dateRef = props.placeholder.value.set(updateObject)
 
         props.modelValue.value = dateRef.copy()
       }
