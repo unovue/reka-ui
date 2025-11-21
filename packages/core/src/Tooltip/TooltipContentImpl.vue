@@ -73,11 +73,16 @@ const ariaLabel = computed(() => {
   let content = ''
 
   function recursiveTextSearch(node: VNode) {
-    if (typeof node.children === 'string' && node.type !== Comment)
-      content += node.children
-    else if (Array.isArray(node.children))
-      node.children.forEach(child => recursiveTextSearch(child as VNode))
+    if (typeof node.children === 'string' && node.type !== Comment) {
+      content += node.children;
+    } else if (Array.isArray(node.children)) {
+      node.children.forEach((child) => recursiveTextSearch(child as VNode));
+    } else if (typeof node.children === 'object' && typeof node.children?.default === 'function') {
+      const slotContent = node.children.default();
+      slotContent.forEach((node: VNode) => recursiveTextSearch(node));
+    }
   }
+
 
   defaultSlot.value?.forEach((node: VNode) => recursiveTextSearch(node))
   return content
