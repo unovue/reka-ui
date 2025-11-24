@@ -114,6 +114,8 @@ function handleSizeChange() {
       },
     })
   }
+
+  scrollbarVisibleContext.onThumbPositionChange()
 }
 
 useResizeObserver(scrollbar, handleSizeChange)
