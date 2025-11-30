@@ -30,7 +30,7 @@ function handleSelect(text: string) {
       <MenuWithAnchor>
         <MenuItem
           class="flex items-center justify-between leading-[1] cursor-default select-none whitespace-nowrap h-[25px] px-[10px] text-black rounded-[3px] outline-none data-[highlighted]:bg-black data-[highlighted]:text-white data-[disabled]:text-gray-100"
-          @select="handleSelect('minize')"
+          @select="handleSelect('minimize')"
         >
           Minimize window
         </MenuItem>

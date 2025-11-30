@@ -254,7 +254,7 @@ provideTreeRootContext({
     if (expanded.value.includes(key))
       expanded.value = expanded.value.filter(val => val !== key)
     else
-      expanded.value.push(key)
+      expanded.value = [...expanded.value, key]
   },
   getKey: props.getKey,
   getChildren: props.getChildren,

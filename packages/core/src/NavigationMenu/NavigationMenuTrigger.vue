@@ -87,9 +87,13 @@ function handlePointerLeave(ev: PointerEvent) {
   }
 }
 
-function handleClick(event: PointerEvent) {
-  if (event.pointerType === 'mouse' && menuContext.disableClickTrigger.value)
+function handleClick(event: MouseEvent | PointerEvent) {
+  if (
+    (!('pointerType' in event) || event.pointerType === 'mouse')
+    && menuContext.disableClickTrigger.value
+  ) {
     return
+  }
 
   // if open via pointermove, we prevent click event
   if (hasPointerMoveOpenedRef.value)

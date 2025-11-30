@@ -16,7 +16,7 @@
   },
   {
     'name': 'pressOpenDelay',
-    'description': '<p>The duration from when the trigger is pressed until the menu openes.</p>\n',
+    'description': '<p>The duration from when the trigger is pressed until the menu opens.</p>\n',
     'type': 'number',
     'required': false,
     'default': '700'
