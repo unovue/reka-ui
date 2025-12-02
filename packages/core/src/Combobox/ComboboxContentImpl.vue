@@ -26,7 +26,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { computed, onMounted, ref, toRefs } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { ListboxContent } from '@/Listbox'
 import { PopperContent } from '@/Popper'
@@ -76,12 +76,6 @@ onMounted(() => {
     if (isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }
-  }
-})
-
-onUnmounted(() => {
-  if (isInputWithinContent.value) {
-    rootContext.triggerElement.value?.focus()
   }
 })
 </script>
