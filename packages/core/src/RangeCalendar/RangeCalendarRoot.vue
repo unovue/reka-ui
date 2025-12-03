@@ -56,10 +56,10 @@ type RangeCalendarRootContext = {
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
   isNextButtonDisabled: (
-    nextPageFunc?: (date: DateValue) => DateValue
+    nextPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   isPrevButtonDisabled: (
-    prevPageFunc?: (date: DateValue) => DateValue
+    prevPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   formatter: Formatter
   dir: Ref<Direction>

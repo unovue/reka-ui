@@ -19,7 +19,7 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   stepSnapping?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
   formatOptions?: Intl.NumberFormatOptions
-  /** The locale to use for formatting dates */
+  /** The locale to use for formatting and currencies */
   locale?: string
   /** When `true`, prevents the user from interacting with the Number Field. */
   disabled?: boolean

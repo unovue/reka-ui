@@ -74,7 +74,7 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 }
 
 interface Point { x: number, y: number }
-  type Polygon = Point[]
+type Polygon = Point[]
 
 function getExitSideFromRect(point: Point, rect: DOMRect): Side {
   const top = Math.abs(rect.top - point.y)

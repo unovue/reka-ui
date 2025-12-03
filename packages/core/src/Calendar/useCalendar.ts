@@ -327,9 +327,9 @@ export function useCalendar(props: UseCalendarProps) {
     const endMonthYear = formatter.fullYear(endMonth, headingFormatOptions.value)
 
     const content
-    = startMonthYear === endMonthYear
-      ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
-      : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
+      = startMonthYear === endMonthYear
+        ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
+        : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
 
     return content
   })
