@@ -137,6 +137,7 @@ watchEffect((cleanupFn) => {
   if (!content.value)
     return
   let pointerMoveDelta = { x: 0, y: 0 }
+  let pointerTypeRef: PointerEvent['pointerType'] = 'touch'
 
   const handlePointerMove = (event: PointerEvent) => {
     pointerMoveDelta = {
@@ -147,12 +148,16 @@ watchEffect((cleanupFn) => {
         Math.round(event.pageY) - (triggerPointerDownPosRef.value?.y ?? 0),
       ),
     }
+    pointerTypeRef = event.pointerType
   }
   const handlePointerUp = (event: PointerEvent) => {
-    // Prevent options from being untappable on touch devices
-    // https://github.com/unovue/reka-ui/issues/804
-    if (event.pointerType === 'touch')
+    // For touch devices, selection happens via click event on item, not pointerup
+    // So we should not interfere with the default behavior for touch
+    if (event.pointerType === 'touch' || pointerTypeRef === 'touch') {
+      document.removeEventListener('pointermove', handlePointerMove)
+      triggerPointerDownPosRef.value = null
       return
+    }
 
     // If the pointer hasn't moved by a certain threshold then we prevent selecting item on `pointerup`.
     if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) {
@@ -274,6 +279,7 @@ provideSelectContentContext({
   <CollectionSlot>
     <FocusScope
       as-child
+      :trapped="rootContext.open.value"
       @mount-auto-focus.prevent
       @unmount-auto-focus="
         (event) => {
