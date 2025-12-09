@@ -24,7 +24,8 @@ const rootContext = injectSelectRootContext()
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
 // Track pointer type to differentiate between mouse and touch/pen
-const pointerTypeRef: PointerEvent['pointerType'] = 'touch'
+// eslint-disable-next-line prefer-const
+let pointerTypeRef: PointerEvent['pointerType'] = 'touch'
 
 const isDisabled = computed(() => rootContext.disabled?.value || props.disabled)
 
