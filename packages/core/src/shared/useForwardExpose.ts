@@ -1,13 +1,13 @@
 import type { ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
-import { unrefElement } from '@vueuse/core'
-import { computed, getCurrentInstance, ref } from 'vue'
+import { computedWithControl, unrefElement } from '@vueuse/core'
+import { getCurrentInstance, ref } from 'vue'
 
 export function useForwardExpose<T extends ComponentPublicInstance>() {
   const instance = getCurrentInstance()!
 
   const currentRef = ref<Element | T | null>()
-  const currentElement = computed<HTMLElement>(() => {
+  const currentElement = computedWithControl(currentRef, (): HTMLElement => {
     // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
     // @ts-expect-error ignore ts error
     return ['#text', '#comment'].includes(currentRef.value?.$el.nodeName) ? currentRef.value?.$el.nextElementSibling : unrefElement(currentRef)
