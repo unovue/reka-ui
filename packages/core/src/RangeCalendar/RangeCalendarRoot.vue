@@ -56,16 +56,18 @@ type RangeCalendarRootContext = {
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
   isNextButtonDisabled: (
-    nextPageFunc?: (date: DateValue) => DateValue
+    nextPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   isPrevButtonDisabled: (
-    prevPageFunc?: (date: DateValue) => DateValue
+    prevPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   formatter: Formatter
   dir: Ref<Direction>
   disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays: Ref<number | undefined>
+  minValue: Ref<DateValue | undefined>
+  maxValue: Ref<DateValue | undefined>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -435,6 +437,8 @@ provideRangeCalendarRootContext({
   disableDaysOutsideCurrentView,
   fixedDate,
   maximumDays,
+  minValue,
+  maxValue,
 })
 
 onMounted(() => {
@@ -448,7 +452,6 @@ onMounted(() => {
     ref="primitiveElement"
     :as="as"
     :as-child="asChild"
-    role="application"
     :aria-label="fullCalendarLabel"
     :data-readonly="readonly ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"

@@ -137,6 +137,6 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string | Record<string, any>'
+    'type': 'string | number | bigint | Record<string, any>'
   }
 ]" />

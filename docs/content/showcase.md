@@ -34,6 +34,11 @@ packages:
     url: https://unaui.com/
     image: https://unaui.com/hero.png
 
+  - title: Vuelor
+    description: A truly flexible, accessible, and Tailwind-ready color picker with developer experience in mind.
+    url: https://vuelor.dev/
+    image: https://vuelor.dev/og.jpg
+
 projects:
   - title: UnInbox
     description: Modern email for teams and professionals.

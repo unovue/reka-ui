@@ -29,6 +29,7 @@ type ComboboxRootContext<T> = {
   ignoreFilter: Ref<boolean>
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
+  resetModelValueOnClear: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -72,6 +73,10 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * When `true`, disable the default filters
    */
   ignoreFilter?: boolean
+  /**
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   */
+  resetModelValueOnClear?: boolean
 }
 </script>
 
@@ -88,6 +93,8 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   resetSearchTermOnSelect: true,
   openOnFocus: false,
   openOnClick: false,
+  resetModelValueOnClear: false,
+  highlightOnHover: true,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -101,7 +108,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -125,16 +132,15 @@ async function onOpenChange(val: boolean) {
     await nextTick()
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
+    inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
+    setTimeout(() => {
+      if (!val && props.resetSearchTermOnBlur)
+        resetSearchTerm.trigger()
+    }, 1)
   }
-
-  inputElement.value?.focus()
-  setTimeout(() => {
-    if (!val && props.resetSearchTermOnBlur)
-      resetSearchTerm.trigger()
-  }, 1)
 }
 
 const resetSearchTerm = createEventHook()
@@ -236,6 +242,7 @@ provideComboboxRootContext({
   ignoreFilter,
   openOnFocus,
   openOnClick,
+  resetModelValueOnClear,
 })
 </script>
 
@@ -255,7 +262,7 @@ provideComboboxRootContext({
       :name="name"
       :required="required"
       :disabled="disabled"
-      :highlight-on-hover="true"
+      :highlight-on-hover="highlightOnHover"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >

@@ -72,7 +72,7 @@ Read our [Animation Guide](/docs/guides/animation) to learn more about implement
 <template>
   <Presence :present="isVisible">
     <div
-      :data-open="isVisible ? 'open' : 'close'"
+      :data-state="isVisible ? 'open' : 'closed'"
       class="data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut"
     >
       <slot />
