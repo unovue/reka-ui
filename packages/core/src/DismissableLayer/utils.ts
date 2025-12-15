@@ -13,28 +13,163 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
+// Shadow DOM aware helper to find closest element with selector
+function closestCrossingBoundaries(
+  element: HTMLElement,
+  selector: string,
+): HTMLElement | null {
+  let current: Node | null = element
+
+  while (current) {
+    if (current.nodeType === Node.ELEMENT_NODE) {
+      const el = current as HTMLElement
+
+      if (el.matches && el.matches(selector)) {
+        return el
+      }
+    }
+
+    // Move to parent, crossing shadow boundaries
+    let next: Node | null = null
+
+    if (current.parentNode) {
+      next = current.parentNode
+    }
+    else if ((current as any).host) {
+      // Handle shadow root cases - check for host property
+      next = (current as any).host
+    }
+    else {
+      break
+    }
+
+    current = next
+  }
+
+  return null
+}
+
+// Shadow DOM aware helper to query all elements with selector
+function querySelectorAllCrossingBoundaries(
+  root: Document | DocumentFragment | Element,
+  selector: string,
+): HTMLElement[] {
+  const results: HTMLElement[] = []
+
+  function traverse(node: Node, depth: number = 0) {
+    const indent = '  '.repeat(depth)
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement
+
+      if (el.matches && el.matches(selector)) {
+        results.push(el)
+      }
+
+      // Check shadow root
+      if (el.shadowRoot) {
+        traverse(el.shadowRoot, depth + 1)
+      }
+    }
+
+    // Traverse children
+    try {
+      node.childNodes.forEach(child => traverse(child, depth + 1))
+    }
+    catch (error) {
+      console.error(
+        `[querySelectorAllCrossingBoundaries] ${indent}Error traversing children:`,
+        error,
+      )
+    }
+  }
+
+  traverse(root)
+  return results
+}
+
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
-  const targetLayer = targetElement.closest(
+  const targetLayer = closestCrossingBoundaries(
+    targetElement,
     '[data-dismissable-layer]',
   )
 
-  const mainLayer = layerElement.dataset.dismissableLayer === ''
-    ? layerElement
-    : layerElement.querySelector(
-      '[data-dismissable-layer]',
-    ) as HTMLElement
+  const mainLayer
+    = layerElement.dataset.dismissableLayer === ''
+      ? layerElement
+      : (layerElement.querySelector('[data-dismissable-layer]') as HTMLElement)
 
-  const nodeList = Array.from(
-    layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
+  // If no target layer found, check if we should handle this outside click
+  if (!targetLayer) {
+    // Get all layers and find if this layer is the topmost
+    const layerRoot = layerElement.getRootNode()
+    const searchRoot
+      = layerRoot.nodeType === Node.DOCUMENT_NODE
+        ? (layerRoot as Document)
+        : layerElement.ownerDocument
+
+    const allLayers = querySelectorAllCrossingBoundaries(
+      searchRoot,
+      '[data-dismissable-layer]',
+    )
+    const mainLayerIndex = allLayers.indexOf(mainLayer)
+
+    // Find the topmost layer (last in DOM order)
+    const topmostLayer = allLayers[allLayers.length - 1]
+    const isTopmostLayer = mainLayer === topmostLayer
+
+    // Only the topmost layer should handle outside clicks
+    if (isTopmostLayer) {
+      return false
+    }
+    else {
+      return true // Pretend it's inside to prevent dismissal
+    }
+  }
+
+  // If target layer is the same as main layer, target is inside
+  if (mainLayer === targetLayer) {
+    return true
+  }
+
+  // For shadow DOM, we need to search in the appropriate root
+  const layerRoot = layerElement.getRootNode()
+  const targetRoot = targetElement.getRootNode()
+
+  // If they're in different roots, we need to search more broadly
+  let searchRoot: Document | DocumentFragment | Element
+  if (layerRoot === targetRoot) {
+    // Same root, search within that root
+    searchRoot
+      = layerRoot.nodeType === Node.DOCUMENT_NODE
+        ? (layerRoot as Document)
+        : (layerRoot as DocumentFragment)
+  }
+  else {
+    // Different roots (e.g., one in shadow DOM, one in main document)
+    // Search in the main document which should contain both
+    searchRoot = layerElement.ownerDocument
+  }
+
+  const nodeList = querySelectorAllCrossingBoundaries(
+    searchRoot,
+    '[data-dismissable-layer]',
   )
 
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
+  // Check layer hierarchy - if main layer comes before target layer in DOM order,
+  // it means target layer is "above" main layer (higher z-index typically)
+  const mainLayerIndex = nodeList.indexOf(mainLayer)
+  const targetLayerIndex = nodeList.indexOf(targetLayer)
+
+  if (
+    mainLayerIndex >= 0
+    && targetLayerIndex >= 0
+    && mainLayerIndex < targetLayerIndex
   ) {
     return true
   }
-  else {
-    return false
-  }
+
+  return false
 }
 
 /**
@@ -47,8 +182,20 @@ export function usePointerDownOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
+  // Get the appropriate document context, considering shadow DOM
+  const getOwnerDocument = (): Document => {
+    if (!element?.value)
+      return globalThis?.document
+
+    const rootNode = element.value.getRootNode()
+    if (rootNode.nodeType === Node.DOCUMENT_NODE) {
+      return rootNode as Document
+    }
+    // In shadow DOM, we still want to listen on the main document for events
+    return element.value.ownerDocument ?? globalThis?.document
+  }
+
+  const ownerDocument = getOwnerDocument()
 
   const isPointerInsideDOMTree = ref(false)
   const handleClickRef = ref(() => {})
@@ -57,7 +204,10 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement | undefined
+      // Use composedPath to get the real target in shadow DOM scenarios
+      const composedPath = event.composedPath()
+      const realTarget = composedPath[0] as HTMLElement | undefined
+      const target = realTarget || (event.target as HTMLElement | undefined)
 
       if (!element?.value || !target)
         return
@@ -150,8 +300,20 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
+  // Get the appropriate document context, considering shadow DOM
+  const getOwnerDocument = (): Document => {
+    if (!element?.value)
+      return globalThis?.document
+
+    const rootNode = element.value.getRootNode()
+    if (rootNode.nodeType === Node.DOCUMENT_NODE) {
+      return rootNode as Document
+    }
+    // In shadow DOM, we still want to listen on the main document for events
+    return element.value.ownerDocument ?? globalThis?.document
+  }
+
+  const ownerDocument = getOwnerDocument()
 
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
@@ -163,7 +325,12 @@ export function useFocusOutside(
 
       await nextTick()
       await nextTick()
-      const target = event.target as HTMLElement | undefined
+
+      // Use composedPath for focus events too
+      const composedPath = event.composedPath()
+      const realTarget = composedPath[0] as HTMLElement | undefined
+      const target = realTarget || (event.target as HTMLElement | undefined)
+
       if (!element.value || !target || isLayerExist(element.value, target))
         return
 
@@ -202,3 +369,6 @@ export function dispatchUpdate() {
   const event = new CustomEvent(CONTEXT_UPDATE)
   document.dispatchEvent(event)
 }
+
+// Export shadow DOM helper functions for external use if needed
+export { closestCrossingBoundaries, querySelectorAllCrossingBoundaries }
