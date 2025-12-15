@@ -1,9 +1,11 @@
-import type { ComponentPublicInstance } from 'vue'
+import type { ComponentInternalInstance, ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
 import { unrefElement } from '@vueuse/core'
 import { computed, getCurrentInstance, ref } from 'vue'
 
-export function useForwardExpose<T extends ComponentPublicInstance>() {
+type ForwardRef = ComponentPublicInstance | ComponentInternalInstance
+
+export function useForwardExpose<T extends ForwardRef>() {
   const instance = getCurrentInstance()!
 
   const currentRef = ref<Element | T | null>()
@@ -56,10 +58,10 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
     Object.defineProperty(ret, '$el', {
       enumerable: true,
       configurable: true,
-      get: () => (ref instanceof Element ? ref : ref.$el),
+      get: () => (ref instanceof Element ? ref : (ref as ComponentPublicInstance).$el),
     })
 
-    instance.exposed = ret
+    instance.exposed = Object.assign({}, ret, (ref as ComponentInternalInstance))
   }
 
   return { forwardRef, currentRef, currentElement }
