@@ -13,42 +13,6 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-// Shadow DOM aware helper to find closest element with selector
-function closestCrossingBoundaries(
-  element: HTMLElement,
-  selector: string,
-): HTMLElement | null {
-  let current: Node | null = element
-
-  while (current) {
-    if (current.nodeType === Node.ELEMENT_NODE) {
-      const el = current as HTMLElement
-
-      if (el.matches && el.matches(selector)) {
-        return el
-      }
-    }
-
-    // Move to parent, crossing shadow boundaries
-    let next: Node | null = null
-
-    if (current.parentNode) {
-      next = current.parentNode
-    }
-    else if ((current as any).host) {
-      // Handle shadow root cases - check for host property
-      next = (current as any).host
-    }
-    else {
-      break
-    }
-
-    current = next
-  }
-
-  return null
-}
-
 // DOM boundary respecting version - doesn't cross shadow boundaries
 function closestWithinBoundaries(
   element: HTMLElement,
@@ -397,6 +361,3 @@ export function dispatchUpdate() {
   const event = new CustomEvent(CONTEXT_UPDATE)
   document.dispatchEvent(event)
 }
-
-// Export shadow DOM helper functions for external use if needed
-export { closestCrossingBoundaries, querySelectorAllCrossingBoundaries }
