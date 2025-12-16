@@ -56,6 +56,14 @@ export interface NavigationMenuRootProps extends PrimitiveProps {
    * @defaultValue `true`
    */
   unmountOnHide?: boolean
+
+  /**
+   * The aria label used for the menu root component. This is the component
+   * where the `as` prop is used for.
+   *
+   * @defaultValue `"Main"`
+   */
+  ariaLabel?: string
 }
 export type NavigationMenuRootEmits = {
   /** Event handler called when the value changes. */
@@ -111,6 +119,7 @@ const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
   disableHoverTrigger: false,
   unmountOnHide: true,
   as: 'nav',
+  ariaLabel: 'Main',
 })
 const emits = defineEmits<NavigationMenuRootEmits>()
 
@@ -214,7 +223,7 @@ provideNavigationMenuContext({
   <CollectionSlot>
     <Primitive
       :ref="forwardRef"
-      aria-label="Main"
+      :aria-label
       :as="as"
       :as-child="asChild"
       :data-orientation="orientation"
