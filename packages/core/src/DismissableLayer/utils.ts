@@ -29,17 +29,13 @@ function closestWithinBoundaries(
       }
     }
 
-    // Move to parent, but stop at shadow boundaries
-    if (current.parentNode && current.parentNode.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
-      current = current.parentNode
-    }
-    else if (current.parentNode && current.parentNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-      // At shadow root boundary - continue within shadow root
-      current = current.parentNode
-    }
-    else {
+    // Move upward, but do not cross a ShadowRoot boundary.
+    const up = (current as Node).parentNode as (Node & ParentNode) | null
+    if (!up)
       break
-    }
+    if (up instanceof ShadowRoot)
+      break
+    current = up
   }
 
   return null
@@ -52,9 +48,7 @@ function querySelectorAllCrossingBoundaries(
 ): HTMLElement[] {
   const results: HTMLElement[] = []
 
-  function traverse(node: Node, depth: number = 0) {
-    const indent = '  '.repeat(depth)
-
+  function traverse(node: Node): void {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement
 
@@ -62,21 +56,20 @@ function querySelectorAllCrossingBoundaries(
         results.push(el)
       }
 
-      // Check shadow root
-      if (el.shadowRoot) {
-        traverse(el.shadowRoot, depth + 1)
+      // Traverse into shadow root if present
+      if ((el as Element & { shadowRoot?: ShadowRoot }).shadowRoot) {
+        traverse((el as Element & { shadowRoot?: ShadowRoot }).shadowRoot as ShadowRoot)
       }
     }
 
-    // Traverse children
-    try {
-      node.childNodes.forEach(child => traverse(child, depth + 1))
-    }
-    catch (error) {
-      console.error(
-        `[querySelectorAllCrossingBoundaries] ${indent}Error traversing children:`,
-        error,
-      )
+    // Traverse light DOM children
+    // childNodes access is safe in same-origin and typical app contexts
+    // and avoids unnecessary allocations.
+    const children = (node as ParentNode).childNodes
+    if (children) {
+      // Use a classic for loop for performance.
+      for (let i = 0; i < children.length; i++)
+        traverse(children[i] as Node)
     }
   }
 
@@ -97,15 +90,13 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
 
   // If no target layer found, check if we should handle this outside click
   if (!targetLayer) {
-    // IMPROVED: Search for ALL layers across all contexts (main document + shadow roots)
-    // Always search from the main document to get complete layer hierarchy
+    // Search for all layers across contexts (document + shadow roots)
+    // Always start from the main document to get a complete view.
     const mainDocument = layerElement.ownerDocument
     const allLayersEverywhere = querySelectorAllCrossingBoundaries(
       mainDocument,
       '[data-dismissable-layer]',
     )
-
-    const mainLayerIndex = allLayersEverywhere.indexOf(mainLayer)
     const topmostLayer = allLayersEverywhere[allLayersEverywhere.length - 1]
     const isTopmostLayer = mainLayer === topmostLayer
     // Only the topmost layer should handle outside clicks
@@ -113,7 +104,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
       return false
     }
     else {
-      return true // Pretend it's inside to prevent dismissal
+      return true // Treat as inside to prevent lower layer dismissal
     }
   }
 
