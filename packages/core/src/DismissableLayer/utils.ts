@@ -49,6 +49,38 @@ function closestCrossingBoundaries(
   return null
 }
 
+// DOM boundary respecting version - doesn't cross shadow boundaries
+function closestWithinBoundaries(
+  element: HTMLElement,
+  selector: string,
+): HTMLElement | null {
+  let current: Node | null = element
+
+  while (current) {
+    if (current.nodeType === Node.ELEMENT_NODE) {
+      const el = current as HTMLElement
+
+      if (el.matches && el.matches(selector)) {
+        return el
+      }
+    }
+
+    // Move to parent, but stop at shadow boundaries
+    if (current.parentNode && current.parentNode.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
+      current = current.parentNode
+    }
+    else if (current.parentNode && current.parentNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      // At shadow root boundary - continue within shadow root
+      current = current.parentNode
+    }
+    else {
+      break
+    }
+  }
+
+  return null
+}
+
 // Shadow DOM aware helper to query all elements with selector
 function querySelectorAllCrossingBoundaries(
   root: Document | DocumentFragment | Element,
@@ -89,7 +121,7 @@ function querySelectorAllCrossingBoundaries(
 }
 
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
-  const targetLayer = closestCrossingBoundaries(
+  const targetLayer = closestWithinBoundaries(
     targetElement,
     '[data-dismissable-layer]',
   )
@@ -99,42 +131,92 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
       ? layerElement
       : (layerElement.querySelector('[data-dismissable-layer]') as HTMLElement)
 
+  console.debug('[isLayerExist] === LAYER ANALYSIS START === v5')
+  console.debug('[isLayerExist] Layer Element:', layerElement)
+  console.debug('[isLayerExist] Target Element:', targetElement)
+  console.debug('[isLayerExist] Main Layer:', mainLayer)
+  console.debug('[isLayerExist] Target Layer:', targetLayer)
+  console.debug('[isLayerExist] Layer Element ID/Class:', {
+    id: layerElement.id,
+    className: layerElement.className,
+    dataset: layerElement.dataset,
+  })
+
   // If no target layer found, check if we should handle this outside click
   if (!targetLayer) {
-    // Get all layers and find if this layer is the topmost
-    const layerRoot = layerElement.getRootNode()
-    const searchRoot
-      = layerRoot.nodeType === Node.DOCUMENT_NODE
-        ? (layerRoot as Document)
-        : layerElement.ownerDocument
+    console.debug('[isLayerExist] 🔍 NO TARGET LAYER - Processing outside click')
 
-    const allLayers = querySelectorAllCrossingBoundaries(
-      searchRoot,
+    // IMPROVED: Search for ALL layers across all contexts (main document + shadow roots)
+    // Always search from the main document to get complete layer hierarchy
+    const mainDocument = layerElement.ownerDocument
+    const allLayersEverywhere = querySelectorAllCrossingBoundaries(
+      mainDocument,
       '[data-dismissable-layer]',
     )
-    const mainLayerIndex = allLayers.indexOf(mainLayer)
 
-    // Find the topmost layer (last in DOM order)
-    const topmostLayer = allLayers[allLayers.length - 1]
+    console.debug('[isLayerExist] 📋 ALL LAYERS FOUND (COMPREHENSIVE):', allLayersEverywhere.length)
+    allLayersEverywhere.forEach((layer, index) => {
+      const layerRoot = layer.getRootNode()
+      console.debug(`[isLayerExist] Layer ${index}:`, {
+        element: layer,
+        id: layer.id,
+        className: layer.className,
+        isMainLayer: layer === mainLayer,
+        root: layerRoot === mainDocument ? 'main-document' : 'shadow-root',
+        dataset: layer.dataset,
+      })
+    })
+
+    const mainLayerIndex = allLayersEverywhere.indexOf(mainLayer)
+    const topmostLayer = allLayersEverywhere[allLayersEverywhere.length - 1]
     const isTopmostLayer = mainLayer === topmostLayer
+
+    console.debug('[isLayerExist] 🎯 COMPREHENSIVE HIERARCHY ANALYSIS:', {
+      mainLayerIndex,
+      topmostLayerIndex: allLayersEverywhere.length - 1,
+      isTopmostLayer,
+      topmostLayer: {
+        element: topmostLayer,
+        id: topmostLayer?.id,
+        className: topmostLayer?.className,
+        root: topmostLayer?.getRootNode() === mainDocument ? 'main-document' : 'shadow-root',
+      },
+      mainLayer: {
+        element: mainLayer,
+        id: mainLayer?.id,
+        className: mainLayer?.className,
+        root: mainLayer?.getRootNode() === mainDocument ? 'main-document' : 'shadow-root',
+      },
+    })
 
     // Only the topmost layer should handle outside clicks
     if (isTopmostLayer) {
+      console.debug('[isLayerExist] ✅ TOPMOST LAYER - Will handle outside click (dismiss)')
       return false
     }
     else {
+      console.debug('[isLayerExist] ❌ NOT TOPMOST - Will ignore outside click (pretend inside)')
       return true // Pretend it's inside to prevent dismissal
     }
   }
 
   // If target layer is the same as main layer, target is inside
   if (mainLayer === targetLayer) {
+    console.debug('[isLayerExist] ✅ TARGET IS SAME AS MAIN LAYER - Click is inside - v5')
     return true
   }
+
+  console.debug('[isLayerExist] 🔍 CHECKING LAYER HIERARCHY')
 
   // For shadow DOM, we need to search in the appropriate root
   const layerRoot = layerElement.getRootNode()
   const targetRoot = targetElement.getRootNode()
+
+  console.debug('[isLayerExist] Root analysis:', {
+    layerRoot,
+    targetRoot,
+    sameRoot: layerRoot === targetRoot,
+  })
 
   // If they're in different roots, we need to search more broadly
   let searchRoot: Document | DocumentFragment | Element
@@ -144,11 +226,14 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
       = layerRoot.nodeType === Node.DOCUMENT_NODE
         ? (layerRoot as Document)
         : (layerRoot as DocumentFragment)
+    console.debug('[isLayerExist] Using same root for search:', searchRoot)
   }
   else {
-    // Different roots (e.g., one in shadow DOM, one in main document)
-    // Search in the main document which should contain both
-    searchRoot = layerElement.ownerDocument
+    // Different roots - layers in different DOM contexts should not interfere with each other
+    // Return false immediately to respect DOM boundaries (e.g., main document vs shadow DOM)
+    console.debug('[isLayerExist] Different roots - rejecting cross-boundary comparison:', { layerRoot, targetRoot })
+    console.debug('[isLayerExist] === LAYER ANALYSIS END ===')
+    return false
   }
 
   const nodeList = querySelectorAllCrossingBoundaries(
@@ -156,19 +241,40 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
     '[data-dismissable-layer]',
   )
 
+  console.debug('[isLayerExist] 📋 HIERARCHY CHECK - All layers in search root:')
+  nodeList.forEach((layer, index) => {
+    console.debug(`[isLayerExist] Hierarchy Layer ${index}:`, {
+      element: layer,
+      id: layer.id,
+      className: layer.className,
+      isMainLayer: layer === mainLayer,
+      isTargetLayer: layer === targetLayer,
+    })
+  })
+
   // Check layer hierarchy - if main layer comes before target layer in DOM order,
   // it means target layer is "above" main layer (higher z-index typically)
   const mainLayerIndex = nodeList.indexOf(mainLayer)
   const targetLayerIndex = nodeList.indexOf(targetLayer)
+
+  console.debug('[isLayerExist] 🎯 HIERARCHY INDICES:', {
+    mainLayerIndex,
+    targetLayerIndex,
+    mainLayerBeforeTarget: mainLayerIndex < targetLayerIndex,
+    bothFound: mainLayerIndex >= 0 && targetLayerIndex >= 0,
+  })
 
   if (
     mainLayerIndex >= 0
     && targetLayerIndex >= 0
     && mainLayerIndex < targetLayerIndex
   ) {
+    console.debug('[isLayerExist] ✅ TARGET LAYER IS ABOVE MAIN LAYER - Click is inside')
     return true
   }
 
+  console.debug('[isLayerExist] ❌ TARGET IS OUTSIDE OR INVALID HIERARCHY')
+  console.debug('[isLayerExist] === LAYER ANALYSIS END ===')
   return false
 }
 
@@ -204,23 +310,46 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
+      console.debug('[handlePointerDown] 🎯 === POINTER DOWN EVENT START === v5')
+
       // Use composedPath to get the real target in shadow DOM scenarios
       const composedPath = event.composedPath()
       const realTarget = composedPath[0] as HTMLElement | undefined
       const target = realTarget || (event.target as HTMLElement | undefined)
 
+      console.debug('[handlePointerDown] Event details:', {
+        originalTarget: event.target,
+        realTarget,
+        finalTarget: target,
+        composedPathLength: composedPath.length,
+        layerElement: element?.value,
+        layerElementId: element?.value?.id,
+        layerElementClass: element?.value?.className,
+      })
+
       if (!element?.value || !target)
         return
 
-      if (isLayerExist(element.value, target)) {
+      const layerExists = isLayerExist(element.value, target)
+      console.debug('[handlePointerDown] Layer exists result:', layerExists)
+
+      if (layerExists) {
+        console.debug('[handlePointerDown] ✅ Click is inside layer - no dismissal')
         isPointerInsideDOMTree.value = false
         return
       }
+
+      console.debug('[handlePointerDown] ❌ Click is outside layer - will attempt dismissal')
 
       if (event.target && !isPointerInsideDOMTree.value) {
         const eventDetail = { originalEvent: event }
 
         function handleAndDispatchPointerDownOutsideEvent() {
+          console.debug('[handlePointerDown] 🚀 DISPATCHING outside event for layer:', {
+            layerElement: element?.value,
+            layerElementId: element?.value?.id,
+            layerElementClass: element?.value?.className,
+          })
           handleAndDispatchCustomEvent(
             POINTER_DOWN_OUTSIDE,
             onPointerDownOutside,
@@ -241,6 +370,7 @@ export function usePointerDownOutside(
          * certain that it was raised, and therefore cleaned-up.
          */
         if (event.pointerType === 'touch') {
+          console.debug('[handlePointerDown] Touch device - deferring to click event')
           ownerDocument.removeEventListener('click', handleClickRef.value)
           handleClickRef.value = handleAndDispatchPointerDownOutsideEvent
           ownerDocument.addEventListener('click', handleClickRef.value, {
@@ -248,16 +378,20 @@ export function usePointerDownOutside(
           })
         }
         else {
+          console.debug('[handlePointerDown] Non-touch device - immediate dispatch')
           handleAndDispatchPointerDownOutsideEvent()
         }
       }
       else {
         // We need to remove the event listener in case the outside click has been canceled.
         // See: https://github.com/radix-ui/primitives/issues/2171
+        console.debug('[handlePointerDown] 🛑 Click was inside DOM tree - cleaning up click listener')
         ownerDocument.removeEventListener('click', handleClickRef.value)
       }
       isPointerInsideDOMTree.value = false
+      console.debug('[handlePointerDown] === POINTER DOWN EVENT END ===')
     }
+
     /**
      * if this hook executes in a component that mounts via a `pointerdown` event, the event
      * would bubble up to the document and trigger a `pointerDownOutside` event. We avoid

@@ -1,5 +1,8 @@
 <script lang="ts">
-import type { FocusOutsideEvent, PointerDownOutsideEvent } from './utils'
+import type {
+  FocusOutsideEvent,
+  PointerDownOutsideEvent,
+} from './utils'
 
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, nextTick, reactive, watchEffect } from 'vue'
