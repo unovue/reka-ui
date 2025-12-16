@@ -61,7 +61,7 @@ export interface NavigationMenuRootProps extends PrimitiveProps {
    * The aria label used for the menu root component. This is the component
    * where the `as` prop is used for.
    *
-   * @defaultValue `"Main"`
+   * @defaultValue `'Main'`
    */
   ariaLabel?: string
 }

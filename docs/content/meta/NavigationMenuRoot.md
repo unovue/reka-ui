@@ -79,6 +79,13 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'ariaLabel',
+    'description': '<p>The aria label used for the menu root component. This is the component where the <code>as</code> prop is used for.</p>\n',
+    'type': 'string',
+    'required': false,
+    'default': '\'Main\''
   }
 ]" />
 
