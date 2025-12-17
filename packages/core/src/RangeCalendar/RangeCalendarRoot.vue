@@ -56,10 +56,10 @@ type RangeCalendarRootContext = {
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
   isNextButtonDisabled: (
-    nextPageFunc?: (date: DateValue) => DateValue
+    nextPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   isPrevButtonDisabled: (
-    prevPageFunc?: (date: DateValue) => DateValue
+    prevPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   formatter: Formatter
   dir: Ref<Direction>
@@ -452,7 +452,6 @@ onMounted(() => {
     ref="primitiveElement"
     :as="as"
     :as-child="asChild"
-    role="application"
     :aria-label="fullCalendarLabel"
     :data-readonly="readonly ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"

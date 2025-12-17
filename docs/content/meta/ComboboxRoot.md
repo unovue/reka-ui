@@ -48,7 +48,8 @@
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'ignoreFilter',

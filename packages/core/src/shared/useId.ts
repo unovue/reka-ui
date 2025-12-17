@@ -21,7 +21,7 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
   }
 
   const configProviderContext = injectConfigProviderContext({ useId: undefined })
-  
+
   if (configProviderContext.useId) {
     return `${prefix}-${configProviderContext.useId()}`
   }

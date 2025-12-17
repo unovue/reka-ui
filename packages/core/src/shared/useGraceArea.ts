@@ -44,7 +44,7 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
   watchEffect((cleanupFn) => {
     if (pointerGraceArea.value) {
       const handleTrackPointerGrace = (event: PointerEvent) => {
-        if (!pointerGraceArea.value || !(event.target instanceof HTMLElement))
+        if (!pointerGraceArea.value || !(event.target instanceof Element))
           return
 
         const target = event.target
@@ -74,7 +74,7 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 }
 
 interface Point { x: number, y: number }
-  type Polygon = Point[]
+type Polygon = Point[]
 
 function getExitSideFromRect(point: Point, rect: DOMRect): Side {
   const top = Math.abs(rect.top - point.y)
