@@ -130,16 +130,28 @@ watchEffect((cleanupFn) => {
   }
 
   const root = getEventRoot(container)
-  root.addEventListener('focusin', handleFocusIn as EventListener)
-  root.addEventListener('focusout', handleFocusOut as EventListener)
+  if (root instanceof Document) {
+    root.addEventListener('focusin', handleFocusIn)
+    root.addEventListener('focusout', handleFocusOut)
+  }
+  else {
+    root.addEventListener('focusin', handleFocusIn as EventListener)
+    root.addEventListener('focusout', handleFocusOut as EventListener)
+  }
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
     const cleanupRoot = getEventRoot(container)
-    cleanupRoot.removeEventListener('focusin', handleFocusIn as EventListener)
-    cleanupRoot.removeEventListener('focusout', handleFocusOut as EventListener)
+    if (cleanupRoot instanceof Document) {
+      cleanupRoot.removeEventListener('focusin', handleFocusIn)
+      cleanupRoot.removeEventListener('focusout', handleFocusOut)
+    }
+    else {
+      cleanupRoot.removeEventListener('focusin', handleFocusIn as EventListener)
+      cleanupRoot.removeEventListener('focusout', handleFocusOut as EventListener)
+    }
     mutationObserver.disconnect()
   })
 })
