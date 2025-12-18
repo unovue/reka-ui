@@ -1,7 +1,7 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toValue, watchEffect } from 'vue'
-import { handleAndDispatchCustomEvent } from '@/shared'
+import { debugLog, elSummary, getActiveElement, handleAndDispatchCustomEvent, rootKind } from '@/shared'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -79,6 +79,12 @@ function querySelectorAllCrossingBoundaries(
 }
 
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+  debugLog('dl', 'isLayerExist:start', {
+    layer: elSummary(layerElement),
+    target: elSummary(targetElement),
+    layerRoot: rootKind(layerElement.getRootNode()),
+    targetRoot: rootKind(targetElement.getRootNode()),
+  })
   const targetLayer = closestWithinBoundaries(
     targetElement,
     '[data-dismissable-layer]',
@@ -93,26 +99,51 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
         })()
 
   if (!targetLayer) {
-    // Search for all layers across contexts (document + shadow roots)
-    // Always start from the main document to get a complete view.
-    const mainDocument = layerElement.ownerDocument
-    const allLayersEverywhere = querySelectorAllCrossingBoundaries(
-      mainDocument,
-      '[data-dismissable-layer]',
-    )
-    const topmostLayer = allLayersEverywhere[allLayersEverywhere.length - 1]
-    const isTopmostLayer = mainLayer === topmostLayer
-    // Only the topmost layer should handle outside clicks
-    if (isTopmostLayer) {
-      return false
+    // No layer under the target in the event's composed path.
+    // Determine if this layer is the topmost within its own root
+    // (Document or ShadowRoot). Only the topmost layer should handle
+    // the outside interaction; lower layers should ignore it and wait
+    // for subsequent interactions.
+    const layerRoot = layerElement.getRootNode()
+    let nodeList: HTMLElement[] = []
+    if (
+      layerRoot instanceof Document
+      || layerRoot instanceof ShadowRoot
+      || layerRoot instanceof DocumentFragment
+    ) {
+      nodeList = Array.from(
+        (layerRoot as Document | ShadowRoot | DocumentFragment).querySelectorAll?.(
+          '[data-dismissable-layer]',
+        ) ?? [],
+      ) as HTMLElement[]
     }
     else {
-      return true // Treat as inside to prevent lower layer dismissal
+      nodeList = Array.from(
+        layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
+      ) as HTMLElement[]
     }
+
+    const topmostLayer = nodeList[nodeList.length - 1]
+    const isTopmostLayer = mainLayer === topmostLayer
+    debugLog('dl', 'isLayerExist:no-target-layer', {
+      layersInRoot: nodeList.map(elSummary),
+      main: elSummary(mainLayer),
+      topmost: elSummary(topmostLayer),
+      isTopmostLayer,
+      decision: isTopmostLayer ? 'outside(false)' : 'inside(true)',
+    })
+    // When this layer is not the topmost, treat as inside (return true)
+    // so a higher layer handles the outside event. If it is the topmost,
+    // treat as outside (false).
+    return !isTopmostLayer
   }
 
   // If target layer is the same as main layer, target is inside
   if (mainLayer === targetLayer) {
+    debugLog('dl', 'isLayerExist:target-is-main (inside)', {
+      main: elSummary(mainLayer),
+      targetLayer: elSummary(targetLayer),
+    })
     return true
   }
 
@@ -140,6 +171,10 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   else {
     // Different roots - layers in different DOM contexts should not interfere with each other
     // Return false immediately to respect DOM boundaries (e.g., main document vs shadow DOM)
+    debugLog('dl', 'isLayerExist:different-roots (treat as outside for this layer)', {
+      layerRoot: rootKind(layerRoot),
+      targetRoot: rootKind(targetRoot),
+    })
     return false
   }
 
@@ -153,15 +188,17 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   const mainLayerIndex = nodeList.indexOf(mainLayer)
   const targetLayerIndex = nodeList.indexOf(targetLayer)
 
-  if (
+  const inside = (
     mainLayerIndex >= 0
     && targetLayerIndex >= 0
     && mainLayerIndex < targetLayerIndex
-  ) {
-    return true
-  }
-
-  return false
+  )
+  debugLog('dl', 'isLayerExist:indices', {
+    mainIndex: mainLayerIndex,
+    targetIndex: targetLayerIndex,
+    inside,
+  })
+  return inside
 }
 
 /**
@@ -208,7 +245,24 @@ export function usePointerDownOutside(
       if (!element?.value || !target)
         return
 
+      // Fast path: if the click is within this layer's subtree, it's not outside.
+      // Using contains is robust with Teleport and ShadowRoot when within the same root.
+      if ((element.value as HTMLElement).contains(target)) {
+        debugLog('dl', 'pointerdown:inside-fast-path', {
+          layer: elSummary(element.value),
+          target: elSummary(target),
+          root: rootKind(element.value.getRootNode()),
+        })
+        isPointerInsideDOMTree.value = false
+        return
+      }
+
       const layerExists = isLayerExist(element.value, target)
+      debugLog('dl', 'pointerdown:layer-exist-check', {
+        layer: elSummary(element.value),
+        target: elSummary(target),
+        layerExists,
+      })
 
       if (layerExists) {
         isPointerInsideDOMTree.value = false
@@ -219,6 +273,10 @@ export function usePointerDownOutside(
         const eventDetail = { originalEvent: event }
 
         function handleAndDispatchPointerDownOutsideEvent() {
+          debugLog('dl', 'pointerdown:DISPATCH outside', {
+            pointerType: event.pointerType,
+            target: elSummary(target),
+          })
           handleAndDispatchCustomEvent(
             POINTER_DOWN_OUTSIDE,
             onPointerDownOutside,
@@ -252,6 +310,7 @@ export function usePointerDownOutside(
       else {
         // We need to remove the event listener in case the outside click has been canceled.
         // See: https://github.com/radix-ui/primitives/issues/2171
+        debugLog('dl', 'pointerdown:remove pending click listener (canceled)')
         ownerDocument.removeEventListener('click', handleClickRef.value)
       }
       isPointerInsideDOMTree.value = false
@@ -299,22 +358,19 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  // Get the appropriate document context, considering shadow DOM
-  const getOwnerDocument = (): Document => {
-    if (!element?.value)
-      return globalThis?.document
-
-    const rootNode = element.value.getRootNode()
-    if (rootNode instanceof Document) {
-      return rootNode
-    }
-    // In shadow DOM, we still want to listen on the main document for events
-    return element.value.ownerDocument ?? globalThis?.document
+  const getEventRoot = (): Document | (ShadowRoot | DocumentFragment) => {
+    const el = element?.value
+    const root = el?.getRootNode()
+    // Prefer ShadowRoot; also treat shadow-like DocumentFragment with `host`
+    if (root instanceof Document)
+      return root
+    if ((typeof ShadowRoot !== 'undefined' && root instanceof ShadowRoot) || (root instanceof DocumentFragment && (root as any).host))
+      return root as ShadowRoot | DocumentFragment
+    return (globalThis?.document as Document)
   }
 
-  const ownerDocument = getOwnerDocument()
-
   const isFocusInsideDOMTree = ref(false)
+  const ignoreFocusOutsideUntil = ref(0)
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
@@ -326,8 +382,8 @@ export function useFocusOutside(
       await nextTick()
 
       // Use composedPath for focus events too
-      const composedPath = event.composedPath()
-      const first = composedPath[0]
+      const composedPath = event.composedPath?.()
+      const first = composedPath && composedPath.length > 0 ? composedPath[0] : undefined
       const target
         = first instanceof HTMLElement
           ? first
@@ -335,11 +391,55 @@ export function useFocusOutside(
             ? event.target
             : undefined
 
-      if (!element.value || !target || isLayerExist(element.value, target))
+      if (!element.value || !target)
         return
+
+      // Fast path: if focus moved within this layer's subtree, it's not outside.
+      if (element.value.contains(target)) {
+        debugLog('focus', 'focusin:inside-fast-path', {
+          layer: elSummary(element.value),
+          target: elSummary(target),
+          root: rootKind(element.value.getRootNode()),
+        })
+        return
+      }
+
+      // Additional guard 1: if a pointerdown just occurred inside this layer,
+      // ignore the immediate subsequent focusout (common when clicking non-focusable areas).
+      if (Date.now() < ignoreFocusOutsideUntil.value) {
+        debugLog('focus', 'focusin:ignore due to recent pointerdown inside', {
+          layer: elSummary(element.value),
+          target: elSummary(target),
+        })
+        return
+      }
+
+      // Additional guard 2: if the currently active element is still inside this layer,
+      // do not treat as outside. This avoids false positives when focus events retarget
+      // across shadow boundaries (e.g., host gets focus but deepest active remains inside).
+      const active = getActiveElement()
+      if (active && active instanceof HTMLElement && element.value.contains(active)) {
+        debugLog('focus', 'focusin:active-element-inside-guard', {
+          layer: elSummary(element.value),
+          active: elSummary(active),
+        })
+        return
+      }
+
+      if (isLayerExist(element.value, target)) {
+        debugLog('focus', 'focusin:layer-exist (treat as inside)', {
+          layer: elSummary(element.value),
+          target: elSummary(target),
+        })
+        return
+      }
 
       if (event.target && !isFocusInsideDOMTree.value) {
         const eventDetail = { originalEvent: event }
+        debugLog('focus', 'focusin:DISPATCH outside', {
+          layer: elSummary(element.value),
+          target: elSummary(target),
+        })
         handleAndDispatchCustomEvent(
           FOCUS_OUTSIDE,
           onFocusOutside,
@@ -348,9 +448,39 @@ export function useFocusOutside(
       }
     }
 
-    ownerDocument.addEventListener('focusin', handleFocus)
+    const root = getEventRoot()
+    const listener: EventListener = ev => handleFocus(ev as FocusEvent)
+    root.addEventListener('focusin', listener)
 
-    cleanupFn(() => ownerDocument.removeEventListener('focusin', handleFocus))
+    // Track pointerdown inside to suppress focus outside dispatch shortly after
+    const pointerListener: EventListener = (ev) => {
+      const e = ev as PointerEvent
+      const path = e.composedPath?.()
+      const first = path && path.length > 0 ? path[0] : undefined
+      const tgt
+        = first instanceof HTMLElement
+          ? first
+          : e.target instanceof HTMLElement
+            ? e.target
+            : undefined
+      if (!element?.value || !tgt)
+        return
+      if (element.value.contains(tgt)) {
+        ignoreFocusOutsideUntil.value = Date.now() + 250
+        debugLog('focus', 'pointerdown:mark to ignore focusout window', {
+          layer: elSummary(element.value),
+          target: elSummary(tgt),
+          until: ignoreFocusOutsideUntil.value,
+        })
+      }
+    }
+    root.addEventListener('pointerdown', pointerListener, { capture: true })
+
+    cleanupFn(() => {
+      const r = getEventRoot()
+      r.removeEventListener('focusin', listener)
+      r.removeEventListener('pointerdown', pointerListener, { capture: true } as any)
+    })
   })
 
   return {
