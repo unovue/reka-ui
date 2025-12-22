@@ -13,28 +13,155 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
+/**
+ * Finds the closest ancestor matching selector, stopping at shadow DOM boundaries.
+ * @param element the starting element
+ * @param selector the selector to match
+ * @returns the closest matching ancestor or null if none found
+ */
+function closestWithinBoundaries(
+  element: HTMLElement,
+  selector: string,
+): HTMLElement | null {
+  let current: Node | null = element
+
+  while (current) {
+    if (current instanceof HTMLElement) {
+      const el: HTMLElement = current
+
+      if (el.matches && el.matches(selector)) {
+        return el
+      }
+    }
+
+    const up: Node | null = current.parentNode
+    if (!up)
+      break
+    if (up instanceof ShadowRoot)
+      break
+    current = up
+  }
+
+  return null
+}
+
+/**
+ * Shadow DOM aware helper to query all elements with selector
+ * @param root the root element or document to start the search from
+ * @param selector the selector to match
+ * @returns an array of matching elements
+ */
+function querySelectorAllCrossingBoundaries(
+  root: Document | DocumentFragment | Element,
+  selector: string,
+): HTMLElement[] {
+  const results: HTMLElement[] = []
+
+  function traverse(node: Node): void {
+    if (node instanceof HTMLElement) {
+      const el: HTMLElement = node
+
+      if (el.matches && el.matches(selector)) {
+        results.push(el)
+      }
+      if (el.shadowRoot) {
+        traverse(el.shadowRoot)
+      }
+    }
+    const children = node.childNodes
+    if (children) {
+      for (let i = 0; i < children.length; i++)
+        traverse(children[i])
+    }
+  }
+  traverse(root)
+  return results
+}
+
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
-  const targetLayer = targetElement.closest(
+  const targetLayer = closestWithinBoundaries(
+    targetElement,
     '[data-dismissable-layer]',
   )
 
-  const mainLayer = layerElement.dataset.dismissableLayer === ''
-    ? layerElement
-    : layerElement.querySelector(
-      '[data-dismissable-layer]',
-    ) as HTMLElement
+  const mainLayer
+    = layerElement.dataset.dismissableLayer === ''
+      ? layerElement
+      : (() => {
+          const nested = layerElement.querySelector('[data-dismissable-layer]')
+          return nested instanceof HTMLElement ? nested : layerElement
+        })()
 
-  const nodeList = Array.from(
-    layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
+  if (!targetLayer) {
+    // Search for all layers across contexts (document + shadow roots)
+    // Always start from the main document to get a complete view.
+    const mainDocument = layerElement.ownerDocument
+    const allLayersEverywhere = querySelectorAllCrossingBoundaries(
+      mainDocument,
+      '[data-dismissable-layer]',
+    )
+    const topmostLayer = allLayersEverywhere[allLayersEverywhere.length - 1]
+    const isTopmostLayer = mainLayer === topmostLayer
+    // Only the topmost layer should handle outside clicks
+    if (isTopmostLayer) {
+      return false
+    }
+    else {
+      return true // Treat as inside to prevent lower layer dismissal
+    }
+  }
+
+  // If target layer is the same as main layer, target is inside
+  if (mainLayer === targetLayer) {
+    return true
+  }
+
+  // For shadow DOM, we need to search in the appropriate root
+  const layerRoot = layerElement.getRootNode()
+  const targetRoot = targetElement.getRootNode()
+
+  // If they're in different roots, we need to search more broadly
+  let searchRoot: Document | DocumentFragment | Element
+  if (layerRoot === targetRoot) {
+    // Same root, search within that root
+    if (layerRoot instanceof Document) {
+      searchRoot = layerRoot
+    }
+    else if (layerRoot instanceof ShadowRoot) {
+      searchRoot = layerRoot
+    }
+    else if (layerRoot instanceof DocumentFragment) {
+      searchRoot = layerRoot
+    }
+    else {
+      searchRoot = layerElement.ownerDocument
+    }
+  }
+  else {
+    // Different roots - layers in different DOM contexts should not interfere with each other
+    // Return false immediately to respect DOM boundaries (e.g., main document vs shadow DOM)
+    return false
+  }
+
+  const nodeList = querySelectorAllCrossingBoundaries(
+    searchRoot,
+    '[data-dismissable-layer]',
   )
 
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
+  // Check layer hierarchy - if main layer comes before target layer in DOM order,
+  // it means target layer is "above" main layer (higher z-index typically)
+  const mainLayerIndex = nodeList.indexOf(mainLayer)
+  const targetLayerIndex = nodeList.indexOf(targetLayer)
+
+  if (
+    mainLayerIndex >= 0
+    && targetLayerIndex >= 0
+    && mainLayerIndex < targetLayerIndex
   ) {
     return true
   }
-  else {
-    return false
-  }
+
+  return false
 }
 
 /**
@@ -47,8 +174,20 @@ export function usePointerDownOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
+  // Get the appropriate document context, considering shadow DOM
+  const getOwnerDocument = (): Document => {
+    if (!element?.value)
+      return globalThis?.document
+
+    const rootNode = element.value.getRootNode()
+    if (rootNode instanceof Document) {
+      return rootNode
+    }
+    // In shadow DOM, we still want to listen on the main document for events
+    return element.value.ownerDocument ?? globalThis?.document
+  }
+
+  const ownerDocument = getOwnerDocument()
 
   const isPointerInsideDOMTree = ref(false)
   const handleClickRef = ref(() => {})
@@ -57,12 +196,21 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement | undefined
+      const composedPath = event.composedPath()
+      const first = composedPath[0]
+      const target
+        = first instanceof HTMLElement
+          ? first
+          : event.target instanceof HTMLElement
+            ? event.target
+            : undefined
 
       if (!element?.value || !target)
         return
 
-      if (isLayerExist(element.value, target)) {
+      const layerExists = isLayerExist(element.value, target)
+
+      if (layerExists) {
         isPointerInsideDOMTree.value = false
         return
       }
@@ -108,6 +256,7 @@ export function usePointerDownOutside(
       }
       isPointerInsideDOMTree.value = false
     }
+
     /**
      * if this hook executes in a component that mounts via a `pointerdown` event, the event
      * would bubble up to the document and trigger a `pointerDownOutside` event. We avoid
@@ -150,8 +299,20 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
+  // Get the appropriate document context, considering shadow DOM
+  const getOwnerDocument = (): Document => {
+    if (!element?.value)
+      return globalThis?.document
+
+    const rootNode = element.value.getRootNode()
+    if (rootNode instanceof Document) {
+      return rootNode
+    }
+    // In shadow DOM, we still want to listen on the main document for events
+    return element.value.ownerDocument ?? globalThis?.document
+  }
+
+  const ownerDocument = getOwnerDocument()
 
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
@@ -163,7 +324,17 @@ export function useFocusOutside(
 
       await nextTick()
       await nextTick()
-      const target = event.target as HTMLElement | undefined
+
+      // Use composedPath for focus events too
+      const composedPath = event.composedPath()
+      const first = composedPath[0]
+      const target
+        = first instanceof HTMLElement
+          ? first
+          : event.target instanceof HTMLElement
+            ? event.target
+            : undefined
+
       if (!element.value || !target || isLayerExist(element.value, target))
         return
 

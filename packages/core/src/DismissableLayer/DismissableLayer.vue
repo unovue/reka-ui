@@ -5,12 +5,7 @@ import type {
 } from './utils'
 
 import type { PrimitiveProps } from '@/Primitive'
-import {
-  computed,
-  nextTick,
-  reactive,
-  watchEffect,
-} from 'vue'
+import { computed, nextTick, reactive, watchEffect } from 'vue'
 import { useForwardExpose } from '@/shared'
 
 export interface DismissableLayerProps extends PrimitiveProps {
@@ -37,13 +32,13 @@ export type DismissableLayerEmits = {
    * Event handler called when the focus moves outside of the `DismissableLayer`.
    * Can be prevented.
    */
-  focusOutside: [ event: FocusOutsideEvent]
+  focusOutside: [event: FocusOutsideEvent]
   /**
    * Event handler called when an interaction happens outside the `DismissableLayer`.
    * Specifically, when a `pointerdown` event happens outside or focus moves outside of it.
    * Can be prevented.
    */
-  interactOutside: [ event: PointerDownOutsideEvent | FocusOutsideEvent]
+  interactOutside: [event: PointerDownOutsideEvent | FocusOutsideEvent]
 }
 
 export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
@@ -62,13 +57,8 @@ export const context = reactive({
 
 <script setup lang="ts">
 import { onKeyStroke } from '@vueuse/core'
-import {
-  Primitive,
-} from '@/Primitive'
-import {
-  useFocusOutside,
-  usePointerDownOutside,
-} from './utils'
+import { Primitive } from '@/Primitive'
+import { useFocusOutside, usePointerDownOutside } from './utils'
 
 const props = withDefaults(defineProps<DismissableLayerProps>(), {
   disableOutsidePointerEvents: false,
@@ -95,15 +85,58 @@ const isBodyPointerEventsDisabled = computed(() => {
 
 const isPointerEventsEnabled = computed(() => {
   const localLayers = Array.from(layers.value)
-  const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1)
-  const highestLayerWithOutsidePointerEventsDisabledIndex = localLayers.indexOf(highestLayerWithOutsidePointerEventsDisabled)
+  const [highestLayerWithOutsidePointerEventsDisabled] = [
+    ...context.layersWithOutsidePointerEventsDisabled,
+  ].slice(-1)
+  const highestLayerWithOutsidePointerEventsDisabledIndex = localLayers.indexOf(
+    highestLayerWithOutsidePointerEventsDisabled,
+  )
 
   return index.value >= highestLayerWithOutsidePointerEventsDisabledIndex
 })
 
+// Helper function to check if target is within a branch, shadow DOM aware
+function isBranchElement(branch: HTMLElement, target: HTMLElement): boolean {
+  // Enhanced shadow DOM aware check: walk up the tree including through shadow boundaries
+  let currentTarget: Node | null = target
+
+  while (currentTarget) {
+    if (currentTarget === branch) {
+      return true
+    }
+
+    // Standard contains check for performance on non-shadow DOM cases
+    if (
+      currentTarget.nodeType === Node.ELEMENT_NODE
+      && branch.contains(currentTarget as HTMLElement)
+    ) {
+      return true
+    }
+
+    // Move up the DOM tree, crossing shadow boundaries
+    if (currentTarget.parentNode) {
+      currentTarget = currentTarget.parentNode
+    }
+    // If we're at a shadow root, move to the host element
+    else if ((currentTarget as ShadowRoot).host) {
+      currentTarget = (currentTarget as ShadowRoot).host
+    }
+    // Handle document fragments with host (alternate shadow root representation)
+    else if ((currentTarget as any).host) {
+      currentTarget = (currentTarget as any).host
+    }
+    // If we're at document or null, stop traversal
+    else {
+      break
+    }
+  }
+
+  return false
+}
+
 const pointerDownOutside = usePointerDownOutside(async (event) => {
   const isPointerDownOnBranch = [...context.branches].some(branch =>
-    branch?.contains(event.target as HTMLElement),
+    branch ? isBranchElement(branch, event.target as HTMLElement) : false,
   )
 
   if (!isPointerEventsEnabled.value || isPointerDownOnBranch)
@@ -117,7 +150,7 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
 
 const focusOutside = useFocusOutside((event) => {
   const isFocusInBranch = [...context.branches].some(branch =>
-    branch?.contains(event.target as HTMLElement),
+    branch ? isBranchElement(branch, event.target as HTMLElement) : false,
   )
 
   if (isFocusInBranch)
@@ -144,7 +177,13 @@ watchEffect((cleanupFn) => {
   if (props.disableOutsidePointerEvents) {
     if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
       originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
-      ownerDocument.value.body.style.pointerEvents = 'none'
+      // Enhanced shadow DOM handling: only modify body if we're in the main document
+      const rootNode = layerElement.value.getRootNode()
+      const isInMainDocument = rootNode === ownerDocument.value
+
+      if (isInMainDocument) {
+        ownerDocument.value.body.style.pointerEvents = 'none'
+      }
     }
     context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
   }
@@ -155,7 +194,13 @@ watchEffect((cleanupFn) => {
       props.disableOutsidePointerEvents
       && context.layersWithOutsidePointerEventsDisabled.size === 1
     ) {
-      ownerDocument.value.body.style.pointerEvents = originalBodyPointerEvents
+      const rootNode = layerElement.value?.getRootNode()
+      const isInMainDocument = rootNode === ownerDocument.value
+
+      if (isInMainDocument) {
+        ownerDocument.value.body.style.pointerEvents
+          = originalBodyPointerEvents
+      }
     }
   })
 })
