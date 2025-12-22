@@ -352,35 +352,18 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 
   isEditing.value = true
   if (_endValue && _startValue) {
-    if (isBefore(_endValue, _startValue)) {
-      modelValue.value = {
-        start: _endValue.copy(),
-        end: _startValue.copy(),
-      }
-    }
-    else {
-      modelValue.value = {
-        start: _startValue.copy(),
-        end: _endValue.copy(),
-      }
-    }
+    const nextValue = isBefore(_endValue, _startValue)
+      ? { start: _endValue.copy(), end: _startValue.copy() }
+      : { start: _startValue.copy(), end: _endValue.copy() }
 
+    modelValue.value = { start: nextValue.start, end: nextValue.end }
     isEditing.value = false
-    validModelValue.value = { start: modelValue.value.start?.copy(), end: modelValue.value.end?.copy() }
+    validModelValue.value = { start: nextValue.start.copy(), end: nextValue.end.copy() }
   }
   else {
-    if (_startValue) {
-      modelValue.value = {
-        start: _startValue.copy(),
-        end: undefined,
-      }
-    }
-    else {
-      modelValue.value = {
-        start: _endValue?.copy(),
-        end: undefined,
-      }
-    }
+    modelValue.value = _startValue
+      ? { start: _startValue.copy(), end: undefined }
+      : { start: _endValue?.copy(), end: undefined }
   }
 })
 
