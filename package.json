@@ -1,7 +1,7 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "license": "MIT",
