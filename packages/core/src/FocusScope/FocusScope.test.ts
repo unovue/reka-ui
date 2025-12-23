@@ -21,25 +21,6 @@ const TestField = ({
   `,
 })
 
-function renderInShadowRoot(component: unknown) {
-  const host = document.createElement('div')
-  document.body.appendChild(host)
-  const shadow = host.attachShadow({ mode: 'open' })
-  const container = document.createElement('div')
-  shadow.appendChild(container)
-  const rendered = render(component, { container, baseElement: container })
-  return { rendered, host }
-}
-
-function getActiveElement(container: Element): Element | null {
-  const root = container.getRootNode()
-  if (root instanceof Document)
-    return root.activeElement
-  if ((root as ShadowRoot).host)
-    return (root as ShadowRoot).activeElement
-  return null
-}
-
 describe('focusScope (light DOM)', () => {
   describe('given a default FocusScope', () => {
     let rendered: RenderResult
@@ -155,6 +136,23 @@ describe('focusScope (light DOM)', () => {
 })
 
 describe('focusScope (shadow root)', () => {
+  function renderInShadowRoot(component: unknown) {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadow = host.attachShadow({ mode: 'open' })
+    const container = document.createElement('div')
+    shadow.appendChild(container)
+    const rendered = render(component, { container, baseElement: container })
+    return { rendered, host }
+  }
+
+  function getActiveElement(container: Element): Element | null {
+    const root = container.getRootNode()
+    if ((root as ShadowRoot).host)
+      return (root as ShadowRoot).activeElement
+    return null
+  }
+
   it('keeps focus on input while adding or removing shadow elements during typing', async () => {
     const { rendered, host } = renderInShadowRoot(defineComponent({
       components: { FocusScope },
@@ -174,13 +172,14 @@ describe('focusScope (shadow root)', () => {
 
     try {
       await nextTick()
-      const input = rendered.getByLabelText(INNER_NAME_INPUT_LABEL) as HTMLInputElement
+      const input = rendered.getByLabelText(INNER_NAME_INPUT_LABEL)
       input.focus()
       expect(getActiveElement(rendered.container)).toBe(input)
-      await userEvent.type(input, 'Reka')
+      await userEvent.type(input, 'Foo')
 
       await waitFor(() => expect(rendered.queryByTestId('shadow-extra')).not.toBeNull())
       expect(getActiveElement(rendered.container)).toBe(input)
+      expect((getActiveElement(rendered.container) as HTMLInputElement).value).toBe('Foo')
 
       await userEvent.keyboard('{Backspace>5}')
       await waitFor(() => expect(rendered.queryByTestId('shadow-extra')).toBeNull())
