@@ -2,7 +2,7 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { FocusScope } from '.'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
@@ -21,7 +21,26 @@ const TestField = ({
   `,
 })
 
-describe('focusScope', () => {
+function renderInShadowRoot(component: unknown) {
+  const host = document.createElement('div')
+  document.body.appendChild(host)
+  const shadow = host.attachShadow({ mode: 'open' })
+  const container = document.createElement('div')
+  shadow.appendChild(container)
+  const rendered = render(component, { container, baseElement: container })
+  return { rendered, host }
+}
+
+function getActiveElement(container: Element): Element | null {
+  const root = container.getRootNode()
+  if (root instanceof Document)
+    return root.activeElement
+  if ((root as ShadowRoot).host)
+    return (root as ShadowRoot).activeElement
+  return null
+}
+
+describe('focusScope (light DOM)', () => {
   describe('given a default FocusScope', () => {
     let rendered: RenderResult
     let tabbableFirst: HTMLInputElement
@@ -132,5 +151,44 @@ describe('focusScope', () => {
       await userEvent.tab()
       waitFor(() => expect(handleLastFocusableElementBlur).toHaveBeenCalledTimes(1))
     })
+  })
+})
+
+describe('focusScope (shadow root)', () => {
+  it('keeps focus on input while adding or removing shadow elements during typing', async () => {
+    const { rendered, host } = renderInShadowRoot(defineComponent({
+      components: { FocusScope },
+      data: () => ({ value: '' }),
+      template: `
+        <FocusScope asChild loop trapped>
+          <div>
+            <label>
+              <span>${INNER_NAME_INPUT_LABEL}</span>
+              <input type="text" aria-label="${INNER_NAME_INPUT_LABEL}" v-model="value" />
+            </label>
+            <span v-if="value" data-testid="shadow-extra">extra</span>
+          </div>
+        </FocusScope>
+      `,
+    }))
+
+    try {
+      await nextTick()
+      const input = rendered.getByLabelText(INNER_NAME_INPUT_LABEL) as HTMLInputElement
+      input.focus()
+      expect(getActiveElement(rendered.container)).toBe(input)
+      await userEvent.type(input, 'Reka')
+
+      await waitFor(() => expect(rendered.queryByTestId('shadow-extra')).not.toBeNull())
+      expect(getActiveElement(rendered.container)).toBe(input)
+
+      await userEvent.keyboard('{Backspace>5}')
+      await waitFor(() => expect(rendered.queryByTestId('shadow-extra')).toBeNull())
+      expect(getActiveElement(rendered.container)).toBe(input)
+    }
+    finally {
+      rendered.unmount()
+      host?.remove()
+    }
   })
 })

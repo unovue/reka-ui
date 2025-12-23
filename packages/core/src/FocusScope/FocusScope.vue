@@ -68,6 +68,13 @@ const focusScope = reactive({
   },
 })
 
+function getEventRoot(container: HTMLElement | null): Document | ShadowRoot {
+  const rootNode = container?.getRootNode()
+  if (rootNode instanceof ShadowRoot)
+    return rootNode
+  return document
+}
+
 watchEffect((cleanupFn) => {
   if (!isClient)
     return
@@ -122,15 +129,29 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  const root = getEventRoot(container)
+  if (root instanceof Document) {
+    root.addEventListener('focusin', handleFocusIn)
+    root.addEventListener('focusout', handleFocusOut)
+  }
+  else {
+    root.addEventListener('focusin', handleFocusIn as EventListener)
+    root.addEventListener('focusout', handleFocusOut as EventListener)
+  }
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    const cleanupRoot = getEventRoot(container)
+    if (cleanupRoot instanceof Document) {
+      cleanupRoot.removeEventListener('focusin', handleFocusIn)
+      cleanupRoot.removeEventListener('focusout', handleFocusOut)
+    }
+    else {
+      cleanupRoot.removeEventListener('focusin', handleFocusIn as EventListener)
+      cleanupRoot.removeEventListener('focusout', handleFocusOut as EventListener)
+    }
     mutationObserver.disconnect()
   })
 })
