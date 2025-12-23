@@ -42,17 +42,6 @@
       "@commitlint/config-conventional"
     ]
   },
-  "pnpm": {
-    "patchedDependencies": {
-      "vitepress": "patches/vitepress.patch"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "simple-git-hooks",
-      "unrs-resolver",
-      "vue-demi"
-    ]
-  },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
     "commit-msg": "pnpm commitlint --edit ${1}"
