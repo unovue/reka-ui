@@ -218,7 +218,25 @@ const allSegmentContent = computed(() => createContent({
   isTimeValue: true,
 }))
 
-const segmentContents = computed(() => allSegmentContent.value.arr)
+const segmentContents = computed(() => {
+  const contents = allSegmentContent.value.arr
+
+  // Convert hour values for 12-hour display
+  if (props.hourCycle === 12) {
+    return contents.map((segment) => {
+      if (segment.part === 'hour' && 'hour' in segmentValues.value) {
+        const hour = segmentValues.value.hour
+        if (hour !== null) {
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+          return { ...segment, value: displayHour.toString() }
+        }
+      }
+      return segment
+    })
+  }
+
+  return contents
+})
 
 const editableSegmentContents = computed(() => segmentContents.value.filter(({ part }) => part !== 'literal'))
 
