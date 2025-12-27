@@ -502,6 +502,18 @@ function resizePanel(panelData: PanelData, unsafePanelSize: number) {
   if (!panelConstraintsArray)
     return
 
+  const panelIndex = findPanelDataIndex(panelDataArray, panelData)
+  const panelUnit = panelData.constraints.sizeUnit ?? '%'
+
+  // Convert px to percent if needed for internal calculation
+  let sizeInPercent = unsafePanelSize
+  if (panelUnit === 'px') {
+    const groupSize = getGroupSizeInPixels()
+    if (groupSize != null) {
+      sizeInPercent = (unsafePanelSize / groupSize) * 100
+    }
+  }
+
   const { panelSize, pivotIndices } = panelDataHelper(
     panelDataArray,
     panelData,
@@ -511,10 +523,10 @@ function resizePanel(panelData: PanelData, unsafePanelSize: number) {
 
   assert(panelSize != null)
 
-  const isLastPanel = findPanelDataIndex(panelDataArray, panelData) === panelDataArray.length - 1
+  const isLastPanel = panelIndex === panelDataArray.length - 1
   const delta = isLastPanel
-    ? panelSize - unsafePanelSize
-    : unsafePanelSize - panelSize
+    ? panelSize - sizeInPercent
+    : sizeInPercent - panelSize
 
   const nextLayout = adjustLayoutByDelta({
     delta,
@@ -756,6 +768,15 @@ function getPanelSize(panelData: PanelData) {
     panelSize != null,
     `Panel size not found for panel "${panelData.id}"`,
   )
+
+  // If the panel uses px units, convert from percent back to px
+  const panelUnit = panelData.constraints.sizeUnit ?? '%'
+  if (panelUnit === 'px') {
+    const groupSize = getGroupSizeInPixels()
+    if (groupSize != null) {
+      return (panelSize / 100) * groupSize
+    }
+  }
 
   return panelSize
 }

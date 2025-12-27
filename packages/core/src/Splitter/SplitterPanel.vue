@@ -162,11 +162,11 @@ defineExpose({
   collapse,
   /** If panel is currently collapsed, expand it to its most recent size. */
   expand,
-  /** Gets the current size of the panel as a percentage (1 - 100). */
+  /** Gets the current size of the panel (in the panel's sizeUnit: percentage for '%', pixels for 'px'). */
   getSize() {
     return getPanelSize(panelDataRef.value)
   },
-  /** Resize panel to the specified percentage (1 - 100). */
+  /** Resize panel to the specified size (in the panel's sizeUnit: percentage for '%', pixels for 'px'). */
   resize,
   /** Returns `true` if the panel is currently collapsed */
   isCollapsed,
