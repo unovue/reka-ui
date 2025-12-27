@@ -93,6 +93,18 @@ function handleDelete(event: KeyboardEvent) {
 }
 
 function handleFocus(event: FocusEvent) {
+  // In OTP mode, inputs should be filled from left to right without skipping middle inputs
+  if (context.otp.value) {
+    const firstEmptyInputIdx = inputElements.value.findIndex((_, idx) =>
+      context.currentModelValue.value[idx] === ''
+      || context.currentModelValue.value[idx] === undefined,
+    )
+    if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < props.index) {
+      inputElements.value[firstEmptyInputIdx].focus()
+      return
+    }
+  }
+
   const target = event.target as HTMLInputElement
   target.setSelectionRange(1, 1)
 

@@ -290,3 +290,22 @@ describe('give PinInput type=number', async () => {
     })
   })
 })
+
+describe('give OTP PinInput', () => {
+  // @ts-expect-error aXe throwing error complaining getComputedStyle
+  window.getComputedStyle = () => {}
+  let wrapper: VueWrapper<InstanceType<typeof PinInput>>
+  let inputs: DOMWrapper<HTMLInputElement>[] = []
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(PinInput, { attachTo: document.body, props: { otp: true } })
+    inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
+    inputs[0].element.focus()
+  })
+
+  it('should disable later inputs if there are empty inputs before them', async () => {
+    inputs[1].element.focus()
+    expect(document.activeElement).toBe(inputs[0].element)
+  })
+})
