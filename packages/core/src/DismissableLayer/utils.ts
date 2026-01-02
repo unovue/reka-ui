@@ -189,7 +189,6 @@ export function useFocusOutside(
 ) {
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
-    console.log('useFocusOutside watchEffect on', element?.value)
     if (!isClient || !toValue(enabled))
       return
     const handleFocus = async (event: FocusEvent) => {
