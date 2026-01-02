@@ -13,28 +13,55 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
-  const targetLayer = targetElement.closest(
-    '[data-dismissable-layer]',
-  )
+function findClosestDismissableLayer(element: HTMLElement, selector: string): HTMLElement | null {
+  return element.closest(selector)
+}
 
-  const mainLayer = layerElement.dataset.dismissableLayer === ''
-    ? layerElement
-    : layerElement.querySelector(
-      '[data-dismissable-layer]',
-    ) as HTMLElement
+/**
+ * Find all dismissable layers in the current context
+ */
+function getAllDismissableLayers(startElement: HTMLElement): HTMLElement[] {
+  const rootNode = startElement.getRootNode()
 
-  const nodeList = Array.from(
-    layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
-  )
-
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
-  ) {
-    return true
+  if (rootNode instanceof Document || rootNode instanceof ShadowRoot) {
+    return Array.from(rootNode.querySelectorAll('[data-dismissable-layer]')) as HTMLElement[]
   }
-  else {
+
+  return []
+}
+
+/**
+ * Check if target element is within the dismissable layer hierarchy
+ */
+function isTargetWithinLayer(layerElement: HTMLElement, targetElement: HTMLElement): boolean {
+  if (!layerElement || !targetElement) {
     return false
   }
+
+  const targetLayer = findClosestDismissableLayer(targetElement, '[data-dismissable-layer]')
+  if (!targetLayer) {
+    return false
+  }
+
+  const currentLayer = layerElement.dataset.dismissableLayer === ''
+    ? layerElement
+    : layerElement.querySelector('[data-dismissable-layer]') as HTMLElement
+
+  if (!currentLayer) {
+    return false
+  }
+
+  // Same layer or target is in a nested layer
+  if (targetLayer === currentLayer) {
+    return true
+  }
+
+  // Check layer hierarchy - nested layers should not dismiss parent layers
+  const allLayers = getAllDismissableLayers(layerElement)
+  const currentIndex = allLayers.indexOf(currentLayer)
+  const targetIndex = allLayers.indexOf(targetLayer)
+
+  return currentIndex < targetIndex
 }
 
 /**
@@ -57,12 +84,14 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement | undefined
+      const composedPath = event.composedPath()
+      const target = (composedPath[0] || event.target) as HTMLElement
 
-      if (!element?.value || !target)
+      if (!element?.value || !target) {
         return
+      }
 
-      if (isLayerExist(element.value, target)) {
+      if (isTargetWithinLayer(element.value, target)) {
         isPointerInsideDOMTree.value = false
         return
       }
@@ -134,8 +163,9 @@ export function usePointerDownOutside(
 
   return {
     onPointerDownCapture: () => {
-      if (!toValue(enabled))
+      if (!toValue(enabled)) {
         return
+      }
       isPointerInsideDOMTree.value = true
     },
   }
@@ -162,18 +192,18 @@ export function useFocusOutside(
         return
 
       await nextTick()
-      await nextTick()
-      const target = event.target as HTMLElement | undefined
-      if (!element.value || !target || isLayerExist(element.value, target))
-        return
 
-      if (event.target && !isFocusInsideDOMTree.value) {
+      const composedPath = event.composedPath()
+      const target = (composedPath[0] || event.target) as HTMLElement
+
+      // Skip shadow root containers as they're not meaningful focus targets
+      if (!target || target.id === 'shadow-root-container') {
+        return
+      }
+
+      if (!isTargetWithinLayer(element.value, target) && !isFocusInsideDOMTree.value) {
         const eventDetail = { originalEvent: event }
-        handleAndDispatchCustomEvent(
-          FOCUS_OUTSIDE,
-          onFocusOutside,
-          eventDetail,
-        )
+        handleAndDispatchCustomEvent(FOCUS_OUTSIDE, onFocusOutside, eventDetail)
       }
     }
 
