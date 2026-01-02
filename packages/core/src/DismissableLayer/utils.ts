@@ -17,6 +17,13 @@ function findClosestDismissableLayer(element: HTMLElement, selector: string): HT
   return element.closest(selector)
 }
 
+function getEventRoot(element: HTMLElement | null): Document | ShadowRoot {
+  const rootNode = element?.getRootNode()
+  if (rootNode instanceof ShadowRoot)
+    return rootNode
+  return document
+}
+
 /**
  * Find all dismissable layers in the current context
  */
@@ -180,11 +187,9 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
-
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
+    console.log('useFocusOutside watchEffect on', element?.value)
     if (!isClient || !toValue(enabled))
       return
     const handleFocus = async (event: FocusEvent) => {
@@ -196,8 +201,11 @@ export function useFocusOutside(
       const composedPath = event.composedPath()
       const target = (composedPath[0] || event.target) as HTMLElement
 
-      // Skip shadow root containers as they're not meaningful focus targets
-      if (!target || target.id === 'shadow-root-container') {
+      if (!target) {
+        return
+      }
+
+      if (target.shadowRoot) {
         return
       }
 
@@ -207,9 +215,26 @@ export function useFocusOutside(
       }
     }
 
-    ownerDocument.addEventListener('focusin', handleFocus)
+    if (!element?.value)
+      return
+    const root = getEventRoot(element.value)
 
-    cleanupFn(() => ownerDocument.removeEventListener('focusin', handleFocus))
+    if (root instanceof Document) {
+      root.addEventListener('focusin', handleFocus)
+    }
+    else {
+      root.addEventListener('focusin', handleFocus as unknown as EventListener)
+    }
+
+    cleanupFn(() => {
+      const cleanupRoot = getEventRoot(element?.value ?? null)
+      if (cleanupRoot instanceof Document) {
+        cleanupRoot.removeEventListener('focusin', handleFocus)
+      }
+      else {
+        cleanupRoot.removeEventListener('focusin', handleFocus as unknown as EventListener)
+      }
+    })
   })
 
   return {
