@@ -241,9 +241,9 @@ importers:
       '@testing-library/vue':
         specifier: ^8.1.0
         version: 8.1.0(@vue/compiler-sfc@3.5.17)(vue@3.5.17(typescript@5.8.3))
-      '@tsconfig/node20':
-        specifier: ^20.1.0
-        version: 20.1.8
+      '@tsconfig/node22':
+        specifier: ^22.0.0
+        version: 22.0.5
       '@types/jsdom':
         specifier: ^27.0.0
         version: 27.0.0
@@ -1859,8 +1859,8 @@ packages:
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
     engines: {node: '>=10.13.0'}
 
-  '@tsconfig/node20@20.1.8':
-    resolution: {integrity: sha512-Em+IdPfByIzWRRpqWL4Z7ArLHZGxmc36BxE3jCz9nBFSm+5aLaPMZyjwu4yetvyKXeogWcxik4L1jB5JTWfw7A==}
+  '@tsconfig/node22@22.0.5':
+    resolution: {integrity: sha512-hLf2ld+sYN/BtOJjHUWOk568dvjFQkHnLNa6zce25GIH+vxKfvTgm3qpaH6ToF5tu/NN0IH66s+Bb5wElHrLcw==}
 
   '@tybys/wasm-util@0.10.0':
     resolution: {integrity: sha512-VyyPYFlOMNylG45GoAe0xDoLwWuowvf92F9kySqzYh8vmYm7D2u4iUJKa1tOUpS70Ku13ASrOkS4ScXFsTaCNQ==}
@@ -8143,7 +8143,7 @@ snapshots:
 
   '@trysound/sax@0.2.0': {}
 
-  '@tsconfig/node20@20.1.8': {}
+  '@tsconfig/node22@22.0.5': {}
 
   '@tybys/wasm-util@0.10.0':
     dependencies:
