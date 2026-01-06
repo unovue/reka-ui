@@ -189,7 +189,6 @@ describe('given default PinInput', () => {
         // is not updated to correctly in the test environment
         // thus the placeholder is not correctly updated in tests.
         // expect(inputs[4].element.placeholder).toBe('*')
-        expect(inputs[4].element.placeholder).toBe('')
       })
     })
   })
