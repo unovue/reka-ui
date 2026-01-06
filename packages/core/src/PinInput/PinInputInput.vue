@@ -50,11 +50,18 @@ function handleInput(event: InputEvent) {
     nextEl.focus()
 }
 
-function resetPlaceholder() {
-  const target = currentElement.value as HTMLInputElement
+function updatePlaceholder() {
   nextTick(() => {
-    if (target && !target.value)
+    const target = currentElement.value as HTMLInputElement
+    if (!target) {
+      return
+    }
+    if (!target.value && target === getActiveElement()) {
+      target.placeholder = ''
+    }
+    else {
       target.placeholder = context.placeholder.value
+    }
   })
 }
 
@@ -95,19 +102,11 @@ function handleDelete(event: KeyboardEvent) {
 function handleFocus(event: FocusEvent) {
   const target = event.target as HTMLInputElement
   target.setSelectionRange(1, 1)
-
-  if (!target.value)
-    target.placeholder = ''
-
-  // #2266, check again after DOM flushes
-  setTimeout(() => {
-    if (!target.value)
-      target.placeholder = ''
-  })
+  updatePlaceholder()
 }
 
 function handleBlur(event: FocusEvent) {
-  resetPlaceholder()
+  updatePlaceholder()
 }
 
 function handlePaste(event: ClipboardEvent) {
@@ -168,11 +167,7 @@ function updateModelValueAt(index: number, value: string) {
   context.modelValue.value = removeTrailingEmptyStrings(tempModelValue)
 }
 
-watch(currentValue, () => {
-  if (!currentValue.value) {
-    resetPlaceholder()
-  }
-})
+watch(currentValue, updatePlaceholder)
 
 onMounted(() => {
   context.onInputElementChange(currentElement.value as HTMLInputElement)
