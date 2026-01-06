@@ -42,6 +42,7 @@ export {
   type DateValue,
   type Formatter,
   type SegmentPart,
+  type TimeValue,
   useBodyScrollLock,
   useDateFormatter,
   useDirection,
