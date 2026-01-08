@@ -1,11 +1,17 @@
 import type { Ref } from 'vue'
 import type { Side } from '@/Popper/utils'
-import { createEventHook, refAutoReset } from '@vueuse/shared'
+import { createEventHook, refAutoReset, tryOnScopeDispose } from '@vueuse/shared'
 import { ref, watchEffect } from 'vue'
 
 export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, containerElement: Ref<HTMLElement | undefined>) {
 // Reset the inTransit state if idle/scrolled.
   const isPointerInTransit = refAutoReset(false, 300)
+  // `refAutoReset` will clear timeout-based resets on scope dispose (e.g., component unmount),
+  // thus leaving the state as-is without resetting it.
+  // So we need to manually reset it in such cases.
+  tryOnScopeDispose(() => {
+    isPointerInTransit.value = false
+  })
 
   const pointerGraceArea = ref<Polygon | null>(null)
   const pointerExit = createEventHook<void>()
@@ -74,7 +80,7 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 }
 
 interface Point { x: number, y: number }
-  type Polygon = Point[]
+type Polygon = Point[]
 
 function getExitSideFromRect(point: Point, rect: DOMRect): Side {
   const top = Math.abs(rect.top - point.y)

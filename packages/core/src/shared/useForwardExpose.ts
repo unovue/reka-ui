@@ -59,7 +59,23 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
       get: () => (ref instanceof Element ? ref : ref.$el),
     })
 
-    instance.exposed = ret
+    // ref not is Element
+    // and `useForwardExpose.test.ts > useForwardRef > should forward plain DOM element ref - 2` Passing in `$el`
+    if (!(ref instanceof Element) && !Object.hasOwn(ref, '$el')) {
+      // Retrieves the `exposed` data that has not been unwrapped by `vue` from `$.exposed`.
+      const childExposed = ref.$.exposed
+      const merged = Object.assign({}, ret)
+
+      for (const key in childExposed) {
+        Object.defineProperty(merged, key, {
+          enumerable: true,
+          configurable: true,
+          get: () => childExposed[key],
+        })
+      }
+
+      instance.exposed = merged
+    }
   }
 
   return { forwardRef, currentRef, currentElement }

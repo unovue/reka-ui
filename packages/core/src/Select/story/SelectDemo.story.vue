@@ -2,6 +2,7 @@
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
 import {
+  SelectArrow,
   SelectContent,
   SelectGroup,
   SelectItem,
@@ -103,6 +104,8 @@ const POSITION = ['item-aligned', 'popper'] as const
               >
                 <Icon icon="radix-icons:chevron-down" />
               </SelectScrollDownButton>
+
+              <SelectArrow class="fill-white" />
             </SelectContent>
           </SelectPortal>
         </SelectRoot>

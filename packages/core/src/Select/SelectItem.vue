@@ -14,7 +14,7 @@ interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-    = createContext<SelectItemContext>('SelectItem')
+  = createContext<SelectItemContext>('SelectItem')
 
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 

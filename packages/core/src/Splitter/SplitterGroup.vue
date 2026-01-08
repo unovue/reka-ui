@@ -532,8 +532,8 @@ function collapsePanel(panelData: PanelData) {
       panelSizeBeforeCollapseRef.value.set(panelData.id, panelSize)
 
       const isLastPanel
-          = findPanelDataIndex(panelDataArray, panelData)
-            === panelDataArray.length - 1
+        = findPanelDataIndex(panelDataArray, panelData)
+          === panelDataArray.length - 1
       const delta = isLastPanel
         ? panelSize - collapsedSize
         : collapsedSize - panelSize
@@ -585,13 +585,13 @@ function expandPanel(panelData: PanelData) {
       )
 
       const baseSize
-          = prevPanelSize != null && prevPanelSize >= minSize
-            ? prevPanelSize
-            : minSize
+        = prevPanelSize != null && prevPanelSize >= minSize
+          ? prevPanelSize
+          : minSize
 
       const isLastPanel
-          = findPanelDataIndex(panelDataArray, panelData)
-            === panelDataArray.length - 1
+        = findPanelDataIndex(panelDataArray, panelData)
+          === panelDataArray.length - 1
       const delta = isLastPanel ? panelSize - baseSize : baseSize - panelSize
 
       const nextLayout = adjustLayoutByDelta({

@@ -9,7 +9,7 @@ export type ResizeHandlerAction = 'down' | 'move' | 'up'
 export type SetResizeHandlerState = (
   action: ResizeHandlerAction,
   isActive: boolean,
-  event: ResizeEvent
+  event: ResizeEvent,
 ) => void
 
 export type PointerHitAreaMargins = {

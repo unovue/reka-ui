@@ -132,16 +132,15 @@ async function onOpenChange(val: boolean) {
     await nextTick()
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
+    inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
+    setTimeout(() => {
+      if (!val && props.resetSearchTermOnBlur)
+        resetSearchTerm.trigger()
+    }, 1)
   }
-
-  inputElement.value?.focus()
-  setTimeout(() => {
-    if (!val && props.resetSearchTermOnBlur)
-      resetSearchTerm.trigger()
-  }, 1)
 }
 
 const resetSearchTerm = createEventHook()

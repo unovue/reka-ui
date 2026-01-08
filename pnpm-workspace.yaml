@@ -1,4 +1,15 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
 packages:
   - 'packages/*'
   - docs
   - .histoire
+patchedDependencies:
+  vitepress: patches/vitepress.patch
+onlyBuiltDependencies:
+  - esbuild
+  - simple-git-hooks
+  - unrs-resolver
+  - vue-demi
