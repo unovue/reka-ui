@@ -105,6 +105,14 @@ describe('timeField', async () => {
     expect(queryByTestId('dayPeriod')).toBeInTheDocument()
   })
 
+  it('filter time zone brackets for specific locales', async () => {
+    const { queryByTestId } = setup({
+      timeFieldProps: { modelValue: calendarDateTime, locale: 'zh-TW', hideTimeZone: true },
+    })
+    expect(queryByTestId('input')).not.toHaveTextContent('[')
+    expect(queryByTestId('input')).not.toHaveTextContent(']')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, input, label } = setup()
     await user.click(label)

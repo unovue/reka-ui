@@ -1,7 +1,7 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.6.1",
+  "version": "2.7.0",
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "license": "MIT",
@@ -27,11 +27,11 @@
     "pub:release": "cd packages/core && pnpm pub:release"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^6.2.0",
+    "@antfu/eslint-config": "^6.7.3",
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "bumpp": "^10.1.1",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.2",
     "lint-staged": "^16.2.7",
     "simple-git-hooks": "^2.13.1",
     "tsx": "^4.20.3",
@@ -40,17 +40,6 @@
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"
-    ]
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "vitepress": "patches/vitepress.patch"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "simple-git-hooks",
-      "unrs-resolver",
-      "vue-demi"
     ]
   },
   "simple-git-hooks": {

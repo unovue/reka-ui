@@ -15,7 +15,7 @@ function extractAndTransformData(tagName: string, raw: string): Element | null {
       tagName: 'link-hover-card-content',
       properties: {
         title: tagName.toLowerCase().replace('table', ''),
-        data: match[1].replace(/'/g, '"'),
+        data: match[1].replace(/'/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
       },
       children: [],
     }
