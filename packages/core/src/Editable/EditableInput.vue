@@ -45,7 +45,7 @@ watch(context.isEditing, (value) => {
 })
 
 function handleSubmitKeyDown(event: KeyboardEvent) {
-  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey)
+  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey && !event.isComposing)
     context.submit()
 }
 </script>
