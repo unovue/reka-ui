@@ -17,7 +17,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state.</p>\n',
-    'type': 'string[][]',
+    'type': 'string[]',
     'required': false
   },
   {

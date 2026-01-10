@@ -173,6 +173,7 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true) {
 
 function highlightItem(value: T) {
   if (isVirtual.value) {
+    // @ts-expect-error known type issue https://github.com/vueuse/vueuse/issues/4610
     virtualHighlightHook.trigger(value)
   }
   else {

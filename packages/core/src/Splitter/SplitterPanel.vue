@@ -33,7 +33,7 @@ export type PanelOnCollapse = () => void
 export type PanelOnExpand = () => void
 export type PanelOnResize = (
   size: number,
-  prevSize: number | undefined
+  prevSize: number | undefined,
 ) => void
 
 export type PanelCallbacks = {

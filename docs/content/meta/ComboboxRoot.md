@@ -48,7 +48,8 @@
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'ignoreFilter',
@@ -99,6 +100,13 @@
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'resetModelValueOnClear',
+    'description': '<p>When <code>true</code> the <code>modelValue</code> will be reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>)</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   },
   {
     'name': 'resetSearchTermOnBlur',
