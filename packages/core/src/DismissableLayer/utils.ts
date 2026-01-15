@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
-import { nextTick, ref, toValue, watchEffect } from 'vue'
+import { computed, nextTick, ref, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
 
 export type PointerDownOutsideEvent = CustomEvent<{
@@ -13,6 +13,26 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
+export function getRootNode(element: HTMLElement | null): Document | ShadowRoot {
+  const rootNode = element?.getRootNode()
+  if (rootNode instanceof ShadowRoot)
+    return rootNode
+  return document
+}
+
+/**
+ * Find all dismissable layers in the current context
+ */
+export function getAllDismissableLayers(startElement: HTMLElement): HTMLElement[] {
+  const rootNode = startElement.getRootNode()
+
+  if (rootNode instanceof Document || rootNode instanceof ShadowRoot) {
+    return Array.from(rootNode.querySelectorAll('[data-dismissable-layer]')) as HTMLElement[]
+  }
+
+  return []
+}
+
 function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   const targetLayer = targetElement.closest(
     '[data-dismissable-layer]',
@@ -24,8 +44,10 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
       '[data-dismissable-layer]',
     ) as HTMLElement
 
+  const rootNode = getRootNode(layerElement)
+
   const nodeList = Array.from(
-    layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
+    rootNode.querySelectorAll('[data-dismissable-layer]'),
   )
 
   if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
@@ -35,6 +57,18 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   else {
     return false
   }
+}
+
+function getPointerEventTarget(event: PointerEvent): HTMLElement | undefined {
+  if (!event.target) {
+    return undefined
+  }
+  const target = event.target as HTMLElement | undefined
+  if (target?.shadowRoot) {
+    return event.composedPath()[0] as HTMLElement | undefined
+  }
+
+  return target
 }
 
 /**
@@ -57,7 +91,7 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement | undefined
+      const target = getPointerEventTarget(event)
 
       if (!element?.value || !target)
         return
@@ -150,25 +184,32 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
+  const rootNode = computed(() => getRootNode(element?.value || null))
 
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
+    if (!element?.value) {
+      return
+    }
     if (!isClient || !toValue(enabled))
       return
-    const handleFocus = async (event: FocusEvent) => {
+    const handleFocus = async (event: Event) => {
+      if (!(event instanceof FocusEvent)) {
+        return
+      }
+
+      const target = event.target as HTMLElement | undefined
       if (!element?.value)
         return
 
       await nextTick()
       await nextTick()
-      const target = event.target as HTMLElement | undefined
+
       if (!element.value || !target || isLayerExist(element.value, target))
         return
 
-      if (event.target && !isFocusInsideDOMTree.value) {
-        const eventDetail = { originalEvent: event }
+      if (target && !isFocusInsideDOMTree.value) {
+        const eventDetail = { originalEvent: { ...event, target } }
         handleAndDispatchCustomEvent(
           FOCUS_OUTSIDE,
           onFocusOutside,
@@ -177,9 +218,9 @@ export function useFocusOutside(
       }
     }
 
-    ownerDocument.addEventListener('focusin', handleFocus)
+    rootNode.value.addEventListener('focusin', handleFocus)
 
-    cleanupFn(() => ownerDocument.removeEventListener('focusin', handleFocus))
+    cleanupFn(() => rootNode.value.removeEventListener('focusin', handleFocus))
   })
 
   return {
