@@ -68,14 +68,25 @@ const focusScope = reactive({
   },
 })
 
+function getEventRoot(container: HTMLElement | null): Document | ShadowRoot {
+  const rootNode = container?.getRootNode()
+  if (rootNode instanceof ShadowRoot)
+    return rootNode
+  return document
+}
+
 watchEffect((cleanupFn) => {
   if (!isClient)
     return
   const container = currentElement.value
+  const root = getEventRoot(container)
   if (!props.trapped)
     return
 
-  function handleFocusIn(event: FocusEvent) {
+  function handleFocusIn(event: Event) {
+    if (!(event instanceof FocusEvent))
+      return
+
     if (focusScope.paused || !container)
       return
     const target = event.target as HTMLElement | null
@@ -84,7 +95,10 @@ watchEffect((cleanupFn) => {
     else focus(lastFocusedElementRef.value, { select: true })
   }
 
-  function handleFocusOut(event: FocusEvent) {
+  function handleFocusOut(event: Event) {
+    if (!(event instanceof FocusEvent))
+      return
+
     if (focusScope.paused || !container)
       return
     const relatedTarget = event.relatedTarget as HTMLElement | null
@@ -136,15 +150,17 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  root.addEventListener('focusin', handleFocusIn)
+  root.addEventListener('focusout', handleFocusOut)
+
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    root.removeEventListener('focusin', handleFocusIn)
+    root.removeEventListener('focusout', handleFocusOut)
+
     mutationObserver.disconnect()
   })
 })
@@ -232,6 +248,38 @@ function handleKeyDown(event: KeyboardEvent) {
         event.preventDefault()
         if (props.loop)
           focus(last, { select: true })
+      }
+      else {
+        const focusedRoot = focusedElement.getRootNode()
+        const containerRoot = container.getRootNode()
+        const isInShadowDOM = focusedRoot instanceof ShadowRoot || containerRoot instanceof ShadowRoot
+
+        if (!isInShadowDOM)
+          return
+
+        event.preventDefault()
+        const allTabbable = getTabbableCandidates(container)
+
+        if (allTabbable.length === 0)
+          return
+
+        const currentIndex = allTabbable.indexOf(focusedElement)
+
+        if (currentIndex === -1) {
+          if (event.shiftKey)
+            focus(last, { select: true })
+          else
+            focus(first, { select: true })
+          return
+        }
+
+        const nextIndex = event.shiftKey
+          ? currentIndex - 1
+          : currentIndex + 1
+        const nextElement = allTabbable[nextIndex]
+        if (nextElement) {
+          focus(nextElement, { select: true })
+        }
       }
     }
   }

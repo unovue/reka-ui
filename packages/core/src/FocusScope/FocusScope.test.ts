@@ -1,11 +1,16 @@
 import type { RenderResult } from '@testing-library/vue'
+import type { VueWrapper } from '@vue/test-utils'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render, waitFor } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import { sleep } from '@/test'
 import { FocusScope } from '.'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '../Select'
+import Dialog from './story/shadowDom/_Dialog.vue'
+import ShadowRootContainer from './story/shadowDom/ShadowRootContainer.vue'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -23,7 +28,7 @@ const TestField = ({
   `,
 })
 
-describe('focusScope', () => {
+describe('focusScope (light DOM)', () => {
   describe('given a default FocusScope', () => {
     let rendered: RenderResult
     let focusContainer: HTMLElement
@@ -185,6 +190,215 @@ describe('focusScope', () => {
       await userEvent.click(trigger)
       const inputReopen = rendered.getByTestId('email-input')
       expect(inputReopen).toHaveFocus()
+    })
+  })
+})
+
+describe('focusScope (shadow root)', () => {
+  function renderInShadowRoot(component: unknown) {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadow = host.attachShadow({ mode: 'open' })
+    const container = document.createElement('div')
+    shadow.appendChild(container)
+    const rendered = render(component, { container, baseElement: container })
+    return { rendered, host }
+  }
+
+  function getActiveElement(container: Element): Element | null {
+    const root = container.getRootNode()
+    if ((root as ShadowRoot).host)
+      return (root as ShadowRoot).activeElement
+    return null
+  }
+
+  it('keeps focus on input while adding or removing shadow elements during typing', async () => {
+    const { rendered, host } = renderInShadowRoot(defineComponent({
+      components: { FocusScope },
+      data: () => ({ value: '' }),
+      template: `
+        <FocusScope asChild loop trapped>
+          <div>
+            <label>
+              <span>${INNER_NAME_INPUT_LABEL}</span>
+              <input type="text" aria-label="${INNER_NAME_INPUT_LABEL}" v-model="value" />
+            </label>
+            <span v-if="value" data-testid="shadow-extra">extra</span>
+          </div>
+        </FocusScope>
+      `,
+    }))
+
+    try {
+      await nextTick()
+      const input = rendered.getByLabelText(INNER_NAME_INPUT_LABEL)
+      input.focus()
+      expect(getActiveElement(rendered.container)).toBe(input)
+      await userEvent.type(input, 'Foo')
+
+      await waitFor(() => expect(rendered.queryByTestId('shadow-extra')).not.toBeNull())
+      expect(getActiveElement(rendered.container)).toBe(input)
+      expect((getActiveElement(rendered.container) as HTMLInputElement).value).toBe('Foo')
+
+      await userEvent.keyboard('{Backspace>5}')
+      await waitFor(() => expect(rendered.queryByTestId('shadow-extra')).toBeNull())
+      expect(getActiveElement(rendered.container)).toBe(input)
+    }
+    finally {
+      rendered.unmount()
+      host?.remove()
+    }
+  })
+
+  type ShadowRootTestCase = {
+    description: string
+    testCase: 'shadowDomOnly' | 'mixedBodyAndShadowDom' | 'bodyOnly'
+  }
+
+  describe('shadow DOM focus loop test', () => {
+    const testSuite: ShadowRootTestCase[] = [
+      {
+        description: 'given a Dialog in the document body, with nested dismissable layers also in the document body',
+        testCase: 'bodyOnly',
+      },
+      {
+        description: 'given a Dialog inside a ShadowRoot, with nested dismissable layers also inside the ShadowRoot',
+        testCase: 'shadowDomOnly',
+      },
+      {
+        description: 'given a Dialog in the document body, with nested dismissable layers inside a ShadowRoot',
+        testCase: 'mixedBodyAndShadowDom',
+      },
+    ]
+
+    testSuite.forEach(({ description, testCase }) => {
+      describe(description, () => {
+        let wrapper: VueWrapper<InstanceType<typeof ShadowRootContainer>>
+        let shadowHost: HTMLElement
+        let shadowRoot: ShadowRoot
+
+        function getDialogOverlay(): HTMLElement | null {
+          if (testCase === 'shadowDomOnly') {
+            return shadowRoot.querySelector('[data-testid="dialog-overlay"]')
+          }
+          else {
+            return document.body.querySelector('[data-testid="dialog-overlay"]')
+          }
+        }
+
+        function getDialogTrigger(): HTMLElement | null {
+          if (testCase === 'shadowDomOnly') {
+            return shadowRoot.querySelector('[data-testid="dialog-trigger"]')
+          }
+          else {
+            return document.body.querySelector('[data-testid="dialog-trigger"]')
+          }
+        }
+
+        function getDialogContent(): HTMLElement | null {
+          if (testCase === 'shadowDomOnly') {
+            return shadowRoot.querySelector('[data-testid="dialog-content"]')
+          }
+          else {
+            return document.body.querySelector('[data-testid="dialog-content"]')
+          }
+        }
+
+        function getQueryRoot(): Document | ShadowRoot {
+          if (testCase === 'bodyOnly') {
+            return document
+          }
+          else {
+            return shadowRoot
+          }
+        }
+
+        beforeEach(async () => {
+          document.body.innerHTML = ''
+          if (testCase === 'shadowDomOnly') {
+            wrapper = mount(ShadowRootContainer, { attachTo: document.body, props: { withDialog: true } })
+            await nextTick()
+            shadowHost = wrapper.find('#shadow-root-container').element as HTMLElement
+            shadowRoot = (shadowHost as unknown as { shadowRoot: ShadowRoot }).shadowRoot!
+            // Open the dialog
+            const trigger = getDialogTrigger() as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogOverlay = getDialogOverlay()
+            expect(dialogOverlay).toBeTruthy()
+            const dialogContent = getDialogContent()
+            expect(dialogContent).toBeTruthy()
+          }
+          else if (testCase === 'mixedBodyAndShadowDom') {
+            wrapper = mount(Dialog, { attachTo: document.body, props: { hasShadowRootInside: true } })
+            await nextTick()
+
+            // Open the dialog
+            const trigger = getDialogTrigger() as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogOverlay = getDialogOverlay()
+            expect(dialogOverlay).toBeTruthy()
+            const dialogContent = getDialogContent()
+            expect(dialogContent).toBeTruthy()
+
+            shadowHost = dialogContent?.querySelector('#shadow-root-container') as HTMLElement
+            shadowRoot = (shadowHost as unknown as { shadowRoot: ShadowRoot }).shadowRoot!
+          }
+          else {
+            wrapper = mount(Dialog, { attachTo: document.body })
+            await nextTick()
+
+            // Open the dialog
+            const trigger = getDialogTrigger() as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogOverlay = getDialogOverlay()
+            expect(dialogOverlay).toBeTruthy()
+            const dialogContent = getDialogContent()
+            expect(dialogContent).toBeTruthy()
+          }
+        })
+
+        afterEach(async () => {
+          await wrapper.unmount()
+          await nextTick()
+        })
+
+        if (testCase !== 'bodyOnly') {
+          it('shadowRoot should be defined', () => {
+            expect(shadowRoot).toBeDefined()
+          })
+        }
+
+        it('should loop focus within the FocusScope in the ShadowRoot', async () => {
+          const queryRoot = getQueryRoot()
+          const nameInput = queryRoot.querySelector(`input[name="name"]`) as HTMLElement
+          const emailInput = queryRoot.querySelector(`input[name="email"]`) as HTMLElement
+          const submitButton = queryRoot.querySelector('button[type="submit"]') as HTMLElement
+          const closeDialogButton = testCase === 'shadowDomOnly'
+            ? shadowRoot.querySelector('[data-testid="dialog-close"]') as HTMLElement
+            : document.querySelector('[data-testid="dialog-close"]') as HTMLElement
+
+          // Focus the first input
+          nameInput.focus()
+          await waitFor(() => expect(queryRoot.activeElement).toBe(nameInput))
+
+          await userEvent.tab()
+          await waitFor(() => expect(queryRoot.activeElement).toBe(emailInput))
+          await userEvent.tab()
+          await waitFor(() => expect(queryRoot.activeElement).toBe(submitButton))
+          await userEvent.tab()
+          await waitFor(() => expect(testCase === 'shadowDomOnly' ? shadowRoot.activeElement : document.activeElement).toBe(closeDialogButton))
+          // Tab again should loop back to the first focusable element
+          await userEvent.tab()
+          await waitFor(() => expect(queryRoot.activeElement).toBe(nameInput))
+
+          // Reverse tab should go to the last focusable element
+          await userEvent.tab({ shift: true })
+          await waitFor(() => expect(testCase === 'shadowDomOnly' ? shadowRoot.activeElement : document.activeElement).toBe(closeDialogButton))
+        })
+      })
     })
   })
 })
