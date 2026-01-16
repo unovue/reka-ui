@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed, ref } from 'vue'
-import { countryList } from '@/shared/constant'
+import { ref } from 'vue'
 import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
@@ -23,35 +22,23 @@ import {
 
 const toggleState = ref(false)
 const checkboxOne = ref(false)
-const radioValue = ref('pedro')
+const checkboxTwo = ref(false)
+const person = ref('pedro')
 
-const content = 'relative min-w-64 max-h-96 overflow-auto bg-white will-change-[opacity,transform] z-50 rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2'
+const filterText = ref('')
+const subFilterText = ref('')
+
+const content = 'relative min-w-32 bg-white border will-change-[opacity,transform] z-50 rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2'
 const item = 'group w-full text-sm leading-none text-violet11 flex items-center h-7 relative pl-7 pr-2 select-none outline-none data-[state=open]:bg-violet4 data-[state=open]:text-violet11 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[highlighted]:text-violet1 data-[highlighted]:data-[state=open]:bg-violet9 data-[highlighted]:data-[state=open]:text-violet1 cursor-default rounded'
-const filterInput = 'w-full px-2 py-1.5 text-sm border-none outline-none focus:ring-0 mb-1 placeholder:text-mauve9'
+const subContent = 'bg-white rounded-md border shadow-md border will-change-[opacity,transform] min-w-32 z-50 overflow-hidden p-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-left-right-1 data-[side=right]:slide-in-from-right-1 data-[side=top]:slide-in-from-bottom-2'
 const separator = '-mx-1 my-1 h-px bg-mauve5'
 const shortcut = 'ml-auto pl-5 text-[13px] text-mauve11 group-data-[highlighted]:text-white group-data-[disabled]:text-mauve8'
+const checkboxItem = 'group w-full text-sm leading-none text-violet11 flex items-center h-7 relative pl-7 pr-2 select-none outline-none data-[state=open]:bg-violet4 data-[state=open]:text-violet11 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[highlighted]:text-violet1 data-[highlighted]:data-[state=open]:bg-violet9 data-[highlighted]:data-[state=open]:text-violet1 cursor-default rounded'
+const radioItem = 'group w-full text-sm leading-none text-violet11 flex items-center h-7 relative pl-7 pr-2 select-none outline-none data-[state=open]:bg-violet4 data-[state=open]:text-violet11 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-violet9 data-[highlighted]:text-violet1 data-[highlighted]:data-[state=open]:bg-violet9 data-[highlighted]:data-[state=open]:text-violet1 cursor-default rounded'
 
-// Main menu filter
-const filterText = ref('')
-const allCountries = countryList.slice(0, 50)
-const filteredCountries = computed(() => {
-  if (!filterText.value.trim())
-    return allCountries
-  return allCountries.filter(c =>
-    c.toLowerCase().includes(filterText.value.toLowerCase().trim()),
-  )
-})
-
-// Submenu filter
-const subFilterText = ref('')
-const subOptions = ['Europe', 'Asia', 'Africa', 'Americas', 'Oceania', 'Antarctica']
-const filteredSubOptions = computed(() => {
-  if (!subFilterText.value.trim())
-    return subOptions
-  return subOptions.filter(opt =>
-    opt.toLowerCase().includes(subFilterText.value.toLowerCase().trim()),
-  )
-})
+function matches(text: string, filter: string) {
+  return !filter || text.toLowerCase().includes(filter.toLowerCase())
+}
 </script>
 
 <template>
@@ -59,7 +46,7 @@ const filteredSubOptions = computed(() => {
     title="DropdownMenu/Filter"
     :layout="{ type: 'single', iframe: false }"
   >
-    <Variant title="Filtered Demo">
+    <Variant title="default">
       <div class="flex items-center justify-center min-h-screen">
         <DropdownMenuRoot v-model:open="toggleState">
           <DropdownMenuTrigger
@@ -77,109 +64,114 @@ const filteredSubOptions = computed(() => {
               :class="content"
               :side-offset="4"
             >
-              <!-- Main Menu Filter -->
-              <div class="sticky top-0 bg-white z-10 px-1 pt-1 pb-0.5">
-                <div class="relative flex items-center border-b border-mauve5">
-                  <Icon
-                    icon="radix-icons:magnifying-glass"
-                    class="ml-2 size-4 text-mauve11"
-                  />
-                  <DropdownMenuFilter
-                    v-model="filterText"
-                    :class="filterInput"
-                    placeholder="Filter countries..."
-                    auto-focus
-                  />
+              <DropdownMenuFilter
+                v-model="filterText"
+                class="w-full px-2 py-1 text-sm outline-none placeholder:text-mauve9 border-b border-mauve5 mb-1"
+                placeholder="Filter items..."
+                auto-focus
+              />
+
+              <DropdownMenuItem
+                v-if="matches('New Tab', filterText)"
+                value="New Tab"
+                :class="item"
+              >
+                New Tab
+                <div :class="shortcut">
+                  ⌘+T
                 </div>
-              </div>
+              </DropdownMenuItem>
 
-              <div class="mt-1">
-                <DropdownMenuItem
-                  v-for="country in filteredCountries"
-                  :key="country"
-                  :class="item"
-                  @select="() => console.log('Selected:', country)"
-                >
-                  <Icon
-                    icon="radix-icons:globe"
-                    class="absolute left-1.5 size-4 text-mauve11 group-data-[highlighted]:text-white"
-                  />
-                  {{ country }}
-                </DropdownMenuItem>
-
-                <div
-                  v-if="filteredCountries.length === 0"
-                  class="py-4 px-2 text-sm text-mauve11 text-center"
-                >
-                  No countries match your search
-                </div>
-              </div>
-
-              <DropdownMenuSeparator :class="separator" />
-
-              <!-- Submenu with Filter -->
-              <DropdownMenuSub>
+              <DropdownMenuSub v-if="matches('More Tools', filterText)">
                 <DropdownMenuSubTrigger
+                  value="more tools"
                   :class="item"
                 >
-                  <Icon
-                    icon="radix-icons:layers"
-                    class="absolute left-1.5 size-4 text-mauve11 group-data-[highlighted]:text-white"
-                  />
-                  Filter Regions
-                  <div class="ml-auto pl-5">
+                  More Tools
+                  <div
+                    class="ml-auto pl-5 text-mauve11 group-data-[highlighted]:text-white group-data-[disabled]:text-mauve8"
+                  >
                     <Icon
                       icon="tabler:chevron-right"
-                      class="size-3.5 text-mauve11 group-data-[highlighted]:text-white"
+                      class="size-3.5"
                     />
                   </div>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent
-                    :class="content"
+                    :class="subContent"
                     :side-offset="2"
                     :align-offset="-4"
                   >
-                    <div class="sticky top-0 bg-white z-10 px-1 pt-1 pb-0.5">
-                      <div class="relative flex items-center border-b border-mauve5">
-                        <Icon
-                          icon="radix-icons:magnifying-glass"
-                          class="ml-2 size-4 text-mauve11"
-                        />
-                        <DropdownMenuFilter
-                          v-model="subFilterText"
-                          :class="filterInput"
-                          placeholder="Search regions..."
-                          auto-focus
-                        />
+                    <DropdownMenuFilter
+                      v-model="subFilterText"
+                      class="w-full px-2 py-1 text-sm outline-none placeholder:text-mauve9 border-b border-mauve5 mb-1"
+                      placeholder="Filter tools..."
+                      auto-focus
+                    />
+                    <DropdownMenuItem
+                      v-if="matches('Save Page As…', subFilterText)"
+                      :class="item"
+                    >
+                      Save Page As…
+                      <div :class="shortcut">
+                        ⌘+S
                       </div>
-                    </div>
-
-                    <div class="mt-1">
-                      <DropdownMenuItem
-                        v-for="region in filteredSubOptions"
-                        :key="region"
-                        :class="item"
-                        @select="() => console.log('Selected region:', region)"
-                      >
-                        {{ region }}
-                      </DropdownMenuItem>
-                      <div
-                        v-if="filteredSubOptions.length === 0"
-                        class="py-2 px-2 text-sm text-mauve11 text-center"
-                      >
-                        No regions found
-                      </div>
-                    </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      v-if="matches('Create Shortcut…', subFilterText)"
+                      :class="item"
+                    >
+                      Create Shortcut…
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      v-if="matches('Name Window…', subFilterText)"
+                      :class="item"
+                    >
+                      Name Window…
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator
+                      v-if="matches('Developer Tools', subFilterText)"
+                      :class="separator"
+                    />
+                    <DropdownMenuItem
+                      v-if="matches('Developer Tools', subFilterText)"
+                      :class="item"
+                    >
+                      Developer Tools
+                    </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
 
+              <DropdownMenuItem
+                v-if="matches('New Window', filterText)"
+                value="New Window"
+                :class="item"
+              >
+                New Window
+                <div :class="shortcut">
+                  ⌘+N
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-if="matches('New Private Window', filterText)"
+                value="New Private Window"
+                :class="item"
+                disabled
+              >
+                New Private Window
+                <div :class="shortcut">
+                  ⇧+⌘+N
+                </div>
+              </DropdownMenuItem>
+
               <DropdownMenuSeparator :class="separator" />
 
               <DropdownMenuCheckboxItem
+                v-if="matches('Show Bookmarks', filterText)"
                 v-model="checkboxOne"
-                :class="item"
+                :class="checkboxItem"
                 @select.prevent
               >
                 <DropdownMenuItemIndicator class="absolute left-0 w-7 inline-flex items-center justify-center">
@@ -190,15 +182,29 @@ const filteredSubOptions = computed(() => {
                   ⌘+B
                 </div>
               </DropdownMenuCheckboxItem>
-
+              <DropdownMenuCheckboxItem
+                v-if="matches('Show Full URLs', filterText)"
+                v-model="checkboxTwo"
+                :class="checkboxItem"
+                @select.prevent
+              >
+                <DropdownMenuItemIndicator class="absolute left-0 w-7 inline-flex items-center justify-center">
+                  <Icon icon="tabler:check" />
+                </DropdownMenuItemIndicator>
+                Show Full URLs
+              </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator :class="separator" />
 
-              <DropdownMenuLabel class="pl-6 text-xs leading-6 text-mauve11">
+              <DropdownMenuLabel
+                v-if="matches('People', filterText) || matches('Pedro Duarte', filterText) || matches('Colm Tuite', filterText)"
+                class="pl-6 text-xs leading-6 text-mauve11"
+              >
                 People
               </DropdownMenuLabel>
-              <DropdownMenuRadioGroup v-model="radioValue">
+              <DropdownMenuRadioGroup v-model="person">
                 <DropdownMenuRadioItem
-                  :class="item"
+                  v-if="matches('Pedro Duarte', filterText)"
+                  :class="radioItem"
                   value="pedro"
                   @select.prevent
                 >
@@ -208,7 +214,8 @@ const filteredSubOptions = computed(() => {
                   Pedro Duarte
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem
-                  :class="item"
+                  v-if="matches('Colm Tuite', filterText)"
+                  :class="radioItem"
                   value="colm"
                   @select.prevent
                 >
@@ -218,7 +225,6 @@ const filteredSubOptions = computed(() => {
                   Colm Tuite
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
-
               <DropdownMenuArrow
                 class="fill-white"
                 :width="12"
