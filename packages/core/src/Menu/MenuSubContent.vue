@@ -19,7 +19,7 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
-import MenuContentImpl from './MenuContentImpl.vue'
+import MenuContentImpl, { injectMenuContentContext } from './MenuContentImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
 import { SUB_CLOSE_KEYS } from './utils'
@@ -34,6 +34,7 @@ const forwarded = useForwardPropsEmits(props, emits)
 const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
 const menuSubContext = injectMenuSubContext()
+const parentContentContext = injectMenuContentContext()
 
 const { forwardRef, currentElement: subContentElement } = useForwardExpose()
 
@@ -80,7 +81,14 @@ menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
         if (isKeyDownInside && isCloseKey) {
           menuContext.onOpenChange(false);
           // We focus manually because we prevented it in `onCloseAutoFocus`
-          menuSubContext.trigger.value?.focus();
+          if (parentContentContext.filterElement.value) {
+            parentContentContext.filterElement.value.focus();
+            parentContentContext.highlightedElement.value = menuSubContext.trigger.value;
+            menuSubContext.trigger.value?.scrollIntoView({ block: 'nearest' });
+          }
+          else {
+            menuSubContext.trigger.value?.focus();
+          }
           // prevent window from scrolling
           event.preventDefault();
         }

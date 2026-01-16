@@ -178,6 +178,7 @@ export const components = {
     'DropdownMenuSub',
     'DropdownMenuSubContent',
     'DropdownMenuSubTrigger',
+    'DropdownMenuFilter',
   ] as const,
   editable: [
     'EditableRoot',
