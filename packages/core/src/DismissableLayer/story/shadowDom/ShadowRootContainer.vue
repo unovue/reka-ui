@@ -6,6 +6,8 @@ import DismissableLayersElements from './DismissableLayersElements.vue'
 
 const props = defineProps<{ withDialog?: boolean }>()
 
+let shadowApp: ReturnType<typeof createApp> | null = null
+
 function mountShadowRoot(container: HTMLDivElement, component: Component) {
   const elementWithShadow = container as Element & { shadowRoot: ShadowRoot | null }
   const shadowRoot
@@ -22,12 +24,17 @@ function mountShadowRoot(container: HTMLDivElement, component: Component) {
   shadowPortalTarget.id = `portal-shadow-root`
   shadowRoot.appendChild(shadowPortalTarget)
 
-  createApp(component, {
+  shadowApp = createApp(component, {
     portalTarget: shadowPortalTarget,
-  }).mount(shadowMountPoint)
+  })
+  shadowApp.mount(shadowMountPoint)
 }
 
 function resetShadowRoot(container: HTMLDivElement) {
+  if (shadowApp) {
+    shadowApp.unmount()
+    shadowApp = null
+  }
   const elementWithShadow = container as Element & { shadowRoot: ShadowRoot | null }
   if (elementWithShadow.shadowRoot) {
     elementWithShadow.shadowRoot.innerHTML = ''

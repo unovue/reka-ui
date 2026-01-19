@@ -219,8 +219,9 @@ export function useFocusOutside(
     }
 
     rootNode.value.addEventListener('focusin', handleFocus)
+    const rootNodeValue = rootNode.value
 
-    cleanupFn(() => rootNode.value.removeEventListener('focusin', handleFocus))
+    cleanupFn(() => rootNodeValue.removeEventListener('focusin', handleFocus))
   })
 
   return {
