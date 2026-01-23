@@ -9,6 +9,7 @@ export * from './Combobox'
 // utilities
 export * from './ConfigProvider'
 export * from './ContextMenu'
+export { type Matcher } from './date'
 export * from './DateField'
 export * from './DatePicker'
 export * from './DateRangeField'
