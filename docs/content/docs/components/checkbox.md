@@ -112,6 +112,7 @@ Use the `trueValue` and `falseValue` props to specify custom values for the chec
 <script setup>
 import { Icon } from '@iconify/vue'
 import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 // With string values
 const acceptTerms = ref('no')

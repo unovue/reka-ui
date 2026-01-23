@@ -86,7 +86,7 @@ const modelValue = useVModel(props as any, 'modelValue', emits as any, {
 
 const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
 
-const isChecked = computed(() => modelValue.value === props.trueValue)
+const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
 const checkboxState = computed<CheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {

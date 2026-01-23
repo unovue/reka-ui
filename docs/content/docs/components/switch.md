@@ -95,6 +95,7 @@ Use the `trueValue` and `falseValue` props to specify custom values for the on a
 ```vue line=4-5,9-10
 <script setup>
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
+import { ref } from 'vue'
 
 // With string values
 const status = ref('inactive')
