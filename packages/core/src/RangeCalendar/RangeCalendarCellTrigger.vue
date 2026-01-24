@@ -1,20 +1,15 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import {
-
-  getLocalTimeZone,
-  isSameDay,
-  isSameMonth,
-  isToday,
-} from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
 import { isBetweenInclusive, toDate } from '@/date'
 import { useKbd } from '@/shared'
+import { isEqualMonth, isSameDay, isToday, toPlainDate } from '@/temporal/comparators'
 
 export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
-  day: DateValue
-  month: DateValue
+  day: TemporalDate
+  month: TemporalDate
 }
 
 export interface RangeCalendarCellTriggerSlot {
@@ -80,10 +75,10 @@ const isHighlighted = computed(() => rootContext.highlightedRange.value
 const allowNonContiguousRanges = computed(() => rootContext.allowNonContiguousRanges.value)
 
 const isDateToday = computed(() => {
-  return isToday(props.day, getLocalTimeZone())
+  return isToday(props.day)
 })
 const isOutsideView = computed(() => {
-  return !isSameMonth(props.day, props.month)
+  return !isEqualMonth(props.day, props.month)
 })
 const isOutsideVisibleView = computed(() =>
   rootContext.isOutsideVisibleView(props.day),
@@ -105,12 +100,17 @@ const isFocusedDate = computed(() => {
   return false
 })
 
-function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
+function changeDate(e: MouseEvent | KeyboardEvent, date: TemporalDate) {
   if (rootContext.readonly.value)
     return
   if (rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date))
     return
 
+<<<<<<< HEAD
+=======
+  rootContext.lastPressedDateValue.value = date
+
+>>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
   if (rootContext.startValue.value && rootContext.highlightedRange.value === null) {
     if (isSameDay(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
@@ -121,8 +121,12 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameDay(rootContext.lastPressedDateValue.value, date))
+<<<<<<< HEAD
         rootContext.startValue.value = date.copy()
       rootContext.lastPressedDateValue.value = date.copy()
+=======
+        rootContext.startValue.value = date
+>>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
       return
     }
   }
@@ -143,30 +147,30 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
   }
 
   if (!rootContext.startValue.value) {
-    rootContext.startValue.value = date.copy()
+    rootContext.startValue.value = date
   }
   else if (!rootContext.endValue.value) {
-    rootContext.endValue.value = date.copy()
+    rootContext.endValue.value = date
   }
   else if (rootContext.endValue.value && rootContext.startValue.value) {
     if (!rootContext.fixedDate.value) {
       rootContext.endValue.value = undefined
-      rootContext.startValue.value = date.copy()
+      rootContext.startValue.value = date
     }
     else if (rootContext.fixedDate.value === 'start') {
-      if (date.compare(rootContext.startValue.value) < 0) {
-        rootContext.startValue.value = date.copy()
+      if (Temporal.PlainDate.compare(toPlainDate(date), toPlainDate(rootContext.startValue.value)) < 0) {
+        rootContext.startValue.value = date
       }
       else {
-        rootContext.endValue.value = date.copy()
+        rootContext.endValue.value = date
       }
     }
     else if (rootContext.fixedDate.value === 'end') {
-      if (date.compare(rootContext.endValue.value) > 0) {
-        rootContext.endValue.value = date.copy()
+      if (Temporal.PlainDate.compare(toPlainDate(date), toPlainDate(rootContext.endValue.value)) > 0) {
+        rootContext.endValue.value = date
       }
       else {
-        rootContext.startValue.value = date.copy()
+        rootContext.startValue.value = date
       }
     }
   }
@@ -181,7 +185,7 @@ function handleClick(e: MouseEvent) {
 function handleFocus() {
   if (isDisabled.value || rootContext.isDateUnavailable?.(props.day))
     return
-  rootContext.focusedValue.value = props.day.copy()
+  rootContext.focusedValue.value = props.day
 }
 
 function handleArrowKey(e: KeyboardEvent) {
@@ -214,10 +218,10 @@ function handleArrowKey(e: KeyboardEvent) {
       changeDate(e, props.day)
   }
 
-  function shiftFocus(day: DateValue, add: number) {
+  function shiftFocus(day: TemporalDate, add: number) {
     const candidateDayValue = day.add({ days: add })
 
-    if ((rootContext.minValue.value && candidateDayValue.compare(rootContext.minValue.value) < 0) || (rootContext.maxValue.value && candidateDayValue.compare(rootContext.maxValue.value) > 0))
+    if ((rootContext.minValue.value && Temporal.PlainDate.compare(toPlainDate(candidateDayValue), toPlainDate(rootContext.minValue.value)) < 0) || (rootContext.maxValue.value && Temporal.PlainDate.compare(toPlainDate(candidateDayValue), toPlainDate(rootContext.maxValue.value)) > 0))
       return
 
     const candidateDay = parentElement.querySelector<HTMLElement>(`[data-value='${candidateDayValue.toString()}']:not([data-outside-view])`)

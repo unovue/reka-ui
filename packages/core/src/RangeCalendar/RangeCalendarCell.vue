@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
+import type { TemporalDate } from '@/temporal/types'
 
 export interface RangeCalendarCellProps extends PrimitiveProps {
-  date: DateValue
+  date: TemporalDate
 }
 </script>
 

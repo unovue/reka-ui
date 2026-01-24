@@ -2,20 +2,20 @@
   * Adapted from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/builders/range-calendar/create.ts
 */
 
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Matcher } from '@/date'
-import { isSameDay } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import { computed } from 'vue'
-import { areAllDaysBetweenValid, getDaysBetween, isBefore, isBetween } from '@/date'
+import { getDaysBetween } from '@/date'
+import { areAllDaysBetweenValid, isBefore, isBetween, isSameDay } from '@/temporal/comparators'
 
 export type UseRangeCalendarProps = {
-  start: Ref<DateValue | undefined>
-  end: Ref<DateValue | undefined>
+  start: Ref<TemporalDate | undefined>
+  end: Ref<TemporalDate | undefined>
   isDateDisabled: Matcher
   isDateUnavailable: Matcher
   isDateHighlightable?: Matcher
-  focusedValue: Ref<DateValue | undefined>
+  focusedValue: Ref<TemporalDate | undefined>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays?: Ref<number | undefined>
@@ -48,19 +48,19 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     },
   )
 
-  const isSelectionStart = (date: DateValue) => {
+  const isSelectionStart = (date: TemporalDate) => {
     if (!props.start.value)
       return false
     return isSameDay(props.start.value, date)
   }
 
-  const isSelectionEnd = (date: DateValue) => {
+  const isSelectionEnd = (date: TemporalDate) => {
     if (!props.end.value)
       return false
     return isSameDay(props.end.value, date)
   }
 
-  const isSelected = (date: DateValue) => {
+  const isSelected = (date: TemporalDate) => {
     if (props.start.value && isSameDay(props.start.value, date))
       return true
     if (props.end.value && isSameDay(props.end.value, date))
@@ -71,7 +71,12 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return false
   }
 
+<<<<<<< HEAD
   const rangeIsDateDisabled = (date: DateValue) => {
+=======
+  // Check if a date exceeds maximum days limit from the start date
+  const rangeIsDateDisabled = (date: TemporalDate) => {
+>>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
     if (props.isDateDisabled(date))
       return true
 
@@ -98,7 +103,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return false
   }
 
-  const isDateHighlightable = (date: DateValue) => {
+  const isDateHighlightable = (date: TemporalDate) => {
     if (props.isDateHighlightable?.(date))
       return true
     return false
@@ -142,13 +147,13 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return null
   })
 
-  const isHighlightedStart = (date: DateValue) => {
+  const isHighlightedStart = (date: TemporalDate) => {
     if (!highlightedRange.value || !highlightedRange.value.start)
       return false
     return isSameDay(highlightedRange.value.start, date)
   }
 
-  const isHighlightedEnd = (date: DateValue) => {
+  const isHighlightedEnd = (date: TemporalDate) => {
     if (!highlightedRange.value || !highlightedRange.value.end)
       return false
     return isSameDay(highlightedRange.value.end, date)
