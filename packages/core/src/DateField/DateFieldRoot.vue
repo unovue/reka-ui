@@ -1,12 +1,11 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { hasTime, isBefore } from '@/date'
+import type { Matcher, TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -20,11 +19,12 @@ import {
   normalizeInputValue,
   syncSegmentValues,
 } from '@/shared/date'
+import { hasTime, isBefore, toPlainDate } from '@/temporal/comparators'
 
 type DateFieldRootContext = {
   locale: Ref<string>
-  modelValue: Ref<DateValue | undefined>
-  placeholder: Ref<DateValue>
+  modelValue: Ref<TemporalDate | undefined>
+  placeholder: Ref<TemporalDate>
   isDateUnavailable?: Matcher
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
@@ -42,13 +42,19 @@ type DateFieldRootContext = {
 
 export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value for the calendar */
-  defaultValue?: DateValue
+  defaultValue?: TemporalDate
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: TemporalDate
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
+<<<<<<< HEAD
   placeholder?: DateValue
   /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateValue | null
+=======
+  placeholder?: TemporalDate
+  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  modelValue?: TemporalDate | null
+>>>>>>> d4175a47 (feat(DateField): migrate DateField to temporal)
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
@@ -60,9 +66,9 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** Whether or not to hide the time zone segment of the field */
   hideTimeZone?: boolean
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: TemporalDate
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: TemporalDate
   /** The locale to use for formatting dates */
   locale?: string
   /** Whether or not the date field is disabled */
@@ -79,9 +85,9 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
 
 export type DateFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | undefined]
+  'update:modelValue': [date: TemporalDate | undefined]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: TemporalDate]
 }
 
 export const [injectDateFieldRootContext, provideDateFieldRootContext]
@@ -110,7 +116,7 @@ const emits = defineEmits<DateFieldRootEmits>()
 defineSlots<{
   default?: (props: {
     /** The current date of the field */
-    modelValue: DateValue | undefined
+    modelValue: TemporalDate | undefined
     /** The date field segment contents */
     segments: { part: SegmentPart, value: string }[]
     /** Value if the input is invalid */
@@ -136,7 +142,7 @@ onMounted(() => {
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
@@ -146,9 +152,9 @@ const defaultDate = getDefaultDate({
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
 const step = computed(() => normalizeDateStep(props))
 
@@ -206,8 +212,8 @@ watch(locale, (value) => {
 })
 
 watch(modelValue, (_modelValue) => {
-  if (!isNullish(_modelValue) && placeholder.value.compare(_modelValue) !== 0) {
-    placeholder.value = _modelValue.copy()
+  if (!isNullish(_modelValue) && Temporal.PlainDate.compare(toPlainDate(placeholder.value), toPlainDate(_modelValue)) !== 0) {
+    placeholder.value = _modelValue
   }
 })
 
