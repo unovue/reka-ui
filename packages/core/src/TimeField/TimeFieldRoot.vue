@@ -1,12 +1,10 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
-import { isBefore } from '@/date'
+import { Temporal } from 'temporal-polyfill'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -21,8 +19,8 @@ import {
 
 type TimeFieldRootContext = {
   locale: Ref<string>
-  modelValue: Ref<DateValue | undefined>
-  placeholder: Ref<DateValue>
+  modelValue: Ref<TimeValue | undefined>
+  placeholder: Ref<TimeValue>
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
@@ -82,12 +80,24 @@ export type TimeFieldRootEmits = {
 export const [injectTimeFieldRootContext, provideTimeFieldRootContext]
   = createContext<TimeFieldRootContext>('TimeFieldRoot')
 
-function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
-  if (value && 'day' in value) {
-    return value
-  }
+function convertValue(value: TimeValue | Temporal.PlainDateTime): Temporal.PlainDateTime {
+  if ('day' in value)
+    return Temporal.PlainDateTime.from(value)
 
-  return toCalendarDateTime(date, value)
+  const today = Temporal.Now.plainDateISO()
+  return Temporal.PlainDateTime.from({
+    year: today.year,
+    month: today.month,
+    day: today.day,
+    hour: value.hour,
+    minute: value.minute,
+    second: value.second,
+    millisecond: value.millisecond ?? 0,
+  })
+}
+
+function compareDateTimeValue(a: Temporal.PlainDateTime, b: Temporal.PlainDateTime) {
+  return Temporal.PlainDateTime.compare(a, b)
 }
 </script>
 
@@ -144,9 +154,9 @@ onMounted(() => {
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<TimeValue>
+}) as Ref<TimeValue | undefined>
 
-const convertedModelValue = computed({
+const convertedModelValue = computed<Temporal.PlainDateTime | undefined>({
   get() {
     if (isNullish(modelValue.value))
       return modelValue.value
@@ -154,10 +164,15 @@ const convertedModelValue = computed({
   },
   set(newValue) {
     if (newValue) {
-      modelValue.value = modelValue.value && 'day' in modelValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, modelValue.value?.millisecond)
+      modelValue.value = Temporal.PlainTime.from({
+        hour: newValue.hour,
+        minute: newValue.minute,
+        second: newValue.second,
+        millisecond: modelValue.value?.millisecond ?? 0,
+      })
     }
     else {
-      modelValue.value = newValue
+      modelValue.value = undefined
     }
     return newValue
   },
@@ -169,17 +184,23 @@ const defaultDate = getDefaultTime({
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
 }) as Ref<TimeValue>
 
-const convertedPlaceholder = computed({
+const convertedPlaceholder = computed<Temporal.PlainDateTime>({
   get() {
     return convertValue(placeholder.value)
   },
   set(newValue) {
-    if (newValue)
-      placeholder.value = 'day' in placeholder.value ? newValue.copy() : new Time(newValue.hour, newValue.minute, newValue.second, placeholder.value?.millisecond)
+    if (newValue) {
+      placeholder.value = Temporal.PlainTime.from({
+        hour: newValue.hour,
+        minute: newValue.minute,
+        second: newValue.second,
+        millisecond: newValue.millisecond ?? 0,
+      })
+    }
     return newValue
   },
 })
@@ -192,13 +213,13 @@ const inferredGranularity = computed(() => {
 })
 
 const isInvalid = computed(() => {
-  if (!modelValue.value)
+  if (!modelValue.value || !convertedModelValue.value)
     return false
 
-  if (convertedMinValue.value && isBefore(convertedModelValue.value, convertedMinValue.value))
+  if (convertedMinValue.value && compareDateTimeValue(convertedModelValue.value, convertedMinValue.value) < 0)
     return true
 
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedModelValue.value))
+  if (convertedMaxValue.value && compareDateTimeValue(convertedModelValue.value, convertedMaxValue.value) > 0)
     return true
 
   return false
@@ -206,7 +227,9 @@ const isInvalid = computed(() => {
 
 const initialSegments = initializeTimeSegmentValues(inferredGranularity.value)
 
-const segmentValues = ref<SegmentValueObj>(modelValue.value ? { ...syncTimeSegmentValues({ value: convertedModelValue.value, formatter }) } : { ...initialSegments })
+const segmentValues = ref<SegmentValueObj>(modelValue.value
+  ? { ...syncTimeSegmentValues({ value: convertedModelValue.value!, formatter }) }
+  : { ...initialSegments })
 
 const allSegmentContent = computed(() => createContent({
   granularity: inferredGranularity.value,
@@ -254,8 +277,8 @@ watch(locale, (value) => {
 })
 
 watch(convertedModelValue, (_modelValue) => {
-  if (!isNullish(_modelValue) && (!isEqualDay(convertedPlaceholder.value, _modelValue) || convertedPlaceholder.value.compare(_modelValue) !== 0))
-    placeholder.value = _modelValue.copy()
+  if (!isNullish(_modelValue) && Temporal.PlainDateTime.compare(convertedPlaceholder.value, _modelValue) !== 0)
+    convertedPlaceholder.value = _modelValue
 })
 
 watch([convertedModelValue, locale], ([_modelValue]) => {
@@ -314,8 +337,14 @@ function setFocusedElement(el: HTMLElement) {
 
 provideTimeFieldRootContext({
   locale,
-  modelValue: convertedModelValue,
-  placeholder: convertedPlaceholder,
+  modelValue: computed({
+    get: () => modelValue.value,
+    set: value => modelValue.value = value,
+  }),
+  placeholder: computed({
+    get: () => placeholder.value,
+    set: value => placeholder.value = value,
+  }),
   disabled,
   formatter,
   hourCycle: props.hourCycle,
