@@ -46,15 +46,9 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default placeholder date */
   defaultPlaceholder?: TemporalDate
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
-<<<<<<< HEAD
-  placeholder?: DateValue
-  /** The controlled value of the field. Can be bound as `v-model`. */
-  modelValue?: DateValue | null
-=======
   placeholder?: TemporalDate
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: TemporalDate | null
->>>>>>> d4175a47 (feat(DateField): migrate DateField to temporal)
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */

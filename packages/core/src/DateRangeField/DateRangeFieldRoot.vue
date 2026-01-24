@@ -1,18 +1,11 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
-
 import type { Ref } from 'vue'
 import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import {
-  areAllDaysBetweenValid,
-  hasTime,
-  isBefore,
-  isBeforeOrSame,
-} from '@/date'
+import type { TemporalDate } from '@/temporal/types'
 import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -25,14 +18,21 @@ import {
 
   syncSegmentValues,
 } from '@/shared/date'
+import {
+  areAllDaysBetweenValid,
+  hasTime,
+  isBefore,
+  isBeforeOrSame,
+  toPlainDate,
+} from '@/temporal/comparators'
 
 export type DateRangeType = 'start' | 'end'
 
 type DateRangeFieldRootContext = {
   locale: Ref<string>
-  startValue: Ref<DateValue | undefined>
-  endValue: Ref<DateValue | undefined>
-  placeholder: Ref<DateValue>
+  startValue: Ref<TemporalDate | undefined>
+  endValue: Ref<TemporalDate | undefined>
+  placeholder: Ref<TemporalDate>
   isDateUnavailable?: Matcher
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
@@ -51,9 +51,9 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   /** The default value for the calendar */
   defaultValue?: DateRange
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: TemporalDate
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
-  placeholder?: DateValue
+  placeholder?: TemporalDate
   /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
@@ -65,9 +65,9 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   /** Whether or not to hide the time zone segment of the field */
   hideTimeZone?: boolean
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: TemporalDate
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: TemporalDate
   /** The locale to use for formatting dates */
   locale?: string
   /** Whether or not the date field is disabled */
@@ -86,7 +86,7 @@ export type DateRangeFieldRootEmits = {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: TemporalDate]
 }
 
 export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
@@ -149,9 +149,9 @@ const defaultDate = getDefaultDate({
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
 const step = computed(() => normalizeDateStep(props))
 
@@ -249,26 +249,26 @@ const segmentContents = computed(() => ({
 
 const editableSegmentContents = computed(() => ({ start: segmentContents.value.start.filter(({ part }) => part !== 'literal'), end: segmentContents.value.end.filter(({ part }) => part !== 'literal') }))
 
-const startValue = ref(modelValue.value?.start?.copy()) as Ref<DateValue | undefined>
-const endValue = ref(modelValue.value?.end?.copy()) as Ref<DateValue | undefined>
+const startValue = ref(modelValue.value?.start) as Ref<TemporalDate | undefined>
+const endValue = ref(modelValue.value?.end) as Ref<TemporalDate | undefined>
 
 watch([startValue, endValue], ([_startValue, _endValue]) => {
-  modelValue.value = { start: _startValue?.copy(), end: _endValue?.copy() }
+  modelValue.value = { start: _startValue, end: _endValue }
 })
 
 watch(modelValue, (_modelValue) => {
   const isStartChanged = _modelValue?.start && startValue.value
-    ? _modelValue.start.compare(startValue.value) !== 0
+    ? toPlainDate(_modelValue.start).equals(toPlainDate(startValue.value)) === false
     : _modelValue?.start !== startValue.value
   if (isStartChanged) {
-    startValue.value = _modelValue?.start?.copy()
+    startValue.value = _modelValue?.start
   }
 
   const isEndChanged = _modelValue?.end && endValue.value
-    ? _modelValue.end.compare(endValue.value) !== 0
+    ? toPlainDate(_modelValue.end).equals(toPlainDate(endValue.value)) === false
     : _modelValue?.end !== endValue.value
   if (isEndChanged) {
-    endValue.value = _modelValue?.end?.copy()
+    endValue.value = _modelValue?.end
   }
 })
 
@@ -295,8 +295,8 @@ watch(locale, (value) => {
 })
 
 watch(modelValue, (_modelValue) => {
-  if (_modelValue && _modelValue.start !== undefined && placeholder.value.compare(_modelValue.start) !== 0)
-    placeholder.value = _modelValue.start.copy()
+  if (_modelValue && _modelValue.start !== undefined && !toPlainDate(placeholder.value).equals(toPlainDate(_modelValue.start)))
+    placeholder.value = _modelValue.start
 })
 
 watch([endValue, locale], ([_endValue]) => {
