@@ -1,20 +1,57 @@
-import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
-
 import type { DateFieldRootProps } from './DateFieldRoot.vue'
-import { CalendarDate, CalendarDateTime, now, parseAbsoluteToLocal, toZoned } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import DateField from './story/_DateField.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = Temporal.PlainDate.from('1980-01-20')
+const calendarDateTime = Temporal.PlainDateTime.from('1980-01-20T12:30:00')
+const zonedDateTime = Temporal.ZonedDateTime.from('1980-01-20T12:30:00-05:00[America/New_York]')
 
 const kbd = useTestKbd()
+
+type DateFields = 'year' | 'month' | 'day'
+type TimeFields = 'hour' | 'minute' | 'second'
+type DateValue = TemporalDate
+
+function addSegmentValue(date: Temporal.ZonedDateTime, segment: DateFields | TimeFields, amount: number) {
+  switch (segment) {
+    case 'year':
+      return date.add({ years: amount })
+    case 'month':
+      return date.add({ months: amount })
+    case 'day':
+      return date.add({ days: amount })
+    case 'hour':
+      return date.add({ hours: amount })
+    case 'minute':
+      return date.add({ minutes: amount })
+    case 'second':
+      return date.add({ seconds: amount })
+  }
+}
+
+function getSegmentValue(date: Temporal.ZonedDateTime, segment: DateFields | TimeFields) {
+  switch (segment) {
+    case 'year':
+      return date.year
+    case 'month':
+      return date.month
+    case 'day':
+      return date.day
+    case 'hour':
+      return date.hour
+    case 'minute':
+      return date.minute
+    case 'second':
+      return date.second
+  }
+}
 
 function getTimeSegments(getByTestId: (...args: any[]) => HTMLElement) {
   return {
@@ -161,8 +198,8 @@ describe('dateField', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, 1)[segment])
+    function cycle(segment: DateFields | TimeFields) {
+      return String(getSegmentValue(addSegmentValue(zonedDateTime, segment, 1), segment))
     }
 
     await user.click(day)
@@ -197,8 +234,8 @@ describe('dateField', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, -1)[segment])
+    function cycle(segment: DateFields | TimeFields) {
+      return String(getSegmentValue(addSegmentValue(zonedDateTime, segment, -1), segment))
     }
 
     await user.click(day)
@@ -229,7 +266,7 @@ describe('dateField', async () => {
          * And use a month (here is April, 30 days) with less than 31 days to ensure the day can be 31
          * when user input day segment first.
          */
-        placeholder: new CalendarDate(2025, 4, 30),
+        placeholder: Temporal.PlainDate.from('2025-04-30'),
       },
     })
 
@@ -344,7 +381,7 @@ describe('dateField', async () => {
   it('should clear all segment when `modelValue` is set to nullish', async () => {
     const { day, month, year, rerender } = setup({
       dateFieldProps: {
-        modelValue: zonedDateTime.copy(),
+        modelValue: zonedDateTime,
       },
     })
 
@@ -399,7 +436,7 @@ describe('dateField', async () => {
       expect(segment).toHaveFocus()
       await user.keyboard(kbd.ARROW_UP)
       expect(segment).toHaveTextContent(
-        String(zonedDateTime[segment.getAttribute('data-reka-date-field-segment') as keyof TimeFields | keyof DateFields]),
+        String(getSegmentValue(zonedDateTime, segment.getAttribute('data-reka-date-field-segment') as DateFields | TimeFields)),
       )
     }
   })
@@ -674,7 +711,7 @@ describe('dateField', async () => {
 
   it('displays correct timezone with ZonedDateTime value - `now`', async () => {
     const { getByTestId } = setup({
-      dateFieldProps: { modelValue: now('America/Los_Angeles') },
+      dateFieldProps: { modelValue: Temporal.Now.zonedDateTimeISO('America/Los_Angeles') },
     })
 
     const timeZone = getByTestId('timeZoneName')
@@ -686,7 +723,7 @@ describe('dateField', async () => {
 
   it('displays correct timezone with ZonedDateTime value - absolute -> local', async () => {
     const { getByTestId } = setup({
-      dateFieldProps: { modelValue: parseAbsoluteToLocal('2023-10-12T12:30:00Z') },
+      dateFieldProps: { modelValue: Temporal.Instant.from('2023-10-12T12:30:00Z').toZonedDateTimeISO(Temporal.Now.timeZoneId()) },
     })
 
     const timeZone = getByTestId('timeZoneName')

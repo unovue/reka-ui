@@ -106,32 +106,23 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: TemporalDate) {
   if (rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date))
     return
 
-<<<<<<< HEAD
-=======
   rootContext.lastPressedDateValue.value = date
-
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
   if (rootContext.startValue.value && rootContext.highlightedRange.value === null) {
     if (isSameDay(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
       rootContext.onPlaceholderChange(date)
-      rootContext.lastPressedDateValue.value = date.copy()
+      rootContext.lastPressedDateValue.value = date
       return
     }
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameDay(rootContext.lastPressedDateValue.value, date))
-<<<<<<< HEAD
-        rootContext.startValue.value = date.copy()
-      rootContext.lastPressedDateValue.value = date.copy()
-=======
         rootContext.startValue.value = date
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
       return
     }
   }
 
-  rootContext.lastPressedDateValue.value = date.copy()
+  rootContext.lastPressedDateValue.value = date
 
   if (
     rootContext.startValue.value

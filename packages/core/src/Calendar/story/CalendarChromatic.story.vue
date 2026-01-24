@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import { CalendarDate } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 import Calendar from './_DummyCalendar.vue'
 
-const defaultValue = new CalendarDate(2024, 2, 20)
-const modelValue = ref(defaultValue) as Ref<DateValue>
+const defaultValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 })
+const modelValue = ref(defaultValue) as Ref<TemporalDate>
 
-const placeholder = ref(new CalendarDate(2024, 4, 1)) as Ref<CalendarDate>
+const placeholder = ref(Temporal.PlainDate.from({ year: 2024, month: 4, day: 1 })) as Ref<TemporalDate>
 
-function paging(date: DateValue, sign: -1 | 1) {
+function paging(date: TemporalDate, sign: -1 | 1) {
   if (sign === -1)
     return date.subtract({ years: 1 })
   return date.add({ years: 1 })
@@ -87,8 +87,8 @@ function paging(date: DateValue, sign: -1 | 1) {
     <Variant title="Pagination functions">
       <Calendar
         :default-value="defaultValue"
-        :next-page="(date: DateValue) => paging(date, 1)"
-        :prev-page="(date: DateValue) => paging(date, -1)"
+        :next-page="(date: TemporalDate) => paging(date, 1)"
+        :prev-page="(date: TemporalDate) => paging(date, -1)"
       />
     </Variant>
   </Story>

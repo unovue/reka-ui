@@ -1,6 +1,5 @@
-import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import type { DateRange, TemporalDate } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
@@ -8,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import { RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
+import { Temporal } from '@/temporal'
 import RangeCalendar from './story/_RangeCalendar.vue'
 
 it('should pass axe accessibility tests', async () => {
@@ -18,18 +18,18 @@ it('should pass axe accessibility tests', async () => {
 const kbd = useTestKbd()
 
 const calendarDateRange = {
-  start: new CalendarDate(1980, 1, 20),
-  end: new CalendarDate(1980, 1, 25),
+  start: Temporal.PlainDate.from('1980-01-20'),
+  end: Temporal.PlainDate.from('1980-01-25'),
 }
 
 const calendarDateTimeRange = {
-  start: new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0),
-  end: new CalendarDateTime(1980, 1, 25, 12, 30, 0, 0),
+  start: Temporal.PlainDateTime.from('1980-01-20T12:30:00'),
+  end: Temporal.PlainDateTime.from('1980-01-25T12:30:00'),
 }
 
 const zonedDateTimeRange = {
-  start: toZoned(calendarDateTimeRange.start, 'America/New_York'),
-  end: toZoned(calendarDateTimeRange.end, 'America/New_York'),
+  start: Temporal.ZonedDateTime.from('1980-01-20T12:30:00-05:00[America/New_York]'),
+  end: Temporal.ZonedDateTime.from('1980-01-25T12:30:00-05:00[America/New_York]'),
 }
 
 const narrowWeekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -46,7 +46,17 @@ function getHighlightedDays(calendar: HTMLElement) {
   return Array.from(calendar.querySelectorAll<HTMLElement>('[data-highlighted]'))
 }
 
-function setup(props: { calendarProps?: RangeCalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+type RangeCalendarStoryProps = InstanceType<typeof RangeCalendar>['$props']
+type RangeCalendarStoryEmits = RangeCalendarStoryProps['emits']
+
+function isDateRange(value: unknown): value is DateRange {
+  if (!value || typeof value !== 'object')
+    return false
+
+  return 'start' in value && 'end' in value
+}
+
+function setup(props: { calendarProps?: RangeCalendarRootProps, emits?: RangeCalendarStoryEmits } = {}) {
   const user = userEvent.setup()
   const returned = render(RangeCalendar, { props })
   const calendar = returned.getByTestId('calendar')
@@ -119,7 +129,14 @@ describe('rangeCalendar', () => {
   it('resets range on select when a range is already selected', async () => {
     const { getByTestId, calendar, user, rerender } = setup({
       calendarProps: { modelValue: calendarDateRange },
-      emits: { 'onUpdate:modelValue': data => rerender({ calendarProps: { modelValue: data } }) },
+      emits: {
+        'onUpdate:modelValue': (data) => {
+          if (!isDateRange(data))
+            return
+
+          return rerender({ calendarProps: { modelValue: data } })
+        },
+      },
     })
 
     let startValue = calendar.querySelector('[data-selection-start]')
@@ -213,7 +230,14 @@ describe('rangeCalendar', () => {
   it('resets range selection when pressing Escape', async () => {
     const { getByTestId, calendar, user, rerender } = setup({
       calendarProps: { modelValue: calendarDateRange },
-      emits: { 'onUpdate:modelValue': data => rerender({ calendarProps: { modelValue: data } }) },
+      emits: {
+        'onUpdate:modelValue': (data) => {
+          if (!isDateRange(data))
+            return
+
+          return rerender({ calendarProps: { modelValue: data } })
+        },
+      },
     })
 
     let startValue = calendar.querySelector('[data-selection-start]')
@@ -418,7 +442,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
-        minValue: new CalendarDate(1979, 11, 25),
+        minValue: Temporal.PlainDate.from('1979-11-25'),
       },
     })
 
@@ -442,7 +466,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
-        maxValue: new CalendarDate(1980, 3, 25),
+        maxValue: Temporal.PlainDate.from('1980-03-25'),
       },
     })
 
@@ -502,7 +526,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
-        maxValue: new CalendarDate(1980, 3, 31),
+        maxValue: Temporal.PlainDate.from('1980-03-31'),
       },
     })
 
@@ -553,7 +577,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
-        minValue: new CalendarDate(1979, 12, 1),
+        minValue: Temporal.PlainDate.from('1979-12-01'),
       },
     })
 
@@ -585,7 +609,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: calendarDateRange.start,
-        isDateUnavailable: (date: DateValue) => {
+        isDateUnavailable: (date: TemporalDate) => {
           return date.day === 3
         },
       },
@@ -604,7 +628,7 @@ describe('rangeCalendar', () => {
       calendarProps: {
         placeholder: calendarDateRange.start,
         allowNonContiguousRanges: true,
-        isDateUnavailable: (date: DateValue) => {
+        isDateUnavailable: (date: TemporalDate) => {
           return date.day === 3
         },
       },
@@ -661,7 +685,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
-        maxValue: new CalendarDate(1980, 2, 15),
+        maxValue: Temporal.PlainDate.from('1980-02-15'),
       },
     })
 
@@ -682,7 +706,7 @@ describe('rangeCalendar', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDateRange,
-        minValue: new CalendarDate(1979, 12, 15),
+        minValue: Temporal.PlainDate.from('1979-12-15'),
       },
     })
 
@@ -716,13 +740,13 @@ describe('numberOfMonths > 1', () => {
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('January - February 1980')
 
-    const firstMonthDayDateStr = calendarDateRange.start.set({ day: 12 }).toString()
+    const firstMonthDayDateStr = calendarDateRange.start.with({ day: 12 }).toString()
     const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
     const secondMonthDay = getByTestId('date-1-2-15')
-    const secondMonthDayDateStr = calendarDateRange.start.set({ day: 15, month: 2 }).toString()
+    const secondMonthDayDateStr = calendarDateRange.start.with({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
 
@@ -758,13 +782,13 @@ describe('numberOfMonths > 1', () => {
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('January - February 1980')
 
-    const firstMonthDayDateStr = calendarDateRange.start.set({ day: 12 }).toString()
+    const firstMonthDayDateStr = calendarDateRange.start.with({ day: 12 }).toString()
     const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
     const secondMonthDay = getByTestId('date-1-2-15')
-    const secondMonthDayDateStr = calendarDateRange.start.set({ day: 15, month: 2 }).toString()
+    const secondMonthDayDateStr = calendarDateRange.start.with({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
 
@@ -789,7 +813,7 @@ describe('numberOfMonths > 1', () => {
       calendarProps: {
         modelValue: calendarDateRange,
         numberOfMonths: 2,
-        maxValue: new CalendarDate(1980, 3, 15),
+        maxValue: Temporal.PlainDate.from('1980-03-15'),
       },
     })
 
@@ -811,7 +835,7 @@ describe('numberOfMonths > 1', () => {
       calendarProps: {
         modelValue: calendarDateRange,
         numberOfMonths: 2,
-        minValue: new CalendarDate(1979, 12, 15),
+        minValue: Temporal.PlainDate.from('1979-12-15'),
       },
     })
 
@@ -879,7 +903,7 @@ describe('handles maximumDays', () => {
   it('limits the maximum number of days that can be selected', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
-        placeholder: new CalendarDate(1980, 1, 15),
+        placeholder: Temporal.PlainDate.from('1980-01-15'),
         maximumDays: 5,
       },
     })
@@ -911,10 +935,17 @@ describe('handles maximumDays', () => {
   it('dynamically updates disabled dates based on the selection and clears constraints after completing a range', async () => {
     const { getByTestId, user, rerender } = setup({
       calendarProps: {
-        placeholder: new CalendarDate(1980, 1, 10),
+        placeholder: Temporal.PlainDate.from('1980-01-10'),
         maximumDays: 3,
       },
-      emits: { 'onUpdate:modelValue': data => rerender({ calendarProps: { placeholder: new CalendarDate(1980, 1, 10), maximumDays: 3, modelValue: data } }) },
+      emits: {
+        'onUpdate:modelValue': (data) => {
+          if (!isDateRange(data))
+            return
+
+          return rerender({ calendarProps: { placeholder: Temporal.PlainDate.from('1980-01-10'), maximumDays: 3, modelValue: data } })
+        },
+      },
     })
 
     // No dates should be disabled due to maximumDays
@@ -950,7 +981,7 @@ describe('handles maximumDays', () => {
   it('highlights dates within the maximum range identical to disabled dates range', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
-        placeholder: new CalendarDate(1980, 1, 15),
+        placeholder: Temporal.PlainDate.from('1980-01-15'),
         maximumDays: 4,
       },
     })

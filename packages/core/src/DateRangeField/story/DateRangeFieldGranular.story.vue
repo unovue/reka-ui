@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { CalendarDateTime } from '@internationalized/date'
+import { Temporal } from 'temporal-polyfill'
 import DateRangeField from './_DummyDateRangeField.vue'
 
-const defaultValue = { start: new CalendarDateTime(2024, 2, 20), end: new CalendarDateTime(2024, 2, 27) }
+const defaultValue = {
+  start: Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 }),
+  end: Temporal.PlainDate.from({ year: 2024, month: 2, day: 27 }),
+}
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { isEqualDay } from '@internationalized/date'
+import { isSameDay, toPlainDate } from '@/temporal/comparators'
 import { DateRangeFieldRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
@@ -31,11 +31,11 @@ const rootContext = injectDateRangePickerRootContext()
       step: rootContext.step.value,
     }"
     @update:model-value="(date) => {
-      if (date.start && rootContext.modelValue.value.start && date.end && rootContext.modelValue.value.end && date.start.compare(rootContext.modelValue.value.start) === 0 && date.end.compare(rootContext.modelValue.value.end) === 0) return
+      if (date.start && rootContext.modelValue.value.start && date.end && rootContext.modelValue.value.end && toPlainDate(date.start).equals(toPlainDate(rootContext.modelValue.value.start)) && toPlainDate(date.end).equals(toPlainDate(rootContext.modelValue.value.end))) return
       rootContext.onDateChange(date)
     }"
     @update:placeholder="(date) => {
-      if (isEqualDay(date, rootContext.placeholder.value) && date.compare(rootContext.placeholder.value) === 0) return
+      if (isSameDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
   >

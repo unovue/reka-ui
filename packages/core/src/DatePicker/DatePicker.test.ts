@@ -1,20 +1,23 @@
-import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
-
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import DatePicker from './story/_DatePicker.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = Temporal.PlainDate.from({ year: 1980, month: 1, day: 20 })
+const calendarDateTime = Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 30, second: 0, millisecond: 0 })
+const zonedDateTime = calendarDateTime.toZonedDateTime('America/New_York')
 
 const kbd = useTestKbd()
+
+type DateFields = 'year' | 'month' | 'day'
+type TimeFields = 'hour' | 'minute' | 'second'
 
 function getTimeSegments(getByTestId: (...args: any[]) => HTMLElement) {
   return {
@@ -26,7 +29,7 @@ function getTimeSegments(getByTestId: (...args: any[]) => HTMLElement) {
   }
 }
 
-function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue | undefined) => void } } = {}) {
+function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate | undefined) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(DatePicker, { props })
   const month = returned.getByTestId('month')
@@ -116,8 +119,17 @@ describe('datePicker', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, 1)[segment])
+    function cycle(segment: DateFields | TimeFields) {
+      const unitMap = {
+        year: 'years',
+        month: 'months',
+        day: 'days',
+        hour: 'hours',
+        minute: 'minutes',
+        second: 'seconds',
+      }
+      const unit = unitMap[segment]
+      return String(zonedDateTime.add({ [unit]: 1 })[segment])
     }
 
     await user.click(day)
@@ -152,8 +164,17 @@ describe('datePicker', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, -1)[segment])
+    function cycle(segment: DateFields | TimeFields) {
+      const unitMap = {
+        year: 'years',
+        month: 'months',
+        day: 'days',
+        hour: 'hours',
+        minute: 'minutes',
+        second: 'seconds',
+      }
+      const unit = unitMap[segment]
+      return String(zonedDateTime.add({ [unit]: -1 })[segment])
     }
 
     await user.click(day)
