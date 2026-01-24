@@ -2,10 +2,10 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/formatter.ts
 */
 
-import type { DateValue, ZonedDateTime } from '@internationalized/date'
-import { DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
-import { hasTime, isZonedDateTime, toDate } from '@/date'
+import { hasTime, isZonedDateTime } from '@/temporal/comparators'
 
 export interface DateFormatterOptions extends Intl.DateTimeFormatOptions {
   calendar?: string
@@ -15,14 +15,14 @@ export type Formatter = {
   getLocale: () => string
   setLocale: (newLocale: string) => void
   custom: (date: Date, options: DateFormatterOptions) => string
-  selectedDate: (date: DateValue, includeTime?: boolean) => string
+  selectedDate: (date: TemporalDate, includeTime?: boolean) => string
   dayOfWeek: (date: Date, length?: DateFormatterOptions['weekday']) => string
   fullMonthAndYear: (date: Date, options?: DateFormatterOptions) => string
   fullMonth: (date: Date, options?: DateFormatterOptions) => string
   fullYear: (date: Date, options?: DateFormatterOptions) => string
   dayPeriod: (date: Date) => string
-  part: (dateObj: DateValue, type: Intl.DateTimeFormatPartTypes, options?: DateFormatterOptions) => string
-  toParts: (date: DateValue, options?: DateFormatterOptions) => Intl.DateTimeFormatPart[]
+  part: (dateObj: TemporalDate, type: Intl.DateTimeFormatPartTypes, options?: DateFormatterOptions) => string
+  toParts: (date: TemporalDate, options?: DateFormatterOptions) => Intl.DateTimeFormatPart[]
   getMonths: () => { label: string, value: number }[]
 }
 
@@ -37,6 +37,23 @@ export type Formatter = {
 export function useDateFormatter(initialLocale: string, opts: DateFormatterOptions = {}): Formatter {
   const locale = ref(initialLocale)
 
+  function toDate(dateValue: TemporalDate, timeZone: string = 'UTC') {
+    if (isZonedDateTime(dateValue)) {
+      return new Date(dateValue.toInstant().epochMilliseconds)
+    }
+
+    if (dateValue instanceof Temporal.PlainDateTime) {
+      const zoned = dateValue.toZonedDateTime(timeZone)
+      return new Date(zoned.toInstant().epochMilliseconds)
+    }
+
+    const zoned = dateValue.toZonedDateTime({
+      timeZone,
+      plainTime: Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 }),
+    })
+    return new Date(zoned.toInstant().epochMilliseconds)
+  }
+
   function getLocale() {
     return locale.value
   }
@@ -46,10 +63,10 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
   }
 
   function custom(date: Date, options: DateFormatterOptions) {
-    return new DateFormatter(locale.value, { ...opts, ...options }).format(date)
+    return new Intl.DateTimeFormat(locale.value, { ...opts, ...options }).format(date)
   }
 
-  function selectedDate(date: DateValue, includeTime = true) {
+  function selectedDate(date: TemporalDate, includeTime = true) {
     if (hasTime(date) && includeTime) {
       return custom(toDate(date), {
         dateStyle: 'long',
@@ -64,42 +81,38 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
   }
 
   function fullMonthAndYear(date: Date, options: DateFormatterOptions = {}) {
-    return new DateFormatter(locale.value, { ...opts, month: 'long', year: 'numeric', ...options }).format(date)
+    return new Intl.DateTimeFormat(locale.value, { ...opts, month: 'long', year: 'numeric', ...options }).format(date)
   }
 
   function fullMonth(date: Date, options: DateFormatterOptions = {}) {
-    return new DateFormatter(locale.value, { ...opts, month: 'long', ...options }).format(date)
+    return new Intl.DateTimeFormat(locale.value, { ...opts, month: 'long', ...options }).format(date)
   }
 
   function getMonths() {
-    const defaultDate = today(getLocalTimeZone())
+    const defaultDate = Temporal.Now.plainDateISO()
     const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    return months.map(item => ({ label: fullMonth(toDate(defaultDate.set({ month: item }))), value: item }))
+    return months.map(item => ({ label: fullMonth(toDate(defaultDate.with({ month: item }))), value: item }))
   }
 
   function fullYear(date: Date, options: DateFormatterOptions = {}) {
-    return new DateFormatter(locale.value, { ...opts, year: 'numeric', ...options }).format(date)
+    return new Intl.DateTimeFormat(locale.value, { ...opts, year: 'numeric', ...options }).format(date)
   }
 
-  function toParts(date: DateValue, options?: DateFormatterOptions) {
-    if (isZonedDateTime(date)) {
-      return new DateFormatter(locale.value, {
-        ...opts,
-        ...options,
-        timeZone: (date as ZonedDateTime).timeZone,
-      }).formatToParts(toDate(date))
-    }
-    else {
-      return new DateFormatter(locale.value, { ...opts, ...options }).formatToParts(toDate(date))
-    }
+  function toParts(date: TemporalDate, options?: DateFormatterOptions) {
+    const timeZone = isZonedDateTime(date) ? date.timeZoneId : options?.timeZone
+    return new Intl.DateTimeFormat(locale.value, {
+      ...opts,
+      ...options,
+      timeZone,
+    }).formatToParts(toDate(date, timeZone))
   }
 
   function dayOfWeek(date: Date, length: DateFormatterOptions['weekday'] = 'narrow') {
-    return new DateFormatter(locale.value, { ...opts, weekday: length }).format(date)
+    return new Intl.DateTimeFormat(locale.value, { ...opts, weekday: length }).format(date)
   }
 
   function dayPeriod(date: Date) {
-    const parts = new DateFormatter(locale.value, {
+    const parts = new Intl.DateTimeFormat(locale.value, {
       ...opts,
       hour: 'numeric',
       minute: 'numeric',
@@ -122,7 +135,7 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
   }
 
   function part(
-    dateObj: DateValue,
+    dateObj: TemporalDate,
     type: Intl.DateTimeFormatPartTypes,
     options: DateFormatterOptions = {},
   ) {

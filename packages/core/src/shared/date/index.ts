@@ -28,7 +28,6 @@ export type {
   DateSegmentObj,
   DateSegmentPart,
   DateStep,
-  DateValue,
   DayOfWeek,
   DayPeriod,
   HourCycle,
@@ -36,6 +35,7 @@ export type {
   SegmentPart,
   SegmentValueObj,
   TimeRange,
+  TemporalDate,
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'

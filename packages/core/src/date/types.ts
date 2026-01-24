@@ -2,20 +2,20 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/types.ts
 */
 
-import type { DateValue } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 
-export type { DateValue }
+export type { TemporalDate }
 
-export type Matcher = (date: DateValue) => boolean
+export type Matcher = (date: TemporalDate) => boolean
 
 export type Grid<T> = {
   /**
-   * A `DateValue` used to represent the month. Since days
+   * A `TemporalDate` used to represent the month. Since days
    * from the previous and next months may be included in the
    * calendar grid, we need a source of truth for the value
    * the grid is representing.
    */
-  value: DateValue
+  value: T
 
   /**
    * An array of arrays representing the weeks in the calendar.

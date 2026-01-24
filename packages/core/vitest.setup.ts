@@ -1,7 +1,9 @@
 import { beforeAll, expect, vi } from 'vitest'
 
 import { configureAxe } from 'vitest-axe'
+
 import * as matchers from 'vitest-axe/matchers'
+import 'temporal-polyfill/global'
 import '@testing-library/jest-dom/vitest'
 import 'vitest-canvas-mock'
 
