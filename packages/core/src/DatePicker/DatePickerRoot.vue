@@ -7,7 +7,7 @@ import type { Matcher, WeekDayFormat } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRefs, watch } from 'vue'
-import { createContext, useDirection } from '@/shared'
+import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -80,14 +80,13 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   disabled: false,
   readonly: false,
   placeholder: undefined,
-  locale: 'en',
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
   closeOnSelect: false,
 })
 const emits = defineEmits<DatePickerRootEmits & PopoverRootEmits>()
 const {
-  locale,
+  locale: propLocale,
   disabled,
   readonly,
   pagedNavigation,
@@ -115,6 +114,7 @@ const {
 } = toRefs(props)
 
 const dir = useDirection(propDir)
+const locale = useLocale(propLocale)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
@@ -125,7 +125,7 @@ const defaultDate = computed(() => getDefaultDate({
   defaultPlaceholder: props.placeholder,
   granularity: props.granularity,
   defaultValue: modelValue.value,
-  locale: props.locale,
+  locale: locale.value,
 }))
 
 const placeholder = useVModel(props, 'placeholder', emits, {
