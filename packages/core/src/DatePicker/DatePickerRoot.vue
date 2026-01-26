@@ -49,7 +49,7 @@ export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & P
   closeOnSelect?: boolean
 }
 
-export type DatePickerRootEmits = {
+export type DatePickerRootEmits = PopoverRootEmits & {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateValue | undefined]
   /** Event handler called whenever the placeholder value changes */
@@ -85,7 +85,7 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   isDateUnavailable: undefined,
   closeOnSelect: false,
 })
-const emits = defineEmits<DatePickerRootEmits & PopoverRootEmits>()
+const emits = defineEmits<DatePickerRootEmits>()
 const {
   locale,
   disabled,

@@ -54,7 +54,7 @@ export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asC
   closeOnSelect?: boolean
 }
 
-export type DateRangePickerRootEmits = {
+export type DateRangePickerRootEmits = PopoverRootEmits & {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
@@ -96,7 +96,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   maximumDays: undefined,
   closeOnSelect: false,
 })
-const emits = defineEmits<DateRangePickerRootEmits & PopoverRootEmits>()
+const emits = defineEmits<DateRangePickerRootEmits>()
 const {
   locale,
   disabled,
