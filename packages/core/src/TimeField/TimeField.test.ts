@@ -463,4 +463,138 @@ describe('timeField', async () => {
     const timeZone = getByTestId('timeZoneName')
     expect(timeZone).toHaveTextContent(thisTimeZone('2023-10-12T12:30:00Z'))
   })
+
+  describe('stepSnapping', () => {
+    it('snaps typed minute value to nearest step', async () => {
+      const { user, getByTestId, value, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 23 - should snap to 30 (nearest multiple of 15)
+      await user.keyboard('{2}{3}')
+      expect(minute).toHaveTextContent('30')
+    })
+
+    it('snaps typed minute value down to nearest step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 17 - should snap to 15 (nearest multiple of 15)
+      await user.keyboard('{1}{7}')
+      expect(minute).toHaveTextContent('15')
+    })
+
+    it('does not snap typed values when stepSnapping is false', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: false,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: false,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 23 - should remain 23 (no snapping)
+      await user.keyboard('{2}{3}')
+      expect(minute).toHaveTextContent('23')
+    })
+
+    it('arrow keys still use step regardless of stepSnapping setting', async () => {
+      const { user, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: false,
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard(kbd.ARROW_UP)
+      expect(minute).toHaveTextContent('15')
+    })
+
+    it('snaps to max boundary when value exceeds max', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 58 - should snap to 45 (last valid step before 60)
+      await user.keyboard('{5}{8}')
+      expect(minute).toHaveTextContent('45')
+    })
+  })
 })
