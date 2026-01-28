@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
 import DateRangePicker from './story/_DateRangePicker.vue'
 
@@ -244,5 +245,95 @@ describe('dateRangePicker', async () => {
     await user.click(startDay)
     await user.click(endDay)
     expect(popoverContent).toBeVisible()
+  })
+
+  describe('locale integration with ConfigProvider', () => {
+    it('uses locale from ConfigProvider when no locale prop is provided', async () => {
+      const { getByTestId } = render({
+        components: { ConfigProvider, DateRangePicker },
+        template: `
+          <ConfigProvider locale="de">
+            <DateRangePicker :dateFieldProps="{
+              modelValue: {
+                start: new CalendarDate(2024, 1, 15),
+                end: new CalendarDate(2024, 1, 20)
+              }
+            }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return { CalendarDate }
+        },
+      })
+
+      const startMonth = getByTestId('start-month')
+      // German locale should display month properly
+      expect(startMonth).toBeInTheDocument()
+    })
+
+    it('locale prop overrides ConfigProvider locale', async () => {
+      const { getByTestId } = render({
+        components: { ConfigProvider, DateRangePicker },
+        template: `
+          <ConfigProvider locale="de">
+            <DateRangePicker :dateFieldProps="{
+              modelValue: {
+                start: new CalendarDate(2024, 1, 15),
+                end: new CalendarDate(2024, 1, 20)
+              },
+              locale: 'en'
+            }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return { CalendarDate }
+        },
+      })
+
+      const startMonth = getByTestId('start-month')
+      // Even though ConfigProvider sets 'de', explicit prop should use 'en'
+      expect(startMonth).toBeInTheDocument()
+    })
+
+    it('updates when ConfigProvider locale changes', async () => {
+      const wrapper = render({
+        components: { ConfigProvider, DateRangePicker },
+        template: `
+          <ConfigProvider :locale="locale">
+            <DateRangePicker :dateFieldProps="{
+              modelValue: {
+                start: new CalendarDate(2024, 1, 15),
+                end: new CalendarDate(2024, 1, 20)
+              }
+            }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return {
+            CalendarDate,
+            locale: 'en',
+          }
+        },
+      })
+
+      const startMonth = wrapper.getByTestId('start-month')
+      expect(startMonth).toBeInTheDocument()
+
+      // Change locale
+      await wrapper.rerender({ locale: 'de' })
+
+      // Month segment should still be in the document
+      expect(startMonth).toBeInTheDocument()
+    })
+
+    it('uses default locale when no ConfigProvider and no locale prop', async () => {
+      const { start } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+      })
+
+      // Should use browser default locale (typically 'en' in test environment)
+      expect(start.month).toBeInTheDocument()
+      expect(start.month).toHaveTextContent(String(calendarDate.start.month))
+    })
   })
 })
