@@ -3,7 +3,7 @@ export interface TreeVirtualizerProps {
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */
-  estimateSize?: number
+  estimateSize?: number | ((index: number) => number)
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (item: Record<string, any>) => string
 }
@@ -79,7 +79,10 @@ const virtualizer = useVirtualizer(
     getItemKey(index) {
       return index + rootContext.getKey(rootContext.expandedItems.value[index].value)
     },
-    estimateSize() {
+    estimateSize(index) {
+      if (typeof props.estimateSize === 'function')
+        return props.estimateSize(index)
+
       return props.estimateSize ?? 28
     },
     getScrollElement() { return parentEl.value },

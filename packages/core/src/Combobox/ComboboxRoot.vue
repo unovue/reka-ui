@@ -45,7 +45,7 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
 }
 
 export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
-  /** The controlled open state of the Combobox. Can be binded with with `v-model:open`. */
+  /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
   defaultOpen?: boolean
@@ -132,16 +132,15 @@ async function onOpenChange(val: boolean) {
     await nextTick()
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
+    inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
+    setTimeout(() => {
+      if (!val && props.resetSearchTermOnBlur)
+        resetSearchTerm.trigger()
+    }, 1)
   }
-
-  inputElement.value?.focus()
-  setTimeout(() => {
-    if (!val && props.resetSearchTermOnBlur)
-      resetSearchTerm.trigger()
-  }, 1)
 }
 
 const resetSearchTerm = createEventHook()

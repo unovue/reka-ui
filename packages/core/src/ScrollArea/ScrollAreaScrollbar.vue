@@ -34,6 +34,7 @@ import {
 } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
+import ScrollAreaScrollbarGlimpse from './ScrollAreaScrollbarGlimpse.vue'
 import ScrollAreaScrollbarHover from './ScrollAreaScrollbarHover.vue'
 import ScrollAreaScrollbarScroll from './ScrollAreaScrollbarScroll.vue'
 import ScrollAreaScrollbarVisible from './ScrollAreaScrollbarVisible.vue'
@@ -94,6 +95,14 @@ provideScrollAreaScrollbarContext({
   >
     <slot />
   </ScrollAreaScrollbarScroll>
+  <ScrollAreaScrollbarGlimpse
+    v-else-if="rootContext.type.value === 'glimpse'"
+    v-bind="$attrs"
+    :ref="forwardRef"
+    :force-mount="forceMount"
+  >
+    <slot />
+  </ScrollAreaScrollbarGlimpse>
   <ScrollAreaScrollbarAuto
     v-else-if="rootContext.type.value === 'auto'"
     v-bind="$attrs"

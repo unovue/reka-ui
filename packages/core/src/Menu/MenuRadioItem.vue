@@ -3,6 +3,7 @@ import type {
   MenuItemEmits,
   MenuItemProps,
 } from './MenuItem.vue'
+import type { AcceptableValue } from '@/shared/types'
 import { reactiveOmit } from '@vueuse/shared'
 import { useForwardProps } from '@/shared'
 
@@ -10,7 +11,7 @@ export type MenuRadioItemEmits = MenuItemEmits
 
 export interface MenuRadioItemProps extends MenuItemProps {
   /** The unique value of the item. */
-  value: string
+  value: AcceptableValue
 }
 </script>
 

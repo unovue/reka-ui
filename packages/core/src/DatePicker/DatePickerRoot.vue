@@ -44,12 +44,12 @@ type DatePickerRootContext = {
   closeOnSelect: Ref<boolean>
 }
 
-export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
   /** Whether or not to close the popover on date select */
   closeOnSelect?: boolean
 }
 
-export type DatePickerRootEmits = {
+export type DatePickerRootEmits = PopoverRootEmits & {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateValue | undefined]
   /** Event handler called whenever the placeholder value changes */
@@ -85,7 +85,7 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   isDateUnavailable: undefined,
   closeOnSelect: false,
 })
-const emits = defineEmits<DatePickerRootEmits & PopoverRootEmits>()
+const emits = defineEmits<DatePickerRootEmits>()
 const {
   locale,
   disabled,

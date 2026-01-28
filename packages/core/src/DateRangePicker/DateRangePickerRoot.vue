@@ -49,12 +49,12 @@ type DateRangePickerRootContext = {
   closeOnSelect?: Ref<boolean>
 }
 
-export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
   /** Whether or not to close the popover on range select */
   closeOnSelect?: boolean
 }
 
-export type DateRangePickerRootEmits = {
+export type DateRangePickerRootEmits = PopoverRootEmits & {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
@@ -96,7 +96,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   maximumDays: undefined,
   closeOnSelect: false,
 })
-const emits = defineEmits<DateRangePickerRootEmits & PopoverRootEmits>()
+const emits = defineEmits<DateRangePickerRootEmits>()
 const {
   locale,
   disabled,

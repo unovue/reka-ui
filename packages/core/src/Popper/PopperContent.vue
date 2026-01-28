@@ -20,6 +20,7 @@ export const PopperContentPropsDefaultValue = {
   alignOffset: 0,
   alignFlip: true,
   arrowPadding: 0,
+  hideShiftedArrow: true,
   avoidCollisions: true,
   collisionBoundary: () => [],
   collisionPadding: 0,
@@ -36,7 +37,7 @@ export interface PopperContentProps extends PrimitiveProps {
    * Will be reversed when collisions occur and avoidCollisions
    * is enabled.
    *
-   * @defaultValue "top"
+   * @defaultValue "bottom"
    */
   side?: Side
 
@@ -111,6 +112,14 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   arrowPadding?: number
+
+  /**
+   * When `true`, hides the arrow when it cannot be centered
+   * to the reference element.
+   *
+   * @defaultValue true
+   */
+  hideShiftedArrow?: boolean
 
   /**
    * The sticky behavior on the align axis. `partial` will keep the
@@ -346,9 +355,10 @@ watchPostEffect(() => {
     emits('placed')
 })
 
-const cannotCenterArrow = computed(
-  () => middlewareData.value.arrow?.centerOffset !== 0,
-)
+const shouldHideArrow = computed(() => {
+  const cannotCenterArrow = middlewareData.value.arrow?.centerOffset !== 0
+  return props.hideShiftedArrow && cannotCenterArrow
+})
 
 const contentZIndex = ref('')
 watchEffect(() => {
@@ -364,7 +374,7 @@ providePopperContentContext({
   onArrowChange: element => arrow.value = element,
   arrowX,
   arrowY,
-  shouldHideArrow: cannotCenterArrow,
+  shouldHideArrow,
 })
 </script>
 
