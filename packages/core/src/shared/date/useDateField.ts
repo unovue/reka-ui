@@ -888,6 +888,12 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (props.part === 'hour' && 'hour' in props.segmentValues.value && props.segmentValues.value.hour !== null && props.step.value.hour && props.step.value.hour > 1) {
       props.segmentValues.value.hour = snapValueToStep(props.segmentValues.value.hour, 0, 23, props.step.value.hour)
+      if ('dayPeriod' in props.segmentValues.value) {
+        if (props.segmentValues.value.hour < 12)
+          props.segmentValues.value.dayPeriod = 'AM'
+        else if (props.segmentValues.value.hour)
+          props.segmentValues.value.dayPeriod = 'PM'
+      }
     }
     else if (props.part === 'minute' && 'minute' in props.segmentValues.value && props.segmentValues.value.minute !== null && props.step.value.minute && props.step.value.minute > 1) {
       props.segmentValues.value.minute = snapValueToStep(props.segmentValues.value.minute, 0, 59, props.step.value.minute)
