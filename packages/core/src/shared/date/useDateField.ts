@@ -883,7 +883,7 @@ export function useDateField(props: UseDateFieldProps) {
   }
 
   function handleSegmentFocusOut() {
-    if (props.stepSnapping?.value === false)
+    if (!props.stepSnapping?.value)
       return
 
     if (props.part === 'hour' && 'hour' in props.segmentValues.value && props.segmentValues.value.hour !== null && props.step.value.hour && props.step.value.hour > 1) {
