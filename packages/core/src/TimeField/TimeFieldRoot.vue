@@ -32,6 +32,7 @@ type TimeFieldRootContext = {
   formatter: Formatter
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Ref<SegmentValueObj>
   segmentContents: Ref<{ part: SegmentPart, value: string }[]>
   elements: Ref<Set<HTMLElement>>
@@ -52,6 +53,8 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
+  /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
@@ -107,6 +110,7 @@ const props = withDefaults(defineProps<TimeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
@@ -120,7 +124,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled, readonly, granularity, defaultValue, minValue, maxValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
@@ -298,6 +302,7 @@ provideTimeFieldRootContext({
   formatter,
   hourCycle: props.hourCycle,
   step,
+  stepSnapping,
   readonly,
   segmentValues,
   isInvalid,

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { nextTick, ref, watch } from 'vue'
+import { computed, ref, watch, watchPostEffect } from 'vue'
 import { useForwardExpose } from '@/shared'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
@@ -13,41 +13,47 @@ import { Primitive } from '@/Primitive'
 
 const props = defineProps<TabsIndicatorProps>()
 const context = injectTabsRootContext()
+defineExpose({
+  updateIndicatorStyle,
+})
 useForwardExpose()
 
 interface IndicatorStyle {
   size: number | null
   position: number | null
 }
-const activeTab = ref<HTMLElement | null>()
 const indicatorStyle = ref<IndicatorStyle>({
   size: null,
   position: null,
 })
+const tabs = ref<Array<HTMLElement>>([])
 
-watch(() => [context.modelValue.value, context?.dir.value], async () => {
-  await nextTick()
+watch(() => [context.modelValue.value, context?.dir.value], () => {
   updateIndicatorStyle()
-}, { immediate: true })
+}, { immediate: true, flush: 'post' })
 
-useResizeObserver([context.tabsList, activeTab], updateIndicatorStyle)
+watchPostEffect(() => {
+  tabs.value = Array.from(context.tabsList.value?.querySelectorAll<HTMLElement>('[role="tab"]') || [])
+})
+
+useResizeObserver(computed(() => [context.tabsList.value, ...tabs.value]), updateIndicatorStyle)
 
 function updateIndicatorStyle() {
-  activeTab.value = context.tabsList.value?.querySelector<HTMLButtonElement>('[role="tab"][data-state="active"]')
+  const activeTab = context.tabsList.value?.querySelector<HTMLButtonElement>('[role="tab"][data-state="active"]')
 
-  if (!activeTab.value)
+  if (!activeTab)
     return
 
   if (context.orientation.value === 'horizontal') {
     indicatorStyle.value = {
-      size: activeTab.value.offsetWidth,
-      position: activeTab.value.offsetLeft,
+      size: activeTab.offsetWidth,
+      position: activeTab.offsetLeft,
     }
   }
   else {
     indicatorStyle.value = {
-      size: activeTab.value.offsetHeight,
-      position: activeTab.value.offsetTop,
+      size: activeTab.offsetHeight,
+      position: activeTab.offsetTop,
     }
   }
 }

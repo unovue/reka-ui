@@ -63,6 +63,12 @@
     'required': false
   },
   {
+    'name': 'disableOutsidePointerEvents',
+    'description': '<p>When <code>true</code>, hover/focus/click interactions will be disabled on elements outside\nthe <code>DismissableLayer</code>. Users will need to click twice on outside elements to\ninteract with them: once to close the <code>DismissableLayer</code>, and again to trigger the element.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'disableUpdateOnLayoutShift',
     'description': '<p>Whether to disable the update position for the content when the layout shifted.</p>\n',
     'type': 'boolean',

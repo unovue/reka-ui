@@ -4,7 +4,7 @@
   {
     'name': 'estimateSize',
     'description': '<p>Estimated size (in px) of each item</p>\n',
-    'type': 'number',
+    'type': 'number | ((index: number) => number)',
     'required': false
   },
   {

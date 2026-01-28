@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { VNode } from 'vue'
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
@@ -42,7 +41,7 @@ export interface TooltipContentImplProps
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { Comment, computed, onMounted, useSlots } from 'vue'
+import { computed, onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { VisuallyHidden } from '@/VisuallyHidden'
@@ -64,24 +63,8 @@ const emits = defineEmits<TooltipContentImplEmits>()
 
 const rootContext = injectTooltipRootContext()
 
-const { forwardRef } = useForwardExpose()
-const slot = useSlots()
-const defaultSlot = computed(() => slot.default?.({}))
-const ariaLabel = computed(() => {
-  if (props.ariaLabel)
-    return props.ariaLabel
-  let content = ''
-
-  function recursiveTextSearch(node: VNode) {
-    if (typeof node.children === 'string' && node.type !== Comment)
-      content += node.children
-    else if (Array.isArray(node.children))
-      node.children.forEach(child => recursiveTextSearch(child as VNode))
-  }
-
-  defaultSlot.value?.forEach((node: VNode) => recursiveTextSearch(node))
-  return content
-})
+const { forwardRef, currentElement } = useForwardExpose()
+const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props

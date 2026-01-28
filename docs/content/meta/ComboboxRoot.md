@@ -48,7 +48,8 @@
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'ignoreFilter',
@@ -58,7 +59,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the listbox. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
@@ -76,7 +77,7 @@
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the Combobox. Can be binded with with <code>v-model:open</code>.</p>\n',
+    'description': '<p>The controlled open state of the Combobox. Can be binded with <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },

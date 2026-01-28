@@ -4,7 +4,7 @@ import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueOb
 import type { Formatter } from '@/shared'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import { snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 type MinuteSecondIncrementProps = {
@@ -46,7 +46,15 @@ function commonSegmentAttrs(props: SegmentAttrProps) {
 function daySegmentAttrs(props: SegmentAttrProps) {
   const { segmentValues, placeholder } = props
   const isEmpty = segmentValues.day === null
-  const date = segmentValues.day ? placeholder.set({ day: segmentValues.day }) : placeholder
+
+  // Include month from segmentValues to ensure correct max days calculation
+  const dateFields: { day?: number, month?: number } = {}
+  if (segmentValues.day)
+    dateFields.day = segmentValues.day
+  if (segmentValues.month)
+    dateFields.month = segmentValues.month
+
+  const date = Object.keys(dateFields).length > 0 ? placeholder.set(dateFields) : placeholder
 
   const valueNow = date.day
   const valueMin = 1
@@ -274,6 +282,7 @@ export type UseDateFieldProps = {
   placeholder: Ref<DateValue>
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping?: Ref<boolean>
   formatter: Formatter
   segmentValues: Ref<SegmentValueObj>
   disabled: Ref<boolean>
@@ -864,21 +873,45 @@ export function useDateField(props: UseDateFieldProps) {
       if (Object.values(props.segmentValues.value).every(item => item !== null)) {
         const updateObject = { ...props.segmentValues.value as Record<AnyExceptLiteral, number> }
 
-        let dateRef = props.placeholder.value.copy()
-
-        Object.keys(updateObject).forEach((part) => {
-          const value = updateObject[part as AnyExceptLiteral]
-          dateRef = dateRef.set({ [part]: value })
-        })
+        // Set all date fields at once to avoid order-dependent constraints
+        // (e.g., setting day: 31 before month: 3 would incorrectly constrain the day)
+        const dateRef = props.placeholder.value.set(updateObject)
 
         props.modelValue.value = dateRef.copy()
       }
     }
   }
 
+  function handleSegmentFocusOut() {
+    if (!props.stepSnapping?.value)
+      return
+
+    if (props.part === 'hour' && 'hour' in props.segmentValues.value && props.segmentValues.value.hour !== null && props.step.value.hour && props.step.value.hour > 1) {
+      props.segmentValues.value.hour = snapValueToStep(props.segmentValues.value.hour, 0, 23, props.step.value.hour)
+      if ('dayPeriod' in props.segmentValues.value) {
+        if (props.segmentValues.value.hour < 12)
+          props.segmentValues.value.dayPeriod = 'AM'
+        else if (props.segmentValues.value.hour)
+          props.segmentValues.value.dayPeriod = 'PM'
+      }
+    }
+    else if (props.part === 'minute' && 'minute' in props.segmentValues.value && props.segmentValues.value.minute !== null && props.step.value.minute && props.step.value.minute > 1) {
+      props.segmentValues.value.minute = snapValueToStep(props.segmentValues.value.minute, 0, 59, props.step.value.minute)
+    }
+    else if (props.part === 'second' && 'second' in props.segmentValues.value && props.segmentValues.value.second !== null && props.step.value.second && props.step.value.second > 1) {
+      props.segmentValues.value.second = snapValueToStep(props.segmentValues.value.second, 0, 59, props.step.value.second)
+    }
+
+    if (Object.values(props.segmentValues.value).every(item => item !== null)) {
+      const dateRef = props.placeholder.value.set({ ...props.segmentValues.value as Record<AnyExceptLiteral, number> })
+      props.modelValue.value = dateRef.copy()
+    }
+  }
+
   return {
     handleSegmentClick,
     handleSegmentKeydown,
+    handleSegmentFocusOut,
     attributes,
   }
 }

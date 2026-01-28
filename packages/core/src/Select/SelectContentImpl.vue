@@ -3,7 +3,7 @@ import type {
   ComponentPublicInstance,
   Ref,
 } from 'vue'
-import type { PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
@@ -24,14 +24,14 @@ export interface SelectContentContext {
   itemRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
-    disabled: boolean
+    disabled: boolean,
   ) => void
   selectedItem?: Ref<HTMLElement | undefined>
   onItemLeave?: () => void
   itemTextRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
-    disabled: boolean
+    disabled: boolean,
   ) => void
   focusSelectedItem?: () => void
   selectedItemText?: Ref<HTMLElement | undefined>
@@ -60,7 +60,7 @@ export type SelectContentImplEmits = {
   pointerDownOutside: [event: PointerDownOutsideEvent]
 }
 
-export interface SelectContentImplProps extends PopperContentProps {
+export interface SelectContentImplProps extends PopperContentProps, DismissableLayerProps {
   /**
    *  The positioning mode to use
    *
@@ -99,6 +99,7 @@ const props = withDefaults(defineProps<SelectContentImplProps>(), {
   align: 'start',
   position: 'item-aligned',
   bodyLock: true,
+  disableOutsidePointerEvents: true,
 })
 const emits = defineEmits<SelectContentImplEmits>()
 
@@ -285,7 +286,7 @@ provideSelectContentContext({
     >
       <DismissableLayer
         as-child
-        disable-outside-pointer-events
+        :disable-outside-pointer-events="disableOutsidePointerEvents"
         @focus-outside.prevent
         @dismiss="rootContext.onOpenChange(false)"
         @escape-key-down="emits('escapeKeyDown', $event)"

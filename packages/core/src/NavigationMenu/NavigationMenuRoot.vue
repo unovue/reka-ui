@@ -5,6 +5,7 @@ import type { Direction, Orientation } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { EVENT_ROOT_CONTENT_DISMISS } from './utils'
 
 export interface NavigationMenuRootProps extends PrimitiveProps {
   /** The controlled value of the menu item to activate. Can be used as `v-model`. */
@@ -91,7 +92,7 @@ export const [injectNavigationMenuContext, provideNavigationMenuContext]
 </script>
 
 <script setup lang="ts">
-import { refAutoReset, useDebounceFn, useVModel } from '@vueuse/core'
+import { refAutoReset, useDebounceFn, useEventListener, useVModel } from '@vueuse/core'
 import {
   computed,
   ref,
@@ -164,6 +165,8 @@ watchEffect(() => {
   )
 })
 
+useEventListener(rootNavigationMenu, EVENT_ROOT_CONTENT_DISMISS, onItemDismiss)
+
 provideNavigationMenuContext({
   isRootMenu: true,
   modelValue,
@@ -203,18 +206,19 @@ provideNavigationMenuContext({
     previousValue.value = modelValue.value
     modelValue.value = val
   },
-  onItemDismiss: () => {
-    previousValue.value = modelValue.value
-    modelValue.value = ''
-  },
+  onItemDismiss,
 })
+
+function onItemDismiss() {
+  previousValue.value = modelValue.value
+  modelValue.value = ''
+}
 </script>
 
 <template>
   <CollectionSlot>
     <Primitive
       :ref="forwardRef"
-      aria-label="Main"
       :as="as"
       :as-child="asChild"
       :data-orientation="orientation"
