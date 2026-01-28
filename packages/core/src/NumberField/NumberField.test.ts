@@ -342,6 +342,20 @@ describe('numberField', () => {
       expect(input.value).toBe('EUR 7.00')
     })
   })
+
+  describe('given focusOnChange prop', () => {
+    it('should focus input when clicking increment by default', async () => {
+      const { input, increment } = setup({ defaultValue: 0, focusOnChange: true })
+      await userEvent.click(increment)
+      expect(input).toHaveFocus()
+    })
+
+    it('should not focus input when clicking increment if focusOnChange is false', async () => {
+      const { input, increment } = setup({ defaultValue: 0, focusOnChange: false })
+      await userEvent.click(increment)
+      expect(input).not.toHaveFocus()
+    })
+  })
 })
 
 describe('given checkbox in a form', async () => {

@@ -33,6 +33,13 @@
     'required': false
   },
   {
+    'name': 'focusOnChange',
+    'description': '<p>When <code>true</code>, the input will be focused when the value changes.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
+  },
+  {
     'name': 'formatOptions',
     'description': '<p>Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user.</p>\n',
     'type': 'NumberFormatOptions',

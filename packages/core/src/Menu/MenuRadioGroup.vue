@@ -1,21 +1,22 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { MenuGroupProps } from './MenuGroup.vue'
+import type { AcceptableValue } from '@/shared/types'
 import { createContext, useForwardProps } from '@/shared'
 
 interface MenuRadioGroupContext {
-  modelValue: Ref<string>
-  onValueChange: (payload: string) => void
+  modelValue: Ref<AcceptableValue>
+  onValueChange: (payload: AcceptableValue) => void
 }
 
 export interface MenuRadioGroupProps extends MenuGroupProps {
   /** The value of the selected item in the group. */
-  modelValue?: string
+  modelValue?: AcceptableValue
 }
 
 export type MenuRadioGroupEmits = {
   /** Event handler called when the value changes. */
-  'update:modelValue': [payload: string]
+  'update:modelValue': [payload: AcceptableValue]
 }
 
 export const [injectMenuRadioGroupContext, provideMenuRadioGroupContext]
