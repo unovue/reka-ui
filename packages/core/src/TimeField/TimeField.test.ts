@@ -455,4 +455,90 @@ describe('timeField', async () => {
     const timeZone = getByTestId('timeZoneName')
     expect(timeZone).toHaveTextContent(thisTimeZone('2023-10-12T12:30:00Z'))
   })
+
+  describe('12-hour format display', () => {
+    it('displays midnight (hour 0) as 12 AM', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(0, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('displays noon (hour 12) as 12 PM', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(12, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('converts afternoon hours (13-23) to 12-hour format', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(13, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('1')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('converts late evening hour (23) to 11 PM', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(23, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('11')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('displays morning hours (1-11) correctly', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(9, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('9')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('works with CalendarDateTime values', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(2024, 1, 15, 15, 45, 0, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('3')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('works with ZonedDateTime values', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: toZoned(new CalendarDateTime(2024, 1, 15, 0, 30, 0, 0), 'America/New_York'),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+  })
 })
