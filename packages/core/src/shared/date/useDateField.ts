@@ -1,9 +1,9 @@
-import type { CalendarDateTime, CycleTimeOptions, DateFields, DateValue, TimeFields } from '@internationalized/date'
+import type { CalendarDateTime, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
 import {
-  DateFormatter
+  DateFormatter,
 } from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
@@ -22,7 +22,6 @@ type DateTimeValueIncrementation = {
   part: keyof Omit<DateFields, 'era'> | keyof TimeFields
   dateRef: DateValue
   prevValue: number | null
-  hourCycle?: HourCycle
 }
 
 type SegmentAttrProps = {
@@ -324,7 +323,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     return Number.parseInt(str.slice(0, -1))
   }
-  function dateTimeValueIncrementation({ e, part, dateRef, prevValue, hourCycle }: DateTimeValueIncrementation): number {
+  function dateTimeValueIncrementation({ e, part, dateRef, prevValue }: DateTimeValueIncrementation): number {
     const step = props.step.value[part] ?? 1
     const sign = e.key === kbd.ARROW_UP ? step : -step
 
@@ -332,7 +331,9 @@ export function useDateField(props: UseDateFieldProps) {
       return dateRef[part as keyof Omit<DateFields, 'era'>]
 
     if (part === 'hour' && 'hour' in dateRef) {
-      const cycleArgs: [keyof DateFields | keyof TimeFields, number, CycleTimeOptions?] = [part, sign, { hourCycle }]
+      // Don't pass hourCycle to cycle - internal representation is always 24-hour
+      // The hourCycle prop only affects display, not internal cycling
+      const cycleArgs: [keyof DateFields | keyof TimeFields, number] = [part, sign]
       return dateRef.set({ [part as keyof DateValue]: prevValue }).cycle(...cycleArgs)[part]
     }
 
@@ -729,16 +730,14 @@ export function useDateField(props: UseDateFieldProps) {
 
     const prevValue = props.segmentValues.value.hour
 
-    const hourCycle = props.hourCycle
-
     if (e.key === kbd.ARROW_UP || e.key === kbd.ARROW_DOWN) {
-      props.segmentValues.value.hour = dateTimeValueIncrementation({ e, part: 'hour', dateRef: props.placeholder.value, prevValue, hourCycle })
+      const newHour = dateTimeValueIncrementation({ e, part: 'hour', dateRef: props.placeholder.value, prevValue })
+      props.segmentValues.value.hour = newHour
 
-      if ('dayPeriod' in props.segmentValues.value) {
-        if (props.segmentValues.value.hour < 12)
-          props.segmentValues.value.dayPeriod = 'AM'
-        else if (props.segmentValues.value.hour)
-          props.segmentValues.value.dayPeriod = 'PM'
+      if ('dayPeriod' in props.segmentValues.value && newHour !== null) {
+        // Determine AM/PM based on internal 24-hour value
+        // Hour 0-11 = AM, Hour 12-23 = PM
+        props.segmentValues.value.dayPeriod = newHour >= 12 ? 'PM' : 'AM'
       }
 
       return
