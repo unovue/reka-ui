@@ -551,7 +551,7 @@ describe('timeField', async () => {
   })
 
   describe('12-hour arrow key cycling', () => {
-    it('maintains PM when cycling from 11 PM to 12 AM', async () => {
+    it('transitions from PM to AM when cycling from 11 PM to 12 AM', async () => {
       const { hour, user, getByTestId } = setup({
         timeFieldProps: {
           modelValue: new Time(23, 30, 0), // 11 PM
@@ -566,7 +566,7 @@ describe('timeField', async () => {
       expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
     })
 
-    it('maintains AM when cycling from 11 AM to 12 PM', async () => {
+    it('transitions from AM to PM when cycling from 11 AM to 12 PM', async () => {
       const { hour, user, getByTestId } = setup({
         timeFieldProps: {
           modelValue: new Time(11, 30, 0), // 11 AM
