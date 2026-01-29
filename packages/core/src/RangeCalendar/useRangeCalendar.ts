@@ -175,7 +175,13 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
   })
 
   const isSelectedDisabled = computed(() => {
-    return hasSelectedDate.value && isStartDateDisabled.value && isEndDateDisabled.value
+    const hasStart = !!props.start.value
+    const hasEnd = !!props.end.value
+    if (!hasStart && !hasEnd)
+      return false
+    if (hasStart && hasEnd)
+      return isStartDateDisabled.value && isEndDateDisabled.value
+    return (hasStart && isStartDateDisabled.value) || (hasEnd && isEndDateDisabled.value)
   })
 
   const selectedFocusableDate = computed(() => {

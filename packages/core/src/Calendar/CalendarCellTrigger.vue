@@ -86,7 +86,7 @@ const isFocusedDate = computed(() => {
     return false
   if (!rootContext.disabled.value && rootContext.isPlaceholderFocusable.value && isSameDay(props.day, rootContext.placeholder.value))
     return true
-  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDateDisabled) && !rootContext.isPlaceholderFocusable.value)
+  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDateDisabled.value) && !rootContext.isPlaceholderFocusable.value)
     return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
   return false
 })
