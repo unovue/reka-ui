@@ -111,8 +111,6 @@ const isTabbable = computed(() => {
   return false
 })
 
-const tabindex = computed(() => isTabbable.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1)
-
 function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
   if (rootContext.readonly.value)
     return
@@ -273,7 +271,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-today="isDateToday ? '' : undefined"
     :data-outside-view="isOutsideView ? '' : undefined"
     :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="tabindex"
+    :tabindex="isTabbable ? 0 : isOutsideView || isDisabled ? undefined : -1"
     @click="handleClick"
     @focusin="handleFocus"
     @mouseenter="handleFocus"

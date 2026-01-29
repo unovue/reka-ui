@@ -35,8 +35,6 @@ export interface CalendarCellTriggerSlot {
     outsideVisibleView: boolean
     /** Current unavailable state */
     unavailable: boolean
-    /** Current can be selected using the tab */
-    isTabbable: boolean
   }) => any
 }
 </script>
