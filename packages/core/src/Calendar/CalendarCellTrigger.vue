@@ -35,6 +35,8 @@ export interface CalendarCellTriggerSlot {
     outsideVisibleView: boolean
     /** Current unavailable state */
     unavailable: boolean
+    /** Current can be selected using the tab */
+    isTabbable: boolean
   }) => any
 }
 </script>
@@ -85,6 +87,16 @@ const isFocusedDate = computed(() => {
   return !rootContext.disabled.value && isSameDay(props.day, rootContext.placeholder.value)
 })
 const isSelectedDate = computed(() => rootContext.isDateSelected(props.day))
+
+const isTabbable = computed(() => {
+  if (isOutsideView.value || isDisabled.value)
+    return false
+  if (isFocusedDate.value && rootContext.isPlaceholderFocusable.value)
+    return true
+  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDateDisabled) && !rootContext.isPlaceholderFocusable.value)
+    return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
+  return false
+})
 
 function changeDate(date: DateValue) {
   if (rootContext.readonly.value)
@@ -177,7 +189,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-outside-view="isOutsideView ? '' : undefined"
     :data-outside-visible-view="isOutsideVisibleView ? '' : undefined"
     :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="isFocusedDate ? 0 : isOutsideView || isDisabled ? undefined : -1"
+    :tabindex="isTabbable ? 0 : isOutsideView || isDisabled ? undefined : -1"
     @click="handleClick"
     @keydown.up.down.left.right.space.enter="handleArrowKey"
     @keydown.enter.prevent
@@ -190,6 +202,7 @@ function handleArrowKey(e: KeyboardEvent) {
       :outside-view="isOutsideView"
       :outside-visible-view="isOutsideVisibleView"
       :unavailable="isUnavailable"
+      :is-tabbable="!!isTabbable"
     >
       {{ dayValue }}
     </slot>
