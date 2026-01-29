@@ -862,3 +862,56 @@ describe('handles maximumDays', () => {
     })
   })
 })
+
+describe('range calendar - tabindex states', () => {
+  it('sets tabindex to 0 for first can tab selected date when has modelValue', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        minValue: new CalendarDate(1980, 1, 15),
+        maxValue: new CalendarDate(1980, 1, 18),
+      },
+    })
+
+    const firstCanTabSelectedDate = getByTestId('date-1-15')
+    expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to 0 for focused date when start within the allowed time range', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        minValue: new CalendarDate(1980, 1, 15),
+        maxValue: new CalendarDate(1980, 1, 21),
+      },
+    })
+
+    const focusedDay = getByTestId('date-1-20')
+    expect(focusedDay).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to 0 for focused date when end within the allowed time range', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        minValue: new CalendarDate(1980, 1, 21),
+        maxValue: new CalendarDate(1980, 1, 26),
+      },
+    })
+
+    const focusedDay = getByTestId('date-1-25')
+    expect(focusedDay).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to 0 for first can tab selected date', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 20),
+        maxValue: new CalendarDate(1980, 1, 19),
+      },
+    })
+
+    const firstCanTabSelectedDate = getByTestId('date-1-1')
+    expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
+  })
+})
