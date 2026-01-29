@@ -68,6 +68,11 @@ type RangeCalendarRootContext = {
   maximumDays: Ref<number | undefined>
   minValue: Ref<DateValue | undefined>
   maxValue: Ref<DateValue | undefined>
+  isPlaceholderFocusable: Ref<boolean>
+  firstFocusableDate: Ref<DateValue | undefined>
+  hasSelectedDate: Ref<boolean>
+  isSelectedDisabled: Ref<boolean>
+  selectedFocusableDate: Ref<DateValue | undefined>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -167,6 +172,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   allowNonContiguousRanges: false,
   maximumDays: undefined,
   disableDaysOutsideCurrentView: false,
+
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
 
@@ -268,6 +274,8 @@ const {
   nextPage,
   prevPage,
   formatter,
+  isPlaceholderFocusable,
+  firstFocusableDate,
 } = useCalendar({
   locale,
   placeholder,
@@ -296,6 +304,9 @@ const {
   isHighlightedStart,
   isHighlightedEnd,
   isDateDisabled: rangeIsDateDisabled,
+  hasSelectedDate,
+  isSelectedDisabled,
+  selectedFocusableDate,
 } = useRangeCalendarState({
   start: startValue,
   end: endValue,
@@ -422,6 +433,11 @@ provideRangeCalendarRootContext({
   maximumDays,
   minValue,
   maxValue,
+  isPlaceholderFocusable,
+  firstFocusableDate,
+  hasSelectedDate,
+  isSelectedDisabled,
+  selectedFocusableDate,
 })
 
 onMounted(() => {

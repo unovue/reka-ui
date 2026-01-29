@@ -97,6 +97,22 @@ const isFocusedDate = computed(() => {
   return !rootContext.disabled.value && isSameDay(props.day, rootContext.placeholder.value)
 })
 
+const isTabbable = computed(() => {
+  if (isOutsideView.value || isDisabled.value)
+    return false
+  if (isFocusedDate.value && rootContext.isPlaceholderFocusable.value)
+    return true
+  if (rootContext.selectedFocusableDate.value && !rootContext.isPlaceholderFocusable.value) {
+    return isSameDay(props.day, rootContext.selectedFocusableDate.value)
+  }
+
+  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDisabled) && !rootContext.isPlaceholderFocusable.value)
+    return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
+  return false
+})
+
+const tabindex = computed(() => isTabbable.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1)
+
 function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
   if (rootContext.readonly.value)
     return
@@ -257,7 +273,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-today="isDateToday ? '' : undefined"
     :data-outside-view="isOutsideView ? '' : undefined"
     :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="isFocusedDate ? 0 : isOutsideView || isDisabled ? undefined : -1"
+    :tabindex="tabindex"
     @click="handleClick"
     @focusin="handleFocus"
     @mouseenter="handleFocus"
