@@ -223,6 +223,23 @@ export function createDateRange({ start, end }: DateRange): DateValue[] {
  * Returns the locale-specific week number
  */
 export function getWeekNumber(date: DateValue, locale: string = 'en-US', firstDayOfWeek?: DayOfWeek): number {
+  // Detect ISO locale by comparing JS day of week with locale day of week
+  const jan1 = new CalendarDate(date.year, 1, 1)
+  const jan1JsDay = jan1.toDate('UTC').getUTCDay()
+  const jan1LocaleDay = getDayOfWeek(jan1, locale, firstDayOfWeek)
+  const usesISOWeek = jan1JsDay !== jan1LocaleDay
+
+  // ISO locales (de-DE, etc.), #2422
+  if (usesISOWeek) {
+    // @see https://weeknumber.com/how-to/javascript
+    const d = date.toDate('UTC')
+    d.setUTCHours(0, 0, 0, 0)
+    d.setUTCDate(d.getUTCDate() + 3 - (d.getUTCDay() + 6) % 7)
+    const week1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4))
+    return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getUTCDay() + 6) % 7) / 7)
+  }
+
+  // Non-ISO locales (en-US, etc.)
   const firstDayOfYear = new CalendarDate(date.year, 1, 1)
 
   const firstDayOfYearWeekday = getDayOfWeek(firstDayOfYear, locale, firstDayOfWeek)
