@@ -5,7 +5,7 @@
 import type { DateValue, DayOfWeek } from '@internationalized/date'
 import type { Grid } from './types'
 import type { DateRange } from '@/shared'
-import { CalendarDate, endOfMonth, endOfYear, getDayOfWeek, startOfMonth, startOfYear } from '@internationalized/date'
+import { CalendarDate, endOfMonth, endOfYear, getDayOfWeek, startOfMonth, startOfWeek, startOfYear } from '@internationalized/date'
 import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from './comparators'
 import { chunk } from './utils'
 
@@ -223,37 +223,27 @@ export function createDateRange({ start, end }: DateRange): DateValue[] {
  * Returns the locale-specific week number
  */
 export function getWeekNumber(date: DateValue, locale: string = 'en-US', firstDayOfWeek?: DayOfWeek): number {
-  // Detect ISO locale by comparing JS day of week with locale day of week
   const jan1 = new CalendarDate(date.year, 1, 1)
-  const jan1JsDay = jan1.toDate('UTC').getUTCDay()
-  const jan1LocaleDay = getDayOfWeek(jan1, locale, firstDayOfWeek)
-  const usesISOWeek = jan1JsDay !== jan1LocaleDay
 
-  // ISO locales (de-DE, etc.), #2422
-  if (usesISOWeek) {
-    // @see https://weeknumber.com/how-to/javascript
-    const d = date.toDate('UTC')
-    d.setUTCHours(0, 0, 0, 0)
-    d.setUTCDate(d.getUTCDate() + 3 - (d.getUTCDay() + 6) % 7)
-    const week1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4))
-    return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getUTCDay() + 6) % 7) / 7)
-  }
+  // Detect ISO locale by comparing JS day of week with locale day of week
+  const usesISOWeek = jan1.toDate('UTC').getUTCDay() !== getDayOfWeek(jan1, locale)
+  const weekStartsOn = firstDayOfWeek ?? (usesISOWeek ? 'mon' : 'sun')
+  const firstWeekContainsDate = usesISOWeek ? 4 : 1
 
-  // Non-ISO locales (en-US, etc.)
-  const firstDayOfYear = new CalendarDate(date.year, 1, 1)
+  // Find the "deciding day" - its year determines which year's week numbering to use
+  const dayOfWeek = getDayOfWeek(date, locale, weekStartsOn)
+  const decidingDay = date.add({ days: 7 - firstWeekContainsDate - dayOfWeek })
+  const weekYear = decidingDay.year
 
-  const firstDayOfYearWeekday = getDayOfWeek(firstDayOfYear, locale, firstDayOfWeek)
+  // Calculate week number from week 1 start
+  const week1Ref = new CalendarDate(weekYear, 1, firstWeekContainsDate)
+  const week1Start = startOfWeek(week1Ref, locale, weekStartsOn)
+  const currentWeekStart = startOfWeek(date, locale, weekStartsOn)
 
-  const firstWeekStart = firstDayOfYear.subtract({ days: firstDayOfYearWeekday })
-
-  // If date is before the first week start It belongs to the last week of the previous year
-  if (date.compare(firstWeekStart) < 0) {
-    const prevYearDate = new CalendarDate(date.year - 1, 12, 31)
-    return getWeekNumber(prevYearDate, locale, firstDayOfWeek)
-  }
-
-  const days = getDaysBetween(firstWeekStart, date)
-
-  // Week number is days divided by 7 plus 1
-  return Math.floor(days.length / 7) + 1
+  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
+  const daysDiff = Math.round(
+    (currentWeekStart.toDate('UTC').getTime() - week1Start.toDate('UTC').getTime())
+    / MS_PER_WEEK,
+  )
+  return daysDiff + 1
 }
