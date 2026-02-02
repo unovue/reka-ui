@@ -359,15 +359,19 @@ export function useCalendar(props: UseCalendarProps) {
 
   const firstFocusableDate = computed(() => {
     for (const month of grid.value) {
-      for (const row of month.rows) {
-        for (const date of row) {
-          if (!isSameMonth(date, month.value) || isDateDisabled(date) || isDateUnavailable(date))
-            continue
-          return date
-        }
+      if (props.minValue.value && isBefore(month.value, props.minValue.value))
+        continue
+
+      const daysInMonth = getDaysInMonth(month.value)
+      const startDay = props.minValue.value && isSameMonth(props.minValue.value, month.value) ? props.minValue.value.day : 1
+
+      for (let day = startDay; day <= daysInMonth; day++) {
+        const date = month.value.set({ day })
+        if (isDateDisabled(date) || isDateUnavailable(date))
+          continue
+        return date
       }
     }
-    return undefined
   })
 
   return {
