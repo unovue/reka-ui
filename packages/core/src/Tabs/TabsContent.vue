@@ -60,7 +60,6 @@ onBeforeUnmount(() => {
       :data-orientation="rootContext.orientation.value"
       :aria-labelledby="triggerId"
       :hidden="!present"
-      tabindex="0"
       :style="{
         animationDuration: isMountAnimationPreventedRef ? '0s' : undefined,
       }"
