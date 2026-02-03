@@ -17,7 +17,7 @@
   {
     'name': 'by',
     'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
-    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) => boolean)',
+    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) =&gt; boolean)',
     'required': false
   },
   {
@@ -88,7 +88,7 @@
   {
     'name': 'entryFocus',
     'description': '<p>Event handler called when container is being focused. Can be prevented.</p>\n',
-    'type': '[event: CustomEvent<any>]'
+    'type': '[event: CustomEvent&lt;any&gt;]'
   },
   {
     'name': 'highlight',

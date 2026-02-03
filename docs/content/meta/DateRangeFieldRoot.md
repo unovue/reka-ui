@@ -166,6 +166,6 @@
   {
     'name': 'setFocusedElement',
     'description': '',
-    'type': '(el: HTMLElement) => void'
+    'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />

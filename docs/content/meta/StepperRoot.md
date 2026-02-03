@@ -119,26 +119,26 @@
   {
     'name': 'goToStep',
     'description': '',
-    'type': '(step: number) => void'
+    'type': '(step: number) =&gt; void'
   },
   {
     'name': 'nextStep',
     'description': '',
-    'type': '() => void'
+    'type': '() =&gt; void'
   },
   {
     'name': 'prevStep',
     'description': '',
-    'type': '() => void'
+    'type': '() =&gt; void'
   },
   {
     'name': 'hasNext',
     'description': '',
-    'type': '() => boolean'
+    'type': '() =&gt; boolean'
   },
   {
     'name': 'hasPrev',
     'description': '',
-    'type': '() => boolean'
+    'type': '() =&gt; boolean'
   }
 ]" />

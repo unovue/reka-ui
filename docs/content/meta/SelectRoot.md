@@ -10,7 +10,7 @@
   {
     'name': 'by',
     'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
-    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) => boolean)',
+    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) =&gt; boolean)',
     'required': false
   },
   {

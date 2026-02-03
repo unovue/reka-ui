@@ -9,7 +9,7 @@
   {
     'name': 'grid',
     'description': '',
-    'type': 'Grid<DateValue>[]'
+    'type': 'Grid&lt;DateValue&gt;[]'
   },
   {
     'name': 'weekDays',
