@@ -3,10 +3,6 @@ import { Label, PinInputInput, PinInputRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const value = ref<string[]>([])
-function handleComplete(e: string[]) {
-  // eslint-disable-next-line no-alert
-  alert(e.join(''))
-}
 </script>
 
 <template>
@@ -22,7 +18,6 @@ function handleComplete(e: string[]) {
       v-model="value"
       placeholder="○"
       class="flex gap-2 items-center mt-1"
-      @complete="handleComplete"
     >
       <PinInputInput
         v-for="(id, index) in 5"
