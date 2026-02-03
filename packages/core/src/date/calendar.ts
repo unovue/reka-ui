@@ -188,6 +188,35 @@ export function createMonths(props: SetMonthProps) {
   return months
 }
 
+/**
+ * Creates a 3x4 grid of months for a given year.
+ */
+export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
+  const { dateObj } = props
+  const months = createYear({ dateObj })
+  return { value: dateObj, cells: months, rows: chunk(months, 4) }
+}
+
+/**
+ * Creates a 3x4 grid of years (decade-aligned).
+ * The grid starts from the decade that contains the given date.
+ */
+export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean }): Grid<DateValue> {
+  const { dateObj, yearsPerPage = 12, decadeAligned = true } = props
+
+  let startYear: number
+  if (decadeAligned) {
+    startYear = startOfDecade(dateObj).year
+  }
+  else {
+    startYear = dateObj.year
+  }
+
+  const years = Array.from({ length: yearsPerPage }, (_, i) => startOfYear(dateObj.set({ year: startYear + i })))
+  const firstYear = years[0]
+  return { value: firstYear, cells: years, rows: chunk(years, 4) }
+}
+
 export function createYearRange({ start, end }: DateRange): DateValue[] {
   const years: DateValue[] = []
 

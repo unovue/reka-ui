@@ -192,6 +192,22 @@ export default defineConfig({
                 text: `Time Field ${BadgeHTML('Alpha', true)}`,
                 link: '/docs/components/time-field',
               },
+              {
+                text: `Month Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-picker',
+              },
+              {
+                text: `Month Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-range-picker',
+              },
+              {
+                text: `Year Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-picker',
+              },
+              {
+                text: `Year Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-range-picker',
+              },
             ],
           },
           {
@@ -316,6 +332,10 @@ export default defineConfig({
               {
                 text: 'Date Picker Selection',
                 link: '/examples/date-picker-selection',
+              },
+              {
+                text: 'Date Picker View Switching',
+                link: '/examples/date-picker-view-switching',
               },
             ],
           },
