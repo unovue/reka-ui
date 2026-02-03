@@ -1,14 +1,14 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
 import { useCalendar } from '@/Calendar/useCalendar'
-import { isBefore } from '@/date'
+import { getWeekStartsOn, isBefore } from '@/date'
 import {
   createContext,
   useDirection,
@@ -28,7 +28,7 @@ type RangeCalendarRootContext = {
   preventDeselect: Ref<boolean>
   grid: Ref<Grid<DateValue>[]>
   weekDays: Ref<string[]>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
@@ -88,7 +88,7 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   /** The maximum number of days that can be selected in a range */
   maximumDays?: number
   /** The day of the week to start the calendar on */
-  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
+  weekStartsOn?: WeekStartsOn
   /** The format to use for the weekday strings provided via the weekdays slot prop */
   weekdayFormat?: WeekDayFormat
   /** The accessible label for the calendar */
@@ -145,7 +145,7 @@ export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
 
 <script setup lang="ts">
 import { useEventListener, useVModel } from '@vueuse/core'
-import { onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
@@ -153,7 +153,6 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   as: 'div',
   pagedNavigation: false,
   preventDeselect: false,
-  weekStartsOn: 0,
   weekdayFormat: 'narrow',
   fixedWeeks: false,
   numberOfMonths: 1,
@@ -179,7 +178,7 @@ defineSlots<{
     /** The days of the week */
     weekDays: string[]
     /** The start of the week */
-    weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6
+    weekStartsOn: WeekStartsOn
     /** The calendar locale */
     locale: string
     /** Whether or not to always display 6 weeks in the calendar */
@@ -194,7 +193,6 @@ const {
   readonly,
   initialFocus,
   pagedNavigation,
-  weekStartsOn,
   weekdayFormat,
   fixedWeeks,
   numberOfMonths,
@@ -219,6 +217,7 @@ const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
+const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
 const lastPressedDateValue = ref() as Ref<DateValue | undefined>
 const focusedValue = ref() as Ref<DateValue | undefined>

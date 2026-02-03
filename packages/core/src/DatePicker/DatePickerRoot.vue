@@ -3,10 +3,11 @@ import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootEmits, PopoverRootProps } from '..'
-import type { Matcher, WeekDayFormat } from '@/date'
+import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRefs, watch } from 'vue'
+import { getWeekStartsOn } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
@@ -26,7 +27,7 @@ type DatePickerRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
@@ -73,7 +74,6 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   modal: false,
   pagedNavigation: false,
   preventDeselect: false,
-  weekStartsOn: 0,
   weekdayFormat: 'narrow',
   fixedWeeks: false,
   numberOfMonths: 1,
@@ -90,7 +90,6 @@ const {
   disabled,
   readonly,
   pagedNavigation,
-  weekStartsOn,
   weekdayFormat,
   fixedWeeks,
   numberOfMonths,
@@ -115,6 +114,7 @@ const {
 
 const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
+const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,

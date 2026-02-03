@@ -11,6 +11,8 @@ import { chunk } from './utils'
 
 export type WeekDayFormat = 'narrow' | 'short' | 'long'
 
+export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
 export type CreateSelectProps = {
   /**
    * The date object representing the date (usually the first day of the month/year).
@@ -27,7 +29,7 @@ export type CreateMonthProps = {
   /**
    * The day of the week to start the calendar on (0 for Sunday, 1 for Monday, etc.).
    */
-  weekStartsOn: number
+  weekStartsOn: WeekStartsOn
 
   /**
    * Whether to always render 6 weeks in the calendar, even if the month doesn't
@@ -217,6 +219,21 @@ export function createDateRange({ start, end }: DateRange): DateValue[] {
   }
 
   return dates
+}
+
+/**
+ * It's better to use `getWeekStart` from `@internationalized/date`,
+ * but sadly it is not yet exported from the package.
+ * And the `Intl.Locale` API is not supported well enough yet.
+ */
+export function getWeekStartsOn(locale: string): WeekStartsOn {
+  // Jan 6, 2025 is a Monday (ISO day = 1)
+  const monday = new CalendarDate(2025, 1, 6)
+  const dayOfWeek = getDayOfWeek(monday, locale)
+  // dayOfWeek tells us Monday's position in the locale's week (0-indexed)
+  // If Monday is position 0 → week starts Monday (1)
+  // If Monday is position 1 → week starts Sunday (0)
+  return (1 - dayOfWeek + 7) % 7 as WeekStartsOn
 }
 
 /**
