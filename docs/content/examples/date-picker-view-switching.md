@@ -22,6 +22,6 @@ Compose Calendar, MonthPicker, and YearPicker to create a date picker with drill
 
 ### View Switching Pattern
 
-Click the heading to zoom out from days to months to years. Select a month or year to zoom back in. Common pattern in native OS calendars and libraries like Mantine.
+Click the month or year in the header to switch views. Selecting a month returns to day view, selecting a year returns to month view. Common pattern in native OS calendars and libraries like Mantine.
 
 </ExampleSection>
