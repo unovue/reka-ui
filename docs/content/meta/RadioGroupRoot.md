@@ -71,7 +71,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the radio group value changes</p>\n',
-    'type': '[payload: string]'
+    'type': '[payload: null | string | number | bigint | Record<string, any>]'
   }
 ]" />
 
