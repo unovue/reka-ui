@@ -97,6 +97,20 @@ describe('rangeCalendar', () => {
     expect(heading).toHaveTextContent('January 1980')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { calendar, rerender } = setup({ calendarProps: { modelValue: null } })
+
+    expect(getSelectedDays(calendar)).toHaveLength(0)
+
+    await rerender({
+      calendarProps: {
+        modelValue: zonedDateTimeRange,
+      },
+    })
+
+    expect(getSelectedDays(calendar)).toHaveLength(6)
+  })
+
   it('resets range on select when a range is already selected', async () => {
     const { getByTestId, calendar, user, rerender } = setup({
       calendarProps: { modelValue: calendarDateRange },

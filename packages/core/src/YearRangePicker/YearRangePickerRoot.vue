@@ -113,7 +113,7 @@ export const [injectYearRangePickerRootContext, provideYearRangePickerRootContex
 
 <script setup lang="ts">
 import { useEventListener, useVModel } from '@vueuse/core'
-import { onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<YearRangePickerRootProps>(), {
@@ -177,18 +177,21 @@ const isEditing = ref(false)
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? { start: undefined, end: undefined },
   passive: (props.modelValue === undefined) as false,
-}) as Ref<DateRange>
+}) as Ref<DateRange | null>
 
-const validModelValue = ref(modelValue.value) as Ref<DateRange>
+const normalizeRange = (value?: DateRange | null): DateRange => value ?? { start: undefined, end: undefined }
+const normalizedModelValue = computed(() => normalizeRange(modelValue.value))
+
+const validModelValue = ref(normalizeRange(modelValue.value)) as Ref<DateRange>
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
-  defaultValue: modelValue.value.start,
+  defaultValue: normalizeRange(modelValue.value).start,
   locale: props.locale,
 })
 
-const startValue = ref(modelValue.value.start) as Ref<DateValue | undefined>
-const endValue = ref(modelValue.value.end) as Ref<DateValue | undefined>
+const startValue = ref(normalizeRange(modelValue.value).start) as Ref<DateValue | undefined>
+const endValue = ref(normalizeRange(modelValue.value).end) as Ref<DateValue | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
@@ -245,22 +248,24 @@ const {
 })
 
 watch(modelValue, (_modelValue, _prevValue) => {
+  const next = normalizeRange(_modelValue)
+  const prev = normalizeRange(_prevValue)
   if (
-    (!_prevValue?.start && _modelValue?.start)
+    (!prev.start && next.start)
     || !_modelValue
-    || !_modelValue.start
-    || (startValue.value && !isSameYear(_modelValue.start, startValue.value))
+    || !next.start
+    || (startValue.value && !isSameYear(next.start, startValue.value))
   ) {
-    startValue.value = _modelValue?.start?.copy?.()
+    startValue.value = next.start?.copy?.()
   }
 
   if (
-    (!_prevValue?.end && _modelValue.end)
+    (!prev.end && next.end)
     || !_modelValue
-    || !_modelValue.end
-    || (endValue.value && !isSameYear(_modelValue.end, endValue.value))
+    || !next.end
+    || (endValue.value && !isSameYear(next.end, endValue.value))
   ) {
-    endValue.value = _modelValue?.end?.copy?.()
+    endValue.value = next.end?.copy?.()
   }
 })
 
@@ -316,7 +321,7 @@ provideYearRangePickerRootContext({
   startValue,
   endValue,
   formatter,
-  modelValue,
+  modelValue: normalizedModelValue,
   placeholder,
   disabled,
   initialFocus,
@@ -384,7 +389,7 @@ onMounted(() => {
       :date="placeholder"
       :grid="grid"
       :locale="locale"
-      :model-value="modelValue"
+      :model-value="normalizedModelValue"
     />
   </Primitive>
 </template>

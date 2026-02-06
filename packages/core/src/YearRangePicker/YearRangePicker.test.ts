@@ -66,6 +66,20 @@ describe('year range picker', () => {
     expect(getByTestId('heading')).toHaveTextContent('1980 - 1991')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { picker, rerender } = setup({ pickerProps: { modelValue: null } })
+
+    expect(getSelectedYears(picker)).toHaveLength(0)
+
+    await rerender({
+      pickerProps: {
+        modelValue: calendarDateRange,
+      },
+    })
+
+    expect(getSelectedYears(picker)).toHaveLength(4)
+  })
+
   it('resets range on select when a range is already selected', async () => {
     const { getByTestId, picker, user, rerender } = setup({
       pickerProps: { modelValue: calendarDateRange },

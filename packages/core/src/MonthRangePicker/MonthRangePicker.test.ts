@@ -66,6 +66,20 @@ describe('month range picker', () => {
     expect(getByTestId('heading')).toHaveTextContent('1980')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { picker, rerender } = setup({ pickerProps: { modelValue: null } })
+
+    expect(getSelectedMonths(picker)).toHaveLength(0)
+
+    await rerender({
+      pickerProps: {
+        modelValue: calendarDateRange,
+      },
+    })
+
+    expect(getSelectedMonths(picker)).toHaveLength(3)
+  })
+
   it('resets range on select when a range is already selected', async () => {
     const { getByTestId, picker, user, rerender } = setup({
       pickerProps: { modelValue: calendarDateRange },
