@@ -4,6 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
+import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -16,6 +17,7 @@ import {
   normalizeHourCycle,
   syncTimeSegmentValues,
 } from '@/shared/date'
+import { isZonedDateTime } from '@/temporal/comparators'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
@@ -164,12 +166,23 @@ const convertedModelValue = computed<Temporal.PlainDateTime | undefined>({
   },
   set(newValue) {
     if (newValue) {
-      modelValue.value = Temporal.PlainTime.from({
-        hour: newValue.hour,
-        minute: newValue.minute,
-        second: newValue.second,
-        millisecond: modelValue.value?.millisecond ?? 0,
-      })
+      const original = modelValue.value
+      if (original && 'day' in original) {
+        // Preserve PlainDateTime/ZonedDateTime type
+        modelValue.value = original.with({
+          hour: newValue.hour,
+          minute: newValue.minute,
+          second: newValue.second,
+        }) as TimeValue
+      }
+      else {
+        modelValue.value = Temporal.PlainTime.from({
+          hour: newValue.hour,
+          minute: newValue.minute,
+          second: newValue.second,
+          millisecond: modelValue.value?.millisecond ?? 0,
+        })
+      }
     }
     else {
       modelValue.value = undefined
@@ -231,9 +244,17 @@ const segmentValues = ref<SegmentValueObj>(modelValue.value
   ? { ...syncTimeSegmentValues({ value: convertedModelValue.value!, formatter }) }
   : { ...initialSegments })
 
+const dateRefForContent = computed<TemporalDate>(() => {
+  const original = modelValue.value ?? placeholder.value
+  if (isZonedDateTime(original)) {
+    return convertedPlaceholder.value.toZonedDateTime(original.timeZoneId)
+  }
+  return convertedPlaceholder.value
+})
+
 const allSegmentContent = computed(() => createContent({
   granularity: inferredGranularity.value,
-  dateRef: convertedPlaceholder.value,
+  dateRef: dateRefForContent.value,
   formatter,
   hideTimeZone: props.hideTimeZone,
   hourCycle: props.hourCycle,
@@ -339,7 +360,14 @@ provideTimeFieldRootContext({
   locale,
   modelValue: computed({
     get: () => modelValue.value,
-    set: value => modelValue.value = value,
+    set: (value) => {
+      if (value && 'hour' in value) {
+        convertedModelValue.value = convertValue(value)
+      }
+      else {
+        modelValue.value = value
+      }
+    },
   }),
   placeholder: computed({
     get: () => placeholder.value,
