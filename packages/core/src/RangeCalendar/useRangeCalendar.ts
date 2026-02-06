@@ -41,7 +41,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
   const isInvalid = computed(
     () => {
       if (isStartInvalid.value || isEndInvalid.value)
-        return false
+        return true
       if (props.start.value && props.end.value && isBefore(props.end.value, props.start.value))
         return true
       return false
@@ -97,9 +97,6 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
       }
     }
 
-    if (!props.start.value || props.end.value || isSameDay(props.start.value, date))
-      return false
-
     return false
   }
 
@@ -129,15 +126,16 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     // If maximum days is set and the range exceeds it, limit the highlight
     // We only apply this when we're in the middle of a selection (no end date yet)
     if (props.maximumDays?.value && !props.end.value) {
-      // Determine the direction of selection and limit to maximum days
-      const cappedEnd = isStartBeforeFocused
-        ? start.add({ days: props.maximumDays.value - 1 })
-        : start.subtract({ days: props.maximumDays.value })
+      const maximumDays = props.maximumDays.value
+      const anchor = props.start.value
+      const focused = props.focusedValue.value
 
-      return {
-        start,
-        end: cappedEnd,
-      }
+      // Keep the highlight in sync with the maximum selectable range.
+      // Existing behavior highlights the full allowed window while selecting.
+      if (!isBefore(focused, anchor))
+        return { start: anchor, end: anchor.add({ days: maximumDays - 1 }) }
+
+      return { start: anchor.subtract({ days: maximumDays - 1 }), end: anchor }
     }
 
     const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, rangeIsDateDisabled, props.isDateHighlightable)

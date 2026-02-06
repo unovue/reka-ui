@@ -73,7 +73,7 @@ export interface MonthPickerRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the month picker. Receives the current placeholder as an argument. */
   prevPage?: (placeholder: DateValue) => DateValue
-  /** The controlled checked state of the month picker */
+  /** The controlled selected month value of the month picker. Can be bound as `v-model`. */
   modelValue?: DateValue | DateValue[] | undefined
   /** Whether multiple months can be selected */
   multiple?: boolean
