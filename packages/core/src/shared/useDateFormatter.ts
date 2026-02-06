@@ -37,7 +37,7 @@ export type Formatter = {
 export function useDateFormatter(initialLocale: string, opts: DateFormatterOptions = {}): Formatter {
   const locale = ref(initialLocale)
 
-  function toDate(dateValue: TemporalDate, timeZone: string = 'UTC') {
+  function toDate(dateValue: TemporalDate, timeZone: string = Temporal.Now.timeZoneId()) {
     if (isZonedDateTime(dateValue)) {
       return new Date(dateValue.toInstant().epochMilliseconds)
     }

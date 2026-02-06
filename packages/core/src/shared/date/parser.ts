@@ -177,13 +177,15 @@ function toDate(dateValue: TemporalDate): Date {
     return new Date(dateValue.toInstant().epochMilliseconds)
   }
 
+  const timeZone = Temporal.Now.timeZoneId()
+
   if (dateValue instanceof Temporal.PlainDateTime) {
-    const zoned = dateValue.toZonedDateTime('UTC')
+    const zoned = dateValue.toZonedDateTime(timeZone)
     return new Date(zoned.toInstant().epochMilliseconds)
   }
 
   const zoned = dateValue.toZonedDateTime({
-    timeZone: 'UTC',
+    timeZone,
     plainTime: Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 }),
   })
   return new Date(zoned.toInstant().epochMilliseconds)
