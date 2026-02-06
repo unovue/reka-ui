@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -17,7 +17,7 @@
   {
     'name': 'prevPage',
     'description': '<p>The function to be used for the prev page. Overwrites the <code>prevPage</code> function set on the <code>MonthPickerRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: DateValue) => DateValue)',
     'required': false
   }
 ]" />

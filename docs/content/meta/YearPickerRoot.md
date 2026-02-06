@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -84,7 +84,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the year picker</p>\n',
+    'description': '<p>The controlled selected year value of the year picker. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateValue | DateValue[]',
     'required': false
   },
@@ -98,7 +98,7 @@
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the year picker. Receives the current placeholder as an argument.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: DateValue) => DateValue)',
     'required': false
   },
   {
@@ -117,7 +117,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the year picker. Receives the current placeholder as an argument.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: DateValue) => DateValue)',
     'required': false
   },
   {
@@ -140,7 +140,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue | DateValue[]]'
   },
   {
     'name': 'update:placeholder',
@@ -158,7 +158,7 @@
   {
     'name': 'grid',
     'description': '<p>The grid of years</p>\n',
-    'type': 'Grid&lt;DateValue&gt;'
+    'type': 'Grid<DateValue>'
   },
   {
     'name': 'locale',

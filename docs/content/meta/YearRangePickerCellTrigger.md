@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -40,7 +40,7 @@
   },
   {
     'name': 'today',
-    'description': '<p>Current year is today\'s year state</p>\n',
+    'description': '<p>Current year is today's year state</p>\n',
     'type': 'boolean'
   },
   {

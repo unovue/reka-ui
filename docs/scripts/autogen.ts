@@ -67,9 +67,9 @@ primitiveComponents.forEach((componentPath) => {
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
-  let parsedString = '<!-- This file was automatic generated. Do not edit it manually -->\n\n'
+  let parsedString = '<!-- This file was automatically generated. Do not edit it manually -->\n'
   if (meta.props.length)
-    parsedString += `<PropsTable :data="${JSON.stringify(meta.props, null, 2).replace(/"/g, '\'')}" />\n`
+    parsedString += `\n<PropsTable :data="${JSON.stringify(meta.props, null, 2).replace(/"/g, '\'')}" />\n`
 
   if (meta.events.length)
     parsedString += `\n<EmitsTable :data="${JSON.stringify(meta.events, null, 2).replace(/"/g, '\'')}" />\n`

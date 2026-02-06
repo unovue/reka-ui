@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -104,14 +104,14 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled selected month range of the month range picker. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the calendar.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: DateValue) => DateValue)',
     'required': false
   },
   {
@@ -130,7 +130,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the calendar.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: DateValue) => DateValue)',
     'required': false
   },
   {
@@ -169,7 +169,7 @@
   {
     'name': 'grid',
     'description': '<p>The grid of months</p>\n',
-    'type': 'Grid&lt;DateValue&gt;'
+    'type': 'Grid<DateValue>'
   },
   {
     'name': 'locale',
