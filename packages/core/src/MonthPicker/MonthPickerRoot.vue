@@ -81,7 +81,7 @@ export interface MonthPickerRootProps extends PrimitiveProps {
 
 export type MonthPickerRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | undefined]
+  'update:modelValue': [date: DateValue | DateValue[] | undefined]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
@@ -181,8 +181,8 @@ const {
   minValue,
   maxValue,
   disabled,
-  isMonthDisabled: propsIsMonthDisabled.value,
-  isMonthUnavailable: propsIsMonthUnavailable.value,
+  isMonthDisabled: propsIsMonthDisabled,
+  isMonthUnavailable: propsIsMonthUnavailable,
   calendarLabel,
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
@@ -226,7 +226,7 @@ function onMonthChange(value: DateValue) {
   else if (Array.isArray(modelValue.value)) {
     const index = modelValue.value.findIndex(date => isSameYearMonth(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValue.value, value]
+      modelValue.value = [...modelValue.value, value.copy()]
     }
     else if (!preventDeselect.value) {
       const next = modelValue.value.filter(date => !isSameYearMonth(date, value))

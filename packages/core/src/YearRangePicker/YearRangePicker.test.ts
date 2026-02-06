@@ -279,6 +279,27 @@ describe('year range picker - maximumYears', () => {
     expect(getByTestId('year-1984')).toHaveAttribute('data-selected')
     expect(getByTestId('year-1985')).toHaveAttribute('data-selected')
   })
+
+  it('highlights backwards within maximumYears without inverting', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: new CalendarDate(1983, 3, 15),
+        maximumYears: 3,
+      },
+    })
+
+    const year1983 = getByTestId('year-1983')
+    await user.click(year1983)
+    expect(year1983).toHaveAttribute('data-selection-start')
+
+    const year1981 = getByTestId('year-1981')
+    await user.hover(year1981)
+
+    expect(year1981).toHaveAttribute('data-highlighted-start')
+    expect(getByTestId('year-1982')).toHaveAttribute('data-highlighted')
+    expect(year1983).toHaveAttribute('data-highlighted-end')
+    expect(getByTestId('year-1980')).not.toHaveAttribute('data-highlighted')
+  })
 })
 
 describe('year range picker - keyboard navigation', () => {

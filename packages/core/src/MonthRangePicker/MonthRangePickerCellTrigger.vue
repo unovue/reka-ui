@@ -51,10 +51,12 @@ const rootContext = injectMonthRangePickerRootContext()
 const { primitiveElement } = usePrimitiveElement()
 
 const shortMonthValue = computed(() => {
+  rootContext.locale.value
   return rootContext.formatter.custom(toDate(props.month), { month: 'short' })
 })
 
 const labelText = computed(() => {
+  rootContext.locale.value
   return rootContext.formatter.custom(toDate(props.month), { month: 'long', year: 'numeric' })
 })
 
@@ -190,7 +192,9 @@ function handleArrowKey(e: KeyboardEvent) {
       changeMonth(e, props.month)
   }
 
-  function shiftFocus(currentMonth: DateValue, add: number) {
+  function shiftFocus(currentMonth: DateValue, add: number, depth = 0) {
+    if (depth > 48)
+      return
     const candidateMonthValue = currentMonth.add({ months: add })
 
     if ((rootContext.minValue.value && endOfMonth(candidateMonthValue).compare(rootContext.minValue.value) < 0)
@@ -212,13 +216,13 @@ function handleArrowKey(e: KeyboardEvent) {
         rootContext.prevPage()
       }
       nextTick(() => {
-        shiftFocus(currentMonth, add)
+        shiftFocus(currentMonth, add, depth + 1)
       })
       return
     }
 
     if (candidateMonth && candidateMonth.hasAttribute('data-disabled'))
-      return shiftFocus(candidateMonthValue, add)
+      return shiftFocus(candidateMonthValue, add, depth + 1)
 
     rootContext.onPlaceholderChange(candidateMonthValue)
     candidateMonth?.focus()
@@ -257,7 +261,8 @@ function handleArrowKey(e: KeyboardEvent) {
 <template>
   <Primitive
     ref="primitiveElement"
-    v-bind="props"
+    :as="props.as"
+    :as-child="props.asChild"
     role="button"
     :aria-label="labelText"
     data-reka-month-range-picker-cell-trigger

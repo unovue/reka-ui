@@ -6,6 +6,7 @@ import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot } from '..'
 import MonthPicker from './story/_MonthPicker.vue'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
@@ -36,6 +37,48 @@ it('should pass axe accessibility tests', async () => {
 })
 
 describe('month picker', async () => {
+  it('does not forward month prop as a DOM attribute', async () => {
+    const { getByTestId } = setup({ pickerProps: { placeholder: calendarDate } })
+    const janMonth = getByTestId('month-1')
+    expect(janMonth.getAttribute('month')).toBe(null)
+  })
+
+  it('does not navigate when prev is disabled and rendered as div', async () => {
+    const user = userEvent.setup()
+
+    const Test = {
+      components: {
+        MonthPickerRoot,
+        MonthPickerHeader,
+        MonthPickerPrev,
+        MonthPickerHeading,
+        MonthPickerNext,
+      },
+      setup() {
+        const placeholder = new CalendarDate(1980, 1, 1)
+        const minValue = new CalendarDate(1980, 1, 1)
+        return { placeholder, minValue }
+      },
+      template: `
+        <MonthPickerRoot
+          :placeholder="placeholder"
+          :min-value="minValue"
+        >
+          <MonthPickerHeader>
+            <MonthPickerPrev as="div" data-testid="prev-button" />
+            <MonthPickerHeading data-testid="heading" />
+            <MonthPickerNext as="div" data-testid="next-button" />
+          </MonthPickerHeader>
+        </MonthPickerRoot>
+      `,
+    }
+
+    const { getByTestId } = render(Test)
+    expect(getByTestId('heading')).toHaveTextContent('1980')
+    await user.click(getByTestId('prev-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1980')
+  })
+
   it('respects a default value if provided - `CalendarDate`', async () => {
     const { getByTestId, picker } = setup({ pickerProps: { modelValue: calendarDate } })
     expect(getSelectedMonth(picker)).toHaveTextContent('Jan')

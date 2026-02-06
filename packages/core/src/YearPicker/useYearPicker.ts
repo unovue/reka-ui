@@ -14,8 +14,8 @@ export type UseYearPickerProps = {
   maxValue: Ref<DateValue | undefined>
   disabled: Ref<boolean>
   yearsPerPage: Ref<number>
-  isYearDisabled?: Matcher
-  isYearUnavailable?: Matcher
+  isYearDisabled?: Matcher | Ref<Matcher | undefined>
+  isYearUnavailable?: Matcher | Ref<Matcher | undefined>
   calendarLabel: Ref<string | undefined>
   nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
   prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
@@ -65,6 +65,9 @@ export function useYearPickerState(props: UseYearPickerStateProps) {
 export function useYearPicker(props: UseYearPickerProps) {
   const formatter = useDateFormatter(props.locale.value)
 
+  const resolveMatcher = (matcher?: Matcher | Ref<Matcher | undefined>) =>
+    typeof matcher === 'function' ? matcher : matcher?.value
+
   const headingFormatOptions = computed(() => {
     const options: DateFormatterOptions = {
       calendar: props.placeholder.value.calendar.identifier,
@@ -82,7 +85,7 @@ export function useYearPicker(props: UseYearPickerProps) {
   })) as Ref<Grid<DateValue>>
 
   function isYearDisabled(dateObj: DateValue) {
-    if (props.isYearDisabled?.(dateObj) || props.disabled.value)
+    if (resolveMatcher(props.isYearDisabled)?.(dateObj) || props.disabled.value)
       return true
     if (props.maxValue.value && isAfter(startOfYear(dateObj), props.maxValue.value))
       return true
@@ -92,7 +95,7 @@ export function useYearPicker(props: UseYearPickerProps) {
   }
 
   const isYearUnavailable = (date: DateValue) => {
-    if (props.isYearUnavailable?.(date))
+    if (resolveMatcher(props.isYearUnavailable)?.(date))
       return true
     return false
   }
@@ -168,6 +171,7 @@ export function useYearPicker(props: UseYearPickerProps) {
   })
 
   watch([props.locale, props.yearsPerPage], () => {
+    formatter.setLocale(props.locale.value)
     grid.value = createYearGrid({ dateObj: props.placeholder.value, yearsPerPage: props.yearsPerPage.value })
   })
 

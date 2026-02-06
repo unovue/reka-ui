@@ -41,10 +41,12 @@ const rootContext = injectYearPickerRootContext()
 const { primitiveElement } = usePrimitiveElement()
 
 const yearValue = computed(() => {
+  rootContext.locale.value
   return rootContext.formatter.fullYear(toDate(props.year))
 })
 
 const labelText = computed(() => {
+  rootContext.locale.value
   return rootContext.formatter.custom(toDate(props.year), {
     year: 'numeric',
   })
@@ -112,7 +114,9 @@ function handleArrowKey(e: KeyboardEvent) {
       changeYear(props.year)
   }
 
-  function shiftFocus(currentYear: DateValue, add: number) {
+  function shiftFocus(currentYear: DateValue, add: number, depth = 0) {
+    if (depth > 48)
+      return
     const candidateYearValue = currentYear.add({ years: add })
 
     if ((rootContext.minValue.value && endOfYear(candidateYearValue).compare(rootContext.minValue.value) < 0)
@@ -134,13 +138,13 @@ function handleArrowKey(e: KeyboardEvent) {
         rootContext.prevPage()
       }
       nextTick(() => {
-        shiftFocus(currentYear, add)
+        shiftFocus(currentYear, add, depth + 1)
       })
       return
     }
 
     if (candidateYear && candidateYear.hasAttribute('data-disabled'))
-      return shiftFocus(candidateYearValue, add)
+      return shiftFocus(candidateYearValue, add, depth + 1)
 
     rootContext.onPlaceholderChange(candidateYearValue)
     candidateYear?.focus()
@@ -180,7 +184,8 @@ function handleArrowKey(e: KeyboardEvent) {
 <template>
   <Primitive
     ref="primitiveElement"
-    v-bind="props"
+    :as="props.as"
+    :as-child="props.asChild"
     role="button"
     :aria-label="labelText"
     data-reka-year-picker-cell-trigger

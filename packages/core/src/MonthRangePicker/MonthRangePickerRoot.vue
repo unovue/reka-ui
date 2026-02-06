@@ -214,8 +214,8 @@ const {
   minValue,
   maxValue,
   disabled,
-  isMonthDisabled: propsIsMonthDisabled.value,
-  isMonthUnavailable: propsIsMonthUnavailable.value,
+  isMonthDisabled: propsIsMonthDisabled,
+  isMonthUnavailable: propsIsMonthUnavailable,
   calendarLabel,
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
@@ -303,7 +303,7 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 })
 
 const kbd = useKbd()
-useEventListener('keydown', (ev) => {
+useEventListener(parentElement, 'keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     startValue.value = validModelValue.value.start?.copy()
     endValue.value = validModelValue.value.end?.copy()

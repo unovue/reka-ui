@@ -220,8 +220,8 @@ const {
   maxValue,
   disabled,
   yearsPerPage,
-  isYearDisabled: propsIsYearDisabled.value,
-  isYearUnavailable: propsIsYearUnavailable.value,
+  isYearDisabled: propsIsYearDisabled,
+  isYearUnavailable: propsIsYearUnavailable,
   calendarLabel,
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
@@ -309,7 +309,7 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 })
 
 const kbd = useKbd()
-useEventListener('keydown', (ev) => {
+useEventListener(parentElement, 'keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     startValue.value = validModelValue.value.start?.copy()
     endValue.value = validModelValue.value.end?.copy()

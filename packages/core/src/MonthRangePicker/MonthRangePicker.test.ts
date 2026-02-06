@@ -279,6 +279,27 @@ describe('month range picker - maximumMonths', () => {
     expect(getByTestId('month-4')).toHaveAttribute('data-selected')
     expect(getByTestId('month-5')).toHaveAttribute('data-selected')
   })
+
+  it('highlights backwards within maximumMonths without inverting', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: new CalendarDate(1980, 3, 15),
+        maximumMonths: 3,
+      },
+    })
+
+    const marchMonth = getByTestId('month-3')
+    await user.click(marchMonth)
+    expect(marchMonth).toHaveAttribute('data-selection-start')
+
+    const janMonth = getByTestId('month-1')
+    await user.hover(janMonth)
+
+    expect(janMonth).toHaveAttribute('data-highlighted-start')
+    expect(getByTestId('month-2')).toHaveAttribute('data-highlighted')
+    expect(marchMonth).toHaveAttribute('data-highlighted-end')
+    expect(getByTestId('month-4')).not.toHaveAttribute('data-highlighted')
+  })
 })
 
 describe('month range picker - keyboard navigation', () => {

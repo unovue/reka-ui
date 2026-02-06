@@ -13,8 +13,8 @@ export type UseMonthPickerProps = {
   minValue: Ref<DateValue | undefined>
   maxValue: Ref<DateValue | undefined>
   disabled: Ref<boolean>
-  isMonthDisabled?: Matcher
-  isMonthUnavailable?: Matcher
+  isMonthDisabled?: Matcher | Ref<Matcher | undefined>
+  isMonthUnavailable?: Matcher | Ref<Matcher | undefined>
   calendarLabel: Ref<string | undefined>
   nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
   prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
@@ -64,6 +64,9 @@ export function useMonthPickerState(props: UseMonthPickerStateProps) {
 export function useMonthPicker(props: UseMonthPickerProps) {
   const formatter = useDateFormatter(props.locale.value)
 
+  const resolveMatcher = (matcher?: Matcher | Ref<Matcher | undefined>) =>
+    typeof matcher === 'function' ? matcher : matcher?.value
+
   const headingFormatOptions = computed(() => {
     const options: DateFormatterOptions = {
       calendar: props.placeholder.value.calendar.identifier,
@@ -78,7 +81,7 @@ export function useMonthPicker(props: UseMonthPickerProps) {
   const grid = ref<Grid<DateValue>>(createMonthGrid({ dateObj: props.placeholder.value })) as Ref<Grid<DateValue>>
 
   function isMonthDisabled(dateObj: DateValue) {
-    if (props.isMonthDisabled?.(dateObj) || props.disabled.value)
+    if (resolveMatcher(props.isMonthDisabled)?.(dateObj) || props.disabled.value)
       return true
     if (props.maxValue.value && isAfter(dateObj.set({ day: 1 }), props.maxValue.value))
       return true
@@ -88,7 +91,7 @@ export function useMonthPicker(props: UseMonthPickerProps) {
   }
 
   const isMonthUnavailable = (date: DateValue) => {
-    if (props.isMonthUnavailable?.(date))
+    if (resolveMatcher(props.isMonthUnavailable)?.(date))
       return true
     return false
   }
@@ -162,6 +165,7 @@ export function useMonthPicker(props: UseMonthPickerProps) {
   })
 
   watch(props.locale, () => {
+    formatter.setLocale(props.locale.value)
     grid.value = createMonthGrid({ dateObj: props.placeholder.value })
   })
 

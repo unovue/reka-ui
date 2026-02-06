@@ -84,7 +84,7 @@ export interface YearPickerRootProps extends PrimitiveProps {
 
 export type YearPickerRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | undefined]
+  'update:modelValue': [date: DateValue | DateValue[] | undefined]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
@@ -187,8 +187,8 @@ const {
   maxValue,
   disabled,
   yearsPerPage,
-  isYearDisabled: propsIsYearDisabled.value,
-  isYearUnavailable: propsIsYearUnavailable.value,
+  isYearDisabled: propsIsYearDisabled,
+  isYearUnavailable: propsIsYearUnavailable,
   calendarLabel,
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
@@ -232,7 +232,7 @@ function onYearChange(value: DateValue) {
   else if (Array.isArray(modelValue.value)) {
     const index = modelValue.value.findIndex(date => isSameYear(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValue.value, value]
+      modelValue.value = [...modelValue.value, value.copy()]
     }
     else if (!preventDeselect.value) {
       const next = modelValue.value.filter(date => !isSameYear(date, value))

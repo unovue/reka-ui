@@ -34,7 +34,7 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
 
   const isInvalid = computed(() => {
     if (isStartInvalid.value || isEndInvalid.value)
-      return false
+      return true
     if (props.start.value && props.end.value && compareYearMonth(props.end.value, props.start.value) < 0)
       return true
     return false
@@ -87,9 +87,6 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
       }
     }
 
-    if (!props.start.value || props.end.value || isSameYearMonth(props.start.value, date))
-      return false
-
     return false
   }
 
@@ -108,11 +105,20 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
     }
 
     if (props.maximumMonths?.value && !props.end.value) {
-      const cappedEnd = isStartBeforeFocused
-        ? start.add({ months: props.maximumMonths.value - 1 })
-        : start.subtract({ months: props.maximumMonths.value - 1 })
+      const maximumMonths = props.maximumMonths.value
+      const anchor = props.start.value
+      const focused = props.focusedValue.value
 
-      return { start, end: cappedEnd }
+      if (compareYearMonth(focused, anchor) >= 0) {
+        const maxEnd = anchor.add({ months: maximumMonths - 1 })
+        const cappedEnd = compareYearMonth(focused, maxEnd) > 0 ? maxEnd : focused
+        return { start: anchor, end: cappedEnd }
+      }
+      else {
+        const minStart = anchor.subtract({ months: maximumMonths - 1 })
+        const cappedStart = compareYearMonth(focused, minStart) < 0 ? minStart : focused
+        return { start: cappedStart, end: anchor }
+      }
     }
 
     const isValid = areAllMonthsBetweenValid(

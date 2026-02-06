@@ -34,7 +34,7 @@ export function useRangeYearPickerState(props: UseRangeYearPickerProps) {
 
   const isInvalid = computed(() => {
     if (isStartInvalid.value || isEndInvalid.value)
-      return false
+      return true
     if (props.start.value && props.end.value && props.end.value.year < props.start.value.year)
       return true
     return false
@@ -87,9 +87,6 @@ export function useRangeYearPickerState(props: UseRangeYearPickerProps) {
       }
     }
 
-    if (!props.start.value || props.end.value || isSameYear(props.start.value, date))
-      return false
-
     return false
   }
 
@@ -108,11 +105,20 @@ export function useRangeYearPickerState(props: UseRangeYearPickerProps) {
     }
 
     if (props.maximumYears?.value && !props.end.value) {
-      const cappedEnd = isStartBeforeFocused
-        ? start.add({ years: props.maximumYears.value - 1 })
-        : start.subtract({ years: props.maximumYears.value - 1 })
+      const maximumYears = props.maximumYears.value
+      const anchor = props.start.value
+      const focused = props.focusedValue.value
 
-      return { start, end: cappedEnd }
+      if (focused.year >= anchor.year) {
+        const maxEnd = anchor.add({ years: maximumYears - 1 })
+        const cappedEnd = focused.year > maxEnd.year ? maxEnd : focused
+        return { start: anchor, end: cappedEnd }
+      }
+      else {
+        const minStart = anchor.subtract({ years: maximumYears - 1 })
+        const cappedStart = focused.year < minStart.year ? minStart : focused
+        return { start: cappedStart, end: anchor }
+      }
     }
 
     const isValid = areAllYearsBetweenValid(
