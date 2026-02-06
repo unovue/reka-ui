@@ -36,7 +36,7 @@ export type UseCalendarStateProps = {
   date: Ref<TemporalDate | TemporalDate[] | undefined>
 }
 
-function toDate(dateValue: TemporalDate, timeZone: string = 'UTC') {
+function toDate(dateValue: TemporalDate, timeZone: string = Temporal.Now.timeZoneId()) {
   if (isZonedDateTime(dateValue)) {
     return new Date(dateValue.toInstant().epochMilliseconds)
   }
@@ -148,11 +148,12 @@ export function useCalendar(props: UseCalendarProps) {
   const formatter = useDateFormatter(props.locale.value)
 
   const headingFormatOptions = computed(() => {
+    const calendarId = props.placeholder.value.calendarId
     const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendarId,
+      calendar: calendarId === 'iso8601' ? 'gregory' : calendarId,
     }
 
-    if (props.placeholder.value.calendarId === 'gregory' && props.placeholder.value.era === 'BC')
+    if (calendarId === 'gregory' && props.placeholder.value.era === 'BC')
       options.era = 'short'
 
     return options
