@@ -17,12 +17,11 @@ import {
   normalizeHourCycle,
   syncTimeSegmentValues,
 } from '@/shared/date'
-import { isZonedDateTime } from '@/temporal/comparators'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
-  modelValue: Ref<TimeValue | undefined>
-  placeholder: Ref<TimeValue>
+  modelValue: Ref<Temporal.PlainDateTime | undefined>
+  placeholder: Ref<Temporal.PlainDateTime>
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
@@ -246,7 +245,7 @@ const segmentValues = ref<SegmentValueObj>(modelValue.value
 
 const dateRefForContent = computed<TemporalDate>(() => {
   const original = modelValue.value ?? placeholder.value
-  if (isZonedDateTime(original)) {
+  if ('timeZoneId' in original) {
     return convertedPlaceholder.value.toZonedDateTime(original.timeZoneId)
   }
   return convertedPlaceholder.value
@@ -358,21 +357,8 @@ function setFocusedElement(el: HTMLElement) {
 
 provideTimeFieldRootContext({
   locale,
-  modelValue: computed({
-    get: () => modelValue.value,
-    set: (value) => {
-      if (value && 'hour' in value) {
-        convertedModelValue.value = convertValue(value)
-      }
-      else {
-        modelValue.value = value
-      }
-    },
-  }),
-  placeholder: computed({
-    get: () => placeholder.value,
-    set: value => placeholder.value = value,
-  }),
+  modelValue: convertedModelValue,
+  placeholder: convertedPlaceholder,
   disabled,
   formatter,
   hourCycle: props.hourCycle,
