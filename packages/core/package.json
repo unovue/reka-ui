@@ -100,7 +100,7 @@
     "@tsconfig/node24": "^24.0.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.0.13",
-    "@vitejs/plugin-vue": "^6.0.3",
+    "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/coverage-istanbul": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",
