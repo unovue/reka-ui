@@ -154,7 +154,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   pagedNavigation: false,
   preventDeselect: false,
   weekdayFormat: 'narrow',
-  fixedWeeks: true,
+  fixedWeeks: false,
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
