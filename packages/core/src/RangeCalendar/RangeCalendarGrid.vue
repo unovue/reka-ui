@@ -26,6 +26,7 @@ const readonly = computed(() => rootContext.readonly.value ? true : undefined)
     :aria-disabled="disabled"
     :data-readonly="readonly && ''"
     :data-disabled="disabled && ''"
+    @mouseleave="rootContext.focusedValue.value = undefined"
   >
     <slot />
   </Primitive>
