@@ -28,14 +28,13 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
+if (autocompleteContext.modelValue.value) {
+  modelValue.value = autocompleteContext.modelValue.value
+}
+
 onMounted(() => {
   if (currentElement.value)
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
-
-  // Initialize input from root's modelValue
-  if (autocompleteContext.modelValue.value) {
-    modelValue.value = autocompleteContext.modelValue.value
-  }
 })
 
 function handleKeyDown(ev: KeyboardEvent) {
