@@ -109,6 +109,39 @@ describe('year range picker', () => {
     expect(getSelectedYears(picker)).toHaveLength(3)
   })
 
+  it('keeps controlled end when parent preserves it after start edit', async () => {
+    const preservedEnd = new CalendarDate(1986, 1, 1)
+    const controlledRange = {
+      start: new CalendarDate(1980, 1, 1),
+      end: preservedEnd,
+    }
+
+    const { getByTestId, picker, user, rerender } = setup({
+      pickerProps: { modelValue: controlledRange },
+      emits: {
+        'onUpdate:modelValue': (data) => {
+          rerender({
+            pickerProps: {
+              modelValue: {
+                start: data.start ?? controlledRange.start,
+                end: data.end ?? preservedEnd,
+              },
+            },
+          })
+        },
+      },
+    })
+
+    const year1983 = getByTestId('year-1983')
+    await user.click(year1983)
+
+    expect(getByTestId('year-1983')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('year-1986')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('year-1984')).toHaveAttribute('data-selected')
+    expect(getByTestId('year-1985')).toHaveAttribute('data-selected')
+    expect(getSelectedYears(picker)).toHaveLength(4)
+  })
+
   it('allows same year selection', async () => {
     const { getByTestId, picker, user, rerender } = setup({
       pickerProps: { placeholder: calendarDateRange.start },

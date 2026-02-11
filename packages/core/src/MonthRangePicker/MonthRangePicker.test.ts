@@ -109,6 +109,39 @@ describe('month range picker', () => {
     expect(getSelectedMonths(picker)).toHaveLength(3)
   })
 
+  it('keeps controlled end when parent preserves it after start edit', async () => {
+    const preservedEnd = new CalendarDate(1980, 8, 1)
+    const controlledRange = {
+      start: new CalendarDate(1980, 1, 1),
+      end: preservedEnd,
+    }
+
+    const { getByTestId, picker, user, rerender } = setup({
+      pickerProps: { modelValue: controlledRange },
+      emits: {
+        'onUpdate:modelValue': (data) => {
+          rerender({
+            pickerProps: {
+              modelValue: {
+                start: data.start ?? controlledRange.start,
+                end: data.end ?? preservedEnd,
+              },
+            },
+          })
+        },
+      },
+    })
+
+    const aprilMonth = getByTestId('month-4')
+    await user.click(aprilMonth)
+
+    expect(getByTestId('month-4')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('month-8')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('month-5')).toHaveAttribute('data-selected')
+    expect(getByTestId('month-7')).toHaveAttribute('data-selected')
+    expect(getSelectedMonths(picker)).toHaveLength(5)
+  })
+
   it('allows same month selection', async () => {
     const { getByTestId, picker, user, rerender } = setup({
       pickerProps: { placeholder: calendarDateRange.start },

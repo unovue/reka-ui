@@ -172,6 +172,39 @@ describe('rangeCalendar', () => {
     expect(calendar.querySelector('[data-selection-end]')).not.toBeInTheDocument()
   })
 
+  it('keeps controlled end when parent preserves it after start edit', async () => {
+    const preservedEnd = new CalendarDate(1980, 1, 28)
+    const controlledRange = {
+      start: new CalendarDate(1980, 1, 20),
+      end: preservedEnd,
+    }
+
+    const { getByTestId, calendar, user, rerender } = setup({
+      calendarProps: { modelValue: controlledRange },
+      emits: {
+        'onUpdate:modelValue': (data: any) => {
+          rerender({
+            calendarProps: {
+              modelValue: {
+                start: data.start ?? controlledRange.start,
+                end: data.end ?? preservedEnd,
+              },
+            },
+          })
+        },
+      },
+    })
+
+    const twentyFourthDay = getByTestId('date-1-24')
+    await user.click(twentyFourthDay)
+
+    expect(getByTestId('date-1-24')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('date-1-28')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('date-1-25')).toHaveAttribute('data-selected')
+    expect(getByTestId('date-1-27')).toHaveAttribute('data-selected')
+    expect(getSelectedDays(calendar)).toHaveLength(5)
+  })
+
   it('resets range selection when pressing Escape', async () => {
     const { getByTestId, calendar, user, rerender } = setup({
       calendarProps: { modelValue: calendarDateRange },
