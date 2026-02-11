@@ -19,6 +19,25 @@ export const components = {
     'AlertDialogAction',
   ] as const,
 
+  autocomplete: [
+    'AutocompleteRoot',
+    'AutocompleteInput',
+    'AutocompleteAnchor',
+    'AutocompleteEmpty',
+    'AutocompleteTrigger',
+    'AutocompleteCancel',
+    'AutocompleteGroup',
+    'AutocompleteLabel',
+    'AutocompleteContent',
+    'AutocompleteViewport',
+    'AutocompleteVirtualizer',
+    'AutocompleteItem',
+    'AutocompleteItemIndicator',
+    'AutocompleteSeparator',
+    'AutocompleteArrow',
+    'AutocompletePortal',
+  ] as const,
+
   aspectRatio: [
     'AspectRatio',
   ] as const,

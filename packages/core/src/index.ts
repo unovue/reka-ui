@@ -1,6 +1,7 @@
 export * from './Accordion'
 export * from './AlertDialog'
 export * from './AspectRatio'
+export * from './Autocomplete'
 export * from './Avatar'
 export * from './Calendar'
 export * from './Checkbox'
