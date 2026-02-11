@@ -162,6 +162,15 @@ async function handleMountAutoFocus(event: Event) {
   })
 }
 
+function isTextInputElement(element: HTMLElement): boolean {
+  if (element instanceof HTMLTextAreaElement)
+    return true
+  if (element instanceof HTMLInputElement) {
+    return !['button', 'checkbox', 'radio', 'submit', 'reset', 'image', 'file', 'hidden', 'range', 'color'].includes(element.type)
+  }
+  return element.isContentEditable
+}
+
 function handleKeyDown(event: KeyboardEvent) {
   if (event.defaultPrevented)
     return
@@ -171,6 +180,20 @@ function handleKeyDown(event: KeyboardEvent) {
     = target.closest('[data-reka-menu-content]') === event.currentTarget
   const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
   const isCharacterKey = event.key.length === 1
+
+  const isFromTextInput = isTextInputElement(target)
+
+  if (isFromTextInput && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
+    event.preventDefault()
+    const items = Array.from(
+      contentElement.value!.querySelectorAll<HTMLElement>('[data-reka-collection-item]:not([data-disabled])'),
+    )
+    if (items.length) {
+      const el = event.key === 'ArrowDown' ? items[0] : items[items.length - 1]
+      el?.focus()
+    }
+    return
+  }
 
   const el = useArrowNavigation(
     event,
@@ -197,7 +220,7 @@ function handleKeyDown(event: KeyboardEvent) {
     // menus should not be navigated using tab key so we prevent it
     if (event.key === 'Tab')
       event.preventDefault()
-    if (!isModifierKey && isCharacterKey)
+    if (!isModifierKey && isCharacterKey && !isFromTextInput)
       handleTypeaheadSearch(event.key, collectionItems)
   }
 
