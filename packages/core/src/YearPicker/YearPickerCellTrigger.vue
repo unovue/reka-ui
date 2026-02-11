@@ -175,7 +175,11 @@ function handleArrowKey(e: KeyboardEvent) {
       if (candidateYear && !candidateYear.hasAttribute('data-disabled')) {
         rootContext.onPlaceholderChange(candidateYearValue)
         candidateYear?.focus()
+        return
       }
+
+      if (candidateYear && candidateYear.hasAttribute('data-disabled'))
+        shiftFocus(candidateYearValue, direction > 0 ? 1 : -1, 1)
     })
   }
 }

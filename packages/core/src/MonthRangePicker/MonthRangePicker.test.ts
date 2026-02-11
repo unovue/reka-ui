@@ -15,6 +15,11 @@ const calendarDateRange = {
   end: new CalendarDate(1980, 3, 25),
 }
 
+const updatedCalendarDateRange = {
+  start: new CalendarDate(1980, 4, 5),
+  end: new CalendarDate(1980, 6, 5),
+}
+
 const calendarDateTimeRange = {
   start: new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0),
   end: new CalendarDateTime(1980, 3, 25, 12, 30, 0, 0),
@@ -198,6 +203,32 @@ describe('month range picker', () => {
 
     expect(startValue).toHaveTextContent('Jan')
     expect(endValue).toHaveTextContent('Mar')
+  })
+
+  it('resets to latest externally controlled complete range when pressing Escape', async () => {
+    const { getByTestId, picker, user, rerender } = setup({
+      pickerProps: { modelValue: calendarDateRange },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data } }) },
+    })
+
+    await rerender({ pickerProps: { modelValue: updatedCalendarDateRange } })
+
+    let startValue = picker.querySelector('[data-selection-start]')
+    let endValue = picker.querySelector('[data-selection-end]')
+
+    expect(startValue).toHaveTextContent('Apr')
+    expect(endValue).toHaveTextContent('Jun')
+
+    await user.click(getByTestId('month-2'))
+    expect(getSelectedMonths(picker)).toHaveLength(1)
+
+    await user.keyboard(kbd.ESCAPE)
+
+    startValue = picker.querySelector('[data-selection-start]')
+    endValue = picker.querySelector('[data-selection-end]')
+
+    expect(startValue).toHaveTextContent('Apr')
+    expect(endValue).toHaveTextContent('Jun')
   })
 
   it('navigates years forward using the next button', async () => {

@@ -257,6 +257,13 @@ watch(modelValue, (_modelValue) => {
   if (!isEndSynced) {
     endValue.value = next.end?.copy?.()
   }
+
+  if (next.start && next.end) {
+    validModelValue.value = {
+      start: next.start.copy(),
+      end: next.end.copy(),
+    }
+  }
 })
 
 watch(startValue, (_startValue) => {
