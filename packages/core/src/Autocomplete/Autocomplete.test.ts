@@ -132,6 +132,34 @@ describe('given default Autocomplete', () => {
         expect(input.element.value).toBe('Custom text')
       })
     })
+
+    describe('data-empty attribute on content', () => {
+      it('should not have data-empty when items match', () => {
+        const content = wrapper.find('[role=listbox]')
+        expect(content.attributes('data-empty')).toBeUndefined()
+      })
+
+      it('should have data-empty when no items match the filter', async () => {
+        input.element.value = 'zzzzz'
+        await input.trigger('input')
+        await nextTick()
+        const content = wrapper.find('[role=listbox]')
+        expect(content.attributes('data-empty')).toBeDefined()
+      })
+
+      it('should remove data-empty when items match again', async () => {
+        input.element.value = 'zzzzz'
+        await input.trigger('input')
+        await nextTick()
+        const content = wrapper.find('[role=listbox]')
+        expect(content.attributes('data-empty')).toBeDefined()
+
+        input.element.value = 'App'
+        await input.trigger('input')
+        await nextTick()
+        expect(content.attributes('data-empty')).toBeUndefined()
+      })
+    })
   })
 })
 

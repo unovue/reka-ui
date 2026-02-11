@@ -187,6 +187,10 @@ The component that pops out when the autocomplete is open.
       attribute: '[data-align]',
       values: ['start', 'end', 'center'],
     },
+    {
+      attribute: '[data-empty]',
+      values: 'Present when there are no items matching the filter',
+    },
   ]"
 />
 
@@ -302,6 +306,29 @@ const fruits = ['Apple', 'Banana', 'Orange', 'Grapes', 'Pineapple']
     <AutocompleteInput placeholder="Type a fruit..." />
     <AutocompletePortal>
       <AutocompleteContent>
+        <AutocompleteItem
+          v-for="fruit in fruits"
+          :key="fruit"
+          :value="fruit"
+        >
+          {{ fruit }}
+        </AutocompleteItem>
+      </AutocompleteContent>
+    </AutocompletePortal>
+  </AutocompleteRoot>
+</template>
+```
+
+### Hide menu when empty
+
+Use the `hideWhenEmpty` prop on `AutocompleteContent` to hide the menu when no items match the filter.
+
+```vue
+<template>
+  <AutocompleteRoot v-model="searchText">
+    <AutocompleteInput placeholder="Type a fruit..." />
+    <AutocompletePortal>
+      <AutocompleteContent hide-when-empty>
         <AutocompleteItem
           v-for="fruit in fruits"
           :key="fruit"

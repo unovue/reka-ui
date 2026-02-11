@@ -170,6 +170,10 @@ The component that pops out when the combobox is open.
       attribute: '[data-align]',
       values: ['start', 'end', 'center'],
     },
+    {
+      attribute: '[data-empty]',
+      values: 'Present when there are no items matching the filter',
+    },
   ]"
 />
 
