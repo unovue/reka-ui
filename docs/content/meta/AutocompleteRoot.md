@@ -53,7 +53,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the Autocomplete (the input text). Can be binded with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the Autocomplete (the input text). Can be bound with <code>v-model</code>.</p>\n',
     'type': 'string',
     'required': false
   },
@@ -65,7 +65,7 @@
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the Autocomplete. Can be binded with <code>v-model:open</code>.</p>\n',
+    'description': '<p>The controlled open state of the Autocomplete. Can be bound with <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },

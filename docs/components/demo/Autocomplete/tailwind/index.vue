@@ -37,7 +37,7 @@ const options = [
     <AutocompleteAnchor class="min-w-[160px] inline-flex items-center justify-between rounded-lg border px-[15px] text-xs leading-none h-[35px] gap-[5px] bg-white text-grass11 hover:bg-stone-50 shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-grass9 outline-none">
       <AutocompleteInput
         class="!bg-transparent outline-none text-grass11 h-full selection:bg-grass5 placeholder-stone-400"
-        placeholder="Type or select a fruit..."
+        placeholder="Type or select an option..."
       />
       <AutocompleteTrigger>
         <Icon

@@ -163,7 +163,7 @@ describe('given default Autocomplete', () => {
   })
 })
 
-describe('given autocomplete in a form', async () => {
+describe('given autocomplete in a form', () => {
   let wrapper: VueWrapper<InstanceType<any>>
   let input: DOMWrapper<HTMLInputElement>
 

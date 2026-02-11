@@ -7,11 +7,11 @@ import { usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
-  /** The controlled value of the Autocomplete (the input text). Can be binded with `v-model`. */
+  /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
   modelValue?: string
   /** The value of the autocomplete when initially rendered. Use when you do not need to control the state. */
   defaultValue?: string
-  /** The controlled open state of the Autocomplete. Can be binded with `v-model:open`. */
+  /** The controlled open state of the Autocomplete. Can be bound with `v-model:open`. */
   open?: boolean
   /** The open state of the autocomplete when it is initially rendered. Use when you do not need to control its open state. */
   defaultOpen?: boolean

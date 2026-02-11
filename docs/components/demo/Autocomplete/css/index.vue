@@ -38,7 +38,7 @@ const options = [
     <AutocompleteAnchor class="AutocompleteAnchor">
       <AutocompleteInput
         class="AutocompleteInput"
-        placeholder="Type or select a fruit..."
+        placeholder="Type or select an option..."
       />
       <AutocompleteTrigger>
         <Icon

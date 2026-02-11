@@ -256,7 +256,7 @@ Renders when the item is selected. You can style this element directly, or you c
 
 ### Group
 
-Used to group multiple items. use in conjunction with `AutocompleteLabel` to ensure good accessibility via automatic labelling.
+Used to group multiple items. Use in conjunction with `AutocompleteLabel` to ensure good accessibility via automatic labelling.
 
 <!-- @include: @/meta/ComboboxGroup.md -->
 
