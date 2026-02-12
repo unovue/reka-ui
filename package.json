@@ -20,6 +20,7 @@
     "docs:contributors": "pnpm --filter docs docs:contributors",
     "docs:sponsors": "pnpm --filter docs docs:sponsors",
     "prepare": "pnpm simple-git-hooks",
+    "test:run": "pnpm --filter reka-ui test:run",
     "test": "pnpm --filter reka-ui test",
     "test-update": "pnpm --filter reka-ui test-update",
     "lint": "eslint .",
