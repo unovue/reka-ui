@@ -3,7 +3,7 @@ import type { AutocompleteRootEmits, AutocompleteRootProps } from '..'
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
 import { useForwardPropsEmits } from '@/shared'
-import { AutocompleteAnchor, AutocompleteContent, AutocompleteEmpty, AutocompleteGroup, AutocompleteInput, AutocompleteItem, AutocompleteItemIndicator, AutocompleteLabel, AutocompleteRoot, AutocompleteSeparator, AutocompleteTrigger, AutocompleteViewport } from '..'
+import { AutocompleteAnchor, AutocompleteContent, AutocompleteEmpty, AutocompleteGroup, AutocompleteInput, AutocompleteItem, AutocompleteLabel, AutocompleteRoot, AutocompleteSeparator, AutocompleteTrigger, AutocompleteViewport } from '..'
 
 const props = defineProps<AutocompleteRootProps>()
 const emits = defineEmits<AutocompleteRootEmits>()
@@ -53,11 +53,6 @@ const open = ref(props.open)
             class="text-[13px] leading-none text-grass11 rounded-[3px] flex items-center h-[25px] pr-[35px] pl-[25px] relative select-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:outline-none data-[highlighted]:bg-grass9 data-[highlighted]:text-grass1"
             :value="option"
           >
-            <AutocompleteItemIndicator
-              class="absolute left-0 w-[25px] inline-flex items-center justify-center"
-            >
-              <Icon icon="radix-icons:check" />
-            </AutocompleteItemIndicator>
             <span>
               {{ option }}
             </span>
@@ -77,11 +72,6 @@ const open = ref(props.open)
             class="text-[13px] leading-none text-grass11 rounded-[3px] flex items-center h-[25px] pr-[35px] pl-[25px] relative select-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:outline-none data-[highlighted]:bg-grass9 data-[highlighted]:text-grass1"
             :value="option"
           >
-            <AutocompleteItemIndicator
-              class="absolute left-0 w-[25px] inline-flex items-center justify-center"
-            >
-              <Icon icon="radix-icons:check" />
-            </AutocompleteItemIndicator>
             <span>
               {{ option }}
             </span>

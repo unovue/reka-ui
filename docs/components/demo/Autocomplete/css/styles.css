@@ -103,12 +103,3 @@ button, input {
   background-color: var(--grass-6);
   margin: 5px;
 }
-
-.AutocompleteItemIndicator {
-  position: absolute;
-  left: 0;
-  width: 25px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}

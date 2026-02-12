@@ -51,7 +51,6 @@ import {
   AutocompleteGroup,
   AutocompleteInput,
   AutocompleteItem,
-  AutocompleteItemIndicator,
   AutocompleteLabel,
   AutocompletePortal,
   AutocompleteRoot,
@@ -72,15 +71,11 @@ import {
     <AutocompletePortal>
       <AutocompleteContent>
         <AutocompleteViewport>
-          <AutocompleteItem>
-            <AutocompleteItemIndicator />
-          </AutocompleteItem>
+          <AutocompleteItem />
 
           <AutocompleteGroup>
             <AutocompleteLabel />
-            <AutocompleteItem>
-              <AutocompleteItemIndicator />
-            </AutocompleteItem>
+            <AutocompleteItem />
           </AutocompleteGroup>
           <AutocompleteSeparator />
         </AutocompleteViewport>
@@ -247,12 +242,6 @@ The component that contains the autocomplete items. When selected, the item's st
     },
   ]"
 />
-
-### ItemIndicator
-
-Renders when the item is selected. You can style this element directly, or you can use it as a wrapper to put an icon into, or both.
-
-<!-- @include: @/meta/ComboboxItemIndicator.md -->
 
 ### Group
 

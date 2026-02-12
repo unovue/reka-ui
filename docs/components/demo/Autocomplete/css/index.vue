@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { AutocompleteAnchor, AutocompleteContent, AutocompleteEmpty, AutocompleteGroup, AutocompleteInput, AutocompleteItem, AutocompleteItemIndicator, AutocompleteLabel, AutocompleteRoot, AutocompleteSeparator, AutocompleteTrigger, AutocompleteViewport } from 'reka-ui'
+import { AutocompleteAnchor, AutocompleteContent, AutocompleteEmpty, AutocompleteGroup, AutocompleteInput, AutocompleteItem, AutocompleteLabel, AutocompleteRoot, AutocompleteSeparator, AutocompleteTrigger, AutocompleteViewport } from 'reka-ui'
 import { ref } from 'vue'
 import './styles.css'
 
@@ -72,11 +72,6 @@ const options = [
               :value="option.name"
               class="AutocompleteItem"
             >
-              <AutocompleteItemIndicator
-                class="AutocompleteItemIndicator"
-              >
-                <Icon icon="radix-icons:check" />
-              </AutocompleteItemIndicator>
               <span>
                 {{ option.name }}
               </span>
