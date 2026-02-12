@@ -48,6 +48,7 @@ import {
   AutocompleteArrow,
   AutocompleteCancel,
   AutocompleteContent,
+  AutocompleteEmpty,
   AutocompleteGroup,
   AutocompleteInput,
   AutocompleteItem,
@@ -71,13 +72,16 @@ import {
     <AutocompletePortal>
       <AutocompleteContent>
         <AutocompleteViewport>
+          <AutocompleteEmpty />
+
           <AutocompleteItem />
+
+          <AutocompleteSeparator />
 
           <AutocompleteGroup>
             <AutocompleteLabel />
             <AutocompleteItem />
           </AutocompleteGroup>
-          <AutocompleteSeparator />
         </AutocompleteViewport>
 
         <AutocompleteArrow />

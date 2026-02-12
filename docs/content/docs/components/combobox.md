@@ -45,6 +45,7 @@ import {
   ComboboxArrow,
   ComboboxCancel,
   ComboboxContent,
+  ComboboxEmpty,
   ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
@@ -69,9 +70,13 @@ import {
     <ComboboxPortal>
       <ComboboxContent>
         <ComboboxViewport>
+          <ComboboxEmpty />
+
           <ComboboxItem>
             <ComboboxItemIndicator />
           </ComboboxItem>
+
+          <ComboboxSeparator />
 
           <ComboboxGroup>
             <ComboboxLabel />
@@ -79,7 +84,6 @@ import {
               <ComboboxItemIndicator />
             </ComboboxItem>
           </ComboboxGroup>
-          <ComboboxSeparator />
         </ComboboxViewport>
 
         <ComboboxArrow />
