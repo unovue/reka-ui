@@ -2,7 +2,7 @@ import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -39,6 +39,10 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 function getSelectedDays(calendar: HTMLElement) {
   return Array.from(calendar.querySelectorAll<HTMLElement>('[data-selected]'))
+}
+
+function getHighlightedDays(calendar: HTMLElement) {
+  return Array.from(calendar.querySelectorAll<HTMLElement>('[data-highlighted]'))
 }
 
 function setup(props: { calendarProps?: RangeCalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
@@ -95,6 +99,20 @@ describe('rangeCalendar', () => {
 
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('January 1980')
+  })
+
+  it('does not crash when modelValue is null', async () => {
+    const { calendar, rerender } = setup({ calendarProps: { modelValue: null } })
+
+    expect(getSelectedDays(calendar)).toHaveLength(0)
+
+    await rerender({
+      calendarProps: {
+        modelValue: zonedDateTimeRange,
+      },
+    })
+
+    expect(getSelectedDays(calendar)).toHaveLength(6)
   })
 
   it('resets range on select when a range is already selected', async () => {
@@ -158,6 +176,39 @@ describe('rangeCalendar', () => {
     expect(calendar.querySelector('[data-selection-end]')).not.toBeInTheDocument()
   })
 
+  it('keeps controlled end when parent preserves it after start edit', async () => {
+    const preservedEnd = new CalendarDate(1980, 1, 28)
+    const controlledRange = {
+      start: new CalendarDate(1980, 1, 20),
+      end: preservedEnd,
+    }
+
+    const { getByTestId, calendar, user, rerender } = setup({
+      calendarProps: { modelValue: controlledRange },
+      emits: {
+        'onUpdate:modelValue': (data: any) => {
+          rerender({
+            calendarProps: {
+              modelValue: {
+                start: data.start ?? controlledRange.start,
+                end: data.end ?? preservedEnd,
+              },
+            },
+          })
+        },
+      },
+    })
+
+    const twentyFourthDay = getByTestId('date-1-24')
+    await user.click(twentyFourthDay)
+
+    expect(getByTestId('date-1-24')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('date-1-28')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('date-1-25')).toHaveAttribute('data-selected')
+    expect(getByTestId('date-1-27')).toHaveAttribute('data-selected')
+    expect(getSelectedDays(calendar)).toHaveLength(5)
+  })
+
   it('resets range selection when pressing Escape', async () => {
     const { getByTestId, calendar, user, rerender } = setup({
       calendarProps: { modelValue: calendarDateRange },
@@ -190,6 +241,46 @@ describe('rangeCalendar', () => {
 
     expect(startValue).toHaveTextContent(String(calendarDateRange.start.day))
     expect(endValue).toHaveTextContent(String(calendarDateRange.end.day))
+  })
+
+  it('caps highlighted range to maximumDays (forward)', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 20),
+        maximumDays: 5,
+      },
+    })
+
+    await user.click(getByTestId('date-1-20'))
+    await fireEvent.mouseEnter(getByTestId('date-1-24'))
+
+    await waitFor(() => {
+      expect(getHighlightedDays(calendar)).toHaveLength(5)
+    })
+
+    expect(getByTestId('date-1-20')).toHaveAttribute('data-highlighted-start')
+    expect(getByTestId('date-1-24')).toHaveAttribute('data-highlighted-end')
+    expect(getByTestId('date-1-25')).not.toHaveAttribute('data-highlighted')
+  })
+
+  it('caps highlighted range to maximumDays (backward)', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 20),
+        maximumDays: 5,
+      },
+    })
+
+    await user.click(getByTestId('date-1-20'))
+    await fireEvent.mouseEnter(getByTestId('date-1-16'))
+
+    await waitFor(() => {
+      expect(getHighlightedDays(calendar)).toHaveLength(5)
+    })
+
+    expect(getByTestId('date-1-16')).toHaveAttribute('data-highlighted-start')
+    expect(getByTestId('date-1-20')).toHaveAttribute('data-highlighted-end')
+    expect(getByTestId('date-1-15')).not.toHaveAttribute('data-highlighted')
   })
 
   it('navigates the months forward using the next button', async () => {

@@ -226,9 +226,12 @@ const isEditing = ref(false)
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? { start: undefined, end: undefined },
   passive: (props.modelValue === undefined) as false,
-}) as Ref<DateRange>
+}) as Ref<DateRange | null>
 
-const validModelValue = ref(modelValue.value) as Ref<DateRange>
+const normalizeRange = (value?: DateRange | null): DateRange => value ?? { start: undefined, end: undefined }
+const normalizedModelValue = computed(() => normalizeRange(modelValue.value))
+
+const validModelValue = ref(normalizeRange(modelValue.value)) as Ref<DateRange>
 
 watch(validModelValue, (value) => {
   emits('update:validModelValue', value)
@@ -236,14 +239,14 @@ watch(validModelValue, (value) => {
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
-  defaultValue: modelValue.value.start,
+  defaultValue: normalizeRange(modelValue.value).start,
   locale: props.locale,
 })
 
-const startValue = ref(modelValue.value.start) as Ref<
+const startValue = ref(normalizeRange(modelValue.value).start) as Ref<
   DateValue | undefined
 >
-const endValue = ref(modelValue.value.end) as Ref<DateValue | undefined>
+const endValue = ref(normalizeRange(modelValue.value).end) as Ref<DateValue | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
@@ -307,23 +310,21 @@ const {
   maximumDays,
 })
 
-watch(modelValue, (_modelValue, _prevValue) => {
-  if (
-    (!_prevValue?.start && _modelValue?.start)
-    || !_modelValue
-    || !_modelValue.start
-    || (startValue.value && !isEqualDay(_modelValue.start, startValue.value))
-  ) {
-    startValue.value = _modelValue?.start?.copy?.()
+watch(modelValue, (_modelValue) => {
+  const next = normalizeRange(_modelValue)
+
+  const isStartSynced = (!next.start && !startValue.value)
+    || (!!next.start && !!startValue.value && isEqualDay(next.start, startValue.value))
+
+  if (!isStartSynced) {
+    startValue.value = next.start?.copy?.()
   }
 
-  if (
-    (!_prevValue?.end && _modelValue.end)
-    || !_modelValue
-    || !_modelValue.end
-    || (endValue.value && !isEqualDay(_modelValue.end, endValue.value))
-  ) {
-    endValue.value = _modelValue?.end?.copy?.()
+  const isEndSynced = (!next.end && !endValue.value)
+    || (!!next.end && !!endValue.value && isEqualDay(next.end, endValue.value))
+
+  if (!isEndSynced) {
+    endValue.value = next.end?.copy?.()
   }
 })
 
@@ -381,7 +382,7 @@ provideRangeCalendarRootContext({
   startValue,
   endValue,
   formatter,
-  modelValue,
+  modelValue: normalizedModelValue,
   placeholder,
   disabled,
   initialFocus,
@@ -469,7 +470,7 @@ onMounted(() => {
       :week-starts-on="weekStartsOn"
       :locale="locale"
       :fixed-weeks="fixedWeeks"
-      :model-value="modelValue"
+      :model-value="normalizedModelValue"
     />
   </Primitive>
 </template>
