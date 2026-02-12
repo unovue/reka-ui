@@ -7,7 +7,8 @@ const regionClass = 'bg-white'
 const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
 
 function alert(message: string) {
-  alert(message)
+  // eslint-disable-next-line no-alert -- window.alert is available in the browser
+  window.alert(message)
 }
 </script>
 
