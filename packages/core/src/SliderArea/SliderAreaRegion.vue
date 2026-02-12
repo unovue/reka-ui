@@ -17,11 +17,11 @@ const rootContext = injectSliderAreaRootContext()
 useForwardExpose()
 
 const percentagesX = computed(() => rootContext.currentModelValue.value.map(v =>
-  convertValueToPercentage(v.x, rootContext.minX.value, rootContext.maxX.value),
+  convertValueToPercentage(v[0], rootContext.minX.value, rootContext.maxX.value),
 ))
 
 const percentagesY = computed(() => rootContext.currentModelValue.value.map(v =>
-  convertValueToPercentage(v.y, rootContext.minY.value, rootContext.maxY.value),
+  convertValueToPercentage(v[1], rootContext.minY.value, rootContext.maxY.value),
 ))
 
 const regionBounds = computed(() => {

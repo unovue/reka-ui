@@ -27,8 +27,8 @@ const { forwardRef, currentElement: thumbElement } = useForwardExpose()
 const { CollectionItem } = useCollection()
 
 const value = computed(() => rootContext.modelValue?.value?.[props.index])
-const percentX = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value.x, rootContext.minX.value ?? 0, rootContext.maxX.value ?? 100))
-const percentY = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value.y, rootContext.minY.value ?? 0, rootContext.maxY.value ?? 100))
+const percentX = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value[0], rootContext.minX.value ?? 0, rootContext.maxX.value ?? 100))
+const percentY = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value[1], rootContext.minY.value ?? 0, rootContext.maxY.value ?? 100))
 const label = computed(() => getLabel(props.index, rootContext.modelValue?.value?.length ?? 0))
 
 const isMounted = useMounted()
@@ -51,8 +51,8 @@ onUnmounted(() => {
       :aria-label="($attrs['aria-label'] as string) || label"
       :data-disabled="rootContext.disabled.value ? '' : undefined"
       aria-roledescription="2D slider"
-      :aria-valuenow="value ? `${value.x},${value.y}` : undefined"
-      :aria-valuetext="value ? `X: ${value.x}, Y: ${value.y}` : undefined"
+      :aria-valuenow="value ? `${value[0]},${value[1]}` : undefined"
+      :aria-valuetext="value ? `X: ${value[0]}, Y: ${value[1]}` : undefined"
       :as-child="asChild"
       :as="as"
       :style="{

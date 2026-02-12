@@ -19,7 +19,7 @@ function alert(message: string) {
     <Variant title="Extreme">
       <SliderAreaRoot
         :class="rootClass"
-        :default-value="[{ x: 0, y: 0 }, { x: 10000, y: 10000 }]"
+        :default-value="[[0, 0], [10000, 10000]]"
         :step-x="500"
         :step-y="500"
         :max-x="10000"
@@ -40,7 +40,7 @@ function alert(message: string) {
         :max-x="100"
         :min-y="-100"
         :max-y="100"
-        :default-value="[{ x: 0, y: 0 }]"
+        :default-value="[[0, 0]]"
       >
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
@@ -52,7 +52,7 @@ function alert(message: string) {
     <Variant title="Multiple thumbs">
       <SliderAreaRoot
         :class="rootClass"
-        :default-value="[{ x: 10, y: 10 }, { x: 20, y: 80 }, { x: 80, y: 20 }, { x: 90, y: 90 }]"
+        :default-value="[[10, 10], [20, 80], [80, 20], [90, 90]]"
       >
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
@@ -71,7 +71,7 @@ function alert(message: string) {
         :max-x="100"
         :min-y="0"
         :max-y="100"
-        :default-value="[{ x: -9000, y: -9000 }]"
+        :default-value="[[-9000, -9000]]"
       >
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
@@ -87,7 +87,7 @@ function alert(message: string) {
         :max-x="100"
         :min-y="0"
         :max-y="100"
-        :default-value="[{ x: 9000, y: 9000 }]"
+        :default-value="[[9000, 9000]]"
       >
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
@@ -99,7 +99,7 @@ function alert(message: string) {
     <Variant title="Disabled">
       <SliderAreaRoot
         :class="rootClass"
-        :default-value="[{ x: 50, y: 50 }]"
+        :default-value="[[50, 50]]"
         disabled
       >
         <SliderAreaTrack
@@ -119,7 +119,7 @@ function alert(message: string) {
       <form @submit.prevent="alert('form submitted!')">
         <SliderAreaRoot
           :class="rootClass"
-          :default-value="[{ x: 0.5, y: 0.5 }]"
+          :default-value="[[0.5, 0.5]]"
           name="slider-area"
           :min-x="0"
           :max-x="1"
@@ -140,7 +140,7 @@ function alert(message: string) {
     <Variant title="Inverted X/Y">
       <SliderAreaRoot
         :class="rootClass"
-        :default-value="[{ x: 20, y: 30 }]"
+        :default-value="[[20, 30]]"
         invert-x
         invert-y
       >
@@ -154,7 +154,7 @@ function alert(message: string) {
     <Variant title="RTL">
       <SliderAreaRoot
         :class="rootClass"
-        :default-value="[{ x: 20, y: 30 }]"
+        :default-value="[[20, 30]]"
         dir="rtl"
       >
         <SliderAreaTrack :class="trackClass">

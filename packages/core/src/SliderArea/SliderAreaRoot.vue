@@ -78,7 +78,7 @@ const props = withDefaults(defineProps<SliderAreaRootProps>(), {
   stepX: 1,
   stepY: 1,
   disabled: false,
-  defaultValue: () => [{ x: 0, y: 0 }],
+  defaultValue: () => [[0, 0]] as SliderAreaPoint[],
   invertX: false,
   invertY: false,
   as: 'span',
@@ -130,10 +130,7 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): Sl
   const posX = event.clientX - rect.left
   const posY = event.clientY - rect.top
 
-  return {
-    x: scaleX(posX),
-    y: scaleY(posY),
-  }
+  return [scaleX(posX), scaleY(posY)]
 }
 
 function handleSlideStart(event: PointerEvent) {
@@ -151,7 +148,7 @@ function handleSlideEnd() {
   rectRef.value = undefined
   const prevValue = valuesBeforeSlideStartRef.value[valueIndexToChangeRef.value]
   const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
-  const hasChanged = prevValue?.x !== nextValue?.x || prevValue?.y !== nextValue?.y
+  const hasChanged = prevValue?.[0] !== nextValue?.[0] || prevValue?.[1] !== nextValue?.[1]
   if (hasChanged)
     emits('valueCommit', toRaw(currentModelValue.value))
 }
@@ -160,14 +157,14 @@ function updateValues(point: SliderAreaPoint, atIndex: number, { commit } = { co
   const decimalCountX = getDecimalCount(stepX.value)
   const decimalCountY = getDecimalCount(stepY.value)
 
-  const snapX = roundValue(Math.round((point.x - minX.value) / stepX.value) * stepX.value + minX.value, decimalCountX)
-  const snapY = roundValue(Math.round((point.y - minY.value) / stepY.value) * stepY.value + minY.value, decimalCountY)
+  const snapX = roundValue(Math.round((point[0] - minX.value) / stepX.value) * stepX.value + minX.value, decimalCountX)
+  const snapY = roundValue(Math.round((point[1] - minY.value) / stepY.value) * stepY.value + minY.value, decimalCountY)
 
   const nextX = clamp(snapX, minX.value, maxX.value)
   const nextY = clamp(snapY, minY.value, maxY.value)
 
   const nextValues = [...currentModelValue.value]
-  nextValues[atIndex] = { x: nextX, y: nextY }
+  nextValues[atIndex] = [nextX, nextY]
 
   valueIndexToChangeRef.value = atIndex
 
@@ -219,7 +216,7 @@ function handleStepKeyDown(event: KeyboardEvent) {
   }
 
   if (dx !== 0 || dy !== 0) {
-    updateValues({ x: value.x + dx, y: value.y + dy }, atIndex, { commit: true })
+    updateValues([value[0] + dx, value[1] + dy], atIndex, { commit: true })
   }
 }
 
@@ -228,7 +225,7 @@ function handleHomeKeyDown() {
   const value = currentModelValue.value[atIndex]
   if (!value)
     return
-  updateValues({ x: minX.value, y: value.y }, atIndex, { commit: true })
+  updateValues([minX.value, value[1]], atIndex, { commit: true })
 }
 
 function handleEndKeyDown() {
@@ -236,7 +233,7 @@ function handleEndKeyDown() {
   const value = currentModelValue.value[atIndex]
   if (!value)
     return
-  updateValues({ x: maxX.value, y: value.y }, atIndex, { commit: true })
+  updateValues([maxX.value, value[1]], atIndex, { commit: true })
 }
 
 const thumbElements = ref<HTMLElement[]>([])

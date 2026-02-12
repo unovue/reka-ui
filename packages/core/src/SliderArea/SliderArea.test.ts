@@ -364,7 +364,7 @@ describe('given slider area in a form', async () => {
 
     it('should trigger submit once', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
-      expect(handleSubmit.mock.results[0].value).toStrictEqual({ 'slider-area': '[{"x":50,"y":50}]' })
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ 'slider-area': '[[50,50]]' })
     })
   })
 
@@ -378,7 +378,7 @@ describe('given slider area in a form', async () => {
 
     it('should trigger submit once', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ 'slider-area': '[{"x":51,"y":50}]' })
+      expect(handleSubmit.mock.results[1].value).toStrictEqual({ 'slider-area': '[[51,50]]' })
     })
   })
 })

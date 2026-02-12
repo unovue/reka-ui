@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { SliderAreaPoint } from '..'
 import { ref } from 'vue'
 import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaTrack } from '..'
 
-const sliderValue = ref([{ x: 50, y: 50 }])
+const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
 </script>
 
 <template>
@@ -25,7 +26,7 @@ const sliderValue = ref([{ x: 50, y: 50 }])
           />
         </SliderAreaRoot>
         <p class="mt-2 text-sm text-white">
-          X: {{ sliderValue[0]?.x }}, Y: {{ sliderValue[0]?.y }}
+          X: {{ sliderValue[0]?.[0] }}, Y: {{ sliderValue[0]?.[1] }}
         </p>
       </div>
     </Variant>

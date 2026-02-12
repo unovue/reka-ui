@@ -1,10 +1,7 @@
 import type { Ref } from 'vue'
 import { createContext } from '@/shared'
 
-export interface SliderAreaPoint {
-  x: number
-  y: number
-}
+export type SliderAreaPoint = [x: number, y: number]
 
 export interface SliderAreaRootContext {
   disabled: Ref<boolean>
@@ -35,8 +32,8 @@ export function getClosestThumbIndex(values: SliderAreaPoint[], point: SliderAre
   const rangeY = maxY - minY || 1
 
   const distances = values.map((value) => {
-    const dx = (value.x - point.x) / rangeX
-    const dy = (value.y - point.y) / rangeY
+    const dx = (value[0] - point[0]) / rangeX
+    const dy = (value[1] - point[1]) / rangeY
     return Math.sqrt(dx * dx + dy * dy)
   })
   const closestDistance = Math.min(...distances)
