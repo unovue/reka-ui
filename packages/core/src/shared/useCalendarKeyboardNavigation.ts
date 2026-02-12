@@ -1,9 +1,24 @@
 import type { DateValue, DayOfWeek } from '@internationalized/date'
+import type { WeekStartsOn } from '@/date'
 import { getDayOfWeek } from '@internationalized/date'
 import { nextTick } from 'vue'
 import { getDaysInMonth } from '@/date'
 
 export const MAX_FOCUS_RETRIES = 24
+
+const weekStartsOnToDayOfWeek: Record<WeekStartsOn, DayOfWeek> = {
+  0: 'sun',
+  1: 'mon',
+  2: 'tue',
+  3: 'wed',
+  4: 'thu',
+  5: 'fri',
+  6: 'sat',
+}
+
+function toDayOfWeek(weekStartsOn: WeekStartsOn): DayOfWeek {
+  return weekStartsOnToDayOfWeek[weekStartsOn]
+}
 
 interface FocusDateOptions {
   parentElement: HTMLElement
@@ -12,13 +27,14 @@ interface FocusDateOptions {
   minValue?: DateValue
   maxValue?: DateValue
   onPlaceholderChange: (date: DateValue) => void
+  allowOutsideView?: boolean
 }
 
 interface FocusWeekBoundaryOptions extends Omit<FocusDateOptions, 'target' | 'directionSign'> {
   baseDate: DateValue
   boundary: 'start' | 'end'
   locale: string
-  weekStartsOn: DayOfWeek
+  weekStartsOn: WeekStartsOn
 }
 
 interface FocusPaginationOptions extends Omit<FocusDateOptions, 'target' | 'directionSign'> {
@@ -36,7 +52,7 @@ export function focusWeekBoundary(options: FocusWeekBoundaryOptions) {
   const { baseDate, boundary, locale, weekStartsOn } = options
   const target = getWeekBoundaryDay(baseDate, locale, weekStartsOn, boundary)
   const directionSign = boundary === 'start' ? -1 : 1
-  focusDate({ ...options, target, directionSign })
+  focusDate({ ...options, target, directionSign, allowOutsideView: true })
 }
 
 export function focusPagination(options: FocusPaginationOptions) {
@@ -66,10 +82,10 @@ export function focusPagination(options: FocusPaginationOptions) {
 export function getWeekBoundaryDay(
   date: DateValue,
   locale: string,
-  weekStartsOn: DayOfWeek,
+  weekStartsOn: WeekStartsOn,
   boundary: 'start' | 'end',
 ): DateValue {
-  const dayOfWeek = getDayOfWeek(date, locale, weekStartsOn)
+  const dayOfWeek = getDayOfWeek(date, locale, toDayOfWeek(weekStartsOn))
   const offset = boundary === 'start' ? -dayOfWeek : 6 - dayOfWeek
   return date.add({ days: offset })
 }
@@ -110,7 +126,10 @@ function tryFocusDate(
   if (retries >= MAX_FOCUS_RETRIES)
     return
 
-  const candidateDay = parentElement.querySelector<HTMLElement>(`[data-value='${target.toString()}']:not([data-outside-view])`)
+  const candidateSelector = options.allowOutsideView
+    ? `[data-value='${target.toString()}']`
+    : `[data-value='${target.toString()}']:not([data-outside-view])`
+  const candidateDay = parentElement.querySelector<HTMLElement>(candidateSelector)
 
   if (!candidateDay) {
     nextTick(() => tryFocusDate(parentElement, target, directionSign, retries + 1, options))
@@ -129,6 +148,9 @@ function tryFocusDate(
     nextTick(() => tryFocusDate(parentElement, nextTarget, directionSign, retries + 1, options))
     return
   }
+
+  if (options.allowOutsideView && candidateDay.hasAttribute('data-outside-view') && !candidateDay.hasAttribute('tabindex'))
+    candidateDay.setAttribute('tabindex', '-1')
 
   candidateDay.focus()
 }
