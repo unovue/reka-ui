@@ -183,17 +183,8 @@ function handleKeyDown(event: KeyboardEvent) {
 
   const isFromTextInput = isTextInputElement(target)
 
-  if (isFromTextInput && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
-    event.preventDefault()
-    const items = Array.from(
-      contentElement.value!.querySelectorAll<HTMLElement>('[data-reka-collection-item]:not([data-disabled])'),
-    )
-    if (items.length) {
-      const el = event.key === 'ArrowDown' ? items[0] : items[items.length - 1]
-      el?.focus()
-    }
+  if (isFromTextInput && ['ArrowDown', 'ArrowUp'].includes(event.key))
     return
-  }
 
   const el = useArrowNavigation(
     event,
