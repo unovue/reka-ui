@@ -712,6 +712,247 @@ describe('calendar', async () => {
     await user.keyboard(kbd.ARROW_RIGHT)
     expect(getByTestId('date-1-1')).toHaveFocus()
   })
+
+  describe('keyboard shortcuts', () => {
+    it('home moves focus to week start', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 0,
+        },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.HOME)
+      expect(getByTestId('date-1-7')).toHaveFocus()
+    })
+
+    it('end moves focus to week end', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 0,
+        },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.END)
+      expect(getByTestId('date-1-13')).toHaveFocus()
+    })
+
+    it('home moves focus to previous-month day when week start is visible', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2021, 1, 1),
+          weekStartsOn: 0,
+        },
+      })
+
+      const monthEdgeDay = getByTestId('date-1-1')
+      monthEdgeDay.focus()
+      await user.keyboard(kbd.HOME)
+      expect(getByTestId('date-12-27')).toHaveFocus()
+    })
+
+    it('end moves focus to next-month day when week end is visible', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2021, 1, 31),
+          weekStartsOn: 0,
+        },
+      })
+
+      const monthEdgeDay = getByTestId('date-1-31')
+      monthEdgeDay.focus()
+      await user.keyboard(kbd.END)
+      expect(getByTestId('date-2-6')).toHaveFocus()
+    })
+
+    it('home moves focus to week start with weekStartsOn: 1', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 1,
+        },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.HOME)
+      expect(getByTestId('date-1-8')).toHaveFocus()
+    })
+
+    it('end moves focus to week end with weekStartsOn: 1', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 1,
+        },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.END)
+      expect(getByTestId('date-1-14')).toHaveFocus()
+    })
+
+    it('page up navigates to previous month keeping day', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 2, 15),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-2-15')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_UP)
+
+      expect(heading).toHaveTextContent('January 2024')
+      expect(getByTestId('date-1-15')).toHaveFocus()
+    })
+
+    it('page down navigates to next month keeping day', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 15),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-1-15')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_DOWN)
+
+      expect(heading).toHaveTextContent('February 2024')
+      expect(getByTestId('date-2-15')).toHaveFocus()
+    })
+
+    it('page up clamps when target month is shorter', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 3, 31),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-3-31')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_UP)
+
+      expect(heading).toHaveTextContent('February 2024')
+      expect(getByTestId('date-2-29')).toHaveFocus()
+    })
+
+    it('shift+page up moves a year back keeping day', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 3, 15),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-3-15')
+      currentDay.focus()
+
+      await user.keyboard('{Shift>}{PageUp}{/Shift}')
+
+      expect(heading).toHaveTextContent('March 2023')
+      expect(getByTestId('date-3-15')).toHaveFocus()
+    })
+
+    it('shift+page down moves a year forward keeping day', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 3, 15),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-3-15')
+      currentDay.focus()
+
+      await user.keyboard('{Shift>}{PageDown}{/Shift}')
+
+      expect(heading).toHaveTextContent('March 2025')
+      expect(getByTestId('date-3-15')).toHaveFocus()
+    })
+
+    it('shift year navigation clamps leap day when moving forward', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 2, 29),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const leapDay = getByTestId('date-2-29')
+      leapDay.focus()
+
+      await user.keyboard('{Shift>}{PageDown}{/Shift}')
+
+      expect(heading).toHaveTextContent('February 2025')
+      expect(getByTestId('date-2-28')).toHaveFocus()
+    })
+
+    it('shift year navigation clamps leap day when moving backward', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 2, 29),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const leapDay = getByTestId('date-2-29')
+      leapDay.focus()
+
+      await user.keyboard('{Shift>}{PageUp}{/Shift}')
+
+      expect(heading).toHaveTextContent('February 2023')
+      expect(getByTestId('date-2-28')).toHaveFocus()
+    })
+
+    it('page up respects minValue boundary', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 15),
+          minValue: new CalendarDate(2024, 1, 5),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-1-15')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_UP)
+
+      expect(heading).toHaveTextContent('January 2024')
+      expect(getByTestId('date-1-5')).toHaveFocus()
+    })
+
+    it('page down respects maxValue boundary', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 15),
+          maxValue: new CalendarDate(2024, 1, 20),
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-1-15')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_DOWN)
+
+      expect(heading).toHaveTextContent('January 2024')
+      expect(getByTestId('date-1-20')).toHaveFocus()
+    })
+  })
 })
 
 describe('numberOfMonths > 1', () => {
