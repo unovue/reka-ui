@@ -123,7 +123,7 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   pagedNavigation: false,
   preventDeselect: false,
   weekdayFormat: 'narrow',
-  fixedWeeks: true,
+  fixedWeeks: false,
   multiple: false,
   numberOfMonths: 1,
   disabled: false,

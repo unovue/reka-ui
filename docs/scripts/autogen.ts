@@ -62,12 +62,11 @@ primitiveComponents.forEach((componentPath) => {
   const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath))
 
   const metaDirPath = resolve(__dirname, '../content/meta')
-  // if meta dir doesn't exist create
   mkdirSync(metaDirPath, { recursive: true })
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
-  let parsedString = '<!-- This file was automatic generated. Do not edit it manually -->\n\n'
+  let parsedString = '<!-- This file was automatically generated. Do not edit it manually -->\n\n'
   if (meta.props.length)
     parsedString += `<PropsTable :data="${JSON.stringify(meta.props, null, 2).replace(/"/g, '\'')}" />\n`
 
