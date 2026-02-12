@@ -36,8 +36,9 @@ onMounted(() => {
   rootContext.thumbElements.value.push(thumbElement.value)
 })
 onUnmounted(() => {
-  const i = rootContext.thumbElements.value.findIndex(i => i === thumbElement.value) ?? -1
-  rootContext.thumbElements.value.splice(i, 1)
+  const i = rootContext.thumbElements.value.findIndex(i => i === thumbElement.value)
+  if (i >= 0)
+    rootContext.thumbElements.value.splice(i, 1)
 })
 </script>
 
