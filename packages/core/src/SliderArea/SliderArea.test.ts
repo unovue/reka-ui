@@ -334,7 +334,7 @@ describe('given default SliderArea', () => {
   })
 })
 
-describe('given slider area in a form', async () => {
+describe('given slider area in a form', () => {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
@@ -348,7 +348,7 @@ describe('given slider area in a form', async () => {
   const wrapper = mount({
     props: ['handleSubmit'],
     components: { SliderArea },
-    template: '<form @submit="handleSubmit"><SliderArea value="true" /></form>',
+    template: '<form @submit="handleSubmit"><SliderArea :default-value="true" /></form>',
   }, {
     props: { handleSubmit },
   })
