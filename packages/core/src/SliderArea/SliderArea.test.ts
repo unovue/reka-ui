@@ -345,12 +345,17 @@ describe('given slider area in a form', () => {
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()
   window.HTMLElement.prototype.setPointerCapture = vi.fn()
 
-  const wrapper = mount({
-    props: ['handleSubmit'],
-    components: { SliderArea },
-    template: '<form @submit="handleSubmit"><SliderArea :default-value="true" /></form>',
-  }, {
-    props: { handleSubmit },
+  let wrapper: VueWrapper
+
+  beforeEach(() => {
+    handleSubmit.mockClear()
+    wrapper = mount({
+      props: ['handleSubmit'],
+      components: { SliderArea },
+      template: '<form @submit="handleSubmit"><SliderArea :default-value="true" /></form>',
+    }, {
+      props: { handleSubmit },
+    })
   })
 
   it('should have hidden input field', async () => {
@@ -377,8 +382,8 @@ describe('given slider area in a form', () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ 'slider-area': '[[51,50]]' })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ 'slider-area': '[[51,50]]' })
     })
   })
 })
