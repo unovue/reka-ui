@@ -1,24 +1,4 @@
-import type { Ref } from 'vue'
-import { createContext } from '@/shared'
-
 export type SliderAreaPoint = [x: number, y: number]
-
-export interface SliderAreaRootContext {
-  disabled: Ref<boolean>
-  minX: Ref<number>
-  maxX: Ref<number>
-  minY: Ref<number>
-  maxY: Ref<number>
-  modelValue?: Readonly<Ref<SliderAreaPoint[] | null | undefined>>
-  currentModelValue: Ref<SliderAreaPoint[]>
-  valueIndexToChangeRef: Ref<number>
-  thumbElements: Ref<HTMLElement[]>
-  isSlidingFromLeft: Ref<boolean>
-  isSlidingFromTop: Ref<boolean>
-}
-
-export const [injectSliderAreaRootContext, provideSliderAreaRootContext]
-  = createContext<SliderAreaRootContext>('SliderAreaRoot')
 
 /**
  * Find the closest thumb to a given point using Euclidean distance.
