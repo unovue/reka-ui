@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction, FormFieldProps } from '../shared/types'
-import type { SliderAreaPoint } from './utils'
+import type { ActiveDirection, SliderAreaPoint } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
@@ -49,7 +49,9 @@ export interface SliderAreaRootContext {
   modelValue?: Readonly<Ref<SliderAreaPoint[] | null | undefined>>
   currentModelValue: Ref<SliderAreaPoint[]>
   valueIndexToChangeRef: Ref<number>
-  thumbElements: Ref<HTMLElement[]>
+  thumbXElements: Ref<HTMLElement[]>
+  thumbYElements: Ref<HTMLElement[]>
+  activeDirection: Ref<ActiveDirection>
   isSlidingFromLeft: Ref<boolean>
   isSlidingFromTop: Ref<boolean>
 }
@@ -115,7 +117,7 @@ const isSlidingFromLeft = computed(() => {
 })
 const isSlidingFromTop = computed(() => !props.invertY)
 
-function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): SliderAreaPoint {
+function getPointFromPointerEvent(event: PointerEvent): SliderAreaPoint {
   const rect = rectRef.value || currentElement.value!.getBoundingClientRect()
   rectRef.value = rect
 
@@ -134,8 +136,10 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): Sl
 }
 
 function handleSlideStart(event: PointerEvent) {
-  const point = getPointFromPointerEvent(event, true)
+  const point = getPointFromPointerEvent(event)
   const closestIndex = getClosestThumbIndex(currentModelValue.value, point, minX.value, maxX.value, minY.value, maxY.value)
+  if (closestIndex === -1)
+    return
   updateValues(point, closestIndex)
 }
 
@@ -173,7 +177,8 @@ function updateValues(point: SliderAreaPoint, atIndex: number, { commit } = { co
     emits('valueCommit', nextValues)
 
   if (hasChanged) {
-    thumbElements.value[valueIndexToChangeRef.value]?.focus()
+    const thumbs = activeDirection.value === 'x' ? thumbXElements.value : thumbYElements.value
+    thumbs[valueIndexToChangeRef.value]?.focus()
     modelValue.value = nextValues
   }
 }
@@ -197,21 +202,27 @@ function handleStepKeyDown(event: KeyboardEvent) {
   switch (event.key) {
     case 'ArrowRight':
       dx = stepX.value * multiplier * xDir
+      activeDirection.value = 'x'
       break
     case 'ArrowLeft':
       dx = -stepX.value * multiplier * xDir
+      activeDirection.value = 'x'
       break
     case 'ArrowDown':
       dy = stepY.value * multiplier * yDir
+      activeDirection.value = 'y'
       break
     case 'ArrowUp':
       dy = -stepY.value * multiplier * yDir
+      activeDirection.value = 'y'
       break
     case 'PageDown':
       dy = stepY.value * 10 * yDir
+      activeDirection.value = 'y'
       break
     case 'PageUp':
       dy = -stepY.value * 10 * yDir
+      activeDirection.value = 'y'
       break
   }
 
@@ -221,6 +232,7 @@ function handleStepKeyDown(event: KeyboardEvent) {
 }
 
 function handleHomeKeyDown() {
+  activeDirection.value = 'x'
   const atIndex = valueIndexToChangeRef.value
   const value = currentModelValue.value[atIndex]
   if (!value)
@@ -229,6 +241,7 @@ function handleHomeKeyDown() {
 }
 
 function handleEndKeyDown() {
+  activeDirection.value = 'x'
   const atIndex = valueIndexToChangeRef.value
   const value = currentModelValue.value[atIndex]
   if (!value)
@@ -236,13 +249,17 @@ function handleEndKeyDown() {
   updateValues([maxX.value, value[1]], atIndex, { commit: true })
 }
 
-const thumbElements = ref<HTMLElement[]>([])
+const thumbXElements = ref<HTMLElement[]>([])
+const thumbYElements = ref<HTMLElement[]>([])
+const activeDirection = ref<ActiveDirection>('x')
 
 provideSliderAreaRootContext({
   modelValue,
   currentModelValue,
   valueIndexToChangeRef,
-  thumbElements,
+  thumbXElements,
+  thumbYElements,
+  activeDirection,
   minX,
   maxX,
   minY,

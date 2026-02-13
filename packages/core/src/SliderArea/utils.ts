@@ -1,9 +1,23 @@
+import type { Ref } from 'vue'
+import { createContext } from '@/shared'
+
 export type SliderAreaPoint = [x: number, y: number]
+
+export type ActiveDirection = 'x' | 'y'
+
+export interface SliderAreaThumbGroupContext {
+  index: Ref<number>
+}
+
+export const [injectSliderAreaThumbGroupContext, provideSliderAreaThumbGroupContext]
+  = createContext<SliderAreaThumbGroupContext>('SliderAreaThumbGroup')
 
 /**
  * Find the closest thumb to a given point using Euclidean distance.
  */
 export function getClosestThumbIndex(values: SliderAreaPoint[], point: SliderAreaPoint, minX: number, maxX: number, minY: number, maxY: number): number {
+  if (values.length === 0)
+    return -1
   if (values.length === 1)
     return 0
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaTrack } from '..'
 
-const thumbClass = 'block w-4 h-4 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-full hover:bg-violet3 focus:outline-none focus:shadow-[0_0_0_4px] focus:shadow-blackA8'
+const thumbClass = 'block w-4 h-4 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-full hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_4px] focus-within:shadow-blackA8'
 const trackClass = 'bg-blackA10 block relative w-full h-full'
 const regionClass = 'bg-white'
 const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'

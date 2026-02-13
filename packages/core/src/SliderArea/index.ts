@@ -18,5 +18,6 @@ export {
   type SliderAreaTrackProps,
 } from './SliderAreaTrack.vue'
 export {
+  type ActiveDirection,
   type SliderAreaPoint,
 } from './utils'

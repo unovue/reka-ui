@@ -22,7 +22,7 @@ const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
             <SliderAreaRegion class="bg-white/25 rounded-sm" />
           </SliderAreaTrack>
           <SliderAreaThumb
-            class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus:outline-none focus:shadow-[0_0_0_5px] focus:shadow-blackA8"
+            class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_5px] focus-within:shadow-blackA8"
           />
         </SliderAreaRoot>
         <p class="mt-2 text-sm text-white">

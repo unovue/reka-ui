@@ -27,24 +27,62 @@ describe('given default SliderArea', () => {
     wrapper = mount(SliderArea)
     expect(await axe(wrapper.element, {
       rules: {
-        'label': { enabled: false },
-        'nested-interactive': { enabled: false },
+        label: { enabled: false },
       },
     })).toHaveNoViolations()
   })
 
-  it('should have default value', () => {
-    expect(wrapper.html()).toContain('aria-valuenow="50,50"')
+  it('should have 2D slider role description on the thumb group', () => {
+    const group = wrapper.find('[aria-roledescription="2D slider"]')
+    expect(group.exists()).toBe(true)
   })
 
-  it('should have 2D slider role description', () => {
-    const thumb = wrapper.find('[role="slider"]')
-    expect(thumb.attributes('aria-roledescription')).toBe('2D slider')
+  it('should have a horizontal ThumbX with correct ARIA attributes', () => {
+    const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+    expect(thumbX.exists()).toBe(true)
+    expect(thumbX.attributes('aria-valuenow')).toBe('50')
+    expect(thumbX.attributes('aria-valuemin')).toBe('0')
+    expect(thumbX.attributes('aria-valuemax')).toBe('100')
   })
 
-  it('should have aria-valuetext', () => {
-    const thumb = wrapper.find('[role="slider"]')
-    expect(thumb.attributes('aria-valuetext')).toBe('X: 50, Y: 50')
+  it('should have a vertical ThumbY with correct ARIA attributes', () => {
+    const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
+    expect(thumbY.exists()).toBe(true)
+    expect(thumbY.attributes('aria-valuenow')).toBe('50')
+    expect(thumbY.attributes('aria-valuemin')).toBe('0')
+    expect(thumbY.attributes('aria-valuemax')).toBe('100')
+  })
+
+  describe('roving tabindex', () => {
+    it('should have tabindex 0 on ThumbX and -1 on ThumbY by default (activeDirection=x)', () => {
+      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
+      expect(thumbX.attributes('tabindex')).toBe('0')
+      expect(thumbY.attributes('tabindex')).toBe('-1')
+    })
+
+    it('should switch tabindex when pressing Down arrow (activeDirection switches to y)', async () => {
+      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      await thumbX.trigger('keydown', { key: 'ArrowDown' })
+      // After pressing down, activeDirection should be 'y'
+      const thumbXAfter = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      const thumbYAfter = wrapper.find('[role="slider"][aria-orientation="vertical"]')
+      expect(thumbXAfter.attributes('tabindex')).toBe('-1')
+      expect(thumbYAfter.attributes('tabindex')).toBe('0')
+    })
+
+    it('should switch back to x when pressing Right arrow after being on y', async () => {
+      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      // Switch to y
+      await thumbX.trigger('keydown', { key: 'ArrowDown' })
+      // Switch back to x
+      const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
+      await thumbY.trigger('keydown', { key: 'ArrowRight' })
+      const thumbXAfter = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      const thumbYAfter = wrapper.find('[role="slider"][aria-orientation="vertical"]')
+      expect(thumbXAfter.attributes('tabindex')).toBe('0')
+      expect(thumbYAfter.attributes('tabindex')).toBe('-1')
+    })
   })
 
   describe('when disabled', () => {
@@ -52,22 +90,23 @@ describe('given default SliderArea', () => {
       await wrapper.setProps({ disabled: true })
     })
 
-    it('should disable the thumb', () => {
-      const thumb = wrapper.find('[role="slider"]')
-      expect(thumb.attributes('data-disabled')).toBe('')
-      expect(thumb.attributes('aria-valuenow')).toBe('50,50')
+    it('should disable the thumb group', () => {
+      const group = wrapper.find('[aria-roledescription="2D slider"]')
+      expect(group.attributes('data-disabled')).toBe('')
     })
 
-    it('should remove tabindex from the thumb', () => {
-      const thumb = wrapper.find('[role="slider"]')
-      expect(thumb.attributes('tabindex')).toBeUndefined()
+    it('should remove tabindex from both thumbs', () => {
+      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
+      expect(thumbX.attributes('tabindex')).toBeUndefined()
+      expect(thumbY.attributes('tabindex')).toBeUndefined()
     })
   })
 
   describe('when enabled', () => {
-    it('should have tabindex on the thumb', () => {
-      const thumb = wrapper.find('[role="slider"]')
-      expect(thumb.attributes('tabindex')).toBe('0')
+    it('should have tabindex on ThumbX (active direction)', () => {
+      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
+      expect(thumbX.attributes('tabindex')).toBe('0')
     })
   })
 
@@ -85,42 +124,42 @@ describe('given default SliderArea', () => {
 
       it('arrowRight should decrease X by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowRight' })
-        expect(slider.attributes('aria-valuenow')).toBe('49,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[49, 50]])
       })
 
       it('arrowLeft should increase X by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowLeft' })
-        expect(slider.attributes('aria-valuenow')).toBe('51,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[51, 50]])
       })
 
       it('arrowUp should still decrease Y by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowUp' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,49')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 49]])
       })
 
       it('arrowDown should still increase Y by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowDown' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,51')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
       })
 
       it('pageUp should still decrease Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,40')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
       })
 
       it('pageDown should still increase Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,60')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
       })
 
       it('home should set X to 0', async () => {
         await slider.trigger('keydown', { key: 'Home' })
-        expect(slider.attributes('aria-valuenow')).toBe('0,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
 
       it('end should set X to max', async () => {
         await slider.trigger('keydown', { key: 'End' })
-        expect(slider.attributes('aria-valuenow')).toBe('100,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
       })
     })
   })
@@ -139,42 +178,42 @@ describe('given default SliderArea', () => {
 
       it('arrowUp should increase Y by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowUp' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,51')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
       })
 
       it('arrowDown should decrease Y by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowDown' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,49')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 49]])
       })
 
       it('arrowRight should still increase X by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowRight' })
-        expect(slider.attributes('aria-valuenow')).toBe('51,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[51, 50]])
       })
 
       it('arrowLeft should still decrease X by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowLeft' })
-        expect(slider.attributes('aria-valuenow')).toBe('49,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[49, 50]])
       })
 
       it('pageUp should increase Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,60')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
       })
 
       it('pageDown should decrease Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,40')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
       })
 
       it('home should still set X to 0', async () => {
         await slider.trigger('keydown', { key: 'Home' })
-        expect(slider.attributes('aria-valuenow')).toBe('0,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
 
       it('end should still set X to max', async () => {
         await slider.trigger('keydown', { key: 'End' })
-        expect(slider.attributes('aria-valuenow')).toBe('100,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
       })
     })
   })
@@ -193,42 +232,42 @@ describe('given default SliderArea', () => {
 
       it('arrowRight should decrease X by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowRight' })
-        expect(slider.attributes('aria-valuenow')).toBe('49,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[49, 50]])
       })
 
       it('arrowLeft should increase X by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowLeft' })
-        expect(slider.attributes('aria-valuenow')).toBe('51,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[51, 50]])
       })
 
       it('arrowUp should increase Y by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowUp' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,51')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
       })
 
       it('arrowDown should decrease Y by 1', async () => {
         await slider.trigger('keydown', { key: 'ArrowDown' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,49')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 49]])
       })
 
       it('pageUp should increase Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,60')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
       })
 
       it('pageDown should decrease Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(slider.attributes('aria-valuenow')).toBe('50,40')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
       })
 
       it('home should set X to 0', async () => {
         await slider.trigger('keydown', { key: 'Home' })
-        expect(slider.attributes('aria-valuenow')).toBe('0,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
 
       it('end should set X to max', async () => {
         await slider.trigger('keydown', { key: 'End' })
-        expect(slider.attributes('aria-valuenow')).toBe('100,50')
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
       })
     })
   })
@@ -242,22 +281,22 @@ describe('given default SliderArea', () => {
 
     it('shift+arrowRight should increase X by 10', async () => {
       await slider.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
-      expect(slider.attributes('aria-valuenow')).toBe('60,50')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[60, 50]])
     })
 
     it('shift+arrowLeft should decrease X by 10', async () => {
       await slider.trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
-      expect(slider.attributes('aria-valuenow')).toBe('40,50')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[40, 50]])
     })
 
     it('shift+arrowUp should decrease Y by 10', async () => {
       await slider.trigger('keydown', { key: 'ArrowUp', shiftKey: true })
-      expect(slider.attributes('aria-valuenow')).toBe('50,40')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
     })
 
     it('shift+arrowDown should increase Y by 10', async () => {
       await slider.trigger('keydown', { key: 'ArrowDown', shiftKey: true })
-      expect(slider.attributes('aria-valuenow')).toBe('50,60')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
     })
   })
 
@@ -294,42 +333,42 @@ describe('given default SliderArea', () => {
 
     it('arrowRight should increase X by 1', async () => {
       await slider.trigger('keydown', { key: 'ArrowRight' })
-      expect(slider.attributes('aria-valuenow')).toBe('51,50')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[51, 50]])
     })
 
     it('arrowLeft should decrease X by 1', async () => {
       await slider.trigger('keydown', { key: 'ArrowLeft' })
-      expect(slider.attributes('aria-valuenow')).toBe('49,50')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[49, 50]])
     })
 
     it('arrowUp should decrease Y by 1', async () => {
       await slider.trigger('keydown', { key: 'ArrowUp' })
-      expect(slider.attributes('aria-valuenow')).toBe('50,49')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 49]])
     })
 
     it('arrowDown should increase Y by 1', async () => {
       await slider.trigger('keydown', { key: 'ArrowDown' })
-      expect(slider.attributes('aria-valuenow')).toBe('50,51')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
     })
 
     it('pageUp should decrease Y by 10', async () => {
       await slider.trigger('keydown', { key: 'PageUp' })
-      expect(slider.attributes('aria-valuenow')).toBe('50,40')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
     })
 
     it('pageDown should increase Y by 10', async () => {
       await slider.trigger('keydown', { key: 'PageDown' })
-      expect(slider.attributes('aria-valuenow')).toBe('50,60')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
     })
 
     it('home should set X to 0', async () => {
       await slider.trigger('keydown', { key: 'Home' })
-      expect(slider.attributes('aria-valuenow')).toBe('0,50')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
     })
 
     it('end should set X to max', async () => {
       await slider.trigger('keydown', { key: 'End' })
-      expect(slider.attributes('aria-valuenow')).toBe('100,50')
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
     })
   })
 })
@@ -352,7 +391,7 @@ describe('given slider area in a form', () => {
     wrapper = mount({
       props: ['handleSubmit'],
       components: { SliderArea },
-      template: '<form @submit="handleSubmit"><SliderArea :default-value="true" /></form>',
+      template: '<form @submit="handleSubmit"><SliderArea /></form>',
     }, {
       props: { handleSubmit },
     })

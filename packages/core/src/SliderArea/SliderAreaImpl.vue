@@ -47,7 +47,7 @@ const rootContext = injectSliderAreaRootContext()
       const target = event.target as HTMLElement;
       target.setPointerCapture(event.pointerId);
       event.preventDefault();
-      if (rootContext.thumbElements.value.includes(target)) {
+      if (rootContext.thumbXElements.value.includes(target) || rootContext.thumbYElements.value.includes(target)) {
         target.focus();
       }
       else {
