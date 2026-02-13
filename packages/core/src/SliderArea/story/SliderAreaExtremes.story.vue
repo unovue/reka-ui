@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaTrack } from '..'
+import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
 const thumbClass = 'block w-4 h-4 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-full hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_4px] focus-within:shadow-blackA8'
 const trackClass = 'bg-blackA10 block relative w-full h-full'
@@ -29,8 +29,14 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -46,7 +52,10 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -58,10 +67,22 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
-        <SliderAreaThumb :class="thumbClass" />
-        <SliderAreaThumb :class="thumbClass" />
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -77,7 +98,10 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -93,7 +117,10 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -112,7 +139,10 @@ function alert(message: string) {
         <SliderAreaThumb
           :class="thumbClass"
           style="opacity: 0.5;"
-        />
+        >
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -132,7 +162,10 @@ function alert(message: string) {
           <SliderAreaTrack :class="trackClass">
             <SliderAreaRegion :class="regionClass" />
           </SliderAreaTrack>
-          <SliderAreaThumb :class="thumbClass" />
+          <SliderAreaThumb :class="thumbClass">
+            <SliderAreaThumbX />
+            <SliderAreaThumbY />
+          </SliderAreaThumb>
         </SliderAreaRoot>
         <button>Submit</button>
       </form>
@@ -148,7 +181,10 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -161,7 +197,10 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
   </Story>

@@ -5,12 +5,12 @@ export type SliderAreaPoint = [x: number, y: number]
 
 export type ActiveDirection = 'x' | 'y'
 
-export interface SliderAreaThumbGroupContext {
+export interface SliderAreaThumbContext {
   index: Ref<number>
 }
 
-export const [injectSliderAreaThumbGroupContext, provideSliderAreaThumbGroupContext]
-  = createContext<SliderAreaThumbGroupContext>('SliderAreaThumbGroup')
+export const [injectSliderAreaThumbContext, provideSliderAreaThumbContext]
+  = createContext<SliderAreaThumbContext>('SliderAreaThumb')
 
 /**
  * Find the closest thumb to a given point using Euclidean distance.

@@ -12,9 +12,7 @@ import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { convertValueToPercentage, getLabel } from '../Slider/utils'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
-import SliderAreaThumbXImpl from './SliderAreaThumbXImpl.vue'
-import SliderAreaThumbYImpl from './SliderAreaThumbYImpl.vue'
-import { provideSliderAreaThumbGroupContext } from './utils'
+import { provideSliderAreaThumbContext } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -37,7 +35,7 @@ const label = computed(() => getLabel(index.value, rootContext.modelValue?.value
 
 const isMounted = useMounted()
 
-provideSliderAreaThumbGroupContext({
+provideSliderAreaThumbContext({
   index,
 })
 </script>
@@ -60,8 +58,6 @@ provideSliderAreaThumbGroupContext({
         display: !isMounted && value === undefined ? 'none' : undefined,
       }"
     >
-      <SliderAreaThumbXImpl />
-      <SliderAreaThumbYImpl />
       <slot />
     </Primitive>
   </CollectionItem>

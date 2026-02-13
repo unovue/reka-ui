@@ -1,13 +1,25 @@
+<script lang="ts">
+import type { PrimitiveProps } from '@/Primitive'
+
+export interface SliderAreaThumbXProps extends PrimitiveProps {}
+</script>
+
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
-import { injectSliderAreaThumbGroupContext } from './utils'
+import { injectSliderAreaThumbContext } from './utils'
+
+const props = withDefaults(defineProps<SliderAreaThumbXProps>(), {
+  as: 'span',
+})
 
 const rootContext = injectSliderAreaRootContext()
-const groupContext = injectSliderAreaThumbGroupContext()
-const thumbElement = ref<HTMLElement>()
+const thumbContext = injectSliderAreaThumbContext()
+const { forwardRef, currentElement: thumbElement } = useForwardExpose()
 
-const value = computed(() => rootContext.modelValue?.value?.[groupContext.index.value])
+const value = computed(() => rootContext.modelValue?.value?.[thumbContext.index.value])
 
 onMounted(() => {
   if (thumbElement.value)
@@ -21,8 +33,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <span
-    :ref="(el: any) => { thumbElement = el?.$el ?? el }"
+  <Primitive
+    :ref="forwardRef"
     role="slider"
     :tabindex="rootContext.disabled.value ? undefined : (rootContext.activeDirection.value === 'x' ? 0 : -1)"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
@@ -30,6 +42,8 @@ onUnmounted(() => {
     :aria-valuenow="value ? value[0] : undefined"
     :aria-valuemin="rootContext.minX.value"
     :aria-valuemax="rootContext.maxX.value"
+    :as-child="asChild"
+    :as="as"
     :style="{
       position: 'absolute',
       display: 'block',
@@ -37,8 +51,10 @@ onUnmounted(() => {
       height: '100%',
     }"
     @focus="() => {
-      rootContext.valueIndexToChangeRef.value = groupContext.index.value
+      rootContext.valueIndexToChangeRef.value = thumbContext.index.value
       rootContext.activeDirection.value = 'x'
     }"
-  />
+  >
+    <slot />
+  </Primitive>
 </template>

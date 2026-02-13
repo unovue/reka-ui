@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SliderAreaPoint } from '..'
 import { ref } from 'vue'
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaTrack } from '..'
+import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
 const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
 </script>
@@ -23,7 +23,10 @@ const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
           </SliderAreaTrack>
           <SliderAreaThumb
             class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_5px] focus-within:shadow-blackA8"
-          />
+          >
+            <SliderAreaThumbX />
+            <SliderAreaThumbY />
+          </SliderAreaThumb>
         </SliderAreaRoot>
         <p class="mt-2 text-sm text-white">
           X: {{ sliderValue[0]?.[0] }}, Y: {{ sliderValue[0]?.[1] }}

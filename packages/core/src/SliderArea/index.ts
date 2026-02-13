@@ -1,7 +1,6 @@
 export {
   default as SliderAreaRegion,
   type SliderAreaRegionProps,
-  type SliderAreaRegion as SliderAreaRegionType,
 } from './SliderAreaRegion.vue'
 export {
   injectSliderAreaRootContext,
@@ -13,6 +12,14 @@ export {
   default as SliderAreaThumb,
   type SliderAreaThumbProps,
 } from './SliderAreaThumb.vue'
+export {
+  default as SliderAreaThumbX,
+  type SliderAreaThumbXProps,
+} from './SliderAreaThumbX.vue'
+export {
+  default as SliderAreaThumbY,
+  type SliderAreaThumbYProps,
+} from './SliderAreaThumbY.vue'
 export {
   default as SliderAreaTrack,
   type SliderAreaTrackProps,

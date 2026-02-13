@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SliderAreaPoint } from '..'
 import { ref } from 'vue'
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaTrack } from '..'
+import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
 const controlled = ref<SliderAreaPoint[]>([[44, 44]])
 const controlledMulti = ref<SliderAreaPoint[]>([[10, 10], [80, 80]])
@@ -25,7 +25,10 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -37,8 +40,14 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -50,7 +59,10 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -62,8 +74,14 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -76,7 +94,10 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -95,7 +116,10 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaThumb
           :class="thumbClass"
           style="opacity: 0.5;"
-        />
+        >
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -109,7 +133,10 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
 
@@ -123,7 +150,10 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />
         </SliderAreaTrack>
-        <SliderAreaThumb :class="thumbClass" />
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
       </SliderAreaRoot>
     </Variant>
   </Story>

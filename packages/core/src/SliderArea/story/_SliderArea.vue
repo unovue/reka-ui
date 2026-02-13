@@ -2,7 +2,7 @@
 import type { SliderAreaPoint, SliderAreaRootEmits, SliderAreaRootProps } from '..'
 import { ref } from 'vue'
 import { useForwardPropsEmits } from '@/shared'
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaTrack } from '..'
+import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
 const props = withDefaults(defineProps<SliderAreaRootProps>(), {
   invertX: false,
@@ -27,6 +27,9 @@ const forwarded = useForwardPropsEmits(props, emits)
     </SliderAreaTrack>
     <SliderAreaThumb
       class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_5px] focus-within:shadow-blackA8"
-    />
+    >
+      <SliderAreaThumbX />
+      <SliderAreaThumbY />
+    </SliderAreaThumb>
   </SliderAreaRoot>
 </template>
