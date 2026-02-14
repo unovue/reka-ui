@@ -48,9 +48,9 @@ export interface SliderAreaRootProps extends PrimitiveProps, FormFieldProps {
 
 export type SliderAreaRootEmits = {
   /** Event handler called when the slider area value changes */
-  'update:modelValue': [payload: number[][] | number[][] | undefined]
+  'update:modelValue': [payload: number[][] | undefined]
   /** Event handler called when the value changes at the end of an interaction. */
-  'valueCommit': [payload: number[][] | number[][]]
+  'valueCommit': [payload: number[][]]
 }
 
 export interface SliderAreaRootContext {
@@ -59,7 +59,7 @@ export interface SliderAreaRootContext {
   maxX: Ref<number>
   minY: Ref<number>
   maxY: Ref<number>
-  modelValue?: Readonly<Ref<number[][] | number[][] | null | undefined>>
+  modelValue?: Readonly<Ref<number[][] | null | undefined>>
   currentModelValue: Ref<number[][]>
   valueIndexToChangeRef: Ref<number>
   thumbXElements: Ref<HTMLElement[]>
@@ -120,7 +120,7 @@ const { CollectionSlot } = useCollection({ isProvider: true })
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<number[][] | number[][] | null>
+}) as Ref<number[][] | null>
 
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
