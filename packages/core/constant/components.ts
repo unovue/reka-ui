@@ -288,6 +288,12 @@ export const components = {
     'RadioGroupIndicator',
   ] as const,
 
+  rating: [
+    'RatingRoot',
+    'RatingItem',
+    'RatingItemIndicator',
+  ] as const,
+
   rangeCalendar: [
     'RangeCalendarRoot',
     'RangeCalendarHeader',
