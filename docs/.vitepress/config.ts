@@ -154,6 +154,7 @@ export default defineConfig({
               { text: 'Pin Input', link: '/docs/components/pin-input' },
               { text: 'Radio Group', link: '/docs/components/radio-group' },
               { text: 'Select', link: '/docs/components/select' },
+              { text: 'Slider Area', link: '/docs/components/slider-area' },
               { text: 'Slider', link: '/docs/components/slider' },
               { text: 'Switch', link: '/docs/components/switch' },
               { text: 'Tags Input', link: '/docs/components/tags-input' },
