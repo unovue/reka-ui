@@ -378,11 +378,11 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
     },
     {
       keys: ['PageUp'],
-      description: 'Sets the Y value to its minimum',
+      description: 'Sets the Y value to its minimum.',
     },
     {
       keys: ['PageDown'],
-      description: 'Sets the Y value to its maximum',
+      description: 'Sets the Y value to its maximum.',
     },
   ]"
 />
@@ -418,7 +418,7 @@ import { SliderArea } from './your-slider-area'
 
  ```ts
 // your-slider-area.ts
-export { default as SliderArea } from 'SliderArea.vue'
+export { default as SliderArea } from './SliderArea.vue'
 ```
 
 ```vue
