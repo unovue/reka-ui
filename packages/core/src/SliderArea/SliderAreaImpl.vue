@@ -7,6 +7,8 @@ export type SliderAreaImplEmits = {
   slideEnd: [event: PointerEvent]
   homeKeyDown: [event: KeyboardEvent]
   endKeyDown: [event: KeyboardEvent]
+  pageUpKeyDown: [event: KeyboardEvent]
+  pageDownKeyDown: [event: KeyboardEvent]
   stepKeyDown: [event: KeyboardEvent]
 }
 
@@ -36,6 +38,14 @@ const rootContext = injectSliderAreaRootContext()
       }
       else if (event.key === 'End') {
         emits('endKeyDown', event)
+        event.preventDefault();
+      }
+      else if (event.key === 'PageUp') {
+        emits('pageUpKeyDown', event)
+        event.preventDefault();
+      }
+      else if (event.key === 'PageDown') {
+        emits('pageDownKeyDown', event)
         event.preventDefault();
       }
       else if (PAGE_KEYS.concat(ARROW_KEYS).includes(event.key)) {

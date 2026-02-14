@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 
 export interface SliderAreaThumbProps extends PrimitiveProps {}
 </script>
@@ -10,7 +9,8 @@ import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { convertValueToPercentage, getLabel } from '../Slider/utils'
+import { useForwardExpose, useSize } from '@/shared'
+import { convertValueToPercentage, getLabel, getThumbInBoundsOffset } from '../Slider/utils'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
 import { provideSliderAreaThumbContext } from './utils'
 
@@ -33,6 +33,18 @@ const percentX = computed(() => value.value === undefined ? 0 : convertValueToPe
 const percentY = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value[1], rootContext.minY.value ?? 0, rootContext.maxY.value ?? 100))
 const label = computed(() => getLabel(index.value, rootContext.modelValue?.value?.length ?? 0))
 
+const size = useSize(groupElement)
+const thumbInBoundsOffsetX = computed(() => {
+  if (rootContext.thumbAlignment.value === 'overflow' || !size.width.value)
+    return 0
+  return getThumbInBoundsOffset(size.width.value, percentX.value, rootContext.isSlidingFromLeft.value ? 1 : -1)
+})
+const thumbInBoundsOffsetY = computed(() => {
+  if (rootContext.thumbAlignment.value === 'overflow' || !size.height.value)
+    return 0
+  return getThumbInBoundsOffset(size.height.value, percentY.value, rootContext.isSlidingFromTop.value ? 1 : -1)
+})
+
 const isMounted = useMounted()
 
 provideSliderAreaThumbContext({
@@ -53,8 +65,8 @@ provideSliderAreaThumbContext({
       :style="{
         transform: 'var(--reka-slider-area-thumb-transform)',
         position: 'absolute',
-        [rootContext.isSlidingFromLeft.value ? 'left' : 'right']: `${percentX}%`,
-        [rootContext.isSlidingFromTop.value ? 'top' : 'bottom']: `${percentY}%`,
+        [rootContext.isSlidingFromLeft.value ? 'left' : 'right']: `calc(${percentX}% + ${thumbInBoundsOffsetX}px)`,
+        [rootContext.isSlidingFromTop.value ? 'top' : 'bottom']: `calc(${percentY}% + ${thumbInBoundsOffsetY}px)`,
         display: !isMounted && value === undefined ? 'none' : undefined,
       }"
     >

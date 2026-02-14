@@ -1,7 +1,6 @@
 import type { Ref } from 'vue'
-import { createContext } from '@/shared'
-
-export type SliderAreaPoint = [x: number, y: number]
+import { clamp, createContext } from '@/shared'
+import { getDecimalCount, roundValue } from '../Slider/utils'
 
 export type ActiveDirection = 'x' | 'y'
 
@@ -13,9 +12,18 @@ export const [injectSliderAreaThumbContext, provideSliderAreaThumbContext]
   = createContext<SliderAreaThumbContext>('SliderAreaThumb')
 
 /**
+ * Snap a value to the nearest step, then clamp it within [min, max].
+ */
+export function snapToStep(value: number, min: number, max: number, step: number): number {
+  const decimalCount = getDecimalCount(step)
+  const snapped = roundValue(Math.round((value - min) / step) * step + min, decimalCount)
+  return clamp(snapped, min, max)
+}
+
+/**
  * Find the closest thumb to a given point using Euclidean distance.
  */
-export function getClosestThumbIndex(values: SliderAreaPoint[], point: SliderAreaPoint, minX: number, maxX: number, minY: number, maxY: number): number {
+export function getClosestThumbIndex(values: number[][], point: number[], minX: number, maxX: number, minY: number, maxY: number): number {
   if (values.length === 0)
     return -1
   if (values.length === 1)

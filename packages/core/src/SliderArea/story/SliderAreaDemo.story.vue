@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { SliderAreaPoint } from '..'
 import { ref } from 'vue'
 import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
-const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
+const sliderValue = ref([[50, 50]])
 </script>
 
 <template>
@@ -18,11 +17,11 @@ const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
           name="slider-area"
           class="relative block select-none touch-none w-[200px] h-[200px]"
         >
-          <SliderAreaTrack class="bg-blackA10 block relative w-full h-full rounded-md">
-            <SliderAreaRegion class="bg-white/25 rounded-sm" />
+          <SliderAreaTrack class="bg-blackA10 block relative w-full h-full rounded-sm">
+            <SliderAreaRegion class="bg-white rounded-sm" />
           </SliderAreaTrack>
           <SliderAreaThumb
-            class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_5px] focus-within:shadow-blackA8"
+            class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_5px] focus-within:shadow-blackA8 [&>*]:outline-none"
           >
             <SliderAreaThumbX />
             <SliderAreaThumbY />

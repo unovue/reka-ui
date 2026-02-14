@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
-const thumbClass = 'block w-4 h-4 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-full hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_4px] focus-within:shadow-blackA8'
-const trackClass = 'bg-blackA10 block relative w-full h-full'
-const regionClass = 'bg-white'
+const thumbClass = 'block w-4 h-4 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-full hover:bg-violet3 focus-within:outline-none focus-within:shadow-[0_0_0_4px] focus-within:shadow-blackA8 [&>*]:outline-none'
+const trackClass = 'bg-blackA10 block relative w-full h-full rounded-sm'
+const regionClass = 'bg-white rounded-sm'
 const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
 
 function alert(message: string) {
@@ -197,6 +197,83 @@ function alert(message: string) {
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
         </SliderAreaTrack>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+      </SliderAreaRoot>
+    </Variant>
+
+    <Variant title="Extreme minXStepsBetweenThumbs">
+      <SliderAreaRoot
+        :class="rootClass"
+        :default-value="[[0, 50], [50, 50], [100, 50]]"
+        :min-x-steps-between-thumbs="40"
+      >
+        <SliderAreaTrack :class="trackClass">
+          <SliderAreaRegion :class="regionClass" />
+        </SliderAreaTrack>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+      </SliderAreaRoot>
+    </Variant>
+
+    <Variant title="Extreme minYStepsBetweenThumbs">
+      <SliderAreaRoot
+        :class="rootClass"
+        :default-value="[[50, 0], [50, 50], [50, 100]]"
+        :min-y-steps-between-thumbs="40"
+      >
+        <SliderAreaTrack :class="trackClass">
+          <SliderAreaRegion :class="regionClass" />
+        </SliderAreaTrack>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+      </SliderAreaRoot>
+    </Variant>
+
+    <Variant title="Extreme minX/YStepsBetweenThumbs (4 thumbs)">
+      <SliderAreaRoot
+        :class="rootClass"
+        :default-value="[[0, 0], [50, 0], [0, 50], [50, 50]]"
+        :min-x-steps-between-thumbs="30"
+        :min-y-steps-between-thumbs="30"
+      >
+        <SliderAreaTrack :class="trackClass">
+          <SliderAreaRegion :class="regionClass" />
+        </SliderAreaTrack>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
+        <SliderAreaThumb :class="thumbClass">
+          <SliderAreaThumbX />
+          <SliderAreaThumbY />
+        </SliderAreaThumb>
         <SliderAreaThumb :class="thumbClass">
           <SliderAreaThumbX />
           <SliderAreaThumbY />

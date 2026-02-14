@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { SliderAreaPoint, SliderAreaRootEmits, SliderAreaRootProps } from '..'
+import type { SliderAreaRootEmits, SliderAreaRootProps } from '..'
 import { ref } from 'vue'
 import { useForwardPropsEmits } from '@/shared'
 import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from '..'
 
 const props = withDefaults(defineProps<SliderAreaRootProps>(), {
-  invertX: false,
-  invertY: false,
+  invertedX: false,
+  invertedY: false,
 })
 const emits = defineEmits<SliderAreaRootEmits>()
 
-const sliderValue = ref<SliderAreaPoint[]>([[50, 50]])
+const sliderValue = ref([[50, 50]])
 
 const forwarded = useForwardPropsEmits(props, emits)
 </script>
