@@ -143,8 +143,8 @@ const rootClass = 'relative block select-none touch-none w-[150px] h-[150px]'
       <SliderAreaRoot
         :class="rootClass"
         :default-value="[[20, 30]]"
-        invert-x
-        invert-y
+        inverted-x
+        inverted-y
       >
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="rangeClass" />

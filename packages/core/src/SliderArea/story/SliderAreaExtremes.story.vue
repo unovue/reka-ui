@@ -175,8 +175,8 @@ function alert(message: string) {
       <SliderAreaRoot
         :class="rootClass"
         :default-value="[[20, 30]]"
-        invert-x
-        invert-y
+        inverted-x
+        inverted-y
       >
         <SliderAreaTrack :class="trackClass">
           <SliderAreaRegion :class="regionClass" />
