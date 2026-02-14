@@ -142,14 +142,14 @@ describe('given default SliderArea', () => {
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
       })
 
-      it('home should set X to min', async () => {
+      it('home should set X to max (inverted)', async () => {
         await slider.trigger('keydown', { key: 'Home' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
       })
 
-      it('end should set X to max', async () => {
+      it('end should set X to min (inverted)', async () => {
         await slider.trigger('keydown', { key: 'End' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
 
       it('pageUp should set Y to min', async () => {
@@ -196,14 +196,14 @@ describe('given default SliderArea', () => {
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[49, 50]])
       })
 
-      it('pageUp should set Y to min', async () => {
+      it('pageUp should set Y to max (inverted)', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
       })
 
-      it('pageDown should set Y to max', async () => {
+      it('pageDown should set Y to min (inverted)', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
       })
 
       it('home should set X to min', async () => {
@@ -250,24 +250,24 @@ describe('given default SliderArea', () => {
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 49]])
       })
 
-      it('pageUp should set Y to min', async () => {
+      it('pageUp should set Y to max (inverted)', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
-      })
-
-      it('pageDown should set Y to max', async () => {
-        await slider.trigger('keydown', { key: 'PageDown' })
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
       })
 
-      it('home should set X to 0', async () => {
-        await slider.trigger('keydown', { key: 'Home' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
+      it('pageDown should set Y to min (inverted)', async () => {
+        await slider.trigger('keydown', { key: 'PageDown' })
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
       })
 
-      it('end should set X to max', async () => {
-        await slider.trigger('keydown', { key: 'End' })
+      it('home should set X to max (inverted)', async () => {
+        await slider.trigger('keydown', { key: 'Home' })
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
+      })
+
+      it('end should set X to min (inverted)', async () => {
+        await slider.trigger('keydown', { key: 'End' })
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
     })
   })
@@ -398,7 +398,7 @@ describe('given slider area in a form', () => {
   })
 
   it('should have hidden input field', async () => {
-    expect(wrapper.find('[type="text"]').exists()).toBe(true)
+    expect(wrapper.find('[type="hidden"]').exists()).toBe(true)
   })
 
   describe('after clicking submit button', () => {

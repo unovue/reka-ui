@@ -146,48 +146,65 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): nu
   const rect = rectRef.value || currentElement.value!.getBoundingClientRect()
   rectRef.value = rect
 
+  const thumbGroup = getThumbGroupElement()
+  const thumbWidth = thumbAlignment.value === 'contain' && thumbGroup ? thumbGroup.clientWidth : 0
+  const thumbHeight = thumbAlignment.value === 'contain' && thumbGroup ? thumbGroup.clientHeight : 0
+
   // Calculate grab offset on first slideMove after a thumb-initiated drag
-  if (!offsetPosition.value && !slideStart) {
-    const thumbGroup = getThumbGroupElement()
-    if (thumbGroup) {
-      const thumbRect = thumbGroup.getBoundingClientRect()
-      offsetPosition.value = {
-        x: event.clientX - (thumbRect.left + thumbRect.width / 2),
-        y: event.clientY - (thumbRect.top + thumbRect.height / 2),
-      }
+  if (!offsetPosition.value && !slideStart && thumbAlignment.value === 'contain' && thumbGroup) {
+    const thumbRect = thumbGroup.getBoundingClientRect()
+    offsetPosition.value = {
+      x: event.clientX - thumbRect.left,
+      y: event.clientY - thumbRect.top,
     }
   }
 
-  const inputX: [number, number] = [0, rect.width]
+  const inputX: [number, number] = [0, rect.width - thumbWidth]
   const outputX: [number, number] = isSlidingFromLeft.value ? [minX.value, maxX.value] : [maxX.value, minX.value]
   const scaleX = linearScale(inputX, outputX)
 
-  const inputY: [number, number] = [0, rect.height]
+  const inputY: [number, number] = [0, rect.height - thumbHeight]
   const outputY: [number, number] = isSlidingFromTop.value ? [minY.value, maxY.value] : [maxY.value, minY.value]
   const scaleY = linearScale(inputY, outputY)
 
-  const posX = event.clientX - rect.left - (offsetPosition.value?.x ?? 0)
-  const posY = event.clientY - rect.top - (offsetPosition.value?.y ?? 0)
+  const posX = slideStart
+    ? event.clientX - rect.left - thumbWidth / 2
+    : event.clientX - rect.left - (offsetPosition.value?.x ?? 0)
+  const posY = slideStart
+    ? event.clientY - rect.top - thumbHeight / 2
+    : event.clientY - rect.top - (offsetPosition.value?.y ?? 0)
 
   return [scaleX(posX), scaleY(posY)]
 }
+
+const lastPointerPosition = ref<{ x: number, y: number }>()
 
 function handleSlideStart(event: PointerEvent) {
   const point = getPointFromPointerEvent(event, true)
   const closestIndex = getClosestThumbIndex(currentModelValue.value, point, minX.value, maxX.value, minY.value, maxY.value)
   if (closestIndex === -1)
     return
+  lastPointerPosition.value = { x: event.clientX, y: event.clientY }
+  // Default to 'x' on initial click since there's no delta to compute
+  activeDirection.value = 'x'
   updateValues(point, closestIndex)
 }
 
 function handleSlideMove(event: PointerEvent) {
   const point = getPointFromPointerEvent(event)
+  if (lastPointerPosition.value) {
+    const dx = Math.abs(event.clientX - lastPointerPosition.value.x)
+    const dy = Math.abs(event.clientY - lastPointerPosition.value.y)
+    activeDirection.value = dx >= dy ? 'x' : 'y'
+  }
+  lastPointerPosition.value = { x: event.clientX, y: event.clientY }
   updateValues(point, valueIndexToChangeRef.value)
 }
 
 function handleSlideEnd() {
   rectRef.value = undefined
   offsetPosition.value = undefined
+  lastPointerPosition.value = undefined
   const prevValue = valuesBeforeSlideStartRef.value[valueIndexToChangeRef.value]
   const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
   const hasChanged = prevValue?.[0] !== nextValue?.[0] || prevValue?.[1] !== nextValue?.[1]
@@ -266,9 +283,18 @@ function handleBoundaryKey(axis: ActiveDirection, boundaryValue: number) {
   const value = currentModelValue.value[atIndex]
   if (!value)
     return
+
+  let effectiveValue = boundaryValue
+  if (axis === 'x' && !isSlidingFromLeft.value) {
+    effectiveValue = boundaryValue === minX.value ? maxX.value : minX.value
+  }
+  else if (axis === 'y' && !isSlidingFromTop.value) {
+    effectiveValue = boundaryValue === minY.value ? maxY.value : minY.value
+  }
+
   const point = axis === 'x'
-    ? [boundaryValue, value[1]]
-    : [value[0], boundaryValue]
+    ? [effectiveValue, value[1]]
+    : [value[0], effectiveValue]
   updateValues(point, atIndex, { commit: true })
 }
 
@@ -325,7 +351,7 @@ provideSliderAreaRootContext({
 
       <VisuallyHiddenInput
         v-if="isFormControl && name"
-        type="text"
+        type="hidden"
         :value="JSON.stringify(modelValue)"
         :name="name"
         :required="required"
