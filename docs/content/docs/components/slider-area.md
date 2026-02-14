@@ -400,7 +400,7 @@ Create your own API by abstracting the primitive parts into your own component.
 
 ### Abstract all parts
 
-This example abstracts all of the `SliderArea` parts so it can be used as a self closing element.
+This example abstracts all of the `SliderArea` parts so it can be used as a self-closing element.
 
 #### Usage
 
