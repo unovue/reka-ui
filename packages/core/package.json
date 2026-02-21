@@ -30,6 +30,10 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./internal": {
+      "import": "./dist/internal.js",
+      "require": "./dist/internal.cjs"
+    },
     "./constant": {
       "import": "./dist/constant.js",
       "require": "./dist/constant.cjs"
