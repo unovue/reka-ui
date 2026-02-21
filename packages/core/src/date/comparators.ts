@@ -143,7 +143,13 @@ export function getLastFirstDayOfWeek<T extends DateValue = DateValue>(
   firstDayOfWeek: number,
   locale: string,
 ): T {
-  const day = getDayOfWeek(date, locale)
+  /**
+   * "firstDayOfWeek" is fixed to 0(Sunday) to avoid confusion regarding locales.
+   * This also aligns with other date libraries, e.g., date-fns.
+   *
+   * #see https://github.com/unovue/reka-ui/issues/2157
+   */
+  const day = getDayOfWeek(date, locale, 'sun')
 
   if (firstDayOfWeek > day)
     return date.subtract({ days: day + 7 - firstDayOfWeek }) as T
@@ -159,7 +165,14 @@ export function getNextLastDayOfWeek<T extends DateValue = DateValue>(
   firstDayOfWeek: number,
   locale: string,
 ): T {
-  const day = getDayOfWeek(date, locale)
+  /**
+   * "firstDayOfWeek" is fixed to 0(Sunday) to avoid confusion regarding locales.
+   * This also aligns with other date libraries, e.g., date-fns.
+   *
+   * #see https://github.com/unovue/reka-ui/issues/2157
+   */
+  const day = getDayOfWeek(date, locale, 'sun')
+
   const lastDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
 
   if (day === lastDayOfWeek)

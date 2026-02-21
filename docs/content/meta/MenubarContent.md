@@ -54,7 +54,7 @@
   {
     'name': 'collisionPadding',
     'description': '<p>The distance in pixels from the boundary edges where collision\ndetection should occur. Accepts a number (same for all sides),\nor a partial padding object, for example: { top: 20, left: 20 }.</p>\n',
-    'type': 'number | Partial<Record<\'top\' | \'right\' | \'bottom\' | \'left\', number>>',
+    'type': 'number | Partial&lt;Record&lt;\'top\' | \'right\' | \'bottom\' | \'left\', number&gt;&gt;',
     'required': false
   },
   {
@@ -66,6 +66,12 @@
   {
     'name': 'forceMount',
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'hideShiftedArrow',
+    'description': '<p>When <code>true</code>, hides the arrow when it cannot be centered\nto the reference element.</p>\n',
     'type': 'boolean',
     'required': false
   },

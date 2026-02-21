@@ -4,13 +4,13 @@ import { createContext, getActiveElement, useDirection, useSelectionBehavior, us
 import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
-  /** The controlled value of the tree. Can be binded with with `v-model`. */
+  /** The controlled value of the tree. Can be binded with `v-model`. */
   modelValue?: M extends true ? U[] : U
   /** The value of the tree when initially rendered. Use when you do not need to control the state of the tree */
   defaultValue?: M extends true ? U[] : U
   /** List of items */
   items?: T[]
-  /** The controlled value of the expanded item. Can be binded with with `v-model`. */
+  /** The controlled value of the expanded item. Can be binded with `v-model`. */
   expanded?: string[]
   /** The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree */
   defaultExpanded?: string[]

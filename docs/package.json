@@ -1,7 +1,7 @@
 {
   "name": "docs",
   "type": "module",
-  "version": "2.7.0",
+  "version": "2.8.2",
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
@@ -35,7 +35,7 @@
     "fast-glob": "^3.3.3",
     "hast": "^1.0.0",
     "mark.js": "^8.11.1",
-    "markdown-it": "^14.1.0",
+    "markdown-it": "^14.1.1",
     "markdown-it-anchor": "^9.2.0",
     "minisearch": "^6.3.0",
     "postcss": "^8.5.1",

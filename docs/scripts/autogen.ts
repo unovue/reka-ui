@@ -67,18 +67,25 @@ primitiveComponents.forEach((componentPath) => {
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
+  // Convert JSON to single-quoted format safely by escaping existing single quotes first
+  function toSingleQuotedJson(obj: unknown): string {
+    return JSON.stringify(obj, null, 2)
+      .replace(/'/g, '\\\'') // Escape existing single quotes
+      .replace(/"/g, '\'') // Then convert double quotes to single
+  }
+
   let parsedString = '<!-- This file was automatic generated. Do not edit it manually -->\n\n'
   if (meta.props.length)
-    parsedString += `<PropsTable :data="${JSON.stringify(meta.props, null, 2).replace(/"/g, '\'')}" />\n`
+    parsedString += `<PropsTable :data="${toSingleQuotedJson(meta.props)}" />\n`
 
   if (meta.events.length)
-    parsedString += `\n<EmitsTable :data="${JSON.stringify(meta.events, null, 2).replace(/"/g, '\'')}" />\n`
+    parsedString += `\n<EmitsTable :data="${toSingleQuotedJson(meta.events)}" />\n`
 
   if (meta.slots.length)
-    parsedString += `\n<SlotsTable :data="${JSON.stringify(meta.slots, null, 2).replace(/"/g, '\'')}" />\n`
+    parsedString += `\n<SlotsTable :data="${toSingleQuotedJson(meta.slots)}" />\n`
 
   if (meta.methods.length)
-    parsedString += `\n<MethodsTable :data="${JSON.stringify(meta.methods, null, 2).replace(/"/g, '\'')}" />\n`
+    parsedString += `\n<MethodsTable :data="${toSingleQuotedJson(meta.methods)}" />\n`
 
   writeFileSync(metaMdFilePath, parsedString)
 })
@@ -128,7 +135,7 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render(description),
-        type: type.replace(/\s*\|\s*undefined/g, ''),
+        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         required,
         default: defaultValue ?? undefined,
       })
@@ -141,7 +148,7 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render((eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
-        type: type.replace(/\s*\|\s*undefined/g, ''),
+        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
     })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -156,7 +163,7 @@ function parseMeta(meta: ComponentMeta) {
         slots.push({
           name: childMeta.name,
           description: md.render(childMeta.description),
-          type: parseTypeFromSchema(childMeta.schema),
+          type: parseTypeFromSchema(childMeta.schema).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         })
       })
     }
@@ -168,7 +175,7 @@ function parseMeta(meta: ComponentMeta) {
     .map(expose => ({
       name: expose.name,
       description: md.render(expose.description),
-      type: expose.type,
+      type: expose.type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
     }))
 
   return {

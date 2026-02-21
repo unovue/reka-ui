@@ -272,6 +272,39 @@ describe('given a Combobox with object', async () => {
   })
 })
 
+describe('given a Combobox with openOnFocus', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, {
+      props: { openOnFocus: true },
+      attachTo: document.body,
+    })
+  })
+
+  it('should open when input is focused', async () => {
+    const input = wrapper.find('input')
+    await input.trigger('focus')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+  })
+
+  it('should not restore focus to input when closing', async () => {
+    const input = wrapper.find('input')
+    const button = wrapper.find('button')
+
+    input.element.focus()
+    await nextTick()
+
+    button.element.focus()
+    button.element.click()
+    await nextTick()
+
+    expect(document.activeElement).toBe(button.element)
+  })
+})
+
 describe('given combobox in a form', async () => {
   let wrapper: VueWrapper<InstanceType<any>>
   let valueBox: DOMWrapper<HTMLInputElement>

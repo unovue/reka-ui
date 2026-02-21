@@ -17,7 +17,7 @@
   {
     'name': 'by',
     'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
-    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) => boolean)',
+    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) =&gt; boolean)',
     'required': false
   },
   {
@@ -59,7 +59,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the listbox. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
@@ -77,7 +77,7 @@
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the Combobox. Can be binded with with <code>v-model:open</code>.</p>\n',
+    'description': '<p>The controlled open state of the Combobox. Can be binded with <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },

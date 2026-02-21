@@ -29,12 +29,12 @@
   {
     'name': 'displayValue',
     'description': '<p>The display value of input for selected item. Does not work with <code>multiple</code>.</p>\n',
-    'type': '((val: any) => string)',
+    'type': '((val: any) =&gt; string)',
     'required': false
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the filter. Can be binded with with v-model.</p>\n',
+    'description': '<p>The controlled value of the filter. Can be binded with v-model.</p>\n',
     'type': 'string',
     'required': false
   }

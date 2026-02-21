@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
 import DatePicker from './story/_DatePicker.vue'
 
@@ -285,5 +286,65 @@ describe('datePicker', async () => {
     const day = getByTestId('date-1-1')
     await user.click(day)
     expect(popoverContent).toBeVisible()
+  })
+
+  describe('locale integration with ConfigProvider', () => {
+    it('uses locale from ConfigProvider when no locale prop is provided', async () => {
+      const user = userEvent.setup()
+      const { getByTestId } = render({
+        components: { ConfigProvider, DatePicker },
+        template: `
+          <ConfigProvider locale="de">
+            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15) }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return { CalendarDate }
+        },
+      })
+
+      const trigger = getByTestId('trigger')
+      await user.click(trigger)
+
+      const heading = getByTestId('heading')
+      // German locale should display month name in German (e.g., "Januar" not "January")
+      expect(heading).toHaveTextContent('Januar')
+    })
+
+    it('locale prop overrides ConfigProvider locale', async () => {
+      const user = userEvent.setup()
+      const { getByTestId } = render({
+        components: { ConfigProvider, DatePicker },
+        template: `
+          <ConfigProvider locale="de">
+            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15), locale: 'en-US' }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return { CalendarDate }
+        },
+      })
+
+      const trigger = getByTestId('trigger')
+      await user.click(trigger)
+
+      const heading = getByTestId('heading')
+      // Even though ConfigProvider sets 'de', explicit prop should use 'en-US'
+      expect(heading).toHaveTextContent('January')
+    })
+
+    it('uses default locale when no ConfigProvider and no locale prop', async () => {
+      const { user, trigger, getByTestId } = setup({
+        datePickerProps: { modelValue: calendarDate },
+      })
+
+      await user.click(trigger)
+
+      const heading = getByTestId('heading')
+      // Should use browser default locale (typically 'en' in test environment)
+      // January 1980 should be displayed
+      expect(heading).toHaveTextContent('January')
+      expect(heading).toHaveTextContent('1980')
+    })
   })
 })

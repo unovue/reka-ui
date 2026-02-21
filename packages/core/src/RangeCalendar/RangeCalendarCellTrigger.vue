@@ -94,7 +94,15 @@ const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || (root
 const dayValue = computed(() => props.day.day.toLocaleString(rootContext.locale.value))
 
 const isFocusedDate = computed(() => {
-  return !rootContext.disabled.value && isSameDay(props.day, rootContext.placeholder.value)
+  if (isOutsideView.value || isDisabled.value)
+    return false
+  if (!rootContext.disabled.value && rootContext.isPlaceholderFocusable.value && isSameDay(props.day, rootContext.placeholder.value))
+    return true
+  if (!rootContext.disabled.value && rootContext.selectedFocusableDate.value && !rootContext.isPlaceholderFocusable.value)
+    return isSameDay(props.day, rootContext.selectedFocusableDate.value)
+  if (!rootContext.disabled.value && (!rootContext.hasSelectedDate.value || rootContext.isSelectedDisabled.value) && !rootContext.isPlaceholderFocusable.value)
+    return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
+  return false
 })
 
 function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
@@ -103,21 +111,23 @@ function changeDate(e: MouseEvent | KeyboardEvent, date: DateValue) {
   if (rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date))
     return
 
-  rootContext.lastPressedDateValue.value = date.copy()
-
   if (rootContext.startValue.value && rootContext.highlightedRange.value === null) {
     if (isSameDay(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
       rootContext.onPlaceholderChange(date)
+      rootContext.lastPressedDateValue.value = date.copy()
       return
     }
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameDay(rootContext.lastPressedDateValue.value, date))
         rootContext.startValue.value = date.copy()
+      rootContext.lastPressedDateValue.value = date.copy()
       return
     }
   }
+
+  rootContext.lastPressedDateValue.value = date.copy()
 
   if (
     rootContext.startValue.value
