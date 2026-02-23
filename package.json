@@ -10,7 +10,9 @@
     "packages/*"
   ],
   "scripts": {
-    "story:dev": "pnpm --filter histoire story:dev --open",
+    "story:dev": "storybook dev -p 6007 --config-dir .storybook",
+    "story:build": "storybook build --config-dir .storybook -o storybook-static",
+    "story:preview": "npx serve storybook-static",
     "build": "pnpm run --filter reka-ui build && pnpm run --filter plugins build",
     "build-only": "pnpm run -r build-only",
     "docs:install": "pnpm --filter docs install",
@@ -30,10 +32,17 @@
     "@antfu/eslint-config": "^7.4.3",
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
+    "@storybook/addon-essentials": "9.0.0-alpha.12",
+    "@storybook/blocks": "9.0.0-alpha.17",
+    "@storybook/theming": "9.0.0-alpha.1",
+    "@storybook/vue3-vite": "10.2.10",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "addon-vue-csf": "file:../../UnoVue/addon-vue-csf",
     "bumpp": "^10.1.1",
     "eslint": "^10.0.0",
     "lint-staged": "^16.2.7",
     "simple-git-hooks": "^2.13.1",
+    "storybook": "10.2.10",
     "tsx": "^4.20.3",
     "typescript": "5.8.3"
   },

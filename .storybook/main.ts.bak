@@ -1,0 +1,45 @@
+import type { StorybookConfig } from '@storybook/vue3-vite'
+import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+
+const config: StorybookConfig = {
+  stories: [
+    '../packages/core/src/**/*.stories.vue',
+    '../packages/core/src/**/*.stories.ts',
+  ],
+  addons: [
+    '@storybook/addon-essentials',
+    'storybook-vue-stories/preset',
+  ],
+  framework: {
+    name: '@storybook/vue3-vite',
+    options: {},
+  },
+  viteFinal: async (config) => {
+    // Dynamically import Vue plugin to avoid ESM/CJS issues
+    const { default: vue } = await import('@vitejs/plugin-vue')
+    
+    // Add Vue plugin if not already present
+    const hasVuePlugin = config.plugins?.some(
+      (p: any) => p && (p.name === 'vite:vue' || p.name?.includes('vue'))
+    )
+    
+    if (!hasVuePlugin) {
+      config.plugins = config.plugins || []
+      config.plugins.unshift(vue())
+    }
+
+    // Add path alias same as Histoire
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': resolve(__dirname, '../packages/core/src'),
+    }
+
+    return config
+  },
+}
+
+export default config
