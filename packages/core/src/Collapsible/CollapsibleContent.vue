@@ -109,6 +109,7 @@ useEventListener(currentElement, 'beforematch', (ev) => {
       :hidden="!present ? rootContext.unmountOnHide.value ? '' : 'until-found' : undefined"
       :data-state="skipAnimation ? undefined : rootContext.open.value ? 'open' : 'closed'"
       :data-disabled="rootContext.disabled?.value ? '' : undefined"
+      data-allow-mismatch="style"
       :style="{
         [`--reka-collapsible-content-height`]: `${height}px`,
         [`--reka-collapsible-content-width`]: `${width}px`,
