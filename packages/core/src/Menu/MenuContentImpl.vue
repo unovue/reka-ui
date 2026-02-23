@@ -284,6 +284,15 @@ function handlePointerMove(event: PointerEvent) {
   }
 }
 
+function handlePointerEnter(event: PointerEvent) {
+  if (!isMouseEvent(event))
+    return
+  // When hovering over a menu content (main or sub), focus its filter element if it exists
+  if (filterElement.value) {
+    filterElement.value.focus()
+  }
+}
+
 provideMenuContentContext({
   onItemEnter: (event) => {
     // event.preventDefault() we can't prevent pointerMove event
@@ -380,6 +389,7 @@ provideMenuContentContext({
           @keydown="handleKeyDown"
           @blur="handleBlur"
           @pointermove="handlePointerMove"
+          @pointerenter="handlePointerEnter"
         >
           <slot />
         </PopperContent>
