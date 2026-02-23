@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'vue'
 import { injectMenuContentContext } from '@/Menu/MenuContentImpl.vue'
 import { injectMenuRootContext } from '@/Menu/MenuRoot.vue'
 import { injectMenuSubContext } from '@/Menu/MenuSub.vue'
@@ -42,6 +42,9 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 const rootContext = injectMenuRootContext()
 const contentContext = injectMenuContentContext()
 const subContext = injectMenuSubContext(null)
+
+// Keep searchRef in sync with modelValue changes
+watch(modelValue, (v) => { contentContext.searchRef.value = v ?? '' }, { immediate: true })
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const disabled = computed(() => props.disabled || false)
