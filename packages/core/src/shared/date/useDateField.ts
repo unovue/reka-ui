@@ -745,7 +745,9 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
-      const is12Hour = uses12HourFormat(props.formatter.getLocale())
+      const is12Hour = props.hourCycle !== undefined
+        ? props.hourCycle === 12
+        : uses12HourFormat(props.formatter.getLocale())
       const max = is12Hour ? 12 : 24
 
       let displayPrev = prevValue

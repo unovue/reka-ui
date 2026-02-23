@@ -166,6 +166,6 @@
   {
     'name': 'setFocusedElement',
     'description': '<p>Helper to set the focused element inside the DateField</p>\n',
-    'type': '(el: HTMLElement) => void'
+    'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />

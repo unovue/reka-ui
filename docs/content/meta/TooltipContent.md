@@ -53,7 +53,7 @@
   {
     'name': 'collisionPadding',
     'description': '<p>The distance in pixels from the boundary edges where collision\ndetection should occur. Accepts a number (same for all sides),\nor a partial padding object, for example: { top: 20, left: 20 }.</p>\n',
-    'type': 'number | Partial<Record<\'top\' | \'right\' | \'bottom\' | \'left\', number>>',
+    'type': 'number | Partial&lt;Record&lt;\'top\' | \'right\' | \'bottom\' | \'left\', number&gt;&gt;',
     'required': false
   },
   {
@@ -78,8 +78,7 @@
     'name': 'side',
     'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and avoidCollisions\nis enabled.</p>\n',
     'type': '\'top\' | \'right\' | \'bottom\' | \'left\'',
-    'required': false,
-    'default': '\'top\''
+    'required': false
   },
   {
     'name': 'sideOffset',
