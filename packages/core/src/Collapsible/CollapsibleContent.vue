@@ -37,8 +37,8 @@ rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
 const presentRef = ref<InstanceType<typeof Presence>>()
 const { forwardRef, currentElement } = useForwardExpose()
 
-const width = ref(0)
-const height = ref(0)
+const width = ref<number | undefined>()
+const height = ref<number | undefined>()
 
 // when opening we want it to immediately open to retrieve dimensions
 // when closing we delay `present` to retrieve dimensions before closing
@@ -109,10 +109,9 @@ useEventListener(currentElement, 'beforematch', (ev) => {
       :hidden="!present ? rootContext.unmountOnHide.value ? '' : 'until-found' : undefined"
       :data-state="skipAnimation ? undefined : rootContext.open.value ? 'open' : 'closed'"
       :data-disabled="rootContext.disabled?.value ? '' : undefined"
-      data-allow-mismatch="style"
       :style="{
-        [`--reka-collapsible-content-height`]: `${height}px`,
-        [`--reka-collapsible-content-width`]: `${width}px`,
+        [`--reka-collapsible-content-height`]: height != null ? `${height}px` : undefined,
+        [`--reka-collapsible-content-width`]: width != null ? `${width}px` : undefined,
       }"
     >
       <slot v-if="rootContext.unmountOnHide.value ? present : true" />
