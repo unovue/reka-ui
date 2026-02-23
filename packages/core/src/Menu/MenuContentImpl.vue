@@ -159,7 +159,7 @@ function onKeydownNavigation(event: KeyboardEvent) {
   }
 }
 
-function onKeydownEnter(event: KeyboardEvent) {
+function onKeydownEnter() {
   if (highlightedElement.value) {
     highlightedElement.value.click()
   }
@@ -169,7 +169,7 @@ const filterElement = ref<HTMLElement>()
 const activeSubmenuContext = ref<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> }>()
 
 watch(highlightedElement, (el) => {
-  if (activeSubmenuContext.value && el && el !== activeSubmenuContext.value.trigger.value) {
+  if (activeSubmenuContext.value && (el === undefined || el !== activeSubmenuContext.value.trigger.value)) {
     activeSubmenuContext.value.onOpenChange(false)
     activeSubmenuContext.value = undefined
   }
