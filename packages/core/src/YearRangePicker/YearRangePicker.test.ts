@@ -374,4 +374,40 @@ describe('year range picker - keyboard navigation', () => {
     await user.keyboard(kbd.PAGE_UP)
     expect(getByTestId('heading')).toHaveTextContent('1980 - 1991')
   })
+
+  it('skips disabled candidate year when navigating to next page', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: calendarDateRange.start,
+        isYearDisabled: (date: DateValue) => date.year === 1992,
+      },
+    })
+
+    const year1980 = getByTestId('year-1980')
+    year1980.focus()
+    expect(year1980).toHaveFocus()
+
+    await user.keyboard(kbd.PAGE_DOWN)
+    expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
+    expect(getByTestId('year-1992')).toHaveAttribute('data-disabled')
+    expect(getByTestId('year-1993')).toHaveFocus()
+  })
+
+  it('falls back to the nearest enabled year when paged candidate is missing', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: calendarDateRange.start,
+        nextPage: date => date.add({ years: 13 }),
+      },
+    })
+
+    const year1980 = getByTestId('year-1980')
+    year1980.focus()
+    expect(year1980).toHaveFocus()
+
+    await user.keyboard(kbd.PAGE_DOWN)
+
+    expect(getByTestId('heading')).toHaveTextContent('1993 - 2004')
+    expect(getByTestId('year-1993')).toHaveFocus()
+  })
 })

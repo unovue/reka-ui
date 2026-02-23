@@ -254,7 +254,10 @@ function handleArrowKey(e: KeyboardEvent) {
       if (candidateMonth && !candidateMonth.hasAttribute('data-disabled')) {
         rootContext.onPlaceholderChange(candidateMonthValue)
         candidateMonth?.focus()
+        return
       }
+
+      shiftFocus(candidateMonthValue, years > 0 ? 1 : -1, 1)
     })
   }
 }

@@ -308,6 +308,42 @@ describe('year picker - keyboard navigation', () => {
     expect(getByTestId('year-1993')).toHaveFocus()
   })
 
+  it('falls back to the nearest enabled year when paged candidate is missing on PageDown', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: calendarDate,
+        nextPage: date => date.add({ years: 13 }),
+      },
+    })
+
+    const year1980 = getByTestId('year-1980')
+    year1980.focus()
+    expect(year1980).toHaveFocus()
+
+    await user.keyboard(kbd.PAGE_DOWN)
+
+    expect(getByTestId('heading')).toHaveTextContent('1993 - 2004')
+    expect(getByTestId('year-1993')).toHaveFocus()
+  })
+
+  it('falls back to the nearest enabled year when paged candidate is missing on PageUp', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: calendarDate,
+        prevPage: date => date.subtract({ years: 24 }),
+      },
+    })
+
+    const year1980 = getByTestId('year-1980')
+    year1980.focus()
+    expect(year1980).toHaveFocus()
+
+    await user.keyboard(kbd.PAGE_UP)
+
+    expect(getByTestId('heading')).toHaveTextContent('1956 - 1967')
+    expect(getByTestId('year-1967')).toHaveFocus()
+  })
+
   it('wraps around years when navigating past boundaries', async () => {
     const { getByTestId, user } = setup({
       pickerProps: { placeholder: calendarDate },

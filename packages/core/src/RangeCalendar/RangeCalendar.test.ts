@@ -839,6 +839,31 @@ describe('handles maximumDays', () => {
     expect(beyondMaximumDay).not.toHaveAttribute('data-highlighted')
   })
 
+  it('keeps backward highlight and disabled boundaries coherent with maximumDays', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(1980, 1, 10),
+        maximumDays: 3,
+      },
+    })
+
+    const startDay = getByTestId('date-1-10')
+    const day8 = getByTestId('date-1-8')
+    const day7 = getByTestId('date-1-7')
+
+    await user.click(startDay)
+    expect(startDay).toHaveAttribute('data-selection-start')
+    expect(day7).toHaveAttribute('aria-disabled', 'true')
+    expect(day8).not.toHaveAttribute('aria-disabled', 'true')
+
+    await user.hover(day8)
+
+    expect(day8).toHaveAttribute('data-highlighted-start')
+    expect(getByTestId('date-1-9')).toHaveAttribute('data-highlighted')
+    expect(startDay).toHaveAttribute('data-highlighted-end')
+    expect(day7).not.toHaveAttribute('data-highlighted')
+  })
+
   describe('a11y', async () => {
     it('should pass axe accessibility tests when closed', async () => {
       const { calendar } = setup({

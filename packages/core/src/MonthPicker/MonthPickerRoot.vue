@@ -223,13 +223,17 @@ function onMonthChange(value: DateValue) {
   else if (!modelValue.value) {
     modelValue.value = [value.copy()]
   }
-  else if (Array.isArray(modelValue.value)) {
-    const index = modelValue.value.findIndex(date => isSameYearMonth(date, value))
+  else {
+    const modelValueArray = Array.isArray(modelValue.value)
+      ? modelValue.value
+      : [modelValue.value]
+
+    const index = modelValueArray.findIndex(date => isSameYearMonth(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValue.value, value.copy()]
+      modelValue.value = [...modelValueArray, value.copy()]
     }
     else if (!preventDeselect.value) {
-      const next = modelValue.value.filter(date => !isSameYearMonth(date, value))
+      const next = modelValueArray.filter(date => !isSameYearMonth(date, value))
       if (!next.length) {
         placeholder.value = value.copy()
         modelValue.value = undefined

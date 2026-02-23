@@ -68,21 +68,28 @@ export function useRangeYearPickerState(props: UseRangeYearPickerProps) {
       return true
 
     if (props.maximumYears?.value) {
+      const maximumYears = props.maximumYears.value
+
       if (props.start.value && props.end.value) {
         if (props.fixedDate.value) {
           const diff = getYearsBetween(props.start.value, props.end.value)
-          if (diff <= props.maximumYears.value) {
-            const yearsLeft = props.maximumYears.value - diff
+          if (diff <= maximumYears) {
+            const yearsLeft = maximumYears - diff
             const startLimit = props.start.value.subtract({ years: yearsLeft })
             const endLimit = props.end.value.add({ years: yearsLeft })
             return date.year < startLimit.year || date.year > endLimit.year
           }
+
+          const fixedValue = props.fixedDate.value === 'start' ? props.start.value : props.end.value
+          const maxDate = fixedValue.add({ years: maximumYears - 1 })
+          const minDate = fixedValue.subtract({ years: maximumYears - 1 })
+          return date.year < minDate.year || date.year > maxDate.year
         }
         return false
       }
       if (props.start.value) {
-        const maxDate = props.start.value.add({ years: props.maximumYears.value - 1 })
-        const minDate = props.start.value.subtract({ years: props.maximumYears.value - 1 })
+        const maxDate = props.start.value.add({ years: maximumYears - 1 })
+        const minDate = props.start.value.subtract({ years: maximumYears - 1 })
         return date.year < minDate.year || date.year > maxDate.year
       }
     }
