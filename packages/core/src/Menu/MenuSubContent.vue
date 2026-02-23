@@ -63,7 +63,10 @@ menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
           if (event.defaultPrevented) return;
           // We prevent closing when the trigger is focused to avoid triggering a re-open animation
           // on pointer interaction.
-          if (event.target !== menuSubContext.trigger.value)
+          // Also check if focus is moving to the parent content's filter to avoid closing when
+          // hovering between submenu and parent menu
+          const isMovingToParentContent = parentContentContext.filterElement.value?.contains(event.target as Node);
+          if (event.target !== menuSubContext.trigger.value && !isMovingToParentContent)
             menuContext.onOpenChange(false);
         }
       "
