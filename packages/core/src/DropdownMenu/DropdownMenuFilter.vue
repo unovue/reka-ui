@@ -74,6 +74,7 @@ onUnmounted(() => {
 })
 
 function handleInput(event: InputEvent) {
+  if (disabled.value) return
   const target = event.target as HTMLInputElement
   modelValue.value = target.value
   // Update the menu's search ref to help with filtering
@@ -89,6 +90,7 @@ function handleBlur() {
 }
 
 function handleKeyDown(event: KeyboardEvent) {
+  if (disabled.value) return
   if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
     event.preventDefault()
     contentContext.onKeydownNavigation(event)
