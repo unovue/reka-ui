@@ -28,10 +28,10 @@ useForwardExpose()
     :data-state="itemContext.dataState.value"
     :data-disabled="itemContext.dataDisabled.value"
     :data-orientation="rootContext.orientation"
-    style="
-      --reka-accordion-content-width: var(--reka-collapsible-content-width);
-      --reka-accordion-content-height: var(--reka-collapsible-content-height);
-    "
+    :style="{
+      '--reka-accordion-content-width': 'var(--reka-collapsible-content-width)',
+      '--reka-accordion-content-height': 'var(--reka-collapsible-content-height)',
+    }"
     @content-found="rootContext.changeModelValue(itemContext.value.value)"
   >
     <slot />
