@@ -26,18 +26,24 @@ defineSlots<RangeCalendarNextSlot>()
 const disabled = computed(() => rootContext.disabled.value || rootContext.isNextButtonDisabled(props.nextPage))
 
 const rootContext = injectRangeCalendarRootContext()
+
+function handleClick() {
+  if (disabled.value)
+    return
+  rootContext.nextPage(props.nextPage)
+}
 </script>
 
 <template>
   <Primitive
-    :as="as"
-    :as-child="asChild"
+    :as="props.as"
+    :as-child="props.asChild"
     aria-label="Next page"
-    :type="as === 'button' ? 'button' : undefined"
+    :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
     :disabled="disabled"
-    @click="rootContext.nextPage(props.nextPage)"
+    @click="handleClick"
   >
     <slot :disabled>
       Next page
