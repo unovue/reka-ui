@@ -2,7 +2,7 @@
 import type { CalendarRootProps } from '..'
 
 import { CalendarDate, isWeekend } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import Calendar from './_DummyCalendar.vue'
 
 const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {

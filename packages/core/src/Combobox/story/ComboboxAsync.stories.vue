@@ -2,7 +2,7 @@
 import { Icon } from '@iconify/vue'
 
 import { useFetch } from '@vueuse/core'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '..'
 

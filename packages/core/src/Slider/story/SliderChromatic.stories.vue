@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 
 import { ref } from 'vue'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from '..'

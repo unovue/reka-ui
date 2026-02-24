@@ -2,7 +2,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import { CalendarDateTime, isWeekend } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 
 import DateRangePicker from './_DummyDateRangePicker.vue'
 

@@ -3,7 +3,7 @@ import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import { CalendarDateTime, getLocalTimeZone, now } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 import DateRangeField from './_DummyDateRangeField.vue'
 

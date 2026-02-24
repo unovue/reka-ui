@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { countryList } from '@/shared/constant'
 import { TreeItem, TreeRoot, TreeVirtualizer } from '..'
 

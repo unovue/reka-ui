@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CalendarDateTime } from '@internationalized/date'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import DateRangeField from './_DummyDateRangeField.vue'
 
 const defaultValue = { start: new CalendarDateTime(2024, 2, 20), end: new CalendarDateTime(2024, 2, 27) }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GenericComponentInstance } from '@/shared/types'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { computed, ref } from 'vue'
 import { countryList } from '@/shared/constant'
 import { ListboxContent, ListboxItem, ListboxRoot } from '..'

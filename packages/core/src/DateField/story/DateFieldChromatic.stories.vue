@@ -2,7 +2,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import { CalendarDate } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 import { DateFieldInput, DateFieldRoot } from '..'
 

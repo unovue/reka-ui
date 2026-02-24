@@ -2,7 +2,7 @@
 import { Icon } from '@iconify/vue'
 
 import { createCalendar, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { computed, ref } from 'vue'
 import { Label } from '@/Label'
 import { SelectContent, SelectGroup, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport } from '@/Select'

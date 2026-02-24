@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Time } from '@internationalized/date'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 import { TimeFieldInput, TimeFieldRoot } from '..'
 

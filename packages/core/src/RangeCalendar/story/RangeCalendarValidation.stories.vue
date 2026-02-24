@@ -2,7 +2,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import { CalendarDate, isWeekend } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import RangeCalendar from './_DummyRangeCalendar.vue'
 
 function isDateUnavailable(date: DateValue) {

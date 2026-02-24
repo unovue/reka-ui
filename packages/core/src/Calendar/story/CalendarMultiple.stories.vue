@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CalendarDate } from '@internationalized/date'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import Calendar from './_DummyCalendar.vue'
 
 const defaultValue = new CalendarDate(2024, 2, 20)

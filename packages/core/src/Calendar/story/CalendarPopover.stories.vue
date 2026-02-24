@@ -4,7 +4,7 @@ import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 
 import { createDecade, createYear, toDate } from '@/date'

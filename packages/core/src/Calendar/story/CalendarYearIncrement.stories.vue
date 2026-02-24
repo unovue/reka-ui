@@ -2,7 +2,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import { Icon } from '@iconify/vue'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 
 function paging(date: DateValue, sign: -1 | 1) {

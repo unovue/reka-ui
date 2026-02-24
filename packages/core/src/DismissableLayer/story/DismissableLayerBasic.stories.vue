@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 
 import { reactive, ref } from 'vue'
 import { FocusScope } from '@/FocusScope'

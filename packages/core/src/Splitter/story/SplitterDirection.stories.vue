@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DataOrientation } from '@/shared/types'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '../'
 

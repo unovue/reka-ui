@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BuddhistCalendar, CalendarDate, HebrewCalendar, JapaneseCalendar, PersianCalendar, TaiwanCalendar } from '@internationalized/date'
 
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import Calendar from './_DummyCalendar.vue'
 
 const gregorian = new CalendarDate(2024, 2, 20)

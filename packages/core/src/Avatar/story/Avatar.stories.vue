@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 
 import { computed, ref } from 'vue'
 import { AvatarFallback, AvatarImage, AvatarRoot } from '..'

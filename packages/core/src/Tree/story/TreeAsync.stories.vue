@@ -2,7 +2,7 @@
 import type { TreeItemToggleEvent } from '..'
 
 import { Icon } from '@iconify/vue'
-import { defineMeta } from 'addon-vue-csf'
+import { defineMeta } from 'sb-addon-vue-csf'
 import { ref } from 'vue'
 import { TreeItem, TreeRoot } from '..'
 
