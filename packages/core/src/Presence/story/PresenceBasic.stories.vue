@@ -15,7 +15,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Basic"
-    as-child
+    :as-child="true"
   >
     <div>
       <div>

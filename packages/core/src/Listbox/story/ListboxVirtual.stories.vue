@@ -19,7 +19,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Basic"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">
       <ListboxContent class="h-72 overflow-auto">
@@ -41,7 +41,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Filter"
-    as-child
+    :as-child="true"
   >
     <div class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">
       <ListboxRoot>
@@ -70,7 +70,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Single"
-    as-child
+    :as-child="true"
   >
     <div class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">
       <ListboxRoot>
@@ -94,7 +94,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Multiple"
-    as-child
+    :as-child="true"
   >
     <div class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">
       <ListboxRoot multiple>
@@ -118,7 +118,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Replace behavior (Single)"
-    as-child
+    :as-child="true"
   >
     <div class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">
       <ListboxRoot selection-behavior="replace">
@@ -142,7 +142,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Replace behavior (Multiple)"
-    as-child
+    :as-child="true"
   >
     <div class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">
       <ListboxRoot

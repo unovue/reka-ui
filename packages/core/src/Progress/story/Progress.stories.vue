@@ -21,7 +21,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Loop"
-    as-child
+    :as-child="true"
   >
     <ProgressRoot
       v-model="interactive"
@@ -40,7 +40,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Indeterminate"
-    as-child
+    :as-child="true"
   >
     <ProgressRoot
       class="relative flex items-center justify-center w-full h-8 overflow-hidden rounded-full bg-blackA9 full"
@@ -62,7 +62,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Errors"
-    as-child
+    :as-child="true"
   >
     <div class="px-2 py-3 rounded-sm bg-slate-600 text-slate-200">
       <p class="mb-4 text-sm rounded-md text-amber-300">

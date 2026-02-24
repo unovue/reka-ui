@@ -12,7 +12,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Horizontal (Auto with overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="auto"
@@ -28,7 +28,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal (Auto without overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="auto"
@@ -41,7 +41,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal (Always with overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="always"
@@ -57,7 +57,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal (Scroll with overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="scroll"
@@ -73,7 +73,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal (Scroll without overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="scroll"
@@ -86,7 +86,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal (Hover with overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="hover"
@@ -102,7 +102,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal (Hover without overflow)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="hover"

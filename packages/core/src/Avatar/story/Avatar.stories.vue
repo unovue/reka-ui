@@ -34,8 +34,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <AvatarRoot
       class="bg-blackA3 inline-flex h-[45px] w-[45px] select-none items-center justify-center overflow-hidden rounded-full align-middle"

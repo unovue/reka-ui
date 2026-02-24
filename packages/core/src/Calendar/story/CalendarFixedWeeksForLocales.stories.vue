@@ -48,7 +48,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Gregorian"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="gregorian"
@@ -59,7 +59,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Japanese"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="japanese"
@@ -70,7 +70,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Persian"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="persian"
@@ -81,7 +81,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Taiwan"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="taiwan"
@@ -92,7 +92,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Buddhist"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="buddhist"
@@ -103,7 +103,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Hebrew"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="hebrew"

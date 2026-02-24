@@ -11,13 +11,13 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Steps"
-    as-child
+    :as-child="true"
   >
     <Rating :step="0.25" />
   </Story>
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <Rating
       :default-value="3"
@@ -25,7 +25,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Clerable"
-    as-child
+    :as-child="true"
   >
     <Rating
       :default-value="3"
@@ -34,7 +34,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Hoverable"
-    as-child
+    :as-child="true"
   >
     <Rating
       hoverable
@@ -42,7 +42,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Length of 3"
-    as-child
+    :as-child="true"
   >
     <Rating
       :length="3
@@ -51,7 +51,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <Rating
       disabled
@@ -59,7 +59,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Combination"
-    as-child
+    :as-child="true"
   >
     <Rating
       clearable
@@ -70,7 +70,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Disabled combination"
-    as-child
+    :as-child="true"
   >
     <Rating
       disabled

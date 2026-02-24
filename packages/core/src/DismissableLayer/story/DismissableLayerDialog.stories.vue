@@ -22,7 +22,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Dialog (fully modal example)"
-    as-child
+    :as-child="true"
   >
     <div class="h-[300vh]">
       <ul class="list-disc ml-4">
@@ -65,7 +65,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Popover (fully modal example)"
-    as-child
+    :as-child="true"
   >
     <div class="h-[300vh]">
       <ul class="list-disc ml-4">
@@ -108,7 +108,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Dialog (with scrollbar)"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col gap-4">
       <button

@@ -13,7 +13,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Min thumb size"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="always"
@@ -30,7 +30,7 @@ const { Story } = defineMeta({
 
   <Story
     name="RTL (prop)"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="always"
@@ -47,7 +47,7 @@ const { Story } = defineMeta({
 
   <Story
     name="RTL (inherited)"
-    as-child
+    :as-child="true"
   >
     <ConfigProvider dir="rtl">
       <ScrollAreaStory
@@ -65,7 +65,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Ellipsis at viewport width"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="always"
@@ -82,7 +82,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Ellipsis at content width"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       type="always"

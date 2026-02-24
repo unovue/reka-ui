@@ -33,7 +33,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Display Value"
-    as-child
+    :as-child="true"
   >
     <ComboboxRoot
       v-model="v1"
@@ -86,7 +86,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Filtering"
-    as-child
+    :as-child="true"
   >
     <ComboboxRoot
       v-model="v2"

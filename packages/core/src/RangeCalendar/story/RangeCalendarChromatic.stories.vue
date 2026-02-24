@@ -27,21 +27,21 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled (modelValue)"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Controlled (modelValue)"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar v-model="modelValue" />
   </Story>
 
   <Story
     name="Uncontrolled (placeholder)"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -51,35 +51,35 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (placeholder)"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar v-model:placeholder="placeholder" />
   </Story>
 
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar />
   </Story>
 
   <Story
     name="Default value"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar :disabled="true" />
   </Story>
 
   <Story
     name="Fixed weeks"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -89,7 +89,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Localization"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -99,7 +99,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Prevent deselection"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -109,7 +109,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Multiple selection"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -119,14 +119,14 @@ const { Story } = defineMeta({
 
   <Story
     name="Different calendar"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar :default-value="persianCalendar" />
   </Story>
 
   <Story
     name="Pagination functions"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"

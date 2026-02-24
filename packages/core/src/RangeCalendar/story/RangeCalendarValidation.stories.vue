@@ -24,7 +24,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Unavailable"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -34,7 +34,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -44,7 +44,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Min"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -54,7 +54,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Max"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -64,7 +64,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Min Max"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"
@@ -75,7 +75,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Maximum Days"
-    as-child
+    :as-child="true"
   >
     <RangeCalendar
       :default-value="defaultValue"

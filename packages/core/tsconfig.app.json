@@ -6,8 +6,8 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
 
     "paths": {
-      "@/*": ["./src/*"],
-      "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
+      "@/*": ["./src/*"]
+      // "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
     },
     // TODO: set skipLibCheck to false (#2043)
     // Ideally we should set this to false, but histoire and vueuse are being difficult...

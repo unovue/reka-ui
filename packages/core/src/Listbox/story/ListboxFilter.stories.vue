@@ -16,7 +16,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Filter (Single)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot class="w-48  flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto ">
       <ListboxFilter
@@ -38,7 +38,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Filter (Multiple)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       :multiple="true"

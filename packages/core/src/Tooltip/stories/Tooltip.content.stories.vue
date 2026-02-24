@@ -15,7 +15,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Aria Label"
-    as-child
+    :as-child="true"
   >
     <div class="grid w-full h-28 place-content-center">
       <TooltipProvider :disable-closing-trigger="true">
@@ -30,7 +30,7 @@ const { Story } = defineMeta({
           </TooltipTrigger>
           <TooltipPortal>
             <TooltipContent
-              as-child
+              :as-child="true"
               align="start"
               side="bottom"
               :align-offset="20"
@@ -54,7 +54,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Events"
-    as-child
+    :as-child="true"
   >
     <div class="grid w-full h-28 place-content-center">
       <p class="mb-4">

@@ -18,8 +18,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div
       ref="boundary"
@@ -29,7 +29,7 @@ const { Story } = defineMeta({
         <PopoverTrigger
           class="rounded-full w-[35px] h-[35px] inline-flex items-center justify-center text-violet11 bg-white shadow-[0_2px_10px] shadow-blackA7 hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black cursor-default outline-none"
           aria-label="Update dimensions"
-          as-child
+          :as-child="true"
         >
           <button>Open</button>
         </PopoverTrigger>

@@ -11,7 +11,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Gregorian"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -41,7 +41,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Japanese"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -72,7 +72,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Persian"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -103,7 +103,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Taiwan"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -134,7 +134,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Hebrew"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -165,7 +165,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Buddhist"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"

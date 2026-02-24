@@ -19,8 +19,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <HoverCardRoot v-model:open="hoverState">
       <HoverCardTrigger
@@ -28,7 +28,7 @@ const { Story } = defineMeta({
         href="https://twitter.com/unovue"
         target="_blank"
         rel="noreferrer noopener"
-        as-child
+        :as-child="true"
       >
         <a>
           <img
@@ -43,7 +43,7 @@ const { Story } = defineMeta({
           <HoverCardContent
             class="w-[300px] rounded-md bg-white p-5 shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px]"
             :side-offset="5"
-            as-child
+            :as-child="true"
           >
             <div>
               <div class="flex flex-col gap-[7px]">

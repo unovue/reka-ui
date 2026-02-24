@@ -2,20 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Reka UI Color Scheme - Light Mode */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 60 8% 97%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 40 6% 91%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 80%;
+    --input: 240 5.9% 80%;
+    --ring: 142.1 76.2% 36.3%;
+    --radius: 0.5rem;
+  }
+
+  /* Reka UI Color Scheme - Dark Mode (Default) */
+  :root.dark,
+  .dark {
+    --background: 141 17% 5%;
+    --foreground: 0 0% 95%;
+    --card: 24 9.8% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 151 62% 59%;
+    --primary-foreground: 144.9 80.4% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 168 2.6% 62.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 142.4 71.8% 29.2%;
+  }
+}
+
 @layer components {
+  /* Reka UI themed accordion */
   .accordion-item {
-    @apply mt-px overflow-hidden first:mt-0 first:rounded-t last:rounded-b focus-within:relative focus-within:z-10 focus-within:ring-2 focus-within:ring-black;
+    @apply mt-px overflow-hidden first:mt-0 first:rounded-t last:rounded-b;
+    @apply focus-within:relative focus-within:z-10;
+    @apply focus-within:ring-2 focus-within:ring-[hsl(var(--ring))];
   }
 
   .accordion-trigger {
-    @apply flex h-12 flex-1 cursor-pointer items-center justify-between bg-white px-5 text-base font-medium leading-none text-green-700 shadow-[0_1px_0] shadow-[--line-color] outline-none hover:bg-gray-200;
+    @apply flex h-12 flex-1 cursor-pointer items-center justify-between px-5 text-base font-medium leading-none outline-none;
+    @apply bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))];
+    @apply shadow-[0_1px_0] shadow-[hsl(var(--border))];
+    @apply hover:bg-[hsl(var(--accent))];
   }
 
   .accordion-content {
-    @apply overflow-hidden bg-gray-100 text-sm text-gray-900 px-5 py-4;
+    @apply overflow-hidden text-sm px-5 py-4;
+    @apply bg-[hsl(var(--muted))] text-[hsl(var(--foreground))];
   }
+
   .accordion-animated-content {
-    @apply overflow-hidden bg-gray-100 text-sm text-gray-900;
+    @apply overflow-hidden text-sm;
+    @apply bg-[hsl(var(--muted))] text-[hsl(var(--foreground))];
   }
 }
 
@@ -27,4 +86,27 @@
 /* span the width to full if child has w-full class */
 .sb-show-main .sb-main-padded > div:has(div.w-full) {
   width: 100%;
+}
+
+/* Storybook dark mode support - apply background to the story iframe */
+.sb-show-main {
+  background-color: #1c1917 !important;
+  color: hsl(0 0% 95%) !important;
+}
+
+/* Light mode specific overrides for story container - Reka UI light theme */
+.light .sb-show-main .sb-main-padded,
+.light.sb-show-main .sb-main-padded {
+  background-color: hsl(0 0% 100%);
+  color: hsl(240 10% 3.9%);
+}
+
+/* Selection styling to match Reka UI */
+::selection {
+  background: hsl(var(--primary) / 0.3);
+}
+
+/* Focus visible styling */
+*:focus-visible {
+  @apply outline-[hsl(var(--ring))];
 }

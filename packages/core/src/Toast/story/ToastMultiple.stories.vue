@@ -38,7 +38,7 @@ const { Story } = defineMeta({
       </ToastDescription>
       <ToastAction
         class="[grid-area:_action]"
-        as-child
+        :as-child="true"
         alt-text="Goto schedule to undo"
       >
         <button class="inline-flex items-center justify-center rounded font-medium text-xs px-[10px] leading-[25px] h-[25px] bg-green2 text-green11 shadow-[inset_0_0_0_1px] shadow-green7 hover:shadow-[inset_0_0_0_1px] hover:shadow-green8 focus:shadow-[0_0_0_2px] focus:shadow-green8">

@@ -25,7 +25,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Default"
-    as-child
+    :as-child="true"
   >
     <div class="w-full h-[600px]">
       <NavigationMenuRoot

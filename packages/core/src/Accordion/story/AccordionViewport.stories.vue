@@ -16,7 +16,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="OutsideViewport"
-    as-child
+    :as-child="true"
   >
     <p>Scroll down to see tabs</p>
     <div :style="{ height: '150vh' }" />

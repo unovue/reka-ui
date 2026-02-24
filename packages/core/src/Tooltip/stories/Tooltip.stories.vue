@@ -15,8 +15,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div class="py-20">
       <TooltipProvider :disabled="disableTooltip">
@@ -41,7 +41,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="closeAnimation"
-    as-child
+    :as-child="true"
   >
     <div class="py-20">
       <TooltipProvider :disabled="disableTooltip">

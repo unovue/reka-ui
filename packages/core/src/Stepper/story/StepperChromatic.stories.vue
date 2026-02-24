@@ -15,49 +15,49 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <Stepper :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <Stepper v-model="modelValue" />
   </Story>
 
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <Stepper />
   </Story>
 
   <Story
     name="Default value"
-    as-child
+    :as-child="true"
   >
     <Stepper :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Linear"
-    as-child
+    :as-child="true"
   >
     <Stepper linear />
   </Story>
 
   <Story
     name="Free"
-    as-child
+    :as-child="true"
   >
     <Stepper :linear="false" />
   </Story>
 
   <Story
     name="Vertical"
-    as-child
+    :as-child="true"
   >
     <Stepper orientation="vertical" />
   </Story>

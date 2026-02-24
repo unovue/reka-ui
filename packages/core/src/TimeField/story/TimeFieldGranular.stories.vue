@@ -12,7 +12,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Granular (second)"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col gap-2">
       <Label
@@ -51,7 +51,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Granular (minute)"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col gap-2">
       <Label
@@ -90,7 +90,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Granular (hour)"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col gap-2">
       <Label

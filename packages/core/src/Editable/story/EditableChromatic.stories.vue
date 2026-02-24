@@ -15,35 +15,35 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled (modelValue)"
-    as-child
+    :as-child="true"
   >
     <Editable :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Controlled (modelValue)"
-    as-child
+    :as-child="true"
   >
     <Editable v-model="modelValue" />
   </Story>
 
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <Editable />
   </Story>
 
   <Story
     name="Default value"
-    as-child
+    :as-child="true"
   >
     <Editable :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Edit on focus"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -53,7 +53,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Edit on double click"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -63,7 +63,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Submit on blur"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -73,7 +73,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Submit on enter"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -83,7 +83,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Select on focus"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -94,7 +94,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -104,7 +104,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Start in edit mode"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -114,7 +114,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Read only"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"
@@ -124,7 +124,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Auto resize"
-    as-child
+    :as-child="true"
   >
     <Editable
       :default-value="defaultValue"

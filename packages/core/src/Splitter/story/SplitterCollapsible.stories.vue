@@ -10,8 +10,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div class="w-full h-48">
       <SplitterGroup direction="horizontal">

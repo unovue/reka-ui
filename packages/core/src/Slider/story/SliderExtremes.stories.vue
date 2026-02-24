@@ -15,7 +15,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Extreme"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -37,7 +37,7 @@ const { Story } = defineMeta({
 
   <Story
     name="0 case"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -56,7 +56,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Multiple range"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -83,7 +83,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Vertical"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex justify-center items-center select-none touch-none w-5 h-[100px]"
@@ -100,7 +100,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Out of bound value (negative)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -119,7 +119,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Out of bound value (positive)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -138,7 +138,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -154,7 +154,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Inside Form"
-    as-child
+    :as-child="true"
   >
     <form @submit.prevent="alert('form submitted!')">
       <SliderRoot

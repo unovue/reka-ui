@@ -15,7 +15,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="With Vue Transition"
-    as-child
+    :as-child="true"
   >
     <div>
       <button @click="isOpen = !isOpen">

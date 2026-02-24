@@ -25,7 +25,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Default"
-    as-child
+    :as-child="true"
   >
     <div class="w-full h-[600px]">
       <NavigationMenuRoot
@@ -40,7 +40,7 @@ const { Story } = defineMeta({
               Learn
               <Icon
                 icon="radix-icons:caret-down"
-                class="text-green10 relative top-[1px] transition-transform duration-[150ms] ease-in group-data-[state=open]:-rotate-180"
+                class="text-green10 relative top-[1px] transition-transform duration-150 ease-in group-data-[state=open]:-rotate-180"
               />
             </NavigationMenuTrigger>
             <NavigationMenuContent
@@ -48,7 +48,7 @@ const { Story } = defineMeta({
             >
               <ul class="one m-0 grid list-none gap-x-[10px] p-[22px] sm:w-[500px] sm:grid-cols-[0.75fr_1fr]">
                 <li class="row-span-3 grid">
-                  <NavigationMenuLink as-child>
+                  <NavigationMenuLink :as-child="true">
                     <a
                       class="focus:shadow-green7 bg-stone-900 flex h-full w-full select-none flex-col justify-end rounded-lg p-[25px] no-underline outline-none focus:shadow-[0_0_0_2px]"
                       href="/"
@@ -92,7 +92,7 @@ const { Story } = defineMeta({
               Overview
               <Icon
                 icon="radix-icons:caret-down"
-                class="text-green10 relative top-[1px] transition-transform duration-[150ms] ease-in group-data-[state=open]:-rotate-180"
+                class="text-green10 relative top-[1px] transition-transform duration-150 ease-in group-data-[state=open]:-rotate-180"
               />
             </NavigationMenuTrigger>
             <NavigationMenuContent class="data-[motion=from-start]:animate-enterFromLeft data-[motion=from-end]:animate-enterFromRight data-[motion=to-start]:animate-exitToLeft data-[motion=to-end]:animate-exitToRight absolute top-0 left-0 w-full sm:w-auto">

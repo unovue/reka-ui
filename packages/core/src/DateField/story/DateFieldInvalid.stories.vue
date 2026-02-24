@@ -12,7 +12,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Default"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col gap-2">
       <Label

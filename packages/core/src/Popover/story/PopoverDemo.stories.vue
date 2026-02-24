@@ -21,8 +21,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <PopoverRoot
       v-model:open="toggleState"

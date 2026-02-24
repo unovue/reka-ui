@@ -19,7 +19,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -48,7 +48,7 @@ const { Story } = defineMeta({
 
   <Story
     name="With default"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -78,7 +78,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -107,7 +107,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -137,7 +137,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Min date"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -168,7 +168,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Max date"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -199,7 +199,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"
@@ -230,7 +230,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Locale awareness"
-    as-child
+    :as-child="true"
   >
     <DateFieldRoot
       v-slot="{ segments }"

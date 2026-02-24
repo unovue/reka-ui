@@ -16,7 +16,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="No orientation (both) + no looping"
-    as-child
+    :as-child="true"
   >
     <ButtonGroup
       :dir="dir"
@@ -42,7 +42,7 @@ const { Story } = defineMeta({
 
   <Story
     name="No orientation (both) +  looping"
-    as-child
+    :as-child="true"
   >
     <ButtonGroup
       :dir="dir"
@@ -69,7 +69,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal orientation + no looping"
-    as-child
+    :as-child="true"
   >
     <ButtonGroup
       :dir="dir"
@@ -95,7 +95,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Horizontal orientation + looping"
-    as-child
+    :as-child="true"
   >
     <ButtonGroup
       :dir="dir"
@@ -122,7 +122,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Vertical orientation + no looping"
-    as-child
+    :as-child="true"
   >
     <ButtonGroup
       :dir="dir"
@@ -148,7 +148,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Vertical orientation + looping"
-    as-child
+    :as-child="true"
   >
     <ButtonGroup
       :dir="dir"

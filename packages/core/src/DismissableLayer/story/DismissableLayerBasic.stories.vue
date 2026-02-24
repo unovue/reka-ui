@@ -30,8 +30,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div class="flex flex-col">
       <button @click="open = !open">
@@ -81,14 +81,14 @@ const { Story } = defineMeta({
 
   <Story
     name="Nested"
-    as-child
+    :as-child="true"
   >
     <DismissableBox />
   </Story>
 
   <Story
     name="Focus trap"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col justify-center">
       <button
@@ -100,7 +100,7 @@ const { Story } = defineMeta({
 
       <DismissableLayer
         v-if="openWithFocusScope"
-        as-child
+        :as-child="true"
         disable-outside-pointer-events
         @dismiss="openWithFocusScope = false"
         @pointer-down-outside="

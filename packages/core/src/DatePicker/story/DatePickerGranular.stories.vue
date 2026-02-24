@@ -11,28 +11,28 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Granular (second)"
-    as-child
+    :as-child="true"
   >
     <DatePicker granularity="second" />
   </Story>
 
   <Story
     name="Granular (minute)"
-    as-child
+    :as-child="true"
   >
     <DatePicker granularity="minute" />
   </Story>
 
   <Story
     name="Granular (hour)"
-    as-child
+    :as-child="true"
   >
     <DatePicker granularity="hour" />
   </Story>
 
   <Story
     name="Granular (day)"
-    as-child
+    :as-child="true"
   >
     <DatePicker granularity="day" />
   </Story>

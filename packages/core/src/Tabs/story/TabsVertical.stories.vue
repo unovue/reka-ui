@@ -10,8 +10,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <TabsRoot
       class="flex h-[400px] shadow-[0_2px_10px] shadow-blackA4"

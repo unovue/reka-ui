@@ -20,7 +20,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled (Single)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot class="w-48 h-72 flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto overflow-auto">
       <ListboxContent>
@@ -38,7 +38,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled (Multiple)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       :multiple="true"
@@ -59,7 +59,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (Single)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       v-model="singleControl"
@@ -80,7 +80,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (Multiple)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       v-model="multipleControl"
@@ -102,7 +102,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Object (Single)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot class="w-48 h-72 flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto overflow-auto">
       <ListboxContent>
@@ -120,7 +120,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Object (Multiple)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       by="value"
@@ -142,7 +142,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Replace behavior (Single)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       :default-value="2"
@@ -164,7 +164,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Replace behavior (Multiple)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       multiple
@@ -186,7 +186,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Highlight on hover"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       highlight-on-hover
@@ -207,7 +207,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Highlight imperative"
-    as-child
+    :as-child="true"
   >
     <button @click="listboxRef?.highlightItem('Anguilla')">
       Select "Anguilla"
@@ -231,7 +231,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Orientation (Horizontal)"
-    as-child
+    :as-child="true"
   >
     <ListboxRoot
       class="w-64 h-full flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto overflow-auto"

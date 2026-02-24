@@ -17,7 +17,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Dialog (fully modal example)"
-    as-child
+    :as-child="true"
   >
     <div class="h-[300vh]">
       <ul class="list-disc ml-4">

@@ -22,8 +22,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div class="text-black">
       <span>{{ open1 }}</span>

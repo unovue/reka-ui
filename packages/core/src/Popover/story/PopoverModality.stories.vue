@@ -19,7 +19,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Non-modal (default)"
-    as-child
+    :as-child="true"
   >
     <div class="flex items-center justify-center flex-col h-[110vh]">
       <PopoverRoot>
@@ -56,7 +56,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Modal"
-    as-child
+    :as-child="true"
   >
     <div class="flex items-center justify-center flex-col h-[110vh]">
       <PopoverRoot :modal="true">

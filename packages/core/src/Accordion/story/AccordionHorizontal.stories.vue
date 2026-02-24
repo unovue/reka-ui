@@ -16,7 +16,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Horizontal Orientation"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"

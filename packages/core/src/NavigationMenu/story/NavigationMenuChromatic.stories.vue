@@ -11,21 +11,21 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Default"
-    as-child
+    :as-child="true"
   >
     <NavigationMenu />
   </Story>
 
   <Story
     name="Disabled click trigger"
-    as-child
+    :as-child="true"
   >
     <NavigationMenu disable-click-trigger />
   </Story>
 
   <Story
     name="Disabled hover trigger"
-    as-child
+    :as-child="true"
   >
     <NavigationMenu disable-hover-trigger />
   </Story>

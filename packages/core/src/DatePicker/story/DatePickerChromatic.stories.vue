@@ -19,35 +19,35 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <DatePicker />
   </Story>
 
   <Story
     name="With default"
-    as-child
+    :as-child="true"
   >
     <DatePicker :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <DatePicker :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <DatePicker v-model="modelValue" />
   </Story>
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <DatePicker
       :default-value="defaultValue"
@@ -57,7 +57,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Prevent deselect"
-    as-child
+    :as-child="true"
   >
     <DatePicker
       :default-value="defaultValue"
@@ -67,7 +67,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Locale awareness"
-    as-child
+    :as-child="true"
   >
     <DatePicker
       :default-value="defaultValue"
@@ -77,7 +77,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Fixed weeks"
-    as-child
+    :as-child="true"
   >
     <DatePicker
       :default-value="defaultValue"
@@ -87,7 +87,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Multiple months"
-    as-child
+    :as-child="true"
   >
     <DatePicker
       :default-value="defaultValue"
@@ -97,7 +97,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Multiple months (Paged navigation)"
-    as-child
+    :as-child="true"
   >
     <DatePicker
       :default-value="defaultValue"

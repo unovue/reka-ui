@@ -17,7 +17,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled (LTR)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -33,7 +33,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Uncontrolled (Multiple) "
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -53,7 +53,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled (RTL) "
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -70,7 +70,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="Uncontrolled (Multiple RTL) "
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -91,7 +91,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled (Multiples)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex items-center select-none touch-none w-[200px] h-5"
@@ -117,7 +117,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       v-model="controlledLtr"
@@ -134,7 +134,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (Multiple)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       v-model="controlledLtrMulti"
@@ -154,7 +154,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (RTL)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       v-model="controlledRtl"
@@ -172,7 +172,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (Multiple RTL)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       v-model="controlledRtlMulti"
@@ -192,7 +192,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Overflow"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       :default-value="[50]"
@@ -210,7 +210,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Overflow (RTL)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       :default-value="[50]"
@@ -229,7 +229,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Vertical Overflow"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex justify-center items-center select-none touch-none w-5 h-[100px]"
@@ -248,7 +248,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Vertical Overflow (Inverted)"
-    as-child
+    :as-child="true"
   >
     <SliderRoot
       class="relative flex justify-center items-center select-none touch-none w-5 h-[100px]"

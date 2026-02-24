@@ -21,35 +21,35 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <DateRangeField />
   </Story>
 
   <Story
     name="With default"
-    as-child
+    :as-child="true"
   >
     <DateRangeField :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <DateRangeField :default-value="defaultValue" />
   </Story>
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <DateRangeField v-model="modelValue" />
   </Story>
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <DateRangeField
       :default-value="defaultValue"
@@ -59,7 +59,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Locale awareness"
-    as-child
+    :as-child="true"
   >
     <DateRangeField
       :default-value="defaultValue"
@@ -69,14 +69,14 @@ const { Story } = defineMeta({
 
   <Story
     name="Placeholder"
-    as-child
+    :as-child="true"
   >
     <DateRangeField :default-placeholder="defaultPlaceholder" />
   </Story>
 
   <Story
     name="Locale timezone"
-    as-child
+    :as-child="true"
   >
     <DateRangeField :default-placeholder="localTimezonePlaceholder" />
   </Story>

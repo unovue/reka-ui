@@ -25,7 +25,7 @@ const { Story } = defineMeta({
 
       <FocusScope
         v-if="trapped1"
-        as-child
+        :as-child="true"
         :loop="trapped1"
         :trapped="trapped1"
       >
@@ -71,7 +71,7 @@ const { Story } = defineMeta({
 
       <FocusScope
         v-if="trapped2"
-        as-child
+        :as-child="true"
         :loop="trapped2"
         :trapped="trapped2"
       >

@@ -11,7 +11,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Horizontal"
-    as-child
+    :as-child="true"
   >
     <div class="w-full h-48">
       <SplitterGroup direction="horizontal">
@@ -32,7 +32,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Vertical"
-    as-child
+    :as-child="true"
   >
     <div class="w-full h-64">
       <SplitterGroup direction="vertical">
@@ -53,7 +53,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Nested"
-    as-child
+    :as-child="true"
   >
     <div class="w-full h-64">
       <SplitterGroup direction="horizontal">

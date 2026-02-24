@@ -27,7 +27,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Min date"
-    as-child
+    :as-child="true"
   >
     <DateRangePicker
       :default-value="defaultValue"
@@ -37,7 +37,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Max date"
-    as-child
+    :as-child="true"
   >
     <DateRangePicker
       :default-value="defaultValue"
@@ -47,7 +47,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Unavailable"
-    as-child
+    :as-child="true"
   >
     <DateRangePicker
       :default-value="defaultValue"
@@ -57,7 +57,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <DateRangePicker
       :default-value="defaultValue"

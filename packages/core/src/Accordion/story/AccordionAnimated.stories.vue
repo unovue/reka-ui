@@ -38,7 +38,7 @@ const selectedValue = ref(['One', 'Two', 'Three', 'Four'])
 <template>
   <Story
     name="Closed by default"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -72,7 +72,7 @@ const selectedValue = ref(['One', 'Two', 'Three', 'Four'])
 
   <Story
     name="Open by default"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -107,7 +107,7 @@ const selectedValue = ref(['One', 'Two', 'Three', 'Four'])
 
   <Story
     name="Animated 2D"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -141,7 +141,7 @@ const selectedValue = ref(['One', 'Two', 'Three', 'Four'])
 
   <Story
     name="Animated Controlled"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       v-model="selectedValue"

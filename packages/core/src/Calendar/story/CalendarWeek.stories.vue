@@ -13,7 +13,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="weeks"
-    as-child
+    :as-child="true"
   >
     <CalendarRoot
       v-slot="{ weekDays, grid }"

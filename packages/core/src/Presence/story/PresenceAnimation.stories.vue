@@ -30,28 +30,28 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="With Mount Animation"
-    as-child
+    :as-child="true"
   >
     <Animation class="animate-fadeIn" />
   </Story>
 
   <Story
     name="With Unmount Animation"
-    as-child
+    :as-child="true"
   >
     <Animation class="data-[state=closed]:animate-fadeOut" />
   </Story>
 
   <Story
     name="With Multiple Animation"
-    as-child
+    :as-child="true"
   >
     <Animation class="multipleMountAnimationsClass" />
   </Story>
 
   <Story
     name="With Open & Close Animation"
-    as-child
+    :as-child="true"
   >
     <Animation
       class="data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut"
@@ -60,14 +60,14 @@ const { Story } = defineMeta({
 
   <Story
     name="With Multiple Open & Close Animation"
-    as-child
+    :as-child="true"
   >
     <Animation class="multipleOpenAndCloseAnimationsClass" />
   </Story>
 
   <Story
     name="With Deferred Mount Animation"
-    as-child
+    :as-child="true"
   >
     <div>
       <p class="text-xs mb-4">

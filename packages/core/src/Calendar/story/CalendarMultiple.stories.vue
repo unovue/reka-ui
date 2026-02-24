@@ -14,7 +14,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="2 months"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="defaultValue"
@@ -24,7 +24,7 @@ const { Story } = defineMeta({
 
   <Story
     name="2 months (Paged navigation)"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="defaultValue"
@@ -35,7 +35,7 @@ const { Story } = defineMeta({
 
   <Story
     name="3 months"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="defaultValue"
@@ -45,7 +45,7 @@ const { Story } = defineMeta({
 
   <Story
     name="3 months (Paged navigation)"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="defaultValue"
@@ -56,7 +56,7 @@ const { Story } = defineMeta({
 
   <Story
     name="3 months (Fixed week)"
-    as-child
+    :as-child="true"
   >
     <Calendar
       :default-value="defaultValue"

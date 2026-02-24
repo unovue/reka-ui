@@ -15,7 +15,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       class="text-sm flex items-center border bg-blackA7 border-blackA9 rounded-md text-white"
@@ -33,7 +33,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       v-model="value"
@@ -51,7 +51,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Decimal"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :default-value="0"
@@ -74,7 +74,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Percentage"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :default-value="0.05"
@@ -96,7 +96,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Currency values"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :default-value="5"
@@ -120,7 +120,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Units"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :default-value="5"
@@ -143,7 +143,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Minimum"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :default-value="5"
@@ -162,7 +162,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Maximum"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :default-value="5"
@@ -181,7 +181,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Step (3)"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :step="3"
@@ -199,7 +199,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Step (3) + Minimum (2)"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :min="2"
@@ -218,7 +218,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Step (3) + Minimum (2) + Maximum (21)"
-    as-child
+    :as-child="true"
   >
     <NumberFieldRoot
       :min="2"

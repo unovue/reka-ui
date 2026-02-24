@@ -15,8 +15,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div class="flex h-10 items-center gap-0.5 mt-20">
       <HoverCardRoot
@@ -25,7 +25,7 @@ const { Story } = defineMeta({
         :open-delay="10"
         :close-delay="0"
       >
-        <HoverCardTrigger as-child>
+        <HoverCardTrigger :as-child="true">
           <div
             class="h-full w-3 rounded-[1px] first:rounded-l-[4px] last:rounded-r-[4px] bg-green-500"
           />

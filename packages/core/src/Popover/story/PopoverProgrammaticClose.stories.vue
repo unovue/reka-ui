@@ -17,8 +17,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <div class="relative flex items-center justify-center flex-col">
       <PopoverRoot v-slot="{ close: closeA }">

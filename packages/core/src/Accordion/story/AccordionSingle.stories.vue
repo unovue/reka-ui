@@ -19,7 +19,7 @@ const selectedValue = ref('item-2')
 <template>
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       type="single"
@@ -72,7 +72,7 @@ const selectedValue = ref('item-2')
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       v-model="selectedValue"
@@ -125,7 +125,7 @@ const selectedValue = ref('item-2')
 
   <Story
     name="Collapsible"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"

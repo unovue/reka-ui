@@ -18,7 +18,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled (Single closed)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -47,7 +47,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled (Single open)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -77,7 +77,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled (Multiple closed)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -106,7 +106,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled (Multiple open)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -136,7 +136,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (Single open)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -166,7 +166,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled (Multiple open)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -196,7 +196,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled (whole)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -226,7 +226,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled (item)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -256,7 +256,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled (with `disabled=false` on top-level)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -315,7 +315,7 @@ const { Story } = defineMeta({
 
   <Story
     name="State attributes (Accordion disabled)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] root-attr"
@@ -346,7 +346,7 @@ const { Story } = defineMeta({
 
   <Story
     name="State attributes (Accordion enabled with item override)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] root-attr"
@@ -378,7 +378,7 @@ const { Story } = defineMeta({
 
   <Story
     name="State attributes (Accordion disabled with item override)"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] root-attr"

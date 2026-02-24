@@ -24,7 +24,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Basic"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory :type="state.type">
       <ScrollAreaCopy
@@ -36,7 +36,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Resizable"
-    as-child
+    :as-child="true"
   >
     <div class="w-[400px] h-[400px] resize overflow-hidden">
       <ScrollAreaStory class="w-full h-full">
@@ -50,7 +50,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Content Change"
-    as-child
+    :as-child="true"
   >
     <div class="w-[400px] h-[400px]">
       <ScrollAreaStory
@@ -68,7 +68,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Animated"
-    as-child
+    :as-child="true"
   >
     <ScrollAreaStory
       animated

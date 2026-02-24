@@ -18,7 +18,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Empty default"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -47,7 +47,7 @@ const { Story } = defineMeta({
 
   <Story
     name="With default"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -77,7 +77,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -106,7 +106,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -136,7 +136,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Min value"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -166,7 +166,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Max value"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -196,7 +196,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Disabled"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"
@@ -226,7 +226,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Locale awareness"
-    as-child
+    :as-child="true"
   >
     <TimeFieldRoot
       v-slot="{ segments }"

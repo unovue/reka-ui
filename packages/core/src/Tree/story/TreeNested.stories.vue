@@ -12,8 +12,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <TreeRoot
       class="list-none select-none w-64 bg-white text-blackA11 rounded-lg p-2 text-sm font-medium"

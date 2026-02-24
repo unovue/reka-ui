@@ -23,7 +23,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="chromatic"
-    as-child
+    :as-child="true"
   >
     <div class="flex flex-col items-left dark:text-white">
       <h1 class="font-bold text-xl dark:text-white">
@@ -100,8 +100,8 @@ const { Story } = defineMeta({
     </div>
   </Story>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <Toggle
       v-model="toggleState"
@@ -116,7 +116,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="toggled by default"
-    as-child
+    :as-child="true"
   >
     <Toggle
       v-model="toggleStateDefaultOn"
@@ -132,7 +132,7 @@ const { Story } = defineMeta({
   </Story>
   <Story
     name="onPressedChange Event"
-    as-child
+    :as-child="true"
   >
     <Toggle
       v-model="toggleState"

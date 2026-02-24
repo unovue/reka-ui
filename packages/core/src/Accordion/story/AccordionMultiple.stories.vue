@@ -19,7 +19,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Uncontrolled"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -72,7 +72,7 @@ const { Story } = defineMeta({
 
   <Story
     name="Controlled"
-    as-child
+    :as-child="true"
   >
     <AccordionRoot
       v-model="selectedValue"

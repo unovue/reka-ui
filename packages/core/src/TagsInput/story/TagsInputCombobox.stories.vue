@@ -26,8 +26,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <ComboboxRoot
       v-model="values"
@@ -55,7 +55,7 @@ const { Story } = defineMeta({
 
           <ComboboxInput
             v-model="query"
-            as-child
+            :as-child="true"
           >
             <TagsInputInput
               placeholder="Fruits..."

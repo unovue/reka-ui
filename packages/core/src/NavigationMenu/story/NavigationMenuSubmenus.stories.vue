@@ -27,7 +27,7 @@ const { Story } = defineMeta({
 <template>
   <Story
     name="Default"
-    as-child
+    :as-child="true"
   >
     <StoryFrame>
       <NavigationMenuRoot

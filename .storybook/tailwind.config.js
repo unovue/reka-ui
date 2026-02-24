@@ -1,11 +1,20 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { blackA, grass, green, indigo, mauve, purple, red, slate, teal, violet } from '@radix-ui/colors'
+
 import animate from 'tailwindcss-animate'
 import plugin from 'tailwindcss/plugin'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
-  content: ['../packages/core/src/**/*.vue', '../packages/core/src/**/*.stories.vue'],
+  content: [
+    resolve(__dirname, '../packages/core/src/**/*.vue'),
+    resolve(__dirname, '../packages/core/src/**/*.stories.vue'),
+    resolve(__dirname, './**/*.vue'),
+  ],
   theme: {
     extend: {
       colors: {

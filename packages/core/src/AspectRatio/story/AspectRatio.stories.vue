@@ -10,8 +10,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <AspectRatio :ratio="16 / 9">
       <img

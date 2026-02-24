@@ -13,8 +13,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <RadioGroupRoot
       v-model="radioStateSingle"
@@ -59,7 +59,7 @@ const { Story } = defineMeta({
       <div class="flex items-center">
         <RadioGroupItem
           id="r3"
-          as-child
+          :as-child="true"
           class="bg-white w-[25px] h-[25px] rounded-full shadow-[0_2px_10px] shadow-blackA7 hover:bg-violet3 focus:shadow-[0_0_0_2px] focus:shadow-black outline-none cursor-default"
           value="compact"
         >

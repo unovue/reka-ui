@@ -39,8 +39,8 @@ const { Story } = defineMeta({
 
 <template>
   <Story
-    name="default"
-    as-child
+    name="Default"
+    :as-child="true"
   >
     <StepperRoot
       class="flex gap-2 p-1"
