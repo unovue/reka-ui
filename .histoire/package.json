@@ -24,7 +24,7 @@
     "@radix-ui/colors": "^3.0.0",
     "@rollup/plugin-alias": "^6.0.0",
     "autoprefixer": "^10.4.20",
-    "eslint": "^10.0.0",
+    "eslint": "^10.0.1",
     "histoire": "^0.17.17",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",

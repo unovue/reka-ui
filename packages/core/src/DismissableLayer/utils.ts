@@ -28,8 +28,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
     layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
   )
 
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
-  ) {
+  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))) {
     return true
   }
   else {

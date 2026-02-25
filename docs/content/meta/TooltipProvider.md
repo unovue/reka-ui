@@ -2,6 +2,12 @@
 
 <PropsTable :data="[
   {
+    'name': 'content',
+    'description': '<p>Default settings that will be used by all tooltip components.</p>\n',
+    'type': 'TooltipContentProps',
+    'required': false
+  },
+  {
     'name': 'delayDuration',
     'description': '<p>The duration from when the pointer enters the trigger until the tooltip gets opened.</p>\n',
     'type': 'number',

@@ -145,6 +145,7 @@ export default defineConfig({
           {
             text: 'Form',
             items: [
+              // TODO: uncomment when release { text: `Autocomplete ${BadgeHTML('Alpha', true)}`, link: '/docs/components/autocomplete' },
               { text: 'Checkbox', link: '/docs/components/checkbox' },
               { text: 'Combobox', link: '/docs/components/combobox' },
               { text: `Editable`, link: '/docs/components/editable' },

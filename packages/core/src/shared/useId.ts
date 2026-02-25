@@ -16,15 +16,14 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
   if (deterministicId)
     return deterministicId
 
+  let id: string
   if ('useId' in vue) {
-    return `${prefix}-${vue.useId?.()}`
+    id = vue.useId?.()
+  }
+  else {
+    const configProviderContext = injectConfigProviderContext({ useId: undefined })
+    id = configProviderContext.useId?.() ?? `${++count}`
   }
 
-  const configProviderContext = injectConfigProviderContext({ useId: undefined })
-
-  if (configProviderContext.useId) {
-    return `${prefix}-${configProviderContext.useId()}`
-  }
-
-  return `${prefix}-${++count}`
+  return prefix ? `${prefix}-${id}` : id
 }

@@ -83,7 +83,7 @@
     "pub:release": "npm publish --access public --provenance"
   },
   "peerDependencies": {
-    "vue": ">= 3.2.0"
+    "vue": ">= 3.4.0"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
