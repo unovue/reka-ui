@@ -241,7 +241,7 @@ function handleKeyDown(event: KeyboardEvent) {
     // menus should not be navigated using tab key so we prevent it
     if (event.key === 'Tab')
       event.preventDefault()
-    if (!isModifierKey && isCharacterKey && !isKeyDownInTextField && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA')
+    if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
       handleTypeaheadSearch(event.key, collectionItems)
   }
 

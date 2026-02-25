@@ -8,7 +8,7 @@ import { injectMenuSubContext } from '@/Menu/MenuSub.vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 export interface DropdownMenuFilterProps extends PrimitiveProps {
-  /** The controlled value of the filter. Can be binded with with v-model. */
+  /** The controlled value of the filter. Can be binded with v-model. */
   modelValue?: string
   /** Focus on element when mounted. */
   autoFocus?: boolean
@@ -52,9 +52,6 @@ const disabled = computed(() => props.disabled || false)
 const activedescendant = ref<string | undefined>()
 watchSyncEffect(() => activedescendant.value = contentContext.highlightedElement.value?.id)
 
-// Track if the filter is focused
-const isFocused = ref(false)
-
 onMounted(() => {
   contentContext.onFilterElementChange(currentElement.value)
   setTimeout(() => {
@@ -80,14 +77,6 @@ function handleInput(event: InputEvent) {
   modelValue.value = target.value
   // Update the menu's search ref to help with filtering
   contentContext.searchRef.value = target.value
-}
-
-function handleFocus() {
-  isFocused.value = true
-}
-
-function handleBlur() {
-  isFocused.value = false
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -118,14 +107,11 @@ function handleKeyDown(event: KeyboardEvent) {
     :value="modelValue"
     :disabled="disabled ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"
-    :aria-disabled="disabled ?? undefined"
+    :aria-disabled="disabled ? true : undefined"
     :aria-activedescendant="activedescendant"
     type="text"
     role="searchbox"
-    aria-label="Filter menu items"
     @input="handleInput"
-    @focus="handleFocus"
-    @blur="handleBlur"
     @keydown="handleKeyDown"
   >
     <slot :model-value="modelValue" />
