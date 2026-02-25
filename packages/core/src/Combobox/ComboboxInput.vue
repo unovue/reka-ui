@@ -60,6 +60,11 @@ function handleFocus() {
     rootContext.onOpenChange(true)
 }
 
+function handleBlur() {
+  if (rootContext.openOnFocus.value && rootContext.open.value)
+    rootContext.onOpenChange(false)
+}
+
 function handleClick() {
   if (rootContext.openOnClick.value && !rootContext.open.value)
     rootContext.onOpenChange(true)
@@ -122,6 +127,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     @input="handleInput"
     @keydown.down.up.prevent="handleKeyDown"
     @focus="handleFocus"
+    @blur="handleBlur"
   >
     <slot />
   </ListboxFilter>
