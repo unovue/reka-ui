@@ -3,12 +3,6 @@ import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
 
 export interface ComboboxEmptyProps extends PrimitiveProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

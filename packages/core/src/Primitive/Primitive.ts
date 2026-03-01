@@ -42,9 +42,6 @@ const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 export const Primitive = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
-  compatConfig: {
-    MODE: 3,
-  },
   props: {
     asChild: {
       type: Boolean,

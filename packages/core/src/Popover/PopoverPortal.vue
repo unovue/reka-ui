@@ -2,12 +2,6 @@
 import type { TeleportProps } from '@/Teleport'
 
 export interface PopoverPortalProps extends TeleportProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -55,12 +55,6 @@ export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
 
 export const [injectTabsRootContext, provideTabsRootContext]
   = createContext<TabsRootContext>('TabsRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">

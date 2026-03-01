@@ -3,12 +3,6 @@ import type { CalendarGridBodyProps } from '..'
 import { CalendarGridBody } from '..'
 
 export interface DatePickerGridBodyProps extends CalendarGridBodyProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

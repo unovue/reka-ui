@@ -4,12 +4,6 @@ import { Separator } from '@/Separator'
 import { useForwardExpose } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
 import { injectStepperRootContext } from './StepperRoot.vue'
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

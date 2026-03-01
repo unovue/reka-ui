@@ -7,12 +7,6 @@ import type {
 export type MenubarCheckboxItemEmits = MenuCheckboxItemEmits
 
 export interface MenubarCheckboxItemProps extends MenuCheckboxItemProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

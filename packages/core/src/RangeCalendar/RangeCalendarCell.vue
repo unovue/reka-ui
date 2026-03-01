@@ -5,12 +5,6 @@ import type { PrimitiveProps } from '@/Primitive'
 export interface RangeCalendarCellProps extends PrimitiveProps {
   date: DateValue
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

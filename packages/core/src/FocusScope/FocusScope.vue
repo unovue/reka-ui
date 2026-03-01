@@ -31,12 +31,6 @@ export interface FocusScopeProps extends PrimitiveProps {
    */
   trapped?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

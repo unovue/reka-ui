@@ -4,12 +4,6 @@ import type { PrimitiveProps } from '@/Primitive'
 export interface VisuallyHiddenProps extends PrimitiveProps {
   feature?: 'focusable' | 'fully-hidden'
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

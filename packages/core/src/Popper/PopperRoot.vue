@@ -14,12 +14,6 @@ interface PopperRootContext {
 
 export const [injectPopperRootContext, providePopperRootContext]
   = createContext<PopperRootContext>('PopperRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -16,12 +16,6 @@ export interface RatingItemProps extends PrimitiveProps {
 
 export const [injectRatingItemContext, provideRatingItemContext]
   = createContext<RatingItemContext>('RatingItem')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

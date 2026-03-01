@@ -43,12 +43,6 @@ export interface ToastRootImplProps extends PrimitiveProps {
 
 export const [injectToastRootContext, provideToastRootContext]
   = createContext<{ onClose: () => void }>('ToastRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -4,12 +4,6 @@ import type { CalendarNextSlot } from '@/Calendar/CalendarNext.vue'
 import { CalendarNext } from '..'
 
 export interface DatePickerNextProps extends CalendarNextProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

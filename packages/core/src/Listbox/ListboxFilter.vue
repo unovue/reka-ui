@@ -18,12 +18,6 @@ export interface ListboxFilterProps extends PrimitiveProps {
 export type ListboxFilterEmits = {
   'update:modelValue': [string]
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -11,12 +11,6 @@ export interface DateRangePickerContentProps extends PopoverContentProps {
   portal?: PopoverPortalProps
 }
 export interface DateRangePickerContentEmits extends PopoverContentEmits {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

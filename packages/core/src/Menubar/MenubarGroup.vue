@@ -2,12 +2,6 @@
 import type { MenuGroupProps } from '@/Menu'
 
 export interface MenubarGroupProps extends MenuGroupProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

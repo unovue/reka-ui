@@ -10,12 +10,6 @@ export interface DialogOverlayProps extends DialogOverlayImplProps {
    */
   forceMount?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

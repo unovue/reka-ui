@@ -18,12 +18,6 @@ export type TreeItemEmits<T> = {
 
 const TREE_SELECT = 'tree.select'
 const TREE_TOGGLE = 'tree.toggle'
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends Record<string, any>">

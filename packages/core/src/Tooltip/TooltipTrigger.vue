@@ -7,12 +7,6 @@ export type TooltipTriggerDataState
     | 'instant-open'
 
 export interface TooltipTriggerProps extends PopperAnchorProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

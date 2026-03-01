@@ -36,12 +36,6 @@ interface ToggleGroupRootContext {
 
 export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
   = createContext<ToggleGroupRootContext>('ToggleGroupRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

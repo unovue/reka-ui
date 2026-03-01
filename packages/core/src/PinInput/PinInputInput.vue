@@ -11,12 +11,6 @@ export interface PinInputInputProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with the pin input */
   disabled?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

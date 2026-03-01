@@ -25,12 +25,6 @@ export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
   = createContext<ContextMenuRootContext>('ContextMenuRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -34,12 +34,6 @@ export type RatingRootEmits = {
 
 export const [injectRatingRootContext, provideRatingRootContext]
   = createContext<RatingRootContext>('RatingRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

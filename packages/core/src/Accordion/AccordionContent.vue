@@ -2,12 +2,6 @@
 import type { CollapsibleContentProps } from '../Collapsible'
 
 export interface AccordionContentProps extends CollapsibleContentProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

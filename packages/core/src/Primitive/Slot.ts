@@ -3,9 +3,6 @@ import { renderSlotFragments } from '@/shared'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
-  compatConfig: {
-    MODE: 3,
-  },
   inheritAttrs: false,
   setup(_, { attrs, slots }) {
     return () => {

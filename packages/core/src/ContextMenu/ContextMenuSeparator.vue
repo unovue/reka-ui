@@ -2,12 +2,6 @@
 import type { MenuSeparatorProps } from '@/Menu'
 
 export interface ContextMenuSeparatorProps extends MenuSeparatorProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

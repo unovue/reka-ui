@@ -3,12 +3,6 @@ import type { PopperArrowProps } from '@/Popper'
 import { useForwardExpose } from '@/shared'
 
 export interface PopoverArrowProps extends PopperArrowProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -8,12 +8,6 @@ import { useCollection } from '@/Collection'
 export type MenubarSubContentEmits = MenuSubContentEmits
 
 export interface MenubarSubContentProps extends MenuSubContentProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

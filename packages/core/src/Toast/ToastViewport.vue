@@ -18,12 +18,6 @@ export interface ToastViewportProps extends PrimitiveProps {
    */
   label?: string | ((hotkey: string) => string)
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

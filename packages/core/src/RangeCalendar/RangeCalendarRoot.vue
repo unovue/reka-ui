@@ -141,12 +141,6 @@ export type RangeCalendarRootEmits = {
 
 export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
   = createContext<RangeCalendarRootContext>('RangeCalendarRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

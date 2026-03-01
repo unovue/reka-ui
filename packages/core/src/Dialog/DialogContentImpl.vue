@@ -31,12 +31,6 @@ export interface DialogContentImplProps extends DismissableLayerProps {
    */
   trapFocus?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

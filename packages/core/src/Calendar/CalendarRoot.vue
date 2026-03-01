@@ -110,12 +110,6 @@ export type CalendarRootEmits = {
 
 export const [injectCalendarRootContext, provideCalendarRootContext]
   = createContext<CalendarRootContext>('CalendarRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

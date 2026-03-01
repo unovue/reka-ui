@@ -6,12 +6,6 @@ import type {
 
 export type AlertDialogEmits = DialogRootEmits
 export interface AlertDialogProps extends Omit<DialogRootProps, 'modal'> {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

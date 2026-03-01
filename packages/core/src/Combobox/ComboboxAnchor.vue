@@ -1,11 +1,5 @@
 <script lang="ts">
 export interface ComboboxAnchorProps extends PopperAnchorProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

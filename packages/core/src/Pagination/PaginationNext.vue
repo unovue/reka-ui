@@ -3,12 +3,6 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 
 export interface PaginationNextProps extends PrimitiveProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

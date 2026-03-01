@@ -29,12 +29,6 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
    */
   trapFocus?: FocusScopeProps['trapped']
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

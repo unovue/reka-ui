@@ -31,12 +31,6 @@ interface CheckboxGroupRootContext {
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
   = createContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

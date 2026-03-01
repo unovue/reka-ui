@@ -4,12 +4,6 @@ import type { CalendarPrevSlot } from '@/Calendar/CalendarPrev.vue'
 import { CalendarPrev } from '..'
 
 export interface DatePickerPrevProps extends CalendarPrevProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

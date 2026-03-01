@@ -3,12 +3,6 @@ import type { ToggleGroupItemProps } from '@/ToggleGroup'
 import { useForwardExpose } from '@/shared'
 
 export interface ToolbarToggleItemProps extends ToggleGroupItemProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

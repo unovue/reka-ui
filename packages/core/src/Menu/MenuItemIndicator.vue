@@ -21,12 +21,6 @@ export const [injectMenuItemIndicatorContext, provideMenuItemIndicatorContext]
     ['MenuCheckboxItem', 'MenuRadioItem'],
     'MenuItemIndicatorContext',
   )
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

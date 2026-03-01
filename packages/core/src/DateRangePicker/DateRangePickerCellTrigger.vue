@@ -3,12 +3,6 @@ import type { RangeCalendarCellTriggerProps, RangeCalendarCellTriggerSlot } from
 import { RangeCalendarCellTrigger } from '..'
 
 export interface DateRangePickerCellTriggerProps extends RangeCalendarCellTriggerProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

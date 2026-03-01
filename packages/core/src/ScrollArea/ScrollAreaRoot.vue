@@ -44,12 +44,6 @@ export interface ScrollAreaRootProps extends PrimitiveProps {
   /** If type is set to either `scroll` or `hover`, this prop determines the length of time, in milliseconds, <br> before the scrollbars are hidden after the user stops interacting with scrollbars. */
   scrollHideDelay?: number
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

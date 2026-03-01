@@ -3,12 +3,6 @@ import type { CalendarHeadingProps } from '..'
 import { CalendarHeading } from '..'
 
 export interface DatePickerHeadingProps extends CalendarHeadingProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -2,12 +2,6 @@
 import type { PopperContentProps } from '@/Popper'
 
 export interface SelectPopperPositionProps extends PopperContentProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

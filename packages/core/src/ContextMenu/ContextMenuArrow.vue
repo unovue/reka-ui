@@ -3,12 +3,6 @@ import type { MenuArrowProps } from '@/Menu'
 import { useForwardExpose } from '@/shared'
 
 export interface ContextMenuArrowProps extends MenuArrowProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

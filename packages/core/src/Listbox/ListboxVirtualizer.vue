@@ -9,12 +9,6 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (option: T) => string
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

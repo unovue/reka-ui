@@ -29,12 +29,6 @@ export interface SwitchRootContext {
 
 export const [injectSwitchRootContext, provideSwitchRootContext]
   = createContext<SwitchRootContext>('SwitchRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -54,12 +54,6 @@ interface RovingContext {
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
   = createContext<RovingContext>('RovingFocusGroup')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

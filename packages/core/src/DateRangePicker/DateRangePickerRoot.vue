@@ -66,12 +66,6 @@ export type DateRangePickerRootEmits = PopoverRootEmits & {
 
 export const [injectDateRangePickerRootContext, provideDateRangePickerRootContext]
   = createContext<DateRangePickerRootContext>('DateRangePickerRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

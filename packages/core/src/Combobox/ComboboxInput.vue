@@ -9,12 +9,6 @@ export interface ComboboxInputProps extends ListboxFilterProps {
   /** The display value of input for selected item. Does not work with `multiple`. */
   displayValue?: (val: any) => string
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

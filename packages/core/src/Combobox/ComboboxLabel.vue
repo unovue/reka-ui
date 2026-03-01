@@ -4,12 +4,6 @@ import type { PrimitiveProps } from '@/Primitive'
 export interface ComboboxLabelProps extends PrimitiveProps {
   for?: string
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -3,12 +3,6 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose, useId } from '@/shared'
 
 export interface PopoverTriggerProps extends PrimitiveProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

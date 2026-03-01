@@ -15,12 +15,6 @@ export interface MenuCheckboxItemProps extends MenuItemProps {
   /** The controlled checked state of the item. Can be used as `v-model`. */
   modelValue?: CheckedState
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

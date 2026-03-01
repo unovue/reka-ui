@@ -66,12 +66,6 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
 
 export const [injectTagsInputRootContext, provideTagsInputRootContext]
   = createContext<TagsInputRootContext>('TagsInputRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">

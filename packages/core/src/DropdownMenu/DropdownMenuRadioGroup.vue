@@ -7,12 +7,6 @@ import type {
 export type DropdownMenuRadioGroupEmits = MenuRadioGroupEmits
 
 export interface DropdownMenuRadioGroupProps extends MenuRadioGroupProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

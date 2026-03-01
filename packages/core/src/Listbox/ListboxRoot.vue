@@ -73,12 +73,6 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   /** Event handler called when the mouse leaves the container */
   'leave': [event: Event]
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

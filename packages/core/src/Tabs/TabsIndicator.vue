@@ -5,12 +5,6 @@ import { useForwardExpose } from '@/shared'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
 export interface TabsIndicatorProps extends PrimitiveProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

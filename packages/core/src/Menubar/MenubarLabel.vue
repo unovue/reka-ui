@@ -3,12 +3,6 @@ import type { MenuLabelProps } from '@/Menu'
 import { useForwardExpose } from '@/shared'
 
 export interface MenubarLabelProps extends MenuLabelProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

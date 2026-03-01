@@ -3,12 +3,6 @@ import type { MenuSeparatorProps } from '@/Menu'
 import { useForwardExpose } from '@/shared'
 
 export interface DropdownMenuSeparatorProps extends MenuSeparatorProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

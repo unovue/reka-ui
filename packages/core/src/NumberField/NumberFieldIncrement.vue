@@ -7,12 +7,6 @@ import { usePressedHold } from './utils'
 export interface NumberFieldIncrementProps extends PrimitiveProps {
   disabled?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

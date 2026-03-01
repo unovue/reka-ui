@@ -7,12 +7,6 @@ import type {
 export type ContextMenuRadioItemEmits = MenuItemEmits
 
 export interface ContextMenuRadioItemProps extends MenuRadioItemProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

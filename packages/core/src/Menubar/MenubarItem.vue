@@ -4,12 +4,6 @@ import type { MenuItemEmits, MenuItemProps } from '@/Menu'
 export type MenubarItemEmits = MenuItemEmits
 
 export interface MenubarItemProps extends MenuItemProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

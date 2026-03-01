@@ -7,12 +7,6 @@ import type {
 export type MenubarRadioGroupEmits = MenuRadioGroupEmits
 
 export interface MenubarRadioGroupProps extends MenuRadioGroupProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

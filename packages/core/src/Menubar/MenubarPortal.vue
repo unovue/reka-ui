@@ -2,12 +2,6 @@
 import type { MenuPortalProps } from '@/Menu'
 
 export interface MenubarPortalProps extends MenuPortalProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

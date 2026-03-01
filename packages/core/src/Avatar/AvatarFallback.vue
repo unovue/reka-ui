@@ -7,12 +7,6 @@ export interface AvatarFallbackProps extends PrimitiveProps {
   /** Useful for delaying rendering so it only appears for those with slower connections. */
   delayMs?: number
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -3,12 +3,6 @@ import type { MenuItemImplProps } from './MenuItemImpl.vue'
 import type { Side } from './utils'
 
 export interface MenuSubTriggerProps extends MenuItemImplProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

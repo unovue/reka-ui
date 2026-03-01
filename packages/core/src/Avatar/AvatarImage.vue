@@ -15,12 +15,6 @@ export interface AvatarImageProps extends PrimitiveProps {
   referrerPolicy?: ImgHTMLAttributes['referrerpolicy']
   crossOrigin?: ImgHTMLAttributes['crossorigin']
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

@@ -34,12 +34,6 @@ export interface DialogRootContext {
 
 export const [injectDialogRootContext, provideDialogRootContext]
   = createContext<DialogRootContext>('DialogRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

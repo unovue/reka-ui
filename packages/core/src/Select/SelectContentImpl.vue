@@ -78,12 +78,6 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
 
 export const [injectSelectContentContext, provideSelectContentContext]
   = createContext<SelectContentContext>('SelectContent')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

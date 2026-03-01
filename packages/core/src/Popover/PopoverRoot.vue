@@ -38,12 +38,6 @@ export interface PopoverRootContext {
 
 export const [injectPopoverRootContext, providePopoverRootContext]
   = createContext<PopoverRootContext>('PopoverRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

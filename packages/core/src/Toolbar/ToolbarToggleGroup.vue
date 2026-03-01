@@ -7,12 +7,6 @@ import type {
 export type ToolbarToggleGroupEmits = ToggleGroupRootEmits
 
 export interface ToolbarToggleGroupProps extends ToggleGroupRootProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

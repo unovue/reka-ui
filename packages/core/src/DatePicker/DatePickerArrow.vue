@@ -3,12 +3,6 @@ import type { PopoverArrowProps } from '..'
 import { PopoverArrow } from '..'
 
 export interface DatePickerArrowProps extends PopoverArrowProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

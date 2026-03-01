@@ -3,12 +3,6 @@ import type { PrimitiveProps } from '@/Primitive'
 import { injectEditableRootContext } from './EditableRoot.vue'
 
 export interface EditableAreaProps extends PrimitiveProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

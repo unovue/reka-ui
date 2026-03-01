@@ -11,12 +11,6 @@ export type SliderImplEmits = {
 }
 
 export interface SliderImplProps extends PrimitiveProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

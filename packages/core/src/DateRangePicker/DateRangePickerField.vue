@@ -2,12 +2,6 @@
 import { isEqualDay } from '@internationalized/date'
 import { DateRangeFieldRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

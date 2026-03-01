@@ -5,12 +5,6 @@ import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '
 
 export interface StepperTriggerProps extends PrimitiveProps {
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

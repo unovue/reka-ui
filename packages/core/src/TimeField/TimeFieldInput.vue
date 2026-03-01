@@ -10,12 +10,6 @@ export interface TimeFieldInputProps extends PrimitiveProps {
   /** The part of the date to render */
   part: SegmentPart
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

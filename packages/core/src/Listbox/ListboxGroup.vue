@@ -10,12 +10,6 @@ interface ListboxGroupContext {
 
 export const [injectListboxGroupContext, provideListboxGroupContext]
   = createContext<ListboxGroupContext>('ListboxGroup')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

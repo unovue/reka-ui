@@ -22,12 +22,6 @@ export interface ArrowProps extends PrimitiveProps {
    */
   rounded?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

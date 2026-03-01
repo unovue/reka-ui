@@ -12,12 +12,6 @@ export type AvatarRootContext = {
 
 export const [injectAvatarRootContext, provideAvatarRootContext]
   = createContext<AvatarRootContext>('AvatarRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

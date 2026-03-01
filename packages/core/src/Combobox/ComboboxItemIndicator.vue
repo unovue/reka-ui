@@ -2,12 +2,6 @@
 import type { ListboxItemIndicatorProps } from '@/Listbox'
 
 export interface ComboboxItemIndicatorProps extends ListboxItemIndicatorProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

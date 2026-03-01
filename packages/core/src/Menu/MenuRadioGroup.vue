@@ -21,12 +21,6 @@ export type MenuRadioGroupEmits = {
 
 export const [injectMenuRadioGroupContext, provideMenuRadioGroupContext]
   = createContext<MenuRadioGroupContext>('MenuRadioGroup')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

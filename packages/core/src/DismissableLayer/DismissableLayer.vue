@@ -59,12 +59,6 @@ export const context = reactive({
   originalBodyPointerEvents: undefined as string | undefined,
   branches: new Set<HTMLElement>(),
 })
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

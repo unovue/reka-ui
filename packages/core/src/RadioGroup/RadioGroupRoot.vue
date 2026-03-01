@@ -39,12 +39,6 @@ interface RadioGroupRootContext {
 
 export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
   = createContext<RadioGroupRootContext>('RadioGroupRoot')
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

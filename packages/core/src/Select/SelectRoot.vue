@@ -60,12 +60,6 @@ export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
 interface SelectOption { value: any, disabled?: boolean, textContent: string }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

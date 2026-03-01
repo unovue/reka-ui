@@ -46,12 +46,6 @@ export interface RangeCalendarCellTriggerSlot {
 
   }) => any
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

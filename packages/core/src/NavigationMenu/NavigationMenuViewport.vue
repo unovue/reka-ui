@@ -14,12 +14,6 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
    */
   align?: 'start' | 'center' | 'end'
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

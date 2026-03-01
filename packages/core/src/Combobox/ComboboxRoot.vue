@@ -78,12 +78,6 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   resetModelValueOnClear?: boolean
 }
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

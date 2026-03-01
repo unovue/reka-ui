@@ -3,12 +3,6 @@ import type { MenuSubTriggerProps } from '@/Menu'
 import { useForwardExpose } from '@/shared'
 
 export interface DropdownMenuSubTriggerProps extends MenuSubTriggerProps {}
-
-export default {
-  compatConfig: {
-    MODE: 3,
-  },
-}
 </script>
 
 <script setup lang="ts">

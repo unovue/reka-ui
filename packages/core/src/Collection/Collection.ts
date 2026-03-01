@@ -59,9 +59,6 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
   const CollectionItem = defineComponent({
     name: 'CollectionItem',
     inheritAttrs: false,
-    compatConfig: {
-      MODE: 3,
-    },
     props: {
       value: {
         // It accepts any value
