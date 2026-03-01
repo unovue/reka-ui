@@ -16,8 +16,8 @@ export interface ColorSwatchProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { getColorContrast, getColorName } from '@/color'
 import { Primitive } from '@/Primitive'
+import { getColorContrast, getColorName } from '@/shared/color'
 
 const props = withDefaults(defineProps<ColorSwatchProps>(), { as: 'div', color: '' })
 
@@ -30,7 +30,7 @@ const label = computed(() => {
   }
   catch {
     if (import.meta.env.DEV) {
-      console.warn(`WARNING: Unable to resolve color "${props.color}" to a name. 
+      console.warn(`WARNING: Unable to resolve color "${props.color}" to a name.
            Please check that the color provided is a valid hex color or provide a label.`)
     }
     return props.color || undefined
@@ -43,7 +43,7 @@ const colorContrast = computed(() => {
   }
   catch {
     if (import.meta.env.DEV) {
-      console.warn(`WARNING: Unable to resolve contrast color for "${props.color}". 
+      console.warn(`WARNING: Unable to resolve contrast color for "${props.color}".
            Please check that the color provided is a valid hex color.`)
     }
     return undefined
