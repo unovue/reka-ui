@@ -123,9 +123,6 @@ const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 
-useFocusGuards()
-useBodyScrollLock(disableOutsidePointerEvents.value)
-
 const searchRef = ref('')
 const timerRef = ref(0)
 const pointerGraceTimerRef = ref(0)
@@ -136,6 +133,9 @@ const currentItemId = ref<string | null>(null)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+useFocusGuards(contentElement)
+useBodyScrollLock(disableOutsidePointerEvents.value)
+
 const { handleTypeaheadSearch } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()
