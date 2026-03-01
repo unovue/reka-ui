@@ -98,7 +98,7 @@
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the year picker. Receives the current placeholder as an argument.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   },
   {
@@ -117,7 +117,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the year picker. Receives the current placeholder as an argument.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   },
   {
@@ -158,7 +158,7 @@
   {
     'name': 'grid',
     'description': '<p>The grid of years</p>\n',
-    'type': 'Grid<DateValue>'
+    'type': 'Grid&lt;DateValue&gt;'
   },
   {
     'name': 'locale',

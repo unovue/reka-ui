@@ -40,7 +40,7 @@
   },
   {
     'name': 'today',
-    'description': '<p>Current year is today's year state</p>\n',
+    'description': '<p>Current year is today\'s year state</p>\n',
     'type': 'boolean'
   },
   {

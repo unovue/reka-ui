@@ -40,7 +40,7 @@
   },
   {
     'name': 'today',
-    'description': '<p>Current month is today's month state</p>\n',
+    'description': '<p>Current month is today\'s month state</p>\n',
     'type': 'boolean'
   },
   {
