@@ -48,6 +48,10 @@ type CalendarRootContext = {
   disableDaysOutsideCurrentView: Ref<boolean>
   minValue: Ref<DateValue | undefined>
   maxValue: Ref<DateValue | undefined>
+  isPlaceholderFocusable: Ref<boolean>
+  firstFocusableDate: Ref<DateValue | undefined>
+  hasSelectedDate: Ref<boolean>
+  isSelectedDateDisabled: Ref<boolean>
 }
 
 export interface CalendarRootProps extends PrimitiveProps {
@@ -216,6 +220,8 @@ const {
   prevPage,
   formatter,
   grid,
+  isPlaceholderFocusable,
+  firstFocusableDate,
 } = useCalendar({
   locale,
   placeholder,
@@ -237,6 +243,8 @@ const {
 const {
   isInvalid,
   isDateSelected,
+  hasSelectedDate,
+  isSelectedDateDisabled,
 } = useCalendarState({
   date: modelValue,
   isDateDisabled,
@@ -327,6 +335,10 @@ provideCalendarRootContext({
   disableDaysOutsideCurrentView,
   minValue,
   maxValue,
+  isPlaceholderFocusable,
+  firstFocusableDate,
+  hasSelectedDate,
+  isSelectedDateDisabled,
 })
 </script>
 

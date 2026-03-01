@@ -29,7 +29,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the tree when initially rendered. Use when you do not need to control the state of the tree</p>\n',
-    'type': 'Record<string, any> | Record<string, any>[]',
+    'type': 'Record&lt;string, any&gt; | Record&lt;string, any&gt;[]',
     'required': false
   },
   {
@@ -53,26 +53,26 @@
   {
     'name': 'getChildren',
     'description': '<p>This function is passed the index of each item and should return a list of children for that item</p>\n',
-    'type': '((val: Record<string, any>) => Record<string, any>[])',
+    'type': '((val: Record&lt;string, any&gt;) =&gt; Record&lt;string, any&gt;[])',
     'required': false,
     'default': 'val.children'
   },
   {
     'name': 'getKey',
     'description': '<p>This function is passed the index of each item and should return a unique key for that item</p>\n',
-    'type': '(val: Record<string, any>): string',
+    'type': '(val: Record&lt;string, any&gt;): string',
     'required': true
   },
   {
     'name': 'items',
     'description': '<p>List of items</p>\n',
-    'type': 'Record<string, any>[]',
+    'type': 'Record&lt;string, any&gt;[]',
     'required': false
   },
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the tree. Can be binded with <code>v-model</code>.</p>\n',
-    'type': 'Record<string, any> | Record<string, any>[]',
+    'type': 'Record&lt;string, any&gt; | Record&lt;string, any&gt;[]',
     'required': false
   },
   {
@@ -105,7 +105,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
-    'type': '[val: Record<string, any> | Record<string, any>[]]'
+    'type': '[val: Record&lt;string, any&gt; | Record&lt;string, any&gt;[]]'
   }
 ]" />
 
@@ -113,12 +113,12 @@
   {
     'name': 'flattenItems',
     'description': '',
-    'type': 'FlattenedItem<Record<string, any>>[]'
+    'type': 'FlattenedItem&lt;Record&lt;string, any&gt;&gt;[]'
   },
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'Record<string, any> | Record<string, any>[]'
+    'type': 'Record&lt;string, any&gt; | Record&lt;string, any&gt;[]'
   },
   {
     'name': 'expanded',

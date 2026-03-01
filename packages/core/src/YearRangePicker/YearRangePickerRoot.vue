@@ -247,24 +247,20 @@ const {
   maximumYears,
 })
 
-watch(modelValue, (_modelValue, _prevValue) => {
+watch(modelValue, (_modelValue) => {
   const next = normalizeRange(_modelValue)
-  const prev = normalizeRange(_prevValue)
-  if (
-    (!prev.start && next.start)
-    || !_modelValue
-    || !next.start
-    || (startValue.value && !isSameYear(next.start, startValue.value))
-  ) {
+
+  const isStartSynced = (!next.start && !startValue.value)
+    || (!!next.start && !!startValue.value && isSameYear(next.start, startValue.value))
+
+  if (!isStartSynced) {
     startValue.value = next.start?.copy?.()
   }
 
-  if (
-    (!prev.end && next.end)
-    || !_modelValue
-    || !next.end
-    || (endValue.value && !isSameYear(next.end, endValue.value))
-  ) {
+  const isEndSynced = (!next.end && !endValue.value)
+    || (!!next.end && !!endValue.value && isSameYear(next.end, endValue.value))
+
+  if (!isEndSynced) {
     endValue.value = next.end?.copy?.()
   }
 })

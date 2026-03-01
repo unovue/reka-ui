@@ -89,21 +89,23 @@ function changeMonth(e: MouseEvent | KeyboardEvent, date: DateValue) {
   if (rootContext.isMonthDisabled(date) || rootContext.isMonthUnavailable?.(date))
     return
 
-  rootContext.lastPressedDateValue.value = date.copy()
-
   if (rootContext.startValue.value && rootContext.highlightedRange.value === null) {
     if (isSameYearMonth(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
       rootContext.onPlaceholderChange(date)
+      rootContext.lastPressedDateValue.value = date.copy()
       return
     }
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameYearMonth(rootContext.lastPressedDateValue.value, date))
         rootContext.startValue.value = date.copy()
+      rootContext.lastPressedDateValue.value = date.copy()
       return
     }
   }
+
+  rootContext.lastPressedDateValue.value = date.copy()
 
   if (
     rootContext.startValue.value
@@ -252,7 +254,10 @@ function handleArrowKey(e: KeyboardEvent) {
       if (candidateMonth && !candidateMonth.hasAttribute('data-disabled')) {
         rootContext.onPlaceholderChange(candidateMonthValue)
         candidateMonth?.focus()
+        return
       }
+
+      shiftFocus(candidateMonthValue, years > 0 ? 1 : -1, 1)
     })
   }
 }

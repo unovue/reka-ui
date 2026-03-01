@@ -89,21 +89,23 @@ function changeYear(e: MouseEvent | KeyboardEvent, date: DateValue) {
   if (rootContext.isYearDisabled(date) || rootContext.isYearUnavailable?.(date))
     return
 
-  rootContext.lastPressedDateValue.value = date.copy()
-
   if (rootContext.startValue.value && rootContext.highlightedRange.value === null) {
     if (isSameYear(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
       rootContext.onPlaceholderChange(date)
+      rootContext.lastPressedDateValue.value = date.copy()
       return
     }
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameYear(rootContext.lastPressedDateValue.value, date))
         rootContext.startValue.value = date.copy()
+      rootContext.lastPressedDateValue.value = date.copy()
       return
     }
   }
+
+  rootContext.lastPressedDateValue.value = date.copy()
 
   if (
     rootContext.startValue.value
@@ -253,7 +255,11 @@ function handleArrowKey(e: KeyboardEvent) {
       if (candidateYear && !candidateYear.hasAttribute('data-disabled')) {
         rootContext.onPlaceholderChange(candidateYearValue)
         candidateYear?.focus()
+        return
       }
+
+      if (!candidateYear || candidateYear.hasAttribute('data-disabled'))
+        shiftFocus(candidateYearValue, direction > 0 ? 1 : -1, 1)
     })
   }
 }

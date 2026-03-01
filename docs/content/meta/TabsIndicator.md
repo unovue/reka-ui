@@ -20,6 +20,6 @@
   {
     'name': 'updateIndicatorStyle',
     'description': '',
-    'type': '() => void'
+    'type': '() =&gt; void'
   }
 ]" />

@@ -3,6 +3,7 @@ import { defineConfig } from 'tsdown'
 export default defineConfig({
   entry: {
     index: './src/index.ts',
+    internal: './src/internal.ts',
     date: './src/date/index.ts',
     constant: './constant/index.ts',
   },

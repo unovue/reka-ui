@@ -168,16 +168,16 @@
   {
     'name': 'submit',
     'description': '<p>Function to submit the value of the editable</p>\n',
-    'type': '() => void'
+    'type': '() =&gt; void'
   },
   {
     'name': 'cancel',
     'description': '<p>Function to cancel the value of the editable</p>\n',
-    'type': '() => void'
+    'type': '() =&gt; void'
   },
   {
     'name': 'edit',
     'description': '<p>Function to set the editable in edit mode</p>\n',
-    'type': '() => void'
+    'type': '() =&gt; void'
   }
 ]" />

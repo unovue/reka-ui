@@ -82,8 +82,15 @@ const isOutsideVisibleView = computed(() =>
 const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || (rootContext.disableDaysOutsideCurrentView.value && isOutsideView.value))
 
 const isFocusedDate = computed(() => {
-  return !rootContext.disabled.value && isSameDay(props.day, rootContext.placeholder.value)
+  if (isOutsideView.value || isDisabled.value)
+    return false
+  if (!rootContext.disabled.value && rootContext.isPlaceholderFocusable.value && isSameDay(props.day, rootContext.placeholder.value))
+    return true
+  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDateDisabled.value) && !rootContext.isPlaceholderFocusable.value)
+    return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
+  return false
 })
+
 const isSelectedDate = computed(() => rootContext.isDateSelected(props.day))
 
 function changeDate(date: DateValue) {

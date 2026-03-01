@@ -17,7 +17,7 @@
   {
     'name': 'nextPage',
     'description': '<p>The function to be used for the next page. Overwrites the <code>nextPage</code> function set on the <code>CalendarRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   }
 ]" />

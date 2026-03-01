@@ -15,6 +15,11 @@ const calendarDateRange = {
   end: new CalendarDate(1980, 3, 25),
 }
 
+const updatedCalendarDateRange = {
+  start: new CalendarDate(1980, 4, 5),
+  end: new CalendarDate(1980, 6, 5),
+}
+
 const calendarDateTimeRange = {
   start: new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0),
   end: new CalendarDateTime(1980, 3, 25, 12, 30, 0, 0),
@@ -109,6 +114,39 @@ describe('month range picker', () => {
     expect(getSelectedMonths(picker)).toHaveLength(3)
   })
 
+  it('keeps controlled end when parent preserves it after start edit', async () => {
+    const preservedEnd = new CalendarDate(1980, 8, 1)
+    const controlledRange = {
+      start: new CalendarDate(1980, 1, 1),
+      end: preservedEnd,
+    }
+
+    const { getByTestId, picker, user, rerender } = setup({
+      pickerProps: { modelValue: controlledRange },
+      emits: {
+        'onUpdate:modelValue': (data) => {
+          rerender({
+            pickerProps: {
+              modelValue: {
+                start: data.start ?? controlledRange.start,
+                end: data.end ?? preservedEnd,
+              },
+            },
+          })
+        },
+      },
+    })
+
+    const aprilMonth = getByTestId('month-4')
+    await user.click(aprilMonth)
+
+    expect(getByTestId('month-4')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('month-8')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('month-5')).toHaveAttribute('data-selected')
+    expect(getByTestId('month-7')).toHaveAttribute('data-selected')
+    expect(getSelectedMonths(picker)).toHaveLength(5)
+  })
+
   it('allows same month selection', async () => {
     const { getByTestId, picker, user, rerender } = setup({
       pickerProps: { placeholder: calendarDateRange.start },
@@ -165,6 +203,32 @@ describe('month range picker', () => {
 
     expect(startValue).toHaveTextContent('Jan')
     expect(endValue).toHaveTextContent('Mar')
+  })
+
+  it('resets to latest externally controlled complete range when pressing Escape', async () => {
+    const { getByTestId, picker, user, rerender } = setup({
+      pickerProps: { modelValue: calendarDateRange },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data } }) },
+    })
+
+    await rerender({ pickerProps: { modelValue: updatedCalendarDateRange } })
+
+    let startValue = picker.querySelector('[data-selection-start]')
+    let endValue = picker.querySelector('[data-selection-end]')
+
+    expect(startValue).toHaveTextContent('Apr')
+    expect(endValue).toHaveTextContent('Jun')
+
+    await user.click(getByTestId('month-2'))
+    expect(getSelectedMonths(picker)).toHaveLength(1)
+
+    await user.keyboard(kbd.ESCAPE)
+
+    startValue = picker.querySelector('[data-selection-start]')
+    endValue = picker.querySelector('[data-selection-end]')
+
+    expect(startValue).toHaveTextContent('Apr')
+    expect(endValue).toHaveTextContent('Jun')
   })
 
   it('navigates years forward using the next button', async () => {
@@ -300,6 +364,60 @@ describe('month range picker - maximumMonths', () => {
     expect(marchMonth).toHaveAttribute('data-highlighted-end')
     expect(getByTestId('month-4')).not.toHaveAttribute('data-highlighted')
   })
+
+  it('enforces maximumMonths for out-of-bounds controlled ranges with fixedDate="start"', async () => {
+    const outOfBoundsRange = {
+      start: new CalendarDate(1980, 1, 1),
+      end: new CalendarDate(1980, 6, 1),
+    }
+
+    const { getByTestId, user, rerender } = setup({
+      pickerProps: {
+        modelValue: outOfBoundsRange,
+        fixedDate: 'start',
+        maximumMonths: 3,
+      },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data, fixedDate: 'start', maximumMonths: 3 } }) },
+    })
+
+    expect(getByTestId('month-5')).toHaveAttribute('data-disabled')
+
+    await user.click(getByTestId('month-5'))
+    expect(getByTestId('month-6')).toHaveAttribute('data-selection-end')
+
+    await user.click(getByTestId('month-3'))
+    expect(getByTestId('month-1')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('month-2')).toHaveAttribute('data-selected')
+    expect(getByTestId('month-3')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('month-4')).not.toHaveAttribute('data-selected')
+  })
+
+  it('enforces maximumMonths for out-of-bounds controlled ranges with fixedDate="end"', async () => {
+    const outOfBoundsRange = {
+      start: new CalendarDate(1980, 1, 1),
+      end: new CalendarDate(1980, 6, 1),
+    }
+
+    const { getByTestId, user, rerender } = setup({
+      pickerProps: {
+        modelValue: outOfBoundsRange,
+        fixedDate: 'end',
+        maximumMonths: 3,
+      },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data, fixedDate: 'end', maximumMonths: 3 } }) },
+    })
+
+    expect(getByTestId('month-2')).toHaveAttribute('data-disabled')
+
+    await user.click(getByTestId('month-2'))
+    expect(getByTestId('month-1')).toHaveAttribute('data-selection-start')
+
+    await user.click(getByTestId('month-4'))
+    expect(getByTestId('month-4')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('month-5')).toHaveAttribute('data-selected')
+    expect(getByTestId('month-6')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('month-3')).not.toHaveAttribute('data-selected')
+  })
 })
 
 describe('month range picker - keyboard navigation', () => {
@@ -340,5 +458,23 @@ describe('month range picker - keyboard navigation', () => {
 
     await user.keyboard(kbd.PAGE_UP)
     expect(getByTestId('heading')).toHaveTextContent('1980')
+  })
+
+  it('skips disabled candidate month when paging by year', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: {
+        placeholder: calendarDateRange.start,
+        isMonthDisabled: (date: DateValue) => date.year === 1981 && date.month === 1,
+      },
+    })
+
+    const janMonth = getByTestId('month-1')
+    janMonth.focus()
+    expect(janMonth).toHaveFocus()
+
+    await user.keyboard(kbd.PAGE_DOWN)
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+    expect(getByTestId('month-1')).toHaveAttribute('data-disabled')
+    expect(getByTestId('month-2')).toHaveFocus()
   })
 })

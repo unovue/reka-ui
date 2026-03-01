@@ -15,7 +15,7 @@ const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
 
 const kbd = useTestKbd()
 
-function setup(props: { pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue | DateValue[] | undefined) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(MonthPicker, { props })
   const picker = returned.getByTestId('month-picker')
@@ -383,5 +383,23 @@ describe('month picker - multiple', () => {
 
     await user.click(selectedMonths[0])
     expect(getSelectedMonths(picker).length).toBe(1)
+  })
+
+  it('normalizes single modelValue when multiple is true', async () => {
+    const d1 = new CalendarDate(1980, 1, 1)
+
+    const { picker, getByTestId, user, rerender } = setup({
+      pickerProps: { modelValue: d1, multiple: true },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+    })
+
+    expect(getSelectedMonths(picker)).toHaveLength(1)
+    expect(getByTestId('month-1')).toHaveAttribute('data-selected')
+
+    await user.click(getByTestId('month-5'))
+
+    expect(getSelectedMonths(picker)).toHaveLength(2)
+    expect(getByTestId('month-1')).toHaveAttribute('data-selected')
+    expect(getByTestId('month-5')).toHaveAttribute('data-selected')
   })
 })

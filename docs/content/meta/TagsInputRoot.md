@@ -35,7 +35,7 @@
   {
     'name': 'convertValue',
     'description': '<p>Convert the input value to the desired type. Mandatory when using objects as values and using <code>TagsInputInput</code></p>\n',
-    'type': '((value: string) => AcceptableInputValue)',
+    'type': '((value: string) =&gt; AcceptableInputValue)',
     'required': false
   },
   {
@@ -67,7 +67,7 @@
   {
     'name': 'displayValue',
     'description': '<p>Display the value of the tag. Useful when you want to apply modifications to the value like adding a suffix or when using object as values</p>\n',
-    'type': '((value: AcceptableInputValue) => string)',
+    'type': '((value: AcceptableInputValue) =&gt; string)',
     'required': false,
     'default': 'value.toString()'
   },
@@ -137,6 +137,6 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string | number | bigint | Record<string, any>'
+    'type': 'string | number | bigint | Record&lt;string, any&gt;'
   }
 ]" />

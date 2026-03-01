@@ -175,7 +175,11 @@ function handleArrowKey(e: KeyboardEvent) {
       if (candidateYear && !candidateYear.hasAttribute('data-disabled')) {
         rootContext.onPlaceholderChange(candidateYearValue)
         candidateYear?.focus()
+        return
       }
+
+      if (!candidateYear || candidateYear.hasAttribute('data-disabled'))
+        shiftFocus(candidateYearValue, direction > 0 ? 1 : -1, 1)
     })
   }
 }
@@ -190,7 +194,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :aria-label="labelText"
     data-reka-year-picker-cell-trigger
     :aria-disabled="isDisabled || isUnavailable ? true : undefined"
-    :data-selected="isSelectedYear ? true : undefined"
+    :data-selected="isSelectedYear ? '' : undefined"
     :data-value="year.toString()"
     :data-disabled="isDisabled ? '' : undefined"
     :data-unavailable="isUnavailable ? '' : undefined"

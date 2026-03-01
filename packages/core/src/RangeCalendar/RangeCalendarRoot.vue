@@ -68,6 +68,11 @@ type RangeCalendarRootContext = {
   maximumDays: Ref<number | undefined>
   minValue: Ref<DateValue | undefined>
   maxValue: Ref<DateValue | undefined>
+  isPlaceholderFocusable: Ref<boolean>
+  firstFocusableDate: Ref<DateValue | undefined>
+  hasSelectedDate: Ref<boolean>
+  isSelectedDisabled: Ref<boolean>
+  selectedFocusableDate: Ref<DateValue | undefined>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -166,6 +171,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   allowNonContiguousRanges: false,
   maximumDays: undefined,
   disableDaysOutsideCurrentView: false,
+
 })
 const emits = defineEmits<RangeCalendarRootEmits>()
 
@@ -270,6 +276,8 @@ const {
   nextPage,
   prevPage,
   formatter,
+  isPlaceholderFocusable,
+  firstFocusableDate,
 } = useCalendar({
   locale,
   placeholder,
@@ -298,6 +306,9 @@ const {
   isHighlightedStart,
   isHighlightedEnd,
   isDateDisabled: rangeIsDateDisabled,
+  hasSelectedDate,
+  isSelectedDisabled,
+  selectedFocusableDate,
 } = useRangeCalendarState({
   start: startValue,
   end: endValue,
@@ -310,24 +321,20 @@ const {
   maximumDays,
 })
 
-watch(modelValue, (_modelValue, _prevValue) => {
+watch(modelValue, (_modelValue) => {
   const next = normalizeRange(_modelValue)
-  const prev = normalizeRange(_prevValue)
-  if (
-    (!prev.start && next.start)
-    || !_modelValue
-    || !next.start
-    || (startValue.value && !isEqualDay(next.start, startValue.value))
-  ) {
+
+  const isStartSynced = (!next.start && !startValue.value)
+    || (!!next.start && !!startValue.value && isEqualDay(next.start, startValue.value))
+
+  if (!isStartSynced) {
     startValue.value = next.start?.copy?.()
   }
 
-  if (
-    (!prev.end && next.end)
-    || !_modelValue
-    || !next.end
-    || (endValue.value && !isEqualDay(next.end, endValue.value))
-  ) {
+  const isEndSynced = (!next.end && !endValue.value)
+    || (!!next.end && !!endValue.value && isEqualDay(next.end, endValue.value))
+
+  if (!isEndSynced) {
     endValue.value = next.end?.copy?.()
   }
 })
@@ -426,6 +433,11 @@ provideRangeCalendarRootContext({
   maximumDays,
   minValue,
   maxValue,
+  isPlaceholderFocusable,
+  firstFocusableDate,
+  hasSelectedDate,
+  isSelectedDisabled,
+  selectedFocusableDate,
 })
 
 onMounted(() => {

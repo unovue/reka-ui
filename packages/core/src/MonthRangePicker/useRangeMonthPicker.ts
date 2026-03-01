@@ -68,21 +68,28 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
       return true
 
     if (props.maximumMonths?.value) {
+      const maximumMonths = props.maximumMonths.value
+
       if (props.start.value && props.end.value) {
         if (props.fixedDate.value) {
           const diff = getMonthsBetween(props.start.value, props.end.value)
-          if (diff <= props.maximumMonths.value) {
-            const monthsLeft = props.maximumMonths.value - diff
+          if (diff <= maximumMonths) {
+            const monthsLeft = maximumMonths - diff
             const startLimit = props.start.value.subtract({ months: monthsLeft })
             const endLimit = props.end.value.add({ months: monthsLeft })
             return compareYearMonth(date, startLimit) < 0 || compareYearMonth(date, endLimit) > 0
           }
+
+          const fixedValue = props.fixedDate.value === 'start' ? props.start.value : props.end.value
+          const maxDate = fixedValue.add({ months: maximumMonths - 1 })
+          const minDate = fixedValue.subtract({ months: maximumMonths - 1 })
+          return compareYearMonth(date, minDate) < 0 || compareYearMonth(date, maxDate) > 0
         }
         return false
       }
       if (props.start.value) {
-        const maxDate = props.start.value.add({ months: props.maximumMonths.value - 1 })
-        const minDate = props.start.value.subtract({ months: props.maximumMonths.value - 1 })
+        const maxDate = props.start.value.add({ months: maximumMonths - 1 })
+        const minDate = props.start.value.subtract({ months: maximumMonths - 1 })
         return compareYearMonth(date, minDate) < 0 || compareYearMonth(date, maxDate) > 0
       }
     }

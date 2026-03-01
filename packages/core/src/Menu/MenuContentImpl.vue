@@ -169,6 +169,7 @@ function handleKeyDown(event: KeyboardEvent) {
   const target = event.target as HTMLElement
   const isKeyDownInside
     = target.closest('[data-reka-menu-content]') === event.currentTarget
+  const isKeyDownInTextField = ['input', 'textarea'].includes(target.tagName.toLowerCase())
   const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
   const isCharacterKey = event.key.length === 1
 
@@ -197,7 +198,7 @@ function handleKeyDown(event: KeyboardEvent) {
     // menus should not be navigated using tab key so we prevent it
     if (event.key === 'Tab')
       event.preventDefault()
-    if (!isModifierKey && isCharacterKey)
+    if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
       handleTypeaheadSearch(event.key, collectionItems)
   }
 
