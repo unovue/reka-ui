@@ -89,8 +89,6 @@ defineSlots<{
   default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-    /** Whether the progress is indeterminate */
-    indeterminate: boolean
   }) => any
 }>()
 
@@ -102,8 +100,6 @@ const modelValue = useVModel(props, 'modelValue', emit, {
 const max = useVModel(props, 'max', emit, {
   passive: (props.max === undefined) as false,
 })
-
-const isIndeterminate = computed(() => isNullish(modelValue.value))
 
 // ------- Watch for correct values -------
 watch(
@@ -130,7 +126,7 @@ watch(
 // ------- End of watch for correct values -------
 
 const progressState = computed<ProgressState>(() => {
-  if (isIndeterminate.value)
+  if (isNullish(modelValue.value))
     return 'indeterminate'
   if (modelValue.value === max.value)
     return 'complete'
@@ -151,7 +147,8 @@ provideProgressRootContext({
     :aria-valuemax="max"
     :aria-valuemin="0"
     :aria-valuenow="isNumber(modelValue) ? modelValue : undefined"
-    :aria-valuetext="isNumber(modelValue) ? getValueLabel(modelValue, max) : undefined"
+    :aria-valuetext="getValueText?.(modelValue, max)"
+    :aria-label="getValueLabel(modelValue, max)"
     role="progressbar"
     :data-state="progressState"
     :data-value="modelValue ?? undefined"
@@ -159,7 +156,6 @@ provideProgressRootContext({
   >
     <slot
       :model-value="modelValue"
-      :indeterminate="isIndeterminate"
     />
   </Primitive>
 </template>
