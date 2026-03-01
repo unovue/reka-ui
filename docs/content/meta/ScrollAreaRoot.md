@@ -40,11 +40,11 @@
   {
     'name': 'scrollTop',
     'description': '<p>Scroll viewport to top</p>\n',
-    'type': '() => void'
+    'type': '() =&gt; void'
   },
   {
     'name': 'scrollTopLeft',
     'description': '<p>Scroll viewport to top-left</p>\n',
-    'type': '() => void'
+    'type': '() =&gt; void'
   }
 ]" />

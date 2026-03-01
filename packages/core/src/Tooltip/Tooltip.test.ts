@@ -1,8 +1,9 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Tooltip from './stories/_Tooltip.vue'
+import TooltipProvider from './TooltipProvider.vue'
 
 describe('given default Tooltip', () => {
   let wrapper: VueWrapper<InstanceType<typeof Tooltip>>
@@ -48,5 +49,50 @@ describe('given default Tooltip', () => {
 
       expect(document.body.innerHTML).not.toContain('Add to library')
     })
+  })
+})
+
+describe('given tooltip within TooltipProvider', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Tooltip>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+
+    wrapper = mount(Tooltip, {
+      global: {
+        stubs: {
+          teleport: {
+            template: '<div><slot /></div>',
+          },
+        },
+      },
+      attachTo: document.body,
+    })
+  })
+
+  it('should use the provider content values', async () => {
+    await wrapper.find('button').trigger('focus')
+
+    const tooltipContentImpl = wrapper.findComponent(TooltipProvider)
+
+    expect(tooltipContentImpl.props('content')).toBe(undefined)
+
+    expect(tooltipContentImpl.html()).toContain('data-side="top"')
+
+    await wrapper.setProps({
+      tooltipProvider: {
+        content: {
+          side: 'left',
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(tooltipContentImpl.props('content')).toEqual({
+      side: 'left',
+    })
+
+    expect(tooltipContentImpl.html()).toContain('data-side="left"')
   })
 })

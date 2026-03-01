@@ -145,6 +145,7 @@ export default defineConfig({
           {
             text: 'Form',
             items: [
+              // TODO: uncomment when release { text: `Autocomplete ${BadgeHTML('Alpha', true)}`, link: '/docs/components/autocomplete' },
               { text: 'Checkbox', link: '/docs/components/checkbox' },
               { text: 'Combobox', link: '/docs/components/combobox' },
               { text: `Editable`, link: '/docs/components/editable' },
@@ -201,6 +202,22 @@ export default defineConfig({
               {
                 text: `Time Field ${BadgeHTML('Alpha', true)}`,
                 link: '/docs/components/time-field',
+              },
+              {
+                text: `Month Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-picker',
+              },
+              {
+                text: `Month Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-range-picker',
+              },
+              {
+                text: `Year Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-picker',
+              },
+              {
+                text: `Year Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-range-picker',
               },
             ],
           },
@@ -326,6 +343,10 @@ export default defineConfig({
               {
                 text: 'Date Picker Selection',
                 link: '/examples/date-picker-selection',
+              },
+              {
+                text: 'Date Picker View Switching',
+                link: '/examples/date-picker-view-switching',
               },
             ],
           },

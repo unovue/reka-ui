@@ -17,7 +17,7 @@
   {
     'name': 'prevPage',
     'description': '<p>The function to be used for the prev page. Overwrites the <code>prevPage</code> function set on the <code>RangeCalendarRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   }
 ]" />

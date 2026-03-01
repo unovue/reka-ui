@@ -29,7 +29,7 @@
   {
     'name': 'displayValue',
     'description': '<p>The display value of input for selected item. Does not work with <code>multiple</code>.</p>\n',
-    'type': '((val: any) => string)',
+    'type': '((val: any) =&gt; string)',
     'required': false
   },
   {

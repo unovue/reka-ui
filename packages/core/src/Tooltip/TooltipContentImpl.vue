@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
+import { defu } from 'defu'
 import { useForwardExpose } from '@/shared'
+import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
   /** Event handler called when focus moves to the destructive action after opening. It can be prevented by calling `event.preventDefault` */
@@ -49,26 +51,32 @@ import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipContentImplProps>(), {
-  side: 'top',
-  sideOffset: 0,
-  align: 'center',
-  avoidCollisions: true,
-  collisionBoundary: () => [],
-  collisionPadding: 0,
-  arrowPadding: 0,
-  sticky: 'partial',
-  hideWhenDetached: false,
+  avoidCollisions: undefined,
+  asChild: undefined,
+  hideWhenDetached: undefined,
 })
 const emits = defineEmits<TooltipContentImplEmits>()
 
 const rootContext = injectTooltipRootContext()
+const providerContext = injectTooltipProviderContext()
 
 const { forwardRef, currentElement } = useForwardExpose()
 const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props
-  return restProps
+
+  return defu(restProps, providerContext.content.value ?? {}, {
+    side: 'top',
+    sideOffset: 0,
+    align: 'center',
+    avoidCollisions: true,
+    collisionBoundary: [],
+    collisionPadding: 0,
+    arrowPadding: 0,
+    sticky: 'partial',
+    hideWhenDetached: false,
+  } satisfies TooltipContentImplProps)
 })
 
 onMounted(() => {

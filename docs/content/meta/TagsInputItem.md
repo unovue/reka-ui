@@ -23,7 +23,7 @@
   {
     'name': 'value',
     'description': '<p>Value associated with the tags</p>\n',
-    'type': 'string | number | bigint | Record<string, any>',
+    'type': 'string | number | bigint | Record&lt;string, any&gt;',
     'required': true
   }
 ]" />

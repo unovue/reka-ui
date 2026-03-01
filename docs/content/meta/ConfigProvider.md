@@ -31,7 +31,7 @@
   {
     'name': 'useId',
     'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
-    'type': '(() => string)',
+    'type': '(() =&gt; string)',
     'required': false
   }
 ]" />
@@ -40,6 +40,6 @@
   {
     'name': 'useId',
     'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
-    'type': '() => string'
+    'type': '() =&gt; string'
   }
 ]" />

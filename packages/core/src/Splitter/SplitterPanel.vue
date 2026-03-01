@@ -4,20 +4,22 @@ import { useId } from '@/shared'
 import { PRECISION } from './utils/constants'
 
 export interface SplitterPanelProps extends PrimitiveProps {
-  /** The size of panel when it is collapsed. */
+  /** The size of panel when it is collapsed; interpreted using `sizeUnit`. */
   collapsedSize?: number
   /** Should panel collapse when resized beyond its `minSize`. When `true`, it will be collapsed to `collapsedSize`. */
   collapsible?: boolean
-  /** Initial size of panel (numeric value between 1-100) */
+  /** Initial size of panel, interpreted using `sizeUnit` (percent by default). */
   defaultSize?: number
   /** Panel id (unique within group); falls back to `useId` when not provided */
   id?: string
-  /** The maximum allowable size of panel (numeric value between 1-100); defaults to `100` */
+  /** The maximum allowable size of panel, interpreted using `sizeUnit`; defaults to `100` (percent). */
   maxSize?: number
-  /** The minimum allowable size of panel (numeric value between 1-100); defaults to `10` */
+  /** The minimum allowable size of panel, interpreted using `sizeUnit`; defaults to `10` (percent). */
   minSize?: number
   /** The order of panel within group; required for groups with conditionally rendered panels */
   order?: number
+  /** Unit used for sizing values; `%` by default, or `px` for fixed sizing. */
+  sizeUnit?: '%' | 'px'
 }
 
 export type SplitterPanelEmits = {
@@ -49,6 +51,7 @@ export type PanelConstraints = {
   /** Panel id (unique within group); falls back to useId when not provided */
   maxSize?: number | undefined
   minSize?: number | undefined
+  sizeUnit?: '%' | 'px' | undefined
 }
 
 export type PanelData = {
@@ -107,6 +110,7 @@ const panelDataRef = computed(() => ({
     /** Panel id (unique within group); falls back to useId when not provided */
     maxSize: props.maxSize,
     minSize: props.minSize,
+    sizeUnit: props.sizeUnit ?? '%',
   },
   id: panelId,
   idIsFromProps: props.id !== undefined,
@@ -121,6 +125,7 @@ watch(() => panelDataRef.value.constraints, (constraints, prevConstraints) => {
     || prevConstraints.collapsible !== constraints.collapsible
     || prevConstraints.maxSize !== constraints.maxSize
     || prevConstraints.minSize !== constraints.minSize
+    || prevConstraints.sizeUnit !== constraints.sizeUnit
   ) {
     reevaluatePanelConstraints(panelDataRef.value, prevConstraints)
   }
@@ -157,11 +162,11 @@ defineExpose({
   collapse,
   /** If panel is currently collapsed, expand it to its most recent size. */
   expand,
-  /** Gets the current size of the panel as a percentage (1 - 100). */
+  /** Gets the current size of the panel (in the panel's sizeUnit: percentage for '%', pixels for 'px'). */
   getSize() {
     return getPanelSize(panelDataRef.value)
   },
-  /** Resize panel to the specified percentage (1 - 100). */
+  /** Resize panel to the specified size (in the panel's sizeUnit: percentage for '%', pixels for 'px'). */
   resize,
   /** Returns `true` if the panel is currently collapsed */
   isCollapsed,

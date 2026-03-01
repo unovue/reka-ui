@@ -1,10 +1,14 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.8.0",
+  "version": "2.8.2",
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/zernonia"
+  },
   "homepage": "https://github.com/unovue/reka-ui",
   "repository": {
     "type": "git",
@@ -29,6 +33,10 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./internal": {
+      "import": "./dist/internal.js",
+      "require": "./dist/internal.cjs"
     },
     "./constant": {
       "import": "./dist/constant.js",
@@ -72,10 +80,10 @@
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
     "test": "vitest",
     "test-update": "vitest -u",
-    "pub:release": "pnpm publish --no-git-checks --access public"
+    "pub:release": "npm publish --access public --provenance"
   },
   "peerDependencies": {
-    "vue": ">= 3.2.0"
+    "vue": ">= 3.4.0"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
@@ -100,7 +108,7 @@
     "@tsconfig/node24": "^24.0.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.0.13",
-    "@vitejs/plugin-vue": "^6.0.3",
+    "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/coverage-istanbul": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",

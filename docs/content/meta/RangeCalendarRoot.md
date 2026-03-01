@@ -131,7 +131,7 @@
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   },
   {
@@ -164,7 +164,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   },
   {
@@ -185,8 +185,7 @@
     'name': 'weekStartsOn',
     'description': '<p>The day of the week to start the calendar on</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6',
-    'required': false,
-    'default': '0'
+    'required': false
   }
 ]" />
 
@@ -222,7 +221,7 @@
   {
     'name': 'grid',
     'description': '<p>The grid of dates</p>\n',
-    'type': 'Grid<DateValue>[]'
+    'type': 'Grid&lt;DateValue&gt;[]'
   },
   {
     'name': 'weekDays',

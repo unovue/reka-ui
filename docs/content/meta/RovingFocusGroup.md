@@ -71,6 +71,6 @@
   {
     'name': 'getItems',
     'description': '',
-    'type': '(includeDisabledItem?: boolean) => { ref: HTMLElement; value?: any; }[]'
+    'type': '(includeDisabledItem?: boolean) =&gt; { ref: HTMLElement; value?: any; }[]'
   }
 ]" />

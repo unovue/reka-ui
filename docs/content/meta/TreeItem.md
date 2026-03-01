@@ -23,7 +23,7 @@
   {
     'name': 'value',
     'description': '<p>Value given to this item</p>\n',
-    'type': 'Record<string, any>',
+    'type': 'Record&lt;string, any&gt;',
     'required': true
   }
 ]" />
@@ -32,12 +32,12 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent<Record<string, any>>]'
+    'type': '[event: SelectEvent&lt;Record&lt;string, any&gt;&gt;]'
   },
   {
     'name': 'toggle',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: ToggleEvent<Record<string, any>>]'
+    'type': '[event: ToggleEvent&lt;Record&lt;string, any&gt;&gt;]'
   }
 ]" />
 

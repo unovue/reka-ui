@@ -209,8 +209,7 @@
     'name': 'weekStartsOn',
     'description': '<p>The day of the week to start the calendar on</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6',
-    'required': false,
-    'default': '0'
+    'required': false
   }
 ]" />
 

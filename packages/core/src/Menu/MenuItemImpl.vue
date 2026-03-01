@@ -13,12 +13,12 @@ export interface MenuItemImplProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useCollection } from '@/Collection'
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { getActiveElement, useForwardExpose } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import { isMouseEvent } from './utils'
 
@@ -29,10 +29,11 @@ defineOptions({
 const props = defineProps<MenuItemImplProps>()
 
 const contentContext = injectMenuContentContext()
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem } = useCollection()
 
 const isFocused = ref(false)
+const isHighlighted = computed(() => isFocused.value || (contentContext.highlightedElement.value === currentElement.value))
 
 async function handlePointerMove(event: PointerEvent) {
   if (event.defaultPrevented)
@@ -46,8 +47,11 @@ async function handlePointerMove(event: PointerEvent) {
   else {
     const defaultPrevented = contentContext.onItemEnter(event)
     if (!defaultPrevented) {
-      const item = event.currentTarget;
-      (item as HTMLElement)?.focus({ preventScroll: true })
+      const item = event.currentTarget as HTMLElement
+      contentContext.highlightedElement.value = item
+      const isInputFocused = ['INPUT', 'TEXTAREA'].includes(getActiveElement()?.tagName || '')
+      if (!isInputFocused)
+        item.focus({ preventScroll: true })
     }
   }
 }
@@ -74,7 +78,7 @@ async function handlePointerLeave(event: PointerEvent) {
       :as-child="asChild"
       :aria-disabled="disabled || undefined"
       :data-disabled="disabled ? '' : undefined"
-      :data-highlighted="isFocused ? '' : undefined"
+      :data-highlighted="isHighlighted ? '' : undefined"
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @focus="
@@ -82,6 +86,7 @@ async function handlePointerLeave(event: PointerEvent) {
           await nextTick();
           if (event.defaultPrevented || disabled) return;
           isFocused = true;
+          contentContext.highlightedElement.value = event.currentTarget as HTMLElement
         }
       "
       @blur="
