@@ -12,5 +12,5 @@ const color = '#E5484D'
     v-bind="props"
     :color="color"
     class="w-8 h-8 rounded ring-1 ring-inset ring-black/15 dark:ring-white/15"
-  /> />
+  />
 </template>

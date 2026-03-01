@@ -70,7 +70,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when container is being focused. Can be prevented. */
   'entryFocus': [event: CustomEvent]
-  /** Event handler called when the mouse leave the container */
+  /** Event handler called when the mouse leaves the container */
   'leave': [event: Event]
 }
 

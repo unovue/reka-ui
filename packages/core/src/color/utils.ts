@@ -1,10 +1,21 @@
 /**
  * Converts a hex color string to RGB (Red, Green, Blue).
- * @param hex
- * @returns
+ * @param hex Hex color string (e.g., "#ff5733" or "#f53")
+ * @returns An object containing red, green, and blue values (0-255).
  */
 export function hexToRGB(hex: string): { r: number, g: number, b: number } {
   hex = hex.replace(/^#/, '')
+
+  // Validate hex format (3 or 6 hex digits)
+  if (!/^[0-9A-F]{6}$/i.test(hex) && !/^[0-9A-F]{3}$/i.test(hex)) {
+    throw new Error(`Invalid hex color: ${hex}. Expected format: #RGB or #RRGGBB`)
+  }
+
+  // Handle shorthand hex (e.g., "#FFF" -> "#FFFFFF")
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('')
+  }
+
   const bigint = parseInt(hex, 16)
   const r = (bigint >> 16) & 255
   const g = (bigint >> 8) & 255
@@ -15,7 +26,7 @@ export function hexToRGB(hex: string): { r: number, g: number, b: number } {
 /**
  * Converts a hex color string to HSL (Hue, Saturation, Lightness).
  * @param hex Hex color string (e.g., "#ff5733")
- * @returns An object containing hue, saturation, and lightness values.
+ * @returns An object containing hue (0-360), saturation (0-100), and lightness (0-100) values.
  */
 export function hexToHSL(hex: string): { h: number, s: number, l: number } {
   let { r, g, b } = hexToRGB(hex)
@@ -32,6 +43,7 @@ export function hexToHSL(hex: string): { h: number, s: number, l: number } {
 
   if (max === min) {
     h = s = 0 // achromatic
+    l *= 100 // Scale l to 0-100 for consistency with chromatic case
   }
   else {
     const d = max - min
@@ -63,18 +75,19 @@ export function getColorName(hex: string) {
   const { h, s, l } = hexToHSL(hex)
 
   // Handle achromatic colors (low saturation)
-  if (s < 0.1) {
-    if (l < 0.1)
+  // Using 0-100 scale for all comparisons
+  if (s < 10) {
+    if (l < 10)
       return 'black'
-    if (l > 0.95)
+    if (l > 95)
       return 'white'
-    if (l < 0.2)
+    if (l < 20)
       return 'very dark gray'
-    if (l < 0.35)
+    if (l < 35)
       return 'dark gray'
-    if (l < 0.65)
+    if (l < 65)
       return 'gray'
-    if (l < 0.8)
+    if (l < 80)
       return 'light gray'
     return 'very light gray'
   }
@@ -106,15 +119,16 @@ export function getColorName(hex: string) {
   else baseName = 'red-magenta'
 
   // Add descriptors based on saturation and lightness
+  // Using 0-100 scale for all comparisons
   const descriptors = []
-  if (s > 0.8)
+  if (s > 80)
     descriptors.push('vibrant')
-  else if (s < 0.3)
+  else if (s < 30)
     descriptors.push('muted')
 
-  if (l > 0.8)
+  if (l > 80)
     descriptors.push('light')
-  else if (l < 0.3)
+  else if (l < 30)
     descriptors.push('dark')
 
   return descriptors.length > 0

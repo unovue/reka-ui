@@ -27,6 +27,7 @@ const emits = defineEmits<ColorSwatchPickerRootEmits>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
+  // Cast required for VueUse's passive option type; enables passive sync when modelValue is undefined
   passive: (props.modelValue === undefined) as false,
 })
 
@@ -40,7 +41,6 @@ const forwarded = useForwardPropsEmits(props, emits)
     as-child
   >
     <ListboxContent
-      aria-label="color swatch options"
       :as-child="asChild"
       :as="as"
     >

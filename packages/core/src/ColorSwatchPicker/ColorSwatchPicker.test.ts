@@ -1,6 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import ColorSwatchPicker from './story/_ColorSwatchPicker.vue'
 
@@ -14,6 +14,10 @@ describe('given default ColorSwatchPicker', () => {
     wrapper = mount(ColorSwatchPicker, { attachTo: document.body })
     content = wrapper.find('[role=listbox]')
     items = wrapper.findAll('[role=option]')
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
   })
 
   it('should render the component', () => {

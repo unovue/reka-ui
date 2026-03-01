@@ -43,7 +43,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the listbox. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'string | string[]',
     'required': false
   },
@@ -93,7 +93,7 @@
   },
   {
     'name': 'leave',
-    'description': '<p>Event handler called when the mouse leave the container</p>\n',
+    'description': '<p>Event handler called when the mouse leaves the container</p>\n',
     'type': '[event: Event]'
   },
   {

@@ -33,7 +33,7 @@ const label = computed(() => {
       console.warn(`WARNING: Unable to resolve color "${props.color}" to a name. 
            Please check that the color provided is a valid hex color or provide a label.`)
     }
-    return undefined
+    return props.color || undefined
   }
 })
 
