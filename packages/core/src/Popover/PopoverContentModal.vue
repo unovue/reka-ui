@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'

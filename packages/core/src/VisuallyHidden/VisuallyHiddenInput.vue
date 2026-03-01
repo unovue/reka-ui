@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts" generic="T">
 import type { VisuallyHiddenInputBubbleProps } from './VisuallyHiddenInputBubble.vue'
 import { computed } from 'vue'

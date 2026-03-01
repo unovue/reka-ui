@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watchEffect } from 'vue'
 import { useCollection } from '@/Collection'

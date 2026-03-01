@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectToastProviderContext } from './ToastProvider.vue'

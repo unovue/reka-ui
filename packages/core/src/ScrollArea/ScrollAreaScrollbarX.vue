@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useForwardExpose } from '@/shared'

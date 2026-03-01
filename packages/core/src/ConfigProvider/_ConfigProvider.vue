@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { ConfigProviderProps } from './ConfigProvider.vue'
 import DropdownMenu from '../DropdownMenu/story/_DropdownMenu.vue'

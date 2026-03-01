@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { Direction, SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
 import { computed, ref, toRefs } from 'vue'

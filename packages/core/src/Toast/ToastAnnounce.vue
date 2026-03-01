@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
 import { useTimeout } from '@vueuse/shared'

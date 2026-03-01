@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { SelectRootContext } from './SelectRoot.vue'
 import type { AcceptableValue } from '@/shared/types'

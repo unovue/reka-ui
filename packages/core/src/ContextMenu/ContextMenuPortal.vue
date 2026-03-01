@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { MenuPortalProps } from '@/Menu'
 import { MenuPortal } from '@/Menu'

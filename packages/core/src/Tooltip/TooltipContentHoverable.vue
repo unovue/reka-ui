@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import type { TooltipContentImplProps } from './TooltipContentImpl.vue'
 import { useForwardExpose, useForwardProps, useGraceArea } from '@/shared'
