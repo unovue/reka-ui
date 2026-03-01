@@ -2,6 +2,12 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface ComboboxCancelProps extends PrimitiveProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -23,6 +29,10 @@ function handleClick() {
   if (rootContext.inputElement.value) {
     rootContext.inputElement.value.value = ''
     rootContext.inputElement.value.focus()
+  }
+
+  if (rootContext.resetModelValueOnClear?.value) {
+    rootContext.modelValue.value = rootContext.multiple.value ? [] : null
   }
 }
 </script>

@@ -3,6 +3,12 @@ import type { PopoverAnchorProps } from '..'
 import { PopoverAnchor } from '..'
 
 export interface DatePickerAnchorProps extends PopoverAnchorProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

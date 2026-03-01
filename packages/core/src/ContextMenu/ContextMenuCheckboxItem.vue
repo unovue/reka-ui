@@ -7,6 +7,12 @@ import type {
 export type ContextMenuCheckboxItemEmits = MenuCheckboxItemEmits
 
 export interface ContextMenuCheckboxItemProps extends MenuCheckboxItemProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -10,6 +10,12 @@ export interface ToastActionProps extends ToastCloseProps {
    */
   altText: string
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

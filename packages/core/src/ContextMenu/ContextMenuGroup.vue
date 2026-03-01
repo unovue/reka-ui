@@ -3,6 +3,12 @@ import type { MenuGroupProps } from '@/Menu'
 import { useForwardExpose } from '@/shared'
 
 export interface ContextMenuGroupProps extends MenuGroupProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

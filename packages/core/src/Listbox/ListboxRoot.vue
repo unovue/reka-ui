@@ -40,7 +40,7 @@ export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
-  /** The controlled value of the listbox. Can be binded with with `v-model`. */
+  /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
   /** The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox */
   defaultValue?: T | Array<T>
@@ -72,6 +72,12 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   'entryFocus': [event: CustomEvent]
   /** Event handler called when the mouse leave the container */
   'leave': [event: Event]
+}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
 }
 </script>
 
@@ -173,6 +179,7 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true) {
 
 function highlightItem(value: T) {
   if (isVirtual.value) {
+    // @ts-expect-error known type issue https://github.com/vueuse/vueuse/issues/4610
     virtualHighlightHook.trigger(value)
   }
   else {
@@ -227,7 +234,7 @@ function onCompositionStart() {
   isComposing.value = true
 }
 function onCompositionEnd() {
-  requestAnimationFrame(() => {
+  nextTick(() => {
     isComposing.value = false
   })
 }

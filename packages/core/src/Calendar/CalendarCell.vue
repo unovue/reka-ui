@@ -6,6 +6,12 @@ export interface CalendarCellProps extends PrimitiveProps {
   /** The date value for the cell */
   date: DateValue
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -2,6 +2,12 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

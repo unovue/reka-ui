@@ -2,11 +2,17 @@
 export interface ScrollAreaScrollbarScrollProps {
   forceMount?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardExpose } from '@/shared'
 import { useStateMachine } from '../shared/useStateMachine'
@@ -39,6 +45,8 @@ const { state, dispatch } = useStateMachine('hidden', {
     POINTER_ENTER: 'interacting',
   },
 })
+
+const visible = computed(() => state.value !== 'hidden')
 
 watchEffect((onCleanup) => {
   if (state.value === 'idle') {
@@ -82,10 +90,11 @@ watchEffect((onCleanup) => {
 </script>
 
 <template>
-  <Presence :present="forceMount || state !== 'hidden'">
+  <Presence :present="forceMount || visible">
     <ScrollAreaScrollbarVisible
       v-bind="$attrs"
       :ref="forwardRef"
+      :data-state="visible ? 'visible' : 'hidden'"
     >
       <slot />
     </ScrollAreaScrollbarVisible>

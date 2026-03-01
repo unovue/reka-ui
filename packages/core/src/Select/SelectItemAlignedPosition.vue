@@ -15,6 +15,12 @@ export interface SelectItemAlignedPositionProps extends PrimitiveProps {}
 
 export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPositionContext]
   = createContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

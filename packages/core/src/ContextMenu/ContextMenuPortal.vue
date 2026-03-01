@@ -1,3 +1,11 @@
+<script lang="ts">
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
+</script>
+
 <script setup lang="ts">
 import type { MenuPortalProps } from '@/Menu'
 import { MenuPortal } from '@/Menu'

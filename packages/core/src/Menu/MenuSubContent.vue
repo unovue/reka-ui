@@ -14,6 +14,12 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
    */
   forceMount?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -4,6 +4,12 @@ import type { PrimitiveProps } from '@/Primitive'
 export interface SliderThumbImplProps extends PrimitiveProps {
   index: number
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

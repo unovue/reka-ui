@@ -9,6 +9,12 @@ export interface ComboboxInputProps extends ListboxFilterProps {
   /** The display value of input for selected item. Does not work with `multiple`. */
   displayValue?: (val: any) => string
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -55,6 +61,16 @@ function handleInput(event: InputEvent) {
   }
 }
 
+function handleFocus() {
+  if (rootContext.openOnFocus.value && !rootContext.open.value)
+    rootContext.onOpenChange(true)
+}
+
+function handleClick() {
+  if (rootContext.openOnClick.value && !rootContext.open.value)
+    rootContext.onOpenChange(true)
+}
+
 function resetSearchTerm() {
   const rootModelValue = rootContext.modelValue.value
 
@@ -86,9 +102,10 @@ watch(rootContext.modelValue, async () => {
     resetSearchTerm()
 }, { immediate: true, deep: true })
 
-watch(rootContext.filterState, () => {
-  // we exclude virtualized list as the state would be constantly updated
-  if (!rootContext.isVirtual.value) {
+watch(rootContext.filterState, (_newValue, oldValue) => {
+  // we exclude virtualized list as the state would be constantly updated,
+  // and only change highlight when previously there were no items displayed
+  if (!rootContext.isVirtual.value && (oldValue.count === 0)) {
     listboxContext.highlightFirstItem()
   }
 })
@@ -101,13 +118,16 @@ watch(rootContext.filterState, () => {
     :as="as"
     :as-child="asChild"
     :auto-focus="autoFocus"
+    :disabled="disabled"
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.contentId"
     aria-autocomplete="list"
     role="combobox"
-    autocomplete="false"
+    autocomplete="off"
+    @click="handleClick"
     @input="handleInput"
     @keydown.down.up.prevent="handleKeyDown"
+    @focus="handleFocus"
   >
     <slot />
   </ListboxFilter>

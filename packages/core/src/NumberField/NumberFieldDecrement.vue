@@ -7,6 +7,12 @@ import { usePressedHold } from './utils'
 export interface NumberFieldDecrementProps extends PrimitiveProps {
   disabled?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -17,7 +23,7 @@ const props = withDefaults(defineProps<NumberFieldDecrementProps>(), {
 })
 
 const rootContext = injectNumberFieldRootContext()
-const isDisabled = computed(() => rootContext.disabled?.value || props.disabled || rootContext.isDecreaseDisabled.value)
+const isDisabled = computed(() => rootContext.disabled?.value || rootContext.readonly.value || props.disabled || rootContext.isDecreaseDisabled.value)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled })

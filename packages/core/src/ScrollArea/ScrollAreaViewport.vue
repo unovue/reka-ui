@@ -9,6 +9,12 @@ export interface ScrollAreaViewportProps extends PrimitiveProps {
    */
   nonce?: string
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

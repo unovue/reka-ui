@@ -23,6 +23,12 @@ export interface DropdownMenuRootContext {
 
 export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
   = createContext<DropdownMenuRootContext>('DropdownMenuRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

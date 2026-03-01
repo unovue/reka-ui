@@ -9,6 +9,12 @@ export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'requir
    */
   value: AcceptableValue
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -33,8 +39,7 @@ const { forwardRef } = useForwardExpose()
   <component
     :is="rootContext.rovingFocus.value ? RovingFocusItem : Primitive"
     as-child
-    :focusable="!disabled"
-    :active="pressed"
+    v-bind="rootContext.rovingFocus.value ? { focusable: !disabled, active: pressed } : {}"
   >
     <Toggle
       v-bind="props"

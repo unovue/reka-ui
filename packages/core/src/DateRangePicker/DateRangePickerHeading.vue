@@ -3,6 +3,12 @@ import type { RangeCalendarHeadingProps } from '..'
 import { RangeCalendarHeading } from '..'
 
 export interface DateRangePickerHeadingProps extends RangeCalendarHeadingProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

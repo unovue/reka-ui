@@ -46,7 +46,7 @@
   },
   {
     'name': 'expanded',
-    'description': '<p>The controlled value of the expanded item. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the expanded item. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'string[]',
     'required': false
   },
@@ -71,7 +71,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the tree. Can be binded with with <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the tree. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'Record<string, any> | Record<string, any>[]',
     'required': false
   },
@@ -90,7 +90,7 @@
   {
     'name': 'selectionBehavior',
     'description': '<p>How multiple selection should behave in the collection.</p>\n',
-    'type': '\'toggle\' | \'replace\'',
+    'type': '\'replace\' | \'toggle\'',
     'required': false,
     'default': '\'toggle\''
   }

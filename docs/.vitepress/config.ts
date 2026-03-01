@@ -2,6 +2,7 @@ import autoprefixer from 'autoprefixer'
 import anchor from 'markdown-it-anchor'
 import tailwind from 'tailwindcss'
 import { defineConfig, postcssIsolateStyles } from 'vitepress'
+import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 import { version } from '../../package.json'
 import { teamMembers } from './contributors'
 import {
@@ -38,6 +39,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#00C38A' }],
     ['link', { rel: 'icon', href: '/logo.png' }],
     ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'canonical', href: 'https://reka-ui.com' }],
     ['meta', { name: 'author', content: `${teamMembers.map(c => c.name).join(', ')} and ${rekaName} contributors` }],
     ['meta', { name: 'keywords', content: 'vue, nuxt, component-library, radix, radix-vue, reka-ui, typescript' }],
     ['meta', { property: 'og:title', content: rekaName }],
@@ -132,6 +134,8 @@ export default defineConfig({
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
+
+          { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
         ],
       },
       {
@@ -264,6 +268,14 @@ export default defineConfig({
                 link: '/docs/utilities/use-date-formatter',
               },
               {
+                text: 'useDirection',
+                link: '/docs/utilities/use-direction',
+              },
+              {
+                text: 'useLocale',
+                link: '/docs/utilities/use-locale',
+              },
+              {
                 text: 'useEmitAsProps',
                 link: '/docs/utilities/use-emit-as-props',
               },
@@ -382,6 +394,9 @@ export default defineConfig({
     headers: {
       level: [2, 3],
     },
+    config(md) {
+      md.use(copyOrDownloadAsMarkdownButtons)
+    },
     anchor: {
       callback(token) {
         // set tw `group` modifier to heading element
@@ -424,6 +439,9 @@ export default defineConfig({
     pageData.frontmatter.sidebar = pageData.frontmatter.layout !== 'showcase'
   },
   vite: {
+    plugins: [llmstxt({
+      ignoreFiles: ['releases/*', 'examples/*', 'showcase.md', 'examples.md', 'meta/*'],
+    })],
     css: {
       postcss: {
         plugins: [

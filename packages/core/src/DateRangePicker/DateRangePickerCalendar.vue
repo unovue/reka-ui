@@ -2,6 +2,12 @@
 import { isEqualDay } from '@internationalized/date'
 import { RangeCalendarRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -31,7 +37,6 @@ const rootContext = injectDateRangePickerRootContext()
       fixedDate: rootContext.fixedDate.value,
       maximumDays: rootContext.maximumDays?.value,
     }"
-    initial-focus
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
     @update:start-value="(date) => {

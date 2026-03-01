@@ -2,25 +2,25 @@ import type { Component, PropType } from 'vue'
 import { defineComponent, h } from 'vue'
 import { Slot } from './Slot'
 
-export type AsTag =
-  | 'a'
-  | 'button'
-  | 'div'
-  | 'form'
-  | 'h2'
-  | 'h3'
-  | 'img'
-  | 'input'
-  | 'label'
-  | 'li'
-  | 'nav'
-  | 'ol'
-  | 'p'
-  | 'span'
-  | 'svg'
-  | 'ul'
-  | 'template'
-  | ({} & string) // any other string
+export type AsTag
+  = | 'a'
+    | 'button'
+    | 'div'
+    | 'form'
+    | 'h2'
+    | 'h3'
+    | 'img'
+    | 'input'
+    | 'label'
+    | 'li'
+    | 'nav'
+    | 'ol'
+    | 'p'
+    | 'span'
+    | 'svg'
+    | 'ul'
+    | 'template'
+    | ({} & string) // any other string
 
 export interface PrimitiveProps {
   /**
@@ -42,6 +42,9 @@ const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 export const Primitive = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
+  compatConfig: {
+    MODE: 3,
+  },
   props: {
     asChild: {
       type: Boolean,

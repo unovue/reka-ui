@@ -15,9 +15,12 @@ import { createContext, useForwardExpose, useSize } from '@/shared'
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
   sideOffset: 0,
+  sideFlip: true,
   align: 'center' as Align,
   alignOffset: 0,
+  alignFlip: true,
   arrowPadding: 0,
+  hideShiftedArrow: true,
   avoidCollisions: true,
   collisionBoundary: () => [],
   collisionPadding: 0,
@@ -34,7 +37,7 @@ export interface PopperContentProps extends PrimitiveProps {
    * Will be reversed when collisions occur and avoidCollisions
    * is enabled.
    *
-   * @defaultValue "top"
+   * @defaultValue "bottom"
    */
   side?: Side
 
@@ -44,6 +47,13 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   sideOffset?: number
+
+  /**
+   * Flip to the opposite side when colliding with boundary.
+   *
+   * @defaultValue true
+   */
+  sideFlip?: boolean
 
   /**
    * The preferred alignment against the trigger.
@@ -59,6 +69,14 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   alignOffset?: number
+
+  /**
+   * Flip alignment when colliding with boundary.
+   * May only occur when `prioritizePosition` is true.
+   *
+   * @defaultValue true
+   */
+  alignFlip?: boolean
 
   /**
    * When `true`, overrides the side and align preferences
@@ -94,6 +112,14 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   arrowPadding?: number
+
+  /**
+   * When `true`, hides the arrow when it cannot be centered
+   * to the reference element.
+   *
+   * @defaultValue true
+   */
+  hideShiftedArrow?: boolean
 
   /**
    * The sticky behavior on the align axis. `partial` will keep the
@@ -159,6 +185,12 @@ export interface PopperContentContext {
 
 export const [injectPopperContentContext, providePopperContentContext]
   = createContext<PopperContentContext>('PopperContent')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -231,6 +263,13 @@ const detectOverflowOptions = computed(() => {
   }
 })
 
+const flipOptions = computed(() => {
+  return {
+    mainAxis: props.sideFlip,
+    crossAxis: props.alignFlip,
+  }
+})
+
 const computedMiddleware = computedEager(() => {
   return [
     offset({
@@ -241,6 +280,7 @@ const computedMiddleware = computedEager(() => {
     && props.avoidCollisions
     && flip({
       ...detectOverflowOptions.value,
+      ...flipOptions.value,
     }),
     props.avoidCollisions
     && shift({
@@ -253,6 +293,7 @@ const computedMiddleware = computedEager(() => {
     && props.avoidCollisions
     && flip({
       ...detectOverflowOptions.value,
+      ...flipOptions.value,
     }),
     size({
       ...detectOverflowOptions.value,
@@ -320,9 +361,10 @@ watchPostEffect(() => {
     emits('placed')
 })
 
-const cannotCenterArrow = computed(
-  () => middlewareData.value.arrow?.centerOffset !== 0,
-)
+const shouldHideArrow = computed(() => {
+  const cannotCenterArrow = middlewareData.value.arrow?.centerOffset !== 0
+  return props.hideShiftedArrow && cannotCenterArrow
+})
 
 const contentZIndex = ref('')
 watchEffect(() => {
@@ -338,7 +380,7 @@ providePopperContentContext({
   onArrowChange: element => arrow.value = element,
   arrowX,
   arrowY,
-  shouldHideArrow: cannotCenterArrow,
+  shouldHideArrow,
 })
 </script>
 

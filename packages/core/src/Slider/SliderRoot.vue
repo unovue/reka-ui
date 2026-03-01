@@ -64,6 +64,12 @@ export interface SliderRootContext {
 
 export const [injectSliderRootContext, provideSliderRootContext]
   = createContext<SliderRootContext>('SliderRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

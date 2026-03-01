@@ -15,6 +15,12 @@ export interface NavigationMenuLinkProps extends PrimitiveProps {
   /** Used to identify the link as the currently active page. */
   active?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

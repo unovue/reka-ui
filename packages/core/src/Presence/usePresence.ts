@@ -93,7 +93,7 @@ export function usePresence(
   const handleAnimationEnd = (event: AnimationEvent) => {
     const currentAnimationName = getAnimationName(node.value)
     const isCurrentAnimation = currentAnimationName.includes(
-      event.animationName,
+      CSS.escape(event.animationName),
     )
     const directionName = state.value === 'mounted' ? 'enter' : 'leave'
     if (event.target === node.value && isCurrentAnimation) {

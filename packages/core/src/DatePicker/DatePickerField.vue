@@ -2,6 +2,12 @@
 import type { DateValue } from '@internationalized/date'
 import { DateFieldRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -28,6 +34,7 @@ const rootContext = injectDatePickerRootContext()
       isDateUnavailable: rootContext.isDateUnavailable,
       required: rootContext.required.value,
       dir: rootContext.dir.value,
+      step: rootContext.step.value,
     }"
     @update:model-value="(date: DateValue | undefined) => {
       if (date && rootContext.modelValue.value && date.compare(rootContext.modelValue.value) === 0) return

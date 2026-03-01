@@ -1,3 +1,11 @@
+<script lang="ts">
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
+</script>
+
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watchEffect } from 'vue'
 import { useCollection } from '@/Collection'

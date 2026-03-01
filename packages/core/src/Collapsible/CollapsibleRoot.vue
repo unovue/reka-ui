@@ -30,6 +30,12 @@ interface CollapsibleRootContext {
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
   = createContext<CollapsibleRootContext>('CollapsibleRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

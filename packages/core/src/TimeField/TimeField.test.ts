@@ -105,6 +105,14 @@ describe('timeField', async () => {
     expect(queryByTestId('dayPeriod')).toBeInTheDocument()
   })
 
+  it('filter time zone brackets for specific locales', async () => {
+    const { queryByTestId } = setup({
+      timeFieldProps: { modelValue: calendarDateTime, locale: 'zh-TW', hideTimeZone: true },
+    })
+    expect(queryByTestId('input')).not.toHaveTextContent('[')
+    expect(queryByTestId('input')).not.toHaveTextContent(']')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, input, label } = setup()
     await user.click(label)
@@ -454,5 +462,451 @@ describe('timeField', async () => {
 
     const timeZone = getByTestId('timeZoneName')
     expect(timeZone).toHaveTextContent(thisTimeZone('2023-10-12T12:30:00Z'))
+  })
+
+  describe('12-hour format display', () => {
+    it('displays midnight (hour 0) as 12 AM', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(0, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('displays noon (hour 12) as 12 PM', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(12, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('converts afternoon hours (13-23) to 12-hour format', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(13, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('1')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('converts late evening hour (23) to 11 PM', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(23, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('11')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('displays morning hours (1-11) correctly', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(9, 30, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('9')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('works with CalendarDateTime values', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(2024, 1, 15, 15, 45, 0, 0),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('3')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('works with ZonedDateTime values', async () => {
+      const { hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: toZoned(new CalendarDateTime(2024, 1, 15, 0, 30, 0, 0), 'America/New_York'),
+          hourCycle: 12,
+        },
+      })
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+  })
+
+  describe('12-hour arrow key cycling', () => {
+    it('transitions from PM to AM when cycling from 11 PM to 12 AM', async () => {
+      const { hour, user, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(23, 30, 0), // 11 PM
+          hourCycle: 12,
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard(kbd.ARROW_UP)
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('transitions from AM to PM when cycling from 11 AM to 12 PM', async () => {
+      const { hour, user, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(11, 30, 0), // 11 AM
+          hourCycle: 12,
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard(kbd.ARROW_UP)
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('cycles correctly through all PM hours without changing to AM', async () => {
+      const { hour, user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(13, 30, 0), // 1 PM
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+
+      // Cycle from 1 PM through 11 PM
+      for (let i = 1; i < 11; i++) {
+        await user.keyboard(kbd.ARROW_UP)
+        expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+      }
+
+      // At 11 PM, next should be 12 AM
+      await user.keyboard(kbd.ARROW_UP)
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+  })
+
+  describe('12-hour input handling', () => {
+    it('allows typing 10 with AM period', async () => {
+      const { hour, user, value, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(0, 30, 0),
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard('{1}{0}')
+
+      expect(hour).toHaveTextContent('10')
+      // Internal value should be 10 for 10 AM
+      expect(value.textContent).toContain('10:30:00')
+    })
+
+    it('allows typing 11 with AM period', async () => {
+      const { hour, user, value, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(0, 30, 0),
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard('{1}{1}')
+
+      expect(hour).toHaveTextContent('11')
+      // Internal value should be 11 for 11 AM
+      expect(value.textContent).toContain('11:30:00')
+    })
+
+    it('allows typing 12 with PM period', async () => {
+      const { hour, user, value, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(13, 30, 0),
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard('{1}{2}')
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+      // Internal value should be 12 for 12 PM
+      expect(value.textContent).toContain('12:30:00')
+    })
+
+    it('allows typing 10 with PM period - converts to 22:00', async () => {
+      const { hour, user, value, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(13, 30, 0),
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard('{1}{0}')
+
+      expect(hour).toHaveTextContent('10')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+      // Internal value should be 22 for 10 PM
+      expect(value.textContent).toContain('22:30:00')
+    })
+
+    it('allows typing 11 with PM period - converts to 23:00', async () => {
+      const { hour, user, value, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(13, 30, 0),
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard('{1}{1}')
+
+      expect(hour).toHaveTextContent('11')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+      // Internal value should be 23 for 11 PM
+      expect(value.textContent).toContain('23:30:00')
+    })
+
+    it('allows typing 12 with AM period - converts to 00:00', async () => {
+      const { hour, user, value, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(1, 30, 0),
+          hourCycle: 12,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                hourCycle: 12,
+              },
+            })
+          },
+        },
+      })
+
+      await user.click(hour)
+      await user.keyboard('{1}{2}')
+
+      expect(hour).toHaveTextContent('12')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+      // Internal value should be 0 for 12 AM (midnight)
+      expect(value.textContent).toContain('00:30:00')
+    })
+  })
+
+  describe('stepSnapping', () => {
+    it('snaps typed minute value to nearest step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 23 - should snap to 30 (nearest multiple of 15)
+      await user.keyboard('{2}{3}')
+      expect(minute).toHaveTextContent('30')
+    })
+
+    it('snaps typed minute value down to nearest step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 17 - should snap to 15 (nearest multiple of 15)
+      await user.keyboard('{1}{7}')
+      expect(minute).toHaveTextContent('15')
+    })
+
+    it('does not snap typed values when stepSnapping is false', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: false,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: false,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 23 - should remain 23 (no snapping)
+      await user.keyboard('{2}{3}')
+      expect(minute).toHaveTextContent('23')
+    })
+
+    it('arrow keys still use step regardless of stepSnapping setting', async () => {
+      const { user, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: false,
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard(kbd.ARROW_UP)
+      expect(minute).toHaveTextContent('15')
+    })
+
+    it('snaps to max boundary when value exceeds max', async () => {
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type 58 - should snap to 45 (last valid step before 60)
+      await user.keyboard('{5}{8}')
+      expect(minute).toHaveTextContent('45')
+    })
   })
 })

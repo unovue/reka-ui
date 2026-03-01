@@ -7,6 +7,12 @@ export interface DropdownMenuSubProps extends MenuSubProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
   defaultOpen?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

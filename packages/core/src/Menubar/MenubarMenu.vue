@@ -21,6 +21,12 @@ type MenubarMenuContext = {
 
 export const [injectMenubarMenuContext, provideMenubarMenuContext]
   = createContext<MenubarMenuContext>('MenubarMenu')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -17,12 +17,16 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** When `false`, prevents the value from snapping to the nearest increment of the step value */
   stepSnapping?: boolean
+  /** When `true`, the input will be focused when the value changes. */
+  focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
   formatOptions?: Intl.NumberFormatOptions
-  /** The locale to use for formatting dates */
+  /** The locale to use for formatting and currencies */
   locale?: string
   /** When `true`, prevents the user from interacting with the Number Field. */
   disabled?: boolean
+  /** When `true`, the Number Field is read-only. */
+  readonly?: boolean
   /** When `true`, prevents the value from changing on wheel scroll. */
   disableWheelChange?: boolean
   /** When `true`, inverts the direction of the wheel change. */
@@ -47,6 +51,7 @@ interface NumberFieldRootContext {
   validate: (val: string) => boolean
   applyInputValue: (val: string) => void
   disabled: Ref<boolean>
+  readonly: Ref<boolean>
   disableWheelChange: Ref<boolean>
   invertWheelChange: Ref<boolean>
   max: Ref<number | undefined>
@@ -57,6 +62,12 @@ interface NumberFieldRootContext {
 }
 
 export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createContext<NumberFieldRootContext>('NumberFieldRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -73,9 +84,10 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   defaultValue: undefined,
   step: 1,
   stepSnapping: true,
+  focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -106,10 +118,12 @@ const isIncreaseDisabled = computed(() => (
 )
 
 function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
-  inputEl.value?.focus()
-  const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
-  if (props.disabled)
+  if (props.focusOnChange) {
+    inputEl.value?.focus()
+  }
+  if (props.disabled || props.readonly)
     return
+  const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
     modelValue.value = min.value ?? 0
   }
@@ -197,6 +211,7 @@ provideNumberFieldRootContext({
   inputEl,
   onInputElement: el => inputEl.value = el,
   textValue,
+  readonly,
   validate,
   applyInputValue,
   disabled,
@@ -218,10 +233,12 @@ provideNumberFieldRootContext({
     :as="as"
     :as-child="asChild"
     :data-disabled="disabled ? '' : undefined"
+    :data-readonly="readonly ? '' : undefined"
   >
     <slot
       :model-value="modelValue"
       :text-value="textValue"
+      :readonly="readonly"
     />
 
     <VisuallyHiddenInput
@@ -230,6 +247,7 @@ provideNumberFieldRootContext({
       :value="modelValue"
       :name="name"
       :disabled="disabled"
+      :readonly="readonly"
       :required="required"
     />
   </Primitive>

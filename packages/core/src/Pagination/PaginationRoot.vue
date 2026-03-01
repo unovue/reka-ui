@@ -40,6 +40,12 @@ export type PaginationRootEmits = {
 
 export const [injectPaginationRootContext, providePaginationRootContext]
   = createContext<PaginationRootContext>('PaginationRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

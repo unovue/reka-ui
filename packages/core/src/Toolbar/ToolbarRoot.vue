@@ -20,6 +20,12 @@ export interface ToolbarRootContext {
 
 export const [injectToolbarRootContext, provideToolbarRootContext]
   = createContext<ToolbarRootContext>('ToolbarRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -117,6 +117,13 @@
     'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
     'type': 'DateStep',
     'required': false
+  },
+  {
+    'name': 'stepSnapping',
+    'description': '<p>Whether to enforce snapping the value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 

@@ -2,6 +2,12 @@
 import type { TeleportProps } from '@/Teleport'
 
 export interface DialogPortalProps extends TeleportProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

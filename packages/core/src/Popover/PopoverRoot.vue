@@ -38,6 +38,12 @@ export interface PopoverRootContext {
 
 export const [injectPopoverRootContext, providePopoverRootContext]
   = createContext<PopoverRootContext>('PopoverRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -56,6 +62,8 @@ defineSlots<{
   default?: (props: {
     /** Current open state */
     open: typeof open.value
+    /** Close the popover */
+    close: () => void
   }) => any
 }>()
 
@@ -87,6 +95,9 @@ providePopoverRootContext({
 
 <template>
   <PopperRoot>
-    <slot :open="open" />
+    <slot
+      :open="open"
+      :close="() => open = false"
+    />
   </PopperRoot>
 </template>

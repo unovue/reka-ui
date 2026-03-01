@@ -13,6 +13,12 @@ export interface MenuContentProps extends MenuRootContentTypeProps {
    */
   forceMount?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

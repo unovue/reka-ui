@@ -48,4 +48,12 @@ export default antfu(
       'unused-imports/no-unused-vars': 'off',
     },
   },
+  {
+    files: ['**/package.json'],
+    rules: {
+      // Wrecks the order of `files` otherwise, and breaks the exclusion patterns
+      // pnpm has no issues with that, but npm does and doesn't apply the correct config
+      'jsonc/sort-array-values': 'off',
+    },
+  },
 )

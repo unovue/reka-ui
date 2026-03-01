@@ -3,8 +3,16 @@ import { getParameters } from 'codesandbox/lib/api/define'
 import { version } from '../../package.json'
 
 export function makeCodeSandboxParams(componentName: string, sources: Record<string, string>) {
-  let files = {}
+  let files: Record<string, any> = {}
   files = constructFiles(componentName, sources)
+  files['.codesandbox/Dockerfile'] = {
+    content: [
+      'FROM node:23',
+      'ENV COREPACK_ENABLE_DOWNLOAD_PROMPT = 0',
+      'RUN corepack enable',
+    ].join('\n'),
+    isBinary: false,
+  }
   return getParameters({ files, template: 'node' })
 }
 
@@ -27,11 +35,18 @@ export function makeStackblitzParams(componentName: string, sources: Record<stri
 }
 
 const viteConfig = {
-  'vite.config.js': {
+  'vite.config.ts': {
     content: `import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwind from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
 export default defineConfig({
+  css: {
+    postcss: {
+      plugins: [tailwind(), autoprefixer()],
+    }
+  },
   plugins: [vue()],
 })`,
     isBinary: false,
@@ -41,13 +56,12 @@ export default defineConfig({
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Vite + Vue + TS</title>
       </head>
       <body>
         <div id="app"></div>
-        <script type="module" src="/src/main.ts"></script>
+        <script type="module" src="./src/main.ts"></script>
       </body>
     </html>
     `,
@@ -68,8 +82,8 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     '@vitejs/plugin-vue': 'latest',
     'vue-tsc': 'latest',
     'tailwindcss': '^3.4.13',
-    'postcss': 'latest',
     'autoprefixer': 'latest',
+    'typescript': 'latest',
   }
 
   const componentFiles = Object.keys(sources).filter(key => key.endsWith('.vue') && key !== 'index.vue')
@@ -85,24 +99,23 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     'package.json': {
       content: {
         name: `reka-ui-${componentName.toLowerCase().replace(/ /g, '-')}`,
-        scripts: { start: 'vite' },
+        description: `Demo project for ${componentName} from Reka UI`,
+        keywords: [],
+        private: true,
+        version: '0.0.0',
+        scripts: {
+          start: 'vite',
+          dev: 'vite',
+          serve: 'vite',
+        },
         dependencies,
         devDependencies,
       },
       isBinary: false,
     },
     ...viteConfig,
-    'tailwind.config.js': sources['tailwind.config.js'] && {
-      content: sources['tailwind.config.js'],
-      isBinary: false,
-    },
-    'postcss.config.js': sources['tailwind.config.js'] && {
-      content: `module.exports = {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  }
-}`,
+    'tailwind.config.cjs': sources['tailwind.config.js'] && {
+      content: sources['tailwind.config.js'].replace('content: [\'./**/*.vue\']', 'content: [\'./src/**/*.{vue,ts,js}\', \'./index.html\']'),
       isBinary: false,
     },
     'src/main.ts': {

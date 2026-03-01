@@ -13,6 +13,12 @@ export interface RovingFocusItemProps extends PrimitiveProps {
   /** When `true`, shift + arrow key will allow focusing on next/previous item. */
   allowShiftKey?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

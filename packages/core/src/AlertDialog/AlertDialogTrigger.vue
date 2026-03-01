@@ -3,6 +3,12 @@ import type { DialogTriggerProps } from '@/Dialog'
 import { useForwardExpose } from '@/shared'
 
 export interface AlertDialogTriggerProps extends DialogTriggerProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

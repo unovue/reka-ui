@@ -6,6 +6,12 @@ export interface LabelProps extends PrimitiveProps {
   /** The id of the element the label is associated with. */
   for?: string
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

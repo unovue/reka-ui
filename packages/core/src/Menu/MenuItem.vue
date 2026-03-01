@@ -11,6 +11,12 @@ export type MenuItemEmits = {
 }
 
 export interface MenuItemProps extends MenuItemImplProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

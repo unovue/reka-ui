@@ -9,7 +9,7 @@ export interface ScrollAreaScrollbarVisibleContext {
   handleWheelScroll: (event: WheelEvent, payload: number) => void
   handleThumbDown: (
     event: MouseEvent,
-    payload: { x: number, y: number }
+    payload: { x: number, y: number },
   ) => void
   handleThumbUp: (event: MouseEvent) => void
   handleSizeChange: (payload: Sizes) => void
@@ -20,6 +20,12 @@ export interface ScrollAreaScrollbarVisibleContext {
 
 export const [injectScrollAreaScrollbarVisibleContext, provideScrollAreaScrollbarVisibleContext]
   = createContext<ScrollAreaScrollbarVisibleContext>('ScrollAreaScrollbarVisible')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

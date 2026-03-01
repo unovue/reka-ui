@@ -10,13 +10,27 @@ type ContextMenuRootContext = {
   modal: Ref<boolean>
   dir: Ref<Direction>
   triggerElement: Ref<HTMLElement | undefined>
+  pressOpenDelay: Ref<number>
 }
 
-export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {}
+export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {
+  /**
+   * The duration from when the trigger is pressed until the menu opens.
+   *
+   * @defaultValue 700
+   */
+  pressOpenDelay?: number
+}
 export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
   = createContext<ContextMenuRootContext>('ContextMenuRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -29,9 +43,10 @@ defineOptions({
 
 const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
+  pressOpenDelay: 700,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
-const { dir: propDir, modal } = toRefs(props)
+const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
 useForwardExpose()
 const dir = useDirection(propDir)
 
@@ -46,6 +61,7 @@ provideContextMenuRootContext({
   dir,
   modal,
   triggerElement,
+  pressOpenDelay,
 })
 
 watch(open, (value) => {

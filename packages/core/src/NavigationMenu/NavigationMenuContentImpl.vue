@@ -12,6 +12,12 @@ type MotionAttribute = 'to-start' | 'to-end' | 'from-start' | 'from-end'
 export type NavigationMenuContentImplEmits = DismissableLayerEmits
 
 export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -103,7 +109,7 @@ function handlePointerDownOutside(ev: PointerDownOutsideEvent) {
       i.ref.contains(target),
     )
     const isRootViewport
-    = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
+      = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
 
     if (isTrigger || isRootViewport || !menuContext.isRootMenu)
       ev.preventDefault()

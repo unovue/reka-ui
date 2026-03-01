@@ -5,6 +5,12 @@ import { useCollection } from '@/Collection'
 export type MenubarContentEmits = MenuContentEmits
 
 export interface MenubarContentProps extends MenuContentProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

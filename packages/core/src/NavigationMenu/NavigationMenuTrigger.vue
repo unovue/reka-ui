@@ -8,6 +8,12 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
   disabled?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -87,9 +93,13 @@ function handlePointerLeave(ev: PointerEvent) {
   }
 }
 
-function handleClick(event: PointerEvent) {
-  if (event.pointerType === 'mouse' && menuContext.disableClickTrigger.value)
+function handleClick(event: MouseEvent | PointerEvent) {
+  if (
+    (!('pointerType' in event) || event.pointerType === 'mouse')
+    && menuContext.disableClickTrigger.value
+  ) {
     return
+  }
 
   // if open via pointermove, we prevent click event
   if (hasPointerMoveOpenedRef.value)

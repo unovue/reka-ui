@@ -2,6 +2,12 @@
 
 <PropsTable :data="[
   {
+    'name': 'alignFlip',
+    'description': '<p>Flip alignment when colliding with boundary.\nMay only occur when <code>prioritizePosition</code> is true.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'alignOffset',
     'description': '<p>An offset in pixels from the <code>start</code> or <code>end</code> alignment options.</p>\n',
     'type': 'number',
@@ -55,6 +61,12 @@
     'required': false
   },
   {
+    'name': 'hideShiftedArrow',
+    'description': '<p>When <code>true</code>, hides the arrow when it cannot be centered\nto the reference element.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'hideWhenDetached',
     'description': '<p>Whether to hide the content when the trigger becomes fully occluded.</p>\n',
     'type': 'boolean',
@@ -83,6 +95,12 @@
     'name': 'reference',
     'description': '<p>The custom element or virtual element that will be set as the reference\nto position the floating element.</p>\n<p>If provided, it will replace the default anchor element.</p>\n',
     'type': 'ReferenceElement',
+    'required': false
+  },
+  {
+    'name': 'sideFlip',
+    'description': '<p>Flip to the opposite side when colliding with boundary.</p>\n',
+    'type': 'boolean',
     'required': false
   },
   {

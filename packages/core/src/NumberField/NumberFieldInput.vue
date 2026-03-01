@@ -6,6 +6,12 @@ import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 
 export interface NumberFieldInputProps extends PrimitiveProps {
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -68,6 +74,8 @@ function handleChange() {
     :inputmode="rootContext.inputMode.value"
     :disabled="rootContext.disabled.value ? '' : undefined"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
+    :readonly="rootContext.readonly.value ? '' : undefined"
+    :data-readonly="rootContext.readonly.value ? '' : undefined"
     autocomplete="off"
     autocorrect="off"
     spellcheck="false"

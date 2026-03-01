@@ -1,12 +1,18 @@
 <script lang="ts">
 import { useForwardExpose, useId } from '@/shared'
 
-export type TooltipTriggerDataState =
-  | 'closed'
-  | 'delayed-open'
-  | 'instant-open'
+export type TooltipTriggerDataState
+  = | 'closed'
+    | 'delayed-open'
+    | 'instant-open'
 
 export interface TooltipTriggerProps extends PopperAnchorProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

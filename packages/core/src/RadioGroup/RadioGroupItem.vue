@@ -16,6 +16,12 @@ interface RadioGroupItemContext {
 
 export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
   = createContext<RadioGroupItemContext>('RadioGroupItem')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

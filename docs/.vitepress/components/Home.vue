@@ -258,7 +258,7 @@ import Chip from './Chip.vue'
       <div class="flex flex-col sm:flex-row items-center justify-center gap-12 sm:gap-20">
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            600k+
+            1.6mil+
           </div>
           <div class="mt-1">
             Monthly downloads
@@ -267,7 +267,7 @@ import Chip from './Chip.vue'
 
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            130+
+            190+
           </div>
           <div class="mt-1">
             Contributors
@@ -276,7 +276,7 @@ import Chip from './Chip.vue'
 
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            4k+
+            5.7k+
           </div>
           <div class="mt-1">
             GitHub Stars

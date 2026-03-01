@@ -69,6 +69,12 @@ export type EditableRootEmits = {
 
 export const [injectEditableRootContext, provideEditableRootContext]
   = createContext<EditableRootContext>('EditableRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -168,7 +174,7 @@ function submit() {
   isEditing.value = false
 
   emits('update:state', 'submit')
-  emits('submit', modelValue.value)
+  emits('submit', inputValue.value)
 }
 
 function handleDismiss() {

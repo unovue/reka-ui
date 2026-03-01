@@ -61,7 +61,7 @@ import {
   RangeCalendarHeading,
   RangeCalendarNext,
   RangeCalendarPrev,
-  RangeCalendarRoot
+  RangeCalendarRoot,
 } from 'reka-ui'
 </script>
 

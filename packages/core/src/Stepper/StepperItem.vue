@@ -28,6 +28,12 @@ export interface StepperItemProps extends PrimitiveProps {
   /** Shows whether the step is completed. */
   completed?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

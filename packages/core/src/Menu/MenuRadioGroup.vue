@@ -1,29 +1,36 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { MenuGroupProps } from './MenuGroup.vue'
-import { createContext } from '@/shared'
+import type { AcceptableValue } from '@/shared/types'
+import { createContext, useForwardProps } from '@/shared'
 
 interface MenuRadioGroupContext {
-  modelValue: Ref<string>
-  onValueChange: (payload: string) => void
+  modelValue: Ref<AcceptableValue>
+  onValueChange: (payload: AcceptableValue) => void
 }
 
 export interface MenuRadioGroupProps extends MenuGroupProps {
   /** The value of the selected item in the group. */
-  modelValue?: string
+  modelValue?: AcceptableValue
 }
 
 export type MenuRadioGroupEmits = {
   /** Event handler called when the value changes. */
-  'update:modelValue': [payload: string]
+  'update:modelValue': [payload: AcceptableValue]
 }
 
 export const [injectMenuRadioGroupContext, provideMenuRadioGroupContext]
   = createContext<MenuRadioGroupContext>('MenuRadioGroup')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
+import { reactiveOmit, useVModel } from '@vueuse/core'
 import MenuGroup from './MenuGroup.vue'
 
 const props = withDefaults(defineProps<MenuRadioGroupProps>(), {
@@ -38,6 +45,9 @@ defineSlots<{
   }) => any
 }>()
 
+const delegatedProps = reactiveOmit(props, ['modelValue'])
+const forwarded = useForwardProps(delegatedProps)
+
 const modelValue = useVModel(props, 'modelValue', emits)
 
 provideMenuRadioGroupContext({
@@ -49,7 +59,7 @@ provideMenuRadioGroupContext({
 </script>
 
 <template>
-  <MenuGroup v-bind="props">
+  <MenuGroup v-bind="forwarded">
     <slot :model-value="modelValue" />
   </MenuGroup>
 </template>

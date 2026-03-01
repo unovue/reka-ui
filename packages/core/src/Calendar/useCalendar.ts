@@ -4,7 +4,7 @@
 
 import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
 import { isEqualMonth, isSameDay } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
@@ -14,7 +14,7 @@ import { useDateFormatter } from '@/shared'
 export type UseCalendarProps = {
   locale: Ref<string>
   placeholder: Ref<DateValue>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
   minValue: Ref<DateValue | undefined>
@@ -327,9 +327,9 @@ export function useCalendar(props: UseCalendarProps) {
     const endMonthYear = formatter.fullYear(endMonth, headingFormatOptions.value)
 
     const content
-    = startMonthYear === endMonthYear
-      ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
-      : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
+      = startMonthYear === endMonthYear
+        ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
+        : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
 
     return content
   })

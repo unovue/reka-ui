@@ -2,6 +2,12 @@
 import type { PopperArrowProps } from '@/Popper'
 
 export interface MenuArrowProps extends PopperArrowProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

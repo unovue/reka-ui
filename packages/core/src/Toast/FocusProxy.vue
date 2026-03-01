@@ -1,3 +1,11 @@
+<script lang="ts">
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
+</script>
+
 <script setup lang="ts">
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectToastProviderContext } from './ToastProvider.vue'

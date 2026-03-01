@@ -12,6 +12,12 @@ export interface CollapsibleContentProps extends PrimitiveProps {
 export type CollapsibleContentEmits = {
   contentFound: [void]
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

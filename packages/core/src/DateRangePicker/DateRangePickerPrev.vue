@@ -4,6 +4,12 @@ import type { RangeCalendarPrevSlot } from '@/RangeCalendar/RangeCalendarPrev.vu
 import { RangeCalendarPrev } from '..'
 
 export interface DateRangePickerPrevProps extends RangeCalendarPrevProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -4,6 +4,12 @@ import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 export interface EditableInputProps extends PrimitiveProps {
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -45,7 +51,7 @@ watch(context.isEditing, (value) => {
 })
 
 function handleSubmitKeyDown(event: KeyboardEvent) {
-  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey)
+  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey && !event.isComposing)
     context.submit()
 }
 </script>

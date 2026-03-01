@@ -21,6 +21,12 @@ export interface NavigationMenuSubProps extends PrimitiveProps {
   /** The orientation of the menu. */
   orientation?: Orientation
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

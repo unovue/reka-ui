@@ -11,6 +11,12 @@ const OPPOSITE_SIDE: Record<Side, Side> = {
 }
 
 export interface PopperArrowProps extends ArrowProps, PrimitiveProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -4,13 +4,13 @@ import { createContext, getActiveElement, useDirection, useSelectionBehavior, us
 import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
-  /** The controlled value of the tree. Can be binded with with `v-model`. */
+  /** The controlled value of the tree. Can be binded with `v-model`. */
   modelValue?: M extends true ? U[] : U
   /** The value of the tree when initially rendered. Use when you do not need to control the state of the tree */
   defaultValue?: M extends true ? U[] : U
   /** List of items */
   items?: T[]
-  /** The controlled value of the expanded item. Can be binded with with `v-model`. */
+  /** The controlled value of the expanded item. Can be binded with `v-model`. */
   expanded?: string[]
   /** The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree */
   defaultExpanded?: string[]
@@ -21,7 +21,7 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   /** How multiple selection should behave in the collection. */
   selectionBehavior?: 'toggle' | 'replace'
   /** Whether multiple options can be selected or not.  */
-  multiple?: M
+  multiple?: M | boolean
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** When `true`, prevents the user from interacting with tree  */
@@ -73,6 +73,12 @@ export type FlattenedItem<T> = {
 }
 
 export const [injectTreeRootContext, provideTreeRootContext] = createContext<TreeRootContext<any>>('TreeRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
@@ -112,7 +118,7 @@ const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error idk
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
-  passive: (props.modelValue === undefined) as false,
+  passive: true,
   deep: true,
 }) as Ref<U | U[]>
 
@@ -254,7 +260,7 @@ provideTreeRootContext({
     if (expanded.value.includes(key))
       expanded.value = expanded.value.filter(val => val !== key)
     else
-      expanded.value.push(key)
+      expanded.value = [...expanded.value, key]
   },
   getKey: props.getKey,
   getChildren: props.getChildren,

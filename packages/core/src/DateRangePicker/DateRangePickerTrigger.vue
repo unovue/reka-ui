@@ -4,6 +4,12 @@ import { PopoverTrigger } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 
 export interface DateRangePickerTriggerProps extends PopoverTriggerProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

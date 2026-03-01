@@ -1,3 +1,11 @@
+<script lang="ts">
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
+</script>
+
 <script setup lang="ts">
 import type { ConfigProviderProps } from './ConfigProvider.vue'
 import DropdownMenu from '../DropdownMenu/story/_DropdownMenu.vue'

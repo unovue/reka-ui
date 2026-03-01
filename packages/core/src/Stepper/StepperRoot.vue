@@ -43,6 +43,12 @@ export type StepperRootEmits = {
 
 export const [injectStepperRootContext, provideStepperRootContext]
   = createContext<StepperRootContext>('StepperRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

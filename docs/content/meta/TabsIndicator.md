@@ -15,3 +15,11 @@
     'required': false
   }
 ]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'updateIndicatorStyle',
+    'description': '',
+    'type': '() => void'
+  }
+]" />

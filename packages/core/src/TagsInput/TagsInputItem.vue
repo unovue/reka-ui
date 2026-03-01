@@ -23,6 +23,12 @@ export interface TagsInputItemContext {
 
 export const [injectTagsInputItemContext, provideTagsInputItemContext]
   = createContext<TagsInputItemContext>('TagsInputItem')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

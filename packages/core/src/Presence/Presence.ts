@@ -32,6 +32,9 @@ export interface PresenceProps {
 
 export default defineComponent({
   name: 'Presence',
+  compatConfig: {
+    MODE: 3,
+  },
   props: {
     present: {
       type: Boolean,

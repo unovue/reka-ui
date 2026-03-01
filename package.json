@@ -1,9 +1,9 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.3.2",
+  "version": "2.8.0",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.13.1",
   "license": "MIT",
   "repository": "unovue/reka-ui",
   "workspaces": [
@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "story:dev": "pnpm --filter histoire story:dev --open",
-    "build": "rimraf packages/core/dist  && pnpm run --filter reka-ui build && pnpm run --filter plugins build",
-    "build-only": "rimraf packages/core/dist  && pnpm run -r build-only",
+    "build": "pnpm run --filter reka-ui build && pnpm run --filter plugins build",
+    "build-only": "pnpm run -r build-only",
     "docs:install": "pnpm --filter docs install",
     "docs:dev": "pnpm --filter docs docs:dev",
     "docs:build": "pnpm --filter docs docs:build",
@@ -27,26 +27,20 @@
     "pub:release": "cd packages/core && pnpm pub:release"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^4.13.1",
-    "@commitlint/cli": "^19.7.1",
-    "@commitlint/config-conventional": "^19.7.1",
+    "@antfu/eslint-config": "^7.2.0",
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
     "bumpp": "^10.1.1",
-    "eslint": "^9.27.0",
-    "lint-staged": "^15.5.2",
-    "pnpm": "^10.0.0",
-    "rimraf": "^6.0.1",
-    "simple-git-hooks": "^2.13.0",
+    "eslint": "^9.39.2",
+    "lint-staged": "^16.2.7",
+    "simple-git-hooks": "^2.13.1",
+    "tsx": "^4.20.3",
     "typescript": "5.8.3"
   },
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"
     ]
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "vitepress": "patches/vitepress.patch"
-    }
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",

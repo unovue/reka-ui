@@ -31,6 +31,12 @@ export interface HoverCardRootContext {
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
   = createContext<HoverCardRootContext>('HoverCardRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -13,6 +13,12 @@ type ComboboxGroupContext = {
 
 export const [injectComboboxGroupContext, provideComboboxGroupContext]
   = createContext<ComboboxGroupContext>('ComboboxGroup')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

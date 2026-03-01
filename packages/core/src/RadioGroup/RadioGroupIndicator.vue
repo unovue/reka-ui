@@ -9,6 +9,12 @@ export interface RadioGroupIndicatorProps extends PrimitiveProps {
    */
   forceMount?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

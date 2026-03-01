@@ -4,6 +4,12 @@ import { computed } from 'vue'
 import { injectEditableRootContext } from './EditableRoot.vue'
 
 export interface EditablePreviewProps extends PrimitiveProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

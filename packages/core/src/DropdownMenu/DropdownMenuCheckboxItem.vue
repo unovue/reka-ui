@@ -7,6 +7,12 @@ import type {
 export type DropdownMenuCheckboxItemEmits = MenuCheckboxItemEmits
 
 export interface DropdownMenuCheckboxItemProps extends MenuCheckboxItemProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -14,6 +14,12 @@ export const [injectAlertDialogContentContext, provideAlertDialogContentContext]
 
 export type AlertDialogContentEmits = DialogContentEmits
 export interface AlertDialogContentProps extends DialogContentProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

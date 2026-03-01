@@ -11,6 +11,12 @@ export interface PopperAnchorProps extends PrimitiveProps {
    */
   reference?: ReferenceElement
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

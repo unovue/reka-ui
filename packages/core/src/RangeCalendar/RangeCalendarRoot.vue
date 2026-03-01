@@ -1,17 +1,16 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
 import { useCalendar } from '@/Calendar/useCalendar'
-import { isBefore } from '@/date'
+import { getWeekStartsOn, isBefore } from '@/date'
 import {
   createContext,
-  isNullish,
   useDirection,
   useKbd,
   useLocale,
@@ -29,7 +28,7 @@ type RangeCalendarRootContext = {
   preventDeselect: Ref<boolean>
   grid: Ref<Grid<DateValue>[]>
   weekDays: Ref<string[]>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
@@ -57,16 +56,18 @@ type RangeCalendarRootContext = {
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
   isNextButtonDisabled: (
-    nextPageFunc?: (date: DateValue) => DateValue
+    nextPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   isPrevButtonDisabled: (
-    prevPageFunc?: (date: DateValue) => DateValue
+    prevPageFunc?: (date: DateValue) => DateValue,
   ) => boolean
   formatter: Formatter
   dir: Ref<Direction>
   disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays: Ref<number | undefined>
+  minValue: Ref<DateValue | undefined>
+  maxValue: Ref<DateValue | undefined>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -87,7 +88,7 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   /** The maximum number of days that can be selected in a range */
   maximumDays?: number
   /** The day of the week to start the calendar on */
-  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
+  weekStartsOn?: WeekStartsOn
   /** The format to use for the weekday strings provided via the weekdays slot prop */
   weekdayFormat?: WeekDayFormat
   /** The accessible label for the calendar */
@@ -124,11 +125,14 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   disableDaysOutsideCurrentView?: boolean
   /** Which part of the range should be fixed */
   fixedDate?: 'start' | 'end'
+
 }
 
 export type RangeCalendarRootEmits = {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
+  /** Event handler called whenever there is a new validModel */
+  'update:validModelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
   /** Event handler called whenever the start value changes */
@@ -137,6 +141,12 @@ export type RangeCalendarRootEmits = {
 
 export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
   = createContext<RangeCalendarRootContext>('RangeCalendarRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -149,7 +159,6 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   as: 'div',
   pagedNavigation: false,
   preventDeselect: false,
-  weekStartsOn: 0,
   weekdayFormat: 'narrow',
   fixedWeeks: false,
   numberOfMonths: 1,
@@ -175,7 +184,7 @@ defineSlots<{
     /** The days of the week */
     weekDays: string[]
     /** The start of the week */
-    weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6
+    weekStartsOn: WeekStartsOn
     /** The calendar locale */
     locale: string
     /** Whether or not to always display 6 weeks in the calendar */
@@ -190,7 +199,6 @@ const {
   readonly,
   initialFocus,
   pagedNavigation,
-  weekStartsOn,
   weekdayFormat,
   fixedWeeks,
   numberOfMonths,
@@ -215,6 +223,7 @@ const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
+const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
 const lastPressedDateValue = ref() as Ref<DateValue | undefined>
 const focusedValue = ref() as Ref<DateValue | undefined>
@@ -225,22 +234,22 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<DateRange>
 
-const currentModelValue = computed(() =>
-  isNullish(modelValue.value)
-    ? { start: undefined, end: undefined }
-    : modelValue.value,
-)
+const validModelValue = ref(modelValue.value) as Ref<DateRange>
+
+watch(validModelValue, (value) => {
+  emits('update:validModelValue', value)
+})
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
-  defaultValue: currentModelValue.value.start,
+  defaultValue: modelValue.value.start,
   locale: props.locale,
 })
 
-const startValue = ref(currentModelValue.value.start) as Ref<
+const startValue = ref(modelValue.value.start) as Ref<
   DateValue | undefined
 >
-const endValue = ref(currentModelValue.value.end) as Ref<DateValue | undefined>
+const endValue = ref(modelValue.value.end) as Ref<DateValue | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
@@ -332,7 +341,7 @@ watch(startValue, (_startValue) => {
 })
 
 watch([startValue, endValue], ([_startValue, _endValue]) => {
-  const value = currentModelValue.value
+  const value = modelValue.value
 
   if (
     value
@@ -347,28 +356,19 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   }
 
   isEditing.value = true
-  if (_startValue && _endValue) {
+  if (_endValue && _startValue) {
+    const nextValue = isBefore(_endValue, _startValue)
+      ? { start: _endValue.copy(), end: _startValue.copy() }
+      : { start: _startValue.copy(), end: _endValue.copy() }
+
+    modelValue.value = { start: nextValue.start, end: nextValue.end }
     isEditing.value = false
-    if (
-      value.start
-      && value.end
-      && isEqualDay(value.start, _startValue)
-      && isEqualDay(value.end, _endValue)
-    ) {
-      return
-    }
-    if (isBefore(_endValue, _startValue)) {
-      modelValue.value = {
-        start: _endValue.copy(),
-        end: _startValue.copy(),
-      }
-    }
-    else {
-      modelValue.value = {
-        start: _startValue.copy(),
-        end: _endValue.copy(),
-      }
-    }
+    validModelValue.value = { start: nextValue.start.copy(), end: nextValue.end.copy() }
+  }
+  else {
+    modelValue.value = _startValue
+      ? { start: _startValue.copy(), end: undefined }
+      : { start: _endValue?.copy(), end: undefined }
   }
 })
 
@@ -376,8 +376,8 @@ const kbd = useKbd()
 useEventListener('keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     // Abort start and end selection
-    startValue.value = modelValue.value.start?.copy()
-    endValue.value = modelValue.value.end?.copy()
+    startValue.value = validModelValue.value.start?.copy()
+    endValue.value = validModelValue.value.end?.copy()
   }
 })
 
@@ -425,6 +425,8 @@ provideRangeCalendarRootContext({
   disableDaysOutsideCurrentView,
   fixedDate,
   maximumDays,
+  minValue,
+  maxValue,
 })
 
 onMounted(() => {
@@ -438,7 +440,6 @@ onMounted(() => {
     ref="primitiveElement"
     :as="as"
     :as-child="asChild"
-    role="application"
     :aria-label="fullCalendarLabel"
     :data-readonly="readonly ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"

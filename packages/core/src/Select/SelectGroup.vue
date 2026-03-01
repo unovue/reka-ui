@@ -10,6 +10,12 @@ interface SelectGroupContext {
 
 export const [injectSelectGroupContext, provideSelectGroupContext]
   = createContext<SelectGroupContext>('SelectGroup')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

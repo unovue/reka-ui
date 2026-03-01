@@ -10,6 +10,12 @@ export interface TooltipContentProps extends TooltipContentImplProps {
    */
   forceMount?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

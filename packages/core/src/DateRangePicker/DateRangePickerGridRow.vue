@@ -3,6 +3,12 @@ import type { RangeCalendarGridRowProps } from '..'
 import { RangeCalendarGridRow } from '..'
 
 export interface DateRangePickerGridRowProps extends RangeCalendarGridRowProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -61,7 +61,7 @@ import {
   CalendarHeading,
   CalendarNext,
   CalendarPrev,
-  CalendarRoot
+  CalendarRoot,
 } from 'reka-ui'
 </script>
 
@@ -286,6 +286,12 @@ This example showcases some of the available locales and how the calendar system
 This component demonstrates intuitive calendar navigation using touch-based swipe gestures, user-friendly way to browse through months.
 
 <ComponentPreview name="CalendarSwipe" />
+
+### Calendar week numbers
+
+This example showcases usage of the CalendarWeek component used to display the number of the week.
+
+<ComponentPreview name="CalendarWeeks" />
 
 ## Accessibility
 

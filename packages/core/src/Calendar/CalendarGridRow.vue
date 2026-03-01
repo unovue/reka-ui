@@ -2,6 +2,12 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarGridRowProps extends PrimitiveProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

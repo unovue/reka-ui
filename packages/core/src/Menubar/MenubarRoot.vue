@@ -34,6 +34,12 @@ export interface MenubarRootContext {
 
 export const [injectMenubarRootContext, provideMenubarRootContext]
   = createContext<MenubarRootContext>('MenubarRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

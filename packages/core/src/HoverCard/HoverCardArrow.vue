@@ -3,6 +3,12 @@ import type { PopperArrowProps } from '@/Popper'
 import { useForwardExpose } from '@/shared'
 
 export interface HoverCardArrowProps extends PopperArrowProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

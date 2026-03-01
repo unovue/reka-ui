@@ -10,6 +10,12 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
    */
   disabled?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -74,7 +80,10 @@ async function handlePointerDown(event: PointerEvent) {
     if (isTouchOrPen(event) && !event.defaultPrevented) {
       // clear the long press here in case there's multiple touch points
       clearLongPress()
-      longPressTimer.value = window.setTimeout(() => handleOpen(event), 700)
+      longPressTimer.value = window.setTimeout(
+        () => handleOpen(event),
+        rootContext.pressOpenDelay.value,
+      )
     }
   }
 }

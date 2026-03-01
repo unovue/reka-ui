@@ -1,5 +1,5 @@
 import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import _traverse from '@babel/traverse'
@@ -23,7 +23,7 @@ const checkerOptions: MetaCheckerOptions = {
 }
 
 const tsconfigChecker = createChecker(
-  resolve(__dirname, '../../packages/core/tsconfig.json'),
+  resolve(__dirname, '../../packages/core/tsconfig.app.json'),
   checkerOptions,
 )
 
@@ -37,7 +37,10 @@ const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*
 })
 
 const listOfComponents = Object.values(components).flatMap(i => i)
-const primitiveComponents = allComponents.filter(i => listOfComponents.includes(parse(i).name))
+const primitiveComponents = allComponents.filter((i) => {
+  // @ts-expect-error: complains because name is a string; completely fine and *actually* intended.
+  return listOfComponents.includes(parse(i).name)
+})
 
 // 1. Generate all the dependencies for each components
 allComponents.forEach((i) => {
@@ -60,8 +63,7 @@ primitiveComponents.forEach((componentPath) => {
 
   const metaDirPath = resolve(__dirname, '../content/meta')
   // if meta dir doesn't exist create
-  if (!existsSync(metaDirPath))
-    mkdirSync(metaDirPath)
+  mkdirSync(metaDirPath, { recursive: true })
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 

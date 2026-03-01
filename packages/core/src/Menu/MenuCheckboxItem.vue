@@ -4,6 +4,7 @@ import type {
   MenuItemProps,
 } from './MenuItem.vue'
 import type { CheckedState } from './utils'
+import { useForwardProps } from '@/shared'
 
 export type MenuCheckboxItemEmits = MenuItemEmits & {
   /** Event handler called when the checked state changes. */
@@ -14,10 +15,16 @@ export interface MenuCheckboxItemProps extends MenuItemProps {
   /** The controlled checked state of the item. Can be used as `v-model`. */
   modelValue?: CheckedState
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
+import { reactiveOmit, useVModel } from '@vueuse/core'
 import MenuItem from './MenuItem.vue'
 import { provideMenuItemIndicatorContext } from './MenuItemIndicator.vue'
 import { getCheckedState, isIndeterminate } from './utils'
@@ -34,6 +41,9 @@ defineSlots<{
   }) => any
 }>()
 
+const delegatedProps = reactiveOmit(props, ['modelValue'])
+const forwarded = useForwardProps(delegatedProps)
+
 const modelValue = useVModel(props, 'modelValue', emits)
 
 provideMenuItemIndicatorContext({ modelValue })
@@ -42,7 +52,7 @@ provideMenuItemIndicatorContext({ modelValue })
 <template>
   <MenuItem
     role="menuitemcheckbox"
-    v-bind="props"
+    v-bind="forwarded"
     :aria-checked="isIndeterminate(modelValue) ? 'mixed' : modelValue"
     :data-state="getCheckedState(modelValue)"
     @select="

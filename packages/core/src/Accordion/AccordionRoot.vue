@@ -64,6 +64,12 @@ export type AccordionRootContext<P extends AccordionRootProps> = {
 
 export const [injectAccordionRootContext, provideAccordionRootContext]
   = createContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">

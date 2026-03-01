@@ -68,6 +68,12 @@ export interface TooltipContext {
 
 export const [injectTooltipRootContext, provideTooltipRootContext]
   = createContext<TooltipContext>('TooltipRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

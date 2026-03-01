@@ -27,6 +27,9 @@ type ComboboxRootContext<T> = {
   filterSearch: Ref<string>
   filterState: ComputedRef<{ count: number, items: Map<string, number>, groups: Set<string> }>
   ignoreFilter: Ref<boolean>
+  openOnFocus: Ref<boolean>
+  openOnClick: Ref<boolean>
+  resetModelValueOnClear: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -42,7 +45,7 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
 }
 
 export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
-  /** The controlled open state of the Combobox. Can be binded with with `v-model:open`. */
+  /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
   defaultOpen?: boolean
@@ -57,9 +60,29 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   resetSearchTermOnSelect?: boolean
   /**
+   * Whether to open the combobox when the input is focused
+   * @defaultValue `false`
+   */
+  openOnFocus?: boolean
+  /**
+   * Whether to open the combobox when the input is clicked
+   * @defaultValue `false`
+   */
+  openOnClick?: boolean
+  /**
    * When `true`, disable the default filters
    */
   ignoreFilter?: boolean
+  /**
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   */
+  resetModelValueOnClear?: boolean
+}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
 }
 </script>
 
@@ -74,6 +97,10 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
+  openOnFocus: false,
+  openOnClick: false,
+  resetModelValueOnClear: false,
+  highlightOnHover: true,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -87,7 +114,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, dir: propDir } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -111,16 +138,15 @@ async function onOpenChange(val: boolean) {
     await nextTick()
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
+    inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
+    setTimeout(() => {
+      if (!val && props.resetSearchTermOnBlur)
+        resetSearchTerm.trigger()
+    }, 1)
   }
-
-  inputElement.value?.focus()
-  setTimeout(() => {
-    if (!val && props.resetSearchTermOnBlur)
-      resetSearchTerm.trigger()
-  }, 1)
 }
 
 const resetSearchTerm = createEventHook()
@@ -220,6 +246,9 @@ provideComboboxRootContext({
   filterSearch,
   filterState,
   ignoreFilter,
+  openOnFocus,
+  openOnClick,
+  resetModelValueOnClear,
 })
 </script>
 
@@ -239,7 +268,7 @@ provideComboboxRootContext({
       :name="name"
       :required="required"
       :disabled="disabled"
-      :highlight-on-hover="true"
+      :highlight-on-hover="highlightOnHover"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >

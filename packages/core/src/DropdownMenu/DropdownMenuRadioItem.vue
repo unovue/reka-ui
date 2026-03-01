@@ -8,6 +8,12 @@ import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 export type DropdownMenuRadioItemEmits = MenuRadioItemEmits
 
 export interface DropdownMenuRadioItemProps extends MenuRadioItemProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

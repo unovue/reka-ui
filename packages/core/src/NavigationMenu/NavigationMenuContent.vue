@@ -10,6 +10,12 @@ export interface NavigationMenuContentProps extends NavigationMenuContentImplPro
    */
   forceMount?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

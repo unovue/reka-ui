@@ -29,7 +29,7 @@
   {
     'name': 'value',
     'description': '<p>The unique value of the item.</p>\n',
-    'type': 'string',
+    'type': 'AcceptableValue',
     'required': true
   }
 ]" />

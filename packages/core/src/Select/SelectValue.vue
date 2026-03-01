@@ -7,6 +7,12 @@ export interface SelectValueProps extends PrimitiveProps {
   /** The content that will be rendered inside the `SelectValue` when no `value` or `defaultValue` is set. */
   placeholder?: string
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -3,6 +3,12 @@ import type { CalendarHeadCellProps } from '..'
 import { CalendarHeadCell } from '..'
 
 export interface DatePickerHeadCellProps extends CalendarHeadCellProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

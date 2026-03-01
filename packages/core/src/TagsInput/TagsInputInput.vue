@@ -10,6 +10,12 @@ export interface TagsInputInputProps extends PrimitiveProps {
   /** Maximum number of character allowed. */
   maxLength?: number
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -51,7 +57,7 @@ function onCompositionStart() {
   isComposing.value = true
 }
 function onCompositionEnd() {
-  requestAnimationFrame(() => {
+  nextTick(() => {
     isComposing.value = false
   })
 }
@@ -85,6 +91,11 @@ function handleInput(event: InputEvent) {
   if (matchesDelimiter) {
     const target = event.target as HTMLInputElement
     target.value = target.value.replace(delimiter, '')
+
+    if (target.value.trim() === '') {
+      target.value = ''
+      return
+    }
 
     const isAdded = context.onAddValue(target.value)
     if (isAdded)

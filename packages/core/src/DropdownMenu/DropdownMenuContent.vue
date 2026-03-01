@@ -7,6 +7,12 @@ import type {
 export type DropdownMenuContentEmits = MenuContentEmits
 
 export interface DropdownMenuContentProps extends MenuContentProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

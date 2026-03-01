@@ -2,6 +2,12 @@
 import type { MenuLabelProps } from '@/Menu'
 
 export interface ContextMenuLabelProps extends MenuLabelProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

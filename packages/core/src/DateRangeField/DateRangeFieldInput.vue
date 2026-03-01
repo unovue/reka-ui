@@ -13,6 +13,12 @@ export interface DateRangeFieldInputProps extends PrimitiveProps {
   /** The type of field to render (start or end) */
   type: DateRangeType
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

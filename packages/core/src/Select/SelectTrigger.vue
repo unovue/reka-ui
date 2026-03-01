@@ -4,6 +4,12 @@ import { useCollection } from '@/Collection'
 export interface SelectTriggerProps extends PopperAnchorProps {
   disabled?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

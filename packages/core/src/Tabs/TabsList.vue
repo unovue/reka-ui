@@ -6,6 +6,12 @@ export interface TabsListProps extends PrimitiveProps {
   /** When `true`, keyboard navigation will loop from last tab to first, and vice versa. */
   loop?: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

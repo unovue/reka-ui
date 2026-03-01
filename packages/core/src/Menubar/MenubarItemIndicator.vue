@@ -3,6 +3,12 @@ import type { MenuItemIndicatorProps } from '@/Menu'
 import { useForwardExpose } from '@/shared'
 
 export interface MenubarItemIndicatorProps extends MenuItemIndicatorProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

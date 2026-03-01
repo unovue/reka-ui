@@ -23,6 +23,12 @@ export type MenuSubEmits = {
   /** Event handler called when the open state of the submenu changes. */
   'update:open': [payload: boolean]
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

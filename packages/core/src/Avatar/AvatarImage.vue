@@ -15,6 +15,12 @@ export interface AvatarImageProps extends PrimitiveProps {
   referrerPolicy?: ImgHTMLAttributes['referrerpolicy']
   crossOrigin?: ImgHTMLAttributes['crossorigin']
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -51,7 +57,8 @@ watch(
     :as-child="asChild"
     :as="as"
     :src="src"
-    :referrer-policy="referrerPolicy"
+    :referrerpolicy="referrerPolicy"
+    :crossorigin="crossOrigin"
   >
     <slot />
   </Primitive>

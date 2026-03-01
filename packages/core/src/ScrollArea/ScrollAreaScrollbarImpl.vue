@@ -8,6 +8,12 @@ type ScrollbarAreaScrollbarImplEmits = {
 export interface ScrollAreaScrollbarImplProps {
   isHorizontal: boolean
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -109,11 +115,13 @@ function handleSizeChange() {
       viewport: rootContext.viewport.value?.offsetHeight ?? 0,
       scrollbar: {
         size: scrollbar.value?.clientHeight ?? 0,
-        paddingStart: toInt(getComputedStyle(scrollbar.value!).paddingLeft),
-        paddingEnd: toInt(getComputedStyle(scrollbar.value!).paddingRight),
+        paddingStart: toInt(getComputedStyle(scrollbar.value!).paddingTop),
+        paddingEnd: toInt(getComputedStyle(scrollbar.value!).paddingBottom),
       },
     })
   }
+
+  scrollbarVisibleContext.onThumbPositionChange()
 }
 
 useResizeObserver(scrollbar, handleSizeChange)

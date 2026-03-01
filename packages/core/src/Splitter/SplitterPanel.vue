@@ -33,7 +33,7 @@ export type PanelOnCollapse = () => void
 export type PanelOnExpand = () => void
 export type PanelOnResize = (
   size: number,
-  prevSize: number | undefined
+  prevSize: number | undefined,
 ) => void
 
 export type PanelCallbacks = {
@@ -57,6 +57,12 @@ export type PanelData = {
   id: string
   idIsFromProps: boolean
   order: number | undefined
+}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
 }
 </script>
 
@@ -127,11 +133,11 @@ watch(() => panelDataRef.value.constraints, (constraints, prevConstraints) => {
 }, { deep: true })
 
 onMounted(() => {
-  const panelData = panelDataRef.value
-  registerPanel(panelData)
-  onUnmounted(() => {
-    unregisterPanel(panelData)
-  })
+  registerPanel(panelDataRef.value)
+})
+
+onUnmounted(() => {
+  unregisterPanel(panelDataRef.value)
 })
 
 const style = computed(() => getPanelStyle(panelDataRef.value, props.defaultSize))

@@ -2,6 +2,12 @@
 import type { ScrollAreaScrollbarAutoProps } from './ScrollAreaScrollbarAuto.vue'
 
 export interface ScrollAreaScrollbarHoverProps extends ScrollAreaScrollbarAutoProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -37,13 +37,24 @@ interface AccordionItemContext {
 
 export const [injectAccordionItemContext, provideAccordionItemContext]
   = createContext<AccordionItemContext>('AccordionItem')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
 
-const props = defineProps<AccordionItemProps>()
+const props = withDefaults(
+  defineProps<AccordionItemProps>(),
+  {
+    unmountOnHide: undefined,
+  },
+)
 
 defineSlots<{
   default?: (props: {
@@ -115,7 +126,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :open="open"
     :as="props.as"
     :as-child="props.asChild"
-    :unmount-on-hide="rootContext.unmountOnHide.value"
+    :unmount-on-hide="props.unmountOnHide ?? rootContext.unmountOnHide.value"
     @keydown.up.down.left.right.home.end="handleArrowKey"
   >
     <slot :open="open" />

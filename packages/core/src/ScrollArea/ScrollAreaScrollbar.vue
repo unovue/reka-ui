@@ -13,7 +13,7 @@ export interface ScrollAreaScrollbarProps extends PrimitiveProps {
   forceMount?: boolean
 }
 
-export interface ScrollAreaScollbarContext {
+export interface ScrollAreaScrollbarContext {
   as: Ref<PrimitiveProps['as']>
   orientation: Ref<'vertical' | 'horizontal'>
   forceMount?: Ref<boolean>
@@ -22,7 +22,13 @@ export interface ScrollAreaScollbarContext {
 }
 
 export const [injectScrollAreaScrollbarContext, provideScrollAreaScrollbarContext]
-  = createContext<ScrollAreaScollbarContext>('ScrollAreaScrollbar')
+  = createContext<ScrollAreaScrollbarContext>('ScrollAreaScrollbar')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -34,6 +40,7 @@ import {
 } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
+import ScrollAreaScrollbarGlimpse from './ScrollAreaScrollbarGlimpse.vue'
 import ScrollAreaScrollbarHover from './ScrollAreaScrollbarHover.vue'
 import ScrollAreaScrollbarScroll from './ScrollAreaScrollbarScroll.vue'
 import ScrollAreaScrollbarVisible from './ScrollAreaScrollbarVisible.vue'
@@ -94,6 +101,14 @@ provideScrollAreaScrollbarContext({
   >
     <slot />
   </ScrollAreaScrollbarScroll>
+  <ScrollAreaScrollbarGlimpse
+    v-else-if="rootContext.type.value === 'glimpse'"
+    v-bind="$attrs"
+    :ref="forwardRef"
+    :force-mount="forceMount"
+  >
+    <slot />
+  </ScrollAreaScrollbarGlimpse>
   <ScrollAreaScrollbarAuto
     v-else-if="rootContext.type.value === 'auto'"
     v-bind="$attrs"

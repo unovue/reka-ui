@@ -260,7 +260,7 @@ describe('given checkboxGroup in a form', async () => {
       const submittedData = Object.fromEntries(formData as any)
 
       expect(handleSubmit).toHaveBeenCalledTimes(1)
-      expect(submittedData).toStrictEqual({ '[test][0][name]': 'jack' })
+      expect(submittedData).toStrictEqual({ 'test[0][name]': 'jack' })
     })
   })
 

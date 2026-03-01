@@ -33,6 +33,12 @@
     'required': false
   },
   {
+    'name': 'nonce',
+    'description': '<p>Will add <code>nonce</code> attribute to the style tag which can be used by Content Security Policy. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code>.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'tabindex',
     'description': '<p>Tabindex for the handle</p>\n',
     'type': 'number',

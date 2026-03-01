@@ -3,7 +3,7 @@
 title: Dropdown Menu
 description: Displays a menu to the user—such as a set of actions or functions—triggered by a button.
 name: dropdown-menu
-aria: https://www.w3.org/WAI/ARIA/apg/patterns/menubutton
+aria: https://www.w3.org/WAI/ARIA/apg/patterns/menu-button
 ---
 
 # DropdownMenu
@@ -798,7 +798,7 @@ import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenu
 
 ## Accessibility
 
-Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubutton) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex) to manage focus movement among menu items.
+Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex) to manage focus movement among menu items.
 
 ### Keyboard Interactions
 

@@ -11,7 +11,7 @@ import {
   reactive,
   watchEffect,
 } from 'vue'
-import { useForwardExpose } from '@/shared'
+import { isNullish, useForwardExpose } from '@/shared'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -56,8 +56,15 @@ export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
 export const context = reactive({
   layersRoot: new Set<HTMLElement>(),
   layersWithOutsidePointerEventsDisabled: new Set<HTMLElement>(),
+  originalBodyPointerEvents: undefined as string | undefined,
   branches: new Set<HTMLElement>(),
 })
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -137,13 +144,12 @@ onKeyStroke('Escape', (event) => {
     emits('dismiss')
 })
 
-let originalBodyPointerEvents: string
 watchEffect((cleanupFn) => {
   if (!layerElement.value)
     return
   if (props.disableOutsidePointerEvents) {
     if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-      originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
+      context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
       ownerDocument.value.body.style.pointerEvents = 'none'
     }
     context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
@@ -154,8 +160,9 @@ watchEffect((cleanupFn) => {
     if (
       props.disableOutsidePointerEvents
       && context.layersWithOutsidePointerEventsDisabled.size === 1
+      && !isNullish(context.originalBodyPointerEvents)
     ) {
-      ownerDocument.value.body.style.pointerEvents = originalBodyPointerEvents
+      ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
     }
   })
 })

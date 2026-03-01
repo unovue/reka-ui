@@ -2,12 +2,13 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { isEqualDay, isSameDay } from '@internationalized/date'
+import { getWeekStartsOn } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useCalendar, useCalendarState } from './useCalendar'
@@ -20,7 +21,7 @@ type CalendarRootContext = {
   preventDeselect: Ref<boolean>
   grid: Ref<Grid<DateValue>[]>
   weekDays: Ref<string[]>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
   multiple: Ref<boolean>
@@ -45,6 +46,8 @@ type CalendarRootContext = {
   formatter: Formatter
   dir: Ref<Direction>
   disableDaysOutsideCurrentView: Ref<boolean>
+  minValue: Ref<DateValue | undefined>
+  maxValue: Ref<DateValue | undefined>
 }
 
 export interface CalendarRootProps extends PrimitiveProps {
@@ -59,7 +62,7 @@ export interface CalendarRootProps extends PrimitiveProps {
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
   preventDeselect?: boolean
   /** The day of the week to start the calendar on */
-  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
+  weekStartsOn?: WeekStartsOn
   /** The format to use for the weekday strings provided via the weekdays slot prop */
   weekdayFormat?: WeekDayFormat
   /** The accessible label for the calendar */
@@ -107,11 +110,17 @@ export type CalendarRootEmits = {
 
 export const [injectCalendarRootContext, provideCalendarRootContext]
   = createContext<CalendarRootContext>('CalendarRoot')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { onMounted, toRefs, watch } from 'vue'
+import { computed, onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
@@ -119,7 +128,6 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   as: 'div',
   pagedNavigation: false,
   preventDeselect: false,
-  weekStartsOn: 0,
   weekdayFormat: 'narrow',
   fixedWeeks: false,
   multiple: false,
@@ -142,7 +150,7 @@ defineSlots<{
     /** The days of the week */
     weekDays: string[]
     /** The start of the week */
-    weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6
+    weekStartsOn: WeekStartsOn
     /** The calendar locale */
     locale: string
     /** Whether or not to always display 6 weeks in the calendar */
@@ -157,7 +165,6 @@ const {
   readonly,
   initialFocus,
   pagedNavigation,
-  weekStartsOn,
   weekdayFormat,
   fixedWeeks,
   multiple,
@@ -180,6 +187,7 @@ const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
+const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
@@ -323,6 +331,8 @@ provideCalendarRootContext({
   onPlaceholderChange,
   onDateChange,
   disableDaysOutsideCurrentView,
+  minValue,
+  maxValue,
 })
 </script>
 
@@ -331,7 +341,6 @@ provideCalendarRootContext({
     ref="primitiveElement"
     :as="as"
     :as-child="asChild"
-    role="application"
     :aria-label="fullCalendarLabel"
     :data-readonly="readonly ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"

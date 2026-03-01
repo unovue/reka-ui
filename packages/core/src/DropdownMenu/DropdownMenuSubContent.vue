@@ -8,6 +8,12 @@ import { useForwardExpose } from '@/shared'
 export type DropdownMenuSubContentEmits = MenuSubContentEmits
 
 export interface DropdownMenuSubContentProps extends MenuSubContentProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -13,6 +13,12 @@ export interface RangeCalendarNextSlot {
     disabled: boolean
   }) => any
 }
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">
@@ -30,7 +36,8 @@ const rootContext = injectRangeCalendarRootContext()
 
 <template>
   <Primitive
-    v-bind="props"
+    :as="as"
+    :as-child="asChild"
     aria-label="Next page"
     :type="as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"

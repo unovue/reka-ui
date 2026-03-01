@@ -2,6 +2,12 @@
 import type { BaseSeparatorProps } from '@/shared/component/BaseSeparator.vue'
 
 export interface SeparatorProps extends BaseSeparatorProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

@@ -1,3 +1,11 @@
+<script lang="ts">
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
+</script>
+
 <script setup lang="ts">
 import type { SelectRootContext } from './SelectRoot.vue'
 import type { AcceptableValue } from '@/shared/types'

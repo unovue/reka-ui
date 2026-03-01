@@ -4,6 +4,12 @@ import type { RangeCalendarNextSlot } from '@/RangeCalendar/RangeCalendarNext.vu
 import { RangeCalendarNext } from '..'
 
 export interface DateRangePickerNextProps extends RangeCalendarNextProps {}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

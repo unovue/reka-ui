@@ -27,6 +27,12 @@ export type NavigationMenuItemContext = {
 
 export const [injectNavigationMenuItemContext, provideNavigationMenuItemContext]
   = createContext<NavigationMenuItemContext>('NavigationMenuItem')
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
+}
 </script>
 
 <script setup lang="ts">

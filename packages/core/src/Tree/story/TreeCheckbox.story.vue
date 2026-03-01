@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
 import { TreeItem, TreeRoot } from '..'
 import { items } from './constants'
+
+const models = ref([])
 </script>
 
 <template>
@@ -12,6 +15,7 @@ import { items } from './constants'
     <Variant title="default">
       <TreeRoot
         v-slot="{ flattenItems }"
+        v-model="models"
         class="list-none select-none w-64 bg-white text-blackA11 rounded-lg p-2 text-sm font-medium"
         :items="items"
         :get-key="(item) => item.title"

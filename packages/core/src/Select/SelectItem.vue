@@ -14,7 +14,7 @@ interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-    = createContext<SelectItemContext>('SelectItem')
+  = createContext<SelectItemContext>('SelectItem')
 
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 
@@ -36,6 +36,12 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
    * Use this when the content is complex, or you have non-textual content inside.
    */
   textValue?: string
+}
+
+export default {
+  compatConfig: {
+    MODE: 3,
+  },
 }
 </script>
 
