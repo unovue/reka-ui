@@ -189,11 +189,9 @@ function updateValues(x: number, y: number) {
     { channel: yChannel.value, value: clampedY },
   ]
 
-  // Include hue in the update to preserve it
-  if (colorSpace.value === 'hsl') {
-    channels.push({ channel: 'hue', value: hueValue.value })
-  }
-  else if (colorSpace.value === 'hsb') {
+  // Preserve hue only when it is NOT directly controlled by an axis
+  const usesHueAxis = xChannel.value === 'hue' || yChannel.value === 'hue'
+  if (!usesHueAxis && (colorSpace.value === 'hsl' || colorSpace.value === 'hsb')) {
     channels.push({ channel: 'hue', value: hueValue.value })
   }
 

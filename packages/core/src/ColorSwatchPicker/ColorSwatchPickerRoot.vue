@@ -16,7 +16,7 @@ import { ListboxContent, ListboxRoot } from '@/Listbox'
 
 const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
   as: 'div',
-  defaultValue: '',
+  defaultValue: undefined,
   dir: 'ltr',
   disabled: false,
   loop: false,
@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
 const emits = defineEmits<ColorSwatchPickerRootEmits>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue,
+  defaultValue: props.defaultValue ?? (props.multiple ? [] : ''),
   // Cast required for VueUse's passive option type; enables passive sync when modelValue is undefined
   passive: (props.modelValue === undefined) as false,
 })
