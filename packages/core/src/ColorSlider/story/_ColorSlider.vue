@@ -32,18 +32,24 @@ const color = ref(props.defaultValue ?? '#ff0000')
       class="relative flex items-center select-none touch-none"
       :class="orientation === 'vertical' ? 'h-[200px] w-5' : 'w-[200px] h-5'"
     >
-      <ColorSliderTrack class="relative flex-1 rounded-full h-4">
+      <ColorSliderTrack
+        class="relative flex-1 rounded-full"
+        :class="orientation === 'vertical' ? 'w-3' : 'h-3'"
+      >
         <div class="absolute inset-0 rounded-full" />
       </ColorSliderTrack>
-      <ColorSliderThumb class="block w-5 h-5 rounded-full bg-white border-2 border-gray-400 shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed" />
+      <ColorSliderThumb
+        class="block w-5 h-5 rounded-full bg-white border-2 border-gray-400 shadow-lg cursor-pointer hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-blue-500"
+        :class="disabled ? 'opacity-50 !cursor-not-allowed hover:!scale-100' : ''"
+      />
     </ColorSliderRoot>
 
     <div class="flex items-center gap-2 text-xs text-gray-500">
       <div
-        class="w-5 h-5 rounded border border-gray-200"
+        class="w-5 h-5 rounded border border-gray-200 shrink-0"
         :style="{ background: color }"
       />
-      <span>{{ color }}</span>
+      <span class="font-mono">{{ color }}</span>
     </div>
   </div>
 </template>

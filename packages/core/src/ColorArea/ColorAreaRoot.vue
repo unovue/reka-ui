@@ -128,8 +128,13 @@ watch(() => color.value, (newColor) => {
   const newX = Math.round(getChannelValue(newColor, xChannel.value))
   const newY = Math.round(getChannelValue(newColor, yChannel.value))
 
-  xValue.value = newX
-  yValue.value = newY
+  // Only update if the rounded value meaningfully changed.
+  // During drag, xValue/yValue store exact floats (e.g. 80.45).
+  // External updates (e.g. hue slider) should not snap these to integers.
+  if (Math.round(xValue.value) !== newX)
+    xValue.value = newX
+  if (Math.round(yValue.value) !== newY)
+    yValue.value = newY
 
   // Update hue if saturation is not 0 (to preserve hue for grayscale colors)
   if (colorSpace.value === 'hsl') {

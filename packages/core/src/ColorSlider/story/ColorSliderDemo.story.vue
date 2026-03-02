@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ColorSlider from './_ColorSlider.vue'
+import ColorSliderCompound from './_ColorSliderCompound.vue'
 </script>
 
 <template>
@@ -7,6 +8,30 @@ import ColorSlider from './_ColorSlider.vue'
     title="ColorSlider/Demo"
     :layout="{ type: 'grid', width: '50%' }"
   >
+    <Variant title="HSL Sliders (Compound)">
+      <ColorSliderCompound
+        default-value="#7f007f"
+        color-space="hsl"
+        :channels="['hue', 'saturation', 'lightness', 'alpha']"
+      />
+    </Variant>
+
+    <Variant title="RGB Sliders (Compound)">
+      <ColorSliderCompound
+        default-value="#7f007f"
+        color-space="rgb"
+        :channels="['red', 'green', 'blue', 'alpha']"
+      />
+    </Variant>
+
+    <Variant title="HSB Sliders (Compound)">
+      <ColorSliderCompound
+        default-value="#7f007f"
+        color-space="hsb"
+        :channels="['hue', 'saturation', 'brightness', 'alpha']"
+      />
+    </Variant>
+
     <Variant title="Hue (HSL)">
       <ColorSlider
         default-value="#7f007f"

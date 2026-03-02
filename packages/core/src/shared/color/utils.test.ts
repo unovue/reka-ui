@@ -1,153 +1,361 @@
+import type { HSBColor, HSLColor } from './types'
 import { describe, expect, it } from 'vitest'
-import { getColorContrast, getColorName, hexToHSL, hexToRGB } from './utils'
+import {
+  colorToHex,
+  colorToHsl,
+  colorToRgb,
+  convertToHsb,
+  convertToHsl,
+  convertToRgb,
+  getChannelRange,
+  getChannelValue,
+  isValidColor,
+  normalizeColor,
+  parseColor,
+  setChannelValue,
+  setChannelValues,
+} from './index'
 
-describe('hexToRGB', () => {
-  it('should convert 6-digit hex color to RGB', () => {
-    expect(hexToRGB('#FF5733')).toEqual({ r: 255, g: 87, b: 51 })
-    expect(hexToRGB('#ff5733')).toEqual({ r: 255, g: 87, b: 51 })
-    expect(hexToRGB('#000000')).toEqual({ r: 0, g: 0, b: 0 })
-    expect(hexToRGB('#FFFFFF')).toEqual({ r: 255, g: 255, b: 255 })
+describe('color utilities', () => {
+  describe('parseColor', () => {
+    it('should parse hex colors', () => {
+      expect(parseColor('#ff0000')).toEqual({
+        space: 'rgb',
+        r: 255,
+        g: 0,
+        b: 0,
+        alpha: 1,
+      })
+      expect(parseColor('#00ff00')).toEqual({
+        space: 'rgb',
+        r: 0,
+        g: 255,
+        b: 0,
+        alpha: 1,
+      })
+      expect(parseColor('#0000ff')).toEqual({
+        space: 'rgb',
+        r: 0,
+        g: 0,
+        b: 255,
+        alpha: 1,
+      })
+    })
+
+    it('should parse shorthand hex colors', () => {
+      expect(parseColor('#f00')).toEqual({
+        space: 'rgb',
+        r: 255,
+        g: 0,
+        b: 0,
+        alpha: 1,
+      })
+    })
+
+    it('should parse hex with alpha', () => {
+      expect(parseColor('#ff000080')).toEqual({
+        space: 'rgb',
+        r: 255,
+        g: 0,
+        b: 0,
+        alpha: expect.closeTo(0.5, 0.01),
+      })
+    })
+
+    it('should parse rgb() colors', () => {
+      expect(parseColor('rgb(255, 128, 64)')).toEqual({
+        space: 'rgb',
+        r: 255,
+        g: 128,
+        b: 64,
+        alpha: 1,
+      })
+    })
+
+    it('should parse rgba() colors', () => {
+      expect(parseColor('rgba(255, 128, 64, 0.5)')).toEqual({
+        space: 'rgb',
+        r: 255,
+        g: 128,
+        b: 64,
+        alpha: 0.5,
+      })
+    })
+
+    it('should parse hsl() colors', () => {
+      expect(parseColor('hsl(120, 50%, 50%)')).toEqual({
+        space: 'hsl',
+        h: 120,
+        s: 50,
+        l: 50,
+        alpha: 1,
+      })
+    })
+
+    it('should parse hsla() colors', () => {
+      expect(parseColor('hsla(120, 50%, 50%, 0.5)')).toEqual({
+        space: 'hsl',
+        h: 120,
+        s: 50,
+        l: 50,
+        alpha: 0.5,
+      })
+    })
+
+    it('should throw for invalid colors', () => {
+      expect(() => parseColor('not a color')).toThrow()
+      expect(() => parseColor('#gggggg')).toThrow()
+    })
   })
 
-  it('should convert 3-digit shorthand hex color to RGB', () => {
-    expect(hexToRGB('#F53')).toEqual({ r: 255, g: 85, b: 51 })
-    expect(hexToRGB('#f53')).toEqual({ r: 255, g: 85, b: 51 })
-    expect(hexToRGB('#000')).toEqual({ r: 0, g: 0, b: 0 })
-    expect(hexToRGB('#FFF')).toEqual({ r: 255, g: 255, b: 255 })
+  describe('isValidColor', () => {
+    it('should return true for valid colors', () => {
+      expect(isValidColor('#ff0000')).toBe(true)
+      expect(isValidColor('rgb(255, 0, 0)')).toBe(true)
+      expect(isValidColor('hsl(0, 100%, 50%)')).toBe(true)
+    })
+
+    it('should return false for invalid colors', () => {
+      expect(isValidColor('not a color')).toBe(false)
+      expect(isValidColor('#gggggg')).toBe(false)
+    })
   })
 
-  it('should handle hex without leading hash', () => {
-    expect(hexToRGB('FF5733')).toEqual({ r: 255, g: 87, b: 51 })
-    expect(hexToRGB('F53')).toEqual({ r: 255, g: 85, b: 51 })
+  describe('normalizeColor', () => {
+    it('should parse string colors', () => {
+      const result = normalizeColor('#ff0000')
+      expect(result.space).toBe('rgb')
+      expect(result).toEqual(parseColor('#ff0000'))
+    })
+
+    it('should return color objects as-is', () => {
+      const color = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      expect(normalizeColor(color)).toBe(color)
+    })
   })
 
-  it('should throw error for invalid hex colors', () => {
-    expect(() => hexToRGB('#GGGGGG')).toThrow('Invalid hex color: GGGGGG')
-    expect(() => hexToRGB('#12345')).toThrow('Invalid hex color: 12345')
-    expect(() => hexToRGB('#1234567')).toThrow('Invalid hex color: 1234567')
-    expect(() => hexToRGB('invalid')).toThrow('Invalid hex color: invalid')
-    expect(() => hexToRGB('')).toThrow('Invalid hex color: ')
-  })
-})
+  describe('colorToHex', () => {
+    it('should convert RGB to hex', () => {
+      const color = { space: 'rgb' as const, r: 255, g: 128, b: 64, alpha: 1 }
+      expect(colorToHex(color)).toBe('#ff8040')
+    })
 
-describe('hexToHSL', () => {
-  it('should convert hex color to HSL correctly', () => {
-    const red = hexToHSL('#FF0000')
-    expect(red.h).toBeCloseTo(0, 0)
-    expect(red.s).toBeCloseTo(100, 0)
-    expect(red.l).toBeCloseTo(50, 0)
+    it('should convert HSL to hex', () => {
+      const color = { space: 'hsl' as const, h: 0, s: 100, l: 50, alpha: 1 }
+      expect(colorToHex(color)).toBe('#ff0000')
+    })
 
-    const green = hexToHSL('#00FF00')
-    expect(green.h).toBeCloseTo(120, 0)
-    expect(green.s).toBeCloseTo(100, 0)
-    expect(green.l).toBeCloseTo(50, 0)
-
-    const blue = hexToHSL('#0000FF')
-    expect(blue.h).toBeCloseTo(240, 0)
-    expect(blue.s).toBeCloseTo(100, 0)
-    expect(blue.l).toBeCloseTo(50, 0)
+    it('should include alpha for transparent colors', () => {
+      const color = { space: 'rgb' as const, r: 255, g: 0, b: 0, alpha: 0.5 }
+      expect(colorToHex(color)).toBe('#ff000080')
+    })
   })
 
-  it('should handle achromatic colors (grays)', () => {
-    const black = hexToHSL('#000000')
-    expect(black.h).toBe(0)
-    expect(black.s).toBe(0)
-    expect(black.l).toBe(0)
+  describe('colorToRgb', () => {
+    it('should format RGB color', () => {
+      const color = { space: 'rgb' as const, r: 255, g: 128, b: 64, alpha: 1 }
+      expect(colorToRgb(color)).toBe('rgb(255, 128, 64)')
+    })
 
-    const white = hexToHSL('#FFFFFF')
-    expect(white.h).toBe(0)
-    expect(white.s).toBe(0)
-    expect(white.l).toBe(100)
-
-    const gray = hexToHSL('#808080')
-    expect(gray.h).toBe(0)
-    expect(gray.s).toBe(0)
-    expect(gray.l).toBeCloseTo(50, 0)
+    it('should format RGBA for transparent colors', () => {
+      const color = { space: 'rgb' as const, r: 255, g: 0, b: 0, alpha: 0.5 }
+      expect(colorToRgb(color)).toBe('rgba(255, 0, 0, 0.5)')
+    })
   })
 
-  it('should handle 3-digit shorthand hex colors', () => {
-    const red = hexToHSL('#F00')
-    expect(red.h).toBeCloseTo(0, 0)
-    expect(red.s).toBeCloseTo(100, 0)
-    expect(red.l).toBeCloseTo(50, 0)
-  })
-})
+  describe('colorToHsl', () => {
+    it('should format HSL color', () => {
+      const color = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      expect(colorToHsl(color)).toBe('hsl(120, 50%, 50%)')
+    })
 
-describe('getColorName', () => {
-  it('should return correct achromatic color names', () => {
-    expect(getColorName('#000000')).toBe('black')
-    expect(getColorName('#FFFFFF')).toBe('white')
-    expect(getColorName('#1a1a1a')).toBe('very dark gray')
-    expect(getColorName('#333333')).toBe('dark gray')
-    expect(getColorName('#808080')).toBe('gray')
-    expect(getColorName('#aaaaaa')).toBe('light gray')
-    expect(getColorName('#eeeeee')).toBe('very light gray')
+    it('should format HSLA for transparent colors', () => {
+      const color = { space: 'hsl' as const, h: 0, s: 100, l: 50, alpha: 0.5 }
+      expect(colorToHsl(color)).toBe('hsla(0, 100%, 50%, 0.5)')
+    })
   })
 
-  it('should return correct base color names by hue', () => {
-    expect(getColorName('#9ACD32')).toBe('yellow-green')
-    expect(getColorName('#20B2AA')).toBe('cyan')
-    expect(getColorName('#8A2BE2')).toBe('violet')
+  describe('convertToRgb', () => {
+    it('should convert HSL to RGB', () => {
+      const hsl = { space: 'hsl' as const, h: 0, s: 100, l: 50, alpha: 1 }
+      const rgb = convertToRgb(hsl)
+      expect(rgb.space).toBe('rgb')
+      expect(rgb.r).toBeCloseTo(255, 0)
+      expect(rgb.g).toBeCloseTo(0, 0)
+      expect(rgb.b).toBeCloseTo(0, 0)
+    })
+
+    it('should preserve existing RGB', () => {
+      const rgb = { space: 'rgb' as const, r: 128, g: 64, b: 32, alpha: 1 }
+      expect(convertToRgb(rgb)).toBe(rgb)
+    })
   })
 
-  it('should add vibrant descriptor for high saturation colors (s > 80)', () => {
-    expect(getColorName('#FF0000')).toBe('vibrant red')
-    expect(getColorName('#00FF00')).toBe('vibrant green')
-    expect(getColorName('#0000FF')).toBe('vibrant blue-violet')
-    expect(getColorName('#FF8C00')).toBe('vibrant orange')
-    expect(getColorName('#FFFF00')).toBe('vibrant yellow')
-    expect(getColorName('#00FFFF')).toBe('vibrant cyan')
-    expect(getColorName('#FF00FF')).toBe('vibrant magenta')
-    expect(getColorName('#9400D3')).toBe('vibrant violet')
-    expect(getColorName('#FF1493')).toBe('vibrant red-magenta')
+  describe('convertToHsl', () => {
+    it('should convert RGB to HSL', () => {
+      const rgb = { space: 'rgb' as const, r: 255, g: 0, b: 0, alpha: 1 }
+      const hsl = convertToHsl(rgb)
+      expect(hsl.space).toBe('hsl')
+      expect(hsl.h).toBeCloseTo(0, 0)
+      expect(hsl.s).toBeCloseTo(100, 0)
+      expect(hsl.l).toBeCloseTo(50, 0)
+    })
+
+    it('should preserve existing HSL', () => {
+      const hsl = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      expect(convertToHsl(hsl)).toBe(hsl)
+    })
   })
 
-  it('should add muted descriptor for low saturation colors (s < 30)', () => {
-    // Low saturation colors with s < 30 would be muted
-    // Example: #C0C0C0 (silver) has s=0, so it's achromatic (gray)
-    // Need a color with s between 10 and 30 to test muted
-    expect(getColorName('#B8A89A')).toContain('muted')
+  describe('convertToHsb', () => {
+    it('should convert RGB to HSB', () => {
+      const rgb = { space: 'rgb' as const, r: 255, g: 0, b: 0, alpha: 1 }
+      const hsb = convertToHsb(rgb)
+      expect(hsb.space).toBe('hsb')
+      expect(hsb.h).toBeCloseTo(0, 0)
+      expect(hsb.s).toBeCloseTo(100, 0)
+    })
+
+    it('should preserve existing HSB', () => {
+      const hsb = { space: 'hsb' as const, h: 120, s: 50, b: 75, alpha: 1 }
+      expect(convertToHsb(hsb)).toBe(hsb)
+    })
   })
 
-  it('should add light descriptor for high lightness colors (l > 80)', () => {
-    // High lightness with l > 80
-    expect(getColorName('#E6F5E6')).toContain('light')
+  describe('getChannelRange', () => {
+    it('should return correct ranges for hue', () => {
+      expect(getChannelRange('hue')).toEqual({ min: 0, max: 360, step: 1 })
+    })
+
+    it('should return correct ranges for saturation/lightness/brightness/alpha', () => {
+      expect(getChannelRange('saturation')).toEqual({ min: 0, max: 100, step: 1 })
+      expect(getChannelRange('lightness')).toEqual({ min: 0, max: 100, step: 1 })
+      expect(getChannelRange('brightness')).toEqual({ min: 0, max: 100, step: 1 })
+      expect(getChannelRange('alpha')).toEqual({ min: 0, max: 100, step: 1 })
+    })
+
+    it('should return correct ranges for RGB channels', () => {
+      expect(getChannelRange('red')).toEqual({ min: 0, max: 255, step: 1 })
+      expect(getChannelRange('green')).toEqual({ min: 0, max: 255, step: 1 })
+      expect(getChannelRange('blue')).toEqual({ min: 0, max: 255, step: 1 })
+    })
   })
 
-  it('should add dark descriptor for low lightness colors (l < 30)', () => {
-    // Low lightness with l < 30
-    expect(getColorName('#006400')).toBe('vibrant dark green')
+  describe('getChannelValue', () => {
+    it('should get RGB values', () => {
+      const rgb = { space: 'rgb' as const, r: 100, g: 150, b: 200, alpha: 1 }
+      expect(getChannelValue(rgb, 'red')).toBe(100)
+      expect(getChannelValue(rgb, 'green')).toBe(150)
+      expect(getChannelValue(rgb, 'blue')).toBe(200)
+    })
+
+    it('should get HSL values', () => {
+      const hsl = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      expect(getChannelValue(hsl, 'hue')).toBe(120)
+      expect(getChannelValue(hsl, 'saturation')).toBe(50)
+      expect(getChannelValue(hsl, 'lightness')).toBe(50)
+    })
+
+    it('should get alpha as percentage', () => {
+      const rgb = { space: 'rgb' as const, r: 100, g: 150, b: 200, alpha: 0.5 }
+      expect(getChannelValue(rgb, 'alpha')).toBe(50)
+    })
   })
 
-  it('should combine multiple descriptors correctly', () => {
-    // Color with high saturation (>80) and low lightness (<30)
-    expect(getColorName('#800000')).toBe('vibrant dark red')
-  })
-})
+  describe('getChannelValue - color space specific', () => {
+    it('should get HSL saturation directly from HSL color', () => {
+      const hsl: HSLColor = { space: 'hsl', h: 120, s: 50, l: 50, alpha: 1 }
+      expect(getChannelValue(hsl, 'saturation')).toBe(50)
+    })
 
-describe('getColorContrast', () => {
-  it('should return "light" for dark colors (luminance <= 0.5)', () => {
-    expect(getColorContrast('#000000')).toBe('light')
-    expect(getColorContrast('#333333')).toBe('light')
-    expect(getColorContrast('#666666')).toBe('light')
-    expect(getColorContrast('#FF0000')).toBe('light')
-    expect(getColorContrast('#008000')).toBe('light')
-    expect(getColorContrast('#0000FF')).toBe('light')
-  })
+    it('should get HSB saturation directly from HSB color', () => {
+      const hsb: HSBColor = { space: 'hsb', h: 120, s: 50, b: 50, alpha: 1 }
+      expect(getChannelValue(hsb, 'saturation')).toBe(50)
+    })
 
-  it('should return "dark" for light colors (luminance > 0.5)', () => {
-    expect(getColorContrast('#FFFFFF')).toBe('dark')
-    expect(getColorContrast('#CCCCCC')).toBe('dark')
-    expect(getColorContrast('#999999')).toBe('dark')
-    expect(getColorContrast('#808080')).toBe('dark')
-    expect(getColorContrast('#FFFF00')).toBe('dark')
-    expect(getColorContrast('#00FF00')).toBe('dark')
-    expect(getColorContrast('#87CEEB')).toBe('dark')
+    it('should get HSB brightness directly from HSB color', () => {
+      const hsb: HSBColor = { space: 'hsb', h: 120, s: 50, b: 75, alpha: 1 }
+      expect(getChannelValue(hsb, 'brightness')).toBe(75)
+    })
   })
 
-  it('should handle 3-digit shorthand hex colors', () => {
-    expect(getColorContrast('#000')).toBe('light')
-    expect(getColorContrast('#FFF')).toBe('dark')
-    expect(getColorContrast('#F00')).toBe('light')
+  describe('setChannelValues', () => {
+    it('should set HSB saturation and brightness without cross-contamination', () => {
+      // Start with HSB color
+      const hsb: HSBColor = { space: 'hsb', h: 0, s: 0, b: 50, alpha: 1 }
+
+      // Set saturation to 10, brightness stays at 50
+      const result = setChannelValues(hsb, [
+        { channel: 'saturation', value: 10 },
+        { channel: 'brightness', value: 50 },
+      ])
+
+      expect(result.space).toBe('hsb')
+      expect(getChannelValue(result, 'saturation')).toBe(10)
+      expect(getChannelValue(result, 'brightness')).toBe(50)
+    })
+
+    it('should return HSB color when starting from RGB with saturation/brightness channels', () => {
+      // Start with RGB color (like from hex)
+      const rgb: RGBColor = { space: 'rgb', r: 128, g: 0, b: 128, alpha: 1 }
+
+      // Set saturation to 99, brightness to 50
+      const result = setChannelValues(rgb, [
+        { channel: 'saturation', value: 99 },
+        { channel: 'brightness', value: 50 },
+      ])
+
+      // Should return HSB (not convert back to RGB)
+      expect(result.space).toBe('hsb')
+      expect(getChannelValue(result, 'saturation')).toBe(99)
+      expect(getChannelValue(result, 'brightness')).toBe(50)
+    })
+
+    it('should update only saturation when brightness unchanged', () => {
+      const hsb: HSBColor = { space: 'hsb', h: 0, s: 0, b: 50, alpha: 1 }
+
+      // Increase saturation to 10
+      const result = setChannelValues(hsb, [
+        { channel: 'saturation', value: 10 },
+        { channel: 'brightness', value: 50 },
+      ])
+
+      expect(getChannelValue(result, 'saturation')).toBe(10)
+      expect(getChannelValue(result, 'brightness')).toBe(50)
+    })
+  })
+
+  describe('setChannelValue', () => {
+    it('should set RGB values', () => {
+      const rgb = { space: 'rgb' as const, r: 100, g: 150, b: 200, alpha: 1 }
+      const result = setChannelValue(rgb, 'red', 255)
+      expect(result.space).toBe('rgb')
+      expect((result as any).r).toBe(255)
+    })
+
+    it('should set HSL values preserving color space', () => {
+      const hsl = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      const result = setChannelValue(hsl, 'hue', 180)
+      expect(result.space).toBe('hsl')
+      expect((result as any).h).toBe(180)
+    })
+
+    it('should set alpha value', () => {
+      const rgb = { space: 'rgb' as const, r: 100, g: 150, b: 200, alpha: 1 }
+      const result = setChannelValue(rgb, 'alpha', 50)
+      expect(result.alpha).toBe(0.5)
+    })
+
+    it('should clamp values to valid range', () => {
+      const hsl = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      const result = setChannelValue(hsl, 'hue', 500)
+      expect((result as any).h).toBe(360)
+    })
+
+    it('should maintain color space when setting cross-space channels', () => {
+      const hsl = { space: 'hsl' as const, h: 120, s: 50, l: 50, alpha: 1 }
+      const result = setChannelValue(hsl, 'red', 255)
+      expect(result.space).toBe('hsl')
+    })
   })
 })

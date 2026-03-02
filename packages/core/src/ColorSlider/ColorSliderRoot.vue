@@ -108,6 +108,12 @@ function toNativeSpace(color: Color, ch: ColorChannelType): Color {
 // Convert to the channel's native space to avoid cross-space round-trips during drag.
 const internalColor = ref<Color>(toNativeSpace(normalizeColor(modelValue.value ?? props.defaultValue ?? '#000000'), channel.value))
 
+// Check if a color is achromatic (hue information is lost in hex round-trips)
+function isAchromatic(color: Color): boolean {
+  const hsl = convertToHsl(color)
+  return hsl.s === 0 || hsl.l === 0 || hsl.l >= 100
+}
+
 // Sync internal color from external modelValue changes (e.g. parent updates)
 watch(() => modelValue.value, (newVal) => {
   if (newVal == null)
@@ -118,7 +124,24 @@ watch(() => modelValue.value, (newVal) => {
   // Only update if the external value actually changed (avoid overwriting
   // precision during our own drag updates)
   if (currentHex !== newHex) {
-    internalColor.value = toNativeSpace(parsed, channel.value)
+    const nativeColor = toNativeSpace(parsed, channel.value)
+    const currentChannelVal = getChannelValue(internalColor.value, channel.value)
+    const newChannelVal = getChannelValue(nativeColor, channel.value)
+
+    // Preserve this slider's channel value when:
+    // 1. Color is achromatic (hue completely lost in hex round-trip)
+    // 2. Channel value diff is within 2% of range (8-bit RGB quantization drift)
+    // We still update the rest of the color so the track gradient stays correct.
+    const range = channelRange.value.max - channelRange.value.min
+    const shouldPreserve = (channel.value === 'hue' && isAchromatic(parsed))
+      || Math.abs(currentChannelVal - newChannelVal) < range * 0.02
+
+    if (shouldPreserve) {
+      internalColor.value = setChannelValue(nativeColor, channel.value, currentChannelVal)
+    }
+    else {
+      internalColor.value = nativeColor
+    }
   }
 })
 

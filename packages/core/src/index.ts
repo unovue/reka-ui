@@ -6,6 +6,9 @@ export * from './Avatar'
 export * from './Calendar'
 export * from './Checkbox'
 export * from './Collapsible'
+export * from './ColorArea'
+export * from './ColorField'
+export * from './ColorSlider'
 export * from './ColorSwatch'
 export * from './ColorSwatchPicker'
 export * from './Combobox'
@@ -61,6 +64,36 @@ export {
   useStateMachine,
   withDefault,
 } from './shared'
+// Color utilities
+export {
+  type Color,
+  type ColorChannel,
+  type ColorFormat,
+  type ColorSpace,
+  colorToHex,
+  colorToHsb,
+  colorToHsl,
+  colorToRgb,
+  colorToString,
+  convertToHsb,
+  convertToHsl,
+  convertToRgb,
+  getAreaBackgroundStyle,
+  getAreaGradient,
+  getChannelName,
+  getChannelRange,
+  getChannelValue,
+  getSliderBackgroundStyle,
+  getSliderGradient,
+  type HSBColor,
+  type HSLColor,
+  isValidColor,
+  normalizeColor,
+  parseColor,
+  type RGBColor,
+  setChannelValue,
+  setChannelValues,
+} from './shared/color'
 export {
   type AcceptableValue,
   type GenericComponentInstance,

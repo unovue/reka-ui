@@ -75,6 +75,23 @@ export const components = {
     'CollapsibleContent',
   ] as const,
 
+  colorArea: [
+    'ColorAreaRoot',
+    'ColorAreaArea',
+    'ColorAreaThumb',
+  ] as const,
+
+  colorField: [
+    'ColorFieldRoot',
+    'ColorFieldInput',
+  ] as const,
+
+  colorSlider: [
+    'ColorSliderRoot',
+    'ColorSliderTrack',
+    'ColorSliderThumb',
+  ] as const,
+
   colorSwatch: [
     'ColorSwatch',
   ] as const,
