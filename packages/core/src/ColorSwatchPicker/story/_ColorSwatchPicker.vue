@@ -21,7 +21,10 @@ const forwarded = useForwardPropsEmits(props, emits)
 </script>
 
 <template>
-  <ColorSwatchPickerRoot v-bind="forwarded">
+  <ColorSwatchPickerRoot
+    v-bind="forwarded"
+    aria-label="Color swatches"
+  >
     <ColorSwatchPickerItem
       v-for="color in colors"
       :key="color"
@@ -29,7 +32,7 @@ const forwarded = useForwardPropsEmits(props, emits)
       class="relative"
     >
       <ColorSwatchPickerItemSwatch
-        class="w-8 h-8 rounded cursor-pointer ring-1 ring-inset ring-black/15 dark:ring-white/15 peer"
+        class="w-8 h-8 rounded cursor-pointer ring-1 ring-inset ring-black/15 dark:ring-white/15 bg-[var(--reka-color-swatch-color)] peer"
       />
       <ColorSwatchPickerItemIndicator class="absolute bottom-1 right-1 size-1 rounded-full bg-white peer-data-[color-contrast=dark]:bg-black" />
     </ColorSwatchPickerItem>

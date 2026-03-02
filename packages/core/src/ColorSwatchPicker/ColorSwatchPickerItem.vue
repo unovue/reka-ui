@@ -22,8 +22,9 @@ export const [injectColorSwatchPickerItemContext, provideColorSwatchPickerItemCo
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
+import { computed, toRefs } from 'vue'
 import { ListboxItem } from '@/Listbox'
+import { getColorName } from '@/shared/color'
 
 const props = defineProps<ColorSwatchPickerItemProps>()
 
@@ -33,6 +34,15 @@ const { value } = toRefs(props)
 
 const forwarded = useForwardPropsEmits(props, emits)
 
+const colorLabel = computed(() => {
+  try {
+    return getColorName(value.value)
+  }
+  catch {
+    return value.value
+  }
+})
+
 provideColorSwatchPickerItemContext({
   color: value,
 })
@@ -41,6 +51,8 @@ provideColorSwatchPickerItemContext({
 <template>
   <ListboxItem
     v-bind="forwarded"
+    :aria-label="colorLabel"
+    :data-color="value"
     :style="{ '--reka-color-swatch-picker-item-color': value }"
   >
     <slot />
