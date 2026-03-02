@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -32,6 +32,6 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent<AcceptableValue>]'
+    'type': '[event: SelectEvent&lt;AcceptableValue&gt;]'
   }
 ]" />

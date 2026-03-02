@@ -19,12 +19,12 @@
 <SlotsTable :data="[
   {
     'name': 'channelName',
-    'description': '<p>The display name of the current channel.</p>\n',
+    'description': '<p>The display name of the current channel</p>\n',
     'type': 'string'
   },
   {
     'name': 'channelValue',
-    'description': '<p>The current numeric value of the channel.</p>\n',
+    'description': '<p>The current numeric value of the channel</p>\n',
     'type': 'number'
   }
 ]" />

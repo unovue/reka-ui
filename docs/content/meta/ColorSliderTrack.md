@@ -15,11 +15,3 @@
     'required': false
   }
 ]" />
-
-<SlotsTable :data="[
-  {
-    'name': 'default',
-    'description': '',
-    'type': '{}'
-  }
-]" />

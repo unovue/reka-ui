@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -75,7 +75,7 @@
   {
     'name': 'selectionBehavior',
     'description': '<p>How multiple selection should behave in the collection.</p>\n',
-    'type': '\'toggle\' | \'replace\'',
+    'type': '\'replace\' | \'toggle\'',
     'required': false
   }
 ]" />
@@ -84,7 +84,7 @@
   {
     'name': 'entryFocus',
     'description': '<p>Event handler called when container is being focused. Can be prevented.</p>\n',
-    'type': '[event: CustomEvent<any>]'
+    'type': '[event: CustomEvent&lt;any&gt;]'
   },
   {
     'name': 'highlight',
@@ -93,7 +93,7 @@
   },
   {
     'name': 'leave',
-    'description': '<p>Event handler called when the mouse leaves the container</p>\n',
+    'description': '<p>Event handler called when the mouse leave the container</p>\n',
     'type': '[event: Event]'
   },
   {

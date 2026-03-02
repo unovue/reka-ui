@@ -14,6 +14,15 @@ const props = withDefaults(defineProps<ColorSliderThumbProps>(), {
   as: 'span',
 })
 
+defineSlots<{
+  default?: (props: {
+    /** The display name of the current channel */
+    channelName: string
+    /** The current numeric value of the channel */
+    channelValue: number
+  }) => any
+}>()
+
 const rootContext = injectColorSliderRootContext()
 
 const ariaLabel = computed(() => {

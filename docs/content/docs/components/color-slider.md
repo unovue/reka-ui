@@ -49,9 +49,8 @@ import {
 
 <template>
   <ColorSliderRoot channel="hue">
-    <ColorSliderTrack>
-      <ColorSliderThumb />
-    </ColorSliderTrack>
+    <ColorSliderTrack />
+    <ColorSliderThumb />
   </ColorSliderRoot>
 </template>
 ```

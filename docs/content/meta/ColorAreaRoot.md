@@ -17,7 +17,7 @@
   {
     'name': 'colorSpace',
     'description': '<p>The color space to operate in.</p>\n',
-    'type': '\'rgb\' | \'hsl\' | \'hsb\'',
+    'type': '\'hsl\' | \'rgb\' | \'hsb\'',
     'required': false,
     'default': '\'hsl\''
   },
@@ -42,9 +42,21 @@
     'required': false
   },
   {
+    'name': 'name',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
+    'name': 'required',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'xChannel',
     'description': '<p>Color channel for the horizontal (x) axis.</p>\n',
-    'type': '\'red\' | \'green\' | \'blue\' | \'alpha\' | \'hue\' | \'saturation\' | \'lightness\' | \'brightness\'',
+    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\'',
     'required': false,
     'default': '\'hue\''
   },
@@ -57,7 +69,7 @@
   {
     'name': 'yChannel',
     'description': '<p>Color channel for the vertical (y) axis.</p>\n',
-    'type': '\'red\' | \'green\' | \'blue\' | \'alpha\' | \'hue\' | \'saturation\' | \'lightness\' | \'brightness\'',
+    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\'',
     'required': false,
     'default': '\'saturation\''
   },
@@ -71,13 +83,23 @@
 
 <EmitsTable :data="[
   {
+    'name': 'change',
+    'description': '',
+    'type': '[value: string]'
+  },
+  {
+    'name': 'changeEnd',
+    'description': '',
+    'type': '[value: string]'
+  },
+  {
     'name': 'update:color',
     'description': '',
     'type': '[value: Color]'
   },
   {
     'name': 'update:modelValue',
-    'description': '',
+    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
     'type': '[value: string]'
   }
 ]" />
@@ -85,7 +107,7 @@
 <SlotsTable :data="[
   {
     'name': 'style',
-    'description': '<p>CSS styles for the color area background gradient.</p>\n',
+    'description': '<p>CSS styles for the color area background gradient</p>\n',
     'type': 'CSSProperties'
   }
 ]" />

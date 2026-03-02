@@ -17,13 +17,13 @@
   {
     'name': 'channel',
     'description': '<p>The color channel to display. If not provided, displays hex value.</p>\n',
-    'type': '\'red\' | \'green\' | \'blue\' | \'alpha\' | \'hue\' | \'saturation\' | \'lightness\' | \'brightness\'',
+    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\'',
     'required': false
   },
   {
     'name': 'colorSpace',
     'description': '<p>The color space to operate in when displaying a channel.</p>\n',
-    'type': '\'rgb\' | \'hsl\' | \'hsb\'',
+    'type': '\'hsl\' | \'rgb\' | \'hsb\'',
     'required': false,
     'default': '\'hsl\''
   },
@@ -61,6 +61,12 @@
     'required': false
   },
   {
+    'name': 'name',
+    'description': '<p>The name of the field. Submitted with its owning form as part of a name/value pair.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'placeholder',
     'description': '<p>Placeholder text when the field is empty.</p>\n',
     'type': 'string',
@@ -75,7 +81,7 @@
   },
   {
     'name': 'required',
-    'description': '<p>When <code>true</code>, indicates that the field must be filled before the form can be submitted.</p>\n',
+    'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -95,7 +101,7 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '',
+    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
     'type': '[value: string]'
   }
 ]" />

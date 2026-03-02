@@ -127,7 +127,7 @@ function handleKeyDown(event: KeyboardEvent) {
     :as="as"
     role="application"
     aria-roledescription="Color picker"
-    :aria-disabled="rootContext.disabled.value ? '' : undefined"
+    :aria-disabled="rootContext.disabled.value ? 'true' : undefined"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     @keydown="handleKeyDown"
     @pointerdown="handlePointerDown"

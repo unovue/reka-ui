@@ -27,7 +27,7 @@ export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
 }
 
 export type ColorSliderRootEmits = {
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: string | Color]
   'update:color': [value: Color]
   'change': [value: string]
   'changeEnd': [value: string]

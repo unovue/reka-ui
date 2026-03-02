@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { FormFieldProps } from '@/shared/types'
@@ -79,6 +79,13 @@ const props = withDefaults(defineProps<ColorAreaRootProps>(), {
 })
 
 const emits = defineEmits<ColorAreaRootEmits>()
+
+defineSlots<{
+  default?: (props: {
+    /** CSS styles for the color area background gradient */
+    style: CSSProperties
+  }) => any
+}>()
 
 const { colorSpace, xChannel, yChannel, disabled } = toRefs(props)
 const { forwardRef, currentElement } = useForwardExpose()
@@ -223,7 +230,7 @@ provideColorAreaRootContext({
     :as="as"
     :as-child="asChild"
     role="group"
-    :aria-disabled="disabled ? '' : undefined"
+    :aria-disabled="disabled ? 'true' : undefined"
     :data-disabled="disabled ? '' : undefined"
   >
     <slot :style="areaStyles" />

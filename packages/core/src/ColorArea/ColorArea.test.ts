@@ -261,8 +261,8 @@ describe('colorArea HSL Saturation(x) / Lightness(y)', () => {
       expect(w.find('[role="application"]').attributes('data-disabled')).toBe('')
     })
 
-    it('area has aria-disabled=""', () => {
-      expect(w.find('[role="application"]').attributes('aria-disabled')).toBe('')
+    it('area has aria-disabled="true"', () => {
+      expect(w.find('[role="application"]').attributes('aria-disabled')).toBe('true')
     })
 
     it('thumb has data-disabled="" and no tabindex', () => {

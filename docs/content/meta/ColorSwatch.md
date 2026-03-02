@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -16,8 +16,8 @@
   },
   {
     'name': 'color',
-    'description': '<p>The color to display in the swatch as a hex string.\nExample: <code>#16a372</code> or <code>#ff5733</code>.</p>\n',
-    'type': 'string',
+    'description': '<p>The color to display in the swatch as a hex string or Color object.\nExample: <code>#16a372</code>, <code>#ff5733</code>, or <code>{ space: \'hsl\', h: 120, s: 100, l: 50, alpha: 1 }</code>.</p>\n',
+    'type': 'string | Color',
     'required': false,
     'default': '\'\''
   },
@@ -34,5 +34,10 @@
     'name': 'color',
     'description': '',
     'type': 'string'
+  },
+  {
+    'name': 'alpha',
+    'description': '',
+    'type': 'number'
   }
 ]" />
