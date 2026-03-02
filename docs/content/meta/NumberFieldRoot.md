@@ -133,5 +133,10 @@
     'name': 'textValue',
     'description': '',
     'type': 'string'
+  },
+  {
+    'name': 'readonly',
+    'description': '',
+    'type': 'boolean'
   }
 ]" />
