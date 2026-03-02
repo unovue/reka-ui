@@ -76,39 +76,37 @@ function handleKeyDown(event: KeyboardEvent) {
   if (rootContext.disabled.value)
     return
 
-  const { step } = rootContext.xRange.value
   const stepMultiplier = event.shiftKey ? 10 : 1
-  const stepSize = step * stepMultiplier
+  const xStepSize = rootContext.xRange.value.step * stepMultiplier
+  const yStepSize = rootContext.yRange.value.step * stepMultiplier
 
   let xDelta = 0
   let yDelta = 0
 
   switch (event.key) {
     case 'ArrowLeft':
-      xDelta = -stepSize
+      xDelta = -xStepSize
       break
     case 'ArrowRight':
-      xDelta = stepSize
+      xDelta = xStepSize
       break
     case 'ArrowUp':
-      yDelta = stepSize
+      yDelta = yStepSize
       break
     case 'ArrowDown':
-      yDelta = -stepSize
+      yDelta = -yStepSize
       break
     case 'PageUp':
-      yDelta = stepSize * 10
+      yDelta = yStepSize * 10
       break
     case 'PageDown':
-      yDelta = -stepSize * 10
+      yDelta = -yStepSize * 10
       break
     case 'Home':
-      // Jump left by larger increment (10 steps)
-      xDelta = -stepSize * 10
+      xDelta = -xStepSize * 10
       break
     case 'End':
-      // Jump right by larger increment (10 steps)
-      xDelta = stepSize * 10
+      xDelta = xStepSize * 10
       break
     default:
       return

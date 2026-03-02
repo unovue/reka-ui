@@ -85,12 +85,13 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 // Convert a color to the native color space for the given channel.
 // This ensures setChannelValue/getChannelValue operate without cross-space round-trips.
-function toNativeSpace(color: Color, ch: ColorChannelType): Color {
+function toNativeSpace(color: Color, ch: ColorChannelType, space: ColorSpace): Color {
   switch (ch) {
     case 'hue':
-    case 'saturation':
     case 'lightness':
       return convertToHsl(color)
+    case 'saturation':
+      return space === 'hsb' ? convertToHsb(color) : convertToHsl(color)
     case 'brightness':
       return convertToHsb(color)
     case 'red':
@@ -106,7 +107,7 @@ function toNativeSpace(color: Color, ch: ColorChannelType): Color {
 
 // Internal color ref that preserves color space precision.
 // Convert to the channel's native space to avoid cross-space round-trips during drag.
-const internalColor = ref<Color>(toNativeSpace(normalizeColor(modelValue.value ?? props.defaultValue ?? '#000000'), channel.value))
+const internalColor = ref<Color>(toNativeSpace(normalizeColor(modelValue.value ?? props.defaultValue ?? '#000000'), channel.value, colorSpace.value))
 
 // Check if a color is achromatic (hue information is lost in hex round-trips)
 function isAchromatic(color: Color): boolean {
@@ -124,7 +125,7 @@ watch(() => modelValue.value, (newVal) => {
   // Only update if the external value actually changed (avoid overwriting
   // precision during our own drag updates)
   if (currentHex !== newHex) {
-    const nativeColor = toNativeSpace(parsed, channel.value)
+    const nativeColor = toNativeSpace(parsed, channel.value, colorSpace.value)
     const currentChannelVal = getChannelValue(internalColor.value, channel.value)
     const newChannelVal = getChannelValue(nativeColor, channel.value)
 

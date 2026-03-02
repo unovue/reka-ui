@@ -175,13 +175,14 @@ function commit() {
 }
 
 function addHexValue(delta: number) {
+  const intDelta = Math.trunc(delta)
   const hexInt = color.value.space === 'rgb'
     ? ((Math.round((color.value as any).r) << 16) | (Math.round((color.value as any).g) << 8) | Math.round((color.value as any).b))
     : (() => {
         const rgb = convertToRgb(color.value)
         return (Math.round(rgb.r) << 16) | (Math.round(rgb.g) << 8) | Math.round(rgb.b)
       })()
-  const clamped = Math.min(Math.max(hexInt + delta, MIN_HEX_INT), MAX_HEX_INT)
+  const clamped = Math.min(Math.max(hexInt + intDelta, MIN_HEX_INT), MAX_HEX_INT)
   const hex = `#${clamped.toString(16).padStart(6, '0')}`
   color.value = parseColor(hex)
   inputValue.value = formatValue(color.value)

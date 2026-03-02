@@ -94,12 +94,24 @@ export function setChannelValue(color: Color, channel: ColorChannel, value: numb
   }
 
   // For HSL channels
-  if (channel === 'hue' || channel === 'saturation' || channel === 'lightness') {
+  if (channel === 'hue' || channel === 'lightness') {
     const hsl = convertToHsl(color)
     const newHsl: HSLColor = {
       ...hsl,
-      [channel === 'hue' ? 'h' : channel === 'saturation' ? 's' : 'l']: clamped,
+      [channel === 'hue' ? 'h' : 'l']: clamped,
     }
+    return convertFromHsl(newHsl, color.space)
+  }
+
+  // For saturation, respect the color's native space (HSB vs HSL)
+  if (channel === 'saturation') {
+    if (color.space === 'hsb') {
+      const hsb = convertToHsb(color)
+      const newHsb: HSBColor = { ...hsb, s: clamped }
+      return convertFromHsb(newHsb, color.space)
+    }
+    const hsl = convertToHsl(color)
+    const newHsl: HSLColor = { ...hsl, s: clamped }
     return convertFromHsl(newHsl, color.space)
   }
 

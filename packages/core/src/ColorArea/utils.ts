@@ -11,6 +11,8 @@ export function linearScale(input: readonly [number, number], output: readonly [
 }
 
 export function convertValueToPercentage(value: number, min: number, max: number) {
+  if (max === min)
+    return 0
   const maxSteps = max - min
   const percentPerStep = 100 / maxSteps
   const percentage = percentPerStep * (value - min)
