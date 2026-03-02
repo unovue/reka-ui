@@ -124,15 +124,12 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     if (props.maximumDays?.value && !props.end.value) {
       const maximumDays = props.maximumDays.value
       const anchor = props.start.value
+      const focused = props.focusedValue.value
 
-      if (isStartBeforeFocused) {
-        const maxEnd = anchor.add({ days: maximumDays - 1 })
-        return { start: anchor, end: maxEnd }
-      }
-      else {
-        const minStart = anchor.subtract({ days: maximumDays - 1 })
-        return { start: minStart, end: anchor }
-      }
+      if (!isBefore(focused, anchor))
+        return { start: anchor, end: anchor.add({ days: maximumDays - 1 }) }
+
+      return { start: anchor.subtract({ days: maximumDays - 1 }), end: anchor }
     }
 
     const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, rangeIsDateDisabled, props.isDateHighlightable)

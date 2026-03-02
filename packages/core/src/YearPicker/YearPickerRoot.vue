@@ -74,7 +74,7 @@ export interface YearPickerRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the year picker. Receives the current placeholder as an argument. */
   prevPage?: (placeholder: DateValue) => DateValue
-  /** The controlled checked state of the year picker */
+  /** The controlled selected year value of the year picker. Can be bound as `v-model`. */
   modelValue?: DateValue | DateValue[] | undefined
   /** Whether multiple years can be selected */
   multiple?: boolean

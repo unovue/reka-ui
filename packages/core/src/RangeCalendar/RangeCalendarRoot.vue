@@ -80,7 +80,7 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   defaultPlaceholder?: DateValue
   /** The default value for the calendar */
   defaultValue?: DateRange
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled selected date range of the calendar. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
@@ -379,7 +379,7 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 })
 
 const kbd = useKbd()
-useEventListener('keydown', (ev) => {
+useEventListener(parentElement, 'keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     // Abort start and end selection
     startValue.value = validModelValue.value.start?.copy()
