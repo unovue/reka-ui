@@ -1,3 +1,4 @@
+import type { MaybeElement } from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
 import { unrefElement } from '@vueuse/core'
@@ -18,10 +19,13 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
     }
   })
 
-  function resolveCurrentElement(): HTMLElement {
+  function resolveCurrentElement() {
     // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
-    // @ts-expect-error ignore ts error
-    return ['#text', '#comment'].includes(currentRef.value?.$el.nodeName) ? currentRef.value?.$el.nextElementSibling : unrefElement(currentRef)
+    return currentRef.value
+      && '$el' in currentRef.value
+      && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
+      ? currentRef.value.$el.nextElementSibling as HTMLElement
+      : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
   }
 
   // Do give us credit if you reference our code :D
