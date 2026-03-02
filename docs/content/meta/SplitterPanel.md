@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -16,7 +16,7 @@
   },
   {
     'name': 'collapsedSize',
-    'description': '<p>The size of panel when it is collapsed.</p>\n',
+    'description': '<p>The size of panel when it is collapsed; interpreted using <code>sizeUnit</code>.</p>\n',
     'type': 'number',
     'required': false
   },
@@ -28,7 +28,7 @@
   },
   {
     'name': 'defaultSize',
-    'description': '<p>Initial size of panel (numeric value between 1-100)</p>\n',
+    'description': '<p>Initial size of panel, interpreted using <code>sizeUnit</code> (percent by default).</p>\n',
     'type': 'number',
     'required': false
   },
@@ -40,13 +40,13 @@
   },
   {
     'name': 'maxSize',
-    'description': '<p>The maximum allowable size of panel (numeric value between 1-100); defaults to <code>100</code></p>\n',
+    'description': '<p>The maximum allowable size of panel, interpreted using <code>sizeUnit</code>; defaults to <code>100</code> (percent).</p>\n',
     'type': 'number',
     'required': false
   },
   {
     'name': 'minSize',
-    'description': '<p>The minimum allowable size of panel (numeric value between 1-100); defaults to <code>10</code></p>\n',
+    'description': '<p>The minimum allowable size of panel, interpreted using <code>sizeUnit</code>; defaults to <code>10</code> (percent).</p>\n',
     'type': 'number',
     'required': false
   },
@@ -54,6 +54,12 @@
     'name': 'order',
     'description': '<p>The order of panel within group; required for groups with conditionally rendered panels</p>\n',
     'type': 'number',
+    'required': false
+  },
+  {
+    'name': 'sizeUnit',
+    'description': '<p>Unit used for sizing values; <code>%</code> by default, or <code>px</code> for fixed sizing.</p>\n',
+    'type': '\'%\' | \'px\'',
     'required': false
   }
 ]" />
@@ -117,12 +123,12 @@
   },
   {
     'name': 'getSize',
-    'description': '<p>Gets the current size of the panel as a percentage (1 - 100).</p>\n',
+    'description': '<p>Gets the current size of the panel (in the panel\'s sizeUnit: percentage for \'%\', pixels for \'px\').</p>\n',
     'type': '() =&gt; number'
   },
   {
     'name': 'resize',
-    'description': '<p>Resize panel to the specified percentage (1 - 100).</p>\n',
+    'description': '<p>Resize panel to the specified size (in the panel\'s sizeUnit: percentage for \'%\', pixels for \'px\').</p>\n',
     'type': '(size: number) =&gt; void'
   }
 ]" />

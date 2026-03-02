@@ -205,10 +205,10 @@ provideNumberFieldRootContext({
   inputEl,
   onInputElement: el => inputEl.value = el,
   textValue,
+  readonly,
   validate,
   applyInputValue,
   disabled,
-  readonly,
   disableWheelChange,
   invertWheelChange,
   max,
@@ -232,6 +232,7 @@ provideNumberFieldRootContext({
     <slot
       :model-value="modelValue"
       :text-value="textValue"
+      :readonly="readonly"
     />
 
     <VisuallyHiddenInput

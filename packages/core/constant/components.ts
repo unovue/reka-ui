@@ -19,6 +19,25 @@ export const components = {
     'AlertDialogAction',
   ] as const,
 
+  autocomplete: [
+    'AutocompleteRoot',
+    'AutocompleteInput',
+    'AutocompleteAnchor',
+    'AutocompleteEmpty',
+    'AutocompleteTrigger',
+    'AutocompleteCancel',
+    'AutocompleteGroup',
+    'AutocompleteLabel',
+    'AutocompleteContent',
+    'AutocompleteViewport',
+    'AutocompleteVirtualizer',
+    'AutocompleteItem',
+    'AutocompleteItemIndicator',
+    'AutocompleteSeparator',
+    'AutocompleteArrow',
+    'AutocompletePortal',
+  ] as const,
+
   aspectRatio: [
     'AspectRatio',
   ] as const,
@@ -54,6 +73,34 @@ export const components = {
     'CollapsibleRoot',
     'CollapsibleTrigger',
     'CollapsibleContent',
+  ] as const,
+
+  colorArea: [
+    'ColorAreaRoot',
+    'ColorAreaArea',
+    'ColorAreaThumb',
+  ] as const,
+
+  colorField: [
+    'ColorFieldRoot',
+    'ColorFieldInput',
+  ] as const,
+
+  colorSlider: [
+    'ColorSliderRoot',
+    'ColorSliderTrack',
+    'ColorSliderThumb',
+  ] as const,
+
+  colorSwatch: [
+    'ColorSwatch',
+  ] as const,
+
+  colorSwatchPicker: [
+    'ColorSwatchPickerRoot',
+    'ColorSwatchPickerItem',
+    'ColorSwatchPickerItemSwatch',
+    'ColorSwatchPickerItemIndicator',
   ] as const,
 
   combobox: [
@@ -178,6 +225,7 @@ export const components = {
     'DropdownMenuSub',
     'DropdownMenuSubContent',
     'DropdownMenuSubTrigger',
+    'DropdownMenuFilter',
   ] as const,
   editable: [
     'EditableRoot',
@@ -230,6 +278,32 @@ export const components = {
     'MenubarSubContent',
     'MenubarSubTrigger',
     'MenubarMenu',
+  ] as const,
+
+  monthPicker: [
+    'MonthPickerRoot',
+    'MonthPickerHeader',
+    'MonthPickerHeading',
+    'MonthPickerGrid',
+    'MonthPickerCell',
+    'MonthPickerNext',
+    'MonthPickerPrev',
+    'MonthPickerGridBody',
+    'MonthPickerGridRow',
+    'MonthPickerCellTrigger',
+  ] as const,
+
+  monthRangePicker: [
+    'MonthRangePickerRoot',
+    'MonthRangePickerHeader',
+    'MonthRangePickerHeading',
+    'MonthRangePickerGrid',
+    'MonthRangePickerCell',
+    'MonthRangePickerNext',
+    'MonthRangePickerPrev',
+    'MonthRangePickerGridBody',
+    'MonthRangePickerGridRow',
+    'MonthRangePickerCellTrigger',
   ] as const,
 
   navigationMenu: [
@@ -435,6 +509,32 @@ export const components = {
 
   viewport: [
     'Viewport',
+  ] as const,
+
+  yearPicker: [
+    'YearPickerRoot',
+    'YearPickerHeader',
+    'YearPickerHeading',
+    'YearPickerGrid',
+    'YearPickerCell',
+    'YearPickerNext',
+    'YearPickerPrev',
+    'YearPickerGridBody',
+    'YearPickerGridRow',
+    'YearPickerCellTrigger',
+  ] as const,
+
+  yearRangePicker: [
+    'YearRangePickerRoot',
+    'YearRangePickerHeader',
+    'YearRangePickerHeading',
+    'YearRangePickerGrid',
+    'YearRangePickerCell',
+    'YearRangePickerNext',
+    'YearRangePickerPrev',
+    'YearRangePickerGridBody',
+    'YearRangePickerGridRow',
+    'YearRangePickerCellTrigger',
   ] as const,
 
   // Utility component

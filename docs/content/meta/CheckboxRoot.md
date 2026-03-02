@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -17,7 +17,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the checkbox when it is initially rendered. Use when you do not need to control its value.</p>\n',
-    'type': 'boolean | \'indeterminate\'',
+    'type': 'unknown',
     'required': false
   },
   {
@@ -25,6 +25,13 @@
     'description': '<p>When <code>true</code>, prevents the user from interacting with the checkbox</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'falseValue',
+    'description': '<p>The value used when the checkbox is unchecked. Defaults to <code>false</code>.</p>\n',
+    'type': 'unknown',
+    'required': false,
+    'default': '(() => false) as unknown as undefined'
   },
   {
     'name': 'id',
@@ -35,7 +42,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the checkbox. Can be binded with v-model.</p>\n',
-    'type': 'boolean | \'indeterminate\' | null',
+    'type': 'unknown',
     'required': false
   },
   {
@@ -51,6 +58,13 @@
     'required': false
   },
   {
+    'name': 'trueValue',
+    'description': '<p>The value used when the checkbox is checked. Defaults to <code>true</code>.</p>\n',
+    'type': 'unknown',
+    'required': false,
+    'default': '(() => true) as unknown as undefined'
+  },
+  {
     'name': 'value',
     'description': '<p>The value given as data when submitted with a <code>name</code>.</p>\n',
     'type': 'AcceptableValue',
@@ -63,7 +77,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: boolean | \'indeterminate\']'
+    'type': '[value: unknown]'
   }
 ]" />
 
@@ -71,11 +85,11 @@
   {
     'name': 'modelValue',
     'description': '<p>Current value</p>\n',
-    'type': 'false | true | \'indeterminate\''
+    'type': 'unknown'
   },
   {
     'name': 'state',
     'description': '<p>Current state</p>\n',
-    'type': 'CheckedState'
+    'type': 'false | true | \'indeterminate\''
   }
 ]" />

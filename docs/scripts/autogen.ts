@@ -31,6 +31,12 @@ const eventDescriptionMap = new Map<string, string>()
 const depTree = new Map<string, string[]>()
 let prevDeps: string[] = []
 
+function toSingleQuotedJson(obj: unknown): string {
+  return JSON.stringify(obj, null, 2)
+    .replace(/'/g, '\\\'')
+    .replace(/"/g, '\'')
+}
+
 const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
   cwd: resolve(__dirname, '../../packages/core'),
   absolute: true,
@@ -62,19 +68,11 @@ primitiveComponents.forEach((componentPath) => {
   const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath))
 
   const metaDirPath = resolve(__dirname, '../content/meta')
-  // if meta dir doesn't exist create
   mkdirSync(metaDirPath, { recursive: true })
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
-  // Convert JSON to single-quoted format safely by escaping existing single quotes first
-  function toSingleQuotedJson(obj: unknown): string {
-    return JSON.stringify(obj, null, 2)
-      .replace(/'/g, '\\\'') // Escape existing single quotes
-      .replace(/"/g, '\'') // Then convert double quotes to single
-  }
-
-  let parsedString = '<!-- This file was automatic generated. Do not edit it manually -->\n\n'
+  let parsedString = '<!-- This file was automatically generated. Do not edit it manually -->\n\n'
   if (meta.props.length)
     parsedString += `<PropsTable :data="${toSingleQuotedJson(meta.props)}" />\n`
 
