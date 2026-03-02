@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -124,7 +124,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled selected date range of the calendar. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },

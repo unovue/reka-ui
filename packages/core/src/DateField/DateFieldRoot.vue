@@ -44,7 +44,7 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   defaultPlaceholder?: DateValue
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateValue | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle

@@ -58,7 +58,7 @@ export interface YearRangePickerRootProps extends PrimitiveProps {
   defaultPlaceholder?: DateValue
   /** The default value for the calendar */
   defaultValue?: DateRange
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled selected year range of the year range picker. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The placeholder date, which is used to determine what year range to display when no date is selected. */
   placeholder?: DateValue
