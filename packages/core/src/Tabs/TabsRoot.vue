@@ -1,25 +1,26 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
+import type { DataOrientation, Direction } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import type { TabValue } from './utils'
 
 export interface TabsRootContext {
-  modelValue: Ref<StringOrNumber | undefined>
-  changeModelValue: (value: StringOrNumber) => void
+  modelValue: Ref<TabValue | undefined>
+  changeModelValue: (value: TabValue) => void
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   unmountOnHide: Ref<boolean>
   activationMode: 'automatic' | 'manual'
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
-  contentIds: Ref<Set<StringOrNumber>>
-  registerContent: (value: StringOrNumber) => void
-  unregisterContent: (value: StringOrNumber) => void
+  contentIds: Ref<Set<TabValue>>
+  registerContent: (value: TabValue) => void
+  unregisterContent: (value: TabValue) => void
 }
 
-export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extends PrimitiveProps {
+export interface TabsRootProps<T extends TabValue = TabValue> extends PrimitiveProps {
   /**
    * The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs
    */
@@ -48,7 +49,7 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
    */
   unmountOnHide?: boolean
 }
-export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
+export type TabsRootEmits<T extends TabValue = TabValue> = {
   /** Event handler called when the value changes */
   'update:modelValue': [payload: T]
 }
@@ -57,7 +58,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
   = createContext<TabsRootContext>('TabsRoot')
 </script>
 
-<script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
+<script setup lang="ts" generic="T extends TabValue = TabValue">
 import { ref, shallowRef, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 
@@ -85,11 +86,11 @@ const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'
 })
 
 const tabsList = ref<HTMLElement>()
-const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
+const contentIds = shallowRef<Set<TabValue>>(new Set())
 
 provideTabsRootContext({
   modelValue,
-  changeModelValue: (value: StringOrNumber) => {
+  changeModelValue: (value: TabValue) => {
     modelValue.value = value as T
   },
   orientation,
@@ -99,10 +100,10 @@ provideTabsRootContext({
   baseId: useId(undefined, 'reka-tabs'),
   tabsList,
   contentIds,
-  registerContent: (value: StringOrNumber) => {
+  registerContent: (value: TabValue) => {
     contentIds.value = new Set([...contentIds.value, value])
   },
-  unregisterContent: (value: StringOrNumber) => {
+  unregisterContent: (value: TabValue) => {
     const newSet = new Set(contentIds.value)
     newSet.delete(value)
     contentIds.value = newSet
