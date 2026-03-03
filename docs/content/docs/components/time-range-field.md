@@ -160,7 +160,9 @@ Contains the time field segments.
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -188,6 +190,7 @@ const timeRange = ref({
 ```vue
 <script setup>
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: undefined,
@@ -222,7 +225,9 @@ function handleTimeRangeChange(newRange) {
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -264,7 +269,9 @@ function isTimeUnavailable(time) {
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0, 30),
@@ -329,7 +336,9 @@ const timeRange = ref({
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -396,7 +405,9 @@ const timeRange = ref({
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -434,7 +445,9 @@ const maxTime = new Time(18, 0)
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -470,7 +483,9 @@ const step = { minute: 15 }
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -509,7 +524,9 @@ const isDisabled = ref(true)
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -550,7 +567,9 @@ The TimeRangeField provides intuitive keyboard navigation for efficient time inp
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -587,7 +606,9 @@ Integrate TimeRangeField with HTML forms to handle submissions and validation.
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -629,7 +650,9 @@ Customize the appearance of the TimeRangeField using CSS classes or Tailwind uti
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -674,7 +697,9 @@ Implement complex validation rules, such as ensuring the end time is after the s
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref, watch } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -725,7 +750,9 @@ The TimeRangeField is built with accessibility in mind. Enhance it further with 
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const timeRange = ref({
   start: new Time(9, 0),
@@ -776,7 +803,9 @@ Use TimeRangeField in practical scenarios like scheduling appointments or bookin
 
 ```vue
 <script setup>
+import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const appointment = ref({
   date: new Date(),

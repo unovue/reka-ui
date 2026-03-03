@@ -113,9 +113,9 @@ const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
 const emits = defineEmits<DateRangeFieldRootEmits>()
 defineSlots<{
   default?: (props: {
-    /** The current time of the field */
+    /** The current date range of the field */
     modelValue: DateRange | null
-    /** The time field segment contents */
+    /** The date field segment contents */
     segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
     /** Value if the input is invalid */
     isInvalid: boolean

@@ -21,8 +21,8 @@ const props = defineProps<{ timeRangeFieldProps?: TimeRangeFieldRootProps, emits
     v-on="{ 'update:modelValue': props.emits?.['onUpdate:modelValue'] }"
   >
     <TimeRangeFieldInput
-      v-for="item in segments.start"
-      :key="item.part"
+      v-for="(item, index) in segments.start"
+      :key="`${item.part}-${index}`"
       :part="item.part"
       :data-testid="item.part === 'literal' ? undefined : `start-${item.part}`"
       type="start"
@@ -30,8 +30,8 @@ const props = defineProps<{ timeRangeFieldProps?: TimeRangeFieldRootProps, emits
       {{ item.value }}
     </TimeRangeFieldInput>
     <TimeRangeFieldInput
-      v-for="item in segments.end"
-      :key="item.part"
+      v-for="(item, index) in segments.end"
+      :key="`${item.part}-${index}`"
       :part="item.part"
       :data-testid="item.part === 'literal' ? undefined : `end-${item.part}`"
       type="end"
@@ -42,7 +42,6 @@ const props = defineProps<{ timeRangeFieldProps?: TimeRangeFieldRootProps, emits
     <span
       data-testid="value"
       tabindex="-1"
-      disabled
     >{{ modelValue }}</span>
   </TimeRangeFieldRoot>
 </template>

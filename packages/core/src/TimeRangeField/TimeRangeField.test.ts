@@ -46,7 +46,7 @@ it('should pass axe accessibility tests', async () => {
   expect(await axe(container)).toHaveNoViolations()
 })
 
-describe('timeField', async () => {
+describe('timeField', () => {
   it('populates segment with value - `Time`', async () => {
     const { start, end } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
@@ -69,7 +69,7 @@ describe('timeField', async () => {
 
   it('populates segment with value - `ZonedDateTime`', async () => {
     const { start, end, getByTestId } = setup({
-      timeRangeFieldProps: { modelValue: zonedDateTime },
+      timeRangeFieldProps: { modelValue: zonedDateTime, locale: 'en-US', hourCycle: 12 },
     })
 
     expect(start.hour).toHaveTextContent(String(zonedDateTime.start.hour))
@@ -158,5 +158,170 @@ describe('timeField', async () => {
     await user.keyboard('2')
     expect(start.minute).toHaveTextContent('2')
     expect(end.minute).toHaveTextContent(String(time.end.minute))
+  })
+
+  it('modifying end value does not affect start value', async () => {
+    const { start, end, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await user.click(end.hour)
+    await user.keyboard(kbd.ARROW_UP)
+    expect(start.hour).toHaveTextContent(String(time.start.hour).padStart(2, '0'))
+    expect(start.minute).toHaveTextContent(String(time.start.minute))
+  })
+
+  it('increments start hour on arrow up', async () => {
+    const { start, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await user.click(start.hour)
+    await user.keyboard(kbd.ARROW_UP)
+    expect(start.hour).toHaveTextContent(String(time.start.hour + 1).padStart(2, '0'))
+  })
+
+  it('decrements end minute on arrow down', async () => {
+    const { end, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await user.click(end.minute)
+    await user.keyboard(kbd.ARROW_DOWN)
+    expect(end.minute).toHaveTextContent(String(time.end.minute - 1))
+  })
+
+  it('types a digit into start segment', async () => {
+    const { start, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await user.click(start.hour)
+    await user.keyboard('{1}{4}')
+    expect(start.hour).toHaveTextContent('14')
+  })
+
+  it('types a digit into end segment', async () => {
+    const { end, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await user.click(end.minute)
+    await user.keyboard('{3}{0}')
+    expect(end.minute).toHaveTextContent('30')
+  })
+
+  it('prevents interaction when disabled', async () => {
+    const { start, end, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB', disabled: true },
+    })
+
+    const segments = [start.hour, start.minute, end.hour, end.minute]
+    for (const seg of segments) {
+      await user.click(seg)
+      expect(seg).not.toHaveFocus()
+    }
+  })
+
+  it('prevents modification when readonly', async () => {
+    const { start, end, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB', readonly: true },
+    })
+
+    await user.click(start.hour)
+    expect(start.hour).toHaveFocus()
+    await user.keyboard(kbd.ARROW_UP)
+    expect(start.hour).toHaveTextContent(String(time.start.hour).padStart(2, '0'))
+
+    await user.click(end.hour)
+    expect(end.hour).toHaveFocus()
+    await user.keyboard(kbd.ARROW_UP)
+    expect(end.hour).toHaveTextContent(String(time.end.hour).padStart(2, '0'))
+  })
+
+  it('displays data-invalid when start is after end', async () => {
+    const invalidTime = {
+      start: new Time(17, 0),
+      end: new Time(9, 0),
+    }
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: invalidTime, locale: 'en-GB' },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('does not display data-invalid for valid range', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('displays data-invalid when value is outside min/max', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: time,
+        locale: 'en-GB',
+        minValue: new Time(10, 0),
+      },
+    })
+
+    // start time is 9:15 which is before min of 10:00
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('focuses first segment on label click', async () => {
+    const { user, label, start } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await user.click(label)
+    expect(start.hour).toHaveFocus()
+  })
+
+  it('renders with second granularity', async () => {
+    const { getByTestId } = setup({
+      timeRangeFieldProps: {
+        modelValue: time,
+        locale: 'en-GB',
+        granularity: 'second',
+      },
+    })
+
+    expect(getByTestId('start-second')).toHaveTextContent(String(time.start.second))
+    expect(getByTestId('end-second')).toHaveTextContent(String(time.end.second).padStart(2, '0'))
+  })
+
+  it('renders with hour granularity', async () => {
+    const returned = render(TimeField, {
+      props: {
+        timeRangeFieldProps: {
+          modelValue: time,
+          locale: 'en-GB',
+          granularity: 'hour',
+        },
+      },
+    })
+
+    expect(returned.getByTestId('start-hour')).toBeVisible()
+    expect(returned.getByTestId('end-hour')).toBeVisible()
+    expect(returned.queryByTestId('start-minute')).toBeNull()
+    expect(returned.queryByTestId('end-minute')).toBeNull()
+  })
+
+  it('navigates from start to end with keyboard typing', async () => {
+    const { start, end, user } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    // Type into start hour (value > 2 auto-advances), then start minute
+    await user.click(start.hour)
+    await user.keyboard('{0}{9}')
+    expect(start.minute).toHaveFocus()
+    await user.keyboard('{1}{5}')
+    // After finishing start minute, focus should move to end hour
+    expect(end.hour).toHaveFocus()
   })
 })

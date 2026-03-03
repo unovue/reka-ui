@@ -15,8 +15,8 @@ const forwarded = useForwardPropsEmits(props, emits)
     class="flex select-none bg-white items-center rounded-lg text-center text-green10 placeholder:text-mauve5 border border-gray9 p-1 data-[invalid]:border-red-500"
   >
     <template
-      v-for="item in segments.start"
-      :key="item.part"
+      v-for="(item, index) in segments.start"
+      :key="`${item.part}-${index}`"
     >
       <TimeRangeFieldInput
         v-if="item.part === 'literal'"
@@ -36,8 +36,8 @@ const forwarded = useForwardPropsEmits(props, emits)
     </template>
     -
     <template
-      v-for="item in segments.end"
-      :key="item.part"
+      v-for="(item, index) in segments.end"
+      :key="`${item.part}-${index}`"
     >
       <TimeRangeFieldInput
         v-if="item.part === 'literal'"

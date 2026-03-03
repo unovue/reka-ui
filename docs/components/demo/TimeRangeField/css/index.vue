@@ -17,8 +17,8 @@ import './styles.css'
       class="TimeField"
     >
       <template
-        v-for="item in segments.start"
-        :key="item.part"
+        v-for="(item, index) in segments.start"
+        :key="`${item.part}-${index}`"
       >
         <TimeRangeFieldInput
           v-if="item.part === 'literal'"
@@ -39,8 +39,8 @@ import './styles.css'
       </template>
       -
       <template
-        v-for="item in segments.end"
-        :key="item.part"
+        v-for="(item, index) in segments.end"
+        :key="`${item.part}-${index}`"
       >
         <TimeRangeFieldInput
           v-if="item.part === 'literal'"

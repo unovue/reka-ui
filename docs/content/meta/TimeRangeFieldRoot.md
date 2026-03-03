@@ -16,13 +16,13 @@
   },
   {
     'name': 'defaultPlaceholder',
-    'description': '<p>The default placeholder date</p>\n',
+    'description': '<p>The default placeholder time</p>\n',
     'type': 'TimeValue',
     'required': false
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The default value for the calendar</p>\n',
+    'description': '<p>The default value for the field</p>\n',
     'type': 'TimeRange',
     'required': false
   },
@@ -41,7 +41,7 @@
   },
   {
     'name': 'granularity',
-    'description': '<p>The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity</p>\n',
+    'description': '<p>The granularity to use for formatting times. Defaults to minute. The field will render segments for each part of the time up to and including the specified granularity</p>\n',
     'type': '\'hour\' | \'minute\' | \'second\'',
     'required': false
   },
@@ -71,19 +71,19 @@
   },
   {
     'name': 'locale',
-    'description': '<p>The locale to use for formatting dates</p>\n',
+    'description': '<p>The locale to use for formatting times</p>\n',
     'type': 'string',
     'required': false
   },
   {
     'name': 'maxValue',
-    'description': '<p>The maximum date that can be selected</p>\n',
+    'description': '<p>The maximum time that can be selected</p>\n',
     'type': 'TimeValue',
     'required': false
   },
   {
     'name': 'minValue',
-    'description': '<p>The minimum date that can be selected</p>\n',
+    'description': '<p>The minimum time that can be selected</p>\n',
     'type': 'TimeValue',
     'required': false
   },
@@ -101,7 +101,7 @@
   },
   {
     'name': 'placeholder',
-    'description': '<p>The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field</p>\n',
+    'description': '<p>The placeholder time, which is used to determine what time to display when no time is selected. This updates as the user navigates the field</p>\n',
     'type': 'TimeValue',
     'required': false
   },

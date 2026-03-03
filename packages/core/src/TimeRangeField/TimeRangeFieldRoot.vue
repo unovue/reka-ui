@@ -14,9 +14,7 @@ import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLo
 import {
   createContent,
   getDefaultTime,
-  getSegmentElements,
   getTimeFieldSegmentElements,
-
   initializeTimeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
@@ -47,11 +45,11 @@ type TimeRangeFieldRootContext = {
 }
 
 export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps {
-  /** The default value for the calendar */
+  /** The default value for the field */
   defaultValue?: TimeRange
-  /** The default placeholder date */
+  /** The default placeholder time */
   defaultPlaceholder?: TimeValue
-  /** The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field */
+  /** The placeholder time, which is used to determine what time to display when no time is selected. This updates as the user navigates the field */
   placeholder?: TimeValue
   /** The controlled checked state of the field. Can be bound as `v-model`. */
   modelValue?: TimeRange | null
@@ -59,15 +57,15 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
-  /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
+  /** The granularity to use for formatting times. Defaults to minute. The field will render segments for each part of the time up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
   hideTimeZone?: boolean
-  /** The maximum date that can be selected */
+  /** The maximum time that can be selected */
   maxValue?: TimeValue
-  /** The minimum date that can be selected */
+  /** The minimum time that can be selected */
   minValue?: TimeValue
-  /** The locale to use for formatting dates */
+  /** The locale to use for formatting times */
   locale?: string
   /** Whether or not the time field is disabled */
   disabled?: boolean
@@ -356,7 +354,7 @@ watch(locale, (value) => {
     // Get the focusable elements again on the next tick
     nextTick(() => {
       segmentElements.value.clear()
-      getSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
+      getTimeFieldSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
     })
   }
 })

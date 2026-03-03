@@ -19,9 +19,8 @@
   padding: 0.5rem;
   align-items: center;
   border-radius: 0.25rem;
-  border-width: 1px;
   text-align: center;
-  background-color: #ffffff;
+  background-color: #fff;
   user-select: none;
   color: var(--green-10);
   border: 1px solid var(--gray-9);
@@ -51,6 +50,6 @@
   background-color: var(--grass-2);
 }
 
-.TimeFieldSegment:[aria-valuetext='Empty'] {
+.TimeFieldSegment[aria-valuetext='Empty'] {
   color: var(--grass-6);
 }
