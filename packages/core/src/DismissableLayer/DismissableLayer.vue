@@ -67,6 +67,8 @@ import {
   Primitive,
 } from '@/Primitive'
 import {
+  getAllDismissableLayers,
+  getRootNode,
   useFocusOutside,
   usePointerDownOutside,
 } from './utils'
@@ -130,6 +132,18 @@ const focusOutside = useFocusOutside((event) => {
 }, layerElement)
 
 onKeyStroke('Escape', (event) => {
+  const composedPath = event.composedPath()
+  const eventTarget = (composedPath[0] || event.target) as HTMLElement
+  const eventTargetRootNode = getRootNode(eventTarget)
+  const allDismissableLayers = getAllDismissableLayers(eventTarget)
+
+  if (eventTargetRootNode instanceof ShadowRoot && allDismissableLayers.length > 0) {
+    const layerElementRootNode = getRootNode(layerElement.value ?? null)
+    if (eventTargetRootNode !== layerElementRootNode) {
+      return
+    }
+  }
+
   const isHighestLayer = index.value === layers.value.size - 1
   if (!isHighestLayer)
     return

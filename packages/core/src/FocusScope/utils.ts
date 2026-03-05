@@ -39,7 +39,7 @@ export function getTabbableEdges(container: HTMLElement) {
  * See: https://developer.mozilla.org/en-US/docs/Web/API/TreeWalker
  * Credit: https://github.com/discord/focus-layers/blob/master/src/util/wrapFocus.tsx#L1
  */
-export function getTabbableCandidates(container: HTMLElement) {
+export function getTabbableCandidates(container: HTMLElement | ShadowRoot) {
   const nodes: HTMLElement[] = []
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: any) => {
@@ -49,6 +49,11 @@ export function getTabbableCandidates(container: HTMLElement) {
       // `.tabIndex` is not the same as the `tabindex` attribute. It works on the
       // runtime's understanding of tabbability, so this automatically accounts
       // for any kind of element that could be tabbed to.
+      if (node.shadowRoot) {
+        const shadowNodes = getTabbableCandidates(node.shadowRoot as ShadowRoot)
+        nodes.push(...shadowNodes)
+      }
+
       return node.tabIndex >= 0
         ? NodeFilter.FILTER_ACCEPT
         : NodeFilter.FILTER_SKIP
