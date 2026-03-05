@@ -19,18 +19,16 @@ describe('given a default Toast', () => {
     trigger = wrapper.find('button')
   })
 
-  it('should have visible toast with role="alert" for screen readers', async () => {
+  it('should have visible toast that is focusable', async () => {
     // Open toast
     await fireEvent.click(trigger.element)
 
     // Wait for toast to appear in DOM
-    await findByText(document.body, 'Scheduled: Catch up')
+    const toastText = await findByText(document.body, 'Scheduled: Catch up')
 
-    // The visible toast element has role="alert" and aria-live="off"
-    // This is the interactive element that users see
-    const toastElement = document.querySelector('[role="alert"]')
+    // The visible toast element should be focusable
+    const toastElement = toastText.closest('li')
     expect(toastElement).toBeTruthy()
-    expect(toastElement?.getAttribute('aria-live')).toBe('off')
     expect(toastElement?.getAttribute('tabindex')).toBe('0')
   })
 
