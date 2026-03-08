@@ -106,7 +106,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/vue": "^8.1.0",
     "@tsconfig/node24": "^24.0.0",
-    "@types/jsdom": "^27.0.0",
+    "@types/jsdom": "^28.0.0",
     "@types/node": "^24.0.13",
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/coverage-istanbul": "^3.2.4",
