@@ -25,9 +25,12 @@ const { forwardRef } = useForwardExpose()
 <template>
   <Presence
     v-if="rootContext?.modal.value"
+    v-slot="{ present }"
     :present="forceMount || rootContext.open.value"
+    :force-mount="forceMount || !rootContext.unmountOnHide.value"
   >
     <DialogOverlayImpl
+      v-show="present"
       v-bind="$attrs"
       :ref="forwardRef"
       :as="as"
