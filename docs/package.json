@@ -39,7 +39,7 @@
     "markdown-it-anchor": "^9.2.0",
     "minisearch": "^6.3.0",
     "postcss": "^8.5.1",
-    "shiki": "^1.29.2",
+    "shiki": "^4.0.2",
     "tailwindcss": "^3.4.17",
     "vitepress": "1.6.3",
     "vitepress-plugin-llms": "^1.9.3",
