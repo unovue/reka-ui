@@ -874,11 +874,10 @@ export function useDateField(props: UseDateFieldProps) {
   function handleSegmentKeydown(e: KeyboardEvent) {
     const disabled = props.disabled.value
     const readonly = props.readonly.value
-    if (e.key !== kbd.TAB)
-      e.preventDefault()
-
     if (disabled || readonly)
       return
+    if (e.key !== kbd.TAB)
+      e.preventDefault()
     const segmentKeydownHandlers = {
       day: handleDaySegmentKeydown,
       month: handleMonthSegmentKeydown,
