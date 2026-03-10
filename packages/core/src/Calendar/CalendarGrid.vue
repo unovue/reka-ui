@@ -17,16 +17,18 @@ const readonly = computed(() => rootContext.readonly.value ? true : undefined)
 </script>
 
 <template>
-  <Primitive
-    v-bind="props"
-    tabindex="-1"
-    role="application"
-    aria-roledescription="calendar grid"
-    :aria-readonly="readonly"
-    :aria-disabled="disabled"
-    :data-readonly="readonly && ''"
-    :data-disabled="disabled && ''"
-  >
-    <slot />
-  </Primitive>
+  <!-- role="application" ensures NVDA passes keyboard events to the web app for arrow key navigation -->
+  <div role="application">
+    <Primitive
+      v-bind="props"
+      tabindex="-1"
+      role="grid"
+      :aria-readonly="readonly"
+      :aria-disabled="disabled"
+      :data-readonly="readonly && ''"
+      :data-disabled="disabled && ''"
+    >
+      <slot />
+    </Primitive>
+  </div>
 </template>
