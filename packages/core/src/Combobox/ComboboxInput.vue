@@ -61,15 +61,20 @@ function handleFocus() {
 }
 
 function handleBlur(ev: FocusEvent) {
-  const nextFocus = ev.relatedTarget as HTMLElement
+  if (!rootContext.open.value)
+    return
 
-  if (rootContext.open.value && nextFocus) {
-    const isInsideRoot = rootContext.parentElement.value?.contains(nextFocus)
-    const isInsideContent = document.getElementById(rootContext.contentId)?.contains(nextFocus)
+  const nextFocus = ev.relatedTarget as Element | null
 
-    if (!isInsideRoot && !isInsideContent) {
-      rootContext.onOpenChange(false)
-    }
+  // If focus moves to nothing (e.g. click on non-focusable area), let DismissableLayer handle it
+  if (!nextFocus)
+    return
+
+  const isInsideRoot = rootContext.parentElement.value?.contains(nextFocus)
+  const isInsideContent = document.getElementById(rootContext.contentId)?.contains(nextFocus)
+
+  if (!isInsideRoot && !isInsideContent) {
+    rootContext.onOpenChange(false)
   }
 }
 
