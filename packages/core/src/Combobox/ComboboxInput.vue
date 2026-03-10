@@ -60,6 +60,19 @@ function handleFocus() {
     rootContext.onOpenChange(true)
 }
 
+function handleBlur(ev: FocusEvent) {
+  const nextFocus = ev.relatedTarget as HTMLElement
+
+  if (rootContext.open.value && nextFocus) {
+    const isInsideRoot = rootContext.parentElement.value?.contains(nextFocus)
+    const isInsideContent = document.getElementById(rootContext.contentId)?.contains(nextFocus)
+
+    if (!isInsideRoot && !isInsideContent) {
+      rootContext.onOpenChange(false)
+    }
+  }
+}
+
 function handleClick() {
   if (rootContext.openOnClick.value && !rootContext.open.value)
     rootContext.onOpenChange(true)
@@ -122,6 +135,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     @input="handleInput"
     @keydown.down.up.prevent="handleKeyDown"
     @focus="handleFocus"
+    @blur="handleBlur"
   >
     <slot />
   </ListboxFilter>
