@@ -18,19 +18,21 @@ const readonly = computed(() => rootContext.readonly.value ? true : undefined)
 </script>
 
 <template>
-  <!-- role="application" ensures NVDA passes keyboard events to the web app for arrow key navigation -->
-  <div role="application">
-    <Primitive
-      v-bind="props"
-      tabindex="-1"
-      role="grid"
-      :aria-readonly="readonly"
-      :aria-disabled="disabled"
-      :data-readonly="readonly && ''"
-      :data-disabled="disabled && ''"
-      @mouseleave="rootContext.focusedValue.value = undefined"
-    >
-      <slot />
-    </Primitive>
-  </div>
+  <!--
+    role="application" is intentional: it ensures screen readers like NVDA pass
+    keyboard events (arrow keys) to the web app instead of intercepting them
+    for virtual cursor navigation. This is the same pattern used by React Aria.
+  -->
+  <Primitive
+    v-bind="props"
+    tabindex="-1"
+    role="application"
+    :aria-readonly="readonly"
+    :aria-disabled="disabled"
+    :data-readonly="readonly && ''"
+    :data-disabled="disabled && ''"
+    @mouseleave="rootContext.focusedValue.value = undefined"
+  >
+    <slot />
+  </Primitive>
 </template>
