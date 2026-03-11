@@ -13,7 +13,10 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+  if (!(targetElement instanceof Element))
+    return false
+
   const targetLayer = targetElement.closest(
     '[data-dismissable-layer]',
   )

@@ -193,6 +193,20 @@ function getPanelDataWithPercentConstraints(groupSizeOverride?: number | null) {
 
 const setLayout = (val: number[]) => layout.value = val
 
+/** Convert internal layout (always in %) to native units for each panel */
+function convertLayoutToNativeUnits(internalLayout: number[]): number[] {
+  const { panelDataArray } = eagerValuesRef.value
+  const groupSize = getGroupSizeInPixels()
+
+  return internalLayout.map((size, index) => {
+    const panelData = panelDataArray[index]
+    if (panelData && (panelData.constraints.sizeUnit ?? '%') === 'px' && groupSize != null) {
+      return (size / 100) * groupSize
+    }
+    return size
+  })
+}
+
 useWindowSplitterPanelGroupBehavior({
   eagerValuesRef,
   groupId,
@@ -347,12 +361,13 @@ watch(() => eagerValuesRef.value.panelDataArrayChanged, () => {
       setLayout(nextLayout)
 
       eagerValuesRef.value.layout = nextLayout
-      emits('layout', nextLayout)
+      emits('layout', convertLayoutToNativeUnits(nextLayout))
 
       callPanelCallbacks(
         panelDataArray,
         nextLayout,
         panelIdToLastNotifiedSizeMapRef.value,
+        getGroupSizeInPixels(),
       )
     }
   }
@@ -391,12 +406,13 @@ watch(groupSizeInPixels, (nextSize, prevSize) => {
     setLayout(nextLayout)
 
     eagerValuesRef.value.layout = nextLayout
-    emits('layout', nextLayout)
+    emits('layout', convertLayoutToNativeUnits(nextLayout))
 
     callPanelCallbacks(
       panelDataArray,
       nextLayout,
       panelIdToLastNotifiedSizeMapRef.value,
+      getGroupSizeInPixels(),
     )
   }
 })
@@ -484,12 +500,13 @@ function registerResizeHandle(dragHandleId: string) {
       setLayout(nextLayout)
 
       eagerValuesRef.value.layout = nextLayout
-      emits('layout', nextLayout)
+      emits('layout', convertLayoutToNativeUnits(nextLayout))
 
       callPanelCallbacks(
         panelDataArray,
         nextLayout,
         panelIdToLastNotifiedSizeMapRef.value,
+        getGroupSizeInPixels(),
       )
     }
   }
@@ -540,12 +557,13 @@ function resizePanel(panelData: PanelData, unsafePanelSize: number) {
     setLayout(nextLayout)
 
     eagerValuesRef.value.layout = nextLayout
-    emits('layout', nextLayout)
+    emits('layout', convertLayoutToNativeUnits(nextLayout))
 
     callPanelCallbacks(
       panelDataArray,
       nextLayout,
       panelIdToLastNotifiedSizeMapRef.value,
+      getGroupSizeInPixels(),
     )
   }
 }
@@ -682,12 +700,13 @@ function collapsePanel(panelData: PanelData) {
 
         eagerValuesRef.value.layout = nextLayout
 
-        emits('layout', nextLayout)
+        emits('layout', convertLayoutToNativeUnits(nextLayout))
 
         callPanelCallbacks(
           panelDataArray,
           nextLayout,
           panelIdToLastNotifiedSizeMapRef.value,
+          getGroupSizeInPixels(),
         )
       }
     }
@@ -747,12 +766,13 @@ function expandPanel(panelData: PanelData) {
 
         eagerValuesRef.value.layout = nextLayout
 
-        emits('layout', nextLayout)
+        emits('layout', convertLayoutToNativeUnits(nextLayout))
 
         callPanelCallbacks(
           panelDataArray,
           nextLayout,
           panelIdToLastNotifiedSizeMapRef.value,
+          getGroupSizeInPixels(),
         )
       }
     }

@@ -16,7 +16,8 @@ export function useHideOthers(target: MaybeElementRef) {
     // disable hideOthers on test mode
     if (import.meta.env.MODE === 'test')
       return
-    if (el)
+    // Skip if inside a closed native popover
+    if (el && !el.closest('[popover]:not(:popover-open)'))
       undo = hideOthers(el)
     else if (undo)
       undo()

@@ -303,6 +303,28 @@ describe('given a Combobox with openOnFocus', () => {
 
     expect(document.activeElement).toBe(button.element)
   })
+
+  it('should close content when focus moves to an element outside', async () => {
+    // Add an external focusable element
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    const input = wrapper.find('input')
+
+    // Focus input to open via openOnFocus
+    await input.trigger('focus')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    // Simulate blur with relatedTarget pointing to external element
+    await input.trigger('blur', { relatedTarget: externalButton })
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
+  })
 })
 
 describe('given combobox in a form', async () => {

@@ -80,6 +80,8 @@ const useBodyLockStackCount = createSharedComposable(() => {
 
     // let dismissibleLayer set previous pointerEvent first
     nextTick(() => {
+      if (!locked.value)
+        return
       document.body.style.pointerEvents = 'none'
       document.body.style.overflow = 'hidden'
     })
