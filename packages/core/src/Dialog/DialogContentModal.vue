@@ -20,7 +20,7 @@ useHideOthers(currentElement)
     v-bind="{ ...props, ...emitsAsProps }"
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
-    :disable-outside-pointer-events="true"
+    :disable-outside-pointer-events="rootContext.open.value"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
