@@ -104,7 +104,7 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
       Edit profile
     </DialogTrigger>
     <DialogPortal>
-      <AnimatePresence multiple>
+      <AnimatePresence>
         <DialogOverlay as-child>
           <Motion
             :initial="{ opacity: 0, scale: 0 }"

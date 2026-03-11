@@ -42,6 +42,7 @@ const { forwardRef } = useForwardExpose()
       v-show="present"
       :ref="forwardRef"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
+      :present
     >
       <slot />
     </DialogContentModal>
