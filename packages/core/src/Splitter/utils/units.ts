@@ -157,5 +157,17 @@ export function recalculateLayoutForPixelPanels({
     nextLayout[index] = prevSize * scaleFactor
   }
 
+  // Normalize to ensure percentages always sum to exactly 100.
+  // Floating-point arithmetic in the px→% conversions above can cause drift
+  // (e.g. 99.89% instead of 100%) that gets persisted to localStorage and
+  // triggers validation warnings on every subsequent page load.
+  const total = nextLayout.reduce((sum, size) => sum + size, 0)
+  if (total > 0 && Math.abs(total - 100) > 1e-9) {
+    const factor = 100 / total
+    for (let index = 0; index < nextLayout.length; index++) {
+      nextLayout[index] = (nextLayout[index] ?? 0) * factor
+    }
+  }
+
   return nextLayout
 }

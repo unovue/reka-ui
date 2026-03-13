@@ -121,6 +121,7 @@ const { forwardRef, currentElement: panelGroupElementRef } = useForwardExpose()
 
 const dragState = ref<DragState | null>(null)
 const groupSizeInPixels = ref<number | null>(null)
+const groupSizeAtLastLayoutInit = ref<number | null>(null)
 const layout = ref<number[]>([])
 const panelIdToLastNotifiedSizeMapRef = ref<Record<string, number>>({})
 const panelSizeBeforeCollapseRef = ref<Map<string, number>>(new Map())
@@ -357,6 +358,11 @@ watch(() => eagerValuesRef.value.panelDataArrayChanged, () => {
       panelConstraints,
     })
 
+    // Track the group size used for this initialization.
+    // Used to detect when a nested px group was measured with an unreliable (too small)
+    // container size before the outer group finished layout.
+    groupSizeAtLastLayoutInit.value = getGroupSizeInPixels()
+
     if (!areEqual(prevLayout, nextLayout)) {
       setLayout(nextLayout)
 
@@ -382,6 +388,20 @@ watch(groupSizeInPixels, (nextSize, prevSize) => {
     return
   if (!hasPixelSizedPanel(panelDataArray))
     return
+
+  // Detect if the layout was initialized with an unreliably small container.
+  // This happens with nested SplitterGroups using sizeUnit="px": the inner group's
+  // ResizeObserver fires before the outer group's flex layout completes, giving a
+  // near-zero container size (e.g. 3.45px). When the outer group finishes and the
+  // container grows to its real size (e.g. 923px), we must re-initialize rather
+  // than recalculate (which would "preserve" the garbage pixel sizes from 3.45px).
+  // We guard with initSize < 50 so that legitimately small-but-real containers
+  // (e.g. a sidebar at 60px) are not accidentally re-initialized on normal resizes.
+  const initSize = groupSizeAtLastLayoutInit.value
+  if (initSize != null && initSize > 0 && initSize < 50 && nextSize > initSize * 10) {
+    eagerValuesRef.value.panelDataArrayChanged = true
+    return
+  }
 
   const recalculatedLayout = recalculateLayoutForPixelPanels({
     layout: prevLayout,
