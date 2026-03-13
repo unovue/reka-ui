@@ -91,6 +91,9 @@ onUnmounted(() => {
         rootContext.onOpenChange(false)
         rootContext.modelValue.value = props.value
       }
+      else if (rootContext.multiple.value) {
+        rootContext.inputElement.value?.focus()
+      }
     }"
   >
     <slot>{{ value }}</slot>

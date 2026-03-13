@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
+import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
 
 describe('given default Combobox', () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
@@ -401,5 +402,59 @@ describe('given combobox in a form', async () => {
     it('should not bubble up the Enter keydown event to the form', () => {
       expect(enterEventBubbledToForm).toBe(false)
     })
+  })
+})
+
+describe('given Combobox with TagsInput and addOnBlur', () => {
+  let wrapper: VueWrapper<InstanceType<typeof ComboboxTagsInput>>
+  let input: DOMWrapper<HTMLInputElement>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(ComboboxTagsInput, {
+      props: { addOnBlur: true },
+      attachTo: document.body,
+    })
+    input = wrapper.find('input')
+  })
+
+  it('should select the combobox item instead of adding raw input text as tag', async () => {
+    // Focus input and type "a" to filter
+    input.element.focus()
+    await input.setValue('a')
+    await nextTick()
+
+    // Simulate the blur that happens when clicking an option (jsdom doesn't do this automatically)
+    const option = wrapper.find('[role=option]')
+    expect(option.text()).toContain('Apple')
+
+    // In a real browser: mousedown on option → input blurs → click fires
+    await input.trigger('blur', { relatedTarget: option.element })
+    await option.trigger('click')
+    await nextTick()
+
+    // "Apple" should be added as tag, NOT the raw text "a"
+    const tags = wrapper.findAll('[data-reka-collection-item]')
+    const tagTexts = tags.map(t => t.text())
+    expect(tagTexts).toContain('Apple')
+    expect(tagTexts).not.toContain('a')
+  })
+
+  it('should refocus input after selecting in multiple mode', async () => {
+    // Focus input and open dropdown
+    input.element.focus()
+    await input.setValue('a')
+    await nextTick()
+
+    const option = wrapper.find('[role=option]')
+
+    // In a real browser, mousedown on option blurs the input.
+    // Simulate this: blur the input, then click the option.
+    input.element.blur()
+    await option.trigger('click')
+    await nextTick()
+
+    // Input should be refocused so subsequent blur can trigger addOnBlur
+    expect(document.activeElement).toBe(input.element)
   })
 })

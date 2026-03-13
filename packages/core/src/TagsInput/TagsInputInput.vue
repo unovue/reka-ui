@@ -24,13 +24,19 @@ const props = withDefaults(defineProps<TagsInputInputProps>(), {
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 
-function handleBlur(event: Event) {
+function handleBlur(event: FocusEvent) {
   context.selectedElement.value = undefined
 
   if (!context.addOnBlur.value)
     return
 
   const target = event.target as HTMLInputElement
+
+  const relatedTarget = event.relatedTarget as HTMLElement | null
+  const controlledId = target.getAttribute('aria-controls')
+  if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
+    return
+
   if (!target.value)
     return
 
