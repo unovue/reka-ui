@@ -33,15 +33,16 @@ describe('nested px SplitterGroup layout re-initialization (issue #2509)', () =>
   beforeEach(() => {
     resizeCallbacks.length = 0
     vi.stubGlobal('ResizeObserver', class MockResizeObserver {
+      private callback: ResizeObserverCallback
       constructor(callback: ResizeObserverCallback) {
+        this.callback = callback
         resizeCallbacks.push(callback)
       }
 
       observe() {}
       unobserve() {}
       disconnect() {
-        // remove this instance's callback on disconnect
-        const idx = resizeCallbacks.indexOf(this.constructor as any)
+        const idx = resizeCallbacks.indexOf(this.callback)
         if (idx !== -1)
           resizeCallbacks.splice(idx, 1)
       }
