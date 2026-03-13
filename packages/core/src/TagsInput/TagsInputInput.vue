@@ -32,6 +32,9 @@ function handleBlur(event: FocusEvent) {
 
   const target = event.target as HTMLInputElement
 
+  // If the blur is caused by clicking an option within the content,
+  // we don't trigger the `addOnBlur` action,
+  // because the clicked option should be added instead of the input's current value.
   const relatedTarget = event.relatedTarget as HTMLElement | null
   const controlledId = target.getAttribute('aria-controls')
   if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
