@@ -109,10 +109,10 @@ describe('nested px SplitterGroup layout re-initialization (issue #2509)', () =>
     // panel absorbing the remainder as a percentage.
     // emitted() wraps each call as [args], so emitted()[n][0] is the layout array.
     const events = splitterGroup.emitted('layout') as [number[]][]
-    expect(events).not.toBeNull()
+    expect(events).toBeDefined()
     expect(events!.length).toBeGreaterThan(0)
 
-    const lastLayout = events!.at(-1)[0]
+    const lastLayout = events!.at(-1)![0]
     // Sidebar panel (px): should be close to its 200px defaultSize
     expect(lastLayout[0]).toBeCloseTo(200, 0)
     // Content panel (%): should occupy the bulk of the remaining space
