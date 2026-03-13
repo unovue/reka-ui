@@ -175,4 +175,43 @@ describe('recalculateLayoutForPixelPanels', () => {
     // center gets remaining: 60 * (50 / 60) = 50
     expect(result![1]).toBe(50)
   })
+
+  it('should normalize result to exactly 100% when floating-point drift occurs (bug #2509)', () => {
+    // Two all-px panels, 50/50, resizing from 920→921px.
+    // Raw arithmetic: (460/921)*100 ≈ 49.945… per panel → sum ≈ 99.89 ≠ 100.
+    // The fix normalises the output so the sum is always exactly 100.
+    const panels = [
+      createPanelData({ id: 'a', constraints: { sizeUnit: 'px' } }),
+      createPanelData({ id: 'b', constraints: { sizeUnit: 'px' } }),
+    ]
+    const result = recalculateLayoutForPixelPanels({
+      layout: [50, 50],
+      panelDataArray: panels,
+      prevGroupSize: 920,
+      nextGroupSize: 921,
+    })
+    expect(result).not.toBeNull()
+    const total = result!.reduce((sum, v) => sum + v, 0)
+    expect(Math.abs(total - 100)).toBeLessThan(1e-9)
+  })
+
+  it('should normalise when three all-px panels produce fractional remainders', () => {
+    // Three px panels at equal thirds (33.33...%) in a group that resizes.
+    // Floating-point triple-division will not sum to exactly 100.
+    const panels = [
+      createPanelData({ id: 'a', constraints: { sizeUnit: 'px' } }),
+      createPanelData({ id: 'b', constraints: { sizeUnit: 'px' } }),
+      createPanelData({ id: 'c', constraints: { sizeUnit: 'px' } }),
+    ]
+    const oneThird = 100 / 3
+    const result = recalculateLayoutForPixelPanels({
+      layout: [oneThird, oneThird, oneThird],
+      panelDataArray: panels,
+      prevGroupSize: 900,
+      nextGroupSize: 901,
+    })
+    expect(result).not.toBeNull()
+    const total = result!.reduce((sum, v) => sum + v, 0)
+    expect(Math.abs(total - 100)).toBeLessThan(1e-9)
+  })
 })
