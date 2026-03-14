@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction, FormFieldProps } from '../shared/types'
-import type { ActiveDirection } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
@@ -62,9 +61,7 @@ export interface SliderAreaRootContext {
   modelValue?: Readonly<Ref<number[][] | null | undefined>>
   currentModelValue: Ref<number[][]>
   valueIndexToChangeRef: Ref<number>
-  thumbXElements: Ref<HTMLElement[]>
-  thumbYElements: Ref<HTMLElement[]>
-  activeDirection: Ref<ActiveDirection>
+  thumbElements: Ref<HTMLElement[]>
   isSlidingFromLeft: Ref<boolean>
   isSlidingFromTop: Ref<boolean>
   thumbAlignment: Ref<ThumbAlignment>
@@ -77,9 +74,9 @@ export const [injectSliderAreaRootContext, provideSliderAreaRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRaw, toRefs } from 'vue'
+import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { ARROW_KEYS, hasMinStepsBetweenValues, linearScale } from '../Slider/utils'
-import SliderAreaImpl from './SliderAreaImpl.vue'
 import { getClosestThumbIndex, snapToStep } from './utils'
 
 defineOptions({
@@ -100,7 +97,7 @@ const props = withDefaults(defineProps<SliderAreaRootProps>(), {
   minXStepsBetweenThumbs: 0,
   minYStepsBetweenThumbs: 0,
   thumbAlignment: 'overflow',
-  as: 'span',
+  as: 'div',
 })
 const emits = defineEmits<SliderAreaRootEmits>()
 
@@ -135,24 +132,23 @@ const isSlidingFromLeft = computed(() => {
 })
 const isSlidingFromTop = computed(() => !props.invertedY)
 
-function getThumbGroupElement(): HTMLElement | undefined {
-  const thumbX = thumbXElements.value[valueIndexToChangeRef.value]
-  const thumbY = thumbYElements.value[valueIndexToChangeRef.value]
-  const thumb = thumbX || thumbY
-  return thumb?.parentElement as HTMLElement | undefined
+function valuesEqual(a: number[][] | null | undefined, b: number[][]): boolean {
+  if (!a || a.length !== b.length)
+    return false
+  return a.every((v, i) => v[0] === b[i][0] && v[1] === b[i][1])
 }
 
 function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): number[] {
   const rect = rectRef.value || currentElement.value!.getBoundingClientRect()
   rectRef.value = rect
 
-  const thumbGroup = getThumbGroupElement()
-  const thumbWidth = thumbAlignment.value === 'contain' && thumbGroup ? thumbGroup.clientWidth : 0
-  const thumbHeight = thumbAlignment.value === 'contain' && thumbGroup ? thumbGroup.clientHeight : 0
+  const thumb = thumbElements.value[valueIndexToChangeRef.value]
+  const thumbWidth = thumbAlignment.value === 'contain' && thumb ? thumb.clientWidth : 0
+  const thumbHeight = thumbAlignment.value === 'contain' && thumb ? thumb.clientHeight : 0
 
   // Calculate grab offset on first slideMove after a thumb-initiated drag
-  if (!offsetPosition.value && !slideStart && thumbAlignment.value === 'contain' && thumbGroup) {
-    const thumbRect = thumbGroup.getBoundingClientRect()
+  if (!offsetPosition.value && !slideStart && thumbAlignment.value === 'contain' && thumb) {
+    const thumbRect = thumb.getBoundingClientRect()
     offsetPosition.value = {
       x: event.clientX - thumbRect.left,
       y: event.clientY - thumbRect.top,
@@ -177,34 +173,22 @@ function getPointFromPointerEvent(event: PointerEvent, slideStart?: boolean): nu
   return [scaleX(posX), scaleY(posY)]
 }
 
-const lastPointerPosition = ref<{ x: number, y: number }>()
-
 function handleSlideStart(event: PointerEvent) {
   const point = getPointFromPointerEvent(event, true)
   const closestIndex = getClosestThumbIndex(currentModelValue.value, point, minX.value, maxX.value, minY.value, maxY.value)
   if (closestIndex === -1)
     return
-  lastPointerPosition.value = { x: event.clientX, y: event.clientY }
-  // Default to 'x' on initial click since there's no delta to compute
-  activeDirection.value = 'x'
   updateValues(point, closestIndex)
 }
 
 function handleSlideMove(event: PointerEvent) {
   const point = getPointFromPointerEvent(event)
-  if (lastPointerPosition.value) {
-    const dx = Math.abs(event.clientX - lastPointerPosition.value.x)
-    const dy = Math.abs(event.clientY - lastPointerPosition.value.y)
-    activeDirection.value = dx >= dy ? 'x' : 'y'
-  }
-  lastPointerPosition.value = { x: event.clientX, y: event.clientY }
   updateValues(point, valueIndexToChangeRef.value)
 }
 
 function handleSlideEnd() {
   rectRef.value = undefined
   offsetPosition.value = undefined
-  lastPointerPosition.value = undefined
   const prevValue = valuesBeforeSlideStartRef.value[valueIndexToChangeRef.value]
   const nextValue = currentModelValue.value[valueIndexToChangeRef.value]
   const hasChanged = prevValue?.[0] !== nextValue?.[0] || prevValue?.[1] !== nextValue?.[1]
@@ -233,18 +217,19 @@ function updateValues(point: number[], atIndex: number, { commit } = { commit: f
 
   valueIndexToChangeRef.value = atIndex
 
-  const hasChanged = JSON.stringify(nextValues) !== JSON.stringify(modelValue.value)
+  const hasChanged = !valuesEqual(modelValue.value, nextValues)
   if (hasChanged && commit)
     emits('valueCommit', nextValues)
 
   if (hasChanged) {
-    const thumbs = activeDirection.value === 'x' ? thumbXElements.value : thumbYElements.value
-    thumbs[valueIndexToChangeRef.value]?.focus()
+    thumbElements.value[valueIndexToChangeRef.value]?.focus()
     modelValue.value = nextValues
   }
 }
 
-const STEP_KEY_DELTAS: Record<string, { axis: ActiveDirection, sign: number }> = {
+type StepAxis = 'x' | 'y'
+
+const STEP_KEY_DELTAS: Record<string, { axis: StepAxis, sign: number }> = {
   ArrowRight: { axis: 'x', sign: 1 },
   ArrowLeft: { axis: 'x', sign: -1 },
   ArrowDown: { axis: 'y', sign: 1 },
@@ -262,7 +247,6 @@ function handleStepKeyDown(event: KeyboardEvent) {
     return
 
   const multiplier = (event.shiftKey && ARROW_KEYS.includes(event.key)) ? 10 : 1
-  activeDirection.value = delta.axis
 
   const dirMultiplier = delta.axis === 'x'
     ? (isSlidingFromLeft.value ? 1 : -1)
@@ -277,8 +261,7 @@ function handleStepKeyDown(event: KeyboardEvent) {
   updateValues(point, atIndex, { commit: true })
 }
 
-function handleBoundaryKey(axis: ActiveDirection, boundaryValue: number) {
-  activeDirection.value = axis
+function handleBoundaryKey(axis: StepAxis, boundaryValue: number) {
   const atIndex = valueIndexToChangeRef.value
   const value = currentModelValue.value[atIndex]
   if (!value)
@@ -298,17 +281,74 @@ function handleBoundaryKey(axis: ActiveDirection, boundaryValue: number) {
   updateValues(point, atIndex, { commit: true })
 }
 
-const thumbXElements = ref<HTMLElement[]>([])
-const thumbYElements = ref<HTMLElement[]>([])
-const activeDirection = ref<ActiveDirection>('x')
+function handleKeyDown(event: KeyboardEvent) {
+  if (disabled.value)
+    return
+
+  if (event.key === 'Home') {
+    handleBoundaryKey('x', minX.value)
+    event.preventDefault()
+  }
+  else if (event.key === 'End') {
+    handleBoundaryKey('x', maxX.value)
+    event.preventDefault()
+  }
+  else if (event.key === 'PageUp') {
+    handleBoundaryKey('y', minY.value)
+    event.preventDefault()
+  }
+  else if (event.key === 'PageDown') {
+    handleBoundaryKey('y', maxY.value)
+    event.preventDefault()
+  }
+  else if (ARROW_KEYS.includes(event.key)) {
+    handleStepKeyDown(event)
+    event.preventDefault()
+  }
+}
+
+function handlePointerDown(event: PointerEvent) {
+  if (disabled.value)
+    return
+
+  const target = event.target as HTMLElement
+  target.setPointerCapture(event.pointerId)
+  event.preventDefault()
+
+  valuesBeforeSlideStartRef.value = currentModelValue.value
+
+  if (thumbElements.value.includes(target)) {
+    target.focus()
+  }
+  else {
+    handleSlideStart(event)
+  }
+}
+
+function handlePointerMove(event: PointerEvent) {
+  if (disabled.value)
+    return
+  const target = event.target as HTMLElement
+  if (target.hasPointerCapture(event.pointerId))
+    handleSlideMove(event)
+}
+
+function handlePointerUp(event: PointerEvent) {
+  const target = event.target as HTMLElement
+  if (target.hasPointerCapture(event.pointerId)) {
+    target.releasePointerCapture(event.pointerId)
+    if (!disabled.value)
+      handleSlideEnd()
+  }
+}
+
+const thumbElements = ref<HTMLElement[]>([])
 
 provideSliderAreaRootContext({
   modelValue,
   currentModelValue,
   valueIndexToChangeRef,
-  thumbXElements,
-  thumbYElements,
-  activeDirection,
+  thumbElements,
   minX,
   maxX,
   minY,
@@ -322,7 +362,7 @@ provideSliderAreaRootContext({
 
 <template>
   <CollectionSlot>
-    <SliderAreaImpl
+    <Primitive
       v-bind="$attrs"
       :ref="forwardRef"
       :as-child="asChild"
@@ -333,19 +373,10 @@ provideSliderAreaRootContext({
       :style="{
         ['--reka-slider-area-thumb-transform' as any]: `translate(${!isSlidingFromLeft && thumbAlignment === 'overflow' ? '50%' : '-50%'}, ${!isSlidingFromTop && thumbAlignment === 'overflow' ? '50%' : '-50%'})`,
       }"
-      @pointerdown="() => {
-        if (!disabled) valuesBeforeSlideStartRef = currentModelValue
-      }"
-      @slide-start="!disabled && handleSlideStart($event)"
-      @slide-move="!disabled && handleSlideMove($event)"
-      @slide-end="!disabled && handleSlideEnd()"
-      @home-key-down="!disabled && handleBoundaryKey('x', minX)"
-      @end-key-down="!disabled && handleBoundaryKey('x', maxX)"
-      @page-up-key-down="!disabled && handleBoundaryKey('y', minY)"
-      @page-down-key-down="!disabled && handleBoundaryKey('y', maxY)"
-      @step-key-down="(event) => {
-        if (!disabled) handleStepKeyDown(event)
-      }"
+      @keydown="handleKeyDown"
+      @pointerdown="handlePointerDown"
+      @pointermove="handlePointerMove"
+      @pointerup="handlePointerUp"
     >
       <slot :model-value="modelValue" />
 
@@ -357,6 +388,6 @@ provideSliderAreaRootContext({
         :required="required"
         :disabled="disabled"
       />
-    </SliderAreaImpl>
+    </Primitive>
   </CollectionSlot>
 </template>

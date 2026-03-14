@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 import { ref } from 'vue'
 import './styles.css'
 
@@ -11,15 +11,12 @@ const sliderValue = ref([[50, 50]])
     v-model="sliderValue"
     class="SliderAreaRoot"
   >
-    <SliderAreaTrack class="SliderAreaTrack">
+    <SliderAreaArea class="SliderAreaArea">
       <SliderAreaRegion class="SliderAreaRegion" />
-    </SliderAreaTrack>
+    </SliderAreaArea>
     <SliderAreaThumb
       class="SliderAreaThumb"
-      aria-label="Volume"
-    >
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+      aria-label="Position"
+    />
   </SliderAreaRoot>
 </template>

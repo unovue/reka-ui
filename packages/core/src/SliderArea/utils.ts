@@ -1,15 +1,5 @@
-import type { Ref } from 'vue'
-import { clamp, createContext } from '@/shared'
+import { clamp } from '@/shared'
 import { getDecimalCount, roundValue } from '../Slider/utils'
-
-export type ActiveDirection = 'x' | 'y'
-
-export interface SliderAreaThumbContext {
-  index: Ref<number>
-}
-
-export const [injectSliderAreaThumbContext, provideSliderAreaThumbContext]
-  = createContext<SliderAreaThumbContext>('SliderAreaThumb')
 
 /**
  * Snap a value to the nearest step, then clamp it within [min, max].

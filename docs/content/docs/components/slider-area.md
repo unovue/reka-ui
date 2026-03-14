@@ -40,24 +40,19 @@ Import all parts and piece them together.
 ```vue
 <script setup>
 import {
+  SliderAreaArea,
   SliderAreaRegion,
   SliderAreaRoot,
   SliderAreaThumb,
-  SliderAreaThumbX,
-  SliderAreaThumbY,
-  SliderAreaTrack,
 } from 'reka-ui'
 </script>
 
 <template>
   <SliderAreaRoot>
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -79,11 +74,11 @@ Contains all the parts of a slider area. It will render an `input` when used wit
   ]"
 />
 
-### Track
+### Area
 
-The track that contains the `SliderAreaRegion`.
+The visual area that represents the 2D range. Must live inside `SliderAreaRoot`. Typically styled with a background color or gradient. Contains the `SliderAreaRegion`.
 
-<!-- @include: @/meta/SliderAreaTrack.md -->
+<!-- @include: @/meta/SliderAreaArea.md -->
 
 <DataAttributesTable
   :data="[
@@ -96,7 +91,7 @@ The track that contains the `SliderAreaRegion`.
 
 ### Region
 
-The region part. Must live inside `SliderAreaTrack`. Represents the area between the origin and the thumb(s).
+The region part. Must live inside `SliderAreaArea`. Represents the bounding box of all thumbs — for a single thumb it spans from the origin to the thumb position, and for multiple thumbs it spans from the minimum to the maximum thumb position on each axis.
 
 <!-- @include: @/meta/SliderAreaRegion.md -->
 
@@ -111,39 +106,9 @@ The region part. Must live inside `SliderAreaTrack`. Represents the area between
 
 ### Thumb
 
-A draggable thumb that positions itself within the 2D area. Must contain `SliderAreaThumbX` and `SliderAreaThumbY`. You can render multiple thumbs.
+A draggable thumb that positions itself within the 2D area. It has `role="slider"` and handles focus and keyboard navigation for both axes. You can render multiple thumbs.
 
 <!-- @include: @/meta/SliderAreaThumb.md -->
-
-<DataAttributesTable
-  :data="[
-    {
-      attribute: '[data-disabled]',
-      values: 'Present when disabled',
-    },
-  ]"
-/>
-
-### ThumbX
-
-The horizontal slider element inside a `SliderAreaThumb`. Provides the `role="slider"` for the X axis and handles focus for horizontal keyboard navigation.
-
-<!-- @include: @/meta/SliderAreaThumbX.md -->
-
-<DataAttributesTable
-  :data="[
-    {
-      attribute: '[data-disabled]',
-      values: 'Present when disabled',
-    },
-  ]"
-/>
-
-### ThumbY
-
-The vertical slider element inside a `SliderAreaThumb`. Provides the `role="slider"` for the Y axis and handles focus for vertical keyboard navigation.
-
-<!-- @include: @/meta/SliderAreaThumbY.md -->
 
 <DataAttributesTable
   :data="[
@@ -163,7 +128,7 @@ Use the `stepX` and `stepY` props to increase the stepping interval for each axi
 ```vue line=9-10
 // index.vue
 <script setup>
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 </script>
 
 <template>
@@ -172,13 +137,10 @@ import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, Sl
     :step-x="10"
     :step-y="10"
   >
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -190,7 +152,7 @@ Use the `minX`, `maxX`, `minY`, and `maxY` props to define custom ranges for eac
 ```vue line=8-11
 // index.vue
 <script setup>
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 </script>
 
 <template>
@@ -201,13 +163,10 @@ import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, Sl
     :max-y="100"
     :default-value="[[180, 50]]"
   >
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -216,25 +175,19 @@ import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, Sl
 
 Add multiple `SliderAreaThumb` components to create a multi-point slider area.
 
-```vue line=7,14-21
+```vue line=7,16-17
 // index.vue
 <script setup>
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 </script>
 
 <template>
   <SliderAreaRoot :default-value="[[25, 25], [75, 75]]">
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -246,7 +199,7 @@ Use `minXStepsBetweenThumbs` and `minYStepsBetweenThumbs` to enforce a minimum d
 ```vue line=10-11
 // index.vue
 <script setup>
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 </script>
 
 <template>
@@ -257,17 +210,11 @@ import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, Sl
     :min-x-steps-between-thumbs="1"
     :min-y-steps-between-thumbs="1"
   >
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -279,7 +226,7 @@ Use the `invertedX` and `invertedY` props to invert the direction of each axis.
 ```vue line=9-10
 // index.vue
 <script setup>
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 </script>
 
 <template>
@@ -288,13 +235,10 @@ import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, Sl
     inverted-x
     inverted-y
   >
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -309,7 +253,7 @@ Use the `thumbAlignment` prop to control how the thumb is positioned relative to
 ```vue line=9
 // index.vue
 <script setup>
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb } from 'reka-ui'
 </script>
 
 <template>
@@ -317,13 +261,10 @@ import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, Sl
     :default-value="[[50, 50]]"
     thumb-alignment="contain"
   >
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
-    <SliderAreaThumb>
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    </SliderAreaArea>
+    <SliderAreaThumb />
   </SliderAreaRoot>
 </template>
 ```
@@ -346,11 +287,11 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
     },
     {
       keys: ['ArrowDown'],
-      description: 'Increases the Y value by the <Code>stepY</Code> amount.',
+      description: 'Increases the Y value by the <Code>stepY</Code> amount. SliderArea uses screen-coordinate convention where Y increases downward. Use <Code>invertedY</Code> to flip this.',
     },
     {
       keys: ['ArrowUp'],
-      description: 'Decreases the Y value by the <Code>stepY</Code> amount.',
+      description: 'Decreases the Y value by the <Code>stepY</Code> amount. SliderArea uses screen-coordinate convention where Y increases downward. Use <Code>invertedY</Code> to flip this.',
     },
     {
       keys: ['Shift + ArrowRight'],
@@ -425,7 +366,7 @@ export { default as SliderArea } from './SliderArea.vue'
  <!-- SliderArea.vue -->
 <script setup lang="ts">
 import type { SliderAreaRootEmits, SliderAreaRootProps } from 'reka-ui'
-import { SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, SliderAreaThumbX, SliderAreaThumbY, SliderAreaTrack, useForwardPropsEmits } from 'reka-ui'
+import { SliderAreaArea, SliderAreaRegion, SliderAreaRoot, SliderAreaThumb, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<SliderAreaRootProps>()
 const emits = defineEmits<SliderAreaRootEmits>()
@@ -435,17 +376,14 @@ const forward = useForwardPropsEmits(props, emits)
 
 <template>
   <SliderAreaRoot v-slot="{ modelValue }" v-bind="forward">
-    <SliderAreaTrack>
+    <SliderAreaArea>
       <SliderAreaRegion />
-    </SliderAreaTrack>
+    </SliderAreaArea>
 
     <SliderAreaThumb
       v-for="(_, i) in modelValue"
       :key="i"
-    >
-      <SliderAreaThumbX />
-      <SliderAreaThumbY />
-    </SliderAreaThumb>
+    />
   </SliderAreaRoot>
 </template>
 ```

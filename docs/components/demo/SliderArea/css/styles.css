@@ -10,7 +10,7 @@
   height: 200px;
 }
 
-.SliderAreaTrack {
+.SliderAreaArea {
   background-color: var(--black-a10);
   display: block;
   position: relative;
@@ -35,7 +35,7 @@
 .SliderAreaThumb:hover {
   background-color: var(--grass-3);
 }
-.SliderAreaThumb:focus-within {
+.SliderAreaThumb:focus {
   outline: none;
   box-shadow: 0 0 0 5px var(--black-a8);
 }

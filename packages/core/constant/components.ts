@@ -410,11 +410,9 @@ export const components = {
 
   sliderArea: [
     'SliderAreaRoot',
+    'SliderAreaArea',
     'SliderAreaRegion',
     'SliderAreaThumb',
-    'SliderAreaThumbX',
-    'SliderAreaThumbY',
-    'SliderAreaTrack',
   ] as const,
 
   slider: [

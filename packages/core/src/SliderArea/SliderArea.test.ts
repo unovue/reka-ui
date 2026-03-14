@@ -1,5 +1,4 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type SliderAreaImpl from './SliderAreaImpl.vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -32,57 +31,18 @@ describe('given default SliderArea', () => {
     })).toHaveNoViolations()
   })
 
-  it('should have 2D slider role description on the thumb group', () => {
-    const group = wrapper.find('[aria-roledescription="2D slider"]')
-    expect(group.exists()).toBe(true)
+  it('should have 2D slider role description on the thumb', () => {
+    const thumb = wrapper.find('[aria-roledescription="2D slider"]')
+    expect(thumb.exists()).toBe(true)
   })
 
-  it('should have a horizontal ThumbX with correct ARIA attributes', () => {
-    const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-    expect(thumbX.exists()).toBe(true)
-    expect(thumbX.attributes('aria-valuenow')).toBe('50')
-    expect(thumbX.attributes('aria-valuemin')).toBe('0')
-    expect(thumbX.attributes('aria-valuemax')).toBe('100')
-  })
-
-  it('should have a vertical ThumbY with correct ARIA attributes', () => {
-    const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
-    expect(thumbY.exists()).toBe(true)
-    expect(thumbY.attributes('aria-valuenow')).toBe('50')
-    expect(thumbY.attributes('aria-valuemin')).toBe('0')
-    expect(thumbY.attributes('aria-valuemax')).toBe('100')
-  })
-
-  describe('roving tabindex', () => {
-    it('should have tabindex 0 on ThumbX and -1 on ThumbY by default (activeDirection=x)', () => {
-      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
-      expect(thumbX.attributes('tabindex')).toBe('0')
-      expect(thumbY.attributes('tabindex')).toBe('-1')
-    })
-
-    it('should switch tabindex when pressing Down arrow (activeDirection switches to y)', async () => {
-      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      await thumbX.trigger('keydown', { key: 'ArrowDown' })
-      // After pressing down, activeDirection should be 'y'
-      const thumbXAfter = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      const thumbYAfter = wrapper.find('[role="slider"][aria-orientation="vertical"]')
-      expect(thumbXAfter.attributes('tabindex')).toBe('-1')
-      expect(thumbYAfter.attributes('tabindex')).toBe('0')
-    })
-
-    it('should switch back to x when pressing Right arrow after being on y', async () => {
-      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      // Switch to y
-      await thumbX.trigger('keydown', { key: 'ArrowDown' })
-      // Switch back to x
-      const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
-      await thumbY.trigger('keydown', { key: 'ArrowRight' })
-      const thumbXAfter = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      const thumbYAfter = wrapper.find('[role="slider"][aria-orientation="vertical"]')
-      expect(thumbXAfter.attributes('tabindex')).toBe('0')
-      expect(thumbYAfter.attributes('tabindex')).toBe('-1')
-    })
+  it('should have a slider with correct ARIA attributes', () => {
+    const thumb = wrapper.find('[role="slider"]')
+    expect(thumb.exists()).toBe(true)
+    expect(thumb.attributes('aria-valuenow')).toBe('50')
+    expect(thumb.attributes('aria-valuetext')).toBe('50, 50')
+    expect(thumb.attributes('aria-valuemin')).toBe('0')
+    expect(thumb.attributes('aria-valuemax')).toBe('100')
   })
 
   describe('when disabled', () => {
@@ -90,23 +50,21 @@ describe('given default SliderArea', () => {
       await wrapper.setProps({ disabled: true })
     })
 
-    it('should disable the thumb group', () => {
-      const group = wrapper.find('[aria-roledescription="2D slider"]')
-      expect(group.attributes('data-disabled')).toBe('')
+    it('should disable the thumb', () => {
+      const thumb = wrapper.find('[aria-roledescription="2D slider"]')
+      expect(thumb.attributes('data-disabled')).toBe('')
     })
 
-    it('should remove tabindex from both thumbs', () => {
-      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      const thumbY = wrapper.find('[role="slider"][aria-orientation="vertical"]')
-      expect(thumbX.attributes('tabindex')).toBeUndefined()
-      expect(thumbY.attributes('tabindex')).toBeUndefined()
+    it('should remove tabindex from thumb', () => {
+      const thumb = wrapper.find('[role="slider"]')
+      expect(thumb.attributes('tabindex')).toBeUndefined()
     })
   })
 
   describe('when enabled', () => {
-    it('should have tabindex on ThumbX (active direction)', () => {
-      const thumbX = wrapper.find('[role="slider"][aria-orientation="horizontal"]')
-      expect(thumbX.attributes('tabindex')).toBe('0')
+    it('should have tabindex 0 on thumb', () => {
+      const thumb = wrapper.find('[role="slider"]')
+      expect(thumb.attributes('tabindex')).toBe('0')
     })
   })
 
@@ -300,21 +258,23 @@ describe('given default SliderArea', () => {
     })
   })
 
-  describe('after pointerdown event on slider-area-impl', () => {
-    let sliderImpl: VueWrapper<InstanceType<typeof SliderAreaImpl>>
+  describe('after pointerdown event on root', () => {
+    let root: DOMWrapper<HTMLElement>
     beforeEach(async () => {
-      sliderImpl = wrapper.findComponent('[data-slider-area-impl]') as any
-      await sliderImpl.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
+      root = wrapper.find('[data-disabled]') as DOMWrapper<HTMLElement>
+      if (!root.exists())
+        root = wrapper.find('[aria-disabled]') as DOMWrapper<HTMLElement>
+      await root.trigger('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 })
     })
 
     describe('after pointermove', () => {
       beforeEach(async () => {
-        await sliderImpl.trigger('pointermove', { clientX: 50, clientY: 50, pointerId: 1 })
+        await root.trigger('pointermove', { clientX: 50, clientY: 50, pointerId: 1 })
       })
 
       describe('after pointerup', () => {
         beforeEach(async () => {
-          await sliderImpl.trigger('pointerup', { pointerId: 1 })
+          await root.trigger('pointerup', { pointerId: 1 })
         })
 
         it('should emit valueCommit on wrapper', async () => {

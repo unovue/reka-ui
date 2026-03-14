@@ -2,14 +2,14 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 
-export interface SliderAreaTrackProps extends PrimitiveProps {}
+export interface SliderAreaAreaProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
 
-withDefaults(defineProps<SliderAreaTrackProps>(), { as: 'span' })
+withDefaults(defineProps<SliderAreaAreaProps>(), { as: 'div' })
 
 const rootContext = injectSliderAreaRootContext()
 
