@@ -371,11 +371,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     if (prev === null) {
-    /**
-     * If the user types a 0 as the first number, we want
-     * to keep track of that so that when they type the next
-     * number, we can move to the next segment.
-     */
+      /**
+       * If the user types a 0 as the first number, we want
+       * to keep track of that so that when they type the next
+       * number, we can move to the next segment.
+       */
 
       if (num === 0) {
         props.lastKeyZero.value = true
@@ -389,7 +389,7 @@ export function useDateField(props: UseDateFieldProps) {
        */
 
       if (props.lastKeyZero.value || num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       props.lastKeyZero.value = false
@@ -417,13 +417,13 @@ export function useDateField(props: UseDateFieldProps) {
      */
 
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart || total > max) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
@@ -449,11 +449,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     if (prev === null) {
-    /**
-     * If the user types a 0 as the first number, we want
-     * to keep track of that so that when they type the next
-     * number, we can move to the next segment.
-     */
+      /**
+       * If the user types a 0 as the first number, we want
+       * to keep track of that so that when they type the next
+       * number, we can move to the next segment.
+       */
 
       if (num === 0) {
         props.lastKeyZero.value = true
@@ -467,7 +467,7 @@ export function useDateField(props: UseDateFieldProps) {
        */
 
       if (props.lastKeyZero.value || num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       props.lastKeyZero.value = false
@@ -496,13 +496,13 @@ export function useDateField(props: UseDateFieldProps) {
      */
 
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
@@ -528,11 +528,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     if (prev === null) {
-    /**
-     * If the user types a 0 as the first number, we want
-     * to keep track of that so that when they type the next
-     * number, we can move to the next segment.
-     */
+      /**
+       * If the user types a 0 as the first number, we want
+       * to keep track of that so that when they type the next
+       * number, we can move to the next segment.
+       */
 
       if (num === 0) {
         props.lastKeyZero.value = true
@@ -546,7 +546,7 @@ export function useDateField(props: UseDateFieldProps) {
        */
 
       if (props.lastKeyZero.value || num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       props.lastKeyZero.value = false
@@ -575,13 +575,13 @@ export function useDateField(props: UseDateFieldProps) {
      */
 
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
@@ -745,7 +745,9 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
-      const is12Hour = uses12HourFormat(props.formatter.getLocale())
+      const is12Hour = props.hourCycle !== undefined
+        ? props.hourCycle === 12
+        : uses12HourFormat(props.formatter.getLocale())
       const max = is12Hour ? 12 : 24
 
       let displayPrev = prevValue
@@ -872,11 +874,10 @@ export function useDateField(props: UseDateFieldProps) {
   function handleSegmentKeydown(e: KeyboardEvent) {
     const disabled = props.disabled.value
     const readonly = props.readonly.value
-    if (e.key !== kbd.TAB)
-      e.preventDefault()
-
     if (disabled || readonly)
       return
+    if (e.key !== kbd.TAB)
+      e.preventDefault()
     const segmentKeydownHandlers = {
       day: handleDaySegmentKeydown,
       month: handleMonthSegmentKeydown,
@@ -885,7 +886,7 @@ export function useDateField(props: UseDateFieldProps) {
       minute: handleMinuteSegmentKeydown,
       second: handleSecondSegmentKeydown,
       dayPeriod: handleDayPeriodSegmentKeydown,
-      timeZoneName: () => {},
+      timeZoneName: () => { },
     } as const
 
     segmentKeydownHandlers[props.part as keyof typeof segmentKeydownHandlers](e)

@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -89,6 +89,12 @@
   {
     'name': 'hideWhenDetached',
     'description': '<p>Whether to hide the content when the trigger becomes fully occluded.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'hideWhenEmpty',
+    'description': '<p>When <code>true</code>, hides the content when there are no items matching the filter.</p>\n',
     'type': 'boolean',
     'required': false
   },

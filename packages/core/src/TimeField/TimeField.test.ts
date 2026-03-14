@@ -336,6 +336,31 @@ describe('timeField', async () => {
     expect(hour).toHaveTextContent('13')
   })
 
+  it('allows typing two-digit hours (e.g. 14) in 24h mode regardless of locale', async () => {
+    const { hour, user, value, rerender } = setup({
+      timeFieldProps: {
+        modelValue: new Time(0, 30, 0),
+        hourCycle: 24,
+      },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          return rerender({
+            timeFieldProps: {
+              modelValue: data,
+              hourCycle: 24,
+            },
+          })
+        },
+      },
+    })
+
+    await user.click(hour)
+    await user.keyboard('{1}{4}')
+
+    expect(hour).toHaveTextContent('14')
+    expect(value.textContent).toContain('14:30:00')
+  })
+
   it('overrides the default displayed segments with the `granularity` prop - `hour`', async () => {
     const { queryByTestId, hour } = setup({
       timeFieldProps: {

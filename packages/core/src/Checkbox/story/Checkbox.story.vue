@@ -5,6 +5,8 @@ import { CheckboxIndicator, CheckboxRoot } from '..'
 
 const checkboxOne = ref<boolean | 'indeterminate'>('indeterminate')
 const checkboxThree = ref(false)
+const customStringState = ref<'yes' | 'no'>('no')
+const customNumberState = ref<1 | 0>(0)
 </script>
 
 <template>
@@ -75,6 +77,58 @@ const checkboxThree = ref(false)
           </CheckboxRoot>
           <span class="select-none">Required Checkbox</span>
         </label>
+      </div>
+    </Variant>
+
+    <Variant title="Custom string values">
+      <div class="flex flex-col gap-4">
+        <label
+          class="flex flex-row gap-4 items-center"
+        >
+          <CheckboxRoot
+            v-model="customStringState"
+            true-value="yes"
+            false-value="no"
+            class="shadow-blackA7 hover:bg-violet3 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none focus-within:shadow-[0_0_0_2px_black]"
+          >
+            <CheckboxIndicator
+              class="bg-white h-full w-full rounded flex items-center justify-center"
+            >
+              <Icon
+                icon="radix-icons:check"
+                class="h-4 w-4 text-black"
+              />
+            </CheckboxIndicator>
+          </CheckboxRoot>
+          <span class="select-none">Accept terms</span>
+        </label>
+        <span class="text-sm">v-model value: "{{ customStringState }}"</span>
+      </div>
+    </Variant>
+
+    <Variant title="Custom number values">
+      <div class="flex flex-col gap-4">
+        <label
+          class="flex flex-row gap-4 items-center"
+        >
+          <CheckboxRoot
+            v-model="customNumberState"
+            :true-value="1"
+            :false-value="0"
+            class="shadow-blackA7 hover:bg-violet3 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none focus-within:shadow-[0_0_0_2px_black]"
+          >
+            <CheckboxIndicator
+              class="bg-white h-full w-full rounded flex items-center justify-center"
+            >
+              <Icon
+                icon="radix-icons:check"
+                class="h-4 w-4 text-black"
+              />
+            </CheckboxIndicator>
+          </CheckboxRoot>
+          <span class="select-none">Enable feature</span>
+        </label>
+        <span class="text-sm">v-model value: {{ customNumberState }}</span>
       </div>
     </Variant>
   </Story>

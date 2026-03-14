@@ -5,6 +5,7 @@
 import type { DateValue } from '@internationalized/date'
 
 export type { DateValue }
+import type { TimeValue } from './comparators'
 import type { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, NON_EDITABLE_SEGMENT_PARTS, TIME_SEGMENT_PARTS } from './parts'
 
 // Days of the week, starting with Sunday
@@ -26,6 +27,11 @@ export type DateStep = {
 export type DateRange = {
   start: DateValue | undefined
   end: DateValue | undefined
+}
+
+export type TimeRange = {
+  start: TimeValue | undefined
+  end: TimeValue | undefined
 }
 
 export type HourCycle = 12 | 24 | undefined

@@ -12,14 +12,11 @@ import {
   createContent,
   getDefaultTime,
   getTimeFieldSegmentElements,
-
   initializeTimeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
   normalizeHourCycle,
-
   syncTimeSegmentValues,
-
 } from '@/shared/date'
 
 type TimeFieldRootContext = {

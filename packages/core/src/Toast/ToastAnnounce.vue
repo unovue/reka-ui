@@ -16,7 +16,10 @@ useRafFn(() => {
 </script>
 
 <template>
-  <VisuallyHidden v-if="isAnnounced || renderAnnounceText">
+  <VisuallyHidden
+    v-if="isAnnounced || renderAnnounceText"
+    feature="fully-hidden"
+  >
     {{ providerContext.label.value }}
     <slot />
   </VisuallyHidden>

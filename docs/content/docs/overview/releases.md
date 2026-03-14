@@ -13,6 +13,40 @@ Discover the latest release of Reka UI.
 
 ---
 
+## v2.9
+
+### ✨ New Features
+
+#### Components
+
+- **ColorPicker Suite**: Complete set of color picker components
+  - `ColorArea` - 2D color selection area with thumb
+  - `ColorField` - Text input for entering color values
+  - `ColorSlider` - Slider for adjusting color channels (hue, saturation, etc.)
+  - `ColorSwatch` - Displays a color preview swatch
+  - `ColorSwatchPicker` - Grid of selectable color swatches
+- **TimeRangeField**: New component for selecting time ranges with start/end inputs
+- **Autocomplete**: New component for free-form text inputs with optional suggestions (different from Combobox - uses string `modelValue` instead of selected item)
+- **MonthPicker & YearPicker**: Four new date picker variants
+  - `MonthPicker` - Single month selection
+  - `MonthRangePicker` - Month range selection
+  - `YearPicker` - Single year selection
+  - `YearRangePicker` - Year range selection
+- **DropdownMenuFilter**: New component for filtering menu items within dropdown menus
+
+#### Functionality
+
+- **Splitter**: Added support for pixel sizing and constraints (in addition to percentages)
+- **Checkbox/Switch**: Added support for custom true/false values (not limited to boolean)
+- **Tooltip**: Added global tooltip content configuration support
+- **Combobox/Autocomplete**: Added `data-empty` attribute and `hideWhenEmpty` prop to hide dropdown when nothing matches
+
+#### Internal (Using it at your own risk)
+
+- **Menu**: Now exported via `/internal` path for advanced customization
+
+---
+
 ## 2.0 Changes
 
 ### ✨ New Features

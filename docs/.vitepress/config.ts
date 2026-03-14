@@ -145,6 +145,7 @@ export default defineConfig({
           {
             text: 'Form',
             items: [
+              { text: `Autocomplete ${BadgeHTML('Alpha', true)}`, link: '/docs/components/autocomplete' },
               { text: 'Checkbox', link: '/docs/components/checkbox' },
               { text: 'Combobox', link: '/docs/components/combobox' },
               { text: `Editable`, link: '/docs/components/editable' },
@@ -160,6 +161,19 @@ export default defineConfig({
               { text: 'Tags Input', link: '/docs/components/tags-input' },
               { text: 'Toggle', link: '/docs/components/toggle' },
               { text: 'Toggle Group', link: '/docs/components/toggle-group' },
+            ],
+          },
+          {
+            text: 'Color',
+            items: [
+              { text: `Color Area ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-area' },
+              { text: `Color Field ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-field' },
+              { text: `Color Slider ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-slider' },
+              { text: `Color Swatch ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-swatch' },
+              {
+                text: `Color Swatch Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/color-swatch-picker',
+              },
             ],
           },
           {
@@ -192,6 +206,26 @@ export default defineConfig({
               {
                 text: `Time Field ${BadgeHTML('Alpha', true)}`,
                 link: '/docs/components/time-field',
+              },
+              {
+                text: `Time Range Field ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/time-range-field',
+              },
+              {
+                text: `Month Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-picker',
+              },
+              {
+                text: `Month Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-range-picker',
+              },
+              {
+                text: `Year Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-picker',
+              },
+              {
+                text: `Year Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-range-picker',
               },
             ],
           },
@@ -299,6 +333,12 @@ export default defineConfig({
             ],
           },
           {
+            text: 'Color',
+            items: [
+              { text: 'Color Picker', link: '/examples/color-picker' },
+            ],
+          },
+          {
             text: 'Combobox',
             items: [
               {
@@ -317,6 +357,10 @@ export default defineConfig({
               {
                 text: 'Date Picker Selection',
                 link: '/examples/date-picker-selection',
+              },
+              {
+                text: 'Date Picker View Switching',
+                link: '/examples/date-picker-view-switching',
               },
             ],
           },

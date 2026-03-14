@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -133,5 +133,10 @@
     'name': 'textValue',
     'description': '',
     'type': 'string'
+  },
+  {
+    'name': 'readonly',
+    'description': '',
+    'type': 'boolean'
   }
 ]" />

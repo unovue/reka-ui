@@ -48,6 +48,10 @@ type CalendarRootContext = {
   disableDaysOutsideCurrentView: Ref<boolean>
   minValue: Ref<DateValue | undefined>
   maxValue: Ref<DateValue | undefined>
+  isPlaceholderFocusable: Ref<boolean>
+  firstFocusableDate: Ref<DateValue | undefined>
+  hasSelectedDate: Ref<boolean>
+  isSelectedDateDisabled: Ref<boolean>
 }
 
 export interface CalendarRootProps extends PrimitiveProps {
@@ -93,7 +97,7 @@ export interface CalendarRootProps extends PrimitiveProps {
   nextPage?: (placeholder: DateValue) => DateValue
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: DateValue) => DateValue
-  /** The controlled checked state of the calendar */
+  /** The controlled selected date value of the calendar. Can be bound as `v-model`. */
   modelValue?: DateValue | DateValue[] | undefined
   /** Whether multiple dates can be selected */
   multiple?: boolean
@@ -216,6 +220,8 @@ const {
   prevPage,
   formatter,
   grid,
+  isPlaceholderFocusable,
+  firstFocusableDate,
 } = useCalendar({
   locale,
   placeholder,
@@ -237,6 +243,8 @@ const {
 const {
   isInvalid,
   isDateSelected,
+  hasSelectedDate,
+  isSelectedDateDisabled,
 } = useCalendarState({
   date: modelValue,
   isDateDisabled,
@@ -327,6 +335,10 @@ provideCalendarRootContext({
   disableDaysOutsideCurrentView,
   minValue,
   maxValue,
+  isPlaceholderFocusable,
+  firstFocusableDate,
+  hasSelectedDate,
+  isSelectedDateDisabled,
 })
 </script>
 

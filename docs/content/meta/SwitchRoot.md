@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -17,7 +17,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The state of the switch when it is initially rendered. Use when you do not need to control its state.</p>\n',
-    'type': 'boolean',
+    'type': 'unknown',
     'required': false
   },
   {
@@ -25,6 +25,13 @@
     'description': '<p>When <code>true</code>, prevents the user from interacting with the switch.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'falseValue',
+    'description': '<p>The value used when the switch is off. Defaults to <code>false</code>.</p>\n',
+    'type': 'unknown',
+    'required': false,
+    'default': '(() => false) as unknown as undefined'
   },
   {
     'name': 'id',
@@ -35,7 +42,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled state of the switch. Can be bind as <code>v-model</code>.</p>\n',
-    'type': 'boolean | null',
+    'type': 'unknown',
     'required': false
   },
   {
@@ -51,6 +58,13 @@
     'required': false
   },
   {
+    'name': 'trueValue',
+    'description': '<p>The value used when the switch is on. Defaults to <code>true</code>.</p>\n',
+    'type': 'unknown',
+    'required': false,
+    'default': '(() => true) as unknown as undefined'
+  },
+  {
     'name': 'value',
     'description': '<p>The value given as data when submitted with a <code>name</code>.</p>\n',
     'type': 'string',
@@ -63,7 +77,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the switch changes.</p>\n',
-    'type': '[payload: boolean]'
+    'type': '[payload: unknown]'
   }
 ]" />
 
@@ -71,6 +85,11 @@
   {
     'name': 'modelValue',
     'description': '<p>Current value</p>\n',
+    'type': 'unknown'
+  },
+  {
+    'name': 'checked',
+    'description': '<p>Whether the switch is checked</p>\n',
     'type': 'boolean'
   }
 ]" />

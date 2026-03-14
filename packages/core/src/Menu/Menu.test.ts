@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import Menu from './story/_Menu.vue'
+import MenuWithSubmenu from './story/_MenuWithSubmenu.vue'
 
 describe('given a default Menu', () => {
   globalThis.ResizeObserver = class ResizeObserver {
@@ -58,5 +59,36 @@ describe('given a default Menu', () => {
         expect(wrapper.emitted('select')?.length).toBe(1)
       })
     })
+  })
+})
+
+describe('given a Menu with submenu', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    mount(MenuWithSubmenu, {
+      attachTo: document.body,
+    })
+  })
+
+  it('should highlight sub trigger on pointermove', async () => {
+    const allItems = await findAllByRole(document.body, 'menuitem')
+    const subTrigger = allItems.find(el => el.getAttribute('aria-haspopup') === 'menu')!
+    expect(subTrigger).toBeTruthy()
+
+    // Simulate pointermove (mouse) on the sub trigger
+    // jsdom doesn't support PointerEvent, so we use MouseEvent with pointerType
+    const pointerMoveEvent = new MouseEvent('pointermove', {
+      bubbles: true,
+    })
+    Object.defineProperty(pointerMoveEvent, 'pointerType', { value: 'mouse' })
+    subTrigger.dispatchEvent(pointerMoveEvent)
+    await nextTick()
+
+    expect(subTrigger.hasAttribute('data-highlighted')).toBe(true)
   })
 })

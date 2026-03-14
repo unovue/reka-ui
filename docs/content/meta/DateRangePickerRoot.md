@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -136,7 +136,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
@@ -209,8 +209,7 @@
     'name': 'weekStartsOn',
     'description': '<p>The day of the week to start the calendar on</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6',
-    'required': false,
-    'default': '0'
+    'required': false
   }
 ]" />
 
