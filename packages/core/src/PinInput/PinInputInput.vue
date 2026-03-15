@@ -127,7 +127,10 @@ function handlePaste(event: ClipboardEvent) {
   if (!clipboardData)
     return
 
-  const values = clipboardData.getData('text')
+  const rawValues = clipboardData.getData('text')
+  const values = context.isNumericMode.value
+    ? rawValues.replace(/\D/g, '')
+    : rawValues
   handleMultipleCharacter(values)
 }
 
