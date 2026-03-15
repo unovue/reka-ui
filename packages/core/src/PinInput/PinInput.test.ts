@@ -265,6 +265,41 @@ describe('give PinInput type=number', async () => {
     })
   })
 
+  describe('after user paste mixed alphanumeric text', () => {
+    beforeEach(async () => {
+      await userEvent.paste('a1b2c3')
+    })
+
+    it('should only populate numeric characters', () => {
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['1', '2', '3', '', ''])
+    })
+  })
+
+  describe('after user paste mixed text with enough numeric characters', () => {
+    beforeEach(async () => {
+      await userEvent.paste('a1b2c3d4e5')
+    })
+
+    it('should populate all boxes with numeric characters only', () => {
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['1', '2', '3', '4', '5'])
+    })
+
+    it('should emit \'complete\' with the result', () => {
+      expect(wrapper.emitted('complete')?.[0]?.[0]).toStrictEqual(['1', '2', '3', '4', '5'])
+    })
+  })
+
+  describe('after user paste mixed text at 2nd input', () => {
+    beforeEach(async () => {
+      inputs[1].element.focus()
+      await userEvent.paste('a1b2c3')
+    })
+
+    it('should populate numeric characters in correct boxes', () => {
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['', '1', '2', '3', ''])
+    })
+  })
+
   describe('after user input numeric word', () => {
     beforeEach(async () => {
       await userEvent.keyboard('12345')
