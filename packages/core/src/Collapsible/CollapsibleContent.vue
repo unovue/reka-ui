@@ -32,7 +32,7 @@ const props = defineProps<CollapsibleContentProps>()
 const emits = defineEmits<CollapsibleContentEmits>()
 
 const rootContext = injectCollapsibleRootContext()
-rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
+rootContext.contentId.value ||= useId(undefined, 'reka-collapsible-content')
 
 const presentRef = ref<InstanceType<typeof Presence>>()
 const { forwardRef, currentElement } = useForwardExpose()
@@ -102,7 +102,7 @@ useEventListener(currentElement, 'beforematch', (ev) => {
   >
     <Primitive
       v-bind="$attrs"
-      :id="rootContext.contentId"
+      :id="rootContext.contentId.value"
       :ref="forwardRef"
       :as-child="props.asChild"
       :as="as"

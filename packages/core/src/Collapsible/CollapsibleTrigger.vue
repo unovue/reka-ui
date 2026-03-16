@@ -22,7 +22,7 @@ const rootContext = injectCollapsibleRootContext()
     :type="as === 'button' ? 'button' : undefined"
     :as="as"
     :as-child="props.asChild"
-    :aria-controls="rootContext.contentId"
+    :aria-controls="rootContext.contentId.value"
     :aria-expanded="rootContext.open.value"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     :data-disabled="rootContext.disabled?.value ? '' : undefined"
