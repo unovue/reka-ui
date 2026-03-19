@@ -19,6 +19,7 @@ export {
 export {
   injectSelectItemContext,
   default as SelectItem,
+  type SelectItemEmits,
   type SelectItemProps,
   type SelectEvent as SelectItemSelectEvent,
 } from './SelectItem.vue'
