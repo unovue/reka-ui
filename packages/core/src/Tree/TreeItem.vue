@@ -4,6 +4,8 @@ export interface TreeItemProps<T> extends PrimitiveProps {
   value: T
   /** Level of depth */
   level: number
+  /** When `true`, prevents the user from interacting with the item. */
+  disabled?: boolean
 }
 
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T, isExpanded: boolean, isSelected: boolean }>
@@ -45,6 +47,7 @@ defineSlots<{
     isExpanded: boolean
     isSelected: boolean
     isIndeterminate: boolean | undefined
+    isDisabled: boolean
     handleToggle: () => void
     handleSelect: () => void
   }) => any
@@ -81,7 +84,11 @@ const isIndeterminate = computed(() => {
   }
 })
 
+const isDisabled = computed(() => rootContext.disabled.value || props.disabled)
+
 function handleKeydownRight(ev: KeyboardEvent) {
+  if (isDisabled.value)
+    return
   if (!hasChildren.value)
     return
 
@@ -103,6 +110,8 @@ function handleKeydownRight(ev: KeyboardEvent) {
 }
 
 function handleKeydownLeft(ev: KeyboardEvent) {
+  if (isDisabled.value)
+    return
   if (isExpanded.value) {
     //  close expanded
     handleToggleCustomEvent(ev)
@@ -121,6 +130,8 @@ function handleKeydownLeft(ev: KeyboardEvent) {
 }
 
 async function handleSelect(ev: SelectEvent<T>) {
+  if (isDisabled.value)
+    return
   emits('select', ev)
   if (ev?.defaultPrevented)
     return
@@ -128,6 +139,8 @@ async function handleSelect(ev: SelectEvent<T>) {
   rootContext.onSelect(props.value)
 }
 async function handleToggle(ev: ToggleEvent<T>) {
+  if (isDisabled.value)
+    return
   emits('toggle', ev)
   if (ev?.defaultPrevented)
     return
@@ -155,6 +168,7 @@ defineExpose({
   isExpanded,
   isSelected,
   isIndeterminate,
+  isDisabled,
   handleToggle: () => rootContext.onToggle(props.value),
   handleSelect: () => rootContext.onSelect(props.value),
 })
@@ -165,6 +179,7 @@ defineExpose({
     as-child
     :value="value"
     allow-shift-key
+    :focusable="!isDisabled"
   >
     <Primitive
       v-bind="$attrs"
@@ -174,9 +189,11 @@ defineExpose({
       :aria-selected="isSelected"
       :aria-expanded="hasChildren ? isExpanded : undefined"
       :aria-level="level"
+      :aria-disabled="isDisabled ? true : undefined"
       :data-indent="level"
       :data-selected="isSelected ? '' : undefined"
       :data-expanded="isExpanded ? '' : undefined"
+      :data-disabled="isDisabled ? '' : undefined"
       @keydown.enter.space.self.prevent="handleSelectCustomEvent"
       @keydown.right.prevent="(ev: KeyboardEvent) => rootContext.dir.value === 'ltr' ? handleKeydownRight(ev) : handleKeydownLeft(ev)"
       @keydown.left.prevent="(ev: KeyboardEvent) => rootContext.dir.value === 'ltr' ? handleKeydownLeft(ev) : handleKeydownRight(ev)"
@@ -189,6 +206,7 @@ defineExpose({
         :is-expanded="isExpanded"
         :is-selected="isSelected"
         :is-indeterminate="isIndeterminate"
+        :is-disabled="isDisabled"
         :handle-select="() => rootContext.onSelect(value)"
         :handle-toggle="() => rootContext.onToggle(value)"
       />

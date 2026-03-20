@@ -2,8 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { useKbd } from '@/shared'
+import { TreeItem, TreeRoot } from '.'
 import Tree from './story/_Tree.vue'
 
 const kbd = useKbd()
@@ -331,5 +332,77 @@ describe('given a Tree with bubbleSelect and propagateSelect', () => {
     expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'true'])
     await items[3].trigger('click')
     expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'false'])
+  })
+})
+
+describe('given a Tree with disabled items', () => {
+  const treeItems = [
+    { title: 'apple' },
+    { title: 'banana' },
+    { title: 'cherry' },
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+  ]
+
+  function mountTree(disabledKeys: string[] = ['banana'], rootDisabled = false) {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          selectionBehavior: 'toggle',
+          disabled: rootDisabled,
+          expanded: ['fruits'],
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, {
+              key: item._id,
+              ...item.bind,
+              disabled: disabledKeys.includes(item._id),
+            }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body })
+    return { wrapper, items: () => wrapper.findAll('[role=treeitem]') }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should set aria-disabled and data-disabled attributes', () => {
+    const { items } = mountTree()
+    expect(items()[1].attributes('aria-disabled')).toBe('true')
+    expect(items()[1].attributes('data-disabled')).toBe('')
+    expect(items()[0].attributes('aria-disabled')).toBeUndefined()
+    expect(items()[0].attributes('data-disabled')).toBeUndefined()
+  })
+
+  it('should not select a disabled item on click or keydown', async () => {
+    const { items } = mountTree()
+    await items()[1].trigger('click')
+    expect(items()[1].attributes('aria-selected')).toBe('false')
+    await items()[1].trigger('keydown', { key: kbd.ENTER })
+    expect(items()[1].attributes('aria-selected')).toBe('false')
+  })
+
+  it('should not toggle a disabled item', async () => {
+    const { items } = mountTree(['fruits'])
+    expect(items().length).toBe(6)
+
+    await items()[3].trigger('click')
+    expect(items().length).toBe(6)
+
+    await items()[3].trigger('keydown', { key: kbd.ARROW_LEFT })
+    expect(items().length).toBe(6)
+  })
+
+  it('should disable all items when root is disabled', async () => {
+    const { items } = mountTree([], true)
+    for (const item of items()) {
+      expect(item.attributes('aria-disabled')).toBe('true')
+    }
+    await items()[0].trigger('click')
+    expect(items()[0].attributes('aria-selected')).toBe('false')
   })
 })
