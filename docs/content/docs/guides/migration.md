@@ -111,7 +111,9 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
   ```vue
   <script setup lang="ts">
-  function pagingFunc(date: DateValue, sign: -1 | 1) { // [!code ++]
+  import type { TemporalDate } from 'reka-ui' // [!code ++]
+
+  function pagingFunc(date: TemporalDate, sign: -1 | 1) { // [!code ++]
     if (sign === -1) // [!code ++]
       return date.subtract({ years: 1 }) // [!code ++]
     return date.add({ years: 1 }) // [!code ++]
@@ -120,10 +122,10 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
   <template>
     <CalendarPrev step="year" /> <!-- [!code --] -->
-    <CalendarPrev :prev-page="(date: DateValue) => pagingFunc(date, -1)" /> <!-- [!code ++] -->
+    <CalendarPrev :prev-page="(date: TemporalDate) => pagingFunc(date, -1)" /> <!-- [!code ++] -->
 
     <CalendarNext step="year" /> <!-- [!code --] -->
-    <CalendarNext :next-page="(date: DateValue) => pagingFunc(date, 1)" /> <!-- [!code ++] -->
+    <CalendarNext :next-page="(date: TemporalDate) => pagingFunc(date, 1)" /> <!-- [!code ++] -->
   </template>
   ```
 

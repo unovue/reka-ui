@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { MonthPickerCell, MonthPickerCellTrigger, MonthPickerGrid, MonthPickerGridBody, MonthPickerGridRow, MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 import './styles.css'
 
-const date = new CalendarDate(2024, 10, 1)
+const date = Temporal.PlainDate.from({ year: 2024, month: 10, day: 1 })
 </script>
 
 <template>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-import type { CalendarRootProps } from 'reka-ui'
+import type { CalendarRootProps, TemporalDate } from 'reka-ui'
 import { Icon } from '@iconify/vue'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
 import './styles.css'
@@ -9,7 +8,7 @@ const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
   return date.day === 17 || date.day === 18
 }
 
-function pagingFunc(date: DateValue, sign: -1 | 1) {
+function pagingFunc(date: TemporalDate, sign: -1 | 1) {
   if (sign === -1)
     return date.subtract({ years: 1 })
   return date.add({ years: 1 })
@@ -26,7 +25,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
     <CalendarHeader class="CalendarHeader">
       <CalendarPrev
         class="CalendarNavButton"
-        :prev-page="(date: DateValue) => pagingFunc(date, -1)"
+        :prev-page="(date: TemporalDate) => pagingFunc(date, -1)"
       >
         <Icon
           icon="radix-icons:double-arrow-left"
@@ -53,7 +52,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
 
       <CalendarNext
         class="CalendarNavButton"
-        :next-page="(date: DateValue) => pagingFunc(date, 1)"
+        :next-page="(date: TemporalDate) => pagingFunc(date, 1)"
       >
         <Icon
           icon="radix-icons:double-arrow-right"

@@ -30,15 +30,15 @@ Presents a calendar view tailored for selecting years.
 
 ## Preface
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
+The component depends on Temporal date/time values. If your environment does not support Temporal natively yet, install [`temporal-polyfill`](https://www.npmjs.com/package/temporal-polyfill).
 
-We highly recommend reading through the documentation for the package to get a solid feel for how it works, and you'll need to install it in your project to use the date-related components.
+We recommend reading the Temporal proposal docs to understand the model and immutability semantics used by Reka UI date-related components.
 
 ## Installation
 
 Install the date package.
 
-<InstallationTabs value="@internationalized/date" />
+<InstallationTabs value="temporal-polyfill" />
 
 Install the component from your command line.
 
