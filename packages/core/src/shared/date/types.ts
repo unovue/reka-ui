@@ -2,7 +2,7 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/types.ts
 */
 
-import type { TemporalDate, TemporalTime } from '@/temporal/types'
+import type { TemporalDate, TemporalDateTime, TemporalTime } from '@/temporal/types'
 
 export type { TemporalDate, TemporalTime }
 import type { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, NON_EDITABLE_SEGMENT_PARTS, TIME_SEGMENT_PARTS } from './parts'
@@ -29,8 +29,8 @@ export type DateRange = {
 }
 
 export type TimeRange = {
-  start: TemporalTime | undefined
-  end: TemporalTime | undefined
+  start: TemporalDateTime | undefined
+  end: TemporalDateTime | undefined
 }
 
 export type HourCycle = 12 | 24 | undefined

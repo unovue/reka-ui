@@ -2,7 +2,6 @@ import type { Ref } from 'vue'
 import type { Grid, Matcher } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
 import type { TemporalDate } from '@/temporal/types'
-import { Temporal } from 'temporal-polyfill'
 import { computed, ref, watch } from 'vue'
 import { createMonthGrid, endOfMonth, isAfter, isBefore, isSameYearMonth, toDate } from '@/date'
 import { useDateFormatter } from '@/shared'
@@ -85,9 +84,7 @@ export function useMonthPicker(props: UseMonthPickerProps) {
   function isMonthDisabled(dateObj: TemporalDate) {
     if (resolveMatcher(props.isMonthDisabled)?.(dateObj) || props.disabled.value)
       return true
-    const monthStart = 'with' in dateObj
-      ? dateObj.with({ day: 1 })
-      : Temporal.PlainDate.from({ year: dateObj.year, month: dateObj.month, day: 1 })
+    const monthStart = dateObj.with({ day: 1 })
 
     if (props.maxValue.value && isAfter(monthStart, props.maxValue.value))
       return true

@@ -1,9 +1,8 @@
 /*
- * Date comparison utilities using Temporal API
- * Replaces @internationalized/date comparators
+ * Date comparison utilities using the Temporal API.
  */
 
-import type { Matcher, TemporalDate, TemporalTime } from './types'
+import type { Matcher, TemporalDate, TemporalDateTime, TemporalTime } from './types'
 import type { DayOfWeek, Granularity } from '@/shared/date'
 import { Temporal } from 'temporal-polyfill'
 
@@ -16,8 +15,17 @@ export function isPlainDateTime(date: TemporalDate): date is Temporal.PlainDateT
   return date instanceof Temporal.PlainDateTime
 }
 
-export function isZonedDateTime(date: TemporalDate): date is Temporal.ZonedDateTime {
+export function isZonedDateTime(date: TemporalDate | TemporalDateTime): date is Temporal.ZonedDateTime {
   return date instanceof Temporal.ZonedDateTime
+}
+
+type LocaleWeekInfo = {
+  firstDay?: number
+  minimalDays?: number
+}
+
+export function getLocaleWeekInfo(locale: string): LocaleWeekInfo | undefined {
+  return (new Intl.Locale(locale) as Intl.Locale & { weekInfo?: LocaleWeekInfo }).weekInfo
 }
 
 export function hasTime(date: TemporalDate): boolean {
@@ -158,7 +166,7 @@ export function getDayOfWeek(date: TemporalDate, locale = 'en-US', firstDayOfWee
     weekStart = map[explicit] ?? 0
   }
   else {
-    const localeWeekStart = new Intl.Locale(locale).weekInfo?.firstDay
+    const localeWeekStart = getLocaleWeekInfo(locale)?.firstDay
     if (localeWeekStart)
       weekStart = localeWeekStart % 7
   }

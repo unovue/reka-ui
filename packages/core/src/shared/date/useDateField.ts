@@ -2,7 +2,6 @@ import type { Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
 import type { TemporalDate } from '@/temporal/types'
-import { DateFormatter } from '@internationalized/date'
 import { Temporal } from 'temporal-polyfill'
 import { computed } from 'vue'
 import { getDaysInMonth, isPlainDateTime, isZonedDateTime } from '@/temporal/comparators'
@@ -780,7 +779,7 @@ export function useDateField(props: UseDateFieldProps) {
   }
 
   function uses12HourFormat(locale: string): boolean {
-    const hourCycle = new DateFormatter(locale, { hour: 'numeric' }).resolvedOptions().hourCycle
+    const hourCycle = new Intl.DateTimeFormat(locale, { hour: 'numeric' }).resolvedOptions().hourCycle
     return hourCycle === 'h11' || hourCycle === 'h12'
   }
 

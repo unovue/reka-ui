@@ -7,7 +7,7 @@ import type { DateRange } from '@/shared'
 import type { DayOfWeek } from '@/shared/date'
 import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
-import { endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek, startOfMonth, startOfYear, toPlainDate } from '@/temporal/comparators'
+import { endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, getLastFirstDayOfWeek, getLocaleWeekInfo, getNextLastDayOfWeek, startOfMonth, startOfYear, toPlainDate } from '@/temporal/comparators'
 import { chunk } from './utils'
 
 export type WeekDayFormat = 'narrow' | 'short' | 'long'
@@ -110,7 +110,7 @@ export function createMonth(props: CreateMonthProps): Grid<TemporalDate> {
     nextMonthDays.push(...extraDaysArray)
   }
 
-  const allDays = lastMonthDays.concat(datesArray, nextMonthDays)
+  const allDays = [...lastMonthDays, ...datesArray, ...nextMonthDays]
 
   const weeks = chunk(allDays, 7)
 
@@ -282,12 +282,11 @@ export function createDateRange({ start, end }: DateRange): TemporalDate[] {
 }
 
 /**
- * It's better to use `getWeekStart` from `@internationalized/date`,
- * but sadly it is not yet exported from the package.
- * And the `Intl.Locale` API is not supported well enough yet.
+ * Prefer a locale-native week-start API when widely available.
+ * Until then, we derive it from `Intl.Locale#weekInfo`.
  */
 export function getWeekStartsOn(locale: string): WeekStartsOn {
-  const firstDay = new Intl.Locale(locale).weekInfo?.firstDay
+  const firstDay = getLocaleWeekInfo(locale)?.firstDay
   return ((firstDay ?? 7) % 7) as WeekStartsOn
 }
 
@@ -299,7 +298,7 @@ export function getWeekNumber(date: TemporalDate, locale: string = 'en-US', firs
 
   const explicitFirstDay = firstDayOfWeek as unknown as string | undefined
   const firstDayMap: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
-  const localeWeekInfo = new Intl.Locale(locale).weekInfo
+  const localeWeekInfo = getLocaleWeekInfo(locale)
   const minimalDays = localeWeekInfo?.minimalDays ?? 1
 
   const getWeek1Start = (year: number) => {

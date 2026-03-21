@@ -1,7 +1,7 @@
 import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { toCalendar } from '@/temporal/calendar'
-import { endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, isPlainDateTime, isZonedDateTime, startOfMonth, startOfYear, toPlainDate } from '@/temporal/comparators'
+import { areAllDaysBetweenValid, endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, isPlainDateTime, isZonedDateTime, startOfMonth, startOfYear, toPlainDate } from '@/temporal/comparators'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the
@@ -120,4 +120,4 @@ export function areAllYearsBetweenValid(
   return true
 }
 
-export { endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, startOfMonth, startOfYear, toPlainDate }
+export { areAllDaysBetweenValid, endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, startOfMonth, startOfYear, toPlainDate }

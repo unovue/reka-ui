@@ -197,7 +197,7 @@ function toDate(dateValue: TemporalDateTime): Date {
   return new Date(zoned.toInstant().epochMilliseconds)
 }
 
-function getTimeFieldValue(dateValue: TemporalDate, part: TimeSegmentPart): number | null {
+function getTimeFieldValue(dateValue: TemporalDateTime, part: TimeSegmentPart): number | null {
   if (part === 'hour' && 'hour' in dateValue)
     return dateValue.hour
   if (part === 'minute' && 'minute' in dateValue)

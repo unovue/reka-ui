@@ -332,7 +332,7 @@ watch(modelValue, (_modelValue, _prevValue) => {
   }
 
   if (
-    (!_prevValue?.end && _modelValue.end)
+    (!_prevValue?.end && _modelValue?.end)
     || !_modelValue
     || !_modelValue.end
     || (endValue.value && !isSameDay(_modelValue.end, endValue.value))
