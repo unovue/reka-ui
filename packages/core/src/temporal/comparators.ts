@@ -25,7 +25,23 @@ export function hasTime(date: TemporalDate): boolean {
 }
 
 export function toPlainDate(date: TemporalDate): Temporal.PlainDate {
-  return isPlainDate(date) ? date : date.toPlainDate()
+  const value = date as any
+
+  if (isPlainDate(value))
+    return value
+
+  if (value && typeof value.toPlainDate === 'function')
+    return value.toPlainDate()
+
+  if (value && typeof value.year === 'number' && typeof value.month === 'number') {
+    return Temporal.PlainDate.from({
+      year: value.year,
+      month: value.month,
+      day: typeof value.day === 'number' ? value.day : 1,
+    })
+  }
+
+  return Temporal.PlainDate.from(String(value))
 }
 
 // Comparison functions
@@ -122,9 +138,32 @@ export function getDaysInMonth(date: TemporalDate): number {
   return plainDate.daysInMonth
 }
 
-export function getDayOfWeek(date: TemporalDate, _locale?: string, _firstDayOfWeek?: DayOfWeek): number {
+export function getDayOfWeek(date: TemporalDate, locale = 'en-US', firstDayOfWeek?: DayOfWeek): number {
   const plainDate = toPlainDate(date)
-  return plainDate.dayOfWeek % 7
+  const isoDay = plainDate.dayOfWeek % 7
+
+  let weekStart = 0
+  const explicit = firstDayOfWeek as unknown as string | undefined
+
+  if (explicit) {
+    const map: Record<string, number> = {
+      sun: 0,
+      mon: 1,
+      tue: 2,
+      wed: 3,
+      thu: 4,
+      fri: 5,
+      sat: 6,
+    }
+    weekStart = map[explicit] ?? 0
+  }
+  else {
+    const localeWeekStart = new Intl.Locale(locale).weekInfo?.firstDay
+    if (localeWeekStart)
+      weekStart = localeWeekStart % 7
+  }
+
+  return (isoDay - weekStart + 7) % 7
 }
 
 export function getLastFirstDayOfWeek<T extends TemporalDate = TemporalDate>(

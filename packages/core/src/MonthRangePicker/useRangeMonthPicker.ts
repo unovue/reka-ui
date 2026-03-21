@@ -1,15 +1,15 @@
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Matcher } from '@/date'
+import type { TemporalDate } from '@/temporal/types'
 import { computed } from 'vue'
 import { areAllMonthsBetweenValid, compareYearMonth, getMonthsBetween, isSameYearMonth } from '@/date'
 
 export type UseRangeMonthPickerProps = {
-  start: Ref<DateValue | undefined>
-  end: Ref<DateValue | undefined>
+  start: Ref<TemporalDate | undefined>
+  end: Ref<TemporalDate | undefined>
   isMonthDisabled: Matcher
   isMonthUnavailable: Matcher
-  focusedValue: Ref<DateValue | undefined>
+  focusedValue: Ref<TemporalDate | undefined>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumMonths?: Ref<number | undefined>
@@ -40,19 +40,19 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
     return false
   })
 
-  const isSelectionStart = (date: DateValue) => {
+  const isSelectionStart = (date: TemporalDate) => {
     if (!props.start.value)
       return false
     return isSameYearMonth(props.start.value, date)
   }
 
-  const isSelectionEnd = (date: DateValue) => {
+  const isSelectionEnd = (date: TemporalDate) => {
     if (!props.end.value)
       return false
     return isSameYearMonth(props.end.value, date)
   }
 
-  const isSelected = (date: DateValue) => {
+  const isSelected = (date: TemporalDate) => {
     if (props.start.value && isSameYearMonth(props.start.value, date))
       return true
     if (props.end.value && isSameYearMonth(props.end.value, date))
@@ -63,7 +63,7 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
     return false
   }
 
-  const rangeIsMonthDisabled = (date: DateValue) => {
+  const rangeIsMonthDisabled = (date: TemporalDate) => {
     if (props.isMonthDisabled(date))
       return true
 
@@ -140,13 +140,13 @@ export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {
     return null
   })
 
-  const isHighlightedStart = (date: DateValue) => {
+  const isHighlightedStart = (date: TemporalDate) => {
     if (!highlightedRange.value?.start)
       return false
     return isSameYearMonth(highlightedRange.value.start, date)
   }
 
-  const isHighlightedEnd = (date: DateValue) => {
+  const isHighlightedEnd = (date: TemporalDate) => {
     if (!highlightedRange.value?.end)
       return false
     return isSameYearMonth(highlightedRange.value.end, date)

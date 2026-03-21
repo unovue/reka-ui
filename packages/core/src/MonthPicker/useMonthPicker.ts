@@ -1,33 +1,33 @@
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Grid, Matcher } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { endOfMonth } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, ref, watch } from 'vue'
-import { createMonthGrid, isAfter, isBefore, isSameYearMonth, toDate } from '@/date'
+import { createMonthGrid, endOfMonth, isAfter, isBefore, isSameYearMonth, toDate } from '@/date'
 import { useDateFormatter } from '@/shared'
 
 export type UseMonthPickerProps = {
   locale: Ref<string>
-  placeholder: Ref<DateValue>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
+  placeholder: Ref<TemporalDate>
+  minValue: Ref<TemporalDate | undefined>
+  maxValue: Ref<TemporalDate | undefined>
   disabled: Ref<boolean>
   isMonthDisabled?: Matcher | Ref<Matcher | undefined>
   isMonthUnavailable?: Matcher | Ref<Matcher | undefined>
   calendarLabel: Ref<string | undefined>
-  nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
-  prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
+  nextPage: Ref<((placeholder: TemporalDate) => TemporalDate) | undefined>
+  prevPage: Ref<((placeholder: TemporalDate) => TemporalDate) | undefined>
 }
 
 export type UseMonthPickerStateProps = {
   isMonthDisabled: Matcher
   isMonthUnavailable: Matcher
-  date: Ref<DateValue | DateValue[] | undefined>
+  date: Ref<TemporalDate | TemporalDate[] | undefined>
 }
 
 export function useMonthPickerState(props: UseMonthPickerStateProps) {
-  function isMonthSelected(dateObj: DateValue) {
+  function isMonthSelected(dateObj: TemporalDate) {
     if (Array.isArray(props.date.value))
       return props.date.value.some(d => isSameYearMonth(d, dateObj))
     else if (!props.date.value)
@@ -68,35 +68,41 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     typeof matcher === 'function' ? matcher : matcher?.value
 
   const headingFormatOptions = computed(() => {
+    const calendarId = props.placeholder.value.calendarId
+
     const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendar.identifier,
+      calendar: calendarId,
     }
 
-    if (props.placeholder.value.calendar.identifier === 'gregory' && props.placeholder.value.era === 'BC')
+    if (calendarId === 'gregory' && props.placeholder.value.era?.toUpperCase() === 'BC')
       options.era = 'short'
 
     return options
   })
 
-  const grid = ref<Grid<DateValue>>(createMonthGrid({ dateObj: props.placeholder.value })) as Ref<Grid<DateValue>>
+  const grid = ref<Grid<TemporalDate>>(createMonthGrid({ dateObj: props.placeholder.value })) as Ref<Grid<TemporalDate>>
 
-  function isMonthDisabled(dateObj: DateValue) {
+  function isMonthDisabled(dateObj: TemporalDate) {
     if (resolveMatcher(props.isMonthDisabled)?.(dateObj) || props.disabled.value)
       return true
-    if (props.maxValue.value && isAfter(dateObj.set({ day: 1 }), props.maxValue.value))
+    const monthStart = 'with' in dateObj
+      ? dateObj.with({ day: 1 })
+      : Temporal.PlainDate.from({ year: dateObj.year, month: dateObj.month, day: 1 })
+
+    if (props.maxValue.value && isAfter(monthStart, props.maxValue.value))
       return true
     if (props.minValue.value && isBefore(endOfMonth(dateObj), props.minValue.value))
       return true
     return false
   }
 
-  const isMonthUnavailable = (date: DateValue) => {
+  const isMonthUnavailable = (date: TemporalDate) => {
     if (resolveMatcher(props.isMonthUnavailable)?.(date))
       return true
     return false
   }
 
-  const isNextButtonDisabled = (nextPageFunc?: (date: DateValue) => DateValue) => {
+  const isNextButtonDisabled = (nextPageFunc?: (date: TemporalDate) => TemporalDate) => {
     if (!props.maxValue.value)
       return false
     if (props.disabled.value)
@@ -105,14 +111,14 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     const currentDate = grid.value.value
     if (nextPageFunc || props.nextPage.value) {
       const nextDate = (nextPageFunc || props.nextPage.value)!(currentDate)
-      return isAfter(nextDate.set({ month: 1, day: 1 }), props.maxValue.value)
+      return isAfter(nextDate.with({ month: 1, day: 1 }), props.maxValue.value)
     }
 
-    const nextYear = currentDate.add({ years: 1 }).set({ month: 1, day: 1 })
+    const nextYear = currentDate.add({ years: 1 }).with({ month: 1, day: 1 })
     return isAfter(nextYear, props.maxValue.value)
   }
 
-  const isPrevButtonDisabled = (prevPageFunc?: (date: DateValue) => DateValue) => {
+  const isPrevButtonDisabled = (prevPageFunc?: (date: TemporalDate) => TemporalDate) => {
     if (!props.minValue.value)
       return false
     if (props.disabled.value)
@@ -121,41 +127,41 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     const currentDate = grid.value.value
     if (prevPageFunc || props.prevPage.value) {
       const prevDate = (prevPageFunc || props.prevPage.value)!(currentDate)
-      return isBefore(endOfMonth(prevDate.set({ month: 12 })), props.minValue.value)
+      return isBefore(endOfMonth(prevDate.with({ month: 12 })), props.minValue.value)
     }
 
-    const prevYear = currentDate.subtract({ years: 1 }).set({ month: 12, day: 31 })
+    const prevYear = currentDate.subtract({ years: 1 }).with({ month: 12, day: 31 })
     return isBefore(prevYear, props.minValue.value)
   }
 
-  const nextPage = (nextPageFunc?: (date: DateValue) => DateValue) => {
+  const nextPage = (nextPageFunc?: (date: TemporalDate) => TemporalDate) => {
     const currentDate = grid.value.value
 
     if (nextPageFunc || props.nextPage.value) {
       const newDate = (nextPageFunc || props.nextPage.value)!(currentDate)
       grid.value = createMonthGrid({ dateObj: newDate })
-      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+      props.placeholder.value = newDate.with({ day: 1 })
       return
     }
 
     const newDate = currentDate.add({ years: 1 })
     grid.value = createMonthGrid({ dateObj: newDate })
-    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+    props.placeholder.value = newDate.with({ day: 1 })
   }
 
-  const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
+  const prevPage = (prevPageFunc?: (date: TemporalDate) => TemporalDate) => {
     const currentDate = grid.value.value
 
     if (prevPageFunc || props.prevPage.value) {
       const newDate = (prevPageFunc || props.prevPage.value)!(currentDate)
       grid.value = createMonthGrid({ dateObj: newDate })
-      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+      props.placeholder.value = newDate.with({ day: 1 })
       return
     }
 
     const newDate = currentDate.subtract({ years: 1 })
     grid.value = createMonthGrid({ dateObj: newDate })
-    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+    props.placeholder.value = newDate.with({ day: 1 })
   }
 
   watch(props.placeholder, (value) => {

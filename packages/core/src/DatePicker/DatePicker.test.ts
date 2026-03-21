@@ -438,11 +438,11 @@ describe('datePicker', async () => {
         components: { ConfigProvider, DatePicker },
         template: `
           <ConfigProvider locale="de">
-            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15) }" />
+            <DatePicker :datePickerProps="{ modelValue: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }) }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 
@@ -460,11 +460,11 @@ describe('datePicker', async () => {
         components: { ConfigProvider, DatePicker },
         template: `
           <ConfigProvider locale="de">
-            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15), locale: 'en-US' }" />
+            <DatePicker :datePickerProps="{ modelValue: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }), locale: 'en-US' }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 

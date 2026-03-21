@@ -1,20 +1,20 @@
-import type { DateValue } from '@internationalized/date'
 import type { YearPickerRootProps } from './YearPickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import YearPicker from './story/_YearPicker.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = Temporal.PlainDate.from({ year: 1980, month: 1, day: 20 })
+const calendarDateTime = Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 30, second: 0, millisecond: 0 })
+const zonedDateTime = calendarDateTime.toZonedDateTime('America/New_York')
 
 const kbd = useTestKbd()
 
-function setup(props: { pickerProps?: YearPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { pickerProps?: YearPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(YearPicker, { props })
   const picker = returned.getByTestId('year-picker')
@@ -149,7 +149,7 @@ describe('year picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         modelValue: calendarDate,
-        minValue: new CalendarDate(1980, 1, 1),
+        minValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
       },
     })
 
@@ -167,7 +167,7 @@ describe('year picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         modelValue: calendarDate,
-        maxValue: new CalendarDate(1991, 12, 31),
+        maxValue: Temporal.PlainDate.from({ year: 1991, month: 12, day: 31 }),
       },
     })
 
@@ -375,8 +375,8 @@ describe('year picker - keyboard navigation', () => {
 
 describe('year picker - multiple', () => {
   it('handles multiple selection', async () => {
-    const d1 = new CalendarDate(1980, 1, 1)
-    const d2 = new CalendarDate(1985, 1, 1)
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+    const d2 = Temporal.PlainDate.from({ year: 1985, month: 1, day: 1 })
 
     const { picker, getByTestId, user, rerender } = setup({
       pickerProps: { modelValue: [d1, d2], multiple: true },
@@ -393,8 +393,8 @@ describe('year picker - multiple', () => {
   })
 
   it('allows deselection in multiple mode', async () => {
-    const d1 = new CalendarDate(1980, 1, 1)
-    const d2 = new CalendarDate(1985, 1, 1)
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+    const d2 = Temporal.PlainDate.from({ year: 1985, month: 1, day: 1 })
 
     const { picker, user, rerender } = setup({
       pickerProps: { modelValue: [d1, d2], multiple: true },

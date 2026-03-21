@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Matcher } from '@/date'
 import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
@@ -8,8 +7,8 @@ import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { TimeRange } from '@/shared/date/types'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, Time, toCalendarDateTime, today } from '@internationalized/date'
-import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
+import { Temporal } from 'temporal-polyfill'
+import { areAllDaysBetweenValid } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -28,9 +27,9 @@ import {
 
 type TimeRangeFieldRootContext = {
   locale: Ref<string>
-  startValue: Ref<DateValue | undefined>
-  endValue: Ref<DateValue | undefined>
-  placeholder: Ref<DateValue>
+  startValue: Ref<Temporal.PlainDateTime | undefined>
+  endValue: Ref<Temporal.PlainDateTime | undefined>
+  placeholder: Ref<Temporal.PlainDateTime>
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
@@ -89,12 +88,24 @@ export type TimeRangeFieldRootEmits = {
 export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
   = createContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
 
-function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
-  if (value && 'day' in value) {
-    return value
-  }
+function convertValue(value: TimeValue | Temporal.PlainDateTime): Temporal.PlainDateTime {
+  if ('day' in value)
+    return Temporal.PlainDateTime.from(value)
 
-  return toCalendarDateTime(date, value)
+  const today = Temporal.Now.plainDateISO()
+  return Temporal.PlainDateTime.from({
+    year: today.year,
+    month: today.month,
+    day: today.day,
+    hour: value.hour,
+    minute: value.minute,
+    second: value.second,
+    millisecond: value.millisecond ?? 0,
+  })
+}
+
+function compareDateTime(a: Temporal.PlainDateTime, b: Temporal.PlainDateTime) {
+  return Temporal.PlainDateTime.compare(a, b)
 }
 </script>
 
@@ -161,10 +172,10 @@ const isStartInvalid = computed(() => {
   if (propsIsTimeUnavailable.value?.(convertedStartValue))
     return true
 
-  if (convertedMinValue.value && isBefore(convertedStartValue, convertedMinValue.value))
+  if (convertedMinValue.value && compareDateTime(convertedStartValue, convertedMinValue.value) < 0)
     return true
 
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedStartValue))
+  if (convertedMaxValue.value && compareDateTime(convertedMaxValue.value, convertedStartValue) < 0)
     return true
 
   return false
@@ -179,10 +190,10 @@ const isEndInvalid = computed(() => {
   if (propsIsTimeUnavailable.value?.(convertedEndValue))
     return true
 
-  if (convertedMinValue.value && isBefore(convertedEndValue, convertedMinValue.value))
+  if (convertedMinValue.value && compareDateTime(convertedEndValue, convertedMinValue.value) < 0)
     return true
 
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedEndValue))
+  if (convertedMaxValue.value && compareDateTime(convertedMaxValue.value, convertedEndValue) < 0)
     return true
 
   return false
@@ -200,7 +211,7 @@ const isInvalid = computed(() => {
     end: convertValue(modelValue.value.end),
   }
 
-  if (!isBeforeOrSame(convertedModelValue.start, convertedModelValue.end))
+  if (compareDateTime(convertedModelValue.start, convertedModelValue.end) > 0)
     return true
 
   if (propsIsTimeUnavailable.value !== undefined) {
@@ -216,11 +227,11 @@ const isInvalid = computed(() => {
   return false
 })
 
-const startValue = ref(modelValue.value?.start?.copy()) as Ref<TimeValue | undefined>
-const endValue = ref(modelValue.value?.end?.copy()) as Ref<TimeValue | undefined>
+const startValue = ref(modelValue.value?.start) as Ref<TimeValue | undefined>
+const endValue = ref(modelValue.value?.end) as Ref<TimeValue | undefined>
 
 watch([startValue, endValue], ([_startValue, _endValue]) => {
-  modelValue.value = { start: _startValue?.copy(), end: _endValue?.copy() }
+  modelValue.value = { start: _startValue, end: _endValue }
 })
 
 const convertedStartValue = computed({
@@ -231,7 +242,9 @@ const convertedStartValue = computed({
   },
   set(newValue) {
     if (newValue) {
-      startValue.value = startValue.value && 'day' in startValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, startValue.value?.millisecond)
+      startValue.value = startValue.value && 'day' in startValue.value
+        ? startValue.value.with({ hour: newValue.hour, minute: newValue.minute, second: newValue.second, millisecond: newValue.millisecond ?? 0 }) as TimeValue
+        : Temporal.PlainTime.from({ hour: newValue.hour, minute: newValue.minute, second: newValue.second, millisecond: newValue.millisecond ?? 0 })
     }
     else {
       startValue.value = newValue
@@ -248,7 +261,9 @@ const convertedEndValue = computed({
   },
   set(newValue) {
     if (newValue) {
-      endValue.value = endValue.value && 'day' in endValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, endValue.value?.millisecond)
+      endValue.value = endValue.value && 'day' in endValue.value
+        ? endValue.value.with({ hour: newValue.hour, minute: newValue.minute, second: newValue.second, millisecond: newValue.millisecond ?? 0 }) as TimeValue
+        : Temporal.PlainTime.from({ hour: newValue.hour, minute: newValue.minute, second: newValue.second, millisecond: newValue.millisecond ?? 0 })
     }
     else {
       endValue.value = newValue
@@ -265,7 +280,7 @@ const defaultDate = getDefaultTime({
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
 }) as Ref<TimeValue>
 
@@ -274,8 +289,11 @@ const convertedPlaceholder = computed({
     return convertValue(placeholder.value)
   },
   set(newValue) {
-    if (newValue)
-      placeholder.value = 'day' in placeholder.value ? newValue.copy() : new Time(newValue.hour, newValue.minute, newValue.second, placeholder.value?.millisecond)
+    if (newValue) {
+      placeholder.value = 'day' in placeholder.value
+        ? placeholder.value.with({ hour: newValue.hour, minute: newValue.minute, second: newValue.second, millisecond: newValue.millisecond ?? 0 }) as TimeValue
+        : Temporal.PlainTime.from({ hour: newValue.hour, minute: newValue.minute, second: newValue.second, millisecond: newValue.millisecond ?? 0 })
+    }
     return newValue
   },
 })
@@ -323,17 +341,17 @@ const editableSegmentContents = computed(() => ({ start: segmentContents.value.s
 
 watch(convertedModelValue, (_modelValue) => {
   const isStartChanged = _modelValue?.start && convertedStartValue.value
-    ? _modelValue.start.compare(convertedStartValue.value) !== 0
+    ? Temporal.PlainDateTime.compare(_modelValue.start, convertedStartValue.value) !== 0
     : _modelValue?.start !== convertedStartValue.value
   if (isStartChanged) {
-    convertedStartValue.value = _modelValue?.start?.copy()
+    convertedStartValue.value = _modelValue?.start
   }
 
   const isEndChanged = _modelValue?.end && convertedEndValue.value
-    ? _modelValue.end.compare(convertedEndValue.value) !== 0
+    ? Temporal.PlainDateTime.compare(_modelValue.end, convertedEndValue.value) !== 0
     : _modelValue?.end !== convertedEndValue.value
   if (isEndChanged) {
-    convertedEndValue.value = _modelValue?.end?.copy()
+    convertedEndValue.value = _modelValue?.end
   }
 })
 
@@ -360,8 +378,14 @@ watch(locale, (value) => {
 })
 
 watch(convertedModelValue, (_modelValue) => {
-  if (_modelValue && _modelValue.start !== undefined && placeholder.value.compare(_modelValue.start) !== 0)
-    placeholder.value = _modelValue.start.copy()
+  if (_modelValue && _modelValue.start !== undefined && Temporal.PlainDateTime.compare(convertedPlaceholder.value, _modelValue.start) !== 0) {
+    placeholder.value = Temporal.PlainTime.from({
+      hour: _modelValue.start.hour,
+      minute: _modelValue.start.minute,
+      second: _modelValue.start.second,
+      millisecond: _modelValue.start.millisecond,
+    })
+  }
 })
 
 watch([convertedEndValue, locale], ([_endValue]) => {

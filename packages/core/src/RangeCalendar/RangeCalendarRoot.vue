@@ -7,10 +7,7 @@ import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import type { TemporalDate } from '@/temporal/types'
 import { useCalendar } from '@/Calendar/useCalendar'
-<<<<<<< HEAD
-import { getWeekStartsOn, isBefore } from '@/date'
-=======
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
+import { getWeekStartsOn } from '@/date'
 import {
   createContext,
   useDirection,
@@ -69,18 +66,13 @@ type RangeCalendarRootContext = {
   disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays: Ref<number | undefined>
-<<<<<<< HEAD
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
-  isPlaceholderFocusable: Ref<boolean>
-  firstFocusableDate: Ref<DateValue | undefined>
-  hasSelectedDate: Ref<boolean>
-  isSelectedDisabled: Ref<boolean>
-  selectedFocusableDate: Ref<DateValue | undefined>
-=======
   minValue: Ref<TemporalDate | undefined>
   maxValue: Ref<TemporalDate | undefined>
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
+  isPlaceholderFocusable: Ref<boolean>
+  firstFocusableDate: Ref<TemporalDate | undefined>
+  hasSelectedDate: Ref<boolean>
+  isSelectedDisabled: Ref<boolean>
+  selectedFocusableDate: Ref<TemporalDate | undefined>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
@@ -257,17 +249,10 @@ const defaultDate = getDefaultDate({
   locale: props.locale,
 })
 
-<<<<<<< HEAD
-const startValue = ref(normalizeRange(modelValue.value).start) as Ref<
-  DateValue | undefined
->
-const endValue = ref(normalizeRange(modelValue.value).end) as Ref<DateValue | undefined>
-=======
-const startValue = ref(modelValue.value.start) as Ref<
+const startValue = ref(normalizedModelValue.value.start) as Ref<
   TemporalDate | undefined
 >
-const endValue = ref(modelValue.value.end) as Ref<TemporalDate | undefined>
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
+const endValue = ref(normalizedModelValue.value.end) as Ref<TemporalDate | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate,
@@ -336,23 +321,6 @@ const {
   maximumDays,
 })
 
-<<<<<<< HEAD
-watch(modelValue, (_modelValue) => {
-  const next = normalizeRange(_modelValue)
-
-  const isStartSynced = (!next.start && !startValue.value)
-    || (!!next.start && !!startValue.value && isEqualDay(next.start, startValue.value))
-
-  if (!isStartSynced) {
-    startValue.value = next.start?.copy?.()
-  }
-
-  const isEndSynced = (!next.end && !endValue.value)
-    || (!!next.end && !!endValue.value && isEqualDay(next.end, endValue.value))
-
-  if (!isEndSynced) {
-    endValue.value = next.end?.copy?.()
-=======
 watch(modelValue, (_modelValue, _prevValue) => {
   if (
     (!_prevValue?.start && _modelValue?.start)
@@ -370,7 +338,6 @@ watch(modelValue, (_modelValue, _prevValue) => {
     || (endValue.value && !isSameDay(_modelValue.end, endValue.value))
   ) {
     endValue.value = _modelValue?.end
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
   }
 })
 

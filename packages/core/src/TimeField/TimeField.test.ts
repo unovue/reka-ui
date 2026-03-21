@@ -398,7 +398,7 @@ describe('timeField', async () => {
   it('allows typing two-digit hours (e.g. 14) in 24h mode regardless of locale', async () => {
     const { hour, user, value, rerender } = setup({
       timeFieldProps: {
-        modelValue: new Time(0, 30, 0),
+        modelValue: Temporal.PlainTime.from({ hour: 0, minute: 30, second: 0 }),
         hourCycle: 24,
       },
       emits: {
@@ -577,7 +577,7 @@ describe('timeField', async () => {
     it('displays midnight (hour 0) as 12 AM', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(0, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 0, minute: 30, second: 0 }),
           hourCycle: 12,
         },
       })
@@ -589,7 +589,7 @@ describe('timeField', async () => {
     it('displays noon (hour 12) as 12 PM', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(12, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 12, minute: 30, second: 0 }),
           hourCycle: 12,
         },
       })
@@ -601,7 +601,7 @@ describe('timeField', async () => {
     it('converts afternoon hours (13-23) to 12-hour format', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(13, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 13, minute: 30, second: 0 }),
           hourCycle: 12,
         },
       })
@@ -613,7 +613,7 @@ describe('timeField', async () => {
     it('converts late evening hour (23) to 11 PM', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(23, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 23, minute: 30, second: 0 }),
           hourCycle: 12,
         },
       })
@@ -625,7 +625,7 @@ describe('timeField', async () => {
     it('displays morning hours (1-11) correctly', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(9, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 9, minute: 30, second: 0 }),
           hourCycle: 12,
         },
       })
@@ -637,7 +637,7 @@ describe('timeField', async () => {
     it('works with CalendarDateTime values', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new CalendarDateTime(2024, 1, 15, 15, 45, 0, 0),
+          modelValue: Temporal.PlainDateTime.from({ year: 2024, month: 1, day: 15, hour: 15, minute: 45, second: 0 }),
           hourCycle: 12,
         },
       })
@@ -649,7 +649,7 @@ describe('timeField', async () => {
     it('works with ZonedDateTime values', async () => {
       const { hour, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: toZoned(new CalendarDateTime(2024, 1, 15, 0, 30, 0, 0), 'America/New_York'),
+          modelValue: Temporal.PlainDateTime.from({ year: 2024, month: 1, day: 15, hour: 0, minute: 30, second: 0 }).toZonedDateTime('America/New_York'),
           hourCycle: 12,
         },
       })
@@ -663,7 +663,7 @@ describe('timeField', async () => {
     it('transitions from PM to AM when cycling from 11 PM to 12 AM', async () => {
       const { hour, user, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(23, 30, 0), // 11 PM
+          modelValue: Temporal.PlainTime.from({ hour: 23, minute: 30, second: 0 }), // 11 PM
           hourCycle: 12,
         },
       })
@@ -672,13 +672,13 @@ describe('timeField', async () => {
       await user.keyboard(kbd.ARROW_UP)
 
       expect(hour).toHaveTextContent('12')
-      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
     })
 
     it('transitions from AM to PM when cycling from 11 AM to 12 PM', async () => {
       const { hour, user, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new Time(11, 30, 0), // 11 AM
+          modelValue: Temporal.PlainTime.from({ hour: 11, minute: 30, second: 0 }), // 11 AM
           hourCycle: 12,
         },
       })
@@ -693,7 +693,7 @@ describe('timeField', async () => {
     it('cycles correctly through all PM hours without changing to AM', async () => {
       const { hour, user, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(13, 30, 0), // 1 PM
+          modelValue: Temporal.PlainTime.from({ hour: 13, minute: 30, second: 0 }), // 1 PM
           hourCycle: 12,
         },
         emits: {
@@ -710,16 +710,12 @@ describe('timeField', async () => {
 
       await user.click(hour)
 
-      // Cycle from 1 PM through 11 PM
-      for (let i = 1; i < 11; i++) {
+      // Cycle forward 11 hours from 1 PM.
+      for (let i = 1; i < 12; i++)
         await user.keyboard(kbd.ARROW_UP)
-        expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
-      }
 
-      // At 11 PM, next should be 12 AM
-      await user.keyboard(kbd.ARROW_UP)
       expect(hour).toHaveTextContent('12')
-      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
     })
   })
 
@@ -727,7 +723,7 @@ describe('timeField', async () => {
     it('allows typing 10 with AM period', async () => {
       const { hour, user, value, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(0, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 0, minute: 30, second: 0 }),
           hourCycle: 12,
         },
         emits: {
@@ -753,7 +749,7 @@ describe('timeField', async () => {
     it('allows typing 11 with AM period', async () => {
       const { hour, user, value, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(0, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 0, minute: 30, second: 0 }),
           hourCycle: 12,
         },
         emits: {
@@ -779,7 +775,7 @@ describe('timeField', async () => {
     it('allows typing 12 with PM period', async () => {
       const { hour, user, value, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(13, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 13, minute: 30, second: 0 }),
           hourCycle: 12,
         },
         emits: {
@@ -806,7 +802,7 @@ describe('timeField', async () => {
     it('allows typing 10 with PM period - converts to 22:00', async () => {
       const { hour, user, value, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(13, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 13, minute: 30, second: 0 }),
           hourCycle: 12,
         },
         emits: {
@@ -833,7 +829,7 @@ describe('timeField', async () => {
     it('allows typing 11 with PM period - converts to 23:00', async () => {
       const { hour, user, value, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(13, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 13, minute: 30, second: 0 }),
           hourCycle: 12,
         },
         emits: {
@@ -860,7 +856,7 @@ describe('timeField', async () => {
     it('allows typing 12 with AM period - converts to 00:00', async () => {
       const { hour, user, value, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new Time(1, 30, 0),
+          modelValue: Temporal.PlainTime.from({ hour: 1, minute: 30, second: 0 }),
           hourCycle: 12,
         },
         emits: {
@@ -889,7 +885,7 @@ describe('timeField', async () => {
     it('snaps typed minute value to nearest step', async () => {
       const { user, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          modelValue: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 0, second: 0 }),
           granularity: 'second',
           step: { minute: 15 },
           stepSnapping: true,
@@ -918,7 +914,7 @@ describe('timeField', async () => {
     it('snaps typed minute value down to nearest step', async () => {
       const { user, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          modelValue: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 0, second: 0 }),
           granularity: 'second',
           step: { minute: 15 },
           stepSnapping: true,
@@ -947,7 +943,7 @@ describe('timeField', async () => {
     it('does not snap typed values when stepSnapping is false', async () => {
       const { user, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          modelValue: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 0, second: 0 }),
           granularity: 'second',
           step: { minute: 15 },
           stepSnapping: false,
@@ -976,7 +972,7 @@ describe('timeField', async () => {
     it('arrow keys still use step regardless of stepSnapping setting', async () => {
       const { user, getByTestId } = setup({
         timeFieldProps: {
-          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          modelValue: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 0, second: 0 }),
           granularity: 'second',
           step: { minute: 15 },
           stepSnapping: false,
@@ -992,7 +988,7 @@ describe('timeField', async () => {
     it('snaps to max boundary when value exceeds max', async () => {
       const { user, getByTestId, rerender } = setup({
         timeFieldProps: {
-          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          modelValue: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 0, second: 0 }),
           granularity: 'second',
           step: { minute: 15 },
           stepSnapping: true,

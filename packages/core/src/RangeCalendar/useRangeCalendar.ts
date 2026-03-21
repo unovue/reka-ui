@@ -71,12 +71,8 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return false
   }
 
-<<<<<<< HEAD
-  const rangeIsDateDisabled = (date: DateValue) => {
-=======
   // Check if a date exceeds maximum days limit from the start date
   const rangeIsDateDisabled = (date: TemporalDate) => {
->>>>>>> 4920baae (feat(RangeCalendar): migrate to temporal)
     if (props.isDateDisabled(date))
       return true
 

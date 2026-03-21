@@ -1,7 +1,7 @@
 import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { toCalendar } from '@/temporal/calendar'
-import { getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, isPlainDateTime, isZonedDateTime } from '@/temporal/comparators'
+import { endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, isPlainDateTime, isZonedDateTime, startOfMonth, startOfYear, toPlainDate } from '@/temporal/comparators'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the
@@ -45,4 +45,79 @@ export function toDate(dateValue: TemporalDate, tz: string = Temporal.Now.timeZo
   return new Date(zoned.toInstant().epochMilliseconds)
 }
 
-export { getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive }
+export function isSameYear(date1: TemporalDate, date2: TemporalDate) {
+  return toPlainDate(date1).year === toPlainDate(date2).year
+}
+
+export function isSameYearMonth(date1: TemporalDate, date2: TemporalDate) {
+  const d1 = toPlainDate(date1)
+  const d2 = toPlainDate(date2)
+  return d1.year === d2.year && d1.month === d2.month
+}
+
+export function compareYearMonth(date1: TemporalDate, date2: TemporalDate) {
+  const d1 = toPlainDate(date1)
+  const d2 = toPlainDate(date2)
+  if (d1.year !== d2.year)
+    return d1.year - d2.year
+  return d1.month - d2.month
+}
+
+export function getMonthsBetween(start: TemporalDate, end: TemporalDate) {
+  const s = toPlainDate(start)
+  const e = toPlainDate(end)
+  return Math.abs((e.year - s.year) * 12 + (e.month - s.month)) + 1
+}
+
+export function getYearsBetween(start: TemporalDate, end: TemporalDate) {
+  return Math.abs(toPlainDate(end).year - toPlainDate(start).year) + 1
+}
+
+export function isMonthBetweenInclusive(date: TemporalDate, start: TemporalDate, end: TemporalDate) {
+  return compareYearMonth(date, start) >= 0 && compareYearMonth(date, end) <= 0
+}
+
+export function isYearBetweenInclusive(date: TemporalDate, start: TemporalDate, end: TemporalDate) {
+  const y = toPlainDate(date).year
+  const ys = toPlainDate(start).year
+  const ye = toPlainDate(end).year
+  return y >= ys && y <= ye
+}
+
+export function areAllMonthsBetweenValid(
+  start: TemporalDate,
+  end: TemporalDate,
+  isUnavailable: ((date: TemporalDate) => boolean) | undefined,
+  isDisabled: ((date: TemporalDate) => boolean) | undefined,
+) {
+  let current = startOfMonth(start).add({ months: 1 })
+  const endMonth = startOfMonth(end)
+
+  while (Temporal.PlainDate.compare(current, endMonth) < 0) {
+    if (isUnavailable?.(current) || isDisabled?.(current))
+      return false
+    current = current.add({ months: 1 })
+  }
+
+  return true
+}
+
+export function areAllYearsBetweenValid(
+  start: TemporalDate,
+  end: TemporalDate,
+  isUnavailable: ((date: TemporalDate) => boolean) | undefined,
+  isDisabled: ((date: TemporalDate) => boolean) | undefined,
+) {
+  let current = startOfYear(start).add({ years: 1 })
+  const endYearDate = startOfYear(end)
+
+  while (Temporal.PlainDate.compare(current, endYearDate) < 0) {
+    if (isUnavailable?.(current) || isDisabled?.(current))
+      return false
+    current = current.add({ years: 1 })
+  }
+
+  return true
+}
+
+export { endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, startOfMonth, startOfYear, toPlainDate }

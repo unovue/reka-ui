@@ -1,14 +1,14 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { endOfMonth, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
-import { isMonthBetweenInclusive, isSameYearMonth, toDate } from '@/date'
+import { compareYearMonth, endOfMonth, isMonthBetweenInclusive, isSameYearMonth, toDate } from '@/date'
 import { useKbd } from '@/shared'
 
 export interface MonthRangePickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
-  month: DateValue
+  month: TemporalDate
 }
 
 export interface MonthRangePickerCellTriggerSlot {
@@ -63,7 +63,7 @@ const labelText = computed(() => {
 const isUnavailable = computed(() => rootContext.isMonthUnavailable?.(props.month) ?? false)
 
 const isCurrentMonth = computed(() => {
-  const todayDate = toCalendar(today(getLocalTimeZone()), props.month.calendar)
+  const todayDate = Temporal.Now.plainDateISO()
   return isSameYearMonth(props.month, todayDate)
 })
 
@@ -83,7 +83,7 @@ const isHighlighted = computed(() => rootContext.highlightedRange.value
   : false)
 const allowNonContiguousRanges = computed(() => rootContext.allowNonContiguousRanges.value)
 
-function changeMonth(e: MouseEvent | KeyboardEvent, date: DateValue) {
+function changeMonth(e: MouseEvent | KeyboardEvent, date: TemporalDate) {
   if (rootContext.readonly.value)
     return
   if (rootContext.isMonthDisabled(date) || rootContext.isMonthUnavailable?.(date))
@@ -93,19 +93,19 @@ function changeMonth(e: MouseEvent | KeyboardEvent, date: DateValue) {
     if (isSameYearMonth(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
       rootContext.onPlaceholderChange(date)
-      rootContext.lastPressedDateValue.value = date.copy()
+      rootContext.lastPressedDateValue.value = date
       return
     }
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameYearMonth(rootContext.lastPressedDateValue.value, date))
-        rootContext.startValue.value = date.copy()
-      rootContext.lastPressedDateValue.value = date.copy()
+        rootContext.startValue.value = date
+      rootContext.lastPressedDateValue.value = date
       return
     }
   }
 
-  rootContext.lastPressedDateValue.value = date.copy()
+  rootContext.lastPressedDateValue.value = date
 
   if (
     rootContext.startValue.value
@@ -121,30 +121,30 @@ function changeMonth(e: MouseEvent | KeyboardEvent, date: DateValue) {
   }
 
   if (!rootContext.startValue.value) {
-    rootContext.startValue.value = date.copy()
+    rootContext.startValue.value = date
   }
   else if (!rootContext.endValue.value) {
-    rootContext.endValue.value = date.copy()
+    rootContext.endValue.value = date
   }
   else if (rootContext.endValue.value && rootContext.startValue.value) {
     if (!rootContext.fixedDate.value) {
       rootContext.endValue.value = undefined
-      rootContext.startValue.value = date.copy()
+      rootContext.startValue.value = date
     }
     else if (rootContext.fixedDate.value === 'start') {
-      if (date.compare(rootContext.startValue.value) < 0) {
-        rootContext.startValue.value = date.copy()
+      if (compareYearMonth(date, rootContext.startValue.value) < 0) {
+        rootContext.startValue.value = date
       }
       else {
-        rootContext.endValue.value = date.copy()
+        rootContext.endValue.value = date
       }
     }
     else if (rootContext.fixedDate.value === 'end') {
-      if (date.compare(rootContext.endValue.value) > 0) {
-        rootContext.endValue.value = date.copy()
+      if (compareYearMonth(date, rootContext.endValue.value) > 0) {
+        rootContext.endValue.value = date
       }
       else {
-        rootContext.startValue.value = date.copy()
+        rootContext.startValue.value = date
       }
     }
   }
@@ -159,7 +159,7 @@ function handleClick(e: MouseEvent) {
 function handleFocus() {
   if (isDisabled.value || rootContext.isMonthUnavailable?.(props.month))
     return
-  rootContext.focusedValue.value = props.month.copy()
+  rootContext.focusedValue.value = props.month
 }
 
 function handleArrowKey(e: KeyboardEvent) {
@@ -198,13 +198,13 @@ function handleArrowKey(e: KeyboardEvent) {
       changeMonth(e, props.month)
   }
 
-  function shiftFocus(currentMonth: DateValue, add: number, depth = 0) {
+  function shiftFocus(currentMonth: TemporalDate, add: number, depth = 0) {
     if (depth > 48)
       return
     const candidateMonthValue = currentMonth.add({ months: add })
 
-    if ((rootContext.minValue.value && endOfMonth(candidateMonthValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && candidateMonthValue.set({ day: 1 }).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && compareYearMonth(endOfMonth(candidateMonthValue), rootContext.minValue.value) < 0)
+      || (rootContext.maxValue.value && compareYearMonth(candidateMonthValue, rootContext.maxValue.value) > 0)) {
       return
     }
 
@@ -237,8 +237,8 @@ function handleArrowKey(e: KeyboardEvent) {
   function shiftFocusYear(years: number) {
     const candidateMonthValue = props.month.add({ years })
 
-    if ((rootContext.minValue.value && endOfMonth(candidateMonthValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && candidateMonthValue.set({ day: 1 }).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && compareYearMonth(endOfMonth(candidateMonthValue), rootContext.minValue.value) < 0)
+      || (rootContext.maxValue.value && compareYearMonth(candidateMonthValue, rootContext.maxValue.value) > 0)) {
       return
     }
 

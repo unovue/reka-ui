@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import type { Formatter } from '@/shared'
 import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
-import type { TemporalDate } from '@/temporal/types'
+import type { TemporalDate, TemporalDateTime } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle, TIME_SEGMENT_PARTS } from '@/shared/date'
 import { isZonedDateTime } from '@/temporal/comparators'
@@ -14,7 +14,7 @@ type SyncDateSegmentValuesProps = {
 }
 
 type SyncTimeSegmentValuesProps = {
-  value: TemporalDate
+  value: TemporalDateTime
   formatter: Formatter
 }
 
@@ -172,7 +172,7 @@ function createContentObj(props: CreateContentObjProps) {
   return content
 }
 
-function toDate(dateValue: TemporalDate): Date {
+function toDate(dateValue: TemporalDateTime): Date {
   if (isZonedDateTime(dateValue)) {
     return new Date(dateValue.toInstant().epochMilliseconds)
   }
@@ -184,10 +184,16 @@ function toDate(dateValue: TemporalDate): Date {
     return new Date(zoned.toInstant().epochMilliseconds)
   }
 
-  const zoned = dateValue.toZonedDateTime({
-    timeZone,
-    plainTime: Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 }),
-  })
+  const today = Temporal.Now.plainDateISO()
+  const zoned = Temporal.PlainDateTime.from({
+    year: today.year,
+    month: today.month,
+    day: today.day,
+    hour: dateValue.hour,
+    minute: dateValue.minute,
+    second: dateValue.second,
+    millisecond: dateValue.millisecond,
+  }).toZonedDateTime(timeZone)
   return new Date(zoned.toInstant().epochMilliseconds)
 }
 

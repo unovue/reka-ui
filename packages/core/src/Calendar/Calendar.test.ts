@@ -1015,8 +1015,8 @@ describe('calendar - tabindex states', () => {
     const { getByTestId } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        minValue: new CalendarDate(1980, 1, 15),
-        maxValue: new CalendarDate(1980, 1, 19),
+        minValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 15 }),
+        maxValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 19 }),
       },
     })
 
@@ -1028,7 +1028,7 @@ describe('calendar - tabindex states', () => {
     const { getByTestId } = setup({
       calendarProps: {
         placeholder: calendarDate,
-        maxValue: new CalendarDate(1980, 1, 19),
+        maxValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 19 }),
       },
     })
 

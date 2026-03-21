@@ -1,14 +1,14 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { endOfMonth, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
-import { isSameYearMonth, toDate } from '@/date'
+import { compareYearMonth, endOfMonth, isSameYearMonth, toDate } from '@/date'
 import { useKbd } from '@/shared'
 
 export interface MonthPickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
-  month: DateValue
+  month: TemporalDate
 }
 
 export interface MonthPickerCellTriggerSlot {
@@ -56,7 +56,7 @@ const labelText = computed(() => {
 const isUnavailable = computed(() => rootContext.isMonthUnavailable?.(props.month) ?? false)
 
 const isCurrentMonth = computed(() => {
-  const todayDate = toCalendar(today(getLocalTimeZone()), props.month.calendar)
+  const todayDate = Temporal.Now.plainDateISO()
   return isSameYearMonth(props.month, todayDate)
 })
 
@@ -68,7 +68,7 @@ const isFocusedMonth = computed(() => {
 
 const isSelectedMonth = computed(() => rootContext.isMonthSelected(props.month))
 
-function changeMonth(date: DateValue) {
+function changeMonth(date: TemporalDate) {
   if (rootContext.readonly.value)
     return
   if (rootContext.isMonthDisabled(date) || rootContext.isMonthUnavailable?.(date))
@@ -119,13 +119,13 @@ function handleArrowKey(e: KeyboardEvent) {
       changeMonth(props.month)
   }
 
-  function shiftFocus(currentMonth: DateValue, add: number, depth = 0) {
+  function shiftFocus(currentMonth: TemporalDate, add: number, depth = 0) {
     if (depth > 48)
       return
     const candidateMonthValue = currentMonth.add({ months: add })
 
-    if ((rootContext.minValue.value && endOfMonth(candidateMonthValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && candidateMonthValue.set({ day: 1 }).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && compareYearMonth(endOfMonth(candidateMonthValue), rootContext.minValue.value) < 0)
+      || (rootContext.maxValue.value && compareYearMonth(candidateMonthValue, rootContext.maxValue.value) > 0)) {
       return
     }
 
@@ -158,8 +158,8 @@ function handleArrowKey(e: KeyboardEvent) {
   function shiftFocusYear(years: number) {
     const candidateMonthValue = props.month.add({ years })
 
-    if ((rootContext.minValue.value && endOfMonth(candidateMonthValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && candidateMonthValue.set({ day: 1 }).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && compareYearMonth(endOfMonth(candidateMonthValue), rootContext.minValue.value) < 0)
+      || (rootContext.maxValue.value && compareYearMonth(candidateMonthValue, rootContext.maxValue.value) > 0)) {
       return
     }
 

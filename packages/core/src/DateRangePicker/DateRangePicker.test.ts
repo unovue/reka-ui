@@ -256,14 +256,14 @@ describe('dateRangePicker', async () => {
           <ConfigProvider locale="de">
             <DateRangePicker :dateFieldProps="{
               modelValue: {
-                start: new CalendarDate(2024, 1, 15),
-                end: new CalendarDate(2024, 1, 20)
+                start: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }),
+                end: Temporal.PlainDate.from({ year: 2024, month: 1, day: 20 })
               }
             }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 
@@ -283,15 +283,15 @@ describe('dateRangePicker', async () => {
           <ConfigProvider locale="de">
             <DateRangePicker :dateFieldProps="{
               modelValue: {
-                start: new CalendarDate(2024, 1, 15),
-                end: new CalendarDate(2024, 1, 20)
+                start: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }),
+                end: Temporal.PlainDate.from({ year: 2024, month: 1, day: 20 })
               },
               locale: 'en-US'
             }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 

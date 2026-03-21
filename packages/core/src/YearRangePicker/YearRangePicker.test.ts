@@ -1,28 +1,27 @@
-import type { DateValue } from '@internationalized/date'
 import type { YearRangePickerRootProps } from './YearRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import YearRangePicker from './story/_YearRangePicker.vue'
 
 const calendarDateRange = {
-  start: new CalendarDate(1980, 1, 20),
-  end: new CalendarDate(1983, 3, 25),
+  start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 20 }),
+  end: Temporal.PlainDate.from({ year: 1983, month: 3, day: 25 }),
 }
 
 const calendarDateTimeRange = {
-  start: new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0),
-  end: new CalendarDateTime(1983, 3, 25, 12, 30, 0, 0),
+  start: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 30, second: 0, millisecond: 0 }),
+  end: Temporal.PlainDateTime.from({ year: 1983, month: 3, day: 25, hour: 12, minute: 30, second: 0, millisecond: 0 }),
 }
 
 const zonedDateTimeRange = {
-  start: toZoned(calendarDateTimeRange.start, 'America/New_York'),
-  end: toZoned(calendarDateTimeRange.end, 'America/New_York'),
+  start: calendarDateTimeRange.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTimeRange.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
@@ -42,6 +41,7 @@ function getSelectedYears(picker: HTMLElement) {
 it('should pass axe accessibility tests', async () => {
   const wrapper = mount(YearRangePicker)
   expect(await axe(wrapper.element)).toHaveNoViolations()
+  wrapper.unmount()
 })
 
 describe('year range picker', () => {
@@ -110,9 +110,9 @@ describe('year range picker', () => {
   })
 
   it('keeps controlled end when parent preserves it after start edit', async () => {
-    const preservedEnd = new CalendarDate(1986, 1, 1)
+    const preservedEnd = Temporal.PlainDate.from({ year: 1986, month: 1, day: 1 })
     const controlledRange = {
-      start: new CalendarDate(1980, 1, 1),
+      start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
       end: preservedEnd,
     }
 
@@ -289,7 +289,7 @@ describe('year range picker - maximumYears', () => {
   it('limits the maximum number of years that can be selected', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
-        placeholder: new CalendarDate(1983, 3, 15),
+        placeholder: Temporal.PlainDate.from({ year: 1983, month: 3, day: 15 }),
         maximumYears: 3,
       },
     })
@@ -316,7 +316,7 @@ describe('year range picker - maximumYears', () => {
   it('highlights backwards within maximumYears without inverting', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
-        placeholder: new CalendarDate(1983, 3, 15),
+        placeholder: Temporal.PlainDate.from({ year: 1983, month: 3, day: 15 }),
         maximumYears: 3,
       },
     })

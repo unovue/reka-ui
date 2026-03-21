@@ -14,6 +14,23 @@ export type WeekDayFormat = 'narrow' | 'short' | 'long'
 
 export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
+function normalizeTemporalDate(dateObj: TemporalDate): TemporalDate {
+  const value = dateObj as any
+
+  if (value && typeof value.with === 'function' && typeof value.add === 'function')
+    return value as TemporalDate
+
+  if (value && typeof value.year === 'number' && typeof value.month === 'number') {
+    return Temporal.PlainDate.from({
+      year: value.year,
+      month: value.month,
+      day: typeof value.day === 'number' ? value.day : 1,
+    })
+  }
+
+  return Temporal.PlainDate.from(String(value))
+}
+
 export type CreateSelectProps = {
   /**
    * The date object representing the date (usually the first day of the month/year).
@@ -61,7 +78,8 @@ export function getDaysBetween(start: TemporalDate, end: TemporalDate) {
 }
 
 export function createMonth(props: CreateMonthProps): Grid<TemporalDate> {
-  const { dateObj, weekStartsOn, fixedWeeks, locale } = props
+  const { weekStartsOn, fixedWeeks, locale } = props
+  const dateObj = normalizeTemporalDate(props.dateObj)
   const daysInMonth = getDaysInMonth(dateObj)
 
   const datesArray = Array.from({ length: daysInMonth }, (_, i) => dateObj.with({ day: i + 1 }))
@@ -119,17 +137,20 @@ type SetDecadeProps = CreateSelectProps & {
 }
 
 export function startOfDecade(dateObj: TemporalDate) {
+  dateObj = normalizeTemporalDate(dateObj)
   // round to the lowest nearest 10 when building the decade
   return startOfYear(dateObj.subtract({ years: dateObj.year - Math.floor(dateObj.year / 10) * 10 }).with({ day: 1, month: 1 }))
 }
 
 export function endOfDecade(dateObj: TemporalDate) {
+  dateObj = normalizeTemporalDate(dateObj)
   // round to the lowest nearest 10 when building the decade
   return endOfYear(dateObj.add({ years: Math.ceil((dateObj.year + 1) / 10) * 10 - dateObj.year - 1 }).with({ day: 35, month: 12 }))
 }
 
 export function createDecade(props: SetDecadeProps): TemporalDate[] {
-  const { dateObj, startIndex, endIndex } = props
+  const { startIndex, endIndex } = props
+  const dateObj = normalizeTemporalDate(props.dateObj)
 
   const decadeArray = Array.from({ length: Math.abs(startIndex ?? 0) + endIndex }, (_, i) =>
     i <= Math.abs((startIndex ?? 0))
@@ -142,20 +163,24 @@ export function createDecade(props: SetDecadeProps): TemporalDate[] {
 }
 
 export function createYear(props: SetYearProps): TemporalDate[] {
-  const { dateObj, numberOfMonths = 1, pagedNavigation = false } = props
+  const { numberOfMonths = 1, pagedNavigation = false } = props
+  const dateObj = normalizeTemporalDate(props.dateObj)
 
   if (numberOfMonths && pagedNavigation) {
-    const monthsArray = Array.from({ length: Math.floor(12 / numberOfMonths) }, (_, i) => startOfMonth(dateObj.with({ month: i * numberOfMonths + 1 })))
+    const monthsArray = Array.from({ length: Math.floor(12 / numberOfMonths) }, (_, i) =>
+      Temporal.PlainDate.from({ year: dateObj.year, month: i * numberOfMonths + 1, day: 1 }))
 
     return monthsArray
   }
 
-  const monthsArray = Array.from({ length: 12 }, (_, i) => startOfMonth(dateObj.with({ month: i + 1 })))
+  const monthsArray = Array.from({ length: 12 }, (_, i) =>
+    Temporal.PlainDate.from({ year: dateObj.year, month: i + 1, day: 1 }))
   return monthsArray
 }
 
 export function createMonths(props: SetMonthProps) {
-  const { numberOfMonths, dateObj, ...monthProps } = props
+  const { numberOfMonths, ...monthProps } = props
+  const dateObj = normalizeTemporalDate(props.dateObj)
 
   const months: Grid<TemporalDate>[] = []
 
@@ -194,7 +219,7 @@ export function createMonths(props: SetMonthProps) {
  * Creates a 3x4 grid of months for a given year.
  */
 export function createMonthGrid(props: CreateSelectProps): Grid<TemporalDate> {
-  const { dateObj } = props
+  const dateObj = normalizeTemporalDate(props.dateObj)
   const months = createYear({ dateObj })
   return { value: dateObj, cells: months, rows: chunk(months, 4) }
 }
@@ -204,7 +229,8 @@ export function createMonthGrid(props: CreateSelectProps): Grid<TemporalDate> {
  * The grid starts from the decade that contains the given date.
  */
 export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean }): Grid<TemporalDate> {
-  const { dateObj, yearsPerPage = 12, decadeAligned = true } = props
+  const { yearsPerPage = 12, decadeAligned = true } = props
+  const dateObj = normalizeTemporalDate(props.dateObj)
 
   let startYear: number
   if (decadeAligned) {
@@ -261,33 +287,37 @@ export function createDateRange({ start, end }: DateRange): TemporalDate[] {
  * And the `Intl.Locale` API is not supported well enough yet.
  */
 export function getWeekStartsOn(locale: string): WeekStartsOn {
-  // Jan 6, 2025 is a Monday (ISO day = 1)
-  const monday = Temporal.PlainDate.from({ year: 2025, month: 1, day: 6 })
-  const dayOfWeek = getDayOfWeek(monday, locale)
-  // dayOfWeek tells us Monday's position in the locale's week (0-indexed)
-  // If Monday is position 0 → week starts Monday (1)
-  // If Monday is position 1 → week starts Sunday (0)
-  return (1 - dayOfWeek + 7) % 7 as WeekStartsOn
+  const firstDay = new Intl.Locale(locale).weekInfo?.firstDay
+  return ((firstDay ?? 7) % 7) as WeekStartsOn
 }
 
 /**
  * Returns the locale-specific week number
  */
 export function getWeekNumber(date: TemporalDate, locale: string = 'en-US', firstDayOfWeek?: DayOfWeek): number {
-  const firstDayOfYear = Temporal.PlainDate.from({ year: date.year, month: 1, day: 1 })
+  const plainDate = toPlainDate(date)
 
-  const firstDayOfYearWeekday = getDayOfWeek(firstDayOfYear, locale, firstDayOfWeek)
+  const explicitFirstDay = firstDayOfWeek as unknown as string | undefined
+  const firstDayMap: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
+  const localeWeekInfo = new Intl.Locale(locale).weekInfo
+  const minimalDays = localeWeekInfo?.minimalDays ?? 1
 
-  const firstWeekStart = firstDayOfYear.subtract({ days: firstDayOfYearWeekday })
-
-  // If date is before the first week start It belongs to the last week of the previous year
-  if (Temporal.PlainDate.compare(toPlainDate(date), toPlainDate(firstWeekStart)) < 0) {
-    const prevYearDate = Temporal.PlainDate.from({ year: date.year - 1, month: 12, day: 31 })
-    return getWeekNumber(prevYearDate, locale, firstDayOfWeek)
+  const getWeek1Start = (year: number) => {
+    const jan1 = Temporal.PlainDate.from({ year, month: 1, day: 1 })
+    const jan1Offset = getDayOfWeek(jan1, locale, firstDayOfWeek)
+    const weekStart = jan1.subtract({ days: jan1Offset })
+    const daysInNewYear = 7 - jan1Offset
+    return daysInNewYear >= minimalDays ? weekStart : weekStart.add({ days: 7 })
   }
 
-  const days = getDaysBetween(firstWeekStart, date)
+  const thisYearWeek1 = getWeek1Start(plainDate.year)
+  if (Temporal.PlainDate.compare(plainDate, thisYearWeek1) < 0)
+    return getWeekNumber(Temporal.PlainDate.from({ year: plainDate.year - 1, month: 12, day: 31 }), locale, firstDayOfWeek)
 
-  // Week number is days divided by 7 plus 1
-  return Math.floor(days.length / 7) + 1
+  const nextYearWeek1 = getWeek1Start(plainDate.year + 1)
+  if (Temporal.PlainDate.compare(plainDate, nextYearWeek1) >= 0)
+    return 1
+
+  const daysSinceWeek1 = thisYearWeek1.until(plainDate, { largestUnit: 'day' }).days
+  return Math.floor(daysSinceWeek1 / 7) + 1
 }

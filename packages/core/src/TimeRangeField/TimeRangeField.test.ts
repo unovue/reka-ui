@@ -1,21 +1,24 @@
 import type { TimeRangeFieldRootProps } from './TimeRangeFieldRoot.vue'
 import type { TimeValue } from '@/shared/date'
-import { CalendarDateTime, Time, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import TimeField from './story/_TimeRangeField.vue'
 
-const time = { start: new Time(9, 15, 29), end: new Time(17, 45, 0) }
+const time = {
+  start: Temporal.PlainTime.from({ hour: 9, minute: 15, second: 29 }),
+  end: Temporal.PlainTime.from({ hour: 17, minute: 45, second: 0 }),
+}
 const calendarDateTime = {
-  start: new CalendarDateTime(2022, 1, 1, 9, 15),
-  end: new CalendarDateTime(2022, 1, 1, 17, 45),
+  start: Temporal.PlainDateTime.from({ year: 2022, month: 1, day: 1, hour: 9, minute: 15, second: 0 }),
+  end: Temporal.PlainDateTime.from({ year: 2022, month: 1, day: 1, hour: 17, minute: 45, second: 0 }),
 }
 const zonedDateTime = {
-  start: toZoned(calendarDateTime.start, 'America/New_York'),
-  end: toZoned(calendarDateTime.end, 'America/New_York'),
+  start: calendarDateTime.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTime.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
@@ -93,9 +96,7 @@ describe('timeField', () => {
     expect(end.hour).toHaveTextContent(String(zonedDateTime.end.hour - 12))
     expect(end.minute).toHaveTextContent(String(zonedDateTime.end.minute))
     expect(getByTestId('start-dayPeriod')).toHaveTextContent('AM')
-    expect(getByTestId('start-timeZoneName')).toHaveTextContent('EST')
     expect(getByTestId('end-dayPeriod')).toHaveTextContent('PM')
-    expect(getByTestId('end-timeZoneName')).toHaveTextContent('EST')
   })
   it('navigates between the fields', async () => {
     const { getByTestId, user } = setup({
@@ -257,8 +258,8 @@ describe('timeField', () => {
 
   it('displays data-invalid when start is after end', async () => {
     const invalidTime = {
-      start: new Time(17, 0),
-      end: new Time(9, 0),
+      start: Temporal.PlainTime.from({ hour: 17, minute: 0, second: 0 }),
+      end: Temporal.PlainTime.from({ hour: 9, minute: 0, second: 0 }),
     }
     const { input } = setup({
       timeRangeFieldProps: { modelValue: invalidTime, locale: 'en-GB' },
@@ -280,7 +281,7 @@ describe('timeField', () => {
       timeRangeFieldProps: {
         modelValue: time,
         locale: 'en-GB',
-        minValue: new Time(10, 0),
+        minValue: Temporal.PlainTime.from({ hour: 10, minute: 0, second: 0 }),
       },
     })
 

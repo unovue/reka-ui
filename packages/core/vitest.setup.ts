@@ -1,7 +1,8 @@
-import { beforeAll, expect, vi } from 'vitest'
+import { cleanup } from '@testing-library/vue'
+
+import { afterEach, beforeAll, expect, vi } from 'vitest'
 
 import { configureAxe } from 'vitest-axe'
-
 import * as matchers from 'vitest-axe/matchers'
 import 'temporal-polyfill/global'
 import '@testing-library/jest-dom/vitest'
@@ -16,6 +17,10 @@ configureAxe({
       enabled: false,
     }],
   },
+})
+
+afterEach(() => {
+  cleanup()
 })
 
 beforeAll(() => {
