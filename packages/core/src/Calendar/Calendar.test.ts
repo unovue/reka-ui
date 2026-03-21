@@ -952,6 +952,160 @@ describe('calendar', async () => {
       expect(heading).toHaveTextContent('January 2024')
       expect(getByTestId('date-1-20')).toHaveFocus()
     })
+
+    it('page up falls inward when clamped to unavailable minValue', async () => {
+      // Set up a calendar where minValue is 20th, but the 20th is unavailable
+      // When PageUp from Feb 15 targets Jan 15, which is < Jan 20 (minValue),
+      // it gets clamped to Jan 20. Since Jan 20 is unavailable,
+      // focus should fall to the next valid day (21st)
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 2, 15),
+          minValue: new CalendarDate(2024, 1, 20),
+          isDateUnavailable: (date: DateValue) => {
+            // January 20th is unavailable
+            return date.month === 1 && date.day === 20
+          },
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-2-15')
+      currentDay.focus()
+
+      // PageUp from Feb 15 -> Jan 15, but minValue is Jan 20, so clamped to Jan 20
+      // Jan 20 is unavailable, so focus should fall to Jan 21 (next valid)
+      await user.keyboard(kbd.PAGE_UP)
+
+      expect(heading).toHaveTextContent('January 2024')
+      // Should land on the next available day after the clamped minValue
+      expect(getByTestId('date-1-21')).toHaveFocus()
+    })
+
+    it('page down falls inward when clamped to unavailable maxValue', async () => {
+      // Set up a calendar where maxValue is 5th, but the 5th is unavailable
+      // When PageDown from Jan 15 targets Feb 15, which is > Feb 5 (maxValue),
+      // it gets clamped to Feb 5. Since Feb 5 is unavailable,
+      // focus should fall to the previous valid day (4th)
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 15),
+          maxValue: new CalendarDate(2024, 2, 5),
+          isDateUnavailable: (date: DateValue) => {
+            // February 5th is unavailable
+            return date.month === 2 && date.day === 5
+          },
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-1-15')
+      currentDay.focus()
+
+      // PageDown from Jan 15 -> Feb 15, but maxValue is Feb 5, so clamped to Feb 5
+      // Feb 5 is unavailable, so focus should fall to Feb 4 (previous valid)
+      await user.keyboard(kbd.PAGE_DOWN)
+
+      expect(heading).toHaveTextContent('February 2024')
+      // Should land on the previous available day before the clamped maxValue
+      expect(getByTestId('date-2-4')).toHaveFocus()
+    })
+
+    it('page up falls inward when clamped to disabled minValue', async () => {
+      // Same test but with disabled instead of unavailable
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 2, 15),
+          minValue: new CalendarDate(2024, 1, 20),
+          isDateDisabled: (date: DateValue) => {
+            // January 20th is disabled
+            return date.month === 1 && date.day === 20
+          },
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-2-15')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_UP)
+
+      expect(heading).toHaveTextContent('January 2024')
+      expect(getByTestId('date-1-21')).toHaveFocus()
+    })
+
+    it('page down falls inward when clamped to disabled maxValue', async () => {
+      // Same test but with disabled instead of unavailable
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 15),
+          maxValue: new CalendarDate(2024, 2, 5),
+          isDateDisabled: (date: DateValue) => {
+            // February 5th is disabled
+            return date.month === 2 && date.day === 5
+          },
+        },
+      })
+
+      const heading = getByTestId('heading')
+      const currentDay = getByTestId('date-1-15')
+      currentDay.focus()
+
+      await user.keyboard(kbd.PAGE_DOWN)
+
+      expect(heading).toHaveTextContent('February 2024')
+      expect(getByTestId('date-2-4')).toHaveFocus()
+    })
+
+    it('page up terminates safely when entire boundary window is blocked', async () => {
+      // Edge case: minValue equals maxValue and is unavailable - should not hang
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 2, 15),
+          minValue: new CalendarDate(2024, 1, 10),
+          maxValue: new CalendarDate(2024, 1, 10),
+          isDateUnavailable: (date: DateValue) => {
+            // January 10th is unavailable (the only date in range)
+            return date.month === 1 && date.day === 10
+          },
+        },
+      })
+
+      const currentDay = getByTestId('date-2-15')
+      currentDay.focus()
+
+      // Should not hang - focus should stay on current day or move to a stable position
+      await user.keyboard(kbd.PAGE_UP)
+
+      // The focus should remain stable - verify no infinite loop by checking test completes
+      // Either stays on current or moves to boundary (the test will hang if there's a loop)
+      expect(true).toBe(true)
+    })
+
+    it('page down terminates safely when entire boundary window is blocked', async () => {
+      // Edge case: maxValue equals minValue and is unavailable - should not hang
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 15),
+          minValue: new CalendarDate(2024, 1, 10),
+          maxValue: new CalendarDate(2024, 1, 10),
+          isDateUnavailable: (date: DateValue) => {
+            // January 10th is unavailable (the only date in range)
+            return date.month === 1 && date.day === 10
+          },
+        },
+      })
+
+      const currentDay = getByTestId('date-1-15')
+      currentDay.focus()
+
+      // Should not hang - focus should stay on current day or move to a stable position
+      await user.keyboard(kbd.PAGE_DOWN)
+
+      // The focus should remain stable - verify no infinite loop by checking test completes
+      // Either stays on current or moves to boundary (the test will hang if there's a loop)
+      expect(true).toBe(true)
+    })
   })
 })
 

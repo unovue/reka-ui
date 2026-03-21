@@ -111,7 +111,27 @@ export function clampTargetDate(date: DateValue, minValue?: DateValue, maxValue?
 
 function focusDate(options: FocusDateOptions) {
   const clampedTarget = clampTargetDate(options.target, options.minValue, options.maxValue)
-  const safeDirection = clampedTarget.compare(options.target) === 0 ? options.directionSign : 0
+
+  // Determine safe direction:
+  // - unclamped target within bounds -> original directionSign
+  // - clamped to minValue from negative movement -> +1 (inward)
+  // - clamped to maxValue from positive movement -> -1 (inward)
+  // - otherwise -> 0
+  let safeDirection = 0
+  const isClampedToMin = options.minValue && clampedTarget.compare(options.minValue) === 0
+  const isClampedToMax = options.maxValue && clampedTarget.compare(options.maxValue) === 0
+  const wasClamped = isClampedToMin || isClampedToMax
+
+  if (!wasClamped) {
+    safeDirection = options.directionSign
+  }
+  else if (isClampedToMin && options.directionSign < 0) {
+    safeDirection = 1
+  }
+  else if (isClampedToMax && options.directionSign > 0) {
+    safeDirection = -1
+  }
+
   options.onPlaceholderChange(clampedTarget)
   nextTick(() => tryFocusDate(options.parentElement, clampedTarget, safeDirection, 0, options))
 }
