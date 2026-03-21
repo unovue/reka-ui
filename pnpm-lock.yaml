@@ -108,9 +108,6 @@ importers:
 
   docs:
     dependencies:
-      '@internationalized/date':
-        specifier: ^3.7.0
-        version: 3.7.0
       '@stackblitz/sdk':
         specifier: ^1.11.0
         version: 1.11.0
@@ -123,6 +120,9 @@ importers:
       reka-ui:
         specifier: link:../packages/core
         version: link:../packages/core
+      temporal-polyfill:
+        specifier: ^0.3.0
+        version: 0.3.0
       typescript:
         specifier: '*'
         version: 5.8.3
@@ -208,9 +208,6 @@ importers:
       '@floating-ui/vue':
         specifier: ^1.1.6
         version: 1.1.6(vue@3.5.17(typescript@5.8.3))
-      '@internationalized/date':
-        specifier: ^3.5.0
-        version: 3.7.0
       '@internationalized/number':
         specifier: ^3.5.0
         version: 3.6.0
@@ -1535,9 +1532,6 @@ packages:
     resolution: {integrity: sha512-Xq0h6zMrHBbrW8jXJ9fISi+x8oDQllg5hTDkDuxnWiskJ63rpJu9CvJshj8VniHVTbsxCg9fVoPAaNp3RQI5OQ==}
     peerDependencies:
       vue: '>=3'
-
-  '@internationalized/date@3.7.0':
-    resolution: {integrity: sha512-VJ5WS3fcVx0bejE/YHfbDKR/yawZgKqn/if+oEeLqNwBtPzVB06olkfcnojTmEMX+gTpH+FlQ69SHNitJ8/erQ==}
 
   '@internationalized/number@3.6.0':
     resolution: {integrity: sha512-PtrRcJVy7nw++wn4W2OuePQQfTqDzfusSuY1QTtui4wa7r+rGVtR75pO8CyKvHvzyQYi3Q1uO5sY0AsB4e65Bw==}
@@ -8299,10 +8293,6 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
       vue: 3.5.17(typescript@5.8.3)
-
-  '@internationalized/date@3.7.0':
-    dependencies:
-      '@swc/helpers': 0.5.11
 
   '@internationalized/number@3.6.0':
     dependencies:
