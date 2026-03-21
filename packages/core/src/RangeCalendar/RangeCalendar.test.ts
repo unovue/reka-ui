@@ -702,12 +702,17 @@ describe('rangeCalendar', () => {
   describe('keyboard shortcuts', () => {
     function getRangeUpdateSpy() {
       let updatedValue: DateValue | undefined
+      let callCount = 0
       return {
         emit: (data: DateValue) => {
+          callCount++
           updatedValue = data
         },
         get value() {
           return updatedValue
+        },
+        get callCount() {
+          return callCount
         },
       }
     }
@@ -728,7 +733,7 @@ describe('rangeCalendar', () => {
       await user.keyboard(kbd.HOME)
 
       expect(getByTestId('date-1-7')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('end focuses week end without mutating the range', async () => {
@@ -747,7 +752,7 @@ describe('rangeCalendar', () => {
       await user.keyboard(kbd.END)
 
       expect(getByTestId('date-1-13')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('home focuses previous-month day when week start is visible without mutating the range', async () => {
@@ -766,7 +771,7 @@ describe('rangeCalendar', () => {
       await user.keyboard(kbd.HOME)
 
       expect(getByTestId('date-12-27')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('end focuses next-month day when week end is visible without mutating the range', async () => {
@@ -785,7 +790,7 @@ describe('rangeCalendar', () => {
       await user.keyboard(kbd.END)
 
       expect(getByTestId('date-2-6')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('home focuses week start with weekStartsOn: 1 without mutating the range', async () => {
@@ -804,7 +809,7 @@ describe('rangeCalendar', () => {
       await user.keyboard(kbd.HOME)
 
       expect(getByTestId('date-1-8')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('end focuses week end with weekStartsOn: 1 without mutating the range', async () => {
@@ -823,7 +828,7 @@ describe('rangeCalendar', () => {
       await user.keyboard(kbd.END)
 
       expect(getByTestId('date-1-14')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page up navigates to previous month while preserving the range', async () => {
@@ -844,7 +849,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('January 2024')
       expect(getByTestId('date-1-15')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page down navigates to next month while preserving the range', async () => {
@@ -865,7 +870,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('February 2024')
       expect(getByTestId('date-2-15')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page up clamps when target month is shorter while preserving range', async () => {
@@ -886,7 +891,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('February 2024')
       expect(getByTestId('date-2-29')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('shift+page up moves a year back while preserving range', async () => {
@@ -907,7 +912,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('March 2023')
       expect(getByTestId('date-3-15')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('shift+page down moves a year forward while preserving range', async () => {
@@ -928,7 +933,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('March 2025')
       expect(getByTestId('date-3-15')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('shift year navigation clamps leap day moving forward', async () => {
@@ -949,7 +954,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('February 2025')
       expect(getByTestId('date-2-28')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('shift year navigation clamps leap day moving backward', async () => {
@@ -970,7 +975,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('February 2023')
       expect(getByTestId('date-2-28')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page up respects minValue boundary', async () => {
@@ -992,7 +997,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('January 2024')
       expect(getByTestId('date-1-5')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page down respects maxValue boundary', async () => {
@@ -1014,7 +1019,7 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('January 2024')
       expect(getByTestId('date-1-20')).toHaveFocus()
-      expect(spy.value).toBeUndefined()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page up falls inward when clamped to unavailable minValue', async () => {
