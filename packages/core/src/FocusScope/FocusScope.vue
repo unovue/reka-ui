@@ -108,6 +108,25 @@ watchEffect((cleanupFn) => {
       focus(lastFocusedElementRef.value, { select: true })
   }
 
+  document.addEventListener('focusin', handleFocusIn)
+  document.addEventListener('focusout', handleFocusOut)
+
+  cleanupFn(() => {
+    document.removeEventListener('focusin', handleFocusIn)
+    document.removeEventListener('focusout', handleFocusOut)
+  })
+})
+
+watchEffect(async (cleanupFn) => {
+  const container = currentElement.value
+
+  await nextTick()
+  if (!container)
+    return
+  focusScopesStack.add(focusScope)
+  const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+  const hasFocusedCandidate = container.contains(previouslyFocusedElement)
+
   // When the focused element gets removed from the DOM, browsers move focus
   // back to the document.body. In this case, we move focus to the container
   // to keep focus trapped correctly.
@@ -122,28 +141,10 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  // Start observing once the DOM has settled via nextTick()
+  // Manipulating the DOM during mountAutoFocus is handled by the MutationObserver
   const mutationObserver = new MutationObserver(handleMutations)
-  if (container)
-    mutationObserver.observe(container, { childList: true, subtree: true })
-
-  cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
-    mutationObserver.disconnect()
-  })
-})
-
-watchEffect(async (cleanupFn) => {
-  const container = currentElement.value
-
-  await nextTick()
-  if (!container)
-    return
-  focusScopesStack.add(focusScope)
-  const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-  const hasFocusedCandidate = container.contains(previouslyFocusedElement)
+  mutationObserver.observe(container, { childList: true, subtree: true })
 
   if (!hasFocusedCandidate) {
     const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
@@ -161,6 +162,8 @@ watchEffect(async (cleanupFn) => {
   }
 
   cleanupFn(() => {
+    mutationObserver.disconnect()
+
     container.removeEventListener(AUTOFOCUS_ON_MOUNT, (ev: Event) =>
       emits('mountAutoFocus', ev))
 
