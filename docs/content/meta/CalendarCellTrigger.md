@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -65,3 +66,29 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `day` | The date value provided to the cell trigger | `DateValue` | Yes | - |
+| `month` | The month in which the cell is rendered | `DateValue` | Yes | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `dayValue` | Current day | `string` |
+| `disabled` | Current disable state | `boolean` |
+| `selected` | Current selected state | `boolean` |
+| `today` | Current today state | `boolean` |
+| `outsideView` | Current outside view state | `boolean` |
+| `outsideVisibleView` | Current outside visible view state | `boolean` |
+| `unavailable` | Current unavailable state | `boolean` |
+
+</llm-only>

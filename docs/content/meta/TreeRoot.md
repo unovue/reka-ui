@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -126,3 +127,43 @@
     'type': 'string[]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"ul"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `bubbleSelect` | When true, selecting children will update the parent state. | `boolean` | No | - |
+| `defaultExpanded` | The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree | `string[]` | No | - |
+| `defaultValue` | The value of the tree when initially rendered. Use when you do not need to control the state of the tree | `Record<string, any> \| Record<string, any>[]` | No | - |
+| `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with tree | `boolean` | No | - |
+| `expanded` | The controlled value of the expanded item. Can be binded with v-model. | `string[]` | No | - |
+| `getChildren` | This function is passed the index of each item and should return a list of children for that item | `((val: Record<string, any>) => Record<string, any>[])` | No | `val.children` |
+| `getKey` | This function is passed the index of each item and should return a unique key for that item | `(val: Record<string, any>): string` | Yes | - |
+| `items` | List of items | `Record<string, any>[]` | No | - |
+| `modelValue` | The controlled value of the tree. Can be binded with v-model. | `Record<string, any> \| Record<string, any>[]` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
+| `propagateSelect` | When true, selecting parent will select the descendants. | `boolean` | No | - |
+| `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:expanded` |  | `[val: string[]]` |
+| `update:modelValue` | Event handler called when the value of the toggle changes. | `[val: Record<string, any> \| Record<string, any>[]]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `flattenItems` |  | `FlattenedItem<Record<string, any>>[]` |
+| `modelValue` |  | `Record<string, any> \| Record<string, any>[]` |
+| `expanded` |  | `string[]` |
+
+</llm-only>

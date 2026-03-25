@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -184,3 +185,57 @@
     'type': 'Matcher'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `calendarLabel` | The accessible label for the year picker | `string` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultValue` | The default value for the year picker | `DateValue` | No | - |
+| `dir` | The reading direction of the calendar when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | Whether the year picker is disabled | `boolean` | No | `false` |
+| `initialFocus` | If true, the year picker will focus the selected year, today, or the first year of the range on mount | `boolean` | No | `false` |
+| `isYearDisabled` | A function that returns whether or not a year is disabled | `Matcher` | No | - |
+| `isYearUnavailable` | A function that returns whether or not a year is unavailable | `Matcher` | No | - |
+| `locale` | The locale to use for formatting dates | `string` | No | - |
+| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
+| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `modelValue` | The controlled selected year value of the year picker. Can be bound as v-model. | `DateValue \| DateValue[]` | No | - |
+| `multiple` | Whether multiple years can be selected | `boolean` | No | `false` |
+| `nextPage` | A function that returns the next page of the year picker. Receives the current placeholder as an argument. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what year range to display when no date is selected | `DateValue` | No | - |
+| `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
+| `prevPage` | A function that returns the previous page of the year picker. Receives the current placeholder as an argument. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `readonly` | Whether the year picker is readonly | `boolean` | No | `false` |
+| `yearsPerPage` | Number of years to display per page | `number` | No | `12` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| DateValue[]]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `date` | The current date of the placeholder | `DateValue` |
+| `grid` | The grid of years | `Grid<DateValue>` |
+| `locale` | The year picker locale | `string` |
+| `modelValue` | The current selected value | `DateValue \| DateValue[] \| undefined` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `isYearDisabled` | A function that returns whether or not a year is disabled | `Matcher` |
+| `isYearUnavailable` | A function that returns whether or not a year is unavailable | `Matcher` |
+
+</llm-only>

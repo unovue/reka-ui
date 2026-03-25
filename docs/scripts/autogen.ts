@@ -73,20 +73,53 @@ primitiveComponents.forEach((componentPath) => {
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
   let parsedString = '<!-- This file was automatically generated. Do not edit it manually -->\n\n'
+
+  let vitePressParts = ''
   if (meta.props.length)
-    parsedString += `<PropsTable :data="${toSingleQuotedJson(meta.props)}" />\n`
-
+    vitePressParts += `<PropsTable :data="${toSingleQuotedJson(meta.props)}" />\n`
   if (meta.events.length)
-    parsedString += `\n<EmitsTable :data="${toSingleQuotedJson(meta.events)}" />\n`
-
+    vitePressParts += `\n<EmitsTable :data="${toSingleQuotedJson(meta.events)}" />\n`
   if (meta.slots.length)
-    parsedString += `\n<SlotsTable :data="${toSingleQuotedJson(meta.slots)}" />\n`
-
+    vitePressParts += `\n<SlotsTable :data="${toSingleQuotedJson(meta.slots)}" />\n`
   if (meta.methods.length)
-    parsedString += `\n<MethodsTable :data="${toSingleQuotedJson(meta.methods)}" />\n`
+    vitePressParts += `\n<MethodsTable :data="${toSingleQuotedJson(meta.methods)}" />\n`
+
+  if (vitePressParts)
+    parsedString += `<llm-exclude>\n${vitePressParts}</llm-exclude>\n`
+
+  const llmParts = generateMarkdownTables(meta)
+  if (llmParts)
+    parsedString += `\n<llm-only>\n\n${llmParts}</llm-only>\n`
 
   writeFileSync(metaMdFilePath, parsedString)
 })
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&#39;/g, '\'').replace(/&quot;/g, '"').trim()
+}
+
+function generateMarkdownTables(meta: ReturnType<typeof parseMeta>): string {
+  const clean = (s: string) => stripHtml(s).replace(/\|/g, '\\|').replace(/\n/g, ' ')
+
+  function toMdTable(title: string, headers: string[], rows: string[][]): string {
+    if (!rows.length)
+      return ''
+    return `**${title}**\n\n| ${headers.join(' | ')} |\n| ${headers.map(() => '---').join(' | ')} |\n${rows.map(r => `| ${r.join(' | ')} |`).join('\n')}\n\n`
+  }
+
+  return [
+    toMdTable('Props', ['Name', 'Description', 'Type', 'Required', 'Default'], meta.props.map(p => [
+      `\`${p.name}\``,
+      clean(p.description),
+      `\`${clean(p.type)}\``,
+      p.required ? 'Yes' : 'No',
+      p.default != null ? `\`${clean(String(p.default))}\`` : '-',
+    ])),
+    toMdTable('Events', ['Name', 'Description', 'Type'], meta.events.map(e => [`\`${e.name}\``, clean(e.description), `\`${clean(e.type)}\``])),
+    toMdTable('Slots', ['Name', 'Description', 'Type'], meta.slots.map(s => [`\`${s.name}\``, clean(s.description), `\`${clean(s.type)}\``])),
+    toMdTable('Methods', ['Name', 'Description', 'Type'], meta.methods.map(m => [`\`${m.name}\``, clean(m.description), `\`${clean(m.type)}\``])),
+  ].join('')
+}
 
 function parseTypeFromSchema(schema: PropertyMetaSchema): string {
   if (typeof schema === 'object' && (schema.kind === 'enum' || schema.kind === 'array')) {

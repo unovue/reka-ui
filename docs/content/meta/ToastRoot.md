@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -108,3 +109,41 @@
     'type': 'number'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"li"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `true` |
+| `duration` | Time in milliseconds that toast should remain visible for. Overrides value given to ToastProvider. | `number` | No | - |
+| `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
+| `open` | The controlled open state of the dialog. Can be bind as v-model:open. | `boolean` | No | - |
+| `type` | Control the sensitivity of the toast for accessibility purposes. For toasts that are the result of a user action, choose foreground. Toasts generated from background tasks should use background. | `"foreground" \| "background"` | No | `"foreground"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `escapeKeyDown` | Event handler called when the escape key is down. It can be prevented by calling event.preventDefault. | `[event: KeyboardEvent]` |
+| `pause` | Event handler called when the dismiss timer is paused. This occurs when the pointer is moved over the viewport, the viewport is focused or when the window is blurred. | `[]` |
+| `resume` | Event handler called when the dismiss timer is resumed. This occurs when the pointer is moved away from the viewport, the viewport is blurred or when the window is focused. | `[]` |
+| `swipeCancel` | Event handler called when swipe interaction is cancelled. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
+| `swipeEnd` | Event handler called at the end of a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
+| `swipeMove` | Event handler called during a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
+| `swipeStart` | Event handler called when starting a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
+| `update:open` | Event handler called when the open state changes | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+| `remaining` | Remaining time (in ms) | `number` |
+| `duration` | Total time the toast will remain visible for (in ms) | `number` |
+
+</llm-only>

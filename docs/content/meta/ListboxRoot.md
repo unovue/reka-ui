@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -114,3 +115,41 @@
     'type': 'AcceptableValue | AcceptableValue[] | undefined'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
+| `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
+| `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
+| `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `orientation` | The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"vertical"` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
+| `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current active value | `AcceptableValue \| AcceptableValue[] \| undefined` |
+
+</llm-only>

@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'closeDelay',
@@ -45,3 +46,29 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `closeDelay` | The duration from when the mouse leaves the trigger or content until the hover card closes. | `number` | No | `300` |
+| `defaultOpen` | The open state of the hover card when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `open` | The controlled open state of the hover card. Can be binded as v-model:open. | `boolean` | No | - |
+| `openDelay` | The duration from when the mouse enters the trigger until the hover card opens. | `number` | No | `700` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:open` | Event handler called when the open state of the hover card changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+
+</llm-only>

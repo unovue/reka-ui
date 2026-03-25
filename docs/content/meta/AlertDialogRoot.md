@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
@@ -35,3 +36,28 @@
     'type': '(): void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
+| `open` | The controlled open state of the dialog. Can be binded as v-model:open. | `boolean` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+| `close` | Close the dialog | `(): void` |
+
+</llm-only>

@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -132,3 +133,50 @@
     'type': '(size: number) =&gt; void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `collapsedSize` | The size of panel when it is collapsed; interpreted using sizeUnit. | `number` | No | - |
+| `collapsible` | Should panel collapse when resized beyond its minSize. When true, it will be collapsed to collapsedSize. | `boolean` | No | - |
+| `defaultSize` | Initial size of panel, interpreted using sizeUnit (percent by default). | `number` | No | - |
+| `id` | Panel id (unique within group); falls back to useId when not provided | `string` | No | - |
+| `maxSize` | The maximum allowable size of panel, interpreted using sizeUnit; defaults to 100 (percent). | `number` | No | - |
+| `minSize` | The minimum allowable size of panel, interpreted using sizeUnit; defaults to 10 (percent). | `number` | No | - |
+| `order` | The order of panel within group; required for groups with conditionally rendered panels | `number` | No | - |
+| `sizeUnit` | Unit used for sizing values; % by default, or px for fixed sizing. | `"%" \| "px"` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `collapse` | Event handler called when panel is collapsed. | `[]` |
+| `expand` | Event handler called when panel is expanded. | `[]` |
+| `resize` | Event handler called when panel is resized; size parameter is a numeric value between 1-100. | `[size: number, prevSize: number]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `isCollapsed` | Is the panel collapsed | `boolean` |
+| `isExpanded` | Is the panel expanded | `boolean` |
+| `collapse` | If panel is collapsible, collapse it fully. | `(): void` |
+| `expand` | If panel is currently collapsed, expand it to its most recent size. | `(): void` |
+| `resize` | Resize panel to the specified percentage (1 - 100). | `(size: number): void` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `collapse` | If panel is collapsible, collapse it fully. | `() => void` |
+| `expand` | If panel is currently collapsed, expand it to its most recent size. | `() => void` |
+| `getSize` | Gets the current size of the panel (in the panel's sizeUnit: percentage for '%', pixels for 'px'). | `() => number` |
+| `resize` | Resize panel to the specified size (in the panel's sizeUnit: percentage for '%', pixels for 'px'). | `(size: number) => void` |
+
+</llm-only>

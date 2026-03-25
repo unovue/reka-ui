@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'autocomplete',
@@ -94,3 +95,38 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `autocomplete` | Native html input autocomplete attribute. | `string` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
+| `defaultOpen` | The open state of the select when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
+| `defaultValue` | The value of the select when initially rendered. Use when you do not need to control the state of the Select | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with Select | `boolean` | No | - |
+| `modelValue` | The controlled value of the Select. Can be bind as v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `open` | The controlled open state of the Select. Can be bind as v-model:open. | `boolean` | No | - |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+| `update:open` | Event handler called when the open state of the context menu changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current input values | `AcceptableValue \| AcceptableValue[] \| undefined` |
+| `open` | Current open state | `boolean` |
+
+</llm-only>

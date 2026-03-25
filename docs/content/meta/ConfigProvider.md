@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'dir',
@@ -43,3 +44,24 @@
     'type': '() =&gt; string'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `dir` | The global reading direction of your application. This will be inherited by all primitives. | `"ltr" \| "rtl"` | No | `"ltr"` |
+| `locale` | The global locale of your application. This will be inherited by all primitives. | `string` | No | `"en"` |
+| `nonce` | The global nonce value of your application. This will be inherited by the related primitives. | `string` | No | - |
+| `scrollBody` | The global scroll body behavior of your application. This will be inherited by the related primitives. | `boolean \| ScrollBodyOption` | No | `true` |
+| `useId` | The global useId injection as a workaround for preventing hydration issue. | `(() => string)` | No | - |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `useId` | The global useId injection as a workaround for preventing hydration issue. | `() => string` |
+
+</llm-only>
