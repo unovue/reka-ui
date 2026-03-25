@@ -11,11 +11,13 @@ import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLo
 import {
   createContent,
   getDefaultDate,
+  getInputType,
   getSegmentElements,
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
   normalizeHourCycle,
+  normalizeInputValue,
   syncSegmentValues,
 } from '@/shared/date'
 
@@ -241,6 +243,11 @@ const prevFocusableSegment = computed(() => {
   return segmentToFocus
 })
 
+const inputType = computed(() => getInputType(inferredGranularity.value))
+const inputValue = computed(() => normalizeInputValue(modelValue.value, inferredGranularity.value))
+const inputMaxValue = computed(() => props.maxValue ? normalizeInputValue(props.maxValue, inferredGranularity.value) : undefined)
+const inputMinValue = computed(() => props.minValue ? normalizeInputValue(props.minValue, inferredGranularity.value) : undefined)
+
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
@@ -303,15 +310,15 @@ defineExpose({
     <VisuallyHidden
       :id="id"
       as="input"
-      type="date"
+      :type="inputType"
       feature="focusable"
       tabindex="-1"
-      :value="modelValue ? modelValue.toString() : ''"
+      :value="inputValue"
       :name="name"
       :disabled="disabled"
       :required="required"
-      :max="maxValue"
-      :min="minValue"
+      :max="inputMaxValue"
+      :min="inputMinValue"
       @focus="Array.from(segmentElements)?.[0]?.focus()"
     />
   </Primitive>
