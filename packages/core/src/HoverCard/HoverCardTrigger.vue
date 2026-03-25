@@ -4,6 +4,7 @@ export interface HoverCardTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
+import { onMounted } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
@@ -16,7 +17,10 @@ withDefaults(defineProps<HoverCardTriggerProps>(), {
 
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectHoverCardRootContext()
-rootContext.triggerElement = currentElement
+
+onMounted(() => {
+  rootContext.triggerElement.value = currentElement.value
+})
 
 function handleLeave() {
   setTimeout(() => {

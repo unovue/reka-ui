@@ -11,6 +11,11 @@ export interface HoverCardRootProps {
   openDelay?: number
   /** The duration from when the mouse leaves the trigger or content until the hover card closes. */
   closeDelay?: number
+  /**
+   * Whether to close the hover card when a scrollable ancestor is scrolled.
+   * @defaultValue true
+   */
+  closeOnAncestorScroll?: boolean
 }
 export type HoverCardRootEmits = {
   /** Event handler called when the open state of the hover card changes. */
@@ -34,8 +39,9 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 </script>
 
 <script setup lang="ts">
+import { getOverflowAncestors } from '@floating-ui/dom'
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onUnmounted, ref, toRefs, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
@@ -43,6 +49,7 @@ const props = withDefaults(defineProps<HoverCardRootProps>(), {
   open: undefined,
   openDelay: 700,
   closeDelay: 300,
+  closeOnAncestorScroll: true,
 })
 const emit = defineEmits<HoverCardRootEmits>()
 
@@ -82,6 +89,29 @@ function handleClose() {
 function handleDismiss() {
   open.value = false
 }
+
+let scrollAncestors: (Element | Window | VisualViewport)[] = []
+
+function removeScrollListeners() {
+  scrollAncestors.forEach(a => a.removeEventListener('scroll', handleAncestorScroll))
+  scrollAncestors = []
+}
+
+function handleAncestorScroll() {
+  clearTimeout(openTimerRef.value)
+  clearTimeout(closeTimerRef.value)
+  handleDismiss()
+}
+
+watch([triggerElement, () => props.closeOnAncestorScroll], ([el, closeOnScroll]) => {
+  removeScrollListeners()
+  if (!el || !closeOnScroll)
+    return
+  scrollAncestors = getOverflowAncestors(el as HTMLElement)
+  scrollAncestors.forEach(a => a.addEventListener('scroll', handleAncestorScroll, { passive: true }))
+})
+
+onUnmounted(removeScrollListeners)
 
 provideHoverCardRootContext({
   open,

@@ -43,6 +43,11 @@ export interface TooltipRootProps {
    * @defaultValue false
    */
   ignoreNonKeyboardFocus?: boolean
+  /**
+   * Whether to close the tooltip when a scrollable ancestor is scrolled.
+   * @defaultValue true
+   */
+  closeOnAncestorScroll?: boolean
 }
 
 export type TooltipRootEmits = {
@@ -71,8 +76,9 @@ export const [injectTooltipRootContext, provideTooltipRootContext]
 </script>
 
 <script setup lang="ts">
+import { getOverflowAncestors } from '@floating-ui/dom'
 import { useTimeoutFn, useVModel } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
@@ -85,6 +91,7 @@ const props = withDefaults(defineProps<TooltipRootProps>(), {
   disableClosingTrigger: undefined,
   disabled: undefined,
   ignoreNonKeyboardFocus: undefined,
+  closeOnAncestorScroll: true,
 })
 
 const emit = defineEmits<TooltipRootEmits>()
@@ -127,6 +134,28 @@ watch(open, (isOpen) => {
 
 const wasOpenDelayedRef = ref(false)
 const trigger = ref<HTMLElement>()
+
+let scrollAncestors: (Element | Window | VisualViewport)[] = []
+
+function removeScrollListeners() {
+  scrollAncestors.forEach(a => a.removeEventListener('scroll', handleAncestorScroll))
+  scrollAncestors = []
+}
+
+function handleAncestorScroll() {
+  if (open.value)
+    handleClose()
+}
+
+watch([trigger, () => props.closeOnAncestorScroll], ([el, closeOnScroll]) => {
+  removeScrollListeners()
+  if (!el || !closeOnScroll)
+    return
+  scrollAncestors = getOverflowAncestors(el as HTMLElement)
+  scrollAncestors.forEach(a => a.addEventListener('scroll', handleAncestorScroll, { passive: true }))
+})
+
+onUnmounted(removeScrollListeners)
 
 const stateAttribute = computed(() => {
   if (!open.value)

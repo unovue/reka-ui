@@ -17,6 +17,11 @@ export interface PopoverRootProps {
    * @defaultValue false
    */
   modal?: boolean
+  /**
+   * Whether to close the popover when a scrollable ancestor is scrolled.
+   * @defaultValue false
+   */
+  closeOnAncestorScroll?: boolean
 }
 export type PopoverRootEmits = {
   /**
@@ -41,14 +46,16 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 </script>
 
 <script setup lang="ts">
+import { getOverflowAncestors } from '@floating-ui/dom'
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onUnmounted, ref, toRefs, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
   open: undefined,
   modal: false,
+  closeOnAncestorScroll: false,
 })
 const emit = defineEmits<PopoverRootEmits>()
 
@@ -70,6 +77,28 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 const hasCustomAnchor = ref(false)
+
+let scrollAncestors: (Element | Window | VisualViewport)[] = []
+
+function removeScrollListeners() {
+  scrollAncestors.forEach(a => a.removeEventListener('scroll', handleAncestorScroll))
+  scrollAncestors = []
+}
+
+function handleAncestorScroll() {
+  if (open.value)
+    open.value = false
+}
+
+watch([triggerElement, () => props.closeOnAncestorScroll], ([el, closeOnScroll]) => {
+  removeScrollListeners()
+  if (!el || !closeOnScroll)
+    return
+  scrollAncestors = getOverflowAncestors(el as HTMLElement)
+  scrollAncestors.forEach(a => a.addEventListener('scroll', handleAncestorScroll, { passive: true }))
+})
+
+onUnmounted(removeScrollListeners)
 
 providePopoverRootContext({
   contentId: '',
