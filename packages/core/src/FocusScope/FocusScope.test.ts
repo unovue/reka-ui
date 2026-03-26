@@ -24,6 +24,7 @@ const TestField = ({
 describe('focusScope', () => {
   describe('given a default FocusScope', () => {
     let rendered: RenderResult
+    let focusContainer: HTMLElement
     let tabbableFirst: HTMLInputElement
     let tabbableSecond: HTMLInputElement
     let tabbableLast: HTMLButtonElement
@@ -33,7 +34,7 @@ describe('focusScope', () => {
         components: { TestField, FocusScope },
         template: `<div>
         <FocusScope asChild loop trapped>
-          <form>
+          <form data-testid="focus-scope">
             <TestField label=${INNER_NAME_INPUT_LABEL} />
             <TestField label=${INNER_EMAIL_INPUT_LABEL} />
             <button>${INNER_SUBMIT_LABEL}</button>
@@ -43,6 +44,7 @@ describe('focusScope', () => {
         <button>some outer button</button>
       </div>`,
       }))
+      focusContainer = rendered.getByTestId('focus-scope') as HTMLElement
       tabbableFirst = rendered.getByLabelText(INNER_NAME_INPUT_LABEL) as HTMLInputElement
       tabbableSecond = rendered.getByLabelText(INNER_EMAIL_INPUT_LABEL) as HTMLInputElement
       tabbableLast = rendered.getByText(INNER_SUBMIT_LABEL) as HTMLButtonElement
@@ -57,13 +59,19 @@ describe('focusScope', () => {
     it('should focus the last element in the scope on shift+tab from the first element in scope', async () => {
       tabbableFirst.focus()
       await userEvent.tab({ shift: true })
-      waitFor(() => expect(tabbableLast).toBe(document.activeElement))
+      await waitFor(() => expect(tabbableLast).toBe(document.activeElement))
     })
 
     it('should focus the first element in scope on tab from the last element in scope', async () => {
       tabbableLast.focus()
       await userEvent.tab()
       expect(tabbableFirst).toBe(document.activeElement)
+    })
+
+    it('should focus container when focused element is removed from the DOM', async () => {
+      tabbableFirst.focus()
+      tabbableFirst.remove()
+      await waitFor(() => expect(focusContainer).toHaveFocus())
     })
   })
 
@@ -100,7 +108,7 @@ describe('focusScope', () => {
     it('should skip the element with a negative tabindex on shift+tab', async () => {
       tabbableSecond.focus()
       await userEvent.tab({ shift: true })
-      waitFor(() => expect(tabbableLast).toBe(document.activeElement))
+      await waitFor(() => expect(tabbableLast).toBe(document.activeElement))
     })
   })
 
@@ -111,7 +119,9 @@ describe('focusScope', () => {
     beforeEach(() => {
       rendered = render(defineComponent({
         components: { TestField, FocusScope },
-        props: { handleLastFocusableElementBlur },
+        setup() {
+          return { handleLastFocusableElementBlur }
+        },
         template: `<div>
         <FocusScope asChild loop trapped>
           <form>
@@ -130,7 +140,7 @@ describe('focusScope', () => {
       tabbableFirst.focus()
       await userEvent.tab({ shift: true })
       await userEvent.tab()
-      waitFor(() => expect(handleLastFocusableElementBlur).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(handleLastFocusableElementBlur).toHaveBeenCalledTimes(1))
     })
   })
 })
