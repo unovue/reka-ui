@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <SlotsTable :data="[
   {
@@ -9,7 +9,7 @@
   {
     'name': 'grid',
     'description': '',
-    'type': 'Grid<DateValue>[]'
+    'type': 'Grid&lt;DateValue&gt;[]'
   },
   {
     'name': 'weekDays',

@@ -24,13 +24,22 @@ const props = withDefaults(defineProps<TagsInputInputProps>(), {
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 
-function handleBlur(event: Event) {
+function handleBlur(event: FocusEvent) {
   context.selectedElement.value = undefined
 
   if (!context.addOnBlur.value)
     return
 
   const target = event.target as HTMLInputElement
+
+  // If the blur is caused by clicking an option within the content,
+  // we don't trigger the `addOnBlur` action,
+  // because the clicked option should be added instead of the input's current value.
+  const relatedTarget = event.relatedTarget as HTMLElement | null
+  const controlledId = target.getAttribute('aria-controls')
+  if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
+    return
+
   if (!target.value)
     return
 

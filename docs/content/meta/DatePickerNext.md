@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -17,7 +17,7 @@
   {
     'name': 'nextPage',
     'description': '<p>The function to be used for the next page. Overwrites the <code>nextPage</code> function set on the <code>CalendarRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   }
 ]" />

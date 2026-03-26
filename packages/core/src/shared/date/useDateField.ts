@@ -1,10 +1,13 @@
-import type { CalendarDateTime, CycleTimeOptions, DateFields, DateValue, TimeFields } from '@internationalized/date'
+import type { CalendarDateTime, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
+import {
+  DateFormatter,
+} from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import { snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 type MinuteSecondIncrementProps = {
@@ -19,7 +22,6 @@ type DateTimeValueIncrementation = {
   part: keyof Omit<DateFields, 'era'> | keyof TimeFields
   dateRef: DateValue
   prevValue: number | null
-  hourCycle?: HourCycle
 }
 
 type SegmentAttrProps = {
@@ -282,6 +284,7 @@ export type UseDateFieldProps = {
   placeholder: Ref<DateValue>
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping?: Ref<boolean>
   formatter: Formatter
   segmentValues: Ref<SegmentValueObj>
   disabled: Ref<boolean>
@@ -320,7 +323,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     return Number.parseInt(str.slice(0, -1))
   }
-  function dateTimeValueIncrementation({ e, part, dateRef, prevValue, hourCycle }: DateTimeValueIncrementation): number {
+  function dateTimeValueIncrementation({ e, part, dateRef, prevValue }: DateTimeValueIncrementation): number {
     const step = props.step.value[part] ?? 1
     const sign = e.key === kbd.ARROW_UP ? step : -step
 
@@ -328,7 +331,9 @@ export function useDateField(props: UseDateFieldProps) {
       return dateRef[part as keyof Omit<DateFields, 'era'>]
 
     if (part === 'hour' && 'hour' in dateRef) {
-      const cycleArgs: [keyof DateFields | keyof TimeFields, number, CycleTimeOptions?] = [part, sign, { hourCycle }]
+      // Don't pass hourCycle to cycle - internal representation is always 24-hour
+      // The hourCycle prop only affects display, not internal cycling
+      const cycleArgs: [keyof DateFields | keyof TimeFields, number] = [part, sign]
       return dateRef.set({ [part as keyof DateValue]: prevValue }).cycle(...cycleArgs)[part]
     }
 
@@ -366,11 +371,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     if (prev === null) {
-    /**
-     * If the user types a 0 as the first number, we want
-     * to keep track of that so that when they type the next
-     * number, we can move to the next segment.
-     */
+      /**
+       * If the user types a 0 as the first number, we want
+       * to keep track of that so that when they type the next
+       * number, we can move to the next segment.
+       */
 
       if (num === 0) {
         props.lastKeyZero.value = true
@@ -384,7 +389,7 @@ export function useDateField(props: UseDateFieldProps) {
        */
 
       if (props.lastKeyZero.value || num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       props.lastKeyZero.value = false
@@ -412,13 +417,13 @@ export function useDateField(props: UseDateFieldProps) {
      */
 
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart || total > max) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
@@ -444,11 +449,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     if (prev === null) {
-    /**
-     * If the user types a 0 as the first number, we want
-     * to keep track of that so that when they type the next
-     * number, we can move to the next segment.
-     */
+      /**
+       * If the user types a 0 as the first number, we want
+       * to keep track of that so that when they type the next
+       * number, we can move to the next segment.
+       */
 
       if (num === 0) {
         props.lastKeyZero.value = true
@@ -462,7 +467,7 @@ export function useDateField(props: UseDateFieldProps) {
        */
 
       if (props.lastKeyZero.value || num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       props.lastKeyZero.value = false
@@ -491,13 +496,13 @@ export function useDateField(props: UseDateFieldProps) {
      */
 
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
@@ -507,8 +512,7 @@ export function useDateField(props: UseDateFieldProps) {
     return { value: total, moveToNext }
   }
 
-  function updateHour(num: number, prev: number | null) {
-    const max = 24
+  function updateHour(max: number, num: number, prev: number | null) {
     let moveToNext = false
     const maxStart = Math.floor(max / 10)
 
@@ -524,11 +528,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
 
     if (prev === null) {
-    /**
-     * If the user types a 0 as the first number, we want
-     * to keep track of that so that when they type the next
-     * number, we can move to the next segment.
-     */
+      /**
+       * If the user types a 0 as the first number, we want
+       * to keep track of that so that when they type the next
+       * number, we can move to the next segment.
+       */
 
       if (num === 0) {
         props.lastKeyZero.value = true
@@ -542,7 +546,7 @@ export function useDateField(props: UseDateFieldProps) {
        */
 
       if (props.lastKeyZero.value || num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       props.lastKeyZero.value = false
@@ -571,13 +575,13 @@ export function useDateField(props: UseDateFieldProps) {
      */
 
     if (digits === 2 || total > max) {
-    /**
-     * As we're doing elsewhere, we're checking if the number is greater
-     * than the max start digit (0-3 in most months), and if so, we're
-     * going to move to the next segment.
-     */
+      /**
+       * As we're doing elsewhere, we're checking if the number is greater
+       * than the max start digit (0-3 in most months), and if so, we're
+       * going to move to the next segment.
+       */
       if (num > maxStart) {
-      // move to next
+        // move to next
         moveToNext = true
       }
       return { value: num, moveToNext }
@@ -714,6 +718,11 @@ export function useDateField(props: UseDateFieldProps) {
     }
   }
 
+  function uses12HourFormat(locale: string): boolean {
+    const hourCycle = new DateFormatter(locale, { hour: 'numeric' }).resolvedOptions().hourCycle
+    return hourCycle === 'h11' || hourCycle === 'h12'
+  }
+
   function handleHourSegmentKeydown(e: KeyboardEvent) {
     const dateRef = props.placeholder.value
     if (!isAcceptableSegmentKey(e.key) || isSegmentNavigationKey(e.key) || !('hour' in dateRef) || !('hour' in props.segmentValues.value))
@@ -721,16 +730,14 @@ export function useDateField(props: UseDateFieldProps) {
 
     const prevValue = props.segmentValues.value.hour
 
-    const hourCycle = props.hourCycle
-
     if (e.key === kbd.ARROW_UP || e.key === kbd.ARROW_DOWN) {
-      props.segmentValues.value.hour = dateTimeValueIncrementation({ e, part: 'hour', dateRef: props.placeholder.value, prevValue, hourCycle })
+      const newHour = dateTimeValueIncrementation({ e, part: 'hour', dateRef: props.placeholder.value, prevValue })
+      props.segmentValues.value.hour = newHour
 
-      if ('dayPeriod' in props.segmentValues.value) {
-        if (props.segmentValues.value.hour < 12)
-          props.segmentValues.value.dayPeriod = 'AM'
-        else if (props.segmentValues.value.hour)
-          props.segmentValues.value.dayPeriod = 'PM'
+      if ('dayPeriod' in props.segmentValues.value && newHour !== null) {
+        // Determine AM/PM based on internal 24-hour value
+        // Hour 0-11 = AM, Hour 12-23 = PM
+        props.segmentValues.value.dayPeriod = newHour >= 12 ? 'PM' : 'AM'
       }
 
       return
@@ -738,14 +745,31 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (isNumberString(e.key)) {
       const num = Number.parseInt(e.key)
-      const { value, moveToNext } = updateHour(num, prevValue)
+      const is12Hour = props.hourCycle !== undefined
+        ? props.hourCycle === 12
+        : uses12HourFormat(props.formatter.getLocale())
+      const max = is12Hour ? 12 : 24
 
-      if ('dayPeriod' in props.segmentValues.value && value && value > 12)
-        props.segmentValues.value.dayPeriod = 'PM'
-      else if ('dayPeriod' in props.segmentValues.value && value)
-        props.segmentValues.value.dayPeriod = 'AM'
+      let displayPrev = prevValue
+      if (is12Hour && prevValue !== null) {
+        displayPrev = prevValue === 0 ? 12 : (prevValue > 12 ? prevValue - 12 : prevValue)
+      }
 
-      props.segmentValues.value.hour = value
+      const { value, moveToNext } = updateHour(max, num, displayPrev)
+
+      // Convert display hour back to internal 24-hour format
+      let internalValue = value
+      if (is12Hour && value !== null) {
+        const period = props.segmentValues.value.dayPeriod || 'AM'
+        if (value === 12) {
+          internalValue = period === 'AM' ? 0 : 12
+        }
+        else {
+          internalValue = period === 'PM' ? value + 12 : value
+        }
+      }
+
+      props.segmentValues.value.hour = internalValue
 
       if (moveToNext)
         props.focusNext()
@@ -850,11 +874,10 @@ export function useDateField(props: UseDateFieldProps) {
   function handleSegmentKeydown(e: KeyboardEvent) {
     const disabled = props.disabled.value
     const readonly = props.readonly.value
-    if (e.key !== kbd.TAB)
-      e.preventDefault()
-
     if (disabled || readonly)
       return
+    if (e.key !== kbd.TAB)
+      e.preventDefault()
     const segmentKeydownHandlers = {
       day: handleDaySegmentKeydown,
       month: handleMonthSegmentKeydown,
@@ -863,7 +886,7 @@ export function useDateField(props: UseDateFieldProps) {
       minute: handleMinuteSegmentKeydown,
       second: handleSecondSegmentKeydown,
       dayPeriod: handleDayPeriodSegmentKeydown,
-      timeZoneName: () => {},
+      timeZoneName: () => { },
     } as const
 
     segmentKeydownHandlers[props.part as keyof typeof segmentKeydownHandlers](e)
@@ -881,9 +904,36 @@ export function useDateField(props: UseDateFieldProps) {
     }
   }
 
+  function handleSegmentFocusOut() {
+    if (!props.stepSnapping?.value)
+      return
+
+    if (props.part === 'hour' && 'hour' in props.segmentValues.value && props.segmentValues.value.hour !== null && props.step.value.hour && props.step.value.hour > 1) {
+      props.segmentValues.value.hour = snapValueToStep(props.segmentValues.value.hour, 0, 23, props.step.value.hour)
+      if ('dayPeriod' in props.segmentValues.value) {
+        if (props.segmentValues.value.hour < 12)
+          props.segmentValues.value.dayPeriod = 'AM'
+        else if (props.segmentValues.value.hour)
+          props.segmentValues.value.dayPeriod = 'PM'
+      }
+    }
+    else if (props.part === 'minute' && 'minute' in props.segmentValues.value && props.segmentValues.value.minute !== null && props.step.value.minute && props.step.value.minute > 1) {
+      props.segmentValues.value.minute = snapValueToStep(props.segmentValues.value.minute, 0, 59, props.step.value.minute)
+    }
+    else if (props.part === 'second' && 'second' in props.segmentValues.value && props.segmentValues.value.second !== null && props.step.value.second && props.step.value.second > 1) {
+      props.segmentValues.value.second = snapValueToStep(props.segmentValues.value.second, 0, 59, props.step.value.second)
+    }
+
+    if (Object.values(props.segmentValues.value).every(item => item !== null)) {
+      const dateRef = props.placeholder.value.set({ ...props.segmentValues.value as Record<AnyExceptLiteral, number> })
+      props.modelValue.value = dateRef.copy()
+    }
+  }
+
   return {
     handleSegmentClick,
     handleSegmentKeydown,
+    handleSegmentFocusOut,
     attributes,
   }
 }

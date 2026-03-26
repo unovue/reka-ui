@@ -1,10 +1,10 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
     'name': 'estimateSize',
     'description': '<p>Estimated size (in px) of each item</p>\n',
-    'type': 'number',
+    'type': 'number | ((index: number) =&gt; number)',
     'required': false
   },
   {
@@ -22,7 +22,7 @@
   {
     'name': 'textContent',
     'description': '<p>Text content for each item to achieve type-ahead feature</p>\n',
-    'type': '((option: AcceptableValue) => string)',
+    'type': '((option: AcceptableValue) =&gt; string)',
     'required': false
   }
 ]" />
@@ -31,12 +31,12 @@
   {
     'name': 'option',
     'description': '',
-    'type': 'null | string | number | bigint | Record<string, any>'
+    'type': 'null | string | number | bigint | Record&lt;string, any&gt;'
   },
   {
     'name': 'virtualizer',
     'description': '',
-    'type': 'Virtualizer<HTMLElement, Element>'
+    'type': 'Virtualizer&lt;HTMLElement, Element&gt;'
   },
   {
     'name': 'virtualItem',

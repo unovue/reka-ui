@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -17,7 +17,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The value of the selected item in the group.</p>\n',
-    'type': 'string',
+    'type': 'AcceptableValue',
     'required': false
   }
 ]" />
@@ -26,6 +26,6 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[payload: string]'
+    'type': '[payload: AcceptableValue]'
   }
 ]" />

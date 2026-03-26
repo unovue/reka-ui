@@ -19,6 +19,19 @@ describe('given a default Toast', () => {
     trigger = wrapper.find('button')
   })
 
+  it('should have visible toast that is focusable', async () => {
+    // Open toast
+    await fireEvent.click(trigger.element)
+
+    // Wait for toast to appear in DOM
+    const toastText = await findByText(document.body, 'Scheduled: Catch up')
+
+    // The visible toast element should be focusable
+    const toastElement = toastText.closest('li')
+    expect(toastElement).toBeTruthy()
+    expect(toastElement?.getAttribute('tabindex')).toBe('0')
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(document.body)).toHaveNoViolations()
 

@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -89,7 +89,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateValue | null',
     'required': false
   },
@@ -166,6 +166,6 @@
   {
     'name': 'setFocusedElement',
     'description': '<p>Helper to set the focused element inside the DateField</p>\n',
-    'type': '(el: HTMLElement) => void'
+    'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />

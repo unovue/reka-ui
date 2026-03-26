@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -13,5 +13,13 @@
     'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
+  }
+]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'updateIndicatorStyle',
+    'description': '',
+    'type': '() =&gt; void'
   }
 ]" />

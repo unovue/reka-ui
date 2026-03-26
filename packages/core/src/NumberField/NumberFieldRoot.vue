@@ -17,6 +17,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** When `false`, prevents the value from snapping to the nearest increment of the step value */
   stepSnapping?: boolean
+  /** When `true`, the input will be focused when the value changes. */
+  focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
   formatOptions?: Intl.NumberFormatOptions
   /** The locale to use for formatting and currencies */
@@ -76,6 +78,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   defaultValue: undefined,
   step: 1,
   stepSnapping: true,
+  focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
 const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
@@ -109,7 +112,9 @@ const isIncreaseDisabled = computed(() => (
 )
 
 function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
-  inputEl.value?.focus()
+  if (props.focusOnChange) {
+    inputEl.value?.focus()
+  }
   if (props.disabled || props.readonly)
     return
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
@@ -200,10 +205,10 @@ provideNumberFieldRootContext({
   inputEl,
   onInputElement: el => inputEl.value = el,
   textValue,
+  readonly,
   validate,
   applyInputValue,
   disabled,
-  readonly,
   disableWheelChange,
   invertWheelChange,
   max,
@@ -227,6 +232,7 @@ provideNumberFieldRootContext({
     <slot
       :model-value="modelValue"
       :text-value="textValue"
+      :readonly="readonly"
     />
 
     <VisuallyHiddenInput

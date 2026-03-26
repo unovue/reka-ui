@@ -1,7 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 import Tabs from './story/_Tabs.vue'
 
 describe('given default Tabs', () => {
@@ -37,5 +38,46 @@ describe('given default Tabs', () => {
       expect(wrapper.find('[role=tabpanel]').exists()).toBeTruthy()
       expect(wrapper.html()).toContain('Change your password')
     })
+  })
+})
+
+describe('given Tabs without TabsContent', () => {
+  it('should not render aria-controls on TabsTrigger', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+            <TabsTrigger value="tab2">Tab 2</TabsTrigger>
+          </TabsList>
+        </TabsRoot>
+      `,
+    })
+    await flushPromises()
+
+    const triggers = wrapper.findAll('[role="tab"]')
+    expect(triggers[0].attributes('aria-controls')).toBeUndefined()
+    expect(triggers[1].attributes('aria-controls')).toBeUndefined()
+  })
+
+  it('should render aria-controls only for TabsTrigger with matching TabsContent', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+            <TabsTrigger value="tab2">Tab 2</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tab1">Content 1</TabsContent>
+        </TabsRoot>
+      `,
+    })
+    await flushPromises()
+
+    const triggers = wrapper.findAll('[role="tab"]')
+    expect(triggers[0].attributes('aria-controls')).toBeDefined()
+    expect(triggers[1].attributes('aria-controls')).toBeUndefined()
   })
 })

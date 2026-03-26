@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -71,7 +71,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the radio group value changes</p>\n',
-    'type': '[payload: string]'
+    'type': '[payload: AcceptableValue]'
   }
 ]" />
 
@@ -79,6 +79,6 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'null | string | number | bigint | Record<string, any>'
+    'type': 'null | string | number | bigint | Record&lt;string, any&gt;'
   }
 ]" />

@@ -7,7 +7,7 @@ packages:
   - title: Shadcn Vue
     description: An unofficial, community-led Vue port of shadcn/ui.
     url: https://www.shadcn-vue.com/
-    image: https://www.shadcn-vue.com/og.png
+    image: https://www.shadcn-vue.com/__og-image__/static/og.png
 
   - title: Nuxt UI
     description: A UI Library for Modern Web Apps, powered by Vue & Tailwind CSS.
@@ -83,7 +83,7 @@ projects:
   - title: Movie Tracker
     description: Your guide to movies and TV shows. Find movies and shows, create lists, share your thoughts.
     url: https://movie-tracker.app/en
-    image: https://raw.githubusercontent.com/dapzer/movie-tracker/refs/heads/master/apps/frontend/src/public/ogImageEn.webp
+    image: https://raw.githubusercontent.com/dapzer/movie-tracker/refs/heads/master/apps/frontend/public/ogImageEn.webp
 
 starters:
   - title: shadcn-docs

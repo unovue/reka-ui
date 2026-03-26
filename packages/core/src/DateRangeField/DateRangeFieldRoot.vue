@@ -12,15 +12,12 @@ import {
   hasTime,
   isBefore,
   isBeforeOrSame,
-
 } from '@/date'
 import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
-
   getDefaultDate,
   getSegmentElements,
-
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
@@ -57,7 +54,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   defaultPlaceholder?: DateValue
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
@@ -114,6 +111,16 @@ const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
   isDateUnavailable: undefined,
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
+defineSlots<{
+  default?: (props: {
+    /** The current date range of the field */
+    modelValue: DateRange | null
+    /** The date field segment contents */
+    segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
+    /** Value if the input is invalid */
+    isInvalid: boolean
+  }) => any
+}>()
 const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)

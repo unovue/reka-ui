@@ -3,3 +3,7 @@ extend-ignore-re = [
   # Chalk.ist website
   "Chalk\\.ist",
 ]
+
+[default.extend-words]
+# Don't correct the german locale "January"
+Januar = "Januar"

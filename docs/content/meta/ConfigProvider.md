@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -31,7 +31,7 @@
   {
     'name': 'useId',
     'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
-    'type': '(() => string)',
+    'type': '(() =&gt; string)',
     'required': false
   }
 ]" />
@@ -40,6 +40,6 @@
   {
     'name': 'useId',
     'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
-    'type': '() => string'
+    'type': '() =&gt; string'
   }
 ]" />

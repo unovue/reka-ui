@@ -9,15 +9,16 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -31,15 +32,24 @@ jobs:
 
   npm:
     runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
-      - name: Build Packages & Publish to npm
-        run: pnpm build && pnpm pub:release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Update npm (Trusted Publishers requires npm >= 11.5.1)
+        run: npm install -g npm@^11
+
+      - name: Build Packages
+        run: pnpm build
+
+      # Must publish from repo root for provenance to work with OIDC
+      - name: Publish to npm
+        run: npm publish ./packages/core --access public --provenance

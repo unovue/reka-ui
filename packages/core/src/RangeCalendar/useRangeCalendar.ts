@@ -41,7 +41,7 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
   const isInvalid = computed(
     () => {
       if (isStartInvalid.value || isEndInvalid.value)
-        return false
+        return true
       if (props.start.value && props.end.value && isBefore(props.end.value, props.start.value))
         return true
       return false
@@ -71,12 +71,10 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return false
   }
 
-  // Check if a date exceeds maximum days limit from the start date
   const rangeIsDateDisabled = (date: DateValue) => {
     if (props.isDateDisabled(date))
       return true
 
-    // Check if exceeds maximum days limit
     if (props.maximumDays?.value) {
       if (props.start.value && props.end.value) {
         if (props.fixedDate.value) {
@@ -96,9 +94,6 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
         return !isBetween(date, minDate, maxDate)
       }
     }
-
-    if (!props.start.value || props.end.value || isSameDay(props.start.value, date))
-      return false
 
     return false
   }
@@ -126,18 +121,15 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
       }
     }
 
-    // If maximum days is set and the range exceeds it, limit the highlight
-    // We only apply this when we're in the middle of a selection (no end date yet)
     if (props.maximumDays?.value && !props.end.value) {
-      // Determine the direction of selection and limit to maximum days
-      const cappedEnd = isStartBeforeFocused
-        ? start.add({ days: props.maximumDays.value - 1 })
-        : start.subtract({ days: props.maximumDays.value })
+      const maximumDays = props.maximumDays.value
+      const anchor = props.start.value
+      const focused = props.focusedValue.value
 
-      return {
-        start,
-        end: cappedEnd,
-      }
+      if (!isBefore(focused, anchor))
+        return { start: anchor, end: anchor.add({ days: maximumDays - 1 }) }
+
+      return { start: anchor.subtract({ days: maximumDays - 1 }), end: anchor }
     }
 
     const isValid = areAllDaysBetweenValid(start, end, props.allowNonContiguousRanges.value ? () => false : props.isDateUnavailable, rangeIsDateDisabled, props.isDateHighlightable)
@@ -162,6 +154,36 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     return isSameDay(highlightedRange.value.end, date)
   }
 
+  const hasSelectedDate = computed(() => {
+    return !!(props.start.value || props.end.value)
+  })
+
+  const isStartDateDisabled = computed(() => {
+    return !!(props.start.value && props.isDateDisabled(props.start.value))
+  })
+
+  const isEndDateDisabled = computed(() => {
+    return !!(props.end.value && props.isDateDisabled(props.end.value))
+  })
+
+  const isSelectedDisabled = computed(() => {
+    const hasStart = !!props.start.value
+    const hasEnd = !!props.end.value
+    if (!hasStart && !hasEnd)
+      return false
+    if (hasStart && hasEnd)
+      return isStartDateDisabled.value && isEndDateDisabled.value
+    return (hasStart && isStartDateDisabled.value) || (hasEnd && isEndDateDisabled.value)
+  })
+
+  const selectedFocusableDate = computed(() => {
+    if (props.start.value && !isStartDateDisabled.value)
+      return props.start.value
+    if (props.end.value && !isEndDateDisabled.value)
+      return props.end.value
+    return undefined
+  })
+
   return {
     isInvalid,
     isSelected,
@@ -172,5 +194,8 @@ export function useRangeCalendarState(props: UseRangeCalendarProps) {
     isHighlightedStart,
     isHighlightedEnd,
     isDateDisabled: rangeIsDateDisabled,
+    hasSelectedDate,
+    isSelectedDisabled,
+    selectedFocusableDate,
   }
 }

@@ -21,12 +21,15 @@ const props = withDefaults(defineProps<PinInputInputProps>(), {
 })
 
 const context = injectPinInputRootContext()
-const inputElements = computed(() => Array.from(context.inputElements!.value))
+const inputElements = computed(() => [...context.inputElements!.value])
 const currentValue = computed(() => context.currentModelValue.value[props.index])
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 const isOtpMode = computed(() => context.otp.value)
 const isPasswordMode = computed(() => context.mask.value)
+
+const NUMBER_REG = /^\d*$/
+const NON_NUMBER_REG = /\D/g
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
 function handleInput(event: InputEvent) {
@@ -37,8 +40,8 @@ function handleInput(event: InputEvent) {
     return
   }
 
-  if (context.isNumericMode.value && !/^\d*$/.test(target.value)) {
-    target.value = target.value.replace(/\D/g, '')
+  if (context.isNumericMode.value && !NUMBER_REG.test(target.value)) {
+    target.value = target.value.replace(NON_NUMBER_REG, '')
     return
   }
 
@@ -50,11 +53,18 @@ function handleInput(event: InputEvent) {
     nextEl.focus()
 }
 
-function resetPlaceholder() {
-  const target = currentElement.value as HTMLInputElement
+function updatePlaceholder() {
   nextTick(() => {
-    if (target && !target.value)
+    const target = currentElement.value as HTMLInputElement
+    if (!target) {
+      return
+    }
+    if (!target.value && target === getActiveElement()) {
+      target.placeholder = ''
+    }
+    else {
       target.placeholder = context.placeholder.value
+    }
   })
 }
 
@@ -93,21 +103,25 @@ function handleDelete(event: KeyboardEvent) {
 }
 
 function handleFocus(event: FocusEvent) {
+  // In OTP mode, inputs should be filled one by one without skipping middle inputs
+  if (context.otp.value) {
+    const firstEmptyInputIdx = inputElements.value.findIndex((_, idx) =>
+      context.currentModelValue.value[idx] === ''
+      || context.currentModelValue.value[idx] === undefined,
+    )
+    if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < props.index) {
+      inputElements.value[firstEmptyInputIdx].focus()
+      return
+    }
+  }
+
   const target = event.target as HTMLInputElement
   target.setSelectionRange(1, 1)
-
-  if (!target.value)
-    target.placeholder = ''
-
-  // #2266, check again after DOM flushes
-  setTimeout(() => {
-    if (!target.value)
-      target.placeholder = ''
-  })
+  updatePlaceholder()
 }
 
 function handleBlur(event: FocusEvent) {
-  resetPlaceholder()
+  updatePlaceholder()
 }
 
 function handlePaste(event: ClipboardEvent) {
@@ -116,7 +130,10 @@ function handlePaste(event: ClipboardEvent) {
   if (!clipboardData)
     return
 
-  const values = clipboardData.getData('text')
+  const rawValues = clipboardData.getData('text')
+  const values = context.isNumericMode.value
+    ? rawValues.replace(NON_NUMBER_REG, '')
+    : rawValues
   handleMultipleCharacter(values)
 }
 
@@ -127,10 +144,15 @@ function handleMultipleCharacter(values: string) {
   for (let i = initialIndex; i < lastIndex; i++) {
     const input = inputElements.value[i]
     const value = values[i - initialIndex]
-    if (context.isNumericMode.value && !/^\d*$/.test(value))
-      continue
-
-    tempModelValue[i] = value
+    if (context.isNumericMode.value) {
+      const num = Number.parseInt(value)
+      if (Number.isNaN(num))
+        continue
+      tempModelValue[i] = num
+    }
+    else {
+      tempModelValue[i] = value
+    }
     input.focus()
   }
   context.modelValue.value = tempModelValue
@@ -168,11 +190,7 @@ function updateModelValueAt(index: number, value: string) {
   context.modelValue.value = removeTrailingEmptyStrings(tempModelValue)
 }
 
-watch(currentValue, () => {
-  if (!currentValue.value) {
-    resetPlaceholder()
-  }
-})
+watch(currentValue, updatePlaceholder)
 
 onMounted(() => {
   context.onInputElementChange(currentElement.value as HTMLInputElement)

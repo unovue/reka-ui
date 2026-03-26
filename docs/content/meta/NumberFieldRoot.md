@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -31,6 +31,13 @@
     'description': '<p>When <code>true</code>, prevents the value from changing on wheel scroll.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'focusOnChange',
+    'description': '<p>When <code>true</code>, the input will be focused when the value changes.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'formatOptions',
@@ -126,5 +133,10 @@
     'name': 'textValue',
     'description': '',
     'type': 'string'
+  },
+  {
+    'name': 'readonly',
+    'description': '',
+    'type': 'boolean'
   }
 ]" />

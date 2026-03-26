@@ -105,8 +105,8 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
       minute: 'numeric',
     }).formatToParts(date)
     const value = parts.find(p => p.type === 'dayPeriod')?.value
-    // Day period can be "AM"/"PM" or "a.m."/"p.m." in some locales
-    if (value === 'PM' || value === 'p.m.')
+    // Day period can be "AM"/"PM" or "am"/"pm" or "a.m."/"p.m." in some locales
+    if (value === 'PM' || value === 'pm' || value === 'p.m.')
       return 'PM'
 
     return 'AM'

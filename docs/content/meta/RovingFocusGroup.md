@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -71,6 +71,6 @@
   {
     'name': 'getItems',
     'description': '',
-    'type': '(includeDisabledItem?: boolean) => { ref: HTMLElement; value?: any; }[]'
+    'type': '(includeDisabledItem?: boolean) =&gt; { ref: HTMLElement; value?: any; }[]'
   }
 ]" />

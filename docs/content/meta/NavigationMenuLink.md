@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -26,6 +26,6 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the user selects a link (via mouse or keyboard).</p>\n<p>Calling <code>event.preventDefault</code> in this handler will prevent the navigation menu from closing when selecting that link.</p>\n',
-    'type': '[payload: CustomEvent<{ originalEvent: Event; }>]'
+    'type': '[payload: CustomEvent&lt;{ originalEvent: Event; }&gt;]'
   }
 ]" />

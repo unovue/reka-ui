@@ -3,11 +3,12 @@ import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverRootEmits, PopoverRootProps, RangeCalendarRootProps } from '..'
-import type { Matcher, WeekDayFormat } from '@/date'
+import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection } from '@/shared'
+import { getWeekStartsOn } from '@/date'
+import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -26,7 +27,7 @@ type DateRangePickerRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
@@ -49,12 +50,12 @@ type DateRangePickerRootContext = {
   closeOnSelect?: Ref<boolean>
 }
 
-export type DateRangePickerRootProps = DateRangeFieldRootProps & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
   /** Whether or not to close the popover on range select */
   closeOnSelect?: boolean
 }
 
-export type DateRangePickerRootEmits = {
+export type DateRangePickerRootEmits = PopoverRootEmits & {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
@@ -69,7 +70,7 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 
 defineOptions({
   inheritAttrs: false,
@@ -81,14 +82,12 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   modal: false,
   pagedNavigation: false,
   preventDeselect: false,
-  weekStartsOn: 0,
   weekdayFormat: 'narrow',
   fixedWeeks: false,
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
   placeholder: undefined,
-  locale: 'en',
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
   isDateHighlightable: undefined,
@@ -96,13 +95,12 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   maximumDays: undefined,
   closeOnSelect: false,
 })
-const emits = defineEmits<DateRangePickerRootEmits & PopoverRootEmits>()
+const emits = defineEmits<DateRangePickerRootEmits>()
 const {
-  locale,
+  locale: propLocale,
   disabled,
   readonly,
   pagedNavigation,
-  weekStartsOn,
   weekdayFormat,
   fixedWeeks,
   numberOfMonths,
@@ -129,6 +127,8 @@ const {
 } = toRefs(props)
 
 const dir = useDirection(propsDir)
+const locale = useLocale(propLocale)
+const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? { start: undefined, end: undefined },
@@ -139,7 +139,7 @@ const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
   granularity: props.granularity,
   defaultValue: modelValue.value?.start,
-  locale: props.locale,
+  locale: locale.value,
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {

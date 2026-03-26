@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -29,7 +29,7 @@
   {
     'name': 'value',
     'description': '<p>The unique value of the item.</p>\n',
-    'type': 'string',
+    'type': 'AcceptableValue',
     'required': true
   }
 ]" />

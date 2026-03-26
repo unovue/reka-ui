@@ -12,14 +12,11 @@ import {
   createContent,
   getDefaultTime,
   getTimeFieldSegmentElements,
-
   initializeTimeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
   normalizeHourCycle,
-
   syncTimeSegmentValues,
-
 } from '@/shared/date'
 
 type TimeFieldRootContext = {
@@ -32,6 +29,7 @@ type TimeFieldRootContext = {
   formatter: Formatter
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Ref<SegmentValueObj>
   segmentContents: Ref<{ part: SegmentPart, value: string }[]>
   elements: Ref<Set<HTMLElement>>
@@ -52,6 +50,8 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
+  /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
@@ -107,6 +107,7 @@ const props = withDefaults(defineProps<TimeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
@@ -120,7 +121,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled, readonly, granularity, defaultValue, minValue, maxValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
@@ -218,7 +219,25 @@ const allSegmentContent = computed(() => createContent({
   isTimeValue: true,
 }))
 
-const segmentContents = computed(() => allSegmentContent.value.arr)
+const segmentContents = computed(() => {
+  const contents = allSegmentContent.value.arr
+
+  // Convert hour values for 12-hour display
+  if (props.hourCycle === 12) {
+    return contents.map((segment) => {
+      if (segment.part === 'hour' && 'hour' in segmentValues.value) {
+        const hour = segmentValues.value.hour
+        if (hour !== null) {
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+          return { ...segment, value: displayHour.toString() }
+        }
+      }
+      return segment
+    })
+  }
+
+  return contents
+})
 
 const editableSegmentContents = computed(() => segmentContents.value.filter(({ part }) => part !== 'literal'))
 
@@ -298,6 +317,7 @@ provideTimeFieldRootContext({
   formatter,
   hourCycle: props.hourCycle,
   step,
+  stepSnapping,
   readonly,
   segmentValues,
   isInvalid,

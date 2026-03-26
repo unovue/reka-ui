@@ -1,14 +1,14 @@
-export { default as DatePickerAnchor } from './DatePickerAnchor.vue'
+export { default as DatePickerAnchor, type DatePickerAnchorProps } from './DatePickerAnchor.vue'
 
-export { default as DatePickerArrow } from './DatePickerArrow.vue'
+export { default as DatePickerArrow, type DatePickerArrowProps } from './DatePickerArrow.vue'
 export { default as DatePickerCalendar } from './DatePickerCalendar.vue'
 
 export { default as DatePickerCell, type DatePickerCellProps } from './DatePickerCell.vue'
 
 export { default as DatePickerCellTrigger, type DatePickerCellTriggerProps } from './DatePickerCellTrigger.vue'
-export { default as DatePickerClose } from './DatePickerClose.vue'
+export { default as DatePickerClose, type DatePickerCloseProps } from './DatePickerClose.vue'
 
-export { default as DatePickerContent, type DatePickerContentProps } from './DatePickerContent.vue'
+export { default as DatePickerContent, type DatePickerContentEmits, type DatePickerContentProps } from './DatePickerContent.vue'
 export { default as DatePickerField } from './DatePickerField.vue'
 
 export { default as DatePickerGrid, type DatePickerGridProps } from './DatePickerGrid.vue'

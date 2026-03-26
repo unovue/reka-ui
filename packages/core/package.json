@@ -1,10 +1,14 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.6.1",
+  "version": "2.9.2",
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/zernonia"
+  },
   "homepage": "https://github.com/unovue/reka-ui",
   "repository": {
     "type": "git",
@@ -29,6 +33,10 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./internal": {
+      "import": "./dist/internal.js",
+      "require": "./dist/internal.cjs"
     },
     "./constant": {
       "import": "./dist/constant.js",
@@ -72,10 +80,10 @@
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
     "test": "vitest",
     "test-update": "vitest -u",
-    "pub:release": "pnpm publish --no-git-checks --access public"
+    "pub:release": "npm publish --access public --provenance"
   },
   "peerDependencies": {
-    "vue": ">= 3.2.0"
+    "vue": ">= 3.4.0"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
@@ -83,8 +91,8 @@
     "@internationalized/date": "^3.5.0",
     "@internationalized/number": "^3.5.0",
     "@tanstack/vue-virtual": "^3.12.0",
-    "@vueuse/core": "^12.5.0",
-    "@vueuse/shared": "^12.5.0",
+    "@vueuse/core": "^14.1.0",
+    "@vueuse/shared": "^14.1.0",
     "aria-hidden": "^1.2.4",
     "defu": "^6.1.4",
     "ohash": "^2.0.11"
@@ -97,16 +105,16 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/vue": "^8.1.0",
-    "@tsconfig/node18": "^18.2.4",
-    "@types/jsdom": "^27.0.0",
+    "@tsconfig/node24": "^24.0.0",
+    "@types/jsdom": "^28.0.0",
     "@types/node": "^24.0.13",
-    "@vitejs/plugin-vue": "^6.0.2",
+    "@vitejs/plugin-vue": "^6.0.5",
     "@vitest/coverage-istanbul": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",
     "jsdom": "^26.1.0",
     "tsdown": "^0.12.9",
-    "vite": "^7.2.7",
+    "vite": "^8.0.0",
     "vitest": "^3.2.4",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^0.3.3",

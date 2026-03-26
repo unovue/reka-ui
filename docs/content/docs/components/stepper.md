@@ -6,6 +6,8 @@ name: stepper
 
 # Stepper
 
+<Badge>Alpha</Badge>
+
 <Description>
 A set of steps that are used to indicate progress through a multi-step process.
 </Description>

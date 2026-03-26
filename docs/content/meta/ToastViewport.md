@@ -1,4 +1,4 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
 <PropsTable :data="[
   {
@@ -24,7 +24,7 @@
   {
     'name': 'label',
     'description': '<p>An author-localized label for the toast viewport to provide context for screen reader users\nwhen navigating page landmarks. The available <code>{hotkey}</code> placeholder will be replaced for you.\nAlternatively, you can pass in a custom function to generate the label.</p>\n',
-    'type': 'string | ((hotkey: string) => string)',
+    'type': 'string | ((hotkey: string) =&gt; string)',
     'required': false,
     'default': '\'Notifications ({hotkey})\''
   }
