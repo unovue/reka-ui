@@ -117,6 +117,8 @@ watchEffect((cleanupFn) => {
   // if the element still exist inside the container,
   // if not then we focus to the container
   function handleMutations(mutations: MutationRecord[]) {
+    if (!lastFocusedElementRef.value)
+      return
     const isLastFocusedElementExist = container.contains(lastFocusedElementRef.value)
     if (!isLastFocusedElementExist)
       focus(container)
