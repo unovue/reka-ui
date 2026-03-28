@@ -1,9 +1,12 @@
 import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { mount } from '@vue/test-utils'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
 import { FocusScope } from '.'
+import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
+import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '../Select'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -131,6 +134,53 @@ describe('focusScope', () => {
       await userEvent.tab({ shift: true })
       await userEvent.tab()
       waitFor(() => expect(handleLastFocusableElementBlur).toHaveBeenCalledTimes(1))
+    })
+  })
+
+  // https://github.com/unovue/reka-ui/issues/2550
+  describe('given a FocusScope with SelectTrigger inside Dialog (#2550)', () => {
+    beforeAll(() => {
+      window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+      window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+      globalThis.ResizeObserver = class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    })
+
+    const DialogWithSelect = defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, SelectRoot, SelectTrigger, SelectValue, SelectContent, SelectItem },
+      template: `
+        <DialogRoot>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Test Dialog</DialogTitle>
+            <input data-testid="email-input" type="text" placeholder="you@example.com" />
+            <SelectRoot>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a">Option A</SelectItem>
+                <SelectItem value="b">Option B</SelectItem>
+              </SelectContent>
+            </SelectRoot>
+          </DialogContent>
+        </DialogRoot>
+      `,
+    })
+
+    it('should auto-focus the first tabbable element when SelectTrigger is present', async () => {
+      document.body.innerHTML = ''
+      const wrapper = mount(DialogWithSelect, { attachTo: document.body })
+
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+
+      const input = document.querySelector('[data-testid="email-input"]') as HTMLInputElement
+      expect(input).toBeTruthy()
+      expect(document.activeElement).toBe(input)
     })
   })
 })
