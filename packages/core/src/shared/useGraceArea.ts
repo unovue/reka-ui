@@ -21,7 +21,9 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
     isPointerInTransit.value = false
   }
 
-  function handleCreateGraceArea(event: PointerEvent, hoverTarget: HTMLElement) {
+  function handleCreateGraceArea(event: PointerEvent, hoverTarget: HTMLElement | undefined) {
+    if (!hoverTarget)
+      return
     const currentTarget = event.currentTarget as HTMLElement
     const exitPoint = { x: event.clientX, y: event.clientY }
     const exitSide = getExitSideFromRect(exitPoint, currentTarget.getBoundingClientRect())
@@ -34,8 +36,8 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 
   watchEffect((cleanupFn) => {
     if (triggerElement.value && containerElement.value) {
-      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, containerElement.value!)
-      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, triggerElement.value!)
+      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, containerElement.value)
+      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, triggerElement.value)
 
       triggerElement.value.addEventListener('pointerleave', handleTriggerLeave)
       containerElement.value.addEventListener('pointerleave', handleContentLeave)
