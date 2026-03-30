@@ -66,6 +66,12 @@
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'id',
+    'description': '<p>Id of the element</p>\n',
+    'type': 'string',
+    'required': false
   }
 ]" />
 

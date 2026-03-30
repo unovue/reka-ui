@@ -24,6 +24,8 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   autocomplete?: string
   /** When `true`, prevents the user from interacting with Select */
   disabled?: boolean
+  /** Id of the element */
+  id?: string
 }
 
 export type SelectRootEmits<T = AcceptableValue> = {
@@ -202,6 +204,7 @@ provideSelectRootContext({
 
     <BubbleSelect
       v-if="isFormControl"
+      :id="id"
       :key="nativeSelectKey"
       aria-hidden="true"
       tabindex="-1"
