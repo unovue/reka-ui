@@ -4,6 +4,8 @@ import { render, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { FocusScope } from '.'
+import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
+import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '../Select'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -141,6 +143,47 @@ describe('focusScope', () => {
       await userEvent.tab({ shift: true })
       await userEvent.tab()
       await waitFor(() => expect(handleLastFocusableElementBlur).toHaveBeenCalledTimes(1))
+    })
+  })
+
+  // https://github.com/unovue/reka-ui/issues/2550
+  describe('given a FocusScope with SelectTrigger inside Dialog (#2550)', () => {
+    const DialogWithSelect = defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, SelectRoot, SelectTrigger, SelectValue, SelectContent, SelectItem },
+      template: `
+        <DialogRoot>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Test Dialog</DialogTitle>
+            <input data-testid="email-input" type="text" placeholder="you@example.com" />
+            <SelectRoot>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a">Option A</SelectItem>
+                <SelectItem value="b">Option B</SelectItem>
+              </SelectContent>
+            </SelectRoot>
+          </DialogContent>
+        </DialogRoot>
+      `,
+    })
+
+    it('should auto-focus the first tabbable element when SelectTrigger is present', async () => {
+      const rendered = render(DialogWithSelect)
+
+      const trigger = rendered.getByRole('button', { name: 'Open' })
+      await userEvent.click(trigger)
+
+      const input1 = rendered.getByTestId('email-input')
+      expect(input1).toHaveFocus()
+
+      // close and reopen, and ensure the input is focused again, not the SelectTrigger
+      await userEvent.keyboard('{Escape}')
+      await userEvent.click(trigger)
+      const inputReopen = rendered.getByTestId('email-input')
+      expect(inputReopen).toHaveFocus()
     })
   })
 })
