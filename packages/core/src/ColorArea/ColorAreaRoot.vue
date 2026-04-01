@@ -228,6 +228,7 @@ provideColorAreaRootContext({
 
 <template>
   <Primitive
+    v-bind="$attrs"
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
