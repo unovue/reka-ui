@@ -211,7 +211,9 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
       const values = collection.map(i => i.value)
       modelValue.value = [...values]
       event.preventDefault()
-      changeHighlight(collection.at(-1).ref)
+      const lastItem = collection.at(-1)
+      if (lastItem)
+        changeHighlight(lastItem.ref)
     }
     else if (!isMetaKey) {
       const el = handleTypeaheadSearch(event.key, getItems())
@@ -309,7 +311,7 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
     let lastValue = collection.find(i => i.ref === targetEl)?.value
 
     if (event.key === kbd.END)
-      lastValue = collection.at(-1).value
+      lastValue = collection.at(-1)?.value
     else if (event.key === kbd.HOME)
       lastValue = collection[0].value
 
