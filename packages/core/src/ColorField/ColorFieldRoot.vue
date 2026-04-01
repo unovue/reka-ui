@@ -73,10 +73,6 @@ import {
 } from '@/shared/color'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
-defineOptions({
-  inheritAttrs: false,
-})
-
 const props = withDefaults(defineProps<ColorFieldRootProps>(), {
   colorSpace: 'hsl',
   disabled: false,
@@ -305,7 +301,6 @@ provideColorFieldRootContext({
 
 <template>
   <Primitive
-    v-bind="$attrs"
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
