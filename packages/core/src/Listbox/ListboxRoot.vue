@@ -313,7 +313,7 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
     if (event.key === kbd.END)
       lastValue = collection.at(-1)?.value
     else if (event.key === kbd.HOME)
-      lastValue = collection[0].value
+      lastValue = collection[0]?.value
 
     if (!lastValue || !firstValue.value)
       return
