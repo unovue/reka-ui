@@ -36,8 +36,6 @@ export default antfu(
       'vue/one-component-per-file': 'off',
       'unicorn/prefer-dom-node-text-content': 'off',
       'unicorn/prefer-number-properties': 'off',
-      'unicorn/prefer-at': 'off',
-      'e18e/prefer-array-at': 'off',
       'unused-imports/no-unused-vars': 'off',
       'regexp/no-super-linear-backtracking': 'off',
     },

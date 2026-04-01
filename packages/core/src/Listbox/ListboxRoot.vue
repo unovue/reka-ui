@@ -211,7 +211,7 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
       const values = collection.map(i => i.value)
       modelValue.value = [...values]
       event.preventDefault()
-      const lastItem = collection[collection.length - 1]
+      const lastItem = collection.at(-1)
       if (lastItem)
         changeHighlight(lastItem.ref)
     }
@@ -311,7 +311,7 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
     let lastValue = collection.find(i => i.ref === targetEl)?.value
 
     if (event.key === kbd.END)
-      lastValue = collection[collection.length - 1]?.value
+      lastValue = collection.at(-1)?.value
     else if (event.key === kbd.HOME)
       lastValue = collection[0].value
 
