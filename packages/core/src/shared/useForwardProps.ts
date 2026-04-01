@@ -38,6 +38,6 @@ export function useForwardProps<T extends Record<string, any>>(props: MaybeRefOr
       if (refProps.value[curr] !== undefined)
         prev[curr as keyof T] = refProps.value[curr]
       return prev
-    }, {} as T)
+    }, {} as Partial<T>)
   })
 }
