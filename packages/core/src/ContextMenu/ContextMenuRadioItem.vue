@@ -21,7 +21,10 @@ useForwardExpose()
 </script>
 
 <template>
-  <MenuRadioItem v-bind="{ ...props, ...emitsAsProps }">
-    <slot />
+  <MenuRadioItem
+    v-slot="slotProps"
+    v-bind="{ ...props, ...emitsAsProps }"
+  >
+    <slot v-bind="slotProps" />
   </MenuRadioItem>
 </template>

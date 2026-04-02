@@ -21,7 +21,10 @@ useForwardExpose()
 </script>
 
 <template>
-  <MenuRadioItem v-bind="forwarded">
-    <slot />
+  <MenuRadioItem
+    v-slot="slotProps"
+    v-bind="forwarded"
+  >
+    <slot v-bind="slotProps" />
   </MenuRadioItem>
 </template>

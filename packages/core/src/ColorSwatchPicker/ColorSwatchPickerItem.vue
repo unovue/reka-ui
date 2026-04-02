@@ -50,11 +50,12 @@ provideColorSwatchPickerItemContext({
 
 <template>
   <ListboxItem
+    v-slot="slotProps"
     v-bind="forwarded"
     :aria-label="colorLabel"
     :data-color="value"
     :style="{ '--reka-color-swatch-picker-item-color': value }"
   >
-    <slot />
+    <slot v-bind="slotProps" />
   </ListboxItem>
 </template>
