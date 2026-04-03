@@ -13,8 +13,10 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "unbuild",
     "generate": "tsx ./src/namespaced/generate",
+    "prebuild": "pnpm generate",
+    "build": "unbuild",
+    "prestub": "pnpm generate",
     "stub": "unbuild --stub"
   },
   "dependencies": {
