@@ -22,6 +22,6 @@ const namespaced = filteredComponents.map((component) => {
   }}`
 })
 
-const template = `import { ${flattenedComponents.join(', ')} } from 'reka-ui'\n\n${namespaced.map(component => component).join('\n\n')}`
+const template = `import { ${flattenedComponents.join(', ')} } from 'reka-ui'\n\n${namespaced.map(component => component).join('\n\n')}\n`
 
 writeFileSync('src/namespaced/index.ts', template, 'utf-8')
