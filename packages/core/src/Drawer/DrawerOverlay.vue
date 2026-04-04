@@ -24,8 +24,8 @@ const props = withDefaults(defineProps<DrawerOverlayProps>(), {
 const rootContext = injectDrawerRootContext()
 const { forwardRef } = useForwardExpose()
 
-const locked = useBodyScrollLock(rootContext.modal.value)
-locked.value = rootContext.modal.value
+if (rootContext.modal.value)
+  useBodyScrollLock(true)
 </script>
 
 <template>

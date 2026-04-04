@@ -83,6 +83,7 @@ const { isSwiping } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
   directions: [rootContext.swipeDirection.value],
+  canStart: () => !rootContext.nestedSwiping.value,
   movementCssVars: {
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
@@ -128,8 +129,9 @@ onMounted(() => {
   // Register with parent nested drawer
   rootContext.notifyParentHasNestedDrawer?.(true)
 
-  // Set nested depth CSS var
-  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.nestedDrawers, '0')
+  // Set nested depth CSS var based on whether we're inside a parent drawer
+  const nestedDepth = rootContext.notifyParentHasNestedDrawer ? 1 : 0
+  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.nestedDrawers, `${nestedDepth}`)
 })
 
 onUnmounted(() => {

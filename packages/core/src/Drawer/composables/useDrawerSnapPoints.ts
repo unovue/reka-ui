@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { DrawerSnapPoint } from '../utils'
-import { useResizeObserver } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 export interface ResolvedSnapPoint {
@@ -38,9 +38,11 @@ export function useDrawerSnapPoints(options: {
       : 16,
   )
 
-  useResizeObserver(viewportRef, ([entry]) => {
-    viewportHeight.value = entry.contentRect.height
-  })
+  if (typeof window !== 'undefined') {
+    useEventListener(window, 'resize', () => {
+      viewportHeight.value = window.innerHeight
+    })
+  }
 
   const resolvedSnapPoints = computed<ResolvedSnapPoint[]>(() => {
     const points = snapPoints.value
@@ -77,7 +79,7 @@ export function useDrawerSnapPoints(options: {
   function snapToNearest(
     currentOffset: number,
     velocity: { x: number, y: number },
-    _direction: 'up' | 'down' | 'left' | 'right',
+    direction: 'up' | 'down' | 'left' | 'right',
     sequential: boolean,
   ) {
     const points = resolvedSnapPoints.value
@@ -85,17 +87,18 @@ export function useDrawerSnapPoints(options: {
       return
 
     const currentHeight = popupHeight.value - currentOffset
-    const velY = velocity.y
+    const isVertical = direction === 'up' || direction === 'down'
+    const vel = isVertical ? velocity.y : velocity.x
 
     if (sequential) {
       const sorted = [...points].sort((a, b) => a.height - b.height)
       const currentIdx = sorted.findIndex(p => Math.abs(p.height - currentHeight) < 20)
-      if (velY < -0.1 || _direction === 'up') {
+      if (vel < -0.1 || direction === 'up' || direction === 'left') {
         const next = currentIdx < sorted.length - 1 ? sorted[currentIdx + 1] : sorted.at(-1)
         if (next)
           onSnapPointChange(next.value)
       }
-      else if (velY > 0.1 || _direction === 'down') {
+      else if (vel > 0.1 || direction === 'down' || direction === 'right') {
         if (currentIdx <= 0) {
           onSnapPointChange(null)
         }

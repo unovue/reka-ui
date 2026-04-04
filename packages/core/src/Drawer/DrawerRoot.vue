@@ -20,8 +20,8 @@ export interface DrawerRootProps {
   snapPoint?: DrawerSnapPoint | null
   defaultSnapPoint?: DrawerSnapPoint | null
   /**
-   * When true, velocity determines which snap to target (skip to non-adjacent).
-   * When false, nearest snap by height is used.
+   * When true, snaps to the next sequential snap point (one step at a time).
+   * When false, snaps to the nearest snap point by distance.
    * @default true
    */
   snapToSequentialPoints?: boolean
@@ -68,7 +68,8 @@ export const [injectDrawerRootContext, provideDrawerRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onUnmounted, ref, toRefs, watch } from 'vue'
+import { injectDrawerProviderContext } from './DrawerProvider.vue'
 import { createNestedSwipeProgressStore } from './utils'
 
 const props = withDefaults(defineProps<DrawerRootProps>(), {
@@ -111,6 +112,9 @@ const nestedSwipeProgressStore = createNestedSwipeProgressStore()
 // Optional parent context for nested drawer support
 const parentContext = injectDrawerRootContext(null)
 
+// Optional provider context for drawer state tracking
+const providerContext = injectDrawerProviderContext(null)
+
 provideDrawerRootContext({
   open,
   modal,
@@ -125,7 +129,10 @@ provideDrawerRootContext({
   nestedSwipeProgressStore,
   onOpenChange(value) { open.value = value },
   setActiveSnapPoint(point) { activeSnapPoint.value = point },
-  onPopupHeightChange(h) { popupHeight.value = h },
+  onPopupHeightChange(h) {
+    popupHeight.value = h
+    providerContext?.visualStateStore.set({ frontmostHeight: h })
+  },
   onNestedFrontmostHeightChange(h) { frontmostHeight.value = h },
   onNestedDrawerPresenceChange(present) {
     hasNestedDrawer.value = present
@@ -138,6 +145,7 @@ provideDrawerRootContext({
   onNestedSwipeProgressChange(progress) {
     nestedSwipeProgressStore.set(progress)
     parentContext?.notifyParentSwipeProgressChange?.(progress)
+    providerContext?.visualStateStore.set({ swipeProgress: progress })
   },
   notifyParentFrontmostHeight: parentContext?.onNestedFrontmostHeightChange,
   notifyParentSwipingChange: parentContext?.onNestedSwipingChange,
@@ -148,6 +156,21 @@ provideDrawerRootContext({
   contentId: useId(undefined, 'reka-drawer-content'),
   titleId: useId(undefined, 'reka-drawer-title'),
   descriptionId: useId(undefined, 'reka-drawer-description'),
+})
+
+// Sync open state with DrawerProvider
+const rootContentId = useId(undefined, 'reka-drawer-content')
+watch(open, (isOpen) => {
+  if (isOpen) {
+    providerContext?.setDrawerOpen(rootContentId, true)
+  }
+  else {
+    providerContext?.setDrawerOpen(rootContentId, false)
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  providerContext?.removeDrawer(rootContentId)
 })
 </script>
 
