@@ -22,6 +22,8 @@ const props = withDefaults(defineProps<DrawerOverlayProps>(), {
 })
 
 const rootContext = injectDrawerRootContext()
+// notifyParentHasNestedDrawer is only set when this drawer is inside another drawer
+const isNested = !!rootContext.notifyParentHasNestedDrawer
 const { forwardRef } = useForwardExpose()
 
 if (rootContext.modal.value)
@@ -31,7 +33,7 @@ if (rootContext.modal.value)
 <template>
   <Presence :present="forceMount || rootContext.open.value">
     <Primitive
-      v-if="rootContext.modal.value"
+      v-if="rootContext.modal.value && (!isNested || forceRender)"
       v-bind="$attrs"
       :ref="forwardRef"
       :as="as"

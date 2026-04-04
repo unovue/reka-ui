@@ -1,7 +1,7 @@
 import type { MaybeRef, Ref } from 'vue'
 import type { SwipeDirection } from '../utils'
 import { useEventListener } from '@vueuse/core'
-import { onUnmounted, ref, toValue, watch } from 'vue'
+import { computed, onUnmounted, ref, toValue, watch } from 'vue'
 import { getDisplacement, getElementTransform } from '../utils'
 
 export interface SwipeProgressDetails {
@@ -13,7 +13,7 @@ export interface SwipeProgressDetails {
 export interface UseSwipeDismissOptions {
   enabled: MaybeRef<boolean>
   elementRef: Ref<HTMLElement | null | undefined>
-  directions: SwipeDirection[]
+  directions: MaybeRef<SwipeDirection[]>
   movementCssVars: { x: string, y: string }
   swipeThreshold?: number | ((opts: { element: HTMLElement, direction: SwipeDirection }) => number)
   ignoreScrollableAncestors?: boolean
@@ -69,8 +69,8 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     onSwipingChange,
   } = options
 
-  const hasVertical = directions.includes('up') || directions.includes('down')
-  const hasHorizontal = directions.includes('left') || directions.includes('right')
+  const hasVertical = computed(() => toValue(directions).includes('up') || toValue(directions).includes('down'))
+  const hasHorizontal = computed(() => toValue(directions).includes('left') || toValue(directions).includes('right'))
 
   const isSwiping = ref(false)
   const swipeDirection = ref<SwipeDirection | undefined>(undefined)
@@ -167,10 +167,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       isFirstMove = false
       const absX = Math.abs(rawDx)
       const absY = Math.abs(rawDy)
-      if (hasVertical && hasHorizontal) {
+      if (hasVertical.value && hasHorizontal.value) {
         lockedAxis = absX > absY ? 'horizontal' : 'vertical'
       }
-      else if (hasVertical) {
+      else if (hasVertical.value) {
         lockedAxis = 'vertical'
       }
       else {
@@ -181,11 +181,11 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     const dx = lockedAxis === 'vertical' ? 0 : rawDx
     const dy = lockedAxis === 'horizontal' ? 0 : rawDy
 
-    const dir: SwipeDirection | undefined = directions.find(d => getDisplacement(d, dx, dy) > 0)
+    const dir: SwipeDirection | undefined = toValue(directions).find(d => getDisplacement(d, dx, dy) > 0)
 
     if (pendingSwipe && pendingSwipeStartPos) {
       const pending = getDisplacement(
-        dir ?? directions[0],
+        dir ?? toValue(directions)[0],
         pos.x - pendingSwipeStartPos.x,
         pos.y - pendingSwipeStartPos.y,
       )
@@ -201,7 +201,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     if (!isSwiping.value)
       return
 
-    const displacement = getDisplacement(intendedDirection ?? directions[0], dx, dy)
+    const displacement = getDisplacement(intendedDirection ?? toValue(directions)[0], dx, dy)
 
     // Detect reversal (cancel swipe)
     if (!cancelledSwipe) {
@@ -237,7 +237,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       const dim = (intendedDirection === 'up' || intendedDirection === 'down')
         ? elementSize.height || currentEl.offsetHeight
         : elementSize.width || currentEl.offsetWidth
-      const threshold = getThreshold(currentEl, intendedDirection ?? directions[0])
+      const threshold = getThreshold(currentEl, intendedDirection ?? toValue(directions)[0])
       const p = Math.min(1, Math.max(0, displacement / (dim + threshold)))
       if (p !== swipeProgress) {
         swipeProgress = p
@@ -253,11 +253,11 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     }
 
     const displacement = getDisplacement(
-      intendedDirection ?? directions[0],
+      intendedDirection ?? toValue(directions)[0],
       dragOffset.value.x,
       dragOffset.value.y,
     )
-    const threshold = getThreshold(el, intendedDirection ?? directions[0])
+    const threshold = getThreshold(el, intendedDirection ?? toValue(directions)[0])
 
     const now = performance.now()
     const velAge = lastDragSample ? now - lastDragSample.time : Infinity
@@ -266,7 +266,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     onRelease?.(velocity)
 
     const velInDirection = getDisplacement(
-      intendedDirection ?? directions[0],
+      intendedDirection ?? toValue(directions)[0],
       velocity.x,
       velocity.y,
     )
@@ -351,7 +351,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     if (!options.ignoreScrollableAncestors) {
-      const axis = hasVertical ? 'vertical' : 'horizontal'
+      const axis = hasVertical.value ? 'vertical' : 'horizontal'
       const scrollable = findScrollableAncestor(target, axis)
       if (scrollable)
         swipeFromScrollable = true
@@ -377,10 +377,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     if (swipeFromScrollable && pendingSwipe) {
       const dx = pos.x - dragStartPos.x
       const dy = pos.y - dragStartPos.y
-      const scrollDir = hasVertical && Math.abs(dy) > Math.abs(dx) ? 'vertical' : 'horizontal'
+      const scrollDir = hasVertical.value && Math.abs(dy) > Math.abs(dx) ? 'vertical' : 'horizontal'
       if (
-        (scrollDir === 'vertical' && hasVertical)
-        || (scrollDir === 'horizontal' && hasHorizontal)
+        (scrollDir === 'vertical' && hasVertical.value)
+        || (scrollDir === 'horizontal' && hasHorizontal.value)
       ) {
         reset()
         return

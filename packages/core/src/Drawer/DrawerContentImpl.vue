@@ -82,7 +82,7 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
 const { isSwiping } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
-  directions: [rootContext.swipeDirection.value],
+  directions: computed(() => [rootContext.swipeDirection.value]),
   canStart: () => !rootContext.nestedSwiping.value,
   movementCssVars: {
     x: DRAWER_CSS_VARS.swipeMovementX,
