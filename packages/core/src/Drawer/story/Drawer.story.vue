@@ -75,23 +75,27 @@ const navLinks = [
           Bottom Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
-            <DrawerHandle class="drawer-handle" />
-            <div class="p-6">
-              <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                Bottom Drawer
-              </DrawerTitle>
-              <DrawerDescription class="text-sm text-gray-600">
-                Swipe direction: down (default). Swipe down to dismiss.
-              </DrawerDescription>
-              <div class="mt-6 flex justify-end">
-                <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                  Close
-                </DrawerClose>
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-bottom">
+            <DrawerContent class="drawer-content-bottom">
+              <DrawerHandle class="drawer-handle" />
+              <div class="p-6">
+                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                  Bottom Drawer
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  Swipe direction: down (default). Swipe down to dismiss.
+                </DrawerDescription>
+                <div class="mt-6 flex justify-end">
+                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                    Close
+                  </DrawerClose>
+                </div>
               </div>
-            </div>
-          </DrawerContent>
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -106,23 +110,27 @@ const navLinks = [
           Top Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-top">
-            <div class="p-6">
-              <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                Top Drawer
-              </DrawerTitle>
-              <DrawerDescription class="text-sm text-gray-600">
-                Swipe direction: up. Swipe up to dismiss.
-              </DrawerDescription>
-              <div class="mt-6 flex justify-end">
-                <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                  Close
-                </DrawerClose>
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-top">
+            <DrawerContent class="drawer-content-top">
+              <div class="p-6">
+                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                  Top Drawer
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  Swipe direction: up. Swipe up to dismiss.
+                </DrawerDescription>
+                <div class="mt-6 flex justify-end">
+                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                    Close
+                  </DrawerClose>
+                </div>
               </div>
-            </div>
-            <DrawerHandle class="drawer-handle drawer-handle-bottom" />
-          </DrawerContent>
+              <DrawerHandle class="drawer-handle drawer-handle-bottom" />
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -137,22 +145,26 @@ const navLinks = [
           Left Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-left">
-            <div class="p-6">
-              <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                Left Drawer
-              </DrawerTitle>
-              <DrawerDescription class="text-sm text-gray-600">
-                Swipe direction: left. Swipe left to dismiss.
-              </DrawerDescription>
-              <div class="mt-6 flex justify-end">
-                <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                  Close
-                </DrawerClose>
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-left">
+            <DrawerContent class="drawer-content-left">
+              <div class="p-6">
+                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                  Left Drawer
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  Swipe direction: left. Swipe left to dismiss.
+                </DrawerDescription>
+                <div class="mt-6 flex justify-end">
+                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                    Close
+                  </DrawerClose>
+                </div>
               </div>
-            </div>
-          </DrawerContent>
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -167,22 +179,26 @@ const navLinks = [
           Right Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-right">
-            <div class="p-6">
-              <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                Right Drawer
-              </DrawerTitle>
-              <DrawerDescription class="text-sm text-gray-600">
-                Swipe direction: right. Swipe right to dismiss.
-              </DrawerDescription>
-              <div class="mt-6 flex justify-end">
-                <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                  Close
-                </DrawerClose>
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-right">
+            <DrawerContent class="drawer-content-right">
+              <div class="p-6">
+                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                  Right Drawer
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  Swipe direction: right. Swipe right to dismiss.
+                </DrawerDescription>
+                <div class="mt-6 flex justify-end">
+                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                    Close
+                  </DrawerClose>
+                </div>
               </div>
-            </div>
-          </DrawerContent>
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -198,40 +214,44 @@ const navLinks = [
           Open Snap Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
-            <DrawerHandle class="drawer-handle" />
-            <div class="p-6">
-              <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                Snap Points
-              </DrawerTitle>
-              <DrawerDescription class="text-sm text-gray-600">
-                This drawer snaps to 50% and 100% of the viewport height.
-              </DrawerDescription>
-              <div class="mt-4 rounded-md bg-gray-100 p-3 text-sm text-gray-700">
-                Active snap point: <strong>{{ snapPoint ?? 'none' }}</strong>
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-bottom">
+            <DrawerContent class="drawer-content-bottom">
+              <DrawerHandle class="drawer-handle" />
+              <div class="p-6">
+                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                  Snap Points
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  This drawer snaps to 50% and 100% of the viewport height.
+                </DrawerDescription>
+                <div class="mt-4 rounded-md bg-gray-100 p-3 text-sm text-gray-700">
+                  Active snap point: <strong>{{ snapPoint ?? 'none' }}</strong>
+                </div>
+                <div class="mt-4 flex gap-2">
+                  <button
+                    class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500"
+                    @click="snapPoint = 0.5"
+                  >
+                    Snap to 50%
+                  </button>
+                  <button
+                    class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500"
+                    @click="snapPoint = 1"
+                  >
+                    Snap to 100%
+                  </button>
+                </div>
+                <div class="mt-6 flex justify-end">
+                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                    Close
+                  </DrawerClose>
+                </div>
               </div>
-              <div class="mt-4 flex gap-2">
-                <button
-                  class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500"
-                  @click="snapPoint = 0.5"
-                >
-                  Snap to 50%
-                </button>
-                <button
-                  class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500"
-                  @click="snapPoint = 1"
-                >
-                  Snap to 100%
-                </button>
-              </div>
-              <div class="mt-6 flex justify-end">
-                <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                  Close
-                </DrawerClose>
-              </div>
-            </div>
-          </DrawerContent>
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -250,22 +270,24 @@ const navLinks = [
             Open Non-modal Drawer
           </DrawerTrigger>
           <DrawerPortal>
-            <DrawerContent class="drawer-content-bottom drawer-content-nonmodal">
-              <DrawerHandle class="drawer-handle" />
-              <div class="p-6">
-                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                  Non-modal Drawer
-                </DrawerTitle>
-                <DrawerDescription class="text-sm text-gray-600">
-                  This drawer does not block background interaction. No overlay is shown.
-                </DrawerDescription>
-                <div class="mt-6 flex justify-end">
-                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                    Close
-                  </DrawerClose>
+            <Transition name="drawer-slide-bottom">
+              <DrawerContent class="drawer-content-bottom drawer-content-nonmodal">
+                <DrawerHandle class="drawer-handle" />
+                <div class="p-6">
+                  <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                    Non-modal Drawer
+                  </DrawerTitle>
+                  <DrawerDescription class="text-sm text-gray-600">
+                    This drawer does not block background interaction. No overlay is shown.
+                  </DrawerDescription>
+                  <div class="mt-6 flex justify-end">
+                    <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                      Close
+                    </DrawerClose>
+                  </div>
                 </div>
-              </div>
-            </DrawerContent>
+              </DrawerContent>
+            </Transition>
           </DrawerPortal>
         </DrawerRoot>
       </div>
@@ -283,23 +305,27 @@ const navLinks = [
           </DrawerTrigger>
           <DrawerSwipeArea class="fixed bottom-0 left-0 right-0 h-8 bg-gray-200/50" />
           <DrawerPortal>
-            <DrawerOverlay class="drawer-overlay" />
-            <DrawerContent class="drawer-content-bottom">
-              <DrawerHandle class="drawer-handle" />
-              <div class="p-6">
-                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                  Swipe to Open
-                </DrawerTitle>
-                <DrawerDescription class="text-sm text-gray-600">
-                  This drawer can be opened by swiping up from the bottom edge area.
-                </DrawerDescription>
-                <div class="mt-6 flex justify-end">
-                  <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                    Close
-                  </DrawerClose>
+            <Transition name="drawer-overlay">
+              <DrawerOverlay class="drawer-overlay" />
+            </Transition>
+            <Transition name="drawer-slide-bottom">
+              <DrawerContent class="drawer-content-bottom">
+                <DrawerHandle class="drawer-handle" />
+                <div class="p-6">
+                  <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                    Swipe to Open
+                  </DrawerTitle>
+                  <DrawerDescription class="text-sm text-gray-600">
+                    This drawer can be opened by swiping up from the bottom edge area.
+                  </DrawerDescription>
+                  <div class="mt-6 flex justify-end">
+                    <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                      Close
+                    </DrawerClose>
+                  </div>
                 </div>
-              </div>
-            </DrawerContent>
+              </DrawerContent>
+            </Transition>
           </DrawerPortal>
         </DrawerRoot>
       </div>
@@ -312,44 +338,52 @@ const navLinks = [
           Open Outer Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
-            <DrawerHandle class="drawer-handle" />
-            <div class="p-6">
-              <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                Outer Drawer
-              </DrawerTitle>
-              <DrawerDescription class="text-sm text-gray-600">
-                This is the outer drawer. Open the inner drawer below.
-              </DrawerDescription>
-              <div class="mt-6">
-                <DrawerRoot v-model:open="innerOpen">
-                  <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500">
-                    Open Inner Drawer
-                  </DrawerTrigger>
-                  <DrawerPortal>
-                    <DrawerOverlay class="drawer-overlay" />
-                    <DrawerContent class="drawer-content-bottom drawer-content-inner">
-                      <DrawerHandle class="drawer-handle" />
-                      <div class="p-6">
-                        <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                          Inner Drawer
-                        </DrawerTitle>
-                        <DrawerDescription class="text-sm text-gray-600">
-                          This is the nested inner drawer. Swipe down to dismiss.
-                        </DrawerDescription>
-                        <div class="mt-6 flex justify-end">
-                          <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                            Close Inner
-                          </DrawerClose>
-                        </div>
-                      </div>
-                    </DrawerContent>
-                  </DrawerPortal>
-                </DrawerRoot>
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-bottom">
+            <DrawerContent class="drawer-content-bottom">
+              <DrawerHandle class="drawer-handle" />
+              <div class="p-6">
+                <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                  Outer Drawer
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  This is the outer drawer. Open the inner drawer below.
+                </DrawerDescription>
+                <div class="mt-6">
+                  <DrawerRoot v-model:open="innerOpen">
+                    <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500">
+                      Open Inner Drawer
+                    </DrawerTrigger>
+                    <DrawerPortal>
+                      <Transition name="drawer-overlay">
+                        <DrawerOverlay class="drawer-overlay" />
+                      </Transition>
+                      <Transition name="drawer-slide-bottom">
+                        <DrawerContent class="drawer-content-bottom drawer-content-inner">
+                          <DrawerHandle class="drawer-handle" />
+                          <div class="p-6">
+                            <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                              Inner Drawer
+                            </DrawerTitle>
+                            <DrawerDescription class="text-sm text-gray-600">
+                              This is the nested inner drawer. Swipe down to dismiss.
+                            </DrawerDescription>
+                            <div class="mt-6 flex justify-end">
+                              <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                                Close Inner
+                              </DrawerClose>
+                            </div>
+                          </div>
+                        </DrawerContent>
+                      </Transition>
+                    </DrawerPortal>
+                  </DrawerRoot>
+                </div>
               </div>
-            </div>
-          </DrawerContent>
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -368,23 +402,27 @@ const navLinks = [
                 Open with Indent
               </DrawerTrigger>
               <DrawerPortal>
-                <DrawerOverlay class="drawer-overlay" />
-                <DrawerContent class="drawer-content-bottom">
-                  <DrawerHandle class="drawer-handle" />
-                  <div class="p-6">
-                    <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                      Indent Effect
-                    </DrawerTitle>
-                    <DrawerDescription class="text-sm text-gray-600">
-                      Notice how the background content scales down when this drawer is open.
-                    </DrawerDescription>
-                    <div class="mt-6 flex justify-end">
-                      <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                        Close
-                      </DrawerClose>
+                <Transition name="drawer-overlay">
+                  <DrawerOverlay class="drawer-overlay" />
+                </Transition>
+                <Transition name="drawer-slide-bottom">
+                  <DrawerContent class="drawer-content-bottom">
+                    <DrawerHandle class="drawer-handle" />
+                    <div class="p-6">
+                      <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                        Indent Effect
+                      </DrawerTitle>
+                      <DrawerDescription class="text-sm text-gray-600">
+                        Notice how the background content scales down when this drawer is open.
+                      </DrawerDescription>
+                      <div class="mt-6 flex justify-end">
+                        <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                          Close
+                        </DrawerClose>
+                      </div>
                     </div>
-                  </div>
-                </DrawerContent>
+                  </DrawerContent>
+                </Transition>
               </DrawerPortal>
             </DrawerRoot>
           </div>
@@ -399,34 +437,38 @@ const navLinks = [
           Open Navigation
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom drawer-content-fullheight">
-            <DrawerHandle class="drawer-handle" />
-            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <DrawerTitle class="text-lg font-semibold text-gray-900">
-                Navigation
-              </DrawerTitle>
-              <DrawerClose class="rounded-md p-1 text-gray-400 hover:text-gray-600">
-                &times;
-              </DrawerClose>
-            </div>
-            <nav class="flex-1 overflow-y-auto px-6 py-4">
-              <ul class="space-y-1">
-                <li
-                  v-for="link in navLinks"
-                  :key="link"
-                >
-                  <a
-                    href="#"
-                    class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                    @click.prevent="mobileNavOpen = false"
+          <Transition name="drawer-overlay">
+            <DrawerOverlay class="drawer-overlay" />
+          </Transition>
+          <Transition name="drawer-slide-bottom">
+            <DrawerContent class="drawer-content-bottom drawer-content-fullheight">
+              <DrawerHandle class="drawer-handle" />
+              <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                <DrawerTitle class="text-lg font-semibold text-gray-900">
+                  Navigation
+                </DrawerTitle>
+                <DrawerClose class="rounded-md p-1 text-gray-400 hover:text-gray-600">
+                  &times;
+                </DrawerClose>
+              </div>
+              <nav class="flex-1 overflow-y-auto px-6 py-4">
+                <ul class="space-y-1">
+                  <li
+                    v-for="link in navLinks"
+                    :key="link"
                   >
-                    {{ link }}
-                  </a>
-                </li>
-              </ul>
-            </nav>
-          </DrawerContent>
+                    <a
+                      href="#"
+                      class="block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      @click.prevent="mobileNavOpen = false"
+                    >
+                      {{ link }}
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            </DrawerContent>
+          </Transition>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -434,19 +476,24 @@ const navLinks = [
 </template>
 
 <style>
-/* Overlay */
+/* === Overlay === */
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background-color: black;
-  opacity: 0.2;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Overlay transition */
+.drawer-overlay-enter-active,
+.drawer-overlay-leave-active {
   transition: opacity 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.drawer-overlay[data-state="closed"] {
+.drawer-overlay-enter-from,
+.drawer-overlay-leave-to {
   opacity: 0;
 }
 
-/* Bottom Drawer Content */
+/* === Bottom Drawer === */
 .drawer-content-bottom {
   position: fixed;
   bottom: 0;
@@ -464,15 +511,21 @@ const navLinks = [
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
-.drawer-content-bottom[data-state="closed"] {
-  transform: translateY(100%);
-}
 .drawer-content-bottom[data-swiping] {
   transition-duration: 0ms;
   user-select: none;
 }
 
-/* Top Drawer Content */
+.drawer-slide-bottom-enter-active,
+.drawer-slide-bottom-leave-active {
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-slide-bottom-enter-from,
+.drawer-slide-bottom-leave-to {
+  transform: translateY(100%);
+}
+
+/* === Top Drawer === */
 .drawer-content-top {
   position: fixed;
   top: 0;
@@ -488,15 +541,21 @@ const navLinks = [
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
-.drawer-content-top[data-state="closed"] {
-  transform: translateY(-100%);
-}
 .drawer-content-top[data-swiping] {
   transition-duration: 0ms;
   user-select: none;
 }
 
-/* Left Drawer Content */
+.drawer-slide-top-enter-active,
+.drawer-slide-top-leave-active {
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-slide-top-enter-from,
+.drawer-slide-top-leave-to {
+  transform: translateY(-100%);
+}
+
+/* === Left Drawer === */
 .drawer-content-left {
   position: fixed;
   top: 0;
@@ -512,15 +571,21 @@ const navLinks = [
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
-.drawer-content-left[data-state="closed"] {
-  transform: translateX(-100%);
-}
 .drawer-content-left[data-swiping] {
   transition-duration: 0ms;
   user-select: none;
 }
 
-/* Right Drawer Content */
+.drawer-slide-left-enter-active,
+.drawer-slide-left-leave-active {
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-slide-left-enter-from,
+.drawer-slide-left-leave-to {
+  transform: translateX(-100%);
+}
+
+/* === Right Drawer === */
 .drawer-content-right {
   position: fixed;
   top: 0;
@@ -536,30 +601,34 @@ const navLinks = [
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
-.drawer-content-right[data-state="closed"] {
-  transform: translateX(100%);
-}
 .drawer-content-right[data-swiping] {
   transition-duration: 0ms;
   user-select: none;
 }
 
-/* Non-modal shadow variant */
+.drawer-slide-right-enter-active,
+.drawer-slide-right-leave-active {
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-slide-right-enter-from,
+.drawer-slide-right-leave-to {
+  transform: translateX(100%);
+}
+
+/* === Variants === */
 .drawer-content-nonmodal {
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
 }
 
-/* Inner drawer background variant */
 .drawer-content-inner {
   background: #f9fafb;
 }
 
-/* Full height drawer */
 .drawer-content-fullheight {
   height: 100%;
 }
 
-/* Handle */
+/* === Handle === */
 .drawer-handle {
   width: 3rem;
   height: 0.25rem;
@@ -572,7 +641,7 @@ const navLinks = [
   margin: 0 auto 1rem;
 }
 
-/* Button */
+/* === Button === */
 .drawer-button {
   display: inline-flex;
   height: 2.5rem;
