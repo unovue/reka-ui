@@ -58,21 +58,21 @@ useHideOthers(rootContext.modal.value ? currentElement : ref(undefined))
       :disable-outside-pointer-events="false"
       @close-auto-focus="(e: Event) => {
         if (!e.defaultPrevented) {
-          if (!hasInteractedOutside.value) rootContext.triggerElement.value?.focus()
+          if (!hasInteractedOutside) rootContext.triggerElement.value?.focus()
           e.preventDefault()
         }
-        hasInteractedOutside.value = false
-        hasPointerDownOutside.value = false
+        hasInteractedOutside = false
+        hasPointerDownOutside = false
       }"
       @interact-outside="(e: any) => {
         if (!e.defaultPrevented) {
-          hasInteractedOutside.value = true
+          hasInteractedOutside = true
           if (e.detail.originalEvent.type === 'pointerdown')
-            hasPointerDownOutside.value = true
+            hasPointerDownOutside = true
         }
         const target = e.target as HTMLElement
         if (rootContext.triggerElement.value?.contains(target)) e.preventDefault()
-        if (e.detail.originalEvent.type === 'focusin' && hasPointerDownOutside.value) e.preventDefault()
+        if (e.detail.originalEvent.type === 'focusin' && hasPointerDownOutside) e.preventDefault()
       }"
     >
       <slot />

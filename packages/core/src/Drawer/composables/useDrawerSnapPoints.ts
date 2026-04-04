@@ -92,7 +92,8 @@ export function useDrawerSnapPoints(options: {
       const currentIdx = sorted.findIndex(p => Math.abs(p.height - currentHeight) < 20)
       if (velY < -0.1 || _direction === 'up') {
         const next = currentIdx < sorted.length - 1 ? sorted[currentIdx + 1] : sorted.at(-1)
-        onSnapPointChange(next.value)
+        if (next)
+          onSnapPointChange(next.value)
       }
       else if (velY > 0.1 || _direction === 'down') {
         if (currentIdx <= 0) {
