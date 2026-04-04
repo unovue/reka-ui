@@ -17,13 +17,13 @@ const open = ref(false)
 
 <template>
   <DrawerRoot v-model:open="open">
-    <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+    <DrawerTrigger class="drawer-button">
       Open Drawer
     </DrawerTrigger>
     <DrawerPortal>
-      <DrawerOverlay class="fixed inset-0 bg-black/40" />
-      <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white outline-none">
-        <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+      <DrawerOverlay class="drawer-overlay" />
+      <DrawerContent class="drawer-content-bottom">
+        <DrawerHandle class="drawer-handle" />
         <div class="p-6">
           <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
             Drawer Title
@@ -41,3 +41,66 @@ const open = ref(false)
     </DrawerPortal>
   </DrawerRoot>
 </template>
+
+<style scoped>
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: black;
+  opacity: 0.2;
+  transition: opacity 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-overlay[data-state="closed"] {
+  opacity: 0;
+}
+
+.drawer-content-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  height: auto;
+  flex-direction: column;
+  background: white;
+  border-radius: 1rem 1rem 0 0;
+  outline: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-bottom[data-state="closed"] {
+  transform: translateY(100%);
+}
+.drawer-content-bottom[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+.drawer-handle {
+  width: 3rem;
+  height: 0.25rem;
+  margin: 1rem auto 0;
+  border-radius: 9999px;
+  background-color: #d1d5db;
+  flex-shrink: 0;
+}
+
+.drawer-button {
+  display: inline-flex;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.875rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: #f9fafb;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.drawer-button:hover {
+  background: #f3f4f6;
+}
+</style>

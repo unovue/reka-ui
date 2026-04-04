@@ -71,13 +71,13 @@ const navLinks = [
         v-model:open="positionBottomOpen"
         swipe-direction="down"
       >
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Bottom Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white outline-none">
-            <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-bottom">
+            <DrawerHandle class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Bottom Drawer
@@ -102,12 +102,12 @@ const navLinks = [
         v-model:open="positionTopOpen"
         swipe-direction="up"
       >
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Top Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed top-0 left-0 right-0 flex h-auto flex-col rounded-b-[10px] bg-white outline-none">
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-top">
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Top Drawer
@@ -121,7 +121,7 @@ const navLinks = [
                 </DrawerClose>
               </div>
             </div>
-            <DrawerHandle class="mx-auto mb-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+            <DrawerHandle class="drawer-handle drawer-handle-bottom" />
           </DrawerContent>
         </DrawerPortal>
       </DrawerRoot>
@@ -133,12 +133,12 @@ const navLinks = [
         v-model:open="positionLeftOpen"
         swipe-direction="left"
       >
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Left Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed left-0 top-0 bottom-0 flex w-80 flex-col rounded-r-[10px] bg-white outline-none">
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-left">
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Left Drawer
@@ -163,12 +163,12 @@ const navLinks = [
         v-model:open="positionRightOpen"
         swipe-direction="right"
       >
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Right Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed right-0 top-0 bottom-0 flex w-80 flex-col rounded-l-[10px] bg-white outline-none">
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-right">
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Right Drawer
@@ -194,13 +194,13 @@ const navLinks = [
         v-model:snap-point="snapPoint"
         :snap-points="[0.5, 1]"
       >
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Open Snap Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white outline-none">
-            <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-bottom">
+            <DrawerHandle class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Snap Points
@@ -246,12 +246,12 @@ const navLinks = [
           v-model:open="nonModalOpen"
           :modal="false"
         >
-          <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+          <DrawerTrigger class="drawer-button">
             Open Non-modal Drawer
           </DrawerTrigger>
           <DrawerPortal>
-            <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)] outline-none">
-              <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+            <DrawerContent class="drawer-content-bottom drawer-content-nonmodal">
+              <DrawerHandle class="drawer-handle" />
               <div class="p-6">
                 <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                   Non-modal Drawer
@@ -278,14 +278,14 @@ const navLinks = [
           Swipe up from the bottom edge to open the drawer, or use the button.
         </p>
         <DrawerRoot v-model:open="swipeToOpen">
-          <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+          <DrawerTrigger class="drawer-button">
             Open Drawer
           </DrawerTrigger>
           <DrawerSwipeArea class="fixed bottom-0 left-0 right-0 h-8 bg-gray-200/50" />
           <DrawerPortal>
-            <DrawerOverlay class="fixed inset-0 bg-black/40" />
-            <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white outline-none">
-              <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+            <DrawerOverlay class="drawer-overlay" />
+            <DrawerContent class="drawer-content-bottom">
+              <DrawerHandle class="drawer-handle" />
               <div class="p-6">
                 <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                   Swipe to Open
@@ -308,13 +308,13 @@ const navLinks = [
     <!-- Nested Drawers -->
     <Variant title="Nested Drawers">
       <DrawerRoot v-model:open="outerOpen">
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Open Outer Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white outline-none">
-            <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-bottom">
+            <DrawerHandle class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Outer Drawer
@@ -328,9 +328,9 @@ const navLinks = [
                     Open Inner Drawer
                   </DrawerTrigger>
                   <DrawerPortal>
-                    <DrawerOverlay class="fixed inset-0 bg-black/40" />
-                    <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-gray-50 outline-none">
-                      <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-400" />
+                    <DrawerOverlay class="drawer-overlay" />
+                    <DrawerContent class="drawer-content-bottom drawer-content-inner">
+                      <DrawerHandle class="drawer-handle" />
                       <div class="p-6">
                         <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                           Inner Drawer
@@ -364,13 +364,13 @@ const navLinks = [
               When the drawer opens, this content will scale down with an indent effect.
             </p>
             <DrawerRoot v-model:open="indentOpen">
-              <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+              <DrawerTrigger class="drawer-button">
                 Open with Indent
               </DrawerTrigger>
               <DrawerPortal>
-                <DrawerOverlay class="fixed inset-0 bg-black/40" />
-                <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-auto flex-col rounded-t-[10px] bg-white outline-none">
-                  <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+                <DrawerOverlay class="drawer-overlay" />
+                <DrawerContent class="drawer-content-bottom">
+                  <DrawerHandle class="drawer-handle" />
                   <div class="p-6">
                     <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                       Indent Effect
@@ -395,13 +395,13 @@ const navLinks = [
     <!-- Mobile Navigation -->
     <Variant title="Mobile Navigation">
       <DrawerRoot v-model:open="mobileNavOpen">
-        <DrawerTrigger class="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-medium shadow ring-1 ring-black/10 hover:bg-gray-50">
+        <DrawerTrigger class="drawer-button">
           Open Navigation
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="fixed inset-0 bg-black/40" />
-          <DrawerContent class="fixed bottom-0 left-0 right-0 flex h-full flex-col bg-white outline-none">
-            <DrawerHandle class="mx-auto mt-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300" />
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-bottom drawer-content-fullheight">
+            <DrawerHandle class="drawer-handle" />
             <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <DrawerTitle class="text-lg font-semibold text-gray-900">
                 Navigation
@@ -432,3 +432,160 @@ const navLinks = [
     </Variant>
   </Story>
 </template>
+
+<style>
+/* Overlay */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: black;
+  opacity: 0.2;
+  transition: opacity 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-overlay[data-state="closed"] {
+  opacity: 0;
+}
+
+/* Bottom Drawer Content */
+.drawer-content-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  height: auto;
+  flex-direction: column;
+  background: white;
+  border-radius: 1rem 1rem 0 0;
+  outline: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-bottom[data-state="closed"] {
+  transform: translateY(100%);
+}
+.drawer-content-bottom[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+/* Top Drawer Content */
+.drawer-content-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  height: auto;
+  flex-direction: column;
+  background: white;
+  border-radius: 0 0 1rem 1rem;
+  outline: none;
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-top[data-state="closed"] {
+  transform: translateY(-100%);
+}
+.drawer-content-top[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+/* Left Drawer Content */
+.drawer-content-left {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  width: 20rem;
+  flex-direction: column;
+  background: white;
+  border-radius: 0 1rem 1rem 0;
+  outline: none;
+  transform: translateX(var(--drawer-swipe-movement-x, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-left[data-state="closed"] {
+  transform: translateX(-100%);
+}
+.drawer-content-left[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+/* Right Drawer Content */
+.drawer-content-right {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  width: 20rem;
+  flex-direction: column;
+  background: white;
+  border-radius: 1rem 0 0 1rem;
+  outline: none;
+  transform: translateX(var(--drawer-swipe-movement-x, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-right[data-state="closed"] {
+  transform: translateX(100%);
+}
+.drawer-content-right[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+/* Non-modal shadow variant */
+.drawer-content-nonmodal {
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Inner drawer background variant */
+.drawer-content-inner {
+  background: #f9fafb;
+}
+
+/* Full height drawer */
+.drawer-content-fullheight {
+  height: 100%;
+}
+
+/* Handle */
+.drawer-handle {
+  width: 3rem;
+  height: 0.25rem;
+  margin: 1rem auto 0;
+  border-radius: 9999px;
+  background-color: #d1d5db;
+  flex-shrink: 0;
+}
+.drawer-handle-bottom {
+  margin: 0 auto 1rem;
+}
+
+/* Button */
+.drawer-button {
+  display: inline-flex;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.875rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: #f9fafb;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.drawer-button:hover {
+  background: #f3f4f6;
+}
+</style>
