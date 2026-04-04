@@ -255,7 +255,7 @@ describe('given Select in a form', async () => {
   const wrapper = mount({
     props: ['handleSubmit'],
     components: { Select },
-    template: '<form @submit="handleSubmit"><Select value="true" /></form>',
+    template: '<form @submit="handleSubmit"><Select name="test" value="true" /></form>',
   }, {
     props: { handleSubmit },
     attachTo: document.body,
