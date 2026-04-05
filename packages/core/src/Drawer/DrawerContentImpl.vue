@@ -17,7 +17,6 @@ export interface DrawerContentImplProps extends DismissableLayerProps {
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
-import { useWarning } from '@/Dialog/utils'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { useForwardExpose } from '@/shared'
@@ -35,15 +34,6 @@ const { forwardRef, currentElement } = useForwardExpose()
 // Register CSS custom properties once
 registerDrawerCssProperties()
 
-// Measure popup height via ResizeObserver
-useResizeObserver(currentElement, ([entry]) => {
-  if (!entry)
-    return
-  const h = entry.contentRect.height
-  rootContext.onPopupHeightChange(h)
-  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}px`)
-})
-
 // Snap points
 const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   snapPoints: rootContext.snapPoints,
@@ -51,12 +41,10 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   popupHeight: rootContext.popupHeight,
   viewportRef: currentElement,
   onSnapPointChange: (point) => {
-    if (point === null) {
+    if (point === null)
       rootContext.onOpenChange(false)
-    }
-    else {
+    else
       rootContext.setActiveSnapPoint(point)
-    }
   },
 })
 
@@ -65,12 +53,19 @@ watch(activeSnapPointOffset, (offset) => {
   const el = currentElement.value
   if (!el)
     return
-  if (offset != null) {
+  if (offset != null)
     el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${offset}px`)
-  }
-  else {
+  else
     el.style.removeProperty(DRAWER_CSS_VARS.snapPointOffset)
-  }
+})
+
+// Measure popup height via ResizeObserver
+useResizeObserver(currentElement, ([entry]) => {
+  if (!entry)
+    return
+  const h = entry.contentRect.height
+  rootContext.onPopupHeightChange(h)
+  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}px`)
 })
 
 // Watch frontmostHeight -> set CSS var
@@ -82,12 +77,12 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
 const { isSwiping } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
-  directions: computed(() => [rootContext.swipeDirection.value]),
-  canStart: () => !rootContext.nestedSwiping.value,
+  directions: [rootContext.swipeDirection.value],
   movementCssVars: {
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
   },
+  canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
     if (rootContext.snapPoints.value && rootContext.snapPoints.value.length > 0) {
       snapToNearest(0, { x: 0, y: 0 }, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
@@ -125,11 +120,8 @@ const dataAttributes = computed(() => {
 
 onMounted(() => {
   rootContext.contentElement.value = currentElement.value
-
-  // Register with parent nested drawer
   rootContext.notifyParentHasNestedDrawer?.(true)
 
-  // Set nested depth CSS var based on whether we're inside a parent drawer
   const nestedDepth = rootContext.notifyParentHasNestedDrawer ? 1 : 0
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.nestedDrawers, `${nestedDepth}`)
 })
@@ -140,13 +132,12 @@ onUnmounted(() => {
 
 // Dev warning for missing DrawerTitle
 if (process.env.NODE_ENV !== 'production') {
-  useWarning({
-    titleName: 'DrawerTitle',
-    contentName: 'DrawerContent',
-    componentLink: 'drawer.html#title',
-    titleId: rootContext.titleId,
-    descriptionId: rootContext.descriptionId,
-    contentElement: currentElement,
+  onMounted(() => {
+    if (!document.getElementById(rootContext.titleId)) {
+      console.warn(
+        `Warning: \`DrawerContent\` requires a \`DrawerTitle\` for accessibility.`,
+      )
+    }
   })
 }
 </script>

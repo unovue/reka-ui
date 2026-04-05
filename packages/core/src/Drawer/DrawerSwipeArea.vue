@@ -43,7 +43,7 @@ const enabled = computed(() => !props.disabled && !rootContext.open.value)
 useSwipeDismiss({
   enabled,
   elementRef: currentElement,
-  directions: computed(() => [openDirection.value]),
+  directions: [openDirection.value],
   movementCssVars: {
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,

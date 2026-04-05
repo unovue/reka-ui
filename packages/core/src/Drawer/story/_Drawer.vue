@@ -21,45 +21,43 @@ const open = ref(false)
       Open Drawer
     </DrawerTrigger>
     <DrawerPortal>
-      <Transition name="drawer-overlay">
-        <DrawerOverlay class="drawer-overlay" />
-      </Transition>
-      <Transition name="drawer-slide-bottom">
-        <DrawerContent class="drawer-content-bottom">
-          <DrawerHandle class="drawer-handle" />
-          <div class="p-6">
-            <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-              Drawer Title
-            </DrawerTitle>
-            <DrawerDescription class="text-sm text-gray-600">
-              This drawer slides up from the bottom. Swipe down to dismiss.
-            </DrawerDescription>
-            <div class="mt-6 flex justify-end">
-              <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                Close
-              </DrawerClose>
-            </div>
+      <DrawerOverlay class="drawer-overlay" />
+      <DrawerContent class="drawer-content-bottom">
+        <DrawerHandle class="drawer-handle" />
+        <div class="p-6">
+          <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+            Drawer Title
+          </DrawerTitle>
+          <DrawerDescription class="text-sm text-gray-600">
+            This drawer slides up from the bottom. Swipe down to dismiss.
+          </DrawerDescription>
+          <div class="mt-6 flex justify-end">
+            <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+              Close
+            </DrawerClose>
           </div>
-        </DrawerContent>
-      </Transition>
+        </div>
+      </DrawerContent>
     </DrawerPortal>
   </DrawerRoot>
 </template>
 
-<style scoped>
+<style>
+@keyframes drawer-overlay-in { from { opacity: 0; } }
+@keyframes drawer-overlay-out { to { opacity: 0; } }
+@keyframes drawer-slide-bottom-in { from { transform: translateY(100%); } }
+@keyframes drawer-slide-bottom-out { to { transform: translateY(100%); } }
+
 .drawer-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.2);
 }
-
-.drawer-overlay-enter-active,
-.drawer-overlay-leave-active {
-  transition: opacity 450ms cubic-bezier(0.32, 0.72, 0, 1);
+.drawer-overlay[data-state="open"] {
+  animation: drawer-overlay-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.drawer-overlay-enter-from,
-.drawer-overlay-leave-to {
-  opacity: 0;
+.drawer-overlay[data-state="closed"] {
+  animation: drawer-overlay-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .drawer-content-bottom {
@@ -68,7 +66,6 @@ const open = ref(false)
   left: 0;
   right: 0;
   display: flex;
-  height: auto;
   flex-direction: column;
   background: white;
   border-radius: 1rem 1rem 0 0;
@@ -76,21 +73,17 @@ const open = ref(false)
   overflow-y: auto;
   overscroll-behavior: contain;
   transform: translateY(var(--drawer-swipe-movement-y, 0px));
-  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
+.drawer-content-bottom[data-state="open"] {
+  animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-bottom[data-state="closed"] {
+  animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
 .drawer-content-bottom[data-swiping] {
-  transition-duration: 0ms;
+  animation: none;
   user-select: none;
-}
-
-.drawer-slide-bottom-enter-active,
-.drawer-slide-bottom-leave-active {
-  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
-}
-.drawer-slide-bottom-enter-from,
-.drawer-slide-bottom-leave-to {
-  transform: translateY(100%);
 }
 
 .drawer-handle {
