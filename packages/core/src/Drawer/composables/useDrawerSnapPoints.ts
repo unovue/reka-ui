@@ -57,7 +57,8 @@ export function useDrawerSnapPoints(options: {
       const height = parseSnapPoint(pt, vh, fs)
       if (resolved.some(r => Math.abs(r.height - height) <= 1))
         continue
-      resolved.push({ value: pt, height, offset: ph - height })
+      const clampedHeight = Math.min(height, Math.min(ph, vh))
+      resolved.push({ value: pt, height: clampedHeight, offset: Math.max(0, ph - clampedHeight) })
     }
     return resolved.sort((a, b) => a.height - b.height)
   })

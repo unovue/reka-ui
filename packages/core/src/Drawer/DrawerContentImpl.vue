@@ -24,13 +24,15 @@ import { useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
-import { DRAWER_CSS_VARS } from './utils'
+import { DRAWER_CSS_VARS, registerDrawerCssProperties } from './utils'
 
 const props = defineProps<DrawerContentImplProps>()
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
+
+registerDrawerCssProperties()
 
 // Snap points
 const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
@@ -46,19 +48,22 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   },
 })
 
-// Watch activeSnapPointOffset -> set/remove CSS vars
+// Watch activeSnapPointOffset -> set CSS vars (matching BaseUI sign convention)
+// offset >= 0 represents distance from fully-open. For 'up' drawers, flip sign.
 watch(activeSnapPointOffset, (offset) => {
   const el = currentElement.value
   if (!el)
     return
   if (offset != null) {
-    el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${offset}px`)
-    // Set snap height so CSS can use min-height to fill from snap point to bottom
+    const dir = rootContext.swipeDirection.value
+    const signedOffset = (dir === 'up' || dir === 'left') ? -offset : offset
+    el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${signedOffset}px`)
+    // Set snap height for CSS min-height (drawer fills from snap point to edge)
     const snapHeight = rootContext.popupHeight.value - offset
-    el.style.setProperty('--drawer-snap-height', `${snapHeight}px`)
+    el.style.setProperty('--drawer-snap-height', `${Math.max(0, snapHeight)}px`)
   }
   else {
-    el.style.removeProperty(DRAWER_CSS_VARS.snapPointOffset)
+    el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, '0px')
     el.style.removeProperty('--drawer-snap-height')
   }
 })

@@ -84,14 +84,40 @@ export function getElementTransform(element: HTMLElement): {
   return { x, y, scale }
 }
 
+let drawerCssVarsRegistered = false
+
+/**
+ * Removes CSS variable inheritance for high-frequency drawer swipe vars.
+ * Uses proper syntax types matching BaseUI:
+ * - Length vars (<length>) with initialValue '0px' for use in calc()/translateY()
+ * - Number vars (<number>) for opacity/strength scalars
+ */
 export function registerDrawerCssProperties() {
-  if (typeof CSS === 'undefined' || !CSS.registerProperty)
+  if (drawerCssVarsRegistered || typeof CSS === 'undefined' || !CSS.registerProperty)
     return
-  const vars = Object.values(DRAWER_CSS_VARS)
-  for (const name of vars) {
+
+  const lengthVars = [
+    DRAWER_CSS_VARS.swipeMovementX,
+    DRAWER_CSS_VARS.swipeMovementY,
+    DRAWER_CSS_VARS.snapPointOffset,
+  ]
+  for (const name of lengthVars) {
     try {
-      CSS.registerProperty({ name, syntax: '*', inherits: false, initialValue: '0' })
+      CSS.registerProperty({ name, syntax: '<length>', inherits: false, initialValue: '0px' })
     }
     catch {}
   }
+
+  const numberVars = [
+    { name: DRAWER_CSS_VARS.swipeProgress, initialValue: '0' },
+    { name: DRAWER_CSS_VARS.swipeStrength, initialValue: '1' },
+  ]
+  for (const { name, initialValue } of numberVars) {
+    try {
+      CSS.registerProperty({ name, syntax: '<number>', inherits: false, initialValue })
+    }
+    catch {}
+  }
+
+  drawerCssVarsRegistered = true
 }
