@@ -45,7 +45,10 @@ const open = ref(false)
 <style>
 @keyframes drawer-overlay-in { from { opacity: 0; } }
 @keyframes drawer-overlay-out { to { opacity: 0; } }
-@keyframes drawer-slide-bottom-in { from { transform: translateY(100%); } }
+@keyframes drawer-slide-bottom-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px))); }
+}
 @keyframes drawer-slide-bottom-out { to { transform: translateY(100%); } }
 
 .drawer-overlay {
@@ -72,7 +75,8 @@ const open = ref(false)
   outline: none;
   overflow-y: auto;
   overscroll-behavior: contain;
-  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
 .drawer-content-bottom[data-state="open"] {
@@ -83,6 +87,7 @@ const open = ref(false)
 }
 .drawer-content-bottom[data-swiping] {
   animation: none;
+  transition-duration: 0ms;
   user-select: none;
 }
 

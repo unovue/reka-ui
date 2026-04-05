@@ -23,16 +23,13 @@ import { useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
-import { DRAWER_CSS_VARS, registerDrawerCssProperties } from './utils'
+import { DRAWER_CSS_VARS } from './utils'
 
 const props = defineProps<DrawerContentImplProps>()
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
-
-// Register CSS custom properties once
-registerDrawerCssProperties()
 
 // Snap points
 const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({

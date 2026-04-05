@@ -193,7 +193,11 @@ const navLinks = [
         </DrawerTrigger>
         <DrawerPortal>
           <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
+          <DrawerContent
+            force-mount
+            class="drawer-content-snap"
+            :class="{ 'drawer-content-snap--open': snapOpen }"
+          >
             <DrawerHandle class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -464,7 +468,8 @@ const navLinks = [
   outline: none;
   overflow-y: auto;
   overscroll-behavior: contain;
-  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
 .drawer-content-bottom[data-state="open"] {
@@ -475,6 +480,7 @@ const navLinks = [
 }
 .drawer-content-bottom[data-swiping] {
   animation: none;
+  transition-duration: 0ms;
   user-select: none;
 }
 
@@ -553,6 +559,32 @@ const navLinks = [
 }
 .drawer-content-right[data-swiping] {
   animation: none;
+  user-select: none;
+}
+
+/* === Snap Points Drawer (transition-based, no animation) === */
+.drawer-content-snap {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  height: auto;
+  flex-direction: column;
+  background: white;
+  border-radius: 1rem 1rem 0 0;
+  outline: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateY(100%);
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-snap--open {
+  transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
+}
+.drawer-content-snap[data-swiping] {
+  transition-duration: 0ms;
   user-select: none;
 }
 
