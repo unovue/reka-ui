@@ -367,6 +367,7 @@ export function useDateField(props: UseDateFieldProps) {
      */
     if (props.hasLeftFocus.value) {
       props.hasLeftFocus.value = false
+      props.lastKeyZero.value = false
       prev = null
     }
 

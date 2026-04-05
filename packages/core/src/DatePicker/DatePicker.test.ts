@@ -227,6 +227,28 @@ describe('datePicker', async () => {
     }
   })
 
+  it('doesn\'t change focus prematurely with segment value of 0', async () => {
+    const { getByTestId, user, day, month, year } = setup({
+      datePickerProps: {
+        modelValue: zonedDateTime,
+        granularity: 'second',
+      },
+    })
+    const { hour, minute, second } = getTimeSegments(getByTestId)
+
+    const segments = [month, day, year, hour, minute, second]
+
+    for (const segment of segments) {
+      await user.click(segment)
+      await user.keyboard('{0}')
+      await user.keyboard(kbd.TAB)
+      expect(segment).not.toHaveFocus()
+      await user.click(segment)
+      await user.keyboard('{1}')
+      expect(segment).toHaveFocus()
+    }
+  })
+
   it('prevents interaction and picker to be opened when `disabled` is `true`', async () => {
     const { trigger, day, month, year } = setup({
       datePickerProps: {
