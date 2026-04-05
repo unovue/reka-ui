@@ -47,3 +47,20 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  size:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Build
+        run: pnpm --filter reka-ui build
+
+      - name: Check bundle size
+        run: pnpm --filter reka-ui size

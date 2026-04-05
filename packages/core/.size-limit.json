@@ -1,0 +1,14 @@
+[
+  {
+    "path": "dist/index.js",
+    "import": "{ AspectRatio }",
+    "limit": "5 KB",
+    "name": "AspectRatio (single simple component)"
+  },
+  {
+    "path": "dist/index.js",
+    "import": "{ DialogRoot, DialogContent, DialogOverlay, DialogTrigger }",
+    "limit": "25 KB",
+    "name": "Dialog (medium complexity component)"
+  }
+]
