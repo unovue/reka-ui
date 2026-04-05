@@ -118,13 +118,13 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
   }
 
   function setCssVars(el: HTMLElement, x: number, y: number) {
-    el.style.setProperty(movementCssVars.x, `${x}`)
-    el.style.setProperty(movementCssVars.y, `${y}`)
+    el.style.setProperty(movementCssVars.x, `${x}px`)
+    el.style.setProperty(movementCssVars.y, `${y}px`)
   }
 
   function clearCssVars(el: HTMLElement) {
-    el.style.setProperty(movementCssVars.x, '0')
-    el.style.setProperty(movementCssVars.y, '0')
+    el.style.setProperty(movementCssVars.x, '0px')
+    el.style.setProperty(movementCssVars.y, '0px')
   }
 
   function reset() {

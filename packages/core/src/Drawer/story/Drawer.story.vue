@@ -391,42 +391,44 @@ const navLinks = [
     <!-- Indent Effect -->
     <Variant title="Indent Effect">
       <DrawerProvider>
-        <DrawerIndentBackground class="fixed inset-0 bg-black transition-opacity duration-300 data-[active]:opacity-30" />
-        <DrawerIndent class="transition-transform duration-300 data-[active]:scale-[0.96] data-[active]:rounded-lg">
-          <div class="min-h-[300px] bg-white p-6">
-            <p class="mb-4 text-sm text-gray-600">
-              When the drawer opens, this content will scale down with an indent effect.
-            </p>
-            <DrawerRoot v-model:open="indentOpen">
-              <DrawerTrigger class="drawer-button">
-                Open with Indent
-              </DrawerTrigger>
-              <DrawerPortal>
-                <Transition name="drawer-overlay">
-                  <DrawerOverlay class="drawer-overlay" />
-                </Transition>
-                <Transition name="drawer-slide-bottom">
-                  <DrawerContent class="drawer-content-bottom">
-                    <DrawerHandle class="drawer-handle" />
-                    <div class="p-6">
-                      <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
-                        Indent Effect
-                      </DrawerTitle>
-                      <DrawerDescription class="text-sm text-gray-600">
-                        Notice how the background content scales down when this drawer is open.
-                      </DrawerDescription>
-                      <div class="mt-6 flex justify-end">
-                        <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-                          Close
-                        </DrawerClose>
+        <div class="indent-root">
+          <DrawerIndentBackground class="indent-background" />
+          <DrawerIndent class="indent-content">
+            <div class="min-h-[300px] bg-white p-6">
+              <p class="mb-4 text-sm text-gray-600">
+                When the drawer opens, this content will scale down with an indent effect.
+              </p>
+              <DrawerRoot v-model:open="indentOpen">
+                <DrawerTrigger class="drawer-button">
+                  Open with Indent
+                </DrawerTrigger>
+                <DrawerPortal>
+                  <Transition name="drawer-overlay">
+                    <DrawerOverlay class="drawer-overlay" />
+                  </Transition>
+                  <Transition name="drawer-slide-bottom">
+                    <DrawerContent class="drawer-content-bottom">
+                      <DrawerHandle class="drawer-handle" />
+                      <div class="p-6">
+                        <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
+                          Indent Effect
+                        </DrawerTitle>
+                        <DrawerDescription class="text-sm text-gray-600">
+                          Notice how the background content scales down when this drawer is open.
+                        </DrawerDescription>
+                        <div class="mt-6 flex justify-end">
+                          <DrawerClose class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                            Close
+                          </DrawerClose>
+                        </div>
                       </div>
-                    </div>
-                  </DrawerContent>
-                </Transition>
-              </DrawerPortal>
-            </DrawerRoot>
-          </div>
-        </DrawerIndent>
+                    </DrawerContent>
+                  </Transition>
+                </DrawerPortal>
+              </DrawerRoot>
+            </div>
+          </DrawerIndent>
+        </div>
       </DrawerProvider>
     </Variant>
 
@@ -639,6 +641,37 @@ const navLinks = [
 }
 .drawer-handle-bottom {
   margin: 0 auto 1rem;
+}
+
+/* === Indent Effect === */
+.indent-root {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.indent-background {
+  position: absolute;
+  inset: 0;
+  background-color: black;
+}
+
+.indent-content {
+  position: relative;
+  min-height: 320px;
+  background-color: white;
+  contain: layout;
+  transform-origin: center top;
+  transition:
+    transform 400ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 250ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.indent-content[data-active] {
+  transform: scale(0.96) translateY(0.5rem);
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
 }
 
 /* === Button === */

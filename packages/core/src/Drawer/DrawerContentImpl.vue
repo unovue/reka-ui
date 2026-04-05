@@ -41,7 +41,7 @@ useResizeObserver(currentElement, ([entry]) => {
     return
   const h = entry.contentRect.height
   rootContext.onPopupHeightChange(h)
-  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}`)
+  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}px`)
 })
 
 // Snap points
@@ -66,7 +66,7 @@ watch(activeSnapPointOffset, (offset) => {
   if (!el)
     return
   if (offset != null) {
-    el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${offset}`)
+    el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${offset}px`)
   }
   else {
     el.style.removeProperty(DRAWER_CSS_VARS.snapPointOffset)
@@ -75,7 +75,7 @@ watch(activeSnapPointOffset, (offset) => {
 
 // Watch frontmostHeight -> set CSS var
 watch(() => rootContext.frontmostHeight.value, (h) => {
-  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}`)
+  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}px`)
 })
 
 // Swipe dismiss
