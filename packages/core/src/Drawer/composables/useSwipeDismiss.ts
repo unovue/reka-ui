@@ -220,11 +220,13 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       ? -Math.sqrt(overshoot)
       : displacement
 
+    // Convert displacement to CSS offset: 'down'/'right' = positive, 'up'/'left' = negative
+    const sign = (intendedDirection === 'up' || intendedDirection === 'left') ? -1 : 1
     const offsetX = (intendedDirection === 'left' || intendedDirection === 'right')
-      ? dampedDisplacement
+      ? dampedDisplacement * sign
       : 0
     const offsetY = (intendedDirection === 'up' || intendedDirection === 'down')
-      ? dampedDisplacement
+      ? dampedDisplacement * sign
       : 0
 
     dragOffset.value = { x: offsetX, y: offsetY }

@@ -106,10 +106,10 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
   },
   onRelease(velocity) {
     if (hasSnapPoints.value) {
-      const currentOffset = activeSnapPointOffset.value ?? 0
-      // Add the current drag offset to the snap offset to get the actual position
-      const dragY = dragOffset.value.y
-      snapToNearest(currentOffset + dragY, velocity, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
+      // Pass the raw drag offset (signed: positive=down/right, negative=up/left)
+      const isVertical = rootContext.swipeDirection.value === 'up' || rootContext.swipeDirection.value === 'down'
+      const dragPx = isVertical ? dragOffset.value.y : dragOffset.value.x
+      snapToNearest(dragPx, velocity, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
     }
   },
   onSwipingChange(swiping) {

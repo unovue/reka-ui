@@ -77,7 +77,7 @@ export function useDrawerSnapPoints(options: {
   })
 
   function snapToNearest(
-    currentOffset: number,
+    dragOffsetPx: number,
     velocity: { x: number, y: number },
     direction: 'up' | 'down' | 'left' | 'right',
     sequential: boolean,
@@ -86,34 +86,62 @@ export function useDrawerSnapPoints(options: {
     if (points.length === 0)
       return
 
-    const currentHeight = popupHeight.value - currentOffset
+    // Find the active snap point's height
+    const activePoint = points.find(p => p.value === activeSnapPoint.value)
+    const activeHeight = activePoint?.height ?? popupHeight.value
+
+    // dragOffsetPx: positive = dragged down/right, negative = dragged up/left
+    // For a bottom drawer: drag down = shrink visible area, drag up = expand
+    const currentVisibleHeight = activeHeight - dragOffsetPx
+
     const isVertical = direction === 'up' || direction === 'down'
     const vel = isVertical ? velocity.y : velocity.x
 
+    // Determine swipe intent from velocity (negative vel = swiping up/left = expanding)
+    const expanding = vel < -0.1
+    const collapsing = vel > 0.1
+
     if (sequential) {
       const sorted = [...points].sort((a, b) => a.height - b.height)
-      const currentIdx = sorted.findIndex(p => Math.abs(p.height - currentHeight) < 20)
-      if (vel < -0.1 || direction === 'up' || direction === 'left') {
+      const currentIdx = sorted.findIndex(p => p.value === activeSnapPoint.value)
+
+      if (expanding) {
+        // Move to next higher snap point
         const next = currentIdx < sorted.length - 1 ? sorted[currentIdx + 1] : sorted.at(-1)
         if (next)
           onSnapPointChange(next.value)
       }
-      else if (vel > 0.1 || direction === 'down' || direction === 'right') {
-        if (currentIdx <= 0) {
-          onSnapPointChange(null)
-        }
-        else {
+      else if (collapsing) {
+        // Move to next lower snap point, or dismiss if at lowest
+        if (currentIdx <= 0)
+          onSnapPointChange(null) // dismiss
+        else
           onSnapPointChange(sorted[currentIdx - 1].value)
+      }
+      else {
+        // No strong velocity — snap to nearest by position
+        let nearest = points[0]
+        for (const p of points) {
+          if (Math.abs(p.height - currentVisibleHeight) < Math.abs(nearest.height - currentVisibleHeight))
+            nearest = p
         }
+        // If dragged past halfway below lowest snap, dismiss
+        if (currentVisibleHeight < (sorted[0]?.height ?? 0) / 2)
+          onSnapPointChange(null)
+        else
+          onSnapPointChange(nearest.value)
       }
     }
     else {
       let nearest = points[0]
       for (const p of points) {
-        if (Math.abs(p.height - currentHeight) < Math.abs(nearest.height - currentHeight))
+        if (Math.abs(p.height - currentVisibleHeight) < Math.abs(nearest.height - currentVisibleHeight))
           nearest = p
       }
-      onSnapPointChange(nearest.value)
+      if (currentVisibleHeight < (points[0]?.height ?? 0) / 2)
+        onSnapPointChange(null)
+      else
+        onSnapPointChange(nearest.value)
     }
   }
 
