@@ -457,7 +457,7 @@ const navLinks = [
   left: 0;
   right: 0;
   display: flex;
-  height: auto;
+  min-height: var(--drawer-snap-height, auto);
   flex-direction: column;
   background: white;
   border-radius: 1rem 1rem 0 0;
@@ -465,7 +465,7 @@ const navLinks = [
   overflow-y: auto;
   overscroll-behavior: contain;
   transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
-  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1), min-height 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
 .drawer-content-bottom[data-state="open"] {

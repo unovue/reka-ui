@@ -15,6 +15,7 @@ export interface DrawerContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
+import type { SwipeDirection } from './utils'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
@@ -45,15 +46,21 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   },
 })
 
-// Watch activeSnapPointOffset -> set/remove CSS var
+// Watch activeSnapPointOffset -> set/remove CSS vars
 watch(activeSnapPointOffset, (offset) => {
   const el = currentElement.value
   if (!el)
     return
-  if (offset != null)
+  if (offset != null) {
     el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${offset}px`)
-  else
+    // Set snap height so CSS can use min-height to fill from snap point to bottom
+    const snapHeight = rootContext.popupHeight.value - offset
+    el.style.setProperty('--drawer-snap-height', `${snapHeight}px`)
+  }
+  else {
     el.style.removeProperty(DRAWER_CSS_VARS.snapPointOffset)
+    el.style.removeProperty('--drawer-snap-height')
+  }
 })
 
 // Measure popup height via ResizeObserver
@@ -70,28 +77,39 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}px`)
 })
 
+// Swipe directions: when snap points exist, allow both dismiss AND expand directions
+const hasSnapPoints = computed(() => (rootContext.snapPoints.value?.length ?? 0) > 0)
+const swipeDirections = computed<SwipeDirection[]>(() => {
+  const dismiss = rootContext.swipeDirection.value
+  if (!hasSnapPoints.value)
+    return [dismiss]
+  // Allow swiping in both directions for snap point navigation
+  const opposite: Record<string, SwipeDirection> = { up: 'down', down: 'up', left: 'right', right: 'left' }
+  return [dismiss, opposite[dismiss]]
+})
+
 // Swipe dismiss
-const { isSwiping } = useSwipeDismiss({
+const { isSwiping, dragOffset } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
-  directions: [rootContext.swipeDirection.value],
+  directions: swipeDirections,
   movementCssVars: {
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
   },
   canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
-    if (rootContext.snapPoints.value && rootContext.snapPoints.value.length > 0) {
-      snapToNearest(0, { x: 0, y: 0 }, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
-    }
-    else {
+    if (!hasSnapPoints.value) {
       rootContext.onOpenChange(false)
     }
+    // With snap points, onRelease handles snapping
   },
   onRelease(velocity) {
-    if (rootContext.snapPoints.value && rootContext.snapPoints.value.length > 0) {
-      const offset = activeSnapPointOffset.value ?? 0
-      snapToNearest(offset, velocity, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
+    if (hasSnapPoints.value) {
+      const currentOffset = activeSnapPointOffset.value ?? 0
+      // Add the current drag offset to the snap offset to get the actual position
+      const dragY = dragOffset.value.y
+      snapToNearest(currentOffset + dragY, velocity, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
     }
   },
   onSwipingChange(swiping) {
@@ -101,6 +119,11 @@ const { isSwiping } = useSwipeDismiss({
     rootContext.onNestedSwipeProgressChange(progress)
   },
 })
+
+function onDismiss() {
+  if (!isSwiping.value)
+    rootContext.onOpenChange(false)
+}
 
 // Data attributes
 const dataAttributes = computed(() => {
@@ -157,11 +180,11 @@ if (process.env.NODE_ENV !== 'production') {
       :aria-describedby="rootContext.descriptionId"
       :aria-labelledby="rootContext.titleId"
       v-bind="{ ...dataAttributes, ...$attrs }"
-      @dismiss="rootContext.onOpenChange(false)"
+      @dismiss="onDismiss"
       @escape-key-down="emits('escapeKeyDown', $event)"
-      @focus-outside="emits('focusOutside', $event)"
-      @interact-outside="emits('interactOutside', $event)"
-      @pointer-down-outside="emits('pointerDownOutside', $event)"
+      @focus-outside="(e: any) => { if (isSwiping) e.preventDefault(); else emits('focusOutside', e) }"
+      @interact-outside="(e: any) => { if (isSwiping) e.preventDefault(); else emits('interactOutside', e) }"
+      @pointer-down-outside="(e: any) => { if (isSwiping) e.preventDefault(); else emits('pointerDownOutside', e) }"
     >
       <slot />
     </DismissableLayer>
