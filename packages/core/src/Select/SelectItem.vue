@@ -42,7 +42,6 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import {
   computed,
-  nextTick,
   onMounted,
   ref,
   toRefs,
@@ -68,7 +67,10 @@ const textId = useId(undefined, 'reka-select-item-text')
 
 const SELECT_SELECT = 'select.select'
 
-async function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent) {
+// Track pointer type to differentiate between mouse and touch interactions
+let pointerTypeRef: PointerEvent['pointerType'] = 'touch'
+
+function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent) {
   if (ev.defaultPrevented)
     return
 
@@ -76,8 +78,7 @@ async function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent) {
   handleAndDispatchCustomEvent(SELECT_SELECT, handleSelect, eventDetail)
 }
 
-async function handleSelect(ev: SelectEvent<T>) {
-  await nextTick()
+function handleSelect(ev: SelectEvent<T>) {
   emits('select', ev)
   if (ev.defaultPrevented)
     return
@@ -89,30 +90,32 @@ async function handleSelect(ev: SelectEvent<T>) {
   }
 }
 
-async function handlePointerMove(event: PointerEvent) {
-  await nextTick()
+function handlePointerMove(event: PointerEvent) {
   if (event.defaultPrevented)
     return
+
+  // Remember pointer type when sliding over to this item from another one
+  pointerTypeRef = event.pointerType
+
   if (disabled.value) {
     contentContext.onItemLeave?.()
   }
-  else {
+  else if (pointerTypeRef === 'mouse') {
+    // Only focus on mouse move, not touch
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
     (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
   }
 }
 
-async function handlePointerLeave(event: PointerEvent) {
-  await nextTick()
+function handlePointerLeave(event: PointerEvent) {
   if (event.defaultPrevented)
     return
   if (event.currentTarget === getActiveElement())
     contentContext.onItemLeave?.()
 }
 
-async function handleKeyDown(event: KeyboardEvent) {
-  await nextTick()
+function handleKeyDown(event: KeyboardEvent) {
   if (event.defaultPrevented)
     return
   const isTypingAhead = contentContext.searchRef?.value !== ''
@@ -168,11 +171,23 @@ provideSelectItemContext({
       :as-child="asChild"
       @focus="isFocused = true"
       @blur="isFocused = false"
-      @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event) => {
+      @click="(event: MouseEvent) => {
+        // Open on click when using a touch or pen device
+        if (pointerTypeRef !== 'mouse') {
+          handleSelectCustomEvent(event as unknown as PointerEvent)
+        }
+      }"
+      @pointerup="(event: PointerEvent) => {
+        // Using a mouse you should be able to do pointer down, move through
+        // the list, and release the pointer over the item to select it.
+        if (pointerTypeRef === 'mouse') {
+          handleSelectCustomEvent(event)
+        }
+      }"
+      @pointerdown="(event: PointerEvent) => {
+        pointerTypeRef = event.pointerType;
         (event.currentTarget as HTMLElement).focus({ preventScroll: true })
       }"
-      @touchend.prevent.stop
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @keydown="handleKeyDown"
