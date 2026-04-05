@@ -37,6 +37,7 @@ export default defineConfig({
     internal: './src/internal.ts',
     date: './src/date/index.ts',
     constant: './constant/index.ts',
+    shared: './src/shared/index.ts',
   },
   fromVite: true,
   platform: 'neutral',
