@@ -83,7 +83,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   })[0]
 
   const targetNode = defaultNode.type === Fragment && Array.isArray(defaultNode.children)
-    ? defaultNode.children[0] as VNode
+    ? defaultNode.children.find(child => typeof (child as VNode).type !== 'symbol') as VNode
     : defaultNode
 
   return {
