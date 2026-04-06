@@ -301,8 +301,9 @@ provideSelectContentContext({
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="
-            (vnode: ComponentPublicInstance) => {
-              const el = unrefElement(vnode) as HTMLElement | undefined
+            (vnode: Element | ComponentPublicInstance | null) => {
+              if (!vnode) return undefined
+              const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
               // special case for PopperContent
               if (el?.hasAttribute('data-reka-popper-content-wrapper'))
                 content = el.firstElementChild as HTMLElement
