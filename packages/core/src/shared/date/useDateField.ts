@@ -450,6 +450,15 @@ export function useDateField(props: UseDateFieldProps) {
       prev = null
     }
 
+    /**
+     * If the last key was a 0 we use the current number as the segment
+     * value and continue to the next segment
+     */
+    if (props.lastKeyZero.value) {
+      props.lastKeyZero.value = false
+      return { value: num, moveToNext: true }
+    }
+
     if (prev === null) {
       /**
        * If the user types a 0 as the first number, we want
@@ -462,13 +471,12 @@ export function useDateField(props: UseDateFieldProps) {
         return { value: 0, moveToNext }
       }
       /**
-       * If the last key was a 0, or if the first number is
-       * greater than the max start digit (0-3 in most cases), then
-       * we want to move to the next segment, since it's not possible
-       * to continue typing a valid number in this segment.
+       * If the first number is greater than the max start digit (0-3 in
+       * most cases), then we want to move to the next segment, since it's
+       * not possible to continue typing a valid number in this segment.
        */
 
-      if (props.lastKeyZero.value || num > maxStart) {
+      if (num > maxStart) {
         // move to next
         moveToNext = true
       }
@@ -530,6 +538,15 @@ export function useDateField(props: UseDateFieldProps) {
       prev = null
     }
 
+    /**
+     * If the last key was a 0 we use the current number as the segment
+     * value and continue to the next segment
+     */
+    if (props.lastKeyZero.value) {
+      props.lastKeyZero.value = false
+      return { value: num, moveToNext: true }
+    }
+
     if (prev === null) {
       /**
        * If the user types a 0 as the first number, we want
@@ -542,13 +559,12 @@ export function useDateField(props: UseDateFieldProps) {
         return { value: 0, moveToNext }
       }
       /**
-       * If the last key was a 0, or if the first number is
-       * greater than the max start digit (0-3 in most cases), then
-       * we want to move to the next segment, since it's not possible
-       * to continue typing a valid number in this segment.
+       * If the first number is greater than the max start digit (0-3 in
+       * most cases), then we want to move to the next segment, since it's
+       * not possible to continue typing a valid number in this segment.
        */
 
-      if (props.lastKeyZero.value || num > maxStart) {
+      if (num > maxStart) {
         // move to next
         moveToNext = true
       }

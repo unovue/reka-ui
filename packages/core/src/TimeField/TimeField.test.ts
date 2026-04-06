@@ -446,6 +446,28 @@ describe('timeField', async () => {
     expect(dayPeriod).toHaveFocus()
   })
 
+  it('takes you all the way through the segment with spamming 0', async () => {
+    const { getByTestId, user, hour } = setup({
+      timeFieldProps: {
+        modelValue: zonedDateTime,
+        granularity: 'second',
+      },
+    })
+
+    const { minute, second, dayPeriod } = getTimeSegments(getByTestId)
+
+    await user.click(hour)
+    await user.keyboard('{0}')
+    await user.keyboard('{0}')
+    expect(minute).toHaveFocus()
+    await user.keyboard('{0}')
+    await user.keyboard('{0}')
+    expect(second).toHaveFocus()
+    await user.keyboard('{0}')
+    await user.keyboard('{0}')
+    expect(dayPeriod).toHaveFocus()
+  })
+
   it('updates the hour on the modelValue if the dayPeriod is updated', async () => {
     const { getByTestId, user, value, rerender } = setup({
       timeFieldProps: {
