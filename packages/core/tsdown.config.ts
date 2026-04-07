@@ -3,8 +3,9 @@ import { defineConfig } from 'tsdown'
 
 // Match `defineComponent(`, `createContext(`, `reactive(` at word boundaries,
 // skipping calls already preceded by a PURE annotation or prefixed with a
-// word character (e.g. _defineComponent).
-const PURE_PATTERN = /(?<=^|[^.\w$])(defineComponent|createContext|reactive)\s*\(/g
+// word character (e.g. _defineComponent), or preceded by `function` keyword
+// (function declarations should not be annotated).
+const PURE_PATTERN = /(?<!function\s)(?<=^|[^.\w$])(defineComponent|createContext|reactive)\s*\(/g
 const ALREADY_PURE = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
 const PATH_SEP = /[\\/]/g
 
