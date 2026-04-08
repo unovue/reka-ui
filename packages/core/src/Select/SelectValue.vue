@@ -10,7 +10,7 @@ export interface SelectValueProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -27,13 +27,6 @@ const rootContext = injectSelectRootContext()
 onMounted(() => {
   rootContext.valueElement = currentElement
 })
-
-watch(
-  () => rootContext.optionsMap.value.size,
-  (map) => {
-    console.log(map)
-  },
-)
 
 const selectedLabel = computed(() => {
   let list: string[] = []
