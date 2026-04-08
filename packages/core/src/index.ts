@@ -96,7 +96,14 @@ export {
 } from './shared/color'
 export {
   type AcceptableValue,
+  type DataOrientation,
+  type Direction,
+  type FormFieldProps,
   type GenericComponentInstance,
+  type ScrollBodyOption,
+  type SingleOrMultipleProps,
+  type SingleOrMultipleType,
+  type StringOrNumber,
 } from './shared/types'
 export * from './Slider'
 export * from './Splitter'
