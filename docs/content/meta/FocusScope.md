@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -42,3 +43,24 @@
     'type': '[event: Event]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `loop` | When true, tabbing from last item will focus first tabbable and shift+tab from first item will focus last tababble. | `boolean` | No | `false` |
+| `trapped` | When true, focus cannot escape the focus scope via keyboard, pointer, or a programmatic focus. | `boolean` | No | `false` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `mountAutoFocus` | Event handler called when auto-focusing on mount. Can be prevented. | `[event: Event]` |
+| `unmountAutoFocus` | Event handler called when auto-focusing on unmount. Can be prevented. | `[event: Event]` |
+
+</llm-only>

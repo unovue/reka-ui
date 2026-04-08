@@ -3,7 +3,7 @@ export function pick<T, K extends keyof T>(object: T, keys: K[]): Pick<T, K> {
     {},
     // eslint-disable-next-line array-callback-return
     ...keys.map((key) => {
-      if (object && Object.prototype.hasOwnProperty.call(object, key))
+      if (object && Object.hasOwn(object, key))
         return { [key]: object[key] }
     }),
   )

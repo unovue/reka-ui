@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -29,3 +30,22 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the MonthPickerRoot. | `((placeholder: DateValue) => DateValue)` | No | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `disabled` | Current disable state | `boolean` |
+
+</llm-only>

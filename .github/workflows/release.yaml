@@ -45,7 +45,9 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Update npm (Trusted Publishers requires npm >= 11.5.1)
-        run: npm install -g npm@^11
+        # Workaround for npm/cli#9151: Node 22's bundled npm 10.9.7 is broken
+        # (missing promise-retry). Pin to 11.11.0 which installs successfully.
+        run: npm install -g npm@11.11.0
 
       - name: Build Packages
         run: pnpm build

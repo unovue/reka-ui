@@ -1,4 +1,4 @@
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger, AspectRatio, AutocompleteAnchor, AutocompleteArrow, AutocompleteCancel, AutocompleteContent, AutocompleteEmpty, AutocompleteGroup, AutocompleteInput, AutocompleteItem, AutocompleteItemIndicator, AutocompleteLabel, AutocompletePortal, AutocompleteRoot, AutocompleteSeparator, AutocompleteTrigger, AutocompleteViewport, AutocompleteVirtualizer, AvatarFallback, AvatarImage, AvatarRoot, CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot, CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, ComboboxAnchor, ComboboxArrow, ComboboxCancel, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxPortal, ComboboxRoot, ComboboxSeparator, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer, ContextMenuArrow, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuItemIndicator, ContextMenuLabel, ContextMenuPortal, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuRoot, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger, DateFieldInput, DateFieldRoot, DatePickerAnchor, DatePickerArrow, DatePickerCalendar, DatePickerCell, DatePickerCellTrigger, DatePickerClose, DatePickerContent, DatePickerField, DatePickerGrid, DatePickerGridBody, DatePickerGridHead, DatePickerGridRow, DatePickerHeadCell, DatePickerHeader, DatePickerHeading, DatePickerInput, DatePickerNext, DatePickerPrev, DatePickerRoot, DatePickerTrigger, DateRangeFieldInput, DateRangeFieldRoot, DateRangePickerAnchor, DateRangePickerArrow, DateRangePickerCalendar, DateRangePickerCell, DateRangePickerCellTrigger, DateRangePickerClose, DateRangePickerContent, DateRangePickerField, DateRangePickerGrid, DateRangePickerGridBody, DateRangePickerGridHead, DateRangePickerGridRow, DateRangePickerHeadCell, DateRangePickerHeader, DateRangePickerHeading, DateRangePickerInput, DateRangePickerNext, DateRangePickerPrev, DateRangePickerRoot, DateRangePickerTrigger, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DropdownMenuArrow, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuFilter, DropdownMenuGroup, DropdownMenuItem, DropdownMenuItemIndicator, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuRoot, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger, FocusScope, HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger, Label, ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer, MenubarArrow, MenubarCheckboxItem, MenubarContent, MenubarGroup, MenubarItem, MenubarItemIndicator, MenubarLabel, MenubarMenu, MenubarPortal, MenubarRadioGroup, MenubarRadioItem, MenubarRoot, MenubarSeparator, MenubarSub, MenubarSubContent, MenubarSubTrigger, MenubarTrigger, NavigationMenuContent, NavigationMenuIndicator, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuSub, NavigationMenuTrigger, NavigationMenuViewport, NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot, PaginationEllipsis, PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot, PinInputInput, PinInputRoot, PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, Presence, ProgressIndicator, ProgressRoot, RadioGroupIndicator, RadioGroupItem, RadioGroupRoot, RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, RovingFocusGroup, RovingFocusItem, ScrollAreaCorner, ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, SelectArrow, SelectContent, SelectGroup, SelectIcon, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport, Separator, SliderRange, SliderRoot, SliderThumb, SliderTrack, SplitterGroup, SplitterPanel, SplitterResizeHandle, StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger, SwitchRoot, SwitchThumb, TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger, TagsInputClear, TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot, TimeFieldInput, TimeFieldRoot, ToastAction, ToastClose, ToastDescription, ToastPortal, ToastProvider, ToastRoot, ToastTitle, ToastViewport, Toggle, ToggleGroupItem, ToggleGroupRoot, ToolbarButton, ToolbarLink, ToolbarRoot, ToolbarSeparator, ToolbarToggleGroup, ToolbarToggleItem, TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger, TreeItem, TreeRoot, TreeVirtualizer, Viewport } from 'reka-ui'
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger, AspectRatio, AutocompleteAnchor, AutocompleteArrow, AutocompleteCancel, AutocompleteContent, AutocompleteEmpty, AutocompleteGroup, AutocompleteInput, AutocompleteItem, AutocompleteItemIndicator, AutocompleteLabel, AutocompletePortal, AutocompleteRoot, AutocompleteSeparator, AutocompleteTrigger, AutocompleteViewport, AutocompleteVirtualizer, AvatarFallback, AvatarImage, AvatarRoot, CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot, CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, ColorAreaArea, ColorAreaRoot, ColorAreaThumb, ColorFieldInput, ColorFieldRoot, ColorSliderRoot, ColorSliderThumb, ColorSliderTrack, ColorSwatch, ColorSwatchPickerItem, ColorSwatchPickerItemIndicator, ColorSwatchPickerItemSwatch, ColorSwatchPickerRoot, ComboboxAnchor, ComboboxArrow, ComboboxCancel, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxPortal, ComboboxRoot, ComboboxSeparator, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer, ContextMenuArrow, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuItemIndicator, ContextMenuLabel, ContextMenuPortal, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuRoot, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger, DateFieldInput, DateFieldRoot, DatePickerAnchor, DatePickerArrow, DatePickerCalendar, DatePickerCell, DatePickerCellTrigger, DatePickerClose, DatePickerContent, DatePickerField, DatePickerGrid, DatePickerGridBody, DatePickerGridHead, DatePickerGridRow, DatePickerHeadCell, DatePickerHeader, DatePickerHeading, DatePickerInput, DatePickerNext, DatePickerPrev, DatePickerRoot, DatePickerTrigger, DateRangeFieldInput, DateRangeFieldRoot, DateRangePickerAnchor, DateRangePickerArrow, DateRangePickerCalendar, DateRangePickerCell, DateRangePickerCellTrigger, DateRangePickerClose, DateRangePickerContent, DateRangePickerField, DateRangePickerGrid, DateRangePickerGridBody, DateRangePickerGridHead, DateRangePickerGridRow, DateRangePickerHeadCell, DateRangePickerHeader, DateRangePickerHeading, DateRangePickerInput, DateRangePickerNext, DateRangePickerPrev, DateRangePickerRoot, DateRangePickerTrigger, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DropdownMenuArrow, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuFilter, DropdownMenuGroup, DropdownMenuItem, DropdownMenuItemIndicator, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuRoot, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger, FocusScope, HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger, Label, ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer, MenubarArrow, MenubarCheckboxItem, MenubarContent, MenubarGroup, MenubarItem, MenubarItemIndicator, MenubarLabel, MenubarMenu, MenubarPortal, MenubarRadioGroup, MenubarRadioItem, MenubarRoot, MenubarSeparator, MenubarSub, MenubarSubContent, MenubarSubTrigger, MenubarTrigger, MonthPickerCell, MonthPickerCellTrigger, MonthPickerGrid, MonthPickerGridBody, MonthPickerGridRow, MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot, MonthRangePickerCell, MonthRangePickerCellTrigger, MonthRangePickerGrid, MonthRangePickerGridBody, MonthRangePickerGridRow, MonthRangePickerHeader, MonthRangePickerHeading, MonthRangePickerNext, MonthRangePickerPrev, MonthRangePickerRoot, NavigationMenuContent, NavigationMenuIndicator, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuSub, NavigationMenuTrigger, NavigationMenuViewport, NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot, PaginationEllipsis, PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot, PinInputInput, PinInputRoot, PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, Presence, ProgressIndicator, ProgressRoot, RadioGroupIndicator, RadioGroupItem, RadioGroupRoot, RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, RovingFocusGroup, RovingFocusItem, ScrollAreaCorner, ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, SelectArrow, SelectContent, SelectGroup, SelectIcon, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport, Separator, SliderRange, SliderRoot, SliderThumb, SliderTrack, SplitterGroup, SplitterPanel, SplitterResizeHandle, StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger, SwitchRoot, SwitchThumb, TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger, TagsInputClear, TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot, TimeFieldInput, TimeFieldRoot, TimeRangeFieldInput, TimeRangeFieldRoot, ToastAction, ToastClose, ToastDescription, ToastPortal, ToastProvider, ToastRoot, ToastTitle, ToastViewport, Toggle, ToggleGroupItem, ToggleGroupRoot, ToolbarButton, ToolbarLink, ToolbarRoot, ToolbarSeparator, ToolbarToggleGroup, ToolbarToggleItem, TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger, TreeItem, TreeRoot, TreeVirtualizer, Viewport, YearPickerCell, YearPickerCellTrigger, YearPickerGrid, YearPickerGridBody, YearPickerGridRow, YearPickerHeader, YearPickerHeading, YearPickerNext, YearPickerPrev, YearPickerRoot, YearRangePickerCell, YearRangePickerCellTrigger, YearRangePickerGrid, YearRangePickerGridBody, YearRangePickerGridRow, YearRangePickerHeader, YearRangePickerHeading, YearRangePickerNext, YearRangePickerPrev, YearRangePickerRoot } from 'reka-ui'
 
 export const Accordion = {
   Content: AccordionContent,
@@ -130,6 +130,48 @@ export const Collapsible = {
   Root: typeof CollapsibleRoot
   Trigger: typeof CollapsibleTrigger
   Content: typeof CollapsibleContent
+}
+
+export const ColorArea = {
+  Root: ColorAreaRoot,
+  Area: ColorAreaArea,
+  Thumb: ColorAreaThumb,
+} as {
+  Root: typeof ColorAreaRoot
+  Area: typeof ColorAreaArea
+  Thumb: typeof ColorAreaThumb
+}
+
+export const ColorField = {
+  Root: ColorFieldRoot,
+  Input: ColorFieldInput,
+} as {
+  Root: typeof ColorFieldRoot
+  Input: typeof ColorFieldInput
+}
+
+export const ColorSlider = {
+  Root: ColorSliderRoot,
+  Track: ColorSliderTrack,
+  Thumb: ColorSliderThumb,
+} as {
+  Root: typeof ColorSliderRoot
+  Track: typeof ColorSliderTrack
+  Thumb: typeof ColorSliderThumb
+}
+
+export { ColorSwatch }
+
+export const ColorSwatchPicker = {
+  Root: ColorSwatchPickerRoot,
+  Item: ColorSwatchPickerItem,
+  ItemSwatch: ColorSwatchPickerItemSwatch,
+  ItemIndicator: ColorSwatchPickerItemIndicator,
+} as {
+  Root: typeof ColorSwatchPickerRoot
+  Item: typeof ColorSwatchPickerItem
+  ItemSwatch: typeof ColorSwatchPickerItemSwatch
+  ItemIndicator: typeof ColorSwatchPickerItemIndicator
 }
 
 export const Combobox = {
@@ -458,6 +500,54 @@ export const Menubar = {
   Menu: typeof MenubarMenu
 }
 
+export const MonthPicker = {
+  Root: MonthPickerRoot,
+  Header: MonthPickerHeader,
+  Heading: MonthPickerHeading,
+  Grid: MonthPickerGrid,
+  Cell: MonthPickerCell,
+  Next: MonthPickerNext,
+  Prev: MonthPickerPrev,
+  GridBody: MonthPickerGridBody,
+  GridRow: MonthPickerGridRow,
+  CellTrigger: MonthPickerCellTrigger,
+} as {
+  Root: typeof MonthPickerRoot
+  Header: typeof MonthPickerHeader
+  Heading: typeof MonthPickerHeading
+  Grid: typeof MonthPickerGrid
+  Cell: typeof MonthPickerCell
+  Next: typeof MonthPickerNext
+  Prev: typeof MonthPickerPrev
+  GridBody: typeof MonthPickerGridBody
+  GridRow: typeof MonthPickerGridRow
+  CellTrigger: typeof MonthPickerCellTrigger
+}
+
+export const MonthRangePicker = {
+  Root: MonthRangePickerRoot,
+  Header: MonthRangePickerHeader,
+  Heading: MonthRangePickerHeading,
+  Grid: MonthRangePickerGrid,
+  Cell: MonthRangePickerCell,
+  Next: MonthRangePickerNext,
+  Prev: MonthRangePickerPrev,
+  GridBody: MonthRangePickerGridBody,
+  GridRow: MonthRangePickerGridRow,
+  CellTrigger: MonthRangePickerCellTrigger,
+} as {
+  Root: typeof MonthRangePickerRoot
+  Header: typeof MonthRangePickerHeader
+  Heading: typeof MonthRangePickerHeading
+  Grid: typeof MonthRangePickerGrid
+  Cell: typeof MonthRangePickerCell
+  Next: typeof MonthRangePickerNext
+  Prev: typeof MonthRangePickerPrev
+  GridBody: typeof MonthRangePickerGridBody
+  GridRow: typeof MonthRangePickerGridRow
+  CellTrigger: typeof MonthRangePickerCellTrigger
+}
+
 export const NavigationMenu = {
   Root: NavigationMenuRoot,
   Content: NavigationMenuContent,
@@ -722,6 +812,14 @@ export const TimeField = {
   Root: typeof TimeFieldRoot
 }
 
+export const TimeRangeField = {
+  Root: TimeRangeFieldRoot,
+  Input: TimeRangeFieldInput,
+} as {
+  Root: typeof TimeRangeFieldRoot
+  Input: typeof TimeRangeFieldInput
+}
+
 export const Toast = {
   Provider: ToastProvider,
   Root: ToastRoot,
@@ -795,6 +893,54 @@ export const Tree = {
 }
 
 export { Viewport }
+
+export const YearPicker = {
+  Root: YearPickerRoot,
+  Header: YearPickerHeader,
+  Heading: YearPickerHeading,
+  Grid: YearPickerGrid,
+  Cell: YearPickerCell,
+  Next: YearPickerNext,
+  Prev: YearPickerPrev,
+  GridBody: YearPickerGridBody,
+  GridRow: YearPickerGridRow,
+  CellTrigger: YearPickerCellTrigger,
+} as {
+  Root: typeof YearPickerRoot
+  Header: typeof YearPickerHeader
+  Heading: typeof YearPickerHeading
+  Grid: typeof YearPickerGrid
+  Cell: typeof YearPickerCell
+  Next: typeof YearPickerNext
+  Prev: typeof YearPickerPrev
+  GridBody: typeof YearPickerGridBody
+  GridRow: typeof YearPickerGridRow
+  CellTrigger: typeof YearPickerCellTrigger
+}
+
+export const YearRangePicker = {
+  Root: YearRangePickerRoot,
+  Header: YearRangePickerHeader,
+  Heading: YearRangePickerHeading,
+  Grid: YearRangePickerGrid,
+  Cell: YearRangePickerCell,
+  Next: YearRangePickerNext,
+  Prev: YearRangePickerPrev,
+  GridBody: YearRangePickerGridBody,
+  GridRow: YearRangePickerGridRow,
+  CellTrigger: YearRangePickerCellTrigger,
+} as {
+  Root: typeof YearRangePickerRoot
+  Header: typeof YearRangePickerHeader
+  Heading: typeof YearRangePickerHeading
+  Grid: typeof YearRangePickerGrid
+  Cell: typeof YearRangePickerCell
+  Next: typeof YearRangePickerNext
+  Prev: typeof YearRangePickerPrev
+  GridBody: typeof YearRangePickerGridBody
+  GridRow: typeof YearRangePickerGridRow
+  CellTrigger: typeof YearRangePickerCellTrigger
+}
 
 export { FocusScope }
 

@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'allowNonContiguousRanges',
@@ -202,3 +203,60 @@
     'type': 'Matcher'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `allowNonContiguousRanges` | When combined with isYearUnavailable, determines whether non-contiguous ranges may be selected. | `boolean` | No | `false` |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `calendarLabel` | The accessible label for the calendar | `string` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
+| `dir` | The reading direction of the calendar when applicable. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | Whether or not the calendar is disabled | `boolean` | No | `false` |
+| `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
+| `initialFocus` | If true, the calendar will focus the selected year on mount | `boolean` | No | `false` |
+| `isYearDisabled` | A function that returns whether or not a year is disabled | `Matcher` | No | - |
+| `isYearUnavailable` | A function that returns whether or not a year is unavailable | `Matcher` | No | - |
+| `locale` | The locale to use for formatting dates | `string` | No | - |
+| `maximumYears` | The maximum number of years that can be selected in a range | `number` | No | - |
+| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
+| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `modelValue` | The controlled selected year range of the year range picker. Can be bound as v-model. | `DateRange \| null` | No | - |
+| `nextPage` | A function that returns the next page of the calendar. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what year range to display when no date is selected. | `DateValue` | No | - |
+| `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
+| `prevPage` | A function that returns the previous page of the calendar. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `readonly` | Whether or not the calendar is readonly | `boolean` | No | `false` |
+| `yearsPerPage` | Number of years to display per page | `number` | No | `12` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `date` | The current date of the placeholder | `DateValue` |
+| `grid` | The grid of years | `Grid<DateValue>` |
+| `locale` | The calendar locale | `string` |
+| `modelValue` | The current date range | `DateRange` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `isYearDisabled` | A function that returns whether or not a year is disabled | `Matcher` |
+| `isYearUnavailable` | A function that returns whether or not a year is unavailable | `Matcher` |
+
+</llm-only>

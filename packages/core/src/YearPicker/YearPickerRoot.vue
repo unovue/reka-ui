@@ -202,7 +202,7 @@ const { isInvalid, isYearSelected } = useYearPickerState({
 
 watch(modelValue, (_modelValue) => {
   if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue[_modelValue.length - 1]
+    const lastValue = _modelValue.at(-1)
     if (lastValue && !isSameYear(placeholder.value, lastValue))
       onPlaceholderChange(lastValue)
   }

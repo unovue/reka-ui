@@ -35,7 +35,7 @@ describe('given a default Dialog', async () => {
 
     it('should focus the cancel button', async () => {
       const cancelButton = await findAllByText(document.body, 'Cancel')
-      expect(cancelButton[cancelButton.length - 1]).toBe(document.activeElement)
+      expect(cancelButton.at(-1)).toBe(document.activeElement)
     })
   })
 })

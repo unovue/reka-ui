@@ -68,14 +68,14 @@ describe('given default TagsInput', () => {
       })
 
       it('should select the last tags', () => {
-        expect(tags[tags.length - 1].attributes('data-state')).toBe('active')
+        expect(tags.at(-1).attributes('data-state')).toBe('active')
       })
 
       it('should select the previous tag when press ArrowLeft', async () => {
         await input.trigger('keydown', {
           key: 'ArrowLeft',
         })
-        expect(tags[tags.length - 1].attributes('data-state')).toBe('inactive')
+        expect(tags.at(-1).attributes('data-state')).toBe('inactive')
         expect(tags[tags.length - 2].attributes('data-state')).toBe('active')
       })
 
@@ -84,7 +84,7 @@ describe('given default TagsInput', () => {
           key: 'Home',
         })
         expect(tags[0].attributes('data-state')).toBe('active')
-        expect(tags[tags.length - 1].attributes('data-state')).toBe('inactive')
+        expect(tags.at(-1).attributes('data-state')).toBe('inactive')
       })
 
       it('should select the last item when press End', async () => {
@@ -95,14 +95,14 @@ describe('given default TagsInput', () => {
           key: 'End',
         })
         expect(tags[0].attributes('data-state')).toBe('inactive')
-        expect(tags[tags.length - 1].attributes('data-state')).toBe('active')
+        expect(tags.at(-1).attributes('data-state')).toBe('active')
       })
 
       it('should remove active state when press ArrowRight', async () => {
         await input.trigger('keydown', {
           key: 'ArrowRight',
         })
-        expect(tags[tags.length - 1].attributes('data-state')).toBe('inactive')
+        expect(tags.at(-1).attributes('data-state')).toBe('inactive')
       })
 
       describe('after pressing on Backspace', () => {
@@ -125,7 +125,7 @@ describe('given default TagsInput', () => {
         })
 
         it('should select the new last tag', () => {
-          expect(tags[tags.length - 1].attributes('data-state')).toBe('active')
+          expect(tags.at(-1).attributes('data-state')).toBe('active')
         })
       })
     })

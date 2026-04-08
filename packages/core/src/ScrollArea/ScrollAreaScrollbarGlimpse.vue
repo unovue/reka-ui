@@ -65,10 +65,7 @@ const debounceScrollEnd = useDebounceFn(() => dispatch('SCROLL_END'), 100)
 
 watchEffect((onCleanup) => {
   if (state.value === 'glimpse') {
-    const timeId = window.setTimeout(
-      () => dispatch('HIDE'),
-      rootContext.scrollHideDelay.value,
-    )
+    const timeId = window.setTimeout(dispatch, rootContext.scrollHideDelay.value, 'HIDE')
 
     onCleanup(() => {
       window.clearTimeout(timeId)
@@ -78,10 +75,7 @@ watchEffect((onCleanup) => {
 
 watchEffect((onCleanup) => {
   if (state.value === 'idle') {
-    const timeId = window.setTimeout(
-      () => dispatch('HIDE'),
-      rootContext.scrollHideDelay.value,
-    )
+    const timeId = window.setTimeout(dispatch, rootContext.scrollHideDelay.value, 'HIDE')
 
     onCleanup(() => {
       window.clearTimeout(timeId)

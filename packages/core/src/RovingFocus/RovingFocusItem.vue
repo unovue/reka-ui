@@ -97,7 +97,7 @@ function handleKeydown(event: KeyboardEvent) {
       :as="as"
       :as-child="asChild"
       @mousedown="
-        (event) => {
+        (event: MouseEvent) => {
           // We prevent focusing non-focusable items on `mousedown`.
           // Even though the item has tabIndex={-1}, that only means take it out of the tab order.
           if (!focusable) event.preventDefault();

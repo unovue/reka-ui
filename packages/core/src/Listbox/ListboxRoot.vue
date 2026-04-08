@@ -27,7 +27,7 @@ type ListboxRootContext<T> = {
 
   onLeave: (event: Event) => void
   onEnter: (event: Event) => void
-  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean) => void
+  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean, focus?: boolean) => void
   onKeydownNavigation: (event: KeyboardEvent) => void
   onKeydownEnter: (event: KeyboardEvent) => void
   onKeydownTypeAhead: (event: KeyboardEvent) => void
@@ -157,12 +157,12 @@ function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
 }
 
-function changeHighlight(el: HTMLElement, scrollIntoView = true) {
+function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
   if (!el)
     return
 
   highlightedElement.value = el
-  if (focusable.value)
+  if (focus ?? focusable.value)
     highlightedElement.value.focus()
   if (scrollIntoView)
     highlightedElement.value.scrollIntoView({ block: 'nearest' })
@@ -211,7 +211,9 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
       const values = collection.map(i => i.value)
       modelValue.value = [...values]
       event.preventDefault()
-      changeHighlight(collection[collection.length - 1].ref)
+      const lastItem = collection.at(-1)
+      if (lastItem)
+        changeHighlight(lastItem.ref)
     }
     else if (!isMetaKey) {
       const el = handleTypeaheadSearch(event.key, getItems())
@@ -309,9 +311,9 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
     let lastValue = collection.find(i => i.ref === targetEl)?.value
 
     if (event.key === kbd.END)
-      lastValue = collection[collection.length - 1].value
+      lastValue = collection.at(-1)?.value
     else if (event.key === kbd.HOME)
-      lastValue = collection[0].value
+      lastValue = collection[0]?.value
 
     if (!lastValue || !firstValue.value)
       return
