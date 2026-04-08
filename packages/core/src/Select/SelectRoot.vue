@@ -171,12 +171,10 @@ provideSelectRootContext({
 
   optionsMap,
   onOptionAdd: (option) => {
-    console.log('adding options')
     optionsMap.value.set(option.value, option)
   },
 
   onOptionRemove: (option) => {
-    console.log('removing options')
     optionsMap.value.delete(option.value)
   },
 })
