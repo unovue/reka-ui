@@ -16,7 +16,7 @@ Port the [BaseUI Drawer](https://base-ui.com/react/components/drawer) component 
 
 ## Component Structure
 
-```
+```text
 packages/core/src/Drawer/
 ├── DrawerRoot.vue              # Context provider + open/modal/swipeDirection state
 ├── DrawerTrigger.vue           # Primitive button that opens drawer
@@ -209,7 +209,7 @@ When dragging past the fully-open position (overshoot in wrong direction), appli
 
 ### Returns
 
-```
+```text
 {
   swipePointerProps: { onPointerDown, onPointerMove, onPointerUp }
   swipeTouchProps: { onTouchStart, onTouchMove, onTouchEnd }

@@ -17,16 +17,15 @@ import { injectDrawerRootContext } from './DrawerRoot.vue'
  * this component is currently a passthrough that carries the `data-drawer-viewport`
  * attribute for downstream selectors. It exists primarily for API parity.
  */
-withDefaults(defineProps<DrawerViewportProps>(), { as: 'div' })
+const props = withDefaults(defineProps<DrawerViewportProps>(), { as: 'div' })
 const { forwardRef } = useForwardExpose()
 const rootContext = injectDrawerRootContext()
 </script>
 
 <template>
   <Primitive
+    v-bind="props"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     data-drawer-viewport=""
     :data-state="rootContext.open.value ? 'open' : 'closed'"
   >

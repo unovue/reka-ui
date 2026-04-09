@@ -219,6 +219,42 @@ function onInteractOutside(event: any) {
   emits('interactOutside', event)
 }
 
+// --- update:openComplete wiring ---
+// Fire `update:openComplete` on the popup's own transitionend/animationend,
+// not on a microtask — consumers rely on this marker to know the enter/exit
+// transition has actually finished. We track the current listener so a rapid
+// open→close doesn't leak or double-fire, and guard with `event.target === el`
+// so child element transitions don't spuriously resolve the drawer lifecycle.
+let openCompleteCleanup: (() => void) | undefined
+
+function clearOpenCompleteListener() {
+  openCompleteCleanup?.()
+  openCompleteCleanup = undefined
+}
+
+watch(() => rootContext.open.value, (isOpen) => {
+  clearOpenCompleteListener()
+  const el = currentElement.value
+  if (!el) {
+    // If there's no element (e.g. closed without ever mounting), fire
+    // synchronously so consumers still get the contract.
+    rootContext.notifyOpenComplete(isOpen)
+    return
+  }
+  const handler = (event: Event) => {
+    if (event.target !== el)
+      return
+    clearOpenCompleteListener()
+    rootContext.notifyOpenComplete(isOpen)
+  }
+  el.addEventListener('transitionend', handler)
+  el.addEventListener('animationend', handler)
+  openCompleteCleanup = () => {
+    el.removeEventListener('transitionend', handler)
+    el.removeEventListener('animationend', handler)
+  }
+})
+
 // Data attributes
 const dataAttributes = computed(() => {
   const attrs: Record<string, string | undefined> = {
@@ -264,6 +300,7 @@ onMounted(() => {
 onUnmounted(() => {
   rootContext.notifyParentHasNestedDrawer?.(false)
   unsubscribeNestedProgress?.()
+  clearOpenCompleteListener()
 })
 
 // Dev warning for missing DrawerTitle

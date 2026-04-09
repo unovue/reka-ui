@@ -263,8 +263,14 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     const dir: SwipeDirection | undefined = toValue(directions).find(d => getDisplacement(d, dx, dy) > 0)
 
     if (pendingSwipe && pendingSwipeStartPos) {
+      // Only promote to an active swipe when we've identified an allowed
+      // direction. If the user is dragging against the dismiss direction
+      // (dir === undefined), bail out so we don't steal scroll/drag from
+      // one-direction drawers.
+      if (!dir)
+        return
       const pending = getDisplacement(
-        dir ?? toValue(directions)[0],
+        dir,
         pos.x - pendingSwipeStartPos.x,
         pos.y - pendingSwipeStartPos.y,
       )
@@ -481,10 +487,14 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       // will lock the axis and retry the decision on the next frame.
     }
 
-    if (isSwiping.value)
-      e.preventDefault()
-
+    // Capture swiping state BEFORE processMove — that function is what sets
+    // isSwiping.value = true on the move that crosses the drag threshold, so
+    // we need to preventDefault on that same event (not the next one) to avoid
+    // a visible scroll hitch on the first frame of the gesture on mobile.
+    const wasSwiping = isSwiping.value
     processMove(el, pos, e.timeStamp)
+    if (wasSwiping || isSwiping.value)
+      e.preventDefault()
   }
 
   function onTouchEnd() {
