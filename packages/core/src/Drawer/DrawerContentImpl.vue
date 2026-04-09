@@ -38,7 +38,7 @@ import { useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
-import { DRAWER_CSS_VARS, registerDrawerCssProperties } from './utils'
+import { DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
 
 const props = defineProps<DrawerContentImplProps>()
 const emits = defineEmits<DrawerContentImplEmits>()
@@ -107,6 +107,11 @@ const swipeDirections = computed<SwipeDirection[]>(() => {
   return [dismiss, opposite[dismiss]]
 })
 
+// Track the latest raw signed delta for snap release (BaseUI parity: the
+// release math needs the delta as of the last move, not the accumulated
+// CSS offset).
+let lastRawDelta = { x: 0, y: 0 }
+
 // Swipe dismiss
 const { isSwiping, dragOffset } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
@@ -125,16 +130,22 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
   },
   onRelease(velocity) {
     if (hasSnapPoints.value) {
-      // Pass the raw drag offset (signed: positive=down/right, negative=up/left)
-      const isVertical = rootContext.swipeDirection.value === 'up' || rootContext.swipeDirection.value === 'down'
-      const dragPx = isVertical ? dragOffset.value.y : dragOffset.value.x
-      snapToNearest(dragPx, velocity, rootContext.swipeDirection.value, rootContext.snapToSequentialPoints.value)
+      // Convert the latest signed delta to a dismiss-direction-positive scalar
+      // (BaseUI: `dragDelta = direction==='down' ? deltaY : direction==='up' ? -deltaY : ...`).
+      // getDisplacement handles the sign flip per direction.
+      const dir = rootContext.swipeDirection.value
+      const dragDelta = getDisplacement(dir, lastRawDelta.x, lastRawDelta.y)
+      snapToNearest(dragDelta, velocity, dir, rootContext.snapToSequentialPoints.value)
     }
   },
   onSwipingChange(swiping) {
+    rootContext.onSwipingChange(swiping)
     rootContext.onNestedSwipingChange(swiping)
   },
-  onProgress(progress) {
+  onProgress(progress, details) {
+    if (details) {
+      lastRawDelta = { x: details.deltaX, y: details.deltaY }
+    }
     rootContext.onNestedSwipeProgressChange(progress)
   },
 })

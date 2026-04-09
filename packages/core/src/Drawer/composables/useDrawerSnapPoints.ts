@@ -1,7 +1,13 @@
 import type { Ref } from 'vue'
-import type { DrawerSnapPoint } from '../utils'
+import type { DrawerSnapPoint, SwipeDirection } from '../utils'
 import { useEventListener } from '@vueuse/core'
 import { computed, ref } from 'vue'
+
+// BaseUI snap-release constants (DrawerViewport.tsx)
+const SNAP_VELOCITY_THRESHOLD = 0.5
+const SNAP_VELOCITY_MULTIPLIER = 300
+const MAX_SNAP_VELOCITY = 4
+const FAST_SWIPE_VELOCITY = 0.5
 
 export interface ResolvedSnapPoint {
   value: DrawerSnapPoint
@@ -81,73 +87,95 @@ export function useDrawerSnapPoints(options: {
     return match?.offset ?? null
   })
 
+  /**
+   * BaseUI-parity snap release math (ported from `DrawerViewport.tsx` lines ~577-714).
+   *
+   * Takes a **dismiss-signed** drag delta (positive = dismiss direction, negative =
+   * open direction) and the raw velocity vector. Computes a velocity-boosted target
+   * offset, then either dismisses, snaps to the closest point, or (in sequential
+   * mode) advances one step based on physical crossing + fast-swipe velocity.
+   */
   function snapToNearest(
-    dragOffsetPx: number,
+    dragDelta: number,
     velocity: { x: number, y: number },
-    direction: 'up' | 'down' | 'left' | 'right',
+    direction: SwipeDirection,
     sequential: boolean,
   ) {
     const points = resolvedSnapPoints.value
     if (points.length === 0)
       return
 
-    // Find the active snap point's height
+    const ph = popupHeight.value
+
+    // Convert raw velocity into a dismiss-signed scalar:
+    //   positive = moving in dismiss direction (collapsing)
+    //   negative = moving in open direction (expanding)
+    const axisVel = (direction === 'up' || direction === 'down') ? velocity.y : velocity.x
+    const velSigned = (direction === 'up' || direction === 'left') ? -axisVel : axisVel
+
+    // Current offset (from fully open): 0 = fully open, `ph` = fully closed
     const activePoint = points.find(p => p.value === activeSnapPoint.value)
-    const activeHeight = activePoint?.height ?? popupHeight.value
+    const currentOffset = activePoint?.offset ?? 0
 
-    // dragOffsetPx: positive = dragged down/right, negative = dragged up/left
-    // For a bottom drawer: drag down = shrink visible area, drag up = expand
-    const currentVisibleHeight = activeHeight - dragOffsetPx
+    // Where the drag alone would leave us (clamped to the popup's range)
+    const dragTargetOffset = Math.max(0, Math.min(ph, currentOffset + dragDelta))
 
-    const isVertical = direction === 'up' || direction === 'down'
-    const vel = isVertical ? velocity.y : velocity.x
+    // Velocity offset (fast-swipe boost) — only when velocity exceeds threshold
+    let targetOffset = dragTargetOffset
+    if (Math.abs(velSigned) >= SNAP_VELOCITY_THRESHOLD) {
+      const clampedVel = Math.max(-MAX_SNAP_VELOCITY, Math.min(MAX_SNAP_VELOCITY, velSigned))
+      targetOffset = dragTargetOffset + clampedVel * SNAP_VELOCITY_MULTIPLIER
+    }
 
-    // Determine swipe intent from velocity (negative vel = swiping up/left = expanding)
-    const expanding = vel < -0.1
-    const collapsing = vel > 0.1
+    // Find the closest snap point to the projected target offset
+    let closest = points[0]
+    let closestDist = Math.abs(targetOffset - closest.offset)
+    for (const p of points) {
+      const d = Math.abs(targetOffset - p.offset)
+      if (d < closestDist) {
+        closest = p
+        closestDist = d
+      }
+    }
+
+    // Close-vs-snap decision: close only when strictly closer to fully-closed
+    // (offset === ph) than to any snap point.
+    const closeDistance = Math.abs(targetOffset - ph)
+    if (closeDistance < closestDist) {
+      onSnapPointChange(null)
+      return
+    }
 
     if (sequential) {
-      const sorted = [...points].sort((a, b) => a.height - b.height)
+      // Sequential mode: only move one step toward the drag direction, and only
+      // if (a) velocity direction matches drag direction and is fast enough, OR
+      // (b) the projected target has physically crossed the adjacent snap.
+      const sorted = [...points].sort((a, b) => a.offset - b.offset)
       const currentIdx = sorted.findIndex(p => p.value === activeSnapPoint.value)
+      if (currentIdx < 0) {
+        onSnapPointChange(closest.value)
+        return
+      }
+      const dragDir = Math.sign(dragDelta) // +1 = dismiss dir, -1 = open dir
+      const velDir = Math.sign(velSigned)
+      const shouldAdvance = velDir === dragDir && Math.abs(velSigned) >= FAST_SWIPE_VELOCITY
+      const adjacentIdx = Math.max(0, Math.min(sorted.length - 1, currentIdx + dragDir))
+      const adjacent = sorted[adjacentIdx]
 
-      if (expanding) {
-        // Move to next higher snap point
-        const next = currentIdx < sorted.length - 1 ? sorted[currentIdx + 1] : sorted.at(-1)
-        if (next)
-          onSnapPointChange(next.value)
+      if (shouldAdvance) {
+        onSnapPointChange(adjacent.value)
+        return
       }
-      else if (collapsing) {
-        // Move to next lower snap point, or dismiss if at lowest
-        if (currentIdx <= 0)
-          onSnapPointChange(null) // dismiss
-        else
-          onSnapPointChange(sorted[currentIdx - 1].value)
-      }
-      else {
-        // No strong velocity — snap to nearest by position
-        let nearest = points[0]
-        for (const p of points) {
-          if (Math.abs(p.height - currentVisibleHeight) < Math.abs(nearest.height - currentVisibleHeight))
-            nearest = p
-        }
-        // If dragged past halfway below lowest snap, dismiss
-        if (currentVisibleHeight < (sorted[0]?.height ?? 0) / 2)
-          onSnapPointChange(null)
-        else
-          onSnapPointChange(nearest.value)
-      }
+
+      // Physical crossing: has the projected target moved past the adjacent point?
+      const crossed = dragDir > 0
+        ? targetOffset > adjacent.offset
+        : targetOffset < adjacent.offset
+      onSnapPointChange(crossed ? adjacent.value : (activeSnapPoint.value ?? closest.value))
+      return
     }
-    else {
-      let nearest = points[0]
-      for (const p of points) {
-        if (Math.abs(p.height - currentVisibleHeight) < Math.abs(nearest.height - currentVisibleHeight))
-          nearest = p
-      }
-      if (currentVisibleHeight < (points[0]?.height ?? 0) / 2)
-        onSnapPointChange(null)
-      else
-        onSnapPointChange(nearest.value)
-    }
+
+    onSnapPointChange(closest.value)
   }
 
   return {

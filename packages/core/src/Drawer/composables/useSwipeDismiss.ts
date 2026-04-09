@@ -71,6 +71,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
 
   const hasVertical = computed(() => toValue(directions).includes('up') || toValue(directions).includes('down'))
   const hasHorizontal = computed(() => toValue(directions).includes('left') || toValue(directions).includes('right'))
+  const allowUp = computed(() => toValue(directions).includes('up'))
+  const allowDown = computed(() => toValue(directions).includes('down'))
+  const allowLeft = computed(() => toValue(directions).includes('left'))
+  const allowRight = computed(() => toValue(directions).includes('right'))
 
   const isSwiping = ref(false)
   const swipeDirection = ref<SwipeDirection | undefined>(undefined)
@@ -158,6 +162,29 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     pendingSwipe = true
   }
 
+  /**
+   * Applies sqrt-damping to any axis moving in a disallowed direction.
+   * Axes moving in an allowed direction pass through linearly.
+   * Ported from BaseUI `useSwipeDismiss.ts:applyDirectionalDamping`.
+   */
+  function applyDirectionalDamping(deltaX: number, deltaY: number) {
+    const exponent = (value: number) => (value >= 0 ? value ** 0.5 : -((Math.abs(value)) ** 0.5))
+    const dampAxis = (delta: number, allowNegative: boolean, allowPositive: boolean) => {
+      if (!allowNegative && delta < 0)
+        return exponent(delta)
+      if (!allowPositive && delta > 0)
+        return exponent(delta)
+      return delta
+    }
+    const newDx = hasHorizontal.value
+      ? dampAxis(deltaX, allowLeft.value, allowRight.value)
+      : exponent(deltaX)
+    const newDy = hasVertical.value
+      ? dampAxis(deltaY, allowUp.value, allowDown.value)
+      : exponent(deltaY)
+    return { x: newDx, y: newDy }
+  }
+
   function processMove(el: HTMLElement, pos: { x: number, y: number }, time: number) {
     const rawDx = pos.x - dragStartPos.x
     const rawDy = pos.y - dragStartPos.y
@@ -178,6 +205,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       }
     }
 
+    // Axis-locked deltas for direction detection
     const dx = lockedAxis === 'vertical' ? 0 : rawDx
     const dy = lockedAxis === 'horizontal' ? 0 : rawDy
 
@@ -201,7 +229,8 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     if (!isSwiping.value)
       return
 
-    const displacement = getDisplacement(intendedDirection ?? toValue(directions)[0], dx, dy)
+    const currentDir = intendedDirection ?? toValue(directions)[0]
+    const displacement = getDisplacement(currentDir, dx, dy)
 
     // Detect reversal (cancel swipe)
     if (!cancelledSwipe) {
@@ -214,36 +243,26 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       }
     }
 
-    // Apply damping when overshooting (moving against dismiss direction)
-    const overshoot = Math.max(0, -displacement)
-    const dampedDisplacement = overshoot > 0
-      ? -Math.sqrt(overshoot)
-      : displacement
+    // Apply directional damping to raw deltas (BaseUI parity).
+    // Allowed-direction axes pass through linearly; disallowed directions
+    // sqrt-damp. No manual single-axis sign reconstruction.
+    const damped = applyDirectionalDamping(dx, dy)
 
-    // Convert displacement to CSS offset: 'down'/'right' = positive, 'up'/'left' = negative
-    const sign = (intendedDirection === 'up' || intendedDirection === 'left') ? -1 : 1
-    const offsetX = (intendedDirection === 'left' || intendedDirection === 'right')
-      ? dampedDisplacement * sign
-      : 0
-    const offsetY = (intendedDirection === 'up' || intendedDirection === 'down')
-      ? dampedDisplacement * sign
-      : 0
-
-    dragOffset.value = { x: offsetX, y: offsetY }
-    setCssVars(el, offsetX, offsetY)
-    recordSample({ x: offsetX, y: offsetY }, time)
+    dragOffset.value = { x: damped.x, y: damped.y }
+    setCssVars(el, damped.x, damped.y)
+    recordSample({ x: damped.x, y: damped.y }, time)
 
     // Progress: 0 = closed/start, 1 = fully dismissed
     const currentEl = elementRef.value
     if (currentEl) {
-      const dim = (intendedDirection === 'up' || intendedDirection === 'down')
+      const dim = (currentDir === 'up' || currentDir === 'down')
         ? elementSize.height || currentEl.offsetHeight
         : elementSize.width || currentEl.offsetWidth
-      const threshold = getThreshold(currentEl, intendedDirection ?? toValue(directions)[0])
+      const threshold = getThreshold(currentEl, currentDir)
       const p = Math.min(1, Math.max(0, displacement / (dim + threshold)))
       if (p !== swipeProgress) {
         swipeProgress = p
-        onProgress?.(p, { deltaX: dx, deltaY: dy, direction: intendedDirection })
+        onProgress?.(p, { deltaX: damped.x, deltaY: damped.y, direction: currentDir })
       }
     }
   }
