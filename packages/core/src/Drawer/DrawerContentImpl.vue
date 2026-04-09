@@ -62,16 +62,21 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   },
 })
 
-// Watch activeSnapPointOffset -> set CSS vars (matching BaseUI sign convention)
-// offset >= 0 represents distance from fully-open. For 'up' drawers, flip sign.
+// Write the active snap offset to the popup's inline style. Called both via a
+// watcher (for live updates as the snap point or popup height changes) and
+// explicitly from onMounted (to set the initial value — a lazy watcher would
+// only fire on CHANGE, which may never happen on a reopen where popupHeight
+// is already measured from a previous open and activeSnapPoint is unchanged).
+//
 // BaseUI parity: snap points are applied purely via a translate using
 // --drawer-snap-point-offset. The popup's height is independent (consumers
 // should set max-height: 100dvh or similar and let the transform slide the
 // popup visually).
-watch(activeSnapPointOffset, (offset) => {
+function writeSnapPointOffset() {
   const el = currentElement.value
   if (!el)
     return
+  const offset = activeSnapPointOffset.value
   if (offset != null) {
     const dir = rootContext.swipeDirection.value
     const signedOffset = (dir === 'up' || dir === 'left') ? -offset : offset
@@ -80,7 +85,9 @@ watch(activeSnapPointOffset, (offset) => {
   else {
     el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, '0px')
   }
-})
+}
+
+watch(activeSnapPointOffset, writeSnapPointOffset)
 
 // Measure popup height via ResizeObserver. BaseUI parity: skip writes while a
 // nested drawer is open and we already have a measured height, to keep the
@@ -162,6 +169,18 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
       const dir = rootContext.swipeDirection.value
       const dragDelta = getDisplacement(dir, lastRawDelta.x, lastRawDelta.y)
       snapToNearest(dragDelta, velocity, dir, rootContext.snapToSequentialPoints.value)
+
+      // Clear the swipe-movement CSS vars for snap transitions. The close-
+      // animation flicker fix in useSwipeDismiss preserves these vars through
+      // the close transition, but for snap-point drawers release doesn't
+      // close — the new --drawer-snap-point-offset takes over and the leftover
+      // movement would compose into it (e.g. snap 1.0 offset=0 + stale
+      // movement -400 = translateY(-400), drawer stuck offscreen), and persist
+      // into the next open cycle. Always reset here when snap points are active.
+      if (el) {
+        el.style.setProperty(DRAWER_CSS_VARS.swipeMovementX, '0px')
+        el.style.setProperty(DRAWER_CSS_VARS.swipeMovementY, '0px')
+      }
     }
   },
   onSwipingChange(swiping) {
@@ -290,6 +309,11 @@ onMounted(() => {
     DRAWER_CSS_VARS.nestedDrawers,
     `${rootContext.nestedOpenDrawerCount.value}`,
   )
+
+  // Initial snap-point offset. Required on reopen when popupHeight is already
+  // measured and activeSnapPoint is unchanged — the lazy watcher would never
+  // fire and the drawer would render at offset 0 (appearing as snap=1.0).
+  writeSnapPointOffset()
 
   unsubscribeNestedProgress = rootContext.nestedSwipeProgressStore.subscribe(() => {
     const progress = rootContext.nestedSwipeProgressStore.getSnapshot()
