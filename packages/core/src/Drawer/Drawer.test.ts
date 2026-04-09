@@ -153,3 +153,46 @@ describe('given a default Drawer', () => {
     })
   })
 })
+
+describe('update:open change event details', () => {
+  const DrawerWithReason = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    props: {
+      onOpenChange: { type: Function, required: true },
+    },
+    template: `
+      <DrawerRoot @update:open="onOpenChange">
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent>
+            <DrawerTitle>T</DrawerTitle>
+            <DrawerClose>Close</DrawerClose>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('emits trigger-press reason on trigger click', async () => {
+    const onOpenChange = vi.fn()
+    const { getByText } = render(DrawerWithReason, { props: { onOpenChange } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenChange).toHaveBeenCalledWith(true, { reason: 'trigger-press' })
+  })
+
+  it('emits close-press reason on close click', async () => {
+    const onOpenChange = vi.fn()
+    const { getByText } = render(DrawerWithReason, { props: { onOpenChange } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    onOpenChange.mockClear()
+    await fireEvent.click(getByText('Close'))
+    await nextTick()
+    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'close-press' })
+  })
+})
