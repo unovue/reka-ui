@@ -170,14 +170,26 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
       const dragDelta = getDisplacement(dir, lastRawDelta.x, lastRawDelta.y)
       snapToNearest(dragDelta, velocity, dir, rootContext.snapToSequentialPoints.value)
 
-      // Clear the swipe-movement CSS vars for snap transitions. The close-
-      // animation flicker fix in useSwipeDismiss preserves these vars through
-      // the close transition, but for snap-point drawers release doesn't
-      // close — the new --drawer-snap-point-offset takes over and the leftover
-      // movement would compose into it (e.g. snap 1.0 offset=0 + stale
-      // movement -400 = translateY(-400), drawer stuck offscreen), and persist
-      // into the next open cycle. Always reset here when snap points are active.
+      // Sequencing matters for smooth drag-to-next-snap animation.
+      //
+      // After snapToNearest, activeSnapPoint has updated synchronously (Vue
+      // refs are synchronous) but the `watch(activeSnapPointOffset, ...)`
+      // runs on the next microtask. If we cleared --drawer-swipe-movement-y
+      // first, the transform would visually jump from the drag position
+      // (e.g. translateY(50)) back to the OLD snap offset (translateY(400))
+      // for a single frame, then the watch would fire and CSS would
+      // transition from 400 down to the new snap offset (translateY(0)) —
+      // the user sees a snap-back-then-animate instead of a continuous
+      // motion from their finger to the new snap.
+      //
+      // Fix: write the new snap offset CSS var synchronously FIRST (via
+      // writeSnapPointOffset, which reads activeSnapPointOffset.value — the
+      // computed recalculates on access), then clear the movement vars.
+      // Both writes happen in the same animation frame, and the CSS
+      // transition on `transform` smoothly interpolates from the current
+      // rendered transform (drag position) to the new snap target.
       if (el) {
+        writeSnapPointOffset()
         el.style.setProperty(DRAWER_CSS_VARS.swipeMovementX, '0px')
         el.style.setProperty(DRAWER_CSS_VARS.swipeMovementY, '0px')
       }

@@ -509,7 +509,19 @@ const navLinks = [
   animation: drawer-snap-slide-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-snap[data-swiping] {
-  animation: none;
+  /* Do NOT touch `animation` here. Setting `animation: none` transitions
+   * animation-name from `drawer-snap-slide-in` to `none`. When data-swiping
+   * is removed at release, animation-name transitions back to
+   * `drawer-snap-slide-in` which the browser interprets as a NEW animation
+   * declaration and restarts from keyframe 0 (translate: 0 100dvh). The
+   * drawer jumps down by 100dvh then animates back up — visible as a giant
+   * snap-down then slow slide-up after every drag release.
+   *
+   * The enter animation has already completed by the time the user can
+   * interact (>450ms after mount), so it's inert and safe to leave
+   * untouched. Only disable the transform transition during active swiping
+   * so it doesn't fight the raw pointer-driven transform.
+   */
   transition-duration: 0ms;
   user-select: none;
 }
