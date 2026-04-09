@@ -64,6 +64,10 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
 
 // Watch activeSnapPointOffset -> set CSS vars (matching BaseUI sign convention)
 // offset >= 0 represents distance from fully-open. For 'up' drawers, flip sign.
+// BaseUI parity: snap points are applied purely via a translate using
+// --drawer-snap-point-offset. The popup's height is independent (consumers
+// should set max-height: 100dvh or similar and let the transform slide the
+// popup visually).
 watch(activeSnapPointOffset, (offset) => {
   const el = currentElement.value
   if (!el)
@@ -72,13 +76,9 @@ watch(activeSnapPointOffset, (offset) => {
     const dir = rootContext.swipeDirection.value
     const signedOffset = (dir === 'up' || dir === 'left') ? -offset : offset
     el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, `${signedOffset}px`)
-    // Set snap height for CSS min-height (drawer fills from snap point to edge)
-    const snapHeight = rootContext.popupHeight.value - offset
-    el.style.setProperty('--drawer-snap-height', `${Math.max(0, snapHeight)}px`)
   }
   else {
     el.style.setProperty(DRAWER_CSS_VARS.snapPointOffset, '0px')
-    el.style.removeProperty('--drawer-snap-height')
   }
 })
 
