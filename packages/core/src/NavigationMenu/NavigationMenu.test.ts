@@ -85,7 +85,7 @@ describe('given default NavigationMenu', () => {
           await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
           await sleep(0)
         }
-        expect(links[links.length - 1].element).toBe(document.activeElement)
+        expect(links.at(-1).element).toBe(document.activeElement)
       })
     })
 

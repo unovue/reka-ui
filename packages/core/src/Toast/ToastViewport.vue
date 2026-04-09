@@ -48,7 +48,9 @@ const hasToasts = computed(() => providerContext.toastCount.value > 0)
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
 
-const hotkeyMessage = computed(() => hotkey.value.join('+').replace(/Key/g, '').replace(/Digit/g, ''))
+const KEY_RE = /Key/g
+const DIGIT_RE = /Digit/g
+const hotkeyMessage = computed(() => hotkey.value.join('+').replace(KEY_RE, '').replace(DIGIT_RE, ''))
 
 onKeyStroke(hotkey.value, () => {
   currentElement.value.focus()
@@ -172,8 +174,9 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
   >
     <FocusProxy
       v-if="hasToasts"
-      :ref="(node: ComponentPublicInstance) => {
-        headFocusProxyRef = unrefElement(node) as HTMLElement
+      :ref="(node: Element | ComponentPublicInstance | null) => {
+        if (!node) return undefined
+        headFocusProxyRef = unrefElement(node as ComponentPublicInstance) as HTMLElement
         return undefined
       }"
       @focus-from-outside-viewport="() => {
@@ -196,8 +199,9 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
     </CollectionSlot>
     <FocusProxy
       v-if="hasToasts"
-      :ref="(node: ComponentPublicInstance) => {
-        tailFocusProxyRef = unrefElement(node) as HTMLElement
+      :ref="(node: Element | ComponentPublicInstance | null) => {
+        if (!node) return undefined
+        tailFocusProxyRef = unrefElement(node as ComponentPublicInstance) as HTMLElement
         return undefined
       }"
       @focus-from-outside-viewport="() => {

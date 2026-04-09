@@ -367,6 +367,7 @@ export function useDateField(props: UseDateFieldProps) {
      */
     if (props.hasLeftFocus.value) {
       props.hasLeftFocus.value = false
+      props.lastKeyZero.value = false
       prev = null
     }
 
@@ -445,6 +446,7 @@ export function useDateField(props: UseDateFieldProps) {
      */
     if (props.hasLeftFocus.value) {
       props.hasLeftFocus.value = false
+      props.lastKeyZero.value = false
       prev = null
     }
 
@@ -524,6 +526,7 @@ export function useDateField(props: UseDateFieldProps) {
     // probably not implement, kind of weird
     if (props.hasLeftFocus.value) {
       props.hasLeftFocus.value = false
+      props.lastKeyZero.value = false
       prev = null
     }
 

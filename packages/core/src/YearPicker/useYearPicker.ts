@@ -106,7 +106,7 @@ export function useYearPicker(props: UseYearPickerProps) {
     if (props.disabled.value)
       return true
 
-    const lastYearInView = grid.value.cells[grid.value.cells.length - 1]
+    const lastYearInView = grid.value.cells.at(-1)!
     if (nextPageFunc || props.nextPage.value) {
       const nextDate = (nextPageFunc || props.nextPage.value)!(lastYearInView)
       return isAfter(startOfYear(nextDate), props.maxValue.value)
@@ -164,7 +164,7 @@ export function useYearPicker(props: UseYearPickerProps) {
 
   watch(props.placeholder, (value) => {
     const firstYearInGrid = grid.value.value
-    const lastYearInGrid = grid.value.cells[grid.value.cells.length - 1]
+    const lastYearInGrid = grid.value.cells.at(-1)!
     if (value.year >= firstYearInGrid.year && value.year <= lastYearInGrid.year)
       return
     grid.value = createYearGrid({ dateObj: value, yearsPerPage: props.yearsPerPage.value })
@@ -180,7 +180,7 @@ export function useYearPicker(props: UseYearPickerProps) {
       formatter.setLocale(props.locale.value)
 
     const firstYear = grid.value.cells[0]
-    const lastYear = grid.value.cells[grid.value.cells.length - 1]
+    const lastYear = grid.value.cells.at(-1)!
 
     return `${formatter.fullYear(toDate(firstYear), headingFormatOptions.value)} - ${formatter.fullYear(toDate(lastYear), headingFormatOptions.value)}`
   })

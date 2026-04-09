@@ -82,7 +82,7 @@ const closeTimerRef = ref(0)
 const remainingTime = ref(duration.value)
 
 const remainingRaf = useRafFn(() => {
-  const elapsedTime = new Date().getTime() - closeTimerStartTimeRef.value
+  const elapsedTime = Date.now() - closeTimerStartTimeRef.value
   remainingTime.value = Math.max(closeTimerRemainingTimeRef.value - elapsedTime, 0)
 }, { fpsLimit: 60 })
 
@@ -95,7 +95,7 @@ function startTimer(duration: number) {
   if (!isClient)
     return
   window.clearTimeout(closeTimerRef.value)
-  closeTimerStartTimeRef.value = new Date().getTime()
+  closeTimerStartTimeRef.value = Date.now()
   closeTimerRef.value = window.setTimeout(handleClose, duration)
 }
 
@@ -133,7 +133,7 @@ watchEffect((cleanupFn) => {
       emits('resume')
     }
     const handlePause = () => {
-      const elapsedTime = new Date().getTime() - closeTimerStartTimeRef.value
+      const elapsedTime = Date.now() - closeTimerStartTimeRef.value
       closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
       window.clearTimeout(closeTimerRef.value)
       remainingRaf.pause()

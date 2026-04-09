@@ -1,7 +1,7 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.9.3",
+  "version": "2.9.5",
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "license": "MIT",
@@ -27,11 +27,11 @@
     "pub:release": "cd packages/core && pnpm pub:release"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.7.3",
+    "@antfu/eslint-config": "^8.0.0",
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "bumpp": "^11.0.1",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "lint-staged": "^16.4.0",
     "simple-git-hooks": "^2.13.1",
     "tsx": "^4.20.3",

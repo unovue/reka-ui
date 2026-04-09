@@ -145,7 +145,7 @@ function position() {
       = contentTopToItemMiddle <= topEdgeToTriggerMiddle
 
     if (willAlignWithoutTopOverflow) {
-      const isLastItem = selectedItem.value === items[items.length - 1]
+      const isLastItem = selectedItem.value === items.at(-1)
       contentWrapperElement.value.style.bottom = `${0}px`
       const viewportOffsetBottom
         = contentElement.value.clientHeight

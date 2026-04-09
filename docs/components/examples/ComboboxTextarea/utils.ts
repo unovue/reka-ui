@@ -1,5 +1,7 @@
 import { defaultTriggers } from './list'
 
+const WHITESPACE_RE = /\s/
+
 export function getTriggerOffset(
   element: HTMLTextAreaElement,
   triggers = defaultTriggers,
@@ -23,7 +25,7 @@ export function getTrigger(
   if (!previousChar)
     return null
   const secondPreviousChar = value[selectionStart - 2]
-  const isIsolated = !secondPreviousChar || /\s/.test(secondPreviousChar)
+  const isIsolated = !secondPreviousChar || WHITESPACE_RE.test(secondPreviousChar)
   if (!isIsolated)
     return null
   if (triggers.includes(previousChar))

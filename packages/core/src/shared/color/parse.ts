@@ -1,5 +1,12 @@
 import type { Color, HSBColor, HSLColor, RGBColor } from './types'
 
+const HEX3_RE = /^[0-9A-F]{3}$/i
+const HEX6_RE = /^[0-9A-F]{6}$/i
+const HEX8_RE = /^[0-9A-F]{8}$/i
+const RGB_RE = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/
+const HSL_RE = /hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/
+const HSB_RE = /hsb[av]?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/
+
 /**
  * Parses a color string into a Color object.
  * Supports hex (#rrggbb, #rgb), rgb(), hsl(), and hsb()/hsv() formats.
@@ -34,7 +41,7 @@ function parseHex(hex: string): RGBColor {
   let normalized = hex.slice(1)
 
   // Validate hex format (3, 6, or 8 hex digits)
-  if (!/^[0-9A-F]{3}$/i.test(normalized) && !/^[0-9A-F]{6}$/i.test(normalized) && !/^[0-9A-F]{8}$/i.test(normalized)) {
+  if (!HEX3_RE.test(normalized) && !HEX6_RE.test(normalized) && !HEX8_RE.test(normalized)) {
     throw new Error(`Invalid hex color: ${hex}. Expected format: #RGB, #RRGGBB, or #RRGGBBAA`)
   }
 
@@ -71,7 +78,7 @@ function parseHex(hex: string): RGBColor {
 }
 
 function parseRgb(rgb: string): RGBColor {
-  const match = rgb.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/)
+  const match = rgb.match(RGB_RE)
   if (!match) {
     throw new Error(`Invalid RGB color: ${rgb}`)
   }
@@ -86,7 +93,7 @@ function parseRgb(rgb: string): RGBColor {
 }
 
 function parseHsl(hsl: string): HSLColor {
-  const match = hsl.match(/hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/)
+  const match = hsl.match(HSL_RE)
   if (!match) {
     throw new Error(`Invalid HSL color: ${hsl}`)
   }
@@ -101,7 +108,7 @@ function parseHsl(hsl: string): HSLColor {
 }
 
 function parseHsb(hsb: string): HSBColor {
-  const match = hsb.match(/hsb[av]?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/)
+  const match = hsb.match(HSB_RE)
   if (!match) {
     throw new Error(`Invalid HSB color: ${hsb}`)
   }

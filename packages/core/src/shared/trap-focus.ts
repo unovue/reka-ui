@@ -12,9 +12,7 @@ export function trapFocus(element: HTMLElement) {
       el => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'),
     )
     const firstFocusableEl = focusableEls[0] as HTMLElement
-    const lastFocusableEl = focusableEls[
-      focusableEls.length - 1
-    ] as HTMLElement
+    const lastFocusableEl = focusableEls.at(-1) as HTMLElement
     const KEYCODE_TAB = 9
 
     if (firstFocusableEl)

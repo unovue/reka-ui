@@ -123,7 +123,7 @@ describe('given default Autocomplete', () => {
 
       it('should emit `update:modelValue` with the typed text', () => {
         const emitted = wrapper.emitted('update:modelValue')
-        const lastEmit = emitted?.[emitted.length - 1]?.[0]
+        const lastEmit = emitted.at(-1)?.[0]
         expect(lastEmit).toBe('Custom text')
       })
 
@@ -171,7 +171,7 @@ describe('given default Autocomplete', () => {
         await input.trigger('compositionend')
         await nextTick()
         const emitted = wrapper.emitted('update:modelValue')
-        const lastEmit = emitted?.[emitted.length - 1]?.[0]
+        const lastEmit = emitted.at(-1)?.[0]
         expect(lastEmit).toBe('香')
       })
     })

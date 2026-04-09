@@ -83,7 +83,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   })[0]
 
   const targetNode = defaultNode.type === Fragment && Array.isArray(defaultNode.children)
-    ? defaultNode.children[0] as VNode
+    ? defaultNode.children.find(child => typeof (child as VNode).type !== 'symbol') as VNode
     : defaultNode
 
   return {
@@ -178,7 +178,7 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
       break
     }
     case 'last': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options?.[props.options.length - 1])
+      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options.at(-1)!)
       break
     }
   }
@@ -211,7 +211,7 @@ rootContext.virtualKeydownHook.on((event) => {
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
       const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const item = intent === 'first' ? items[0] : items.at(-1)
       if (item)
         rootContext.changeHighlight(item.ref)
     })

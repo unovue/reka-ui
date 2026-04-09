@@ -3,6 +3,8 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import _traverse from '@babel/traverse'
+
+const STARTS_WITH_UPPERCASE_RE = /^[A-Z]/
 import fg from 'fast-glob'
 import MarkdownIt from 'markdown-it'
 import { components } from 'reka-ui/constant'
@@ -126,7 +128,7 @@ function parseTypeFromSchema(schema: PropertyMetaSchema): string {
     const isFlatEnum = schema.schema?.every(val => typeof val === 'string')
     const enumValue = schema?.schema?.filter(i => i !== 'undefined') ?? []
 
-    if (isFlatEnum && /^[A-Z]/.test(schema.type))
+    if (isFlatEnum && STARTS_WITH_UPPERCASE_RE.test(schema.type))
       return enumValue.join(' | ')
     else if (typeof schema.schema?.[0] === 'object' && schema.schema?.[0].kind === 'enum')
       return schema.schema.map((s: PropertyMetaSchema) => parseTypeFromSchema(s)).join(' | ')
@@ -294,7 +296,7 @@ function generateDependencies(componentPath: string) {
     traverse(result, {
       ImportDeclaration: (path) => {
         const value = path.node.source.value.split('/').at(-1)
-        if (value && value.match(/^[A-Z]/) && !value.includes('vue')) {
+        if (value && STARTS_WITH_UPPERCASE_RE.test(value) && !value.includes('vue')) {
           const prev = depTree.get(dir) ?? []
           depTree.set(dir, [...new Set([...prev, value])])
         }
