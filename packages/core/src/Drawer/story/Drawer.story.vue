@@ -193,9 +193,9 @@ const navLinks = [
         </DrawerTrigger>
         <DrawerPortal>
           <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
-            <DrawerHandle class="drawer-handle" />
-            <div class="p-6">
+          <DrawerContent class="drawer-content-snap">
+            <DrawerHandle class="drawer-handle drawer-snap-handle" />
+            <div class="drawer-snap-scroll">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Snap Points
               </DrawerTitle>
@@ -457,16 +457,60 @@ const navLinks = [
   left: 0;
   right: 0;
   display: flex;
-  min-height: var(--drawer-snap-height, auto);
   flex-direction: column;
   background: white;
   border-radius: 1rem 1rem 0 0;
   outline: none;
   overflow-y: auto;
   overscroll-behavior: contain;
-  transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
-  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1), min-height 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
+}
+
+/* === Snap Points Drawer ===
+ * Fills the viewport vertically so popupHeight measures the full viewport,
+ * then the snap-point-offset transform slides the popup down to visually
+ * reveal only the active snap point's portion. Ported from BaseUI's
+ * snap-points demo CSS.
+ */
+.drawer-content-snap {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  background: white;
+  border-radius: 1rem 1rem 0 0;
+  outline: none;
+  overflow: visible;
+  transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-snap[data-state="open"] {
+  animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-snap[data-state="closed"] {
+  animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-snap[data-swiping] {
+  animation: none;
+  transition-duration: 0ms;
+  user-select: none;
+}
+.drawer-snap-handle {
+  flex-shrink: 0;
+}
+.drawer-snap-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 1.5rem 1.5rem;
 }
 .drawer-content-bottom[data-state="open"] {
   animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
