@@ -183,4 +183,55 @@ describe('useDrawerSnapPoints — snap release math', () => {
       expect(changes).toEqual([null])
     })
   })
+
+  describe('overshoot clamping (drag past fully-open)', () => {
+    // Regression for the bug where dragging up from snap=0.5 past the top
+    // snap (snap=1.0) would produce a large negative drag delta. Base UI's
+    // snap release math uses `Math.max(0, Math.min(popupHeight, ...))` to
+    // clamp `dragTargetOffset`, so the projected target never goes below 0
+    // (past the fully-open position) regardless of drag magnitude.
+
+    it('clamps a huge up-drag at fully-open snap=1.0 offset (0)', () => {
+      // Active = 500 (offset 0, fully open). Drag -1000 (huge upward) with
+      // small negative velocity. targetOffset = max(0, min(500, 0 + -1000))
+      // = max(0, -1000) = 0. Closest snap is 500 (offset 0). No dismiss
+      // because closeDistance (|0-500|=500) > closestDist (0).
+      const { snapToNearest, changes } = makeHook({
+        snapPoints: [200, 500],
+        activeSnapPoint: 500,
+        popupHeight: 500,
+      })
+      snapToNearest(-1000, { x: 0, y: -2 }, 'down', false)
+      expect(changes).toEqual([500])
+    })
+
+    it('clamps a huge up-drag when starting from a mid snap', () => {
+      // Active = 200 (offset 300). Drag -1500 (huge upward). dragTargetOffset
+      // = max(0, min(500, 300 + -1500)) = 0. Velocity is also upward (-3) so
+      // velSigned = -3, |vel| >= 0.5 so velocityOffset = clamp(-3,-4,4) * 300
+      // = -900. targetOffset = 0 + -900 = -900. closeDistance |-900 - 500|
+      // = 1400; closest snap is 500 (offset 0) dist 900. closest snap wins.
+      const { snapToNearest, changes } = makeHook({
+        snapPoints: [200, 500],
+        activeSnapPoint: 200,
+        popupHeight: 500,
+      })
+      snapToNearest(-1500, { x: 0, y: -3 }, 'down', false)
+      expect(changes).toEqual([500])
+    })
+
+    it('also works for `up` drawers (sign-flipped)', () => {
+      // 'up' drawer, active=500. A user dragging UP is in the dismiss
+      // direction for an up drawer, so dragDelta is positive. But an
+      // aggressive DOWN drag (negative dragDelta, moving AGAINST dismiss)
+      // should clamp similarly.
+      const { snapToNearest, changes } = makeHook({
+        snapPoints: [200, 500],
+        activeSnapPoint: 500,
+        popupHeight: 500,
+      })
+      snapToNearest(-1000, { x: 0, y: 2 }, 'up', false)
+      expect(changes).toEqual([500])
+    })
+  })
 })
