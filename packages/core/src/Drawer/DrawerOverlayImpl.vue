@@ -5,7 +5,7 @@ export interface DrawerOverlayImplProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useBodyScrollLock, useForwardExpose } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
@@ -14,7 +14,14 @@ import { DRAWER_CSS_VARS } from './utils'
 defineProps<DrawerOverlayImplProps>()
 const rootContext = injectDrawerRootContext()
 
-useBodyScrollLock(true)
+// Only lock body scroll while the drawer is actually open. With `forceMount`,
+// the overlay may stay mounted while closed — unconditional lock would keep
+// the page scroll blocked.
+const locked = useBodyScrollLock(rootContext.open.value)
+watch(() => rootContext.open.value, (open) => {
+  locked.value = open
+}, { immediate: true })
+
 useForwardExpose()
 
 // BaseUI parity: the backdrop carries data-swiping / data-swipe-direction so

@@ -53,7 +53,7 @@ onUnmounted(() => {
     v-bind="props"
     :ref="forwardRef"
     :data-active="providerContext?.active.value ? '' : undefined"
-    :data-inactive="!providerContext?.active.value ? '' : undefined"
+    :data-inactive="providerContext?.active.value === false ? '' : undefined"
     :style="{ [DRAWER_CSS_VARS.swipeProgress]: '0' }"
   >
     <slot />

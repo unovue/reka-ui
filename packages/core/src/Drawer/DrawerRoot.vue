@@ -69,6 +69,7 @@ export interface DrawerRootContext {
   isSwiping: Ref<boolean>
   nestedSwipeProgressStore: NestedSwipeProgressStore
   onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason) => void
+  notifyOpenComplete: (value: boolean) => void
   setActiveSnapPoint: (point: DrawerSnapPoint | null) => void
   onPopupHeightChange: (height: number) => void
   onNestedFrontmostHeightChange: (height: number) => void
@@ -169,6 +170,9 @@ provideDrawerRootContext({
     uncontrolledOpen.value = value
     emit('update:open', value, details)
   },
+  notifyOpenComplete(value) {
+    emit('update:openComplete', value)
+  },
   setActiveSnapPoint(point) { activeSnapPoint.value = point },
   onPopupHeightChange(h) {
     popupHeight.value = h
@@ -223,11 +227,9 @@ watch(open, (isOpen) => {
   }
 }, { immediate: true })
 
-// Emit openComplete after next tick (approximates Base UI's onOpenChangeComplete
-// which fires after CSS transitions. Consumers can refine via onTransitionEnd.)
-watch(open, (isOpen) => {
-  queueMicrotask(() => emit('update:openComplete', isOpen))
-})
+// `update:openComplete` is emitted by DrawerContentImpl after the popup's
+// enter/exit transition actually finishes (via transitionend/animationend on
+// the popup element). DrawerRoot just exposes the notify hook through context.
 
 onUnmounted(() => {
   providerContext?.removeDrawer(contentId)

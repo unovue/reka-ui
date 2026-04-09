@@ -40,10 +40,14 @@ const openDirection = computed<SwipeDirection>(() => {
 
 const enabled = computed(() => !props.disabled && !rootContext.open.value)
 
+// Keep the directions array reactive — `[openDirection.value]` would capture
+// the initial value only and ignore prop/state updates.
+const directions = computed<SwipeDirection[]>(() => [openDirection.value])
+
 useSwipeDismiss({
   enabled,
   elementRef: currentElement,
-  directions: [openDirection.value],
+  directions,
   movementCssVars: {
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
