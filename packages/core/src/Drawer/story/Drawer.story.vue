@@ -36,6 +36,15 @@ const mobileNavOpen = ref(false)
 
 const swipeToOpen = ref(false)
 
+const uncontainedOpen = ref(false)
+const uncontainedActions = [
+  'Unfollow',
+  'Mute',
+  'Add to Favourites',
+  'Add to Close Friends',
+  'Restrict',
+]
+
 const navLinks = [
   'Home',
   'Dashboard',
@@ -384,6 +393,73 @@ const navLinks = [
       </DrawerProvider>
     </Variant>
 
+    <Variant title="Uncontained">
+      <!--
+        Ports BaseUI's `uncontained` drawer demo: an iOS-style action sheet
+        where the popup is a pointer-events:none container holding two
+        independently-styled "surfaces" (an action list and a danger button).
+        The popup itself carries the drag/swipe transform but has no
+        background/border, so the visible surfaces appear to float.
+      -->
+      <DrawerRoot v-model:open="uncontainedOpen">
+        <DrawerTrigger class="drawer-button">
+          Open action sheet
+        </DrawerTrigger>
+        <DrawerPortal>
+          <DrawerOverlay class="drawer-overlay" />
+          <DrawerContent class="drawer-content-uncontained">
+            <div class="uncontained-surface">
+              <DrawerTitle class="visually-hidden">
+                Profile actions
+              </DrawerTitle>
+              <DrawerDescription class="visually-hidden">
+                Choose an action for this user.
+              </DrawerDescription>
+              <ul
+                class="uncontained-actions"
+                aria-label="Profile actions"
+              >
+                <li
+                  v-for="(action, index) in uncontainedActions"
+                  :key="action"
+                  class="uncontained-action"
+                >
+                  <!--
+                    BaseUI places a visually-hidden Drawer.Close on the first
+                    list item so screen readers and keyboard users can reach
+                    the close action, while the visible row buttons just
+                    toggle the controlled open state.
+                  -->
+                  <DrawerClose
+                    v-if="index === 0"
+                    class="visually-hidden"
+                  >
+                    Close action sheet
+                  </DrawerClose>
+                  <button
+                    type="button"
+                    class="uncontained-action-button"
+                    @click="uncontainedOpen = false"
+                  >
+                    {{ action }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div class="uncontained-danger-surface">
+              <button
+                type="button"
+                class="uncontained-danger-button"
+                @click="uncontainedOpen = false"
+              >
+                Block User
+              </button>
+            </div>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    </Variant>
+
     <Variant title="Mobile Navigation">
       <DrawerRoot v-model:open="mobileNavOpen">
         <DrawerTrigger class="drawer-button">
@@ -540,6 +616,118 @@ const navLinks = [
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 1.5rem 1.5rem;
+}
+
+/* === Uncontained (iOS-style action sheet) ===
+ * Ported from BaseUI's `uncontained` drawer demo. The popup is a
+ * `pointer-events: none` flex container that carries the swipe transform
+ * but has no visible background itself. The visible "surfaces" inside
+ * (the action list and the danger button) re-enable pointer events and
+ * render as independently-rounded cards that appear to float.
+ */
+.drawer-content-uncontained {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+  outline: 0;
+  pointer-events: none;
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.drawer-content-uncontained[data-state="open"] {
+  animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-uncontained[data-state="closed"] {
+  animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-uncontained[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+.uncontained-surface {
+  pointer-events: auto;
+  border-radius: 1rem;
+  outline: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  color: #111827;
+  overflow: hidden;
+}
+.uncontained-actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.uncontained-action:not(:first-child) {
+  border-top: 1px solid #e5e7eb;
+}
+.uncontained-action-button {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 0;
+  background-color: transparent;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  text-align: center;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+.uncontained-action-button:hover,
+.uncontained-action-button:focus-visible {
+  outline: 0;
+  background-color: #f3f4f6;
+}
+.uncontained-danger-surface {
+  pointer-events: auto;
+  border-radius: 1rem;
+  outline: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  overflow: hidden;
+}
+.uncontained-danger-button {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 0;
+  background-color: transparent;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  color: #dc2626;
+  cursor: pointer;
+  user-select: none;
+}
+.uncontained-danger-button:hover,
+.uncontained-danger-button:focus-visible {
+  outline: 0;
+  background-color: #f3f4f6;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 .drawer-content-bottom[data-state="open"] {
   animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
