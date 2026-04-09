@@ -345,12 +345,17 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     const shouldDismiss = !cancelledSwipe
       && (displacement >= threshold || velInDirection > 0.3)
 
-    clearCssVars(el)
-
     if (shouldDismiss) {
+      // BaseUI parity: on dismiss, keep the drag transform in place so the
+      // close animation runs smoothly from the dragged position. Clearing the
+      // CSS vars here would cause a one-frame snap-back to resting before the
+      // closing transition begins (visible as a flicker).
+      el.setAttribute('data-swipe-dismissed', '')
       onDismiss?.()
     }
     else {
+      // On cancel, reset the drag transform so the drawer animates back to rest.
+      clearCssVars(el)
       onCancel?.()
     }
 
