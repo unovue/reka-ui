@@ -581,6 +581,23 @@ const navLinks = [
   background-color: black;
 }
 .indent-content {
+  /*
+   * --drawer-swipe-progress is written on this element by DrawerIndent and
+   * ticks from 0 (at-rest-open) toward 1 as the user swipes the drawer away.
+   * --indent-progress inverts that so the transform can lerp from the
+   * "scaled down" state (progress 0) back toward the "neutral" state
+   * (progress 1) as the user drags the drawer off-screen.
+   *
+   * --indent-transition is a clever 1-or-0 switch: at rest, swipeProgress is
+   * 0 so clamp(0, 0*100000, 1) = 0 and the value is 1 (transitions on). The
+   * moment any swipe starts, clamp(...) saturates to 1 and the value drops
+   * to 0 — which we multiply into transition-duration to silence transitions
+   * during the drag so the transform tracks the pointer in real time.
+   */
+  --indent-progress: var(--drawer-swipe-progress);
+  --indent-radius: calc(1rem * (1 - var(--indent-progress)));
+  --indent-transition: calc(1 - clamp(0, calc(var(--drawer-swipe-progress) * 100000), 1));
+
   position: relative;
   min-height: 320px;
   background-color: white;
@@ -589,12 +606,17 @@ const navLinks = [
   transition:
     transform 400ms cubic-bezier(0.32, 0.72, 0, 1),
     border-radius 250ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition-duration:
+    calc(400ms * var(--indent-transition)),
+    calc(250ms * var(--indent-transition));
   will-change: transform;
 }
 .indent-content[data-active] {
-  transform: scale(0.96) translateY(0.5rem);
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
+  transform:
+    scale(calc(0.96 + (0.04 * var(--indent-progress))))
+    translateY(calc(0.5rem * (1 - var(--indent-progress))));
+  border-top-left-radius: var(--indent-radius);
+  border-top-right-radius: var(--indent-radius);
 }
 
 /* === Handle === */
