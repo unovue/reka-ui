@@ -504,14 +504,21 @@ const navLinks = [
 /* === Keyframes === */
 @keyframes drawer-overlay-in { from { opacity: 0; } }
 @keyframes drawer-overlay-out { to { opacity: 0; } }
-@keyframes drawer-slide-bottom-in { from { transform: translateY(100%); } }
-@keyframes drawer-slide-bottom-out { to { transform: translateY(100%); } }
-@keyframes drawer-slide-top-in { from { transform: translateY(-100%); } }
-@keyframes drawer-slide-top-out { to { transform: translateY(-100%); } }
-@keyframes drawer-slide-left-in { from { transform: translateX(-100%); } }
-@keyframes drawer-slide-left-out { to { transform: translateX(-100%); } }
-@keyframes drawer-slide-right-in { from { transform: translateX(100%); } }
-@keyframes drawer-slide-right-out { to { transform: translateX(100%); } }
+/* Enter/exit keyframes use the independent `translate` CSS property rather
+ * than `transform` so they compose with the inline `transform` (which
+ * carries the live drag offset). If keyframes animated `transform` directly,
+ * they would clobber the drag offset for the duration of the animation,
+ * and any mid-drag release would visibly bounce to the start position of
+ * the keyframe (e.g. translateY(100%) for a bottom drawer) before sliding
+ * back to the final transform. */
+@keyframes drawer-slide-bottom-in { from { translate: 0 100%; } }
+@keyframes drawer-slide-bottom-out { to { translate: 0 100%; } }
+@keyframes drawer-slide-top-in { from { translate: 0 -100%; } }
+@keyframes drawer-slide-top-out { to { translate: 0 -100%; } }
+@keyframes drawer-slide-left-in { from { translate: -100% 0; } }
+@keyframes drawer-slide-left-out { to { translate: -100% 0; } }
+@keyframes drawer-slide-right-in { from { translate: 100% 0; } }
+@keyframes drawer-slide-right-out { to { translate: 100% 0; } }
 
 /* === Overlay === */
 .drawer-overlay {
@@ -736,7 +743,7 @@ const navLinks = [
   animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-bottom[data-swiping] {
-  animation: none;
+  /* See the matching comment on .drawer-content-snap[data-swiping]. */
   transition-duration: 0ms;
   user-select: none;
 }
@@ -763,7 +770,11 @@ const navLinks = [
   animation: drawer-slide-top-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-top[data-swiping] {
-  animation: none;
+  /* Do NOT set `animation: none` here — see the matching comment on
+   * .drawer-content-snap[data-swiping] for the full explanation. Toggling
+   * animation-name on drag triggers a full re-run of the enter keyframe on
+   * release, bouncing the drawer to its off-screen start position. */
+  transition-duration: 0ms;
   user-select: none;
 }
 
@@ -789,7 +800,11 @@ const navLinks = [
   animation: drawer-slide-left-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-left[data-swiping] {
-  animation: none;
+  /* Do NOT set `animation: none` here — see the matching comment on
+   * .drawer-content-snap[data-swiping] for the full explanation. Toggling
+   * animation-name on drag triggers a full re-run of the enter keyframe on
+   * release, bouncing the drawer to its off-screen start position. */
+  transition-duration: 0ms;
   user-select: none;
 }
 
@@ -815,7 +830,11 @@ const navLinks = [
   animation: drawer-slide-right-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-right[data-swiping] {
-  animation: none;
+  /* Do NOT set `animation: none` here — see the matching comment on
+   * .drawer-content-snap[data-swiping] for the full explanation. Toggling
+   * animation-name on drag triggers a full re-run of the enter keyframe on
+   * release, bouncing the drawer to its off-screen start position. */
+  transition-duration: 0ms;
   user-select: none;
 }
 
