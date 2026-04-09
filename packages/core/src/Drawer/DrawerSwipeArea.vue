@@ -49,7 +49,7 @@ useSwipeDismiss({
     y: DRAWER_CSS_VARS.swipeMovementY,
   },
   onDismiss() {
-    rootContext.onOpenChange(true)
+    rootContext.onOpenChange(true, 'swipe')
   },
   onSwipingChange(swiping) {
     rootContext.onNestedSwipingChange(swiping)

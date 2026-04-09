@@ -18,7 +18,7 @@ const rootContext = injectDrawerRootContext()
   <Primitive
     v-bind="props"
     :type="as === 'button' ? 'button' : undefined"
-    @click="rootContext.onOpenChange(false)"
+    @click="rootContext.onOpenChange(false, 'close-press')"
   >
     <slot />
   </Primitive>

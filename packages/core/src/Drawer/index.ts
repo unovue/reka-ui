@@ -7,6 +7,12 @@ export {
   type DrawerContentEmits,
   type DrawerContentProps,
 } from './DrawerContent.vue'
+// Base UI alias: Drawer.Popup === DrawerContent
+export {
+  default as DrawerPopup,
+  type DrawerContentEmits as DrawerPopupEmits,
+  type DrawerContentProps as DrawerPopupProps,
+} from './DrawerContent.vue'
 export {
   default as DrawerDescription,
   type DrawerDescriptionProps,
@@ -27,6 +33,11 @@ export {
   default as DrawerOverlay,
   type DrawerOverlayProps,
 } from './DrawerOverlay.vue'
+// Base UI alias: Drawer.Backdrop === DrawerOverlay
+export {
+  default as DrawerBackdrop,
+  type DrawerOverlayProps as DrawerBackdropProps,
+} from './DrawerOverlay.vue'
 export {
   default as DrawerPortal,
   type DrawerPortalProps,
@@ -35,6 +46,9 @@ export {
   default as DrawerProvider,
 } from './DrawerProvider.vue'
 export {
+  type DrawerModal,
+  type DrawerOpenChangeDetails,
+  type DrawerOpenChangeReason,
   default as DrawerRoot,
   type DrawerRootEmits,
   type DrawerRootProps,
@@ -52,3 +66,7 @@ export {
   default as DrawerTrigger,
   type DrawerTriggerProps,
 } from './DrawerTrigger.vue'
+export {
+  default as DrawerViewport,
+  type DrawerViewportProps,
+} from './DrawerViewport.vue'

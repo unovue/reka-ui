@@ -23,17 +23,24 @@ const { forwardRef, currentElement } = useForwardExpose()
 const hasInteractedOutside = ref(false)
 const hasPointerDownOutside = ref(false)
 
-const hideOthersTarget = computed(() => rootContext.modal.value ? currentElement.value : undefined)
-useHideOthers(hideOthersTarget)
+// Modality tiers:
+//   true           → full modal (focus trap + hide others + outside pointer events blocked)
+//   'trap-focus'   → traps focus but does NOT block outside pointer events
+//   false          → non-modal
+const isFullModal = computed(() => rootContext.modal.value === true)
+const isTrapFocusOnly = computed(() => rootContext.modal.value === 'trap-focus')
+const shouldTrapFocus = computed(() => (isFullModal.value || isTrapFocusOnly.value) && rootContext.open.value)
+const shouldHideOthers = computed(() => isFullModal.value ? currentElement.value : undefined)
+useHideOthers(shouldHideOthers)
 </script>
 
 <template>
   <Presence :present="forceMount || rootContext.open.value">
     <DrawerContentImpl
-      v-if="rootContext.modal.value"
+      v-if="isFullModal"
       :ref="forwardRef"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
-      :trap-focus="rootContext.open.value"
+      :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="true"
       @close-auto-focus="(e: Event) => {
         if (!e.defaultPrevented) {
@@ -55,7 +62,7 @@ useHideOthers(hideOthersTarget)
       v-else
       :ref="forwardRef"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
-      :trap-focus="false"
+      :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="false"
       @close-auto-focus="(e: Event) => {
         if (!e.defaultPrevented) {

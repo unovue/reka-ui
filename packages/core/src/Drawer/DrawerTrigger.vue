@@ -28,7 +28,7 @@ onMounted(() => {
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
-    @click="rootContext.onOpenChange(true)"
+    @click="rootContext.onOpenChange(true, 'trigger-press')"
   >
     <slot />
   </Primitive>

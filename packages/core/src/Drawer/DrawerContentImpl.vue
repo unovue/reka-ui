@@ -11,6 +11,20 @@ export type DrawerContentImplEmits = DismissableLayerEmits & {
 
 export interface DrawerContentImplProps extends DismissableLayerProps {
   trapFocus?: boolean
+  /**
+   * Initial focus target when the drawer opens.
+   * - `true` / default: focus the first focusable element inside
+   * - `false`: do not focus anything
+   * - element ref: focus that specific element
+   */
+  initialFocus?: boolean | HTMLElement | null
+  /**
+   * Final focus target when the drawer closes.
+   * - `true` / default: focus the trigger
+   * - `false`: do not restore focus
+   * - element ref: focus that specific element
+   */
+  finalFocus?: boolean | HTMLElement | null
 }
 </script>
 
@@ -105,7 +119,7 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
   canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
     if (!hasSnapPoints.value) {
-      rootContext.onOpenChange(false)
+      rootContext.onOpenChange(false, 'swipe')
     }
     // With snap points, onRelease handles snapping
   },
@@ -125,9 +139,47 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
   },
 })
 
+// Track the source of the next dismiss so we can attach a reason.
+// DismissableLayer fires `escape-key-down` / `pointer-down-outside` / `focus-outside`
+// before it fires `dismiss`, so we capture the reason in those handlers and read
+// it here.
+let pendingDismissReason: 'escape-key' | 'outside-press' | undefined
+
 function onDismiss() {
-  if (!isSwiping.value)
-    rootContext.onOpenChange(false)
+  if (isSwiping.value)
+    return
+  rootContext.onOpenChange(false, pendingDismissReason ?? 'outside-press')
+  pendingDismissReason = undefined
+}
+
+function onEscapeKeyDown(event: KeyboardEvent) {
+  pendingDismissReason = 'escape-key'
+  emits('escapeKeyDown', event)
+}
+
+function onPointerDownOutside(event: any) {
+  if (isSwiping.value) {
+    event.preventDefault()
+    return
+  }
+  pendingDismissReason = 'outside-press'
+  emits('pointerDownOutside', event)
+}
+
+function onFocusOutside(event: any) {
+  if (isSwiping.value) {
+    event.preventDefault()
+    return
+  }
+  emits('focusOutside', event)
+}
+
+function onInteractOutside(event: any) {
+  if (isSwiping.value) {
+    event.preventDefault()
+    return
+  }
+  emits('interactOutside', event)
 }
 
 // Data attributes
@@ -186,10 +238,10 @@ if (process.env.NODE_ENV !== 'production') {
       :aria-labelledby="rootContext.titleId"
       v-bind="{ ...dataAttributes, ...$attrs }"
       @dismiss="onDismiss"
-      @escape-key-down="emits('escapeKeyDown', $event)"
-      @focus-outside="(e: any) => { if (isSwiping) e.preventDefault(); else emits('focusOutside', e) }"
-      @interact-outside="(e: any) => { if (isSwiping) e.preventDefault(); else emits('interactOutside', e) }"
-      @pointer-down-outside="(e: any) => { if (isSwiping) e.preventDefault(); else emits('pointerDownOutside', e) }"
+      @escape-key-down="onEscapeKeyDown"
+      @focus-outside="onFocusOutside"
+      @interact-outside="onInteractOutside"
+      @pointer-down-outside="onPointerDownOutside"
     >
       <slot />
     </DismissableLayer>

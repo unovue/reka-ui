@@ -9,7 +9,7 @@ export interface ResolvedSnapPoint {
   offset: number
 }
 
-function parseSnapPoint(value: DrawerSnapPoint, viewportHeight: number, rootFontSize: number): number {
+function parseSnapPoint(value: DrawerSnapPoint, viewportHeight: number, rootFontSize: number): number | null {
   if (typeof value === 'number') {
     if (value >= 0 && value <= 1)
       return Math.round(value * viewportHeight)
@@ -19,7 +19,8 @@ function parseSnapPoint(value: DrawerSnapPoint, viewportHeight: number, rootFont
     return Math.round(Number.parseFloat(value) * rootFontSize)
   if (value.endsWith('px'))
     return Math.round(Number.parseFloat(value))
-  return 0
+  // Unknown units (e.g. '%', 'vh') are unsupported — drop the snap point
+  return null
 }
 
 export function useDrawerSnapPoints(options: {
@@ -55,6 +56,8 @@ export function useDrawerSnapPoints(options: {
     const resolved: ResolvedSnapPoint[] = []
     for (const pt of points) {
       const height = parseSnapPoint(pt, vh, fs)
+      if (height == null)
+        continue
       if (resolved.some(r => Math.abs(r.height - height) <= 1))
         continue
       const clampedHeight = Math.min(height, Math.min(ph, vh))
@@ -66,13 +69,14 @@ export function useDrawerSnapPoints(options: {
   const activeSnapPointOffset = computed<number | null>(() => {
     if (!activeSnapPoint.value || resolvedSnapPoints.value.length === 0)
       return null
+    const activeHeight = parseSnapPoint(
+      activeSnapPoint.value as DrawerSnapPoint,
+      viewportHeight.value,
+      rootFontSize.value,
+    )
     const match = resolvedSnapPoints.value.find(
       r => r.value === activeSnapPoint.value
-        || Math.abs(r.height - parseSnapPoint(
-          activeSnapPoint.value as DrawerSnapPoint,
-          viewportHeight.value,
-          rootFontSize.value,
-        )) <= 1,
+        || (activeHeight != null && Math.abs(r.height - activeHeight) <= 1),
     )
     return match?.offset ?? null
   })

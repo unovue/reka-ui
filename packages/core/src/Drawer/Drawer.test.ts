@@ -1,7 +1,5 @@
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type { Mock, SpyInstance } from 'vitest'
+import type { Mock, MockInstance } from 'vitest'
 import { findByText, fireEvent, render } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
@@ -61,7 +59,7 @@ const NoTitleDrawerTest = defineComponent({
 })
 
 describe('given a default Drawer', () => {
-  let consoleWarnMock: SpyInstance
+  let consoleWarnMock: MockInstance
   let consoleWarnMockFunction: Mock
 
   beforeEach(() => {
