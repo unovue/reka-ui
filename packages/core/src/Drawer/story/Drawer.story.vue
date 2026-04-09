@@ -473,6 +473,13 @@ const navLinks = [
  * then the snap-point-offset transform slides the popup down to visually
  * reveal only the active snap point's portion. Ported from BaseUI's
  * snap-points demo CSS.
+ *
+ * Enter/exit animations use the independent `translate` CSS property so
+ * they compose with the inline `transform` (which carries the snap point
+ * offset) instead of replacing it. If we used `transform` in the keyframes,
+ * the enter animation would clobber the snap-point transform and the drawer
+ * would briefly slide up to fully-open (snap 1.0) before settling at the
+ * active snap point — a visible flicker.
  */
 .drawer-content-snap {
   position: fixed;
@@ -489,18 +496,24 @@ const navLinks = [
   overflow: visible;
   transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
-  will-change: transform;
+  will-change: transform, translate;
 }
 .drawer-content-snap[data-state="open"] {
-  animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: drawer-snap-slide-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-snap[data-state="closed"] {
-  animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: drawer-snap-slide-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .drawer-content-snap[data-swiping] {
   animation: none;
   transition-duration: 0ms;
   user-select: none;
+}
+@keyframes drawer-snap-slide-in {
+  from { translate: 0 100dvh; }
+}
+@keyframes drawer-snap-slide-out {
+  to { translate: 0 100dvh; }
 }
 .drawer-snap-handle {
   flex-shrink: 0;
