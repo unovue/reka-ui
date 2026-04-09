@@ -54,6 +54,55 @@ function findScrollableAncestor(
   return findScrollableAncestor(el.parentElement, axis)
 }
 
+/**
+ * Returns whether the user can start a swipe dismiss from a scrollable element
+ * based on the scroll position and drag direction.
+ * Ported from BaseUI `useSwipeDismiss.ts:canSwipeFromScrollEdgeOnPendingMove`.
+ *
+ * Returns:
+ *   true  → swipe is allowed (scroll is at the relevant edge)
+ *   false → swipe is blocked (user is scrolling, not dismissing)
+ *   null  → the drag is not along a recognized axis; caller should fall through
+ */
+function canSwipeFromScrollEdge(
+  scrollTarget: HTMLElement,
+  deltaX: number,
+  deltaY: number,
+  flags: { hasVertical: boolean, hasHorizontal: boolean, allowUp: boolean, allowDown: boolean, allowLeft: boolean, allowRight: boolean },
+): boolean | null {
+  const absDx = Math.abs(deltaX)
+  const absDy = Math.abs(deltaY)
+  const useVerticalAxis
+    = flags.hasVertical && deltaY !== 0 && (!flags.hasHorizontal || absDy >= absDx)
+
+  if (useVerticalAxis) {
+    const maxScrollTop = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight)
+    const atTop = scrollTarget.scrollTop <= 0
+    const atBottom = scrollTarget.scrollTop >= maxScrollTop
+    const movingDown = deltaY > 0
+    const movingUp = deltaY < 0
+    // A 'down'-dismiss drawer starts dismiss on a downward pull from the top.
+    // An 'up'-dismiss drawer starts dismiss on an upward pull from the bottom.
+    const canSwipeDown = movingDown && atTop && flags.allowDown
+    const canSwipeUp = movingUp && atBottom && flags.allowUp
+    return canSwipeDown || canSwipeUp
+  }
+
+  const useHorizontalAxis
+    = flags.hasHorizontal && deltaX !== 0 && (!flags.hasVertical || absDx > absDy)
+  if (useHorizontalAxis) {
+    const maxScrollLeft = Math.max(0, scrollTarget.scrollWidth - scrollTarget.clientWidth)
+    const atLeft = scrollTarget.scrollLeft <= 0
+    const atRight = scrollTarget.scrollLeft >= maxScrollLeft
+    const movingRight = deltaX > 0
+    const movingLeft = deltaX < 0
+    const canSwipeRight = movingRight && atLeft && flags.allowRight
+    const canSwipeLeft = movingLeft && atRight && flags.allowLeft
+    return canSwipeRight || canSwipeLeft
+  }
+  return null
+}
+
 export function useSwipeDismiss(options: UseSwipeDismissOptions) {
   const {
     elementRef,
@@ -89,6 +138,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
   let pendingSwipe = false
   let pendingSwipeStartPos: { x: number, y: number } | null = null
   let swipeFromScrollable = false
+  let scrollableAncestor: HTMLElement | null = null
   let elementSize = { width: 0, height: 0 }
   let swipeProgress = 0
   let lastDragSample: { x: number, y: number, time: number } | null = null
@@ -143,6 +193,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     pendingSwipe = false
     pendingSwipeStartPos = null
     swipeFromScrollable = false
+    scrollableAncestor = null
     elementSize = { width: 0, height: 0 }
     swipeProgress = 0
     lastDragSample = null
@@ -374,8 +425,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     if (!options.ignoreScrollableAncestors) {
       const axis = hasVertical.value ? 'vertical' : 'horizontal'
       const scrollable = findScrollableAncestor(target, axis)
-      if (scrollable)
+      if (scrollable) {
         swipeFromScrollable = true
+        scrollableAncestor = scrollable
+      }
     }
 
     const t = e.touches[0]
@@ -395,17 +448,32 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
 
     const pos = { x: t.clientX, y: t.clientY }
 
-    if (swipeFromScrollable && pendingSwipe) {
+    if (swipeFromScrollable && pendingSwipe && scrollableAncestor) {
       const dx = pos.x - dragStartPos.x
       const dy = pos.y - dragStartPos.y
-      const scrollDir = hasVertical.value && Math.abs(dy) > Math.abs(dx) ? 'vertical' : 'horizontal'
-      if (
-        (scrollDir === 'vertical' && hasVertical.value)
-        || (scrollDir === 'horizontal' && hasHorizontal.value)
-      ) {
+      // BaseUI-style scroll-edge allowance: only cancel if the user is genuinely
+      // scrolling (not at the edge in the dismiss direction). If they are at the
+      // relevant edge, let the swipe proceed.
+      const allowed = canSwipeFromScrollEdge(scrollableAncestor, dx, dy, {
+        hasVertical: hasVertical.value,
+        hasHorizontal: hasHorizontal.value,
+        allowUp: allowUp.value,
+        allowDown: allowDown.value,
+        allowLeft: allowLeft.value,
+        allowRight: allowRight.value,
+      })
+      if (allowed === false) {
         reset()
         return
       }
+      if (allowed === true) {
+        // Scroll edge reached in the swipe direction → clear the guard so
+        // subsequent moves go through the normal swipe path.
+        swipeFromScrollable = false
+        scrollableAncestor = null
+      }
+      // allowed === null → axis unclear, fall through to processMove which
+      // will lock the axis and retry the decision on the next frame.
     }
 
     if (isSwiping.value)

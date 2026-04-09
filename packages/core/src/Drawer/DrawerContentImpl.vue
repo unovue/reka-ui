@@ -38,7 +38,7 @@ import { useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
-import { DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
+import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
 
 const props = defineProps<DrawerContentImplProps>()
 const emits = defineEmits<DrawerContentImplEmits>()
@@ -82,9 +82,13 @@ watch(activeSnapPointOffset, (offset) => {
   }
 })
 
-// Measure popup height via ResizeObserver
+// Measure popup height via ResizeObserver. BaseUI parity: skip writes while a
+// nested drawer is open and we already have a measured height, to keep the
+// parent's snap-point geometry stable while the child drawer animates.
 useResizeObserver(currentElement, ([entry]) => {
   if (!entry)
+    return
+  if (rootContext.hasNestedDrawer.value && rootContext.popupHeight.value > 0)
     return
   const h = entry.contentRect.height
   rootContext.onPopupHeightChange(h)
@@ -129,6 +133,28 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
     // With snap points, onRelease handles snapping
   },
   onRelease(velocity) {
+    // Write the `--drawer-swipe-strength` CSS var so consumer transitions can
+    // scale their duration with release velocity. Ported from BaseUI
+    // `DrawerViewport.tsx:resolveSwipeRelease`.
+    const el = currentElement.value
+    if (el) {
+      const dir = rootContext.swipeDirection.value
+      const size = (dir === 'left' || dir === 'right') ? el.offsetWidth : el.offsetHeight
+      const axisDelta = (dir === 'left' || dir === 'right') ? lastRawDelta.x : lastRawDelta.y
+      const releaseVelocity = (dir === 'left' || dir === 'right') ? velocity.x : velocity.y
+      const scalar = computeSwipeReleaseScalar({
+        direction: dir,
+        size,
+        axisDelta,
+        snapPointOffset: activeSnapPointOffset.value ?? 0,
+        releaseVelocity,
+      })
+      if (scalar != null)
+        el.style.setProperty(DRAWER_CSS_VARS.swipeStrength, `${scalar}`)
+      else
+        el.style.setProperty(DRAWER_CSS_VARS.swipeStrength, '1')
+    }
+
     if (hasSnapPoints.value) {
       // Convert the latest signed delta to a dismiss-direction-positive scalar
       // (BaseUI: `dragDelta = direction==='down' ? deltaY : direction==='up' ? -deltaY : ...`).
@@ -206,16 +232,38 @@ const dataAttributes = computed(() => {
   return attrs
 })
 
+// Sync nestedOpenDrawerCount onto the popup CSS var so nested scale effects
+// can read it. BaseUI uses a running count, not a boolean.
+watch(() => rootContext.nestedOpenDrawerCount.value, (n) => {
+  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.nestedDrawers, `${n}`)
+})
+
+// Subscribe to the nested swipe progress store: when a CHILD drawer reports
+// dismiss-swipe progress, the parent popup reads it and writes the value onto
+// its own `--drawer-swipe-progress` CSS var so consumer CSS can animate the
+// parent "in reverse" while the child swipes away. Ported from BaseUI
+// `DrawerPopup.tsx` (useIsoLayoutEffect subscribing to nestedSwipeProgressStore).
+let unsubscribeNestedProgress: (() => void) | undefined
+
 onMounted(() => {
   rootContext.contentElement.value = currentElement.value
   rootContext.notifyParentHasNestedDrawer?.(true)
 
-  const nestedDepth = rootContext.notifyParentHasNestedDrawer ? 1 : 0
-  currentElement.value?.style.setProperty(DRAWER_CSS_VARS.nestedDrawers, `${nestedDepth}`)
+  // Initial nested-drawer count
+  currentElement.value?.style.setProperty(
+    DRAWER_CSS_VARS.nestedDrawers,
+    `${rootContext.nestedOpenDrawerCount.value}`,
+  )
+
+  unsubscribeNestedProgress = rootContext.nestedSwipeProgressStore.subscribe(() => {
+    const progress = rootContext.nestedSwipeProgressStore.getSnapshot()
+    currentElement.value?.style.setProperty(DRAWER_CSS_VARS.swipeProgress, `${progress}`)
+  })
 })
 
 onUnmounted(() => {
   rootContext.notifyParentHasNestedDrawer?.(false)
+  unsubscribeNestedProgress?.()
 })
 
 // Dev warning for missing DrawerTitle
