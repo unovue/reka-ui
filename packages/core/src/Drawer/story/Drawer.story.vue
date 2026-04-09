@@ -494,7 +494,11 @@ const navLinks = [
   border-radius: 1rem 1rem 0 0;
   outline: none;
   overflow: visible;
-  transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
+  /* Clamp the translate to max(0px, ...) so an aggressive drag past the
+   * top snap point cannot push the drawer above the viewport. The swipe
+   * movement is a negative delta when dragging up, so a raw sum can go
+   * negative past the fully-expanded (snap=1.0, offset=0) position. */
+  transform: translateY(max(0px, calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px))));
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform, translate;
 }
