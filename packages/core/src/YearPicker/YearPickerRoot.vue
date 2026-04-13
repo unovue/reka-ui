@@ -211,33 +211,39 @@ watch(modelValue, (_modelValue) => {
   }
 })
 
+function resolveYearValue(value: DateValue, reference?: DateValue) {
+  if (!reference)
+    return value.copy()
+  return reference.copy().set({ year: value.year })
+}
+
 function onYearChange(value: DateValue) {
   if (!multiple.value) {
     if (!modelValue.value) {
-      modelValue.value = value.copy()
+      modelValue.value = resolveYearValue(value, placeholder.value)
       return
     }
 
     if (!preventDeselect.value && isSameYear(modelValue.value as DateValue, value)) {
-      placeholder.value = value.copy()
+      placeholder.value = resolveYearValue(value, modelValue.value as DateValue)
       modelValue.value = undefined
     }
     else {
-      modelValue.value = value.copy()
+      modelValue.value = resolveYearValue(value, modelValue.value as DateValue)
     }
   }
   else if (!modelValue.value) {
-    modelValue.value = [value.copy()]
+    modelValue.value = [resolveYearValue(value, placeholder.value)]
   }
   else if (Array.isArray(modelValue.value)) {
     const index = modelValue.value.findIndex(date => isSameYear(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValue.value, value.copy()]
+      modelValue.value = [...modelValue.value, resolveYearValue(value, placeholder.value)]
     }
     else if (!preventDeselect.value) {
       const next = modelValue.value.filter(date => !isSameYear(date, value))
       if (!next.length) {
-        placeholder.value = value.copy()
+        placeholder.value = resolveYearValue(value, modelValue.value[index])
         modelValue.value = undefined
         return
       }

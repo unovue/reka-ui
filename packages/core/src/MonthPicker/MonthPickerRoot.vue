@@ -205,23 +205,29 @@ watch(modelValue, (_modelValue) => {
   }
 })
 
+function resolveMonthValue(value: DateValue, reference?: DateValue) {
+  if (!reference)
+    return value.copy()
+  return reference.copy().set({ month: value.month, year: value.year })
+}
+
 function onMonthChange(value: DateValue) {
   if (!multiple.value) {
     if (!modelValue.value) {
-      modelValue.value = value.copy()
+      modelValue.value = resolveMonthValue(value, placeholder.value)
       return
     }
 
     if (!preventDeselect.value && isSameYearMonth(modelValue.value as DateValue, value)) {
-      placeholder.value = value.copy()
+      placeholder.value = resolveMonthValue(value, modelValue.value as DateValue)
       modelValue.value = undefined
     }
     else {
-      modelValue.value = value.copy()
+      modelValue.value = resolveMonthValue(value, modelValue.value as DateValue)
     }
   }
   else if (!modelValue.value) {
-    modelValue.value = [value.copy()]
+    modelValue.value = [resolveMonthValue(value, placeholder.value)]
   }
   else {
     const modelValueArray = Array.isArray(modelValue.value)
@@ -230,12 +236,12 @@ function onMonthChange(value: DateValue) {
 
     const index = modelValueArray.findIndex(date => isSameYearMonth(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValueArray, value.copy()]
+      modelValue.value = [...modelValueArray, resolveMonthValue(value, placeholder.value)]
     }
     else if (!preventDeselect.value) {
       const next = modelValueArray.filter(date => !isSameYearMonth(date, value))
       if (!next.length) {
-        placeholder.value = value.copy()
+        placeholder.value = resolveMonthValue(value, modelValueArray[index])
         modelValue.value = undefined
         return
       }
