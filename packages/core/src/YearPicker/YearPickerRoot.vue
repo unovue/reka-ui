@@ -214,7 +214,7 @@ watch(modelValue, (_modelValue) => {
 function resolveYearValue(value: DateValue, reference?: DateValue) {
   if (!reference)
     return value.copy()
-  return reference.copy().set({ year: value.year })
+  return value.copy().set({ month: reference.month, day: reference.day })
 }
 
 function onYearChange(value: DateValue) {

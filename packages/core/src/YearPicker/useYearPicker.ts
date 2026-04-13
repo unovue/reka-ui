@@ -138,13 +138,13 @@ export function useYearPicker(props: UseYearPickerProps) {
     if (nextPageFunc || props.nextPage.value) {
       const newDate = (nextPageFunc || props.nextPage.value)!(firstYearInGrid)
       grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-      props.placeholder.value = props.placeholder.value.set({ year: newDate.year })
+      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
       return
     }
 
     const newDate = firstYearInGrid.add({ years: props.yearsPerPage.value })
     grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-    props.placeholder.value = props.placeholder.value.set({ year: newDate.year })
+    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
   }
 
   const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
@@ -153,13 +153,13 @@ export function useYearPicker(props: UseYearPickerProps) {
     if (prevPageFunc || props.prevPage.value) {
       const newDate = (prevPageFunc || props.prevPage.value)!(firstYearInGrid)
       grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-      props.placeholder.value = props.placeholder.value.set({ year: newDate.year })
+      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
       return
     }
 
     const newDate = firstYearInGrid.subtract({ years: props.yearsPerPage.value })
     grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-    props.placeholder.value = props.placeholder.value.set({ year: newDate.year })
+    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
   }
 
   watch(props.placeholder, (value) => {
