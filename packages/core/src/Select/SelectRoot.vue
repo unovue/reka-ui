@@ -89,7 +89,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { required, disabled, multiple, dir: propDir } = toRefs(props)
+const { id, required, disabled, multiple, dir: propDir } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error Missing infer for AcceptableValue

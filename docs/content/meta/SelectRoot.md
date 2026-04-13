@@ -120,6 +120,7 @@
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `open` | The controlled open state of the Select. Can be bind as v-model:open. | `boolean` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `id` | Id of the element | `string` | No | - |
 
 **Events**
 
