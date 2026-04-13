@@ -21,7 +21,9 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
     isPointerInTransit.value = false
   }
 
-  function handleCreateGraceArea(event: PointerEvent, hoverTarget: HTMLElement) {
+  function handleCreateGraceArea(event: PointerEvent, hoverTarget: HTMLElement | undefined) {
+    if (!hoverTarget)
+      return
     const currentTarget = event.currentTarget as HTMLElement
     const exitPoint = { x: event.clientX, y: event.clientY }
     const exitSide = getExitSideFromRect(exitPoint, currentTarget.getBoundingClientRect())
@@ -34,8 +36,8 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 
   watchEffect((cleanupFn) => {
     if (triggerElement.value && containerElement.value) {
-      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, containerElement.value!)
-      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, triggerElement.value!)
+      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, containerElement.value)
+      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, triggerElement.value)
 
       triggerElement.value.addEventListener('pointerleave', handleTriggerLeave)
       containerElement.value.addEventListener('pointerleave', handleContentLeave)
@@ -190,7 +192,7 @@ function getHullPresorted<P extends Point>(points: Readonly<Array<P>>): Array<P>
   for (let i = 0; i < points.length; i++) {
     const p = points[i]
     while (upperHull.length >= 2) {
-      const q = upperHull[upperHull.length - 1]
+      const q = upperHull.at(-1)!
       const r = upperHull[upperHull.length - 2]
       if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x))
         upperHull.pop()
@@ -204,7 +206,7 @@ function getHullPresorted<P extends Point>(points: Readonly<Array<P>>): Array<P>
   for (let i = points.length - 1; i >= 0; i--) {
     const p = points[i]
     while (lowerHull.length >= 2) {
-      const q = lowerHull[lowerHull.length - 1]
+      const q = lowerHull.at(-1)!
       const r = lowerHull[lowerHull.length - 2]
       if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x))
         lowerHull.pop()

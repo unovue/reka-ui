@@ -169,7 +169,7 @@ provideSelectItemContext({
       @focus="isFocused = true"
       @blur="isFocused = false"
       @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event) => {
+      @pointerdown="(event: PointerEvent) => {
         (event.currentTarget as HTMLElement).focus({ preventScroll: true })
       }"
       @touchend.prevent.stop

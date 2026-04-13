@@ -85,7 +85,7 @@ onMounted(() => {
     const target = event.target as HTMLElement
     if (target?.contains(rootContext.trigger.value!))
       rootContext.onClose()
-  })
+  }, { capture: true })
   // Close this tooltip if another one opens
   useEventListener(window, TOOLTIP_OPEN, rootContext.onClose)
 })

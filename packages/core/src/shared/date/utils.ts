@@ -1,5 +1,5 @@
 import type { Granularity } from './comparators'
-import type { DateStep, HourCycle } from './types'
+import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
 import { defu } from 'defu'
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
@@ -81,4 +81,32 @@ export function normalizeHour12(hourCycle: HourCycle) {
   if (hourCycle === 12)
     return true
   return undefined
+}
+
+export function getInputType(granularity: Granularity): DateInputType {
+  return granularity === 'day' ? 'date' : 'datetime-local'
+}
+
+export function normalizeInputValue(date: DateValue | undefined, granularity: Granularity): string {
+  if (!date)
+    return ''
+
+  const type = getInputType(granularity)
+
+  const year = String(date.year).padStart(4, '0')
+  const month = String(date.month).padStart(2, '0')
+  const day = String(date.day).padStart(2, '0')
+
+  if (type === 'date')
+    return `${year}-${month}-${day}`
+
+  const hour = String('hour' in date ? date.hour : 0).padStart(2, '0')
+  const minute = String('minute' in date ? date.minute : 0).padStart(2, '0')
+
+  if (granularity === 'second') {
+    const second = String('second' in date ? date.second : 0).padStart(2, '0')
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+  }
+
+  return `${year}-${month}-${day}T${hour}:${minute}`
 }

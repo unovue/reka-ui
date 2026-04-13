@@ -3,11 +3,15 @@
  * @param hex Hex color string (e.g., "#ff5733" or "#f53")
  * @returns An object containing red, green, and blue values (0-255).
  */
+const HASH_PREFIX_RE = /^#/
+const HEX6_RE = /^[0-9A-F]{6}$/i
+const HEX3_RE = /^[0-9A-F]{3}$/i
+
 export function hexToRGB(hex: string): { r: number, g: number, b: number } {
-  hex = hex.replace(/^#/, '')
+  hex = hex.replace(HASH_PREFIX_RE, '')
 
   // Validate hex format (3 or 6 hex digits)
-  if (!/^[0-9A-F]{6}$/i.test(hex) && !/^[0-9A-F]{3}$/i.test(hex)) {
+  if (!HEX6_RE.test(hex) && !HEX3_RE.test(hex)) {
     throw new Error(`Invalid hex color: ${hex}. Expected format: #RGB or #RRGGBB`)
   }
 

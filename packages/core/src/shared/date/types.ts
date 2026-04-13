@@ -54,3 +54,5 @@ export type TimeSegmentObj = {
 export type DateAndTimeSegmentObj = DateSegmentObj & TimeSegmentObj
 export type SegmentValueObj = DateSegmentObj | DateAndTimeSegmentObj
 export type SegmentContentObj = Record<EditableSegmentPart, string>
+
+export type DateInputType = 'date' | 'datetime-local'

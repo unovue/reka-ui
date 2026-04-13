@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -83,3 +84,35 @@
     'type': 'AcceptableValue | AcceptableValue[] | undefined'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `collapsible` | When type is "single", allows closing content when clicking trigger for an open item. When type is "multiple", this prop has no effect. | `boolean` | No | `false` |
+| `defaultValue` | The default active value of the item(s). Use when you do not need to control the state of the item(s). | `string \| string[]` | No | - |
+| `dir` | The reading direction of the accordion when applicable. If omitted, assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with the accordion and all its items | `boolean` | No | `false` |
+| `modelValue` | The controlled value of the active item(s). Use this when you need to control the state of the items. Can be binded with v-model | `string \| string[]` | No | - |
+| `orientation` | The orientation of the accordion. | `"vertical" \| "horizontal"` | No | `"vertical"` |
+| `type` | Determines whether a "single" or "multiple" items can be selected at a time. This prop will overwrite the inferred type from modelValue and defaultValue. | `"single" \| "multiple"` | No | - |
+| `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the expanded state of an item changes | `[value: string \| string[]]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current active value | `AcceptableValue \| AcceptableValue[] \| undefined` |
+
+</llm-only>

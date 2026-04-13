@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -68,3 +69,34 @@
     'type': '(): void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"li"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `level` | Level of depth | `number` | Yes | - |
+| `value` | Value given to this item | `Record<string, any>` | Yes | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<Record<string, any>>]` |
+| `toggle` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: ToggleEvent<Record<string, any>>]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `isExpanded` |  | `boolean` |
+| `isSelected` |  | `boolean` |
+| `isIndeterminate` |  | `boolean \| undefined` |
+| `handleToggle` |  | `(): void` |
+| `handleSelect` |  | `(): void` |
+
+</llm-only>

@@ -276,6 +276,30 @@ describe('timeField', async () => {
     }
   })
 
+  it('doesn\'t change focus prematurely with segment value of 0', async () => {
+    const { getByTestId, user, hour } = setup({
+      timeFieldProps: {
+        modelValue: time,
+        granularity: 'second',
+      },
+    })
+
+    const minute = getByTestId('minute')
+    const second = getByTestId('second')
+
+    const segments = [hour, minute, second]
+
+    for (const segment of segments) {
+      await user.click(segment)
+      await user.keyboard('{0}')
+      await user.keyboard(kbd.TAB)
+      expect(segment).not.toHaveFocus()
+      await user.click(segment)
+      await user.keyboard('{1}')
+      expect(segment).toHaveFocus()
+    }
+  })
+
   it('prevents interaction when `disabled`', async () => {
     const { user, getByTestId, hour } = setup({
       timeFieldProps: {
@@ -419,6 +443,31 @@ describe('timeField', async () => {
     expect(second).toHaveFocus()
     await user.keyboard('{1}')
     await user.keyboard('{1}')
+    expect(dayPeriod).toHaveFocus()
+  })
+
+  it('takes you all the way through the segment with spamming 0', async () => {
+    const { getByTestId, user, hour } = setup({
+      timeFieldProps: {
+        modelValue: zonedDateTime,
+        granularity: 'second',
+      },
+    })
+
+    const { minute, second, dayPeriod } = getTimeSegments(getByTestId)
+
+    await user.click(hour)
+    await user.keyboard('{0}')
+    expect(hour).toHaveFocus()
+    await user.keyboard('{0}')
+    expect(minute).toHaveFocus()
+    await user.keyboard('{0}')
+    expect(minute).toHaveFocus()
+    await user.keyboard('{0}')
+    expect(second).toHaveFocus()
+    await user.keyboard('{0}')
+    expect(second).toHaveFocus()
+    await user.keyboard('{0}')
     expect(dayPeriod).toHaveFocus()
   })
 

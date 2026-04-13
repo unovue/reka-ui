@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 
+const ALLOWED_INPUT_RE = /[\d.-]/
+
 export interface ColorFieldInputProps extends PrimitiveProps {}
 </script>
 
@@ -87,7 +89,7 @@ function handleBeforeInput(event: InputEvent) {
   const data = event.data
 
   // Allow numbers, decimal point, minus sign
-  if (data && !/[\d.-]/.test(data)) {
+  if (data && !ALLOWED_INPUT_RE.test(data)) {
     event.preventDefault()
     return
   }

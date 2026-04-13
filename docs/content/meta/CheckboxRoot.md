@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -93,3 +94,37 @@
     'type': 'false | true | \'indeterminate\''
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `unknown` | No | - |
+| `disabled` | When true, prevents the user from interacting with the checkbox | `boolean` | No | - |
+| `falseValue` | The value used when the checkbox is unchecked. Defaults to false. | `unknown` | No | `(() => false) as unknown as undefined` |
+| `id` | Id of the element | `string` | No | - |
+| `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `unknown` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `trueValue` | The value used when the checkbox is checked. Defaults to true. | `unknown` | No | `(() => true) as unknown as undefined` |
+| `value` | The value given as data when submitted with a name. | `AcceptableValue` | No | `"on"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: unknown]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current value | `unknown` |
+| `state` | Current state | `false \| true \| "indeterminate"` |
+
+</llm-only>

@@ -203,7 +203,7 @@ provideSelectRootContext({
     />
 
     <BubbleSelect
-      v-if="isFormControl"
+      v-if="isFormControl && name"
       :id="id"
       :key="nativeSelectKey"
       aria-hidden="true"

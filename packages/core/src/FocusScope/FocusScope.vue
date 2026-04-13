@@ -117,7 +117,21 @@ watchEffect((cleanupFn) => {
   // if the element still exist inside the container,
   // if not then we focus to the container
   function handleMutations(mutations: MutationRecord[]) {
-    const isLastFocusedElementExist = container.contains(lastFocusedElementRef.value)
+    const lastFocusedElement = lastFocusedElementRef.value
+
+    // Mutation may be triggered by something unrelated to focus, e.g. class is set on an element
+    // so we first check if we even have a previously focused element.
+    if (lastFocusedElement === null) {
+      return
+    }
+
+    // Ensure mutations removed nodes from the DOM at all.
+    const anyNodesRemoved = mutations.some(m => m.removedNodes.length > 0)
+    if (!anyNodesRemoved) {
+      return
+    }
+
+    const isLastFocusedElementExist = container.contains(lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
   }

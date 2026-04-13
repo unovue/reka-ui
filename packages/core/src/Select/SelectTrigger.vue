@@ -111,7 +111,7 @@ function handlePointerOpen(event: PointerEvent) {
         }
       "
       @keydown="
-        (event) => {
+        (event: KeyboardEvent) => {
           const isTypingAhead = search !== '';
           const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
           if (!isModifierKey && event.key.length === 1)

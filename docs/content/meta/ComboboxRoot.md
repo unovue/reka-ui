@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -154,3 +155,47 @@
     'type': 'AcceptableValue | AcceptableValue[]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
+| `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
+| `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
+| `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
+| `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `open` | The controlled open state of the Combobox. Can be binded with v-model:open. | `boolean` | No | - |
+| `openOnClick` | Whether to open the combobox when the input is clicked | `boolean` | No | `false` |
+| `openOnFocus` | Whether to open the combobox when the input is focused | `boolean` | No | `false` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple) | `boolean` | No | `false` |
+| `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
+| `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+| `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+| `modelValue` | Current active value | `AcceptableValue \| AcceptableValue[]` |
+
+</llm-only>
