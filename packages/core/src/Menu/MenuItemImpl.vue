@@ -60,8 +60,13 @@ async function handlePointerLeave(event: PointerEvent) {
   if (!isMouseEvent(event))
     return
 
+  // If the highlight was already claimed by another element (e.g. the pointer moved
+  // directly onto another item, whose synchronous `pointermove` ran before this
+  // `nextTick` resolved), this leave is stale and must not reset focus/roving state.
+  if (contentContext.highlightedElement.value !== currentElement.value)
+    return
+
   const isMovingToSubmenu = contentContext.onItemLeave(event)
-  // When the pointer leaves this item to empty space (not another item or a submenu), clear the highlight.
   if (!isMovingToSubmenu && contentContext.highlightedElement.value === currentElement.value)
     contentContext.highlightedElement.value = undefined
 }
