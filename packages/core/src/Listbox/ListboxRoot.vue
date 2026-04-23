@@ -79,6 +79,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { createEventHook, useVModel } from '@vueuse/core'
+import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -324,6 +325,12 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
 }
 
 async function highlightSelected(event?: Event) {
+  // highlightSelected is called inside a watch with immediate set to true.
+  // This results in code execution during SSR.
+  // Ensure this code only runs in a browser environment, since it performs
+  // DOM-only side effects (focus, scrollIntoView, synthetic KeyboardEvent).
+  if (!isClient)
+    return
   await nextTick()
   if (isVirtual.value) {
     // Trigger on nextTick for Virtualizer to be mounted
