@@ -10,7 +10,8 @@ import type {
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useSize } from '@/shared'
+import type { Direction } from '@/shared/types'
+import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -173,6 +174,11 @@ export interface PopperContentProps extends PrimitiveProps {
    *  If provided, it will replace the default anchor element.
    */
   reference?: ReferenceElement
+
+  /**
+   * The reading direction of the popper content when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
+   */
+  dir?: Direction
 }
 
 export interface PopperContentContext {
@@ -224,6 +230,7 @@ const emits = defineEmits<{
 
 const rootContext = injectPopperRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const dir = useDirection(computed(() => props.dir))
 
 const floatingRef = ref<HTMLElement>()
 
@@ -317,6 +324,7 @@ const computedMiddleware = computedEager(() => {
     transformOrigin({
       arrowWidth: arrowWidth.value,
       arrowHeight: arrowHeight.value,
+      dir: dir.value,
     }),
     props.hideWhenDetached
     && hide({ strategy: 'referenceHidden', ...detectOverflowOptions.value }),

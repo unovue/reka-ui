@@ -13,6 +13,7 @@ export function isNotNull<T>(value: T | null): value is T {
 export function transformOrigin(options: {
   arrowWidth: number
   arrowHeight: number
+  dir?: 'ltr' | 'rtl'
 }): Middleware {
   return {
     name: 'transformOrigin',
@@ -26,9 +27,17 @@ export function transformOrigin(options: {
       const arrowHeight = isArrowHidden ? 0 : options.arrowHeight
 
       const [placedSide, placedAlign] = getSideAndAlignFromPlacement(placement)
-      const noArrowAlign = { start: '0%', center: '50%', end: '100%' }[
-        placedAlign
-      ]
+      const noArrowAlignX = {
+        start: options.dir === 'rtl' ? '100%' : '0%',
+        center: '50%',
+        end: options.dir === 'rtl' ? '0%' : '100%',
+      }[placedAlign]
+
+      const noArrowAlignY = {
+        start: '0%',
+        center: '50%',
+        end: '100%',
+      }[placedAlign]
 
       const arrowXCenter = (middlewareData.arrow?.x ?? 0) + arrowWidth / 2
       const arrowYCenter = (middlewareData.arrow?.y ?? 0) + arrowHeight / 2
@@ -37,20 +46,20 @@ export function transformOrigin(options: {
       let y = ''
 
       if (placedSide === 'bottom') {
-        x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`
+        x = isArrowHidden ? noArrowAlignX : `${arrowXCenter}px`
         y = `${-arrowHeight}px`
       }
       else if (placedSide === 'top') {
-        x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`
+        x = isArrowHidden ? noArrowAlignX : `${arrowXCenter}px`
         y = `${rects.floating.height + arrowHeight}px`
       }
       else if (placedSide === 'right') {
         x = `${-arrowHeight}px`
-        y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`
+        y = isArrowHidden ? noArrowAlignY : `${arrowYCenter}px`
       }
       else if (placedSide === 'left') {
         x = `${rects.floating.width + arrowHeight}px`
-        y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`
+        y = isArrowHidden ? noArrowAlignY : `${arrowYCenter}px`
       }
       return { data: { x, y } }
     },
