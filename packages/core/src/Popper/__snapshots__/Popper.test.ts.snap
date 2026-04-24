@@ -17,6 +17,7 @@ exports[`give default Popper > should render correctly and match snapshot 1`] = 
     <div
       data-align="center"
       data-side="bottom"
+      dir="ltr"
       style="animation: none;"
     >
       
