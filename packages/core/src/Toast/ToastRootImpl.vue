@@ -183,7 +183,20 @@ provideToastRootContext({ onClose: handleClose })
     role="alert"
     :aria-live="type === 'foreground' ? 'assertive' : 'polite'"
   >
-    {{ announceTextContent }}
+    <!--
+      Render each chunk as its own text node so screen readers get the
+      natural pause break between nodes (see comment in utils.ts).
+      Interpolating the array directly with `{{ announceTextContent }}`
+      would route through Vue's `toDisplayString`, which JSON-stringifies
+      arrays — the live region would then announce literal `[`, quotes
+      and commas instead of the toast title and description.
+    -->
+    <template
+      v-for="(text, i) in announceTextContent"
+      :key="i"
+    >
+      {{ text }}
+    </template>
   </ToastAnnounce>
 
   <Teleport

@@ -41,6 +41,31 @@ describe('given a default Toast', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
+  it('should announce title and description as plain text (not JSON)', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // ToastAnnounce renders the live region on the next animation frame
+    // (see ToastAnnounce.vue's useRafFn) — wait for two RAFs so it's
+    // guaranteed to be in the DOM.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+
+    const liveRegion = document.querySelector('[role="alert"][aria-live]')
+    expect(liveRegion).toBeTruthy()
+    const text = liveRegion!.textContent ?? ''
+
+    // Vue's `{{ array }}` would JSON-stringify the announceTextContent
+    // array — guard against that regression by asserting the live region
+    // does not contain JSON syntax characters.
+    expect(text).not.toMatch(/[[\]"]/)
+
+    // The toast title and description must both be part of the announced
+    // text so screen-reader users actually hear the toast.
+    expect(text).toContain('Scheduled: Catch up')
+  })
+
   describe('after clicking the trigger', () => {
     beforeEach(async () => {
       fireEvent.click(trigger.element)
