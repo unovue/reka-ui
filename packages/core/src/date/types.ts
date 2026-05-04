@@ -2,11 +2,9 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/types.ts
 */
 
-import type { TemporalDate } from '@/temporal/types'
+import type { Matcher, TemporalDate } from '@/temporal/types'
 
-export type { TemporalDate }
-
-export type Matcher = (date: TemporalDate) => boolean
+export type { Matcher, TemporalDate }
 
 export type Grid<T> = {
   /**
