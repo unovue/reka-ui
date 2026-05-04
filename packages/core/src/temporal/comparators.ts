@@ -274,15 +274,11 @@ export function areAllDaysBetweenValid(
   const startDate = toPlainDate(start)
   const endDate = toPlainDate(end)
   let dCurrent = startDate.add({ days: 1 })
-  if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent)) && !isHighlightable?.(dCurrent)) {
-    return false
-  }
-
   while (Temporal.PlainDate.compare(dCurrent, endDate) < 0) {
-    dCurrent = dCurrent.add({ days: 1 })
     if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent)) && !isHighlightable?.(dCurrent)) {
       return false
     }
+    dCurrent = dCurrent.add({ days: 1 })
   }
   return true
 }
