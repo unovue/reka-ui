@@ -97,7 +97,7 @@ describe('year picker', async () => {
   it('allows years to be deselected by clicking the selected year', async () => {
     const { user, picker, rerender } = setup({
       pickerProps: { modelValue: calendarDate },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data } }) },
     })
 
     const selectedYear = getSelectedYear(picker)
@@ -109,7 +109,7 @@ describe('year picker', async () => {
   it.each([kbd.ENTER, kbd.SPACE])('allows deselection with %s key', async (key) => {
     const { user, picker, rerender } = setup({
       pickerProps: { modelValue: calendarDate },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data } }) },
     })
 
     const selectedYear = getSelectedYear(picker)
@@ -185,7 +185,7 @@ describe('year picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         placeholder: calendarDate,
-        isYearUnavailable: (date: DateValue) => {
+        isYearUnavailable: (date: TemporalDate) => {
           return date.year === 1985
         },
       },
@@ -203,7 +203,7 @@ describe('year picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         placeholder: calendarDate,
-        isYearDisabled: (date: DateValue) => {
+        isYearDisabled: (date: TemporalDate) => {
           return date.year === 1985
         },
       },
@@ -308,7 +308,7 @@ describe('year picker - keyboard navigation', () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         placeholder: calendarDate,
-        isYearDisabled: (date: DateValue) => date.year === 1992,
+        isYearDisabled: (date: TemporalDate) => date.year === 1992,
       },
     })
 
@@ -380,7 +380,7 @@ describe('year picker - multiple', () => {
 
     const { picker, getByTestId, user, rerender } = setup({
       pickerProps: { modelValue: [d1, d2], multiple: true },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
     } as any)
 
     const selectedYears = getSelectedYears(picker)
@@ -398,7 +398,7 @@ describe('year picker - multiple', () => {
 
     const { picker, user, rerender } = setup({
       pickerProps: { modelValue: [d1, d2], multiple: true },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
     } as any)
 
     const selectedYears = getSelectedYears(picker)
