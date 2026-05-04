@@ -31,9 +31,10 @@ const rootContext = injectDatePickerRootContext()
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
     :multiple="false"
-    @update:model-value="(date: TemporalDate | undefined) => {
-      if (date && rootContext.modelValue.value && isSameDay(date, rootContext.modelValue.value)) return
-      rootContext.onDateChange(date)
+    @update:model-value="(date: TemporalDate | TemporalDate[] | undefined) => {
+      const singleDate = Array.isArray(date) ? date[0] : date
+      if (singleDate && rootContext.modelValue.value && isSameDay(singleDate, rootContext.modelValue.value)) return
+      rootContext.onDateChange(singleDate)
     }"
     @update:placeholder="(date: TemporalDate) => {
       if (isSameDay(date, rootContext.placeholder.value)) return

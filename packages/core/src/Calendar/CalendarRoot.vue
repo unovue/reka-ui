@@ -106,7 +106,7 @@ export interface CalendarRootProps extends PrimitiveProps {
 
 export type CalendarRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: TemporalDate | undefined]
+  'update:modelValue': [date: TemporalDate | undefined] | [dates: TemporalDate[]]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: TemporalDate]
 }
@@ -189,7 +189,7 @@ const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<TemporalDate | TemporalDate[] | undefined>
+})
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
