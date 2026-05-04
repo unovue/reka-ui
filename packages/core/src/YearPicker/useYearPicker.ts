@@ -70,13 +70,22 @@ export function useYearPicker(props: UseYearPickerProps) {
 
   const headingFormatOptions = computed(() => {
     const calendarId = props.placeholder.value.calendarId
+    const resolvedCalendar = calendarId === 'iso8601' ? 'gregory' : calendarId
 
     const options: DateFormatterOptions = {
-      calendar: calendarId,
+      calendar: resolvedCalendar,
     }
 
-    if (calendarId === 'gregory' && props.placeholder.value.era?.toLowerCase() === 'bc')
-      options.era = 'short'
+    if (resolvedCalendar === 'gregory') {
+      const parts = new Intl.DateTimeFormat(props.locale.value, {
+        calendar: resolvedCalendar,
+        era: 'short',
+      }).formatToParts(toDate(props.placeholder.value))
+      const eraPart = parts.find(p => p.type === 'era')
+      if (eraPart && (eraPart.value.toLowerCase() === 'bc' || eraPart.value.toLowerCase() === 'bce')) {
+        options.era = 'short'
+      }
+    }
 
     return options
   })

@@ -149,12 +149,21 @@ export function useCalendar(props: UseCalendarProps) {
 
   const headingFormatOptions = computed(() => {
     const calendarId = props.placeholder.value.calendarId
+    const resolvedCalendar = calendarId === 'iso8601' ? 'gregory' : calendarId
     const options: DateFormatterOptions = {
-      calendar: calendarId === 'iso8601' ? 'gregory' : calendarId,
+      calendar: resolvedCalendar,
     }
 
-    if (calendarId === 'gregory' && props.placeholder.value.era === 'BC')
-      options.era = 'short'
+    if (resolvedCalendar === 'gregory') {
+      const parts = new Intl.DateTimeFormat(props.locale.value, {
+        calendar: resolvedCalendar,
+        era: 'short',
+      }).formatToParts(toDate(props.placeholder.value))
+      const eraPart = parts.find(p => p.type === 'era')
+      if (eraPart && (eraPart.value.toLowerCase() === 'bc' || eraPart.value.toLowerCase() === 'bce')) {
+        options.era = 'short'
+      }
+    }
 
     return options
   })
