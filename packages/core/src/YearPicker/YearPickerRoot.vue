@@ -226,16 +226,14 @@ function onYearChange(value: TemporalDate) {
       modelValue.value = value
     }
   }
-  else if (!modelValue.value) {
-    modelValue.value = [value]
-  }
-  else if (Array.isArray(modelValue.value)) {
-    const index = modelValue.value.findIndex(date => isSameYear(date, value))
+  else {
+    const current = Array.isArray(modelValue.value) ? modelValue.value : [modelValue.value]
+    const index = current.findIndex(date => isSameYear(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValue.value, value]
+      modelValue.value = [...current, value]
     }
     else if (!preventDeselect.value) {
-      const next = modelValue.value.filter(date => !isSameYear(date, value))
+      const next = current.filter(date => !isSameYear(date, value))
       if (!next.length) {
         placeholder.value = value
         modelValue.value = undefined

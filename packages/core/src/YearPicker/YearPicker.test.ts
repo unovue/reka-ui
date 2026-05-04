@@ -407,6 +407,38 @@ describe('year picker - multiple', () => {
     await user.click(selectedYears[0])
     expect(getSelectedYears(picker).length).toBe(1)
   })
+
+  it('handles single date in multiple mode and appends new year', async () => {
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+
+    const { picker, getByTestId, user, rerender } = setup({
+      pickerProps: { modelValue: d1, multiple: true },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+    } as any)
+
+    const selectedYears = getSelectedYears(picker)
+    expect(selectedYears.length).toBe(1)
+
+    const year1988 = getByTestId('year-1988')
+    await user.click(year1988)
+
+    expect(getSelectedYears(picker).length).toBe(2)
+  })
+
+  it('deselects single date in multiple mode when preventDeselect is false', async () => {
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+
+    const { picker, user, rerender } = setup({
+      pickerProps: { modelValue: d1, multiple: true, preventDeselect: false },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+    } as any)
+
+    const selectedYears = getSelectedYears(picker)
+    expect(selectedYears.length).toBe(1)
+
+    await user.click(selectedYears[0])
+    expect(getSelectedYears(picker).length).toBe(0)
+  })
 })
 
 describe('year picker - yearsPerPage', () => {
