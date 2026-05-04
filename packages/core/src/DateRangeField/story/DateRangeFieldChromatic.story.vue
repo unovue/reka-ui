@@ -12,7 +12,7 @@ const defaultValue = {
 const modelValue = ref(defaultValue) as Ref<{ start: TemporalDate, end: TemporalDate }>
 
 const defaultPlaceholder = Temporal.PlainDate.from({ year: 2023, month: 10, day: 11 })
-const localTimezonePlaceholder = Temporal.Now.plainDateISO()
+const localTimezonePlaceholder = Temporal.PlainDate.from({ year: 2024, month: 3, day: 15 })
 </script>
 
 <template>

@@ -3,8 +3,8 @@ import { Temporal } from 'temporal-polyfill'
 import DateRangeField from './_DummyDateRangeField.vue'
 
 const defaultValue = {
-  start: Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 }),
-  end: Temporal.PlainDate.from({ year: 2024, month: 2, day: 27 }),
+  start: Temporal.PlainDateTime.from({ year: 2024, month: 2, day: 20, hour: 9, minute: 15, second: 30 }),
+  end: Temporal.PlainDateTime.from({ year: 2024, month: 2, day: 27, hour: 17, minute: 45, second: 50 }),
 }
 </script>
 
