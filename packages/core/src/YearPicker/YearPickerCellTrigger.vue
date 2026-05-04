@@ -4,6 +4,7 @@ import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
 import { isSameYear, toDate } from '@/date'
+import { toCalendar } from '@/temporal/calendar'
 import { useKbd } from '@/shared'
 import { endOfYear, startOfYear, toPlainDate } from '@/temporal/comparators'
 
@@ -57,7 +58,9 @@ const isUnavailable = computed(() => rootContext.isYearUnavailable?.(props.year)
 
 const isCurrentYear = computed(() => {
   const todayDate = Temporal.Now.plainDateISO()
-  return isSameYear(props.year, todayDate)
+  const calendarId = rootContext.placeholder.value.calendarId
+  const normalizedToday = toCalendar(todayDate, calendarId as Parameters<typeof toCalendar>[1])
+  return isSameYear(props.year, normalizedToday)
 })
 
 const isDisabled = computed(() => rootContext.isYearDisabled(props.year))
