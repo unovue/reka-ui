@@ -8,7 +8,7 @@ export interface TabsIndicatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
+import { useMounted, useResizeObserver } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 
 const props = defineProps<TabsIndicatorProps>()
@@ -17,6 +17,8 @@ defineExpose({
   updateIndicatorStyle,
 })
 useForwardExpose()
+
+const isMounted = useMounted()
 
 interface IndicatorStyle {
   size: number | null
@@ -61,7 +63,7 @@ function updateIndicatorStyle() {
 
 <template>
   <Primitive
-    v-if="typeof indicatorStyle.size === 'number'"
+    v-if="isMounted && typeof indicatorStyle.size === 'number'"
     v-bind="props"
     :style="{
       '--reka-tabs-indicator-size': `${indicatorStyle.size}px`,
