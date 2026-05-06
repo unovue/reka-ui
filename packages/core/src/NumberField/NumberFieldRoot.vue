@@ -121,7 +121,7 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
     return
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
-    modelValue.value = startingValue.value ?? min.value ?? 0
+    modelValue.value = clampInputValue(startingValue.value ?? min.value ?? 0)
   }
   else {
     if (type === 'increase')
