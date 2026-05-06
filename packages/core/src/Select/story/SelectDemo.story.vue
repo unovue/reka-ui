@@ -53,62 +53,60 @@ const POSITION = ['item-aligned', 'popper'] as const
           </SelectTrigger>
 
           <SelectPortal>
-            <Transition>
-              <SelectContent
-                class="min-w-[160px] bg-white overflow-hidden rounded shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)]"
-                :side-offset="5"
-                :position="position"
+            <SelectContent
+              class="min-w-[160px] bg-white overflow-hidden rounded shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)]"
+              :side-offset="5"
+              :position="position"
+            >
+              <SelectScrollUpButton
+                class="flex items-center justify-center h-[25px] bg-white text-violet11 cursor-default"
               >
-                <SelectScrollUpButton
-                  class="flex items-center justify-center h-[25px] bg-white text-violet11 cursor-default"
-                >
-                  <Icon icon="radix-icons:chevron-up" />
-                </SelectScrollUpButton>
+                <Icon icon="radix-icons:chevron-up" />
+              </SelectScrollUpButton>
 
-                <SelectViewport class="p-[5px]">
-                  <SelectLabel
-                    class="px-[25px] text-xs leading-[25px] text-mauve11"
+              <SelectViewport class="p-[5px]">
+                <SelectLabel
+                  class="px-[25px] text-xs leading-[25px] text-mauve11"
+                >
+                  Fruits
+                </SelectLabel>
+                <SelectGroup>
+                  <SelectItemWrapper :options="options" />
+                </SelectGroup>
+                <SelectSeparator class="h-[1px] bg-violet6 m-[5px]" />
+                <SelectLabel
+                  class="px-[25px] text-xs leading-[25px] text-mauve11"
+                >
+                  Vegetables
+                </SelectLabel>
+                <SelectGroup>
+                  <SelectItem
+                    v-for="(option, index) in vegetables"
+                    :key="index"
+                    class="text-[13px] leading-none text-violet11 rounded-[3px] flex items-center h-[25px] pr-[35px] pl-[25px] relative select-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:outline-none data-[highlighted]:bg-violet9 data-[highlighted]:text-violet1"
+                    :value="option"
+                    :disabled="option === 'Courgette'"
                   >
-                    Fruits
-                  </SelectLabel>
-                  <SelectGroup>
-                    <SelectItemWrapper :options="options" />
-                  </SelectGroup>
-                  <SelectSeparator class="h-[1px] bg-violet6 m-[5px]" />
-                  <SelectLabel
-                    class="px-[25px] text-xs leading-[25px] text-mauve11"
-                  >
-                    Vegetables
-                  </SelectLabel>
-                  <SelectGroup>
-                    <SelectItem
-                      v-for="(option, index) in vegetables"
-                      :key="index"
-                      class="text-[13px] leading-none text-violet11 rounded-[3px] flex items-center h-[25px] pr-[35px] pl-[25px] relative select-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:outline-none data-[highlighted]:bg-violet9 data-[highlighted]:text-violet1"
-                      :value="option"
-                      :disabled="option === 'Courgette'"
+                    <SelectItemIndicator
+                      class="absolute left-0 w-[25px] inline-flex items-center justify-center"
                     >
-                      <SelectItemIndicator
-                        class="absolute left-0 w-[25px] inline-flex items-center justify-center"
-                      >
-                        <Icon icon="radix-icons:check" />
-                      </SelectItemIndicator>
-                      <SelectItemText>
-                        {{ option }}
-                      </SelectItemText>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectViewport>
+                      <Icon icon="radix-icons:check" />
+                    </SelectItemIndicator>
+                    <SelectItemText>
+                      {{ option }}
+                    </SelectItemText>
+                  </SelectItem>
+                </SelectGroup>
+              </SelectViewport>
 
-                <SelectScrollDownButton
-                  class="flex items-center justify-center h-[25px] bg-white text-violet11 cursor-default"
-                >
-                  <Icon icon="radix-icons:chevron-down" />
-                </SelectScrollDownButton>
+              <SelectScrollDownButton
+                class="flex items-center justify-center h-[25px] bg-white text-violet11 cursor-default"
+              >
+                <Icon icon="radix-icons:chevron-down" />
+              </SelectScrollDownButton>
 
-                <SelectArrow class="fill-white" />
-              </SelectContent>
-            </Transition>
+              <SelectArrow class="fill-white" />
+            </SelectContent>
           </SelectPortal>
         </SelectRoot>
       </div>
