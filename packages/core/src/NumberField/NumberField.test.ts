@@ -91,6 +91,22 @@ describe('numberField', () => {
     expect(input.value).toBe('0')
   })
 
+  it('should start at starting value on increment/decrement, when no value present', async () => {
+    const { input, increment, decrement } = setup({ step: 3, startingValue: 40 })
+    expect(input.value).toBe('')
+
+    await userEvent.click(increment)
+    expect(input.value).toBe('40')
+    await userEvent.click(increment)
+    expect(input.value).toBe('43')
+
+    await userEvent.clear(input)
+    await userEvent.click(decrement)
+    expect(input.value).toBe('40')
+    await userEvent.click(decrement)
+    expect(input.value).toBe('37')
+  })
+
   it('should increase and decrease based on keyboard navigation on input', async () => {
     const { input } = setup({ defaultValue: 0, min: 0, max: 10 })
 
