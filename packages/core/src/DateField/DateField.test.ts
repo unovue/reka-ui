@@ -674,4 +674,64 @@ describe('dateField', async () => {
     const timeZone = getByTestId('timeZoneName')
     expect(timeZone).toHaveTextContent(thisTimeZone('2023-10-12T12:30:00Z'))
   })
+
+  describe('stepSnapping', () => {
+    it('snaps typed minute value to nearest step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{3}')
+
+      expect(minute).toHaveTextContent('30')
+    })
+
+    it('does not snap typed values when stepSnapping is false', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: false,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: false,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{3}')
+
+      expect(minute).toHaveTextContent('23')
+    })
+  })
 })
