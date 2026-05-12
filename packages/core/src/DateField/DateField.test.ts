@@ -701,8 +701,99 @@ describe('dateField', async () => {
       const minute = getByTestId('minute')
       await user.click(minute)
       await user.keyboard('{2}{3}')
+      await user.click(getByTestId('second'))
 
       expect(minute).toHaveTextContent('30')
+    })
+
+    it('does not change typed minute value already on the step boundary', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{1}{5}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('15')
+    })
+
+    it('snaps typed minute value using custom step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 10 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 10 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{6}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('30')
+    })
+
+    it('snaps typed boundary minute value to the nearest valid step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{5}{9}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('45')
     })
 
     it('does not snap typed values when stepSnapping is false', async () => {
@@ -730,6 +821,7 @@ describe('dateField', async () => {
       const minute = getByTestId('minute')
       await user.click(minute)
       await user.keyboard('{2}{3}')
+      await user.click(getByTestId('second'))
 
       expect(minute).toHaveTextContent('23')
     })
