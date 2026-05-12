@@ -45,6 +45,13 @@
     'required': false
   },
   {
+    'name': 'nullableValue',
+    'description': '<p>The value of the hidden native select option when the model value is nullish.</p>\n',
+    'type': 'string',
+    'required': false,
+    'default': '\'\''
+  },
+  {
     'name': 'multiple',
     'description': '<p>Whether multiple options can be selected or not.</p>\n',
     'type': 'boolean',
@@ -110,6 +117,7 @@
 | `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with Select | `boolean` | No | - |
 | `modelValue` | The controlled value of the Select. Can be bind as v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `nullableValue` | The value of the hidden native select option when the model value is nullish. | `string` | No | `""` |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `open` | The controlled open state of the Select. Can be bind as v-model:open. | `boolean` | No | - |

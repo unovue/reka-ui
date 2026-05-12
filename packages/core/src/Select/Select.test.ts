@@ -265,6 +265,18 @@ describe('given Select in a form', async () => {
     expect(wrapper.find('select').exists()).toBe(true)
   })
 
+  it('should use the nullableValue for the hidden select when the value is nullish', async () => {
+    const wrapper = mount({
+      components: { Select },
+      template: '<form><Select name="test" nullable-value="null" /></form>',
+    }, {
+      attachTo: document.body,
+    })
+
+    const options = wrapper.findAll('select option')
+    expect((options[0].element as HTMLOptionElement).value).toBe('null')
+  })
+
   describe('after selecting option and clicking submit button', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('pointerdown', {
