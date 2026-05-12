@@ -7,8 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { sleep } from '@/test'
-import NavigationMenuItem from './NavigationMenuItem.vue'
+import NavigationMenuUnmountOnHideFalse from './__test__/NavigationMenuUnmountOnHideFalse.vue'
 
+import NavigationMenuItem from './NavigationMenuItem.vue'
 import NavigationMenu from './story/_NavigationMenu.vue'
 
 vi.mock('@vueuse/core', async () => {
@@ -100,6 +101,24 @@ describe('given default NavigationMenu', () => {
     //     expect(wrapper.find('[data-dismissable-layer]').exists()).toBe(false)
     //   })
     // })
+  })
+
+  it('keeps active content open when clicking inside with unmountOnHide disabled', async () => {
+    const wrapper = mount(NavigationMenuUnmountOnHideFalse, { attachTo: document.body })
+
+    await wrapper.find('[data-testid="trigger-one"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    await sleep(0)
+
+    expect(wrapper.find('[data-testid="model-value"]').text()).toBe('one')
+
+    await fireEvent.pointerDown(wrapper.find('[data-testid="inside-one"]').element)
+    await wrapper.vm.$nextTick()
+    await sleep(0)
+
+    expect(wrapper.find('[data-testid="model-value"]').text()).toBe('one')
+
+    wrapper.unmount()
   })
 
   describe('menu triggers', () => {
