@@ -281,6 +281,42 @@ describe('datePicker', async () => {
     expect(selectedValue).toBeInstanceOf(CalendarDateTime)
     expect((selectedValue as CalendarDateTime).hour).toBe(0)
     expect((selectedValue as CalendarDateTime).minute).toBe(0)
+    expect((selectedValue as CalendarDateTime).second).toBe(0)
+    expect((selectedValue as CalendarDateTime).millisecond).toBe(0)
+  })
+
+  it('resets ZonedDateTime time when selecting a date after the model value is cleared', async () => {
+    const emittedValues: (DateValue | undefined)[] = []
+    const zonedValue = toZoned(new CalendarDateTime(1980, 1, 20, 12, 30, 45, 123), 'America/New_York')
+    const { user, trigger, getByTestId, rerender } = setup({
+      datePickerProps: {
+        modelValue: zonedValue,
+        granularity: 'second',
+      },
+      emits: {
+        'onUpdate:modelValue': value => emittedValues.push(value),
+      },
+    })
+
+    await rerender({
+      datePickerProps: {
+        modelValue: undefined,
+        granularity: 'second',
+      },
+      emits: {
+        'onUpdate:modelValue': value => emittedValues.push(value),
+      },
+    })
+
+    await user.click(trigger)
+    await user.click(getByTestId('date-1-1'))
+
+    const selectedValue = emittedValues.at(-1)
+    expect(selectedValue).toHaveProperty('timeZone', 'America/New_York')
+    expect(selectedValue?.hour).toBe(0)
+    expect(selectedValue?.minute).toBe(0)
+    expect(selectedValue?.second).toBe(0)
+    expect(selectedValue?.millisecond).toBe(0)
   })
 
   it('should close the picker on select when `closeOnSelect` is true', async () => {
