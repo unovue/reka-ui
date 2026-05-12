@@ -140,6 +140,9 @@ const open = useVModel(props, 'open', emits, {
 
 const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()
 
+/**
+ * Reset time fields on DateValue instances that support time granularity.
+ */
 function resetTime(date: DateValue) {
   if (!('hour' in date))
     return date
