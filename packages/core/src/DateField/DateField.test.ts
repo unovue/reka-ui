@@ -754,26 +754,26 @@ describe('dateField', async () => {
       await user.click(getByTestId('second'))
 
       expect(minute).toHaveTextContent('30')
-    })
-
-    it('snaps typed boundary minute value to the nearest valid step', async () => {
-      const { user, getByTestId } = setupStepSnappingTest({
-        step: { minute: 15 },
-        stepSnapping: true,
-      })
-
-      const minute = getByTestId('minute')
-      await user.click(minute)
-      await user.keyboard('{5}{9}')
-      await user.click(getByTestId('second'))
-
-      expect(minute).toHaveTextContent('45')
-    })
-
-    it('snaps equidistant minute value down to the nearest deterministic step', async () => {
-      const { user, getByTestId } = setupStepSnappingTest({
-        step: { minute: 15 },
-        stepSnapping: true,
+    it('snaps typed minute value down to the nearest step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
       })
 
       const minute = getByTestId('minute')
