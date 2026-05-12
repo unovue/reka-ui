@@ -26,7 +26,7 @@ function getTimeSegments(getByTestId: (...args: any[]) => HTMLElement) {
   }
 }
 
-function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue | undefined) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(DatePicker, { props })
   const month = returned.getByTestId('month')
@@ -250,6 +250,37 @@ describe('datePicker', async () => {
     expect(calendar.querySelector('[data-selected]')).toBeInTheDocument()
     await user.click(targetCell)
     expect(calendar.querySelector('[data-selected]')).not.toBeInTheDocument()
+  })
+
+  it('resets time when selecting a date after the model value is cleared', async () => {
+    const emittedValues: (DateValue | undefined)[] = []
+    const { user, trigger, getByTestId, rerender } = setup({
+      datePickerProps: {
+        modelValue: calendarDateTime,
+        granularity: 'minute',
+      },
+      emits: {
+        'onUpdate:modelValue': value => emittedValues.push(value),
+      },
+    })
+
+    await rerender({
+      datePickerProps: {
+        modelValue: undefined,
+        granularity: 'minute',
+      },
+      emits: {
+        'onUpdate:modelValue': value => emittedValues.push(value),
+      },
+    })
+
+    await user.click(trigger)
+    await user.click(getByTestId('date-1-1'))
+
+    const selectedValue = emittedValues.at(-1)
+    expect(selectedValue).toBeInstanceOf(CalendarDateTime)
+    expect((selectedValue as CalendarDateTime).hour).toBe(0)
+    expect((selectedValue as CalendarDateTime).minute).toBe(0)
   })
 
   it('should close the picker on select when `closeOnSelect` is true', async () => {
