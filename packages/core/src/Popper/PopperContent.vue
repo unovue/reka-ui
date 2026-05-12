@@ -403,6 +403,7 @@ providePopperContentContext({
   >
     <Primitive
       :ref="forwardRef"
+      v-memo="[props.asChild, as, placedSide, placedAlign, isPositioned, $attrs]"
       v-bind="$attrs"
       :as-child="props.asChild"
       :as="as"

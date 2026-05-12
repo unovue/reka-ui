@@ -2,8 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
@@ -456,5 +457,66 @@ describe('given Combobox with TagsInput and addOnBlur', () => {
 
     // Input should be refocused so subsequent blur can trigger addOnBlur
     expect(document.activeElement).toBe(input.element)
+  })
+})
+
+describe('comboboxContent with popper positioning', () => {
+  const getSlotRenderCount = vi.fn(() => ({ value: 0 }))
+
+  const PopperCombobox = defineComponent({
+    setup() {
+      const modelValue = ref('')
+      const slotRenderCount = getSlotRenderCount()
+      const options = Array.from({ length: 60 }, (_, index) => `Option ${index}`)
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              h(ComboboxInput),
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxContent, { position: 'popper' }, {
+            default: () => {
+              slotRenderCount.value += 1
+              return h(ComboboxViewport, null, {
+                default: () => options.map(option => h(ComboboxItem, { key: option, value: option }, { default: () => option })),
+              })
+            },
+          }),
+        ],
+      })
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSlotRenderCount.mockClear()
+    globalThis.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  })
+
+  it('does not rerender option slot content after popper position updates', async () => {
+    const slotRenderCount = { value: 0 }
+    getSlotRenderCount.mockReturnValue(slotRenderCount)
+
+    const wrapper = mount(PopperCombobox, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    expect(slotRenderCount.value).toBeLessThanOrEqual(2)
+
+    await sleep(0)
+    await nextTick()
+
+    expect(slotRenderCount.value).toBeLessThanOrEqual(2)
   })
 })
