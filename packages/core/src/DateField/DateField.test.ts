@@ -754,6 +754,8 @@ describe('dateField', async () => {
       await user.click(getByTestId('second'))
 
       expect(minute).toHaveTextContent('30')
+    })
+
     it('snaps typed minute value down to the nearest step', async () => {
       const { user, getByTestId, rerender } = setup({
         dateFieldProps: {
