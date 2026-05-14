@@ -92,7 +92,8 @@ type UnionToOptional<T> = {
 type EmitFunction<TName extends string, TArgs extends unknown[], TReturn> = (name: TName, ...args: TArgs) => TReturn
 
 type CamelCase<S extends string>
-  = S extends `${infer T}${'-'}${infer U}` ? `${Lowercase<T>}${Capitalize<CamelCase<U>>}`
+  = S extends `${infer T}-${infer U}`
+    ? `${T}${Capitalize<CamelCase<U>>}`
     : S
 
 type HandlerKey<TName extends string> = CamelCase<`on-${TName}`>
