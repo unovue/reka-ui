@@ -36,9 +36,9 @@ export function useEmitAsProps<Name extends string, Fn extends Function = Functi
 }
 
 export type ToEmit<Name extends string, Fn extends Function>
-  = Fn extends (name: infer TName, ...args: any[]) => infer TReturn
-    ? TName extends Name
-      ? [TReturn] extends [void]
+  = OverloadSignatureTuple<Fn, Props<Fn>, []> extends infer T
+    ? T[number]['args'] extends [name: Name, ...args: any[]]
+      ? [T[number]['return']] extends [void]
           ? Fn
           : never
       : never
