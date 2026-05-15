@@ -1,3 +1,4 @@
+import type { AnyFn } from '@vueuse/shared'
 import { camelize, getCurrentInstance, toHandlerKey } from 'vue'
 
 // Vue doesn't have emits forwarding, in order to bind the emits we have to convert events into `onXXX` handlers
@@ -16,7 +17,7 @@ import { camelize, getCurrentInstance, toHandlerKey } from 'vue'
  * @returns The function `useEmitAsProps` returns an object that maps event names to functions that
  * call the `emit` function with the corresponding event name and arguments.
  */
-export function useEmitAsProps<Name extends string, Fn extends Function = Function>(emit: ToEmit<Name, Fn>) {
+export function useEmitAsProps<Name extends string, Fn extends AnyFn = AnyFn>(emit: ToEmit<Name, Fn>) {
   const vm = getCurrentInstance()
 
   const events = vm?.type.emits as Name[]
@@ -35,7 +36,7 @@ export function useEmitAsProps<Name extends string, Fn extends Function = Functi
   return result
 }
 
-export type ToEmit<Name extends string, Fn extends Function>
+export type ToEmit<Name extends string, Fn extends AnyFn>
   = OverloadSignatureTuple<Fn, Props<Fn>, []> extends infer T
     ? T[number]['args'] extends [name: Name, ...args: any[]]
       ? [T[number]['return']] extends [void]
@@ -64,7 +65,7 @@ interface ExtendSignature<T extends object, TArgs extends readonly unknown[], TR
 }
 
 type OverloadSignatureTuple<
-  TFunction extends Function,
+  TFunction extends AnyFn,
   TProps extends object,
   TSignature extends readonly OverloadSignature<readonly unknown[], unknown>[],
 > = TProps extends TFunction
@@ -87,9 +88,9 @@ type ToFunctionSignatureTuple<T extends readonly OverloadSignature<readonly unkn
     : never;
 }
 
-type FunctionSignatureTuple<T extends Function> = ToFunctionSignatureTuple<OverloadSignatureTuple<T, Props<T>, readonly []>>
+type FunctionSignatureTuple<T extends AnyFn> = ToFunctionSignatureTuple<OverloadSignatureTuple<T, Props<T>, readonly []>>
 
-type FunctionSignature<T extends Function> = FunctionSignatureTuple<T>[number]
+type FunctionSignature<T extends AnyFn> = FunctionSignatureTuple<T>[number]
 
 type MergeUnion<T> = {
   [K in T extends any ? keyof T : never]: T extends { [P in K]: any } ? T[K] : never;
@@ -104,9 +105,9 @@ type CamelCase<S extends string>
 
 type HandlerKey<TName extends string> = CamelCase<`on-${TName}`>
 
-type EmitUnion<Emits extends Function>
+type EmitUnion<Emits extends AnyFn>
   = Emits extends EmitFunction<infer TName, infer TArgs, infer TReturn>
     ? { [K in HandlerKey<TName>]: (...args: TArgs) => TReturn }
     : unknown
 
-export type EmitAsProps<T extends Function> = Props<MergeUnion<EmitUnion<FunctionSignature<T>>>>
+export type EmitAsProps<T extends AnyFn> = Props<MergeUnion<EmitUnion<FunctionSignature<T>>>>

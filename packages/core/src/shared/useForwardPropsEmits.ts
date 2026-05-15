@@ -1,3 +1,4 @@
+import type { AnyFn } from '@vueuse/shared'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { EmitAsProps, ToEmit } from './useEmitAsProps'
 import type { WithOptionalBooleans } from './useForwardProps'
@@ -23,12 +24,12 @@ export function useForwardPropsEmits<
 export function useForwardPropsEmits<
   T extends Record<string, any>,
   Name extends string,
-  Fn extends Function = Function,
+  Fn extends AnyFn = AnyFn,
 >(props: MaybeRefOrGetter<T>, emit: ToEmit<Name, Fn>): ComputedRef<WithOptionalBooleans<T> & EmitAsProps<Fn>>
 export function useForwardPropsEmits<
   T extends Record<string, any>,
   Name extends string,
-  Fn extends Function = Function,
+  Fn extends AnyFn = AnyFn,
 >(props: MaybeRefOrGetter<T>, emit?: ToEmit<Name, Fn>) {
   const parsedProps = useForwardProps(props)
   const emitsAsProps = emit ? useEmitAsProps(emit) : {}
