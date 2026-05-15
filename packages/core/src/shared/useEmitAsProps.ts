@@ -64,12 +64,27 @@ type EmitUnion<Fn extends AnyFn>
 
 // Types for prop keys
 
-type CamelCase<S extends string>
-  = S extends `${infer T}-${infer U}`
-    ? `${T}${Capitalize<CamelCase<U>>}`
+type WordChar
+  = | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
+    | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'
+    | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'
+    | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
+    | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+    | '_'
+
+/**
+ * Type-safe converter for camelize(string) from Vue package
+ */
+export type Camelize<S extends string>
+  = S extends `${infer Prefix}-${infer Rest}`
+    ? Rest extends `${infer Char}${infer After}`
+      ? Char extends WordChar
+        ? `${Camelize<Prefix>}${Uppercase<Char>}${Camelize<After>}`
+        : `${Camelize<Prefix>}-${Camelize<Rest>}`
+      : S
     : S
 
-type HandlerKey<Name extends string> = CamelCase<`on-${Name}`>
+type HandlerKey<Name extends string> = Camelize<`on-${Name}`>
 
 // Package-private overload types from @vue/shared
 
