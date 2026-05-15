@@ -52,7 +52,13 @@ type OverloadSignature<
   return: TReturn
 }
 
-// @ts-expect-error - intentionally inherit from generic argument to capture all function overloads
+// @ts-expect-error - extending a generic type parameter `T` is intentional here so
+// ExtendSignature inherits every overload of T for the recursive overload-walking
+// algorithm. Removing this suppression causes TS to error and would break the
+// recursion/bottoming-out logic (silently changing overload inference).
+// Preserve this directive until TS natively supports `interface … extends T`.
+// Ref: ExtendSignature<T, TArgs, TReturn> and the recursive overload walk in
+// OverloadSignatureTuple.
 interface ExtendSignature<T extends object, TArgs extends readonly unknown[], TReturn> extends T {
   (...args: TArgs): TReturn
 }
