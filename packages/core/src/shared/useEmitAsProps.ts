@@ -91,7 +91,7 @@ type FunctionSignatureTuple<T extends Function> = ToFunctionSignatureTuple<Overl
 
 type FunctionSignature<T extends Function> = FunctionSignatureTuple<T>[number]
 
-type UnionToOptional<T> = {
+type MergeUnion<T> = {
   [K in T extends any ? keyof T : never]: T extends { [P in K]: any } ? T[K] : never;
 }
 
@@ -109,4 +109,4 @@ type EmitUnion<Emits extends Function>
     ? { [K in HandlerKey<TName>]: (...args: TArgs) => TReturn }
     : unknown
 
-export type EmitAsProps<T extends Function> = Props<UnionToOptional<EmitUnion<FunctionSignature<T>>>>
+export type EmitAsProps<T extends Function> = Props<MergeUnion<EmitUnion<FunctionSignature<T>>>>
