@@ -17,7 +17,7 @@
   },
   {
     'name': 'bubbleSelect',
-    'description': '<p>When <code>true</code>, selecting children will update the parent state.</p>\n',
+    'description': '<p>When <code>true</code>, selecting children will update the parent state. Requires <code>multiple</code> to be <code>true</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -84,7 +84,7 @@
   },
   {
     'name': 'propagateSelect',
-    'description': '<p>When <code>true</code>, selecting parent will select the descendants.</p>\n',
+    'description': '<p>When <code>true</code>, selecting parent will select the descendants. Requires <code>multiple</code> to be <code>true</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
