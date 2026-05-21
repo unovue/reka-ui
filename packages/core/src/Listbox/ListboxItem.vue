@@ -44,7 +44,7 @@ const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value === rootContext.highlightedElement.value)
+const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
