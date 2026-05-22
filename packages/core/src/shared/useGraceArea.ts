@@ -57,12 +57,33 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 
         const target = event.target
         const pointerPosition = { x: event.clientX, y: event.clientY }
-        const hasEnteredTarget = triggerElement.value?.contains(target) || containerElement.value?.contains(target)
+        const isOverTrigger = !!triggerElement.value?.contains(target)
+        const isOverContent = !!containerElement.value?.contains(target)
         const isPointerOutsideGraceArea = !isPointInPolygon(pointerPosition, pointerGraceArea.value)
         const isAnotherGraceAreaTrigger = !!target.closest('[data-grace-area-trigger]')
 
-        if (hasEnteredTarget) {
+        // When the cursor is over the content, check if there is another grace
+        // area trigger underneath at the same pointer position (e.g., a tooltip's
+        // content is positioned over another tooltip's trigger). If so, close
+        // the current tooltip so the underlying trigger remains accessible.
+        const isOverOtherTriggerBeneathContent = isOverContent && target.ownerDocument
+          .elementsFromPoint(pointerPosition.x, pointerPosition.y)
+          .some((el) => {
+            const t = el.closest('[data-grace-area-trigger]')
+            return !!t && t !== triggerElement.value
+          })
+
+        if (isOverOtherTriggerBeneathContent) {
           handleRemoveGraceArea()
+          pointerExit.trigger()
+        }
+        else if (isOverTrigger) {
+          handleRemoveGraceArea()
+        }
+        else if (isOverContent) {
+          // Keep the grace area so pointermove keeps firing while the cursor
+          // moves over the content, allowing us to detect when it later
+          // crosses over another trigger underneath.
         }
         else if (isPointerOutsideGraceArea || isAnotherGraceAreaTrigger) {
           handleRemoveGraceArea()
