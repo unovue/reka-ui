@@ -76,7 +76,7 @@ provideListboxItemContext({
       :id="id"
       v-bind="$attrs"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected]"
+      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value]"
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"
