@@ -23,6 +23,7 @@ useForwardExpose()
     :as-child="asChild"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     style="pointer-events: auto"
+    @pointerdown.left.prevent
   >
     <slot />
   </Primitive>

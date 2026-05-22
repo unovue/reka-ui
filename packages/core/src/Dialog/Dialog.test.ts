@@ -134,5 +134,31 @@ describe('given a default Dialog', () => {
         expect(document.activeElement).toBe(trigger.element)
       })
     })
+
+    describe('when clicking the overlay', () => {
+      beforeEach(async () => {
+        // Wait for the document-level pointerdown listener to be registered
+        // (registered via setTimeout(0) inside DismissableLayer).
+        await new Promise(resolve => setTimeout(resolve, 0))
+        // Find the overlay: the only element with data-state="open" that
+        // isn't the trigger button or the dialog content.
+        const overlayEl = Array.from(
+          document.querySelectorAll('[data-state="open"]'),
+        ).find(el => el.tagName === 'DIV' && !el.getAttribute('role')) as HTMLElement
+        await fireEvent.pointerDown(overlayEl)
+        await nextTick()
+        await nextTick()
+        // setTimeout(0) inside FocusScope cleanup
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      it('should close the content', () => {
+        expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
+      })
+
+      it('should focus trigger', () => {
+        expect(document.activeElement).toBe(trigger.element)
+      })
+    })
   })
 })
