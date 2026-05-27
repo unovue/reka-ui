@@ -1,5 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type { Mock, SpyInstance } from 'vitest'
+import type { Mock, MockInstance } from 'vitest'
 import { findByText, fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -117,7 +117,7 @@ describe('given a default Dialog', () => {
   let wrapper: VueWrapper<InstanceType<typeof DialogTest>>
   let trigger: DOMWrapper<HTMLElement>
   let closeButton: HTMLElement
-  let consoleWarnMock: SpyInstance
+  let consoleWarnMock: MockInstance
   let consoleWarnMockFunction: Mock
 
   beforeEach(() => {
