@@ -21,7 +21,7 @@ export type DialogContentImplEmits = DismissableLayerEmits & {
 export interface DialogContentImplProps extends DismissableLayerProps {
   /**
    * Used to force mounting when more control is needed. Useful when
-   * controlling transntion with Vue native transition or other animation libraries.
+   * controlling transition with Vue native transition or other animation libraries.
    */
   forceMount?: boolean
   /**

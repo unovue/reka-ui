@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
+import { computed } from 'vue'
 import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
-const props = defineProps<DialogContentImplProps>()
+const props = defineProps<DialogContentImplProps & { present: boolean }>()
 const emits = defineEmits<DialogContentImplEmits>()
 
 const rootContext = injectDialogRootContext()
@@ -12,15 +13,22 @@ const rootContext = injectDialogRootContext()
 const emitsAsProps = useEmitAsProps(emits)
 
 const { forwardRef, currentElement } = useForwardExpose()
-useHideOthers(currentElement)
+
+const ariaHiddenTarget = computed(() => props.present ? currentElement.value : undefined)
+useHideOthers(ariaHiddenTarget)
+
+const forwardedProps = computed(() => {
+  const { present: _, ...rest } = props
+  return rest
+})
 </script>
 
 <template>
   <DialogContentImpl
-    v-bind="{ ...props, ...emitsAsProps }"
+    v-bind="{ ...forwardedProps, ...emitsAsProps }"
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
-    :disable-outside-pointer-events="true"
+    :disable-outside-pointer-events="present"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {

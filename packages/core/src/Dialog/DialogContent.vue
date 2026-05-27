@@ -32,16 +32,23 @@ const { forwardRef } = useForwardExpose()
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    v-slot="{ present }"
+    :present="forceMount || rootContext.open.value"
+    :force-mount="forceMount || !rootContext.unmountOnHide.value"
+  >
     <DialogContentModal
       v-if="rootContext.modal.value"
+      v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
+      :present="rootContext.unmountOnHide.value || present"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />
     </DialogContentModal>
     <DialogContentNonModal
       v-else
+      v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
