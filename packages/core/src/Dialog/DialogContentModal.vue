@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -20,6 +20,12 @@ useHideOthers(ariaHiddenTarget)
 const forwardedProps = computed(() => {
   const { present: _, ...rest } = props
   return rest
+})
+
+watch(() => props.present, (isPresent, wasPresent) => {
+  if (!isPresent && wasPresent) {
+    rootContext.triggerElement.value?.focus()
+  }
 })
 </script>
 

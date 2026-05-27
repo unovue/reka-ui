@@ -50,6 +50,69 @@ const DialogTest = defineComponent({
 </DialogRoot>`,
 })
 
+const UnmountOnHideDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot :unmount-on-hide="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay />
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+})
+
+describe('given a Dialog with unmountOnHide=false', () => {
+  let wrapper: VueWrapper<InstanceType<typeof UnmountOnHideDialogTest>>
+  let trigger: DOMWrapper<HTMLElement>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(UnmountOnHideDialogTest, { attachTo: document.body })
+    trigger = wrapper.find('button')
+  })
+
+  it('should keep content in DOM when closed after being opened', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    const contentEl = document.querySelector('[role="dialog"]')
+    expect(contentEl).not.toBeNull()
+    expect((contentEl as HTMLElement).style.display).toBe('none')
+  })
+
+  it('should focus the close button on open', async () => {
+    await fireEvent.click(trigger.element)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    expect(closeButton).toBe(document.activeElement)
+  })
+
+  it('should restore focus to trigger on close', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    expect(document.activeElement).toBe(trigger.element)
+  })
+
+  it('should not apply aria-hidden to body when closed', async () => {
+    await nextTick()
+    expect(document.body.getAttribute('aria-hidden')).toBeNull()
+  })
+
+  it('should pass axe accessibility tests when open', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+})
+
 describe('given a default Dialog', () => {
   let wrapper: VueWrapper<InstanceType<typeof DialogTest>>
   let trigger: DOMWrapper<HTMLElement>
