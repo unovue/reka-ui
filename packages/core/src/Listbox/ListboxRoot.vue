@@ -158,25 +158,25 @@ function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
 }
 
-let isMounted = false
+let isInitialHighlight = true
 
 function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
   if (!el)
     return
 
   highlightedElement.value = el
-  if (focus ?? focusable.value)
-    highlightedElement.value.focus({ preventScroll: !isMounted })
-  if (scrollIntoView) {
-    if (!isMounted && isClient) {
-      const { scrollX, scrollY } = window
-      highlightedElement.value.scrollIntoView({ block: 'nearest' })
-      window.scrollTo(scrollX, scrollY)
-    }
-    else {
-      highlightedElement.value.scrollIntoView({ block: 'nearest' })
-    }
+
+  if (isInitialHighlight) {
+    isInitialHighlight = false
+    const highlightedItem = getItems().find(i => i.ref === el)
+    emits('highlight', highlightedItem)
+    return
   }
+
+  if (focus ?? focusable.value)
+    highlightedElement.value.focus()
+  if (scrollIntoView)
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
 
   const highlightedItem = getItems().find(i => i.ref === el)
   emits('highlight', highlightedItem)
@@ -361,13 +361,6 @@ watch(modelValue, () => {
   if (!isUserAction.value) {
     nextTick(() => {
       highlightSelected()
-      if (!isMounted && isClient) {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            isMounted = true
-          })
-        })
-      }
     })
   }
 }, { immediate: true, deep: true })
