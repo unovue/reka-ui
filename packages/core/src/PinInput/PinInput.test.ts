@@ -417,6 +417,34 @@ describe('iME composition handling', () => {
     expect(inputs[0].element.value).toBe('')
     expect(document.activeElement).toBe(inputs[0].element)
   })
+
+  it('should distribute multi-character composition commit across slots', async () => {
+    await inputs[0].trigger('compositionstart')
+    inputs[0].element.value = 'ab'
+    await inputs[0].trigger('compositionend', { data: 'ab' })
+    await nextTick()
+
+    expect(inputs[0].element.value).toBe('a')
+    expect(inputs[1].element.value).toBe('b')
+    expect(document.activeElement).toBe(inputs[2].element)
+  })
+
+  it('should distribute multi-digit numeric composition commit across slots', async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' } })
+    inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
+    inputs[0].element.focus()
+
+    await inputs[0].trigger('compositionstart')
+    inputs[0].element.value = '123'
+    await inputs[0].trigger('compositionend', { data: '123' })
+    await nextTick()
+
+    expect(inputs[0].element.value).toBe('1')
+    expect(inputs[1].element.value).toBe('2')
+    expect(inputs[2].element.value).toBe('3')
+    expect(document.activeElement).toBe(inputs[3].element)
+  })
 })
 
 describe('give OTP PinInput', () => {

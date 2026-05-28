@@ -502,8 +502,7 @@ describe('iME composition handling', () => {
     await nextTick()
 
     const content = wrapper.find('[role=listbox]')
-    if (content.exists()) {
-      expect(content.attributes('data-empty')).toBeDefined()
-    }
+    expect(content.exists()).toBe(true)
+    expect(content.attributes('data-empty')).toBeDefined()
   })
 })

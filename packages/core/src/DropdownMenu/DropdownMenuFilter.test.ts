@@ -151,13 +151,15 @@ describe('given DropdownMenu with Filter', () => {
       const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
       expect(filterInput).toBeTruthy()
 
+      const baseline = document.querySelectorAll('[role="menuitem"]').length
+
       filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
       filterInput.value = 'xiang'
       filterInput.dispatchEvent(new Event('input', { bubbles: true }))
       await nextTick()
 
       const items = document.querySelectorAll('[role="menuitem"]')
-      expect(items.length).toBeGreaterThan(0)
+      expect(items.length).toBe(baseline)
     })
 
     it('should update search after composition ends', async () => {

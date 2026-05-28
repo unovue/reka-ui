@@ -35,15 +35,33 @@ const { primitiveElement, currentElement } = usePrimitiveElement()
 
 const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
   const target = event.target as HTMLInputElement
-  const value = event.data || target.value.slice(-1)
+  const value = event.data || target.value
 
-  if (context.isNumericMode.value && !NUMBER_REG.test(value)) {
-    target.value = target.value.replace(NON_NUMBER_REG, '')
+  if (context.isNumericMode.value) {
+    const filtered = value.replace(NON_NUMBER_REG, '')
+    if (!filtered) {
+      target.value = ''
+      return
+    }
+    if (filtered.length > 1) {
+      handleMultipleCharacter(filtered)
+      return
+    }
+    target.value = filtered
+    updateModelValueAt(props.index, filtered)
+    const nextEl = inputElements.value[props.index + 1]
+    if (nextEl)
+      nextEl.focus()
+    return
+  }
+
+  if (value.length > 1) {
+    handleMultipleCharacter(value)
     return
   }
 
   target.value = value
-  updateModelValueAt(props.index, target.value)
+  updateModelValueAt(props.index, value)
 
   const nextEl = inputElements.value[props.index + 1]
   if (nextEl)
