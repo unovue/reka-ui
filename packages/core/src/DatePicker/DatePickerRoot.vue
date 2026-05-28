@@ -154,6 +154,9 @@ watch(modelValue, (value) => {
   if (value && value.compare(placeholder.value) !== 0) {
     placeholder.value = value.copy()
   }
+  else if (!value && 'hour' in placeholder.value) {
+    placeholder.value = resetTime(placeholder.value)
+  }
   if (closeOnSelect.value) {
     open.value = false
   }
@@ -192,7 +195,7 @@ provideDatePickerRootContext({
       modelValue.value = undefined
     }
     else if (!modelValue.value) {
-      modelValue.value = resetTime(date).copy()
+      modelValue.value = date.copy()
     }
     else if (!preventDeselect.value && date && modelValue.value.compare(date) === 0) {
       modelValue.value = undefined
