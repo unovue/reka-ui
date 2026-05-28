@@ -132,6 +132,41 @@ describe('given default Listbox', () => {
   })
 })
 
+describe('given a Listbox on initial mount', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Listbox>>
+  let scrollSpy: ReturnType<typeof vi.fn>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+
+  beforeEach(async () => {
+    scrollSpy = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy
+    document.body.innerHTML = ''
+    wrapper = mount(Listbox, { attachTo: document.body })
+    // let the immediate watcher's highlight cycle resolve
+    await nextTick()
+    await nextTick()
+  })
+
+  it('should highlight the first item without scrolling the page or stealing focus', () => {
+    const items = wrapper.findAll('[role=option]')
+    // the item is highlighted for keyboard entry...
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    // ...but the mount highlight must not focus it or scroll it into view,
+    // otherwise a Listbox below the fold scrolls the whole page on load.
+    expect(scrollSpy).not.toHaveBeenCalled()
+    expect(document.activeElement).not.toBe(items[0].element)
+  })
+
+  it('should focus and scroll once the user interacts', async () => {
+    await wrapper.find('[role=listbox]').trigger('focus')
+    const items = wrapper.findAll('[role=option]')
+    expect(document.activeElement).toBe(items[0].element)
+    expect(scrollSpy).toHaveBeenCalled()
+  })
+})
+
 describe('given multiple `true` Listbox', () => {
   const kbd = useKbd()
   let wrapper: VueWrapper<InstanceType<typeof Listbox>>

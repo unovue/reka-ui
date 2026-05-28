@@ -158,6 +158,10 @@ function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
 }
 
+// Suppresses focus/scroll only during the initial mount cycle, so a Listbox
+// below the fold doesn't scroll the page into view on load. It's released
+// after the mount cycle (see the modelValue watcher) so deferred highlights,
+// like a Combobox opening its dropdown, still scroll the selected item into view.
 let isInitialHighlight = true
 
 function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
@@ -166,17 +170,12 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
 
   highlightedElement.value = el
 
-  if (isInitialHighlight) {
-    isInitialHighlight = false
-    const highlightedItem = getItems().find(i => i.ref === el)
-    emits('highlight', highlightedItem)
-    return
+  if (!isInitialHighlight) {
+    if (focus ?? focusable.value)
+      highlightedElement.value.focus()
+    if (scrollIntoView)
+      highlightedElement.value.scrollIntoView({ block: 'nearest' })
   }
-
-  if (focus ?? focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
-    highlightedElement.value.scrollIntoView({ block: 'nearest' })
 
   const highlightedItem = getItems().find(i => i.ref === el)
   emits('highlight', highlightedItem)
@@ -361,6 +360,12 @@ watch(modelValue, () => {
   if (!isUserAction.value) {
     nextTick(() => {
       highlightSelected()
+      // Release after the initial mount highlight, regardless of whether items
+      // existed, so only that highlight skips focus/scroll. Any later highlight
+      // (user interaction, or a Combobox opening its dropdown) scrolls normally.
+      nextTick(() => {
+        isInitialHighlight = false
+      })
     })
   }
 }, { immediate: true, deep: true })
