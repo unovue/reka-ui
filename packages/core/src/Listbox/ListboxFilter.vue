@@ -3,6 +3,7 @@ import type { PrimitiveProps } from '..'
 import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useComposing } from '@/shared'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 
@@ -59,6 +60,23 @@ onMounted(() => {
 onUnmounted(() => {
   rootContext.focusable.value = true
 })
+
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing(() => {
+  rootContext.onCompositionEnd()
+  rootContext.highlightFirstItem()
+})
+
+function onCompositionStart() {
+  rootContext.onCompositionStart()
+  handleCompositionStart()
+}
+
+function handleInput(event: InputEvent) {
+  modelValue.value = (event.target as HTMLInputElement).value
+  if (isComposing.value)
+    return
+  rootContext.highlightFirstItem()
+}
 </script>
 
 <template>
@@ -74,12 +92,9 @@ onUnmounted(() => {
     type="text"
     @keydown.down.up.home.end.prevent="rootContext.onKeydownNavigation"
     @keydown.enter="rootContext.onKeydownEnter"
-    @input="(event: InputEvent) => {
-      modelValue = (event.target as HTMLInputElement).value
-      rootContext.highlightFirstItem()
-    }"
-    @compositionstart="rootContext.onCompositionStart"
-    @compositionend="rootContext.onCompositionEnd"
+    @input="handleInput"
+    @compositionstart="onCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot :model-value="modelValue" />
   </Primitive>

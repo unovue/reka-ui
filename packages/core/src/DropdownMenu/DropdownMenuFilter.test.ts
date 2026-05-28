@@ -140,4 +140,41 @@ describe('given DropdownMenu with Filter', () => {
       expect(filterInput?.getAttribute('data-disabled')).toBe('')
     })
   })
+
+  describe('iME composition handling', () => {
+    beforeEach(async () => {
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+    })
+
+    it('should not update search during IME composition', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      expect(filterInput).toBeTruthy()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.value = 'xiang'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      const items = document.querySelectorAll('[role="menuitem"]')
+      expect(items.length).toBeGreaterThan(0)
+    })
+
+    it('should update search after composition ends', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      expect(filterInput).toBeTruthy()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.value = 'zzzzz'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: 'zzzzz', bubbles: true }))
+      await nextTick()
+      await nextTick()
+
+      const items = document.querySelectorAll('[role="menuitem"]')
+      expect(items.length).toBe(0)
+    })
+  })
 })

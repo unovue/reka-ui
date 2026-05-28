@@ -2,7 +2,7 @@
 import type { PinInputContextValue } from './PinInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { getActiveElement, useArrowNavigation } from '@/shared'
+import { getActiveElement, useArrowNavigation, useComposing } from '@/shared'
 import { injectPinInputRootContext } from './PinInputRoot.vue'
 
 export interface PinInputInputProps extends PrimitiveProps {
@@ -32,7 +32,27 @@ const NUMBER_REG = /^\d*$/
 const NON_NUMBER_REG = /\D/g
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
+
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  const target = event.target as HTMLInputElement
+  const value = event.data || target.value.slice(-1)
+
+  if (context.isNumericMode.value && !NUMBER_REG.test(value)) {
+    target.value = target.value.replace(NON_NUMBER_REG, '')
+    return
+  }
+
+  target.value = value
+  updateModelValueAt(props.index, target.value)
+
+  const nextEl = inputElements.value[props.index + 1]
+  if (nextEl)
+    nextEl.focus()
+})
+
 function handleInput(event: InputEvent) {
+  if (isComposing.value || event.isComposing)
+    return
   const target = event.target as HTMLInputElement
 
   if ((event.data?.length ?? 0) > 1) {
@@ -223,6 +243,8 @@ onUnmounted(() => {
     @focus="handleFocus"
     @blur="handleBlur"
     @paste="handlePaste"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </Primitive>

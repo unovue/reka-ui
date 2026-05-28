@@ -366,6 +366,59 @@ describe('give PinInput type=number', async () => {
   })
 })
 
+describe('iME composition handling', () => {
+  // @ts-expect-error aXe throwing error complaining getComputedStyle
+  window.getComputedStyle = () => {}
+  let wrapper: VueWrapper<InstanceType<typeof PinInput>>
+  let inputs: DOMWrapper<HTMLInputElement>[] = []
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(PinInput, { attachTo: document.body })
+    inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
+    inputs[0].element.focus()
+  })
+
+  it('should not shift focus during composition', async () => {
+    await inputs[0].trigger('compositionstart')
+    await inputs[0].trigger('input', { data: '1', isComposing: true })
+    await nextTick()
+
+    expect(document.activeElement).toBe(inputs[0].element)
+    expect(inputs[0].element.value).toBe('')
+  })
+
+  it('should process the committed value after compositionend', async () => {
+    await inputs[0].trigger('compositionstart')
+    await inputs[0].trigger('input', { data: '5', isComposing: true })
+    await nextTick()
+
+    expect(document.activeElement).toBe(inputs[0].element)
+
+    inputs[0].element.value = '5'
+    await inputs[0].trigger('compositionend', { data: '5' })
+    await nextTick()
+
+    expect(inputs[0].element.value).toBe('5')
+    expect(document.activeElement).toBe(inputs[1].element)
+  })
+
+  it('should reject non-numeric IME input in numeric mode', async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' } })
+    inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
+    inputs[0].element.focus()
+
+    await inputs[0].trigger('compositionstart')
+    inputs[0].element.value = 'あ'
+    await inputs[0].trigger('compositionend', { data: 'あ' })
+    await nextTick()
+
+    expect(inputs[0].element.value).toBe('')
+    expect(document.activeElement).toBe(inputs[0].element)
+  })
+})
+
 describe('give OTP PinInput', () => {
   // @ts-expect-error aXe throwing error complaining getComputedStyle
   window.getComputedStyle = () => {}

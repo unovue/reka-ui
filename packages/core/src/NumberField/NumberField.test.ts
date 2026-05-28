@@ -395,3 +395,31 @@ describe('given checkbox in a form', async () => {
     })
   })
 })
+
+describe('iME composition handling', () => {
+  it('should not block beforeinput during IME composition', () => {
+    const { input } = setup()
+    input.focus()
+
+    const event = new InputEvent('beforeinput', {
+      data: 'あ',
+      cancelable: true,
+    })
+    Object.defineProperty(event, 'isComposing', { value: true })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should block invalid beforeinput when NOT composing', () => {
+    const { input } = setup()
+    input.focus()
+
+    const event = new InputEvent('beforeinput', {
+      data: 'abc',
+      cancelable: true,
+    })
+    Object.defineProperty(event, 'isComposing', { value: false })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+  })
+})

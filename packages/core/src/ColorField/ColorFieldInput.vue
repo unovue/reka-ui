@@ -82,6 +82,8 @@ function handleKeydown(event: KeyboardEvent) {
 
 // Handle numeric key validation for channel mode
 function handleBeforeInput(event: InputEvent) {
+  if (event.isComposing)
+    return
   if (!rootContext.channel.value)
     return // No validation for hex mode
 

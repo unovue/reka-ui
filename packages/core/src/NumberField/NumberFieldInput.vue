@@ -85,6 +85,7 @@ function handleChange() {
     @keydown.end.prevent="rootContext.handleMinMaxValue('max')"
     @wheel="handleWheelEvent"
     @beforeinput="(event: InputEvent) => {
+      if (event.isComposing) return
       const target = event.target as HTMLInputElement
       let nextValue
         = target.value.slice(0, target.selectionStart ?? undefined)

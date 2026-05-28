@@ -3,9 +3,10 @@ import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { DateFieldRootProps } from './DateFieldRoot.vue'
 import { CalendarDate, CalendarDateTime, now, parseAbsoluteToLocal, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
 import DateField from './story/_DateField.vue'
 
@@ -673,5 +674,55 @@ describe('dateField', async () => {
 
     const timeZone = getByTestId('timeZoneName')
     expect(timeZone).toHaveTextContent(thisTimeZone('2023-10-12T12:30:00Z'))
+  })
+})
+
+describe('iME composition handling', () => {
+  it('should not update segment during IME keydown (keyCode 229)', async () => {
+    const { day, user } = setup()
+
+    await user.click(day)
+    expect(day).toHaveFocus()
+
+    await fireEvent.keyDown(day, { key: 'Process', keyCode: 229, isComposing: true })
+
+    expect(day).toHaveTextContent('dd')
+  })
+
+  it('should process committed digit after compositionend', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    await fireEvent.keyDown(day, { key: 'Process', keyCode: 229, isComposing: true })
+    expect(day).toHaveTextContent('dd')
+
+    await fireEvent(day, new CompositionEvent('compositionend', { data: '5' }))
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('5')
+  })
+
+  it('should ignore non-digit characters from compositionend', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    await fireEvent(day, new CompositionEvent('compositionend', { data: 'あ' }))
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('dd')
+  })
+
+  it('should not advance to next segment during composition', async () => {
+    const { month, day, user } = setup()
+
+    await user.click(month)
+    expect(month).toHaveFocus()
+
+    await fireEvent.keyDown(month, { key: 'Process', keyCode: 229, isComposing: true })
+
+    expect(month).toHaveFocus()
+    expect(day).not.toHaveFocus()
   })
 })

@@ -6,6 +6,7 @@ import { injectMenuContentContext } from '@/Menu/MenuContentImpl.vue'
 import { injectMenuRootContext } from '@/Menu/MenuRoot.vue'
 import { injectMenuSubContext } from '@/Menu/MenuSub.vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useComposing } from '@/shared'
 
 export interface DropdownMenuFilterProps extends PrimitiveProps {
   /** The controlled value of the filter. Can be binded with v-model. */
@@ -70,12 +71,21 @@ onUnmounted(() => {
   contentContext.searchRef.value = ''
 })
 
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  const el = event.target as HTMLInputElement
+  if (el) {
+    modelValue.value = el.value
+    contentContext.searchRef.value = el.value
+  }
+})
+
 function handleInput(event: InputEvent) {
   if (disabled.value)
     return
+  if (isComposing.value)
+    return
   const target = event.target as HTMLInputElement
   modelValue.value = target.value
-  // Update the menu's search ref to help with filtering
   contentContext.searchRef.value = target.value
 }
 
@@ -113,6 +123,8 @@ function handleKeyDown(event: KeyboardEvent) {
     role="searchbox"
     @input="handleInput"
     @keydown="handleKeyDown"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot :model-value="modelValue" />
   </Primitive>

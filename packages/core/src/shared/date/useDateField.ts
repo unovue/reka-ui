@@ -10,6 +10,8 @@ import { getDaysInMonth, toDate } from '@/date'
 import { snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
+const DIGIT_REG = /^\d$/
+
 type MinuteSecondIncrementProps = {
   e: KeyboardEvent
   part: keyof TimeFields
@@ -877,6 +879,9 @@ export function useDateField(props: UseDateFieldProps) {
   }
 
   function handleSegmentKeydown(e: KeyboardEvent) {
+    if (e.isComposing || e.keyCode === 229)
+      return
+
     const disabled = props.disabled.value
     const readonly = props.readonly.value
     if (disabled || readonly)
@@ -935,9 +940,23 @@ export function useDateField(props: UseDateFieldProps) {
     }
   }
 
+  function handleSegmentCompositionEnd(e: CompositionEvent) {
+    const data = e.data
+    if (!data)
+      return
+
+    for (const char of data) {
+      if (DIGIT_REG.test(char)) {
+        const syntheticEvent = new KeyboardEvent('keydown', { key: char })
+        handleSegmentKeydown(syntheticEvent)
+      }
+    }
+  }
+
   return {
     handleSegmentClick,
     handleSegmentKeydown,
+    handleSegmentCompositionEnd,
     handleSegmentFocusOut,
     attributes,
   }
