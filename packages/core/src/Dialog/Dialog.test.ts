@@ -1,6 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Mock, SpyInstance } from 'vitest'
-import { findByText, fireEvent, render } from '@testing-library/vue'
+import { createEvent, findByText, fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -47,6 +47,23 @@ const DialogTest = defineComponent({
     <DialogTitle>${TITLE_TEXT}</DialogTitle>
     <DialogClose>${CLOSE_TEXT}</DialogClose>
   </DialogContent>
+</DialogRoot>`,
+})
+
+// Reproduces https://github.com/unovue/reka-ui/issues/2660 — the content is
+// nested *inside* the overlay (a common centering pattern), so pointerdown
+// events from controls in the content bubble up to the overlay.
+const NestedContentDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay>
+    <DialogContent>
+      <DialogTitle>${TITLE_TEXT}</DialogTitle>
+      <input data-testid="text-input" type="text">
+      <DialogClose>${CLOSE_TEXT}</DialogClose>
+    </DialogContent>
+  </DialogOverlay>
 </DialogRoot>`,
 })
 
@@ -159,6 +176,48 @@ describe('given a default Dialog', () => {
       it('should focus trigger', () => {
         expect(document.activeElement).toBe(trigger.element)
       })
+    })
+  })
+})
+
+// Regression test for https://github.com/unovue/reka-ui/issues/2660
+// The overlay calls `preventDefault()` on its own `pointerdown` to keep focus
+// on the trigger after the dialog closes (#2655). When the content is nested
+// inside the overlay, that handler must NOT prevent the default action of
+// pointerdown events bubbling up from controls inside the content — otherwise
+// native `<select>`/`<input>` interactions break.
+describe('given a Dialog with content nested inside the overlay', () => {
+  let wrapper: VueWrapper<InstanceType<typeof NestedContentDialogTest>>
+  let consoleWarnMock: SpyInstance
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(NestedContentDialogTest, { attachTo: document.body })
+    consoleWarnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+  })
+
+  afterEach(() => {
+    consoleWarnMock.mockRestore()
+  })
+
+  describe('when pressing down on a control inside the content', () => {
+    it('should not prevent the default pointerdown action', async () => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="text-input"]')!
+      const event = createEvent.pointerDown(input, { button: 0 })
+      input.dispatchEvent(event)
+      await nextTick()
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should keep the dialog open', async () => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="text-input"]')!
+      await fireEvent.pointerDown(input, { button: 0 })
+      await nextTick()
+
+      expect(document.body.innerHTML).toContain(CLOSE_TEXT)
     })
   })
 })
