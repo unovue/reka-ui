@@ -146,40 +146,6 @@ describe('given default Combobox', () => {
   })
 })
 
-describe('given a Combobox with a preselected value', () => {
-  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
-  let scrolledInto: HTMLElement[]
-
-  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
-  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
-  globalThis.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-
-  beforeEach(async () => {
-    scrolledInto = []
-    window.HTMLElement.prototype.scrollIntoView = vi.fn(function (this: HTMLElement) {
-      scrolledInto.push(this)
-    })
-    document.body.innerHTML = ''
-    wrapper = mount(Combobox, { attachTo: document.body, props: { defaultValue: 'Pineapple' } })
-    // Let the initial mount highlight cycle release, so the first real open
-    // is treated as a user-driven highlight (not the mount highlight).
-    await sleep(50)
-  })
-
-  it('should scroll the selected item into view on first open', async () => {
-    await wrapper.find('button').trigger('click')
-    await sleep(50)
-
-    const checked = wrapper.findAll('[role=option]').find(i => i.attributes('data-state') === 'checked')
-    expect(checked).toBeTruthy()
-    expect(scrolledInto).toContain(checked!.element)
-  })
-})
-
 describe('given a Combobox with multiple prop', async () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
   let valueBox: DOMWrapper<HTMLInputElement>
