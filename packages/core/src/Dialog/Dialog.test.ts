@@ -129,8 +129,16 @@ describe('given a Dialog with unmountOnHide=false', () => {
     expect(document.activeElement).toBe(trigger.element)
   })
 
-  it('should not apply aria-hidden to body when closed', async () => {
+  it('should not apply aria-hidden to body after open then close', async () => {
+    await fireEvent.click(trigger.element)
     await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    // Content stays mounted, but the rest of the page must stay accessible.
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
     expect(document.body.getAttribute('aria-hidden')).toBeNull()
   })
 
