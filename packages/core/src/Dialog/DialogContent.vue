@@ -50,6 +50,7 @@ const { forwardRef } = useForwardExpose()
       v-else
       v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
+      :present="rootContext.unmountOnHide.value || present"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />

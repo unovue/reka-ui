@@ -62,6 +62,17 @@ const UnmountOnHideDialogTest = defineComponent({
 </DialogRoot>`,
 })
 
+const NonModalUnmountOnHideDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot :modal="false" :unmount-on-hide="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+})
+
 // Reproduces https://github.com/unovue/reka-ui/issues/2660 — the content is
 // nested *inside* the overlay (a common centering pattern), so pointerdown
 // events from controls in the content bubble up to the overlay.
@@ -127,6 +138,40 @@ describe('given a Dialog with unmountOnHide=false', () => {
     await fireEvent.click(trigger.element)
     await nextTick()
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+})
+
+describe('given a non-modal Dialog with unmountOnHide=false', () => {
+  let wrapper: VueWrapper<InstanceType<typeof NonModalUnmountOnHideDialogTest>>
+  let trigger: DOMWrapper<HTMLElement>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(NonModalUnmountOnHideDialogTest, { attachTo: document.body })
+    trigger = wrapper.find('button')
+  })
+
+  it('should keep content in DOM when closed after being opened', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    const contentEl = document.querySelector('[role="dialog"]')
+    expect(contentEl).not.toBeNull()
+    expect((contentEl as HTMLElement).style.display).toBe('none')
+  })
+
+  it('should restore focus to trigger on close', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    expect(document.activeElement).toBe(trigger.element)
   })
 })
 

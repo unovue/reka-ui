@@ -22,10 +22,12 @@ const forwardedProps = computed(() => {
   return rest
 })
 
+// When `unmountOnHide` is `false` the content stays mounted on close, so
+// `FocusScope` never unmounts and `close-auto-focus` never fires. Restore
+// focus to the trigger manually once the content is no longer present.
 watch(() => props.present, (isPresent, wasPresent) => {
-  if (!isPresent && wasPresent) {
+  if (!isPresent && wasPresent)
     rootContext.triggerElement.value?.focus()
-  }
 })
 </script>
 
