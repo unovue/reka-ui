@@ -112,8 +112,16 @@ describe('given a Dialog with unmountOnHide=false', () => {
     expect((contentEl as HTMLElement).style.display).toBe('none')
   })
 
+  it('should not pull focus into the content while closed on mount', async () => {
+    // Content is force-mounted but hidden; auto-focus must not fire yet.
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(document.activeElement).toBe(document.body)
+  })
+
   it('should focus the close button on open', async () => {
     await fireEvent.click(trigger.element)
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
     const closeButton = await findByText(document.body, CLOSE_TEXT)
     expect(closeButton).toBe(document.activeElement)
   })
@@ -131,6 +139,7 @@ describe('given a Dialog with unmountOnHide=false', () => {
 
     await fireEvent.click(trigger.element)
     await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
 
     const closeButton = await findByText(document.body, CLOSE_TEXT)
     expect(closeButton).toBe(document.activeElement)
@@ -189,6 +198,17 @@ describe('given a non-modal Dialog with unmountOnHide=false', () => {
     expect((contentEl as HTMLElement).style.display).toBe('none')
   })
 
+  it('should focus the close button on open', async () => {
+    expect(document.activeElement).toBe(document.body)
+
+    await fireEvent.click(trigger.element)
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    expect(closeButton).toBe(document.activeElement)
+  })
+
   it('should restore focus to trigger on close', async () => {
     await fireEvent.click(trigger.element)
     await nextTick()
@@ -198,6 +218,36 @@ describe('given a non-modal Dialog with unmountOnHide=false', () => {
     await new Promise(resolve => setTimeout(resolve, 10))
 
     expect(document.activeElement).toBe(trigger.element)
+  })
+})
+
+describe('given a Dialog with unmountOnHide=false, openAutoFocus', () => {
+  const OpenAutoFocusDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    props: ['onOpenAutoFocus'],
+    template: `<DialogRoot :unmount-on-hide="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent @open-auto-focus="onOpenAutoFocus">
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  it('should not emit openAutoFocus while closed and emit once per open', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    const wrapper = mount(OpenAutoFocusDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    // Force-mounted but hidden: the auto-focus must not fire on mount.
+    await nextTick()
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
+
+    await fireEvent.click(trigger.element)
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(1)
   })
 })
 

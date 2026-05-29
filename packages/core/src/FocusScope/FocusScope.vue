@@ -35,7 +35,7 @@ export interface FocusScopeProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
+import { nextTick, reactive, ref, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createFocusScopesStack } from './stack'
 import {
@@ -149,6 +149,24 @@ watchEffect((cleanupFn) => {
   })
 })
 
+// Dispatch the mount auto-focus event and move focus to the first tabbable
+// candidate (or the container as a fallback). Shared by the physical-mount path
+// and the visibility path below so both behave identically. Consumers (e.g.
+// Dialog's `openAutoFocus`) may `preventDefault()` to opt out of default focus.
+function dispatchMountAutoFocus(container: HTMLElement, previouslyFocusedElement: HTMLElement | null) {
+  const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
+  const handleMountAutoFocus = (ev: Event) => emits('mountAutoFocus', ev)
+  container.addEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
+  container.dispatchEvent(mountEvent)
+  container.removeEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
+
+  if (!mountEvent.defaultPrevented) {
+    focusFirst(getTabbableCandidates(container), { select: true })
+    if (getActiveElement() === previouslyFocusedElement)
+      focus(container)
+  }
+}
+
 watchEffect(async (cleanupFn) => {
   const container = currentElement.value
 
@@ -159,20 +177,15 @@ watchEffect(async (cleanupFn) => {
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
   const hasFocusedCandidate = container.contains(previouslyFocusedElement)
 
-  if (!hasFocusedCandidate) {
-    const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
-    container.addEventListener(AUTOFOCUS_ON_MOUNT, (ev: Event) =>
-      emits('mountAutoFocus', ev))
-    container.dispatchEvent(mountEvent)
+  // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
+  // scope physically mounts hidden via `v-show` (`display: none`). Skip the
+  // mount auto-focus in that case, otherwise it fires `mountAutoFocus` and
+  // steals focus into a closed dialog. The visibility watcher below re-runs the
+  // auto-focus once the scope actually becomes visible.
+  const isHidden = isClient && getComputedStyle(container).display === 'none'
 
-    if (!mountEvent.defaultPrevented) {
-      focusFirst(getTabbableCandidates(container), {
-        select: true,
-      })
-      if (getActiveElement() === previouslyFocusedElement)
-        focus(container)
-    }
-  }
+  if (!hasFocusedCandidate && !isHidden)
+    dispatchMountAutoFocus(container, previouslyFocusedElement)
 
   cleanupFn(() => {
     container.removeEventListener(AUTOFOCUS_ON_MOUNT, (ev: Event) =>
@@ -202,63 +215,35 @@ watchEffect(async (cleanupFn) => {
   })
 })
 
-// Re-run the mount auto-focus when the scope becomes trapped again while it
-// stays mounted, e.g. a force-mounted Dialog (`unmountOnHide: false`) reopening.
-// The mount `watchEffect` above only fires on physical mount, keyed off
-// `currentElement`, so without this the content would never regain focus on
-// subsequent opens. In the normal (unmount-on-close) path the content mounts
-// already trapped, so this `false -> true` transition never happens and
-// behavior is unchanged.
-watch(() => props.trapped, async (trapped, prevTrapped) => {
-  if (!isClient || !trapped || prevTrapped)
-    return
-
-  const container = currentElement.value
-  await nextTick()
-  if (!container)
-    return
-
-  const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-  if (container.contains(previouslyFocusedElement))
-    return
-
-  // Dispatch the mount auto-focus event once. Consumers (e.g. Dialog's
-  // `openAutoFocus`) may `preventDefault()` to opt out of the default focus.
-  const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
-  const handleMountAutoFocus = (ev: Event) => emits('mountAutoFocus', ev)
-  container.addEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
-  container.dispatchEvent(mountEvent)
-  container.removeEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
-
-  if (mountEvent.defaultPrevented)
-    return
-
-  function tryFocus() {
+// Force-mounted scopes (e.g. Dialog `unmountOnHide: false`) physically mount
+// only once but are shown/hidden in place via `v-show` (`display: none`). The
+// mount `watchEffect` above keys auto-focus off physical mount, so it would
+// never re-focus on reopen and (without the visibility gate) would fire while
+// hidden. Drive auto-focus off the actual hidden -> visible transition instead:
+// this covers the first open and every reopen, for both trapped (modal) and
+// non-trapped (non-modal) scopes. Reacting to the style/class mutation means it
+// runs after the DOM updates, so the focus targets are already visible.
+if (isClient) {
+  watchEffect((cleanupFn) => {
+    const container = currentElement.value
     if (!container)
       return
-    focusFirst(getTabbableCandidates(container), { select: true })
-    if (getActiveElement() === previouslyFocusedElement)
-      focus(container)
-  }
 
-  tryFocus()
-
-  // When the content is force-mounted (e.g. `unmountOnHide: false`), its
-  // visibility is toggled via `v-show` driven by `Presence`, which can apply a
-  // frame after `trapped` flips. On that first pass the container is still
-  // `display: none`, so there are no tabbable candidates and `focus()` no-ops.
-  // Retry on the next frame if focus hasn't landed inside the scope yet. The
-  // auto-focus event is not re-dispatched, only the focus move is retried.
-  if (
-    typeof requestAnimationFrame !== 'undefined'
-    && !container.contains(getActiveElement())
-  ) {
-    requestAnimationFrame(() => {
-      if (props.trapped && container && !container.contains(getActiveElement()))
-        tryFocus()
+    let wasHidden = getComputedStyle(container).display === 'none'
+    const observer = new MutationObserver(() => {
+      const isHidden = getComputedStyle(container).display === 'none'
+      if (wasHidden && !isHidden) {
+        const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+        if (!container.contains(previouslyFocusedElement))
+          dispatchMountAutoFocus(container, previouslyFocusedElement)
+      }
+      wasHidden = isHidden
     })
-  }
-})
+    observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'] })
+
+    cleanupFn(() => observer.disconnect())
+  })
+}
 
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.loop && !props.trapped)
