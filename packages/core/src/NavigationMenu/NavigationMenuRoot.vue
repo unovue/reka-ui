@@ -149,14 +149,15 @@ const computedDelay = computed(() => {
 })
 
 const debouncedFn = useDebounceFn((val?: string) => {
-  if (typeof val === "string") {
-    if (val === "" && skipNextClose.value) {
+  if (typeof val === 'string') {
+    if (val === '' && skipNextClose.value) {
       skipNextClose.value = false
       return
     }
     previousValue.value = modelValue.value
     modelValue.value = val
-    if (val === "") isDelaySkipped.value = true
+    if (val === '')
+      isDelaySkipped.value = true
   }
 }, computedDelay)
 
@@ -193,11 +194,12 @@ provideNavigationMenuContext({
     viewport.value = val
   },
   onTriggerEnter: (val) => {
-    if (modelValue.value !== "") {
+    if (modelValue.value !== '') {
       skipNextClose.value = true
       previousValue.value = modelValue.value
       modelValue.value = val
-    } else {
+    }
+    else {
       debouncedFn(val)
     }
   },
