@@ -212,8 +212,10 @@ provideNavigationMenuContext({
     debouncedFn()
   },
   onContentLeave: () => {
-    if (!props.disablePointerLeaveClose)
+    if (!props.disablePointerLeaveClose) {
+      skipNextClose.value = false
       debouncedFn('')
+    }
   },
   onItemSelect: (val) => {
     // When selecting item we trigger update immediately
