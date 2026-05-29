@@ -149,6 +149,7 @@ const computedDelay = computed(() => {
 })
 
 const debouncedFn = useDebounceFn((val?: string) => {
+  // passing `undefined` meant to reset the debounce timer
   if (typeof val === 'string') {
     if (val === '' && skipNextClose.value) {
       skipNextClose.value = false
