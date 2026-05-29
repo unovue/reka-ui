@@ -222,16 +222,41 @@ watch(() => props.trapped, async (trapped, prevTrapped) => {
   if (container.contains(previouslyFocusedElement))
     return
 
+  // Dispatch the mount auto-focus event once. Consumers (e.g. Dialog's
+  // `openAutoFocus`) may `preventDefault()` to opt out of the default focus.
   const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
   const handleMountAutoFocus = (ev: Event) => emits('mountAutoFocus', ev)
   container.addEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
   container.dispatchEvent(mountEvent)
   container.removeEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
 
-  if (!mountEvent.defaultPrevented) {
+  if (mountEvent.defaultPrevented)
+    return
+
+  function tryFocus() {
+    if (!container)
+      return
     focusFirst(getTabbableCandidates(container), { select: true })
     if (getActiveElement() === previouslyFocusedElement)
       focus(container)
+  }
+
+  tryFocus()
+
+  // When the content is force-mounted (e.g. `unmountOnHide: false`), its
+  // visibility is toggled via `v-show` driven by `Presence`, which can apply a
+  // frame after `trapped` flips. On that first pass the container is still
+  // `display: none`, so there are no tabbable candidates and `focus()` no-ops.
+  // Retry on the next frame if focus hasn't landed inside the scope yet. The
+  // auto-focus event is not re-dispatched, only the focus move is retried.
+  if (
+    typeof requestAnimationFrame !== 'undefined'
+    && !container.contains(getActiveElement())
+  ) {
+    requestAnimationFrame(() => {
+      if (props.trapped && container && !container.contains(getActiveElement()))
+        tryFocus()
+    })
   }
 })
 
