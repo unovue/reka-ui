@@ -118,6 +118,24 @@ describe('given a Dialog with unmountOnHide=false', () => {
     expect(closeButton).toBe(document.activeElement)
   })
 
+  it('should re-focus the content when reopened', async () => {
+    // The content stays mounted, so focus must be re-applied on each open via
+    // the `trapped` false -> true transition (not just on physical mount).
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(document.activeElement).toBe(trigger.element)
+
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    expect(closeButton).toBe(document.activeElement)
+  })
+
   it('should restore focus to trigger on close', async () => {
     await fireEvent.click(trigger.element)
     await nextTick()

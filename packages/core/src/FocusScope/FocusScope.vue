@@ -35,7 +35,7 @@ export interface FocusScopeProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { nextTick, reactive, ref, watchEffect } from 'vue'
+import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createFocusScopesStack } from './stack'
 import {
@@ -200,6 +200,39 @@ watchEffect(async (cleanupFn) => {
       container.removeAttribute('data-focus-scope-unmounting')
     }, 0)
   })
+})
+
+// Re-run the mount auto-focus when the scope becomes trapped again while it
+// stays mounted, e.g. a force-mounted Dialog (`unmountOnHide: false`) reopening.
+// The mount `watchEffect` above only fires on physical mount, keyed off
+// `currentElement`, so without this the content would never regain focus on
+// subsequent opens. In the normal (unmount-on-close) path the content mounts
+// already trapped, so this `false -> true` transition never happens and
+// behavior is unchanged.
+watch(() => props.trapped, async (trapped, prevTrapped) => {
+  if (!isClient || !trapped || prevTrapped)
+    return
+
+  const container = currentElement.value
+  await nextTick()
+  if (!container)
+    return
+
+  const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+  if (container.contains(previouslyFocusedElement))
+    return
+
+  const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
+  const handleMountAutoFocus = (ev: Event) => emits('mountAutoFocus', ev)
+  container.addEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
+  container.dispatchEvent(mountEvent)
+  container.removeEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
+
+  if (!mountEvent.defaultPrevented) {
+    focusFirst(getTabbableCandidates(container), { select: true })
+    if (getActiveElement() === previouslyFocusedElement)
+      focus(container)
+  }
 })
 
 function handleKeyDown(event: KeyboardEvent) {
