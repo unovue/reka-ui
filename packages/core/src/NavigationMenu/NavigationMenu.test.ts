@@ -137,6 +137,11 @@ describe('given default NavigationMenu', () => {
 
     const findLinkContent = () => wrapper.find('[data-dismissable-layer]')
 
+    async function useRealDebounceFn() {
+      const { useDebounceFn: realUseDebounceFn } = await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core')
+      vi.mocked(useDebounceFn).mockImplementation(realUseDebounceFn)
+    }
+
     it('should open menu on click by default', async () => {
       const button = findTriggerButton()
 
@@ -209,6 +214,59 @@ describe('given default NavigationMenu', () => {
 
       // Menu should be closed
       expect(findLinkContent().exists()).toBeFalsy()
+    })
+
+    it('switching triggers keeps menu open', async () => {
+      vi.useFakeTimers()
+      await useRealDebounceFn()
+
+      const localWrapper = mount(NavigationMenu, { attachTo: document.body })
+      const triggers = localWrapper.findAll('[data-navigation-menu-trigger]')
+      const findContent = () => localWrapper.find('[data-dismissable-layer]')
+
+      await triggers[0].trigger('pointermove', { pointerType: 'mouse' })
+      await vi.advanceTimersByTimeAsync(200)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(true)
+
+      await triggers[0].trigger('pointerleave', { pointerType: 'mouse' })
+      await triggers[1].trigger('pointermove', { pointerType: 'mouse' })
+      await nextTick()
+
+      expect(triggers[1].attributes('data-state')).toBe('open')
+      expect(findContent().exists()).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(150)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(true)
+
+      localWrapper.unmount()
+      vi.useRealTimers()
+    })
+
+    it('leaving content closes menu', async () => {
+      vi.useFakeTimers()
+      await useRealDebounceFn()
+
+      const localWrapper = mount(NavigationMenu, { attachTo: document.body })
+      const findContent = () => localWrapper.find('[data-dismissable-layer]')
+
+      await localWrapper.find('[data-navigation-menu-trigger]').trigger('pointermove', { pointerType: 'mouse' })
+      await vi.advanceTimersByTimeAsync(200)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(true)
+
+      await findContent().trigger('pointerleave', { pointerType: 'mouse' })
+      await vi.advanceTimersByTimeAsync(150)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(false)
+
+      localWrapper.unmount()
+      vi.useRealTimers()
     })
   })
 })
