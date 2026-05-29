@@ -9,6 +9,7 @@ import {
   computed,
   nextTick,
   reactive,
+  toRaw,
   watchEffect,
 } from 'vue'
 import { isNullish, useForwardExpose } from '@/shared'
@@ -141,19 +142,36 @@ onKeyStroke('Escape', (event) => {
 watchEffect((cleanupFn) => {
   if (!layerElement.value)
     return
-  if (props.disableOutsidePointerEvents) {
-    if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+
+  // Capture the value for cleanup: `props.disableOutsidePointerEvents` is reactive,
+  // so reading it inside `cleanupFn` would return the *new* value. When the prop
+  // toggles `true` -> `false` while the layer stays mounted (e.g. `unmountOnHide: false`),
+  // that would skip restoring the body pointer-events and leave the page frozen.
+  const element = layerElement.value
+  const disabledOutsidePointerEvents = props.disableOutsidePointerEvents
+  const disabledLayers = context.layersWithOutsidePointerEventsDisabled
+  // Read `size` from the raw set so this effect doesn't track the reactive set
+  // it also mutates (which would recurse). Mutations still go through the proxy
+  // so dependent computeds (e.g. `isBodyPointerEventsDisabled`) stay reactive.
+  const rawDisabledLayers = toRaw(disabledLayers)
+
+  if (disabledOutsidePointerEvents) {
+    if (rawDisabledLayers.size === 0) {
       context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
       ownerDocument.value.body.style.pointerEvents = 'none'
     }
-    context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
+    disabledLayers.add(element)
   }
-  layers.value.add(layerElement.value)
+  layers.value.add(element)
 
   cleanupFn(() => {
+    if (!disabledOutsidePointerEvents)
+      return
+
+    disabledLayers.delete(element)
+
     if (
-      props.disableOutsidePointerEvents
-      && context.layersWithOutsidePointerEventsDisabled.size === 1
+      rawDisabledLayers.size === 0
       && !isNullish(context.originalBodyPointerEvents)
     ) {
       ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
