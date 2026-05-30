@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config'
+import pluginVueA11y from 'eslint-plugin-vuejs-accessibility'
 
 export default antfu(
   {
@@ -49,6 +50,18 @@ export default antfu(
       'no-alert': 'off',
       'unused-imports/no-unused-vars': 'off',
     },
+  },
+  {
+    files: ['packages/core/src/**/*.vue'],
+    plugins: {
+      'vuejs-accessibility': pluginVueA11y,
+    },
+    // Adopt the recommended preset at `warn` while existing violations are
+    // fixed incrementally; flip to `error` once the codebase is clean.
+    rules: Object.fromEntries(
+      Object.keys(pluginVueA11y.configs['flat/recommended'][1].rules)
+        .map(rule => [rule, 'warn']),
+    ),
   },
   {
     files: ['**/package.json'],
