@@ -7,7 +7,7 @@ import {
 } from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
-import { snapValueToStep, useKbd } from '@/shared'
+import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/
@@ -946,10 +946,20 @@ export function useDateField(props: UseDateFieldProps) {
       return
 
     for (const char of data) {
-      if (DIGIT_REG.test(char)) {
-        const syntheticEvent = new KeyboardEvent('keydown', { key: char })
-        handleSegmentKeydown(syntheticEvent)
-      }
+      if (!DIGIT_REG.test(char))
+        continue
+
+      // Dispatch to the focused segment so subsequent digits follow focus
+      // after `focusNext()` advances to the next segment (e.g. "34" → 3 in day, 4 in month).
+      const target = getActiveElement()
+      if (!(target instanceof HTMLElement))
+        break
+
+      target.dispatchEvent(new KeyboardEvent('keydown', {
+        key: char,
+        bubbles: true,
+        cancelable: true,
+      }))
     }
   }
 

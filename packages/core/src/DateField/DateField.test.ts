@@ -725,4 +725,17 @@ describe('iME composition handling', () => {
     expect(month).toHaveFocus()
     expect(day).not.toHaveFocus()
   })
+
+  it('should route multi-digit commit to following segments after focus advances', async () => {
+    const { month, day, user, getByTestId } = setup()
+
+    await user.click(month)
+
+    // Committing "45": 4 fills month and auto-advances, 5 lands in the next segment
+    await fireEvent(month, new CompositionEvent('compositionend', { data: '45' }))
+    await nextTick()
+
+    expect(getByTestId('month')).toHaveTextContent('4')
+    expect(getByTestId('day')).toHaveTextContent('5')
+  })
 })

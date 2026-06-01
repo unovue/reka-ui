@@ -61,7 +61,8 @@ onUnmounted(() => {
   rootContext.focusable.value = true
 })
 
-const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing(() => {
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  modelValue.value = (event.target as HTMLInputElement).value
   rootContext.onCompositionEnd()
   rootContext.highlightFirstItem()
 })
@@ -72,9 +73,9 @@ function onCompositionStart() {
 }
 
 function handleInput(event: InputEvent) {
-  modelValue.value = (event.target as HTMLInputElement).value
   if (isComposing.value)
     return
+  modelValue.value = (event.target as HTMLInputElement).value
   rootContext.highlightFirstItem()
 }
 </script>

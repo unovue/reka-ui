@@ -42,8 +42,10 @@ const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposi
 })
 
 function handleKeyDown(ev: KeyboardEvent) {
+  // Don't swallow arrow keys mid-composition, they're used for IME candidate navigation
   if (isComposing.value)
     return
+  ev.preventDefault()
   if (!rootContext.open.value)
     rootContext.onOpenChange(true)
 }
@@ -164,7 +166,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     autocomplete="off"
     @click="handleClick"
     @input="handleInput"
-    @keydown.down.up.prevent="handleKeyDown"
+    @keydown.down.up="handleKeyDown"
     @focus="handleFocus"
     @blur="handleBlur"
     @compositionstart="handleCompositionStart"
