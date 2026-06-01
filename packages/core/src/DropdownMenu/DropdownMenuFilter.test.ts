@@ -141,7 +141,7 @@ describe('given DropdownMenu with Filter', () => {
     })
   })
 
-  describe('iME composition handling', () => {
+  describe('handle IME composition', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('click')
       await nextTick()

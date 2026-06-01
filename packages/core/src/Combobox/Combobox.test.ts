@@ -480,7 +480,7 @@ describe('given Combobox with TagsInput and addOnBlur', () => {
   })
 })
 
-describe('iME composition handling', () => {
+describe('handle IME composition', () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
   let input: DOMWrapper<HTMLInputElement>
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()

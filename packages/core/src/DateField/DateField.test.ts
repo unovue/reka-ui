@@ -677,7 +677,7 @@ describe('dateField', async () => {
   })
 })
 
-describe('iME composition handling', () => {
+describe('handle IME composition', () => {
   it('should not update segment during IME keydown (keyCode 229)', async () => {
     const { day, user } = setup()
 

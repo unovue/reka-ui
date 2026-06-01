@@ -366,7 +366,7 @@ describe('give PinInput type=number', async () => {
   })
 })
 
-describe('iME composition handling', () => {
+describe('handle IME composition', () => {
   // @ts-expect-error aXe throwing error complaining getComputedStyle
   window.getComputedStyle = () => {}
   let wrapper: VueWrapper<InstanceType<typeof PinInput>>

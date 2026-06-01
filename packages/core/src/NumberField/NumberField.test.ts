@@ -396,7 +396,7 @@ describe('given checkbox in a form', async () => {
   })
 })
 
-describe('iME composition handling', () => {
+describe('handle IME composition', () => {
   it('should not block beforeinput during IME composition', () => {
     const { input } = setup()
     input.focus()
