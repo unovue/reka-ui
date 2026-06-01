@@ -23,6 +23,8 @@ const lastKeyZero = ref(false)
 const {
   handleSegmentClick,
   handleSegmentKeydown,
+  handleSegmentBeforeInput,
+  handleSegmentCompositionStart,
   handleSegmentCompositionEnd,
   handleSegmentFocusOut,
   attributes,
@@ -62,6 +64,8 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
     v-on="part !== 'literal' ? {
       mousedown: handleSegmentClick,
       keydown: handleSegmentKeydown,
+      beforeinput: handleSegmentBeforeInput,
+      compositionstart: handleSegmentCompositionStart,
       compositionend: handleSegmentCompositionEnd,
       focusout: () => {
         hasLeftFocus = true

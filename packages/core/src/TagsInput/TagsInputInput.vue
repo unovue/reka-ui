@@ -100,6 +100,14 @@ function handleInput(event: InputEvent) {
   }
 }
 
+function handleInputKeydown(event: KeyboardEvent) {
+  // `isComposing` stays true until the tick after `compositionend`, so arrow/backspace
+  // tag navigation is skipped even when the commit keydown reports `event.isComposing === false`.
+  if (isComposing.value)
+    return
+  context.onInputKeydown(event)
+}
+
 function handlePaste(event: ClipboardEvent) {
   if (context.addOnPaste.value) {
     event.preventDefault()
@@ -154,7 +162,7 @@ onMounted(() => {
     @keydown.enter="handleCustomKeydown"
     @keydown.tab="handleTab"
     @blur="handleBlur"
-    @keydown="context.onInputKeydown"
+    @keydown="handleInputKeydown"
     @compositionstart="handleCompositionStart"
     @compositionend="handleCompositionEnd"
     @paste="handlePaste"

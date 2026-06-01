@@ -357,4 +357,24 @@ describe('keyboard interactions', () => {
     input.element.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(false)
   })
+
+  it('should not step the value during composition (arrow keys are IME candidate navigation)', async () => {
+    const wrapper = mount(ColorField, {
+      props: {
+        defaultValue: '#ff0000',
+        channel: 'hue',
+        colorSpace: 'hsl',
+      },
+    })
+    const input = wrapper.find('input')
+    expect(input.element.value).toBe('0')
+
+    // Arrow keys mid-composition navigate IME candidates, they must not step the value
+    await input.trigger('keydown', { key: 'ArrowUp', isComposing: true })
+    expect(input.element.value).toBe('0')
+
+    // Once composition ends, stepping works again
+    await input.trigger('keydown', { key: 'ArrowUp' })
+    expect(input.element.value).toBe('1')
+  })
 })

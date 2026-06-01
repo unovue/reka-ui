@@ -403,6 +403,14 @@ describe('handle IME composition', () => {
     expect(document.activeElement).toBe(inputs[1].element)
   })
 
+  it('should not move between inputs with arrow keys during composition', async () => {
+    await inputs[0].trigger('compositionstart')
+    await inputs[0].trigger('keydown', { key: 'ArrowRight', isComposing: true })
+    await nextTick()
+
+    expect(document.activeElement).toBe(inputs[0].element)
+  })
+
   it('should reject non-numeric IME input in numeric mode', async () => {
     document.body.innerHTML = ''
     wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' } })

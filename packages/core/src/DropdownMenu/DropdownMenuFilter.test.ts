@@ -178,5 +178,32 @@ describe('given DropdownMenu with Filter', () => {
       const items = document.querySelectorAll('[role="menuitem"]')
       expect(items.length).toBe(0)
     })
+
+    it('should not navigate items during IME composition (arrow keys are IME candidate navigation)', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      filterInput.focus()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      await nextTick()
+
+      // Arrow keys mid-composition navigate IME candidates: the menu must not
+      // highlight an item nor steal focus away from the filter input.
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+      Object.defineProperty(event, 'isComposing', { value: true })
+      filterInput.dispatchEvent(event)
+      await nextTick()
+
+      expect(document.querySelector('[role="menuitem"][data-highlighted]')).toBeNull()
+      expect(document.activeElement).toBe(filterInput)
+
+      // Once composition ends, navigation works again
+      filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: '', bubbles: true }))
+      await nextTick()
+      await nextTick()
+      filterInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await nextTick()
+
+      expect(document.querySelector('[role="menuitem"][data-highlighted]')).not.toBeNull()
+    })
   })
 })

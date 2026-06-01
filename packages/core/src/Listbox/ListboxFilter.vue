@@ -78,6 +78,21 @@ function handleInput(event: InputEvent) {
   modelValue.value = (event.target as HTMLInputElement).value
   rootContext.highlightFirstItem()
 }
+
+function handleKeydownNavigation(event: KeyboardEvent) {
+  // Don't navigate mid-composition, arrow keys are used for IME candidate navigation
+  if (isComposing.value)
+    return
+  event.preventDefault()
+  rootContext.onKeydownNavigation(event)
+}
+
+function handleKeydownEnter(event: KeyboardEvent) {
+  // Don't select mid-composition, Enter commits the IME candidate
+  if (isComposing.value)
+    return
+  rootContext.onKeydownEnter(event)
+}
 </script>
 
 <template>
@@ -91,8 +106,8 @@ function handleInput(event: InputEvent) {
     :aria-disabled="disabled ?? undefined"
     :aria-activedescendant="activedescendant"
     type="text"
-    @keydown.down.up.home.end.prevent="rootContext.onKeydownNavigation"
-    @keydown.enter="rootContext.onKeydownEnter"
+    @keydown.down.up.home.end="handleKeydownNavigation"
+    @keydown.enter="handleKeydownEnter"
     @input="handleInput"
     @compositionstart="onCompositionStart"
     @compositionend="handleCompositionEnd"

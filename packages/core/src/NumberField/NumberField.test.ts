@@ -422,4 +422,18 @@ describe('handle IME composition', () => {
     input.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(true)
   })
+
+  it('should not step the value during composition (arrow keys are IME candidate navigation)', async () => {
+    const { input } = setup({ defaultValue: 0, min: 0, max: 10 })
+
+    // Arrow keys mid-composition navigate IME candidates, they must not step the value
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP, isComposing: true })
+    expect(input.value).toBe('0')
+    await fireEvent.keyDown(input, { key: kbd.END, isComposing: true })
+    expect(input.value).toBe('0')
+
+    // Once composition ends, stepping works again
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+    expect(input.value).toBe('1')
+  })
 })

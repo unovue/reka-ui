@@ -678,6 +678,46 @@ describe('dateField', async () => {
 })
 
 describe('handle IME composition', () => {
+  it('should block direct text insertion into the segment (Safari fires beforeinput before keydown with an IME active)', async () => {
+    const { day, user } = setup()
+
+    await user.click(day)
+
+    // Safari inserts the raw character at `input` (before `keydown`) while an IME
+    // is active; blocking `beforeinput` is the only way to stop it leaking in.
+    const event = new InputEvent('beforeinput', { data: '1', inputType: 'insertText', cancelable: true })
+    Object.defineProperty(event, 'isComposing', { value: false })
+    day.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should let composition input through beforeinput', async () => {
+    const { day, user } = setup()
+
+    await user.click(day)
+
+    const event = new InputEvent('beforeinput', { data: 'n', inputType: 'insertCompositionText', cancelable: true })
+    Object.defineProperty(event, 'isComposing', { value: true })
+    day.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should still apply a directly-typed digit when a CJK IME is active (keyCode 229, not composing)', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+    expect(day).toHaveFocus()
+
+    // Pinyin active but NOT composing: Safari flags the keydown with keyCode 229
+    // while passing the real digit through (key === '1', isComposing false).
+    await fireEvent.keyDown(day, { key: '1', keyCode: 229 })
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('1')
+  })
+
   it('should not update segment during IME keydown (keyCode 229)', async () => {
     const { day, user } = setup()
 
@@ -714,6 +754,46 @@ describe('handle IME composition', () => {
     expect(getByTestId('day')).toHaveTextContent('dd')
   })
 
+  it('should restore the placeholder after composing non-numeric text into the segment', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    // The IME mutates the contenteditable directly: capture Vue's nodes on
+    // compositionstart, then simulate the IME prepending text to the value node.
+    await fireEvent(day, new CompositionEvent('compositionstart', { data: '' }))
+    const valueNode = [...day.childNodes].find(n => n.nodeType === 3 && n.nodeValue) as Text
+    valueNode.nodeValue = `你${valueNode.nodeValue}`
+    expect(getByTestId('day')).toHaveTextContent('你dd')
+
+    // On commit, the IME text must be reverted and Vue's node restored so it stays
+    // patchable (Vue won't reconcile it since the segment value never changed).
+    await fireEvent(day, new CompositionEvent('compositionend', { data: '你' }))
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('dd')
+  })
+
+  it('should still apply a digit typed right after a non-numeric composition', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    // Compose a non-numeric character and commit it.
+    await fireEvent(day, new CompositionEvent('compositionstart', { data: '' }))
+    const valueNode = [...day.childNodes].find(n => n.nodeType === 3 && n.nodeValue) as Text
+    valueNode.nodeValue = `你${valueNode.nodeValue}`
+    await fireEvent(day, new CompositionEvent('compositionend', { data: '你' }))
+    await nextTick()
+    expect(getByTestId('day')).toHaveTextContent('dd')
+
+    // Typing a digit afterwards must still update the segment (regression: Vue's
+    // text node was being detached, freezing the display).
+    await fireEvent.keyDown(day, { key: '5' })
+    await nextTick()
+    expect(getByTestId('day')).toHaveTextContent('5')
+  })
+
   it('should not advance to next segment during composition', async () => {
     const { month, day, user } = setup()
 
@@ -737,5 +817,21 @@ describe('handle IME composition', () => {
 
     expect(getByTestId('month')).toHaveTextContent('4')
     expect(getByTestId('day')).toHaveTextContent('5')
+  })
+
+  it('should not navigate between segments during composition (arrow keys are IME candidate navigation)', async () => {
+    const { month, day, user } = setup()
+
+    await user.click(month)
+    expect(month).toHaveFocus()
+
+    // Arrow keys mid-composition are used to navigate IME candidates, not segments
+    await fireEvent.keyDown(month, { key: 'ArrowRight', isComposing: true })
+    expect(month).toHaveFocus()
+    expect(day).not.toHaveFocus()
+
+    // Once composition ends, arrow keys navigate segments again
+    await fireEvent.keyDown(month, { key: 'ArrowRight' })
+    expect(day).toHaveFocus()
   })
 })

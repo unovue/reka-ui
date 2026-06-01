@@ -92,6 +92,13 @@ function handleInput(event: InputEvent) {
 function handleKeyDown(event: KeyboardEvent) {
   if (disabled.value)
     return
+  // During composition the keys belong to the IME (candidate navigation/commit).
+  // Stop them from bubbling to the menu content's keydown handler (which would
+  // navigate/typeahead) without calling preventDefault, so the IME still works.
+  if (isComposing.value) {
+    event.stopPropagation()
+    return
+  }
   if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
     event.preventDefault()
     contentContext.onKeydownNavigation(event)

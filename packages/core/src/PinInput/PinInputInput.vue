@@ -107,6 +107,9 @@ function updatePlaceholder() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
+  // Don't move between inputs mid-composition, arrow keys are used for IME candidate navigation
+  if (isComposing.value || event.isComposing)
+    return
   useArrowNavigation(event, getActiveElement() as HTMLElement, undefined, {
     itemsArray: inputElements.value,
     focus: true,
