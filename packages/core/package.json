@@ -119,7 +119,7 @@
     "size-limit": "^12.0.1",
     "tsdown": "^0.12.9",
     "vite": "^8.0.14",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.0",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^0.3.3",
     "vue": "3.5.17",
