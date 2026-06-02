@@ -158,24 +158,15 @@ function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
 }
 
-// Suppresses focus/scroll only during the initial mount cycle, so a Listbox
-// below the fold doesn't scroll the page into view on load. It's released
-// after the mount cycle (see the modelValue watcher) so deferred highlights,
-// like a Combobox opening its dropdown, still scroll the selected item into view.
-let isInitialHighlight = true
-
 function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
   if (!el)
     return
 
   highlightedElement.value = el
-
-  if (!isInitialHighlight) {
-    if (focus ?? focusable.value)
-      highlightedElement.value.focus()
-    if (scrollIntoView)
-      highlightedElement.value.scrollIntoView({ block: 'nearest' })
-  }
+  if (focus ?? focusable.value)
+    highlightedElement.value.focus()
+  if (scrollIntoView)
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
 
   const highlightedItem = getItems().find(i => i.ref === el)
   emits('highlight', highlightedItem)
@@ -333,7 +324,7 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
   }
 }
 
-async function highlightSelected(event?: Event) {
+async function highlightSelected(event?: Event, scroll = true) {
   // highlightSelected is called inside a watch with immediate set to true.
   // This results in code execution during SSR.
   // Ensure this code only runs in a browser environment, since it performs
@@ -348,24 +339,31 @@ async function highlightSelected(event?: Event) {
   else {
     const collection = getCollectionItem()
     const item = collection.find(i => i.dataset.state === 'checked')
+    // On the initial (mount) highlight we only set the roving-tabindex target.
+    // Focusing/scrolling here would scroll the page to a Listbox the user never
+    // interacted with (e.g. one below the fold). Later highlights scroll as before.
+    const focus = scroll ? undefined : false
     if (item)
-      changeHighlight(item)
+      changeHighlight(item, scroll, focus)
     else if (collection.length)
-      changeHighlight(collection[0])
+      changeHighlight(collection[0], scroll, focus)
   }
 }
+
+// `false` until the initial (mount) modelValue highlight has been queued.
+// Flipped synchronously in the watcher so the "is this the mount highlight?"
+// decision never depends on nextTick ordering, which differs between a client
+// mount and SSR hydration. The intent travels with the call as an argument
+// rather than via a shared flag released on a later tick.
+let hasHighlightedOnMount = false
 
 // watch for only programmatic changes
 watch(modelValue, () => {
   if (!isUserAction.value) {
+    const scroll = hasHighlightedOnMount
+    hasHighlightedOnMount = true
     nextTick(() => {
-      highlightSelected()
-      // Release after the initial mount highlight, regardless of whether items
-      // existed, so only that highlight skips focus/scroll. Any later highlight
-      // (user interaction, or a Combobox opening its dropdown) scrolls normally.
-      nextTick(() => {
-        isInitialHighlight = false
-      })
+      highlightSelected(undefined, scroll)
     })
   }
 }, { immediate: true, deep: true })
