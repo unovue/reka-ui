@@ -581,7 +581,17 @@ describe('comboboxContent with popper positioning', () => {
     document.body.innerHTML = ''
     getSlotRenderCount.mockClear()
     globalThis.ResizeObserver = class ResizeObserver {
-      observe() {}
+      private callback: ResizeObserverCallback
+
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback
+      }
+
+      observe(target: Element) {
+        this.callback([{ target } as ResizeObserverEntry], this)
+        this.callback([{ target } as ResizeObserverEntry], this)
+      }
+
       unobserve() {}
       disconnect() {}
     }
@@ -596,13 +606,12 @@ describe('comboboxContent with popper positioning', () => {
     await wrapper.find('button').trigger('click')
     await nextTick()
 
-    const renderCountAfterOpen = slotRenderCount.value
-    expect(renderCountAfterOpen).toBeLessThanOrEqual(4)
+    expect(slotRenderCount.value).toBe(3)
 
     await sleep(0)
     await nextTick()
 
-    expect(slotRenderCount.value).toBeLessThanOrEqual(4)
+    expect(slotRenderCount.value).toBe(4)
   })
 
   it('updates visible options when filtering while popper content is open', async () => {

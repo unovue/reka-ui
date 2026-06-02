@@ -407,6 +407,7 @@ providePopperContentContext({
     }"
   >
     <Primitive
+      v-if="props.memoDependencies"
       :ref="forwardRef"
       v-memo="[
         props.asChild,
@@ -415,8 +416,25 @@ providePopperContentContext({
         placedAlign,
         isPositioned,
         ...Object.values($attrs),
-        ...(props.memoDependencies ?? []),
+        ...props.memoDependencies,
       ]"
+      v-bind="$attrs"
+      :as-child="props.asChild"
+      :as="props.as"
+      :data-side="placedSide"
+      :data-align="placedAlign"
+      :style="{
+        // if the PopperContent hasn't been placed yet (not all measurements done)
+        // we prevent animations so that users's animation don't kick in too early referring wrong sides
+        animation: !isPositioned ? 'none' : undefined,
+      }"
+    >
+      <slot />
+    </Primitive>
+
+    <Primitive
+      v-else
+      :ref="forwardRef"
       v-bind="$attrs"
       :as-child="props.asChild"
       :as="props.as"
