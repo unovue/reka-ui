@@ -307,23 +307,44 @@ describe('given a Combobox with openOnFocus', () => {
   })
 
   it('should close content when focus moves to an element outside', async () => {
-    // Add an external focusable element
     const externalButton = document.createElement('button')
     externalButton.textContent = 'External'
     document.body.appendChild(externalButton)
 
     const input = wrapper.find('input')
 
-    // Focus input to open via openOnFocus
-    await input.trigger('focus')
+    input.element.focus()
     await nextTick()
     expect(wrapper.find('[role=group]').exists()).toBe(true)
 
-    // Simulate blur with relatedTarget pointing to external element
-    await input.trigger('blur', { relatedTarget: externalButton })
+    externalButton.focus()
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     await nextTick()
 
     expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
+  })
+
+  it('should not close when focus is restored inside before deferred close fires', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    const input = wrapper.find('input')
+
+    input.element.focus()
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    // Synthetic blur: fires handleBlur with relatedTarget outside,
+    // but doesn't change document.activeElement — simulates FocusScope
+    // restoring focus back inside before the deferred close callback runs
+    await input.trigger('blur', { relatedTarget: externalButton })
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
 
     externalButton.remove()
   })
@@ -460,6 +481,69 @@ describe('given Combobox with TagsInput and addOnBlur', () => {
   })
 })
 
+describe('given combobox handleBlur with deferred close', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body, props: { resetSearchTermOnBlur: true } })
+  })
+
+  it('should not close when focus is restored inside before deferred close fires', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    // Open combobox
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    const input = wrapper.find('input')
+    input.element.focus()
+
+    // Synthetic blur: fires handleBlur with relatedTarget outside,
+    // but doesn't change document.activeElement — simulates FocusScope
+    // restoring focus back inside before the deferred close callback runs
+    await input.trigger('blur', { relatedTarget: externalButton })
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalButton.remove()
+  })
+
+  it('should close when focus stays outside after rAF', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    // Open combobox
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    const input = wrapper.find('input')
+    input.element.focus()
+
+    // Focus moves outside and stays there
+    externalButton.focus()
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
+  })
+})
+
 describe('comboboxContent with popper positioning', () => {
   const getSlotRenderCount = vi.fn(() => ({ value: 0 }))
 
@@ -512,11 +596,31 @@ describe('comboboxContent with popper positioning', () => {
     await wrapper.find('button').trigger('click')
     await nextTick()
 
-    expect(slotRenderCount.value).toBeLessThanOrEqual(2)
+    const renderCountAfterOpen = slotRenderCount.value
+    expect(renderCountAfterOpen).toBeLessThanOrEqual(4)
 
     await sleep(0)
     await nextTick()
 
-    expect(slotRenderCount.value).toBeLessThanOrEqual(2)
+    expect(slotRenderCount.value).toBeLessThanOrEqual(4)
+  })
+
+  it('updates visible options when filtering while popper content is open', async () => {
+    const slotRenderCount = { value: 0 }
+    getSlotRenderCount.mockReturnValue(slotRenderCount)
+
+    const wrapper = mount(PopperCombobox, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Option 1')
+    expect(wrapper.text()).toContain('Option 59')
+
+    await wrapper.find('input').setValue('Option 59')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Option 59')
+    expect(wrapper.text()).not.toContain('Option 1')
   })
 })

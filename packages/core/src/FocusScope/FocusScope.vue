@@ -185,6 +185,10 @@ watchEffect(async (cleanupFn) => {
     container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
     container.dispatchEvent(unmountEvent)
 
+    // Signal that blur events fired below are system-initiated (focus trap
+    // cleanup), not user-initiated. Consumers can use this to skip validation.
+    container.setAttribute('data-focus-scope-unmounting', '')
+
     setTimeout(() => {
       if (!unmountEvent.defaultPrevented)
         focus(previouslyFocusedElement ?? document.body, { select: true })
@@ -193,6 +197,7 @@ watchEffect(async (cleanupFn) => {
       container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
 
       focusScopesStack.remove(focusScope)
+      container.removeAttribute('data-focus-scope-unmounting')
     }, 0)
   })
 })

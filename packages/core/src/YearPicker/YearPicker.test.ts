@@ -54,6 +54,20 @@ describe('year picker', async () => {
     expect(getByTestId('heading')).toHaveTextContent('1980 - 1991')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { picker, rerender } = setup({ pickerProps: { modelValue: null } })
+
+    expect(getSelectedYears(picker)).toHaveLength(0)
+
+    await rerender({
+      pickerProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(getSelectedYear(picker)).toHaveTextContent('1980')
+  })
+
   it('navigates to next decade using next button', async () => {
     const { getByTestId, user } = setup({ pickerProps: { modelValue: calendarDate } })
 
