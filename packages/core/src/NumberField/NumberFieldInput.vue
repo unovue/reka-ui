@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { onMounted, ref, watch } from 'vue'
-import { getActiveElement } from '@/shared'
+import { getActiveElement, useComposing, useKbd } from '@/shared'
 import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 
 export interface NumberFieldInputProps extends PrimitiveProps {
@@ -17,6 +17,46 @@ const props = withDefaults(defineProps<NumberFieldInputProps>(), {
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const rootContext = injectNumberFieldRootContext()
+const kbd = useKbd()
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
+
+function handleKeydown(event: KeyboardEvent) {
+  // Don't step/apply mid-composition, keys are used for IME candidate navigation and commit.
+  // `isComposing` stays true until the tick after `compositionend`, so the commit keydown
+  // (which can report `event.isComposing === false`) is still skipped.
+  if (isComposing.value || event.isComposing)
+    return
+
+  switch (event.key) {
+    case kbd.ARROW_UP:
+      event.preventDefault()
+      rootContext.handleIncrease()
+      break
+    case kbd.ARROW_DOWN:
+      event.preventDefault()
+      rootContext.handleDecrease()
+      break
+    case kbd.PAGE_UP:
+      event.preventDefault()
+      rootContext.handleIncrease(10)
+      break
+    case kbd.PAGE_DOWN:
+      event.preventDefault()
+      rootContext.handleDecrease(10)
+      break
+    case kbd.HOME:
+      event.preventDefault()
+      rootContext.handleMinMaxValue('min')
+      break
+    case kbd.END:
+      event.preventDefault()
+      rootContext.handleMinMaxValue('max')
+      break
+    case kbd.ENTER:
+      rootContext.applyInputValue((event.target as HTMLInputElement)?.value)
+      break
+  }
+}
 
 function handleWheelEvent(event: WheelEvent) {
   if (rootContext.disableWheelChange.value)
@@ -77,14 +117,10 @@ function handleChange() {
     :aria-valuenow="rootContext.modelValue.value"
     :aria-valuemin="rootContext.min.value"
     :aria-valuemax="rootContext.max.value"
-    @keydown.up.prevent="rootContext.handleIncrease()"
-    @keydown.down.prevent="rootContext.handleDecrease()"
-    @keydown.page-up.prevent="rootContext.handleIncrease(10)"
-    @keydown.page-down.prevent="rootContext.handleDecrease(10)"
-    @keydown.home.prevent="rootContext.handleMinMaxValue('min')"
-    @keydown.end.prevent="rootContext.handleMinMaxValue('max')"
+    @keydown="handleKeydown"
     @wheel="handleWheelEvent"
     @beforeinput="(event: InputEvent) => {
+      if (event.isComposing) return
       const target = event.target as HTMLInputElement
       let nextValue
         = target.value.slice(0, target.selectionStart ?? undefined)
@@ -100,8 +136,9 @@ function handleChange() {
       inputValue = target.value
     }"
     @change="handleChange"
-    @keydown.enter="rootContext.applyInputValue($event.target?.value)"
     @blur="rootContext.applyInputValue($event.target?.value)"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </Primitive>

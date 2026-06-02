@@ -3,6 +3,7 @@ import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
 import { useVModel } from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useComposing } from '@/shared'
 
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
@@ -34,25 +35,40 @@ onMounted(() => {
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
 })
 
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  const el = event.target as HTMLInputElement
+  if (el)
+    processInputValue(el.value)
+})
+
 function handleKeyDown(ev: KeyboardEvent) {
+  // Don't swallow arrow keys mid-composition, they're used for IME candidate navigation
+  if (isComposing.value)
+    return
+  ev.preventDefault()
   if (!rootContext.open.value)
     rootContext.onOpenChange(true)
 }
 
-function handleInput(event: InputEvent) {
-  const target = event.target as HTMLInputElement
+function processInputValue(value: string) {
   if (!rootContext.open.value) {
     rootContext.onOpenChange(true)
     nextTick(() => {
-      if (target.value) {
-        rootContext.filterSearch.value = target.value
+      if (value) {
+        rootContext.filterSearch.value = value
         listboxContext.highlightFirstItem()
       }
     })
   }
   else {
-    rootContext.filterSearch.value = target.value
+    rootContext.filterSearch.value = value
   }
+}
+
+function handleInput(event: InputEvent) {
+  if (isComposing.value)
+    return
+  processInputValue((event.target as HTMLInputElement).value)
 }
 
 function handleFocus() {
@@ -150,9 +166,11 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     autocomplete="off"
     @click="handleClick"
     @input="handleInput"
-    @keydown.down.up.prevent="handleKeyDown"
+    @keydown.down.up="handleKeyDown"
     @focus="handleFocus"
     @blur="handleBlur"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </ListboxFilter>
