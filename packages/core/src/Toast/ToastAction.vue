@@ -9,15 +9,25 @@ export interface ToastActionProps extends ToastCloseProps {
    * @example <ToastAction altText="Undo (Alt+U)">Undo</ToastAction>
    */
   altText: string
+  /**
+   * Whether the action should close the toast when clicked.
+   *
+   * @defaultValue true
+   */
+  closeOnClick?: boolean
 }
 </script>
 
 <script setup lang="ts">
+import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import ToastAnnounceExclude from './ToastAnnounceExclude.vue'
 import ToastClose from './ToastClose.vue'
 
-const props = defineProps<ToastActionProps>()
+const props = withDefaults(defineProps<ToastActionProps>(), {
+  as: 'button',
+  closeOnClick: true,
+})
 
 if (!props.altText)
   throw new Error('Missing prop `altText` expected on `ToastAction`')
@@ -32,11 +42,22 @@ const { forwardRef } = useForwardExpose()
     as-child
   >
     <ToastClose
+      v-if="closeOnClick"
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
     >
       <slot />
     </ToastClose>
+
+    <Primitive
+      v-else
+      :ref="forwardRef"
+      :as="as"
+      :as-child="asChild"
+      :type="as === 'button' ? 'button' : undefined"
+    >
+      <slot />
+    </Primitive>
   </ToastAnnounceExclude>
 </template>
