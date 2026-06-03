@@ -324,7 +324,7 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
   }
 }
 
-async function highlightSelected(event?: Event) {
+async function highlightSelected(event?: Event, scroll = true) {
   // highlightSelected is called inside a watch with immediate set to true.
   // This results in code execution during SSR.
   // Ensure this code only runs in a browser environment, since it performs
@@ -339,18 +339,31 @@ async function highlightSelected(event?: Event) {
   else {
     const collection = getCollectionItem()
     const item = collection.find(i => i.dataset.state === 'checked')
+    // On the initial (mount) highlight we only set the roving-tabindex target.
+    // Focusing/scrolling here would scroll the page to a Listbox the user never
+    // interacted with (e.g. one below the fold). Later highlights scroll as before.
+    const focus = scroll ? undefined : false
     if (item)
-      changeHighlight(item)
+      changeHighlight(item, scroll, focus)
     else if (collection.length)
-      changeHighlight(collection[0])
+      changeHighlight(collection[0], scroll, focus)
   }
 }
+
+// `false` until the initial (mount) modelValue highlight has been queued.
+// Flipped synchronously in the watcher so the "is this the mount highlight?"
+// decision never depends on nextTick ordering, which differs between a client
+// mount and SSR hydration. The intent travels with the call as an argument
+// rather than via a shared flag released on a later tick.
+let hasHighlightedOnMount = false
 
 // watch for only programmatic changes
 watch(modelValue, () => {
   if (!isUserAction.value) {
+    const scroll = hasHighlightedOnMount
+    hasHighlightedOnMount = true
     nextTick(() => {
-      highlightSelected()
+      highlightSelected(undefined, scroll)
     })
   }
 }, { immediate: true, deep: true })

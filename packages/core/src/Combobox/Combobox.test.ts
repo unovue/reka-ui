@@ -306,23 +306,44 @@ describe('given a Combobox with openOnFocus', () => {
   })
 
   it('should close content when focus moves to an element outside', async () => {
-    // Add an external focusable element
     const externalButton = document.createElement('button')
     externalButton.textContent = 'External'
     document.body.appendChild(externalButton)
 
     const input = wrapper.find('input')
 
-    // Focus input to open via openOnFocus
-    await input.trigger('focus')
+    input.element.focus()
     await nextTick()
     expect(wrapper.find('[role=group]').exists()).toBe(true)
 
-    // Simulate blur with relatedTarget pointing to external element
-    await input.trigger('blur', { relatedTarget: externalButton })
+    externalButton.focus()
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     await nextTick()
 
     expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
+  })
+
+  it('should not close when focus is restored inside before deferred close fires', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    const input = wrapper.find('input')
+
+    input.element.focus()
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    // Synthetic blur: fires handleBlur with relatedTarget outside,
+    // but doesn't change document.activeElement — simulates FocusScope
+    // restoring focus back inside before the deferred close callback runs
+    await input.trigger('blur', { relatedTarget: externalButton })
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
 
     externalButton.remove()
   })
@@ -456,5 +477,116 @@ describe('given Combobox with TagsInput and addOnBlur', () => {
 
     // Input should be refocused so subsequent blur can trigger addOnBlur
     expect(document.activeElement).toBe(input.element)
+  })
+})
+
+describe('handle IME composition', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+  let input: DOMWrapper<HTMLInputElement>
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  beforeEach(() => {
+    // @ts-expect-error aXe throwing error complaining getComputedStyle
+    window.getComputedStyle = () => ({
+      animationName: '',
+    })
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body })
+    input = wrapper.find('input')
+  })
+
+  it('should not update filter during IME composition', async () => {
+    await input.trigger('compositionstart')
+    input.element.value = 'xiang'
+    await input.trigger('input')
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    expect(content.exists()).toBe(false)
+  })
+
+  it('should update filter after composition ends', async () => {
+    await input.trigger('compositionstart')
+    input.element.value = 'zzzzz'
+    await input.trigger('input')
+    await nextTick()
+
+    input.element.value = 'zzzzz'
+    await input.trigger('compositionend')
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    expect(content.exists()).toBe(true)
+    expect(content.attributes('data-empty')).toBeDefined()
+  })
+})
+
+describe('given combobox handleBlur with deferred close', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body, props: { resetSearchTermOnBlur: true } })
+  })
+
+  it('should not close when focus is restored inside before deferred close fires', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    // Open combobox
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    const input = wrapper.find('input')
+    input.element.focus()
+
+    // Synthetic blur: fires handleBlur with relatedTarget outside,
+    // but doesn't change document.activeElement — simulates FocusScope
+    // restoring focus back inside before the deferred close callback runs
+    await input.trigger('blur', { relatedTarget: externalButton })
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalButton.remove()
+  })
+
+  it('should close when focus stays outside after rAF', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    // Open combobox
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    const input = wrapper.find('input')
+    input.element.focus()
+
+    // Focus moves outside and stays there
+    externalButton.focus()
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
   })
 })

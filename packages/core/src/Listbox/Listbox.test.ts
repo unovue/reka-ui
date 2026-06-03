@@ -2,9 +2,10 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
+import { ListboxItem, ListboxRoot } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -128,6 +129,41 @@ describe('given default Listbox', () => {
       await newItem.trigger('click')
       expect(document.activeElement).toBe(newItem.element)
     })
+  })
+})
+
+describe('given a Listbox on initial mount', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Listbox>>
+  let scrollSpy: ReturnType<typeof vi.fn>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+
+  beforeEach(async () => {
+    scrollSpy = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy
+    document.body.innerHTML = ''
+    wrapper = mount(Listbox, { attachTo: document.body })
+    // let the immediate watcher's highlight cycle resolve
+    await nextTick()
+    await nextTick()
+  })
+
+  it('should highlight the first item without scrolling the page or stealing focus', () => {
+    const items = wrapper.findAll('[role=option]')
+    // the item is highlighted for keyboard entry...
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    // ...but the mount highlight must not focus it or scroll it into view,
+    // otherwise a Listbox below the fold scrolls the whole page on load.
+    expect(scrollSpy).not.toHaveBeenCalled()
+    expect(document.activeElement).not.toBe(items[0].element)
+  })
+
+  it('should focus and scroll once the user interacts', async () => {
+    await wrapper.find('[role=listbox]').trigger('focus')
+    const items = wrapper.findAll('[role=option]')
+    expect(document.activeElement).toBe(items[0].element)
+    expect(scrollSpy).toHaveBeenCalled()
   })
 })
 
@@ -316,6 +352,45 @@ describe('given horizontal Listbox', () => {
         })
       })
     })
+  })
+})
+
+// Regression test for https://github.com/unovue/reka-ui/issues/2644
+// `v-memo` on ListboxItem must invalidate when `disabled` (or
+// `rootContext.focusable.value`) changes, otherwise `data-disabled` / `disabled`
+// attributes go stale and the item still participates in keyboard navigation.
+describe('given ListboxItem with reactive `disabled` prop', () => {
+  it('should update DOM attributes when `disabled` toggles without highlight/selection change', async () => {
+    const isDisabled = ref(false)
+    const ReactiveDisabledListbox = defineComponent({
+      setup() {
+        return () =>
+          h(ListboxRoot, null, {
+            default: () => [
+              h(ListboxItem, { value: { id: 1 }, disabled: isDisabled.value }, () => 'toggleable'),
+              h(ListboxItem, { value: { id: 2 } }, () => 'other'),
+            ],
+          })
+      },
+    })
+
+    const wrapper = mount(ReactiveDisabledListbox, { attachTo: document.body })
+    const items = wrapper.findAll('[role=option]')
+
+    expect(items[0].attributes('data-disabled')).toBeUndefined()
+    expect(items[0].attributes('disabled')).toBeUndefined()
+
+    isDisabled.value = true
+    await nextTick()
+
+    expect(items[0].attributes('data-disabled')).toBe('')
+    expect(items[0].attributes('disabled')).toBe('')
+
+    isDisabled.value = false
+    await nextTick()
+
+    expect(items[0].attributes('data-disabled')).toBeUndefined()
+    expect(items[0].attributes('disabled')).toBeUndefined()
   })
 })
 

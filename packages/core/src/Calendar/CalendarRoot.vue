@@ -98,7 +98,7 @@ export interface CalendarRootProps extends PrimitiveProps {
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: DateValue) => DateValue
   /** The controlled selected date value of the calendar. Can be bound as `v-model`. */
-  modelValue?: DateValue | DateValue[] | undefined
+  modelValue?: DateValue | DateValue[] | null
   /** Whether multiple dates can be selected */
   multiple?: boolean
   /** Whether or not to disable days outside the current view. */
