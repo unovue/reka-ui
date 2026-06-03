@@ -133,7 +133,7 @@ describe('given default Autocomplete', () => {
       })
     })
 
-    describe('iME composition', () => {
+    describe('handle IME composition', () => {
       it('should not filter during composition', async () => {
         await input.trigger('compositionstart')
         input.element.value = 'x'

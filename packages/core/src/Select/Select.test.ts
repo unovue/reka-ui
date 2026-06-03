@@ -1,10 +1,11 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { handleSubmit } from '@/test'
+import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
@@ -248,6 +249,35 @@ describe('given Select with object type', async () => {
         expect(group.exists()).toBeFalsy()
       })
     })
+  })
+})
+
+describe('given SelectContent cleanup', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('should clear delayed presence updates when unmounted after closing', async () => {
+    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+    const wrapper = mount(SelectUnmountCleanup, { attachTo: document.body })
+
+    await nextTick()
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    const timerCountAfterClose = vi.getTimerCount()
+    expect(timerCountAfterClose).toBeGreaterThan(0)
+
+    await wrapper.findAll('button')[1].trigger('click')
+    await nextTick()
+
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBeLessThan(timerCountAfterClose)
   })
 })
 

@@ -44,7 +44,7 @@ const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value === rootContext.highlightedElement.value)
+const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
@@ -76,7 +76,7 @@ provideListboxItemContext({
       :id="id"
       v-bind="$attrs"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected]"
+      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value]"
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"

@@ -24,6 +24,9 @@ const {
   handleSegmentClick,
   handleSegmentKeydown,
   handleSegmentFocusOut,
+  handleSegmentBeforeInput,
+  handleSegmentCompositionStart,
+  handleSegmentCompositionEnd,
   attributes,
 } = useDateField({
   hasLeftFocus,
@@ -61,6 +64,9 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
     v-on="part !== 'literal' ? {
       mousedown: handleSegmentClick,
       keydown: handleSegmentKeydown,
+      beforeinput: handleSegmentBeforeInput,
+      compositionstart: handleSegmentCompositionStart,
+      compositionend: handleSegmentCompositionEnd,
       focusout: () => {
         hasLeftFocus = true
         handleSegmentFocusOut()
