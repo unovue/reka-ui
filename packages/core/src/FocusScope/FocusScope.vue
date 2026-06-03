@@ -280,6 +280,12 @@ function handleKeyDown(event: KeyboardEvent) {
         if (nextElement) {
           focus(nextElement, { select: true })
         }
+        else if (props.loop) {
+          if (event.shiftKey)
+            focus(last, { select: true })
+          else
+            focus(first, { select: true })
+        }
       }
     }
   }

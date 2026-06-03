@@ -398,7 +398,74 @@ describe('focusScope (shadow root)', () => {
           await userEvent.tab({ shift: true })
           await waitFor(() => expect(testCase === 'shadowDomOnly' ? shadowRoot.activeElement : document.activeElement).toBe(closeDialogButton))
         })
+
+        it('should navigate backward with shift+tab mid-list in the FocusScope', async () => {
+          const queryRoot = getQueryRoot()
+          const nameInput = queryRoot.querySelector(`input[name="name"]`) as HTMLElement
+          const emailInput = queryRoot.querySelector(`input[name="email"]`) as HTMLElement
+          const submitButton = queryRoot.querySelector('button[type="submit"]') as HTMLElement
+
+          // Shift+Tab from email → name
+          emailInput.focus()
+          await waitFor(() => expect(queryRoot.activeElement).toBe(emailInput))
+          await userEvent.tab({ shift: true })
+          await waitFor(() => expect(queryRoot.activeElement).toBe(nameInput))
+
+          // Shift+Tab from submit → email
+          submitButton.focus()
+          await waitFor(() => expect(queryRoot.activeElement).toBe(submitButton))
+          await userEvent.tab({ shift: true })
+          await waitFor(() => expect(queryRoot.activeElement).toBe(emailInput))
+        })
       })
     })
+  })
+
+  it('should trap focus without looping in shadow DOM when loop=false', async () => {
+    function renderInShadowRoot(component: unknown) {
+      const host = document.createElement('div')
+      document.body.appendChild(host)
+      const shadow = host.attachShadow({ mode: 'open' })
+      const container = document.createElement('div')
+      shadow.appendChild(container)
+      const rendered = render(component, { container, baseElement: container })
+      return { rendered, host }
+    }
+
+    const { rendered, host } = renderInShadowRoot(defineComponent({
+      components: { FocusScope },
+      template: `
+        <FocusScope asChild trapped>
+          <div>
+            <input name="first" />
+            <input name="second" />
+            <input name="last" />
+          </div>
+        </FocusScope>
+      `,
+    }))
+
+    try {
+      await nextTick()
+      const shadow = (host as any).shadowRoot as ShadowRoot
+      const first = shadow.querySelector('input[name="first"]') as HTMLElement
+      const last = shadow.querySelector('input[name="last"]') as HTMLElement
+
+      // Tab from last should not wrap to first
+      last.focus()
+      await waitFor(() => expect(shadow.activeElement).toBe(last))
+      await userEvent.tab()
+      await waitFor(() => expect(shadow.activeElement).toBe(last))
+
+      // Shift+Tab from first should not wrap to last
+      first.focus()
+      await waitFor(() => expect(shadow.activeElement).toBe(first))
+      await userEvent.tab({ shift: true })
+      await waitFor(() => expect(shadow.activeElement).toBe(first))
+    }
+    finally {
+      rendered.unmount()
+      host?.remove()
+    }
   })
 })
