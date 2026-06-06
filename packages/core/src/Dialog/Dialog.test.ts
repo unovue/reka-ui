@@ -67,6 +67,68 @@ const NestedContentDialogTest = defineComponent({
 </DialogRoot>`,
 })
 
+// Reproduces https://github.com/unovue/reka-ui/issues/2677 — a modal Dialog
+// hardcoded `disableOutsidePointerEvents` to `true`, so the prop passed to
+// `DialogContent` was ignored. These are tested without a `DialogOverlay`,
+// because the overlay's `useBodyScrollLock` locks `body` pointer-events through
+// a separate mechanism unrelated to this prop.
+function makeModalDialog(contentBinding: string) {
+  return defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent ${contentBinding}>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+}
+
+describe('given a modal Dialog (#2677)', () => {
+  let consoleWarnMock: SpyInstance
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    consoleWarnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleWarnMock.mockRestore()
+  })
+
+  it('should lock body pointer-events by default', async () => {
+    const wrapper = mount(makeModalDialog(''), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
+  })
+
+  it('should respect disableOutsidePointerEvents=false on the content', async () => {
+    const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="false"'), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).not.toBe('none')
+    wrapper.unmount()
+  })
+
+  it('should still lock body pointer-events when explicitly true', async () => {
+    const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="true"'), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
+  })
+})
+
 describe('given a default Dialog', () => {
   let wrapper: VueWrapper<InstanceType<typeof DialogTest>>
   let trigger: DOMWrapper<HTMLElement>

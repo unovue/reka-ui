@@ -4,7 +4,9 @@ import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
-const props = defineProps<DialogContentImplProps>()
+const props = withDefaults(defineProps<DialogContentImplProps>(), {
+  disableOutsidePointerEvents: true,
+})
 const emits = defineEmits<DialogContentImplEmits>()
 
 const rootContext = injectDialogRootContext()
@@ -20,7 +22,7 @@ useHideOthers(currentElement)
     v-bind="{ ...props, ...emitsAsProps }"
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
-    :disable-outside-pointer-events="true"
+    :disable-outside-pointer-events="props.disableOutsidePointerEvents"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
