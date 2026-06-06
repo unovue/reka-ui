@@ -9,6 +9,7 @@ import {
   computed,
   nextTick,
   reactive,
+  watch,
   watchEffect,
 } from 'vue'
 import { isNullish, useForwardExpose } from '@/shared'
@@ -138,28 +139,38 @@ onKeyStroke('Escape', (event) => {
     emits('dismiss')
 })
 
-watchEffect((cleanupFn) => {
-  if (!layerElement.value)
-    return
-  if (props.disableOutsidePointerEvents) {
-    if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-      context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
-      ownerDocument.value.body.style.pointerEvents = 'none'
+// Use `watch` with explicit sources (instead of `watchEffect`) so this effect
+// only re-runs when `layerElement` or `disableOutsidePointerEvents` change.
+// Reading `context.layersWithOutsidePointerEventsDisabled.size` inside the
+// callback must NOT make it reactive: otherwise adding/removing any other
+// layer would re-run this effect and its cleanup could prematurely restore the
+// body's `pointer-events` while an ancestor layer is still open (#2674).
+watch(
+  [layerElement, () => props.disableOutsidePointerEvents],
+  ([element, disableOutsidePointerEvents], _, onCleanup) => {
+    if (!element)
+      return
+    if (disableOutsidePointerEvents) {
+      if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+        context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
+        ownerDocument.value.body.style.pointerEvents = 'none'
+      }
+      context.layersWithOutsidePointerEventsDisabled.add(element)
     }
-    context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
-  }
-  layers.value.add(layerElement.value)
+    layers.value.add(element)
 
-  cleanupFn(() => {
-    if (
-      props.disableOutsidePointerEvents
-      && context.layersWithOutsidePointerEventsDisabled.size === 1
-      && !isNullish(context.originalBodyPointerEvents)
-    ) {
-      ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
-    }
-  })
-})
+    onCleanup(() => {
+      if (
+        disableOutsidePointerEvents
+        && context.layersWithOutsidePointerEventsDisabled.size === 1
+        && !isNullish(context.originalBodyPointerEvents)
+      ) {
+        ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
+      }
+    })
+  },
+  { immediate: true },
+)
 
 watchEffect((cleanupFn) => {
   cleanupFn(() => {

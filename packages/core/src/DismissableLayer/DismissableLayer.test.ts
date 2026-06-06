@@ -2,7 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { sleep } from '@/test'
+import { DismissableLayer as DismissableLayerPrimitive } from '.'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
@@ -17,6 +19,65 @@ describe('isLayerExist', () => {
 
     expect(isLayerExist(layer, document as any)).toBe(false)
     expect(isLayerExist(layer, document.createTextNode('x') as any)).toBe(false)
+  })
+})
+
+describe('nested layers with disableOutsidePointerEvents (#2674)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+  })
+
+  function mountNested() {
+    const outerOpen = ref(true)
+    const innerOpen = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          outerOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'outer' }, () => 'Outer')
+            : null,
+          innerOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'inner' }, () => 'Inner')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { wrapper, outerOpen, innerOpen }
+  }
+
+  it('should keep body pointer-events none after a nested layer closes while outer stays open', async () => {
+    const { wrapper, innerOpen } = mountNested()
+    await sleep(1)
+
+    // Outer (dialog) open -> body locked
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Open inner (menu) layer
+    innerOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Close inner layer while outer is still open
+    innerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    wrapper.unmount()
+  })
+
+  it('should restore body pointer-events after the last layer closes', async () => {
+    const { wrapper, outerOpen } = mountNested()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    outerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
   })
 })
 
