@@ -262,6 +262,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: ^3.2.6
         version: 3.2.6(vitest@4.1.8)
+      '@vue/server-renderer':
+        specifier: 3.5.17
+        version: 3.5.17(vue@3.5.17(typescript@5.8.3))
       '@vue/test-utils':
         specifier: ^2.4.11
         version: 2.4.11(@vue/compiler-dom@3.5.35)(@vue/server-renderer@3.5.17(vue@3.5.17(typescript@5.8.3)))(vue@3.5.17(typescript@5.8.3))
