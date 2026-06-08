@@ -148,6 +148,14 @@ watchEffect((cleanupFn) => {
     }
     context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
   }
+  else {
+    if (context.layersWithOutsidePointerEventsDisabled.has(layerElement.value)) {
+      context.layersWithOutsidePointerEventsDisabled.delete(layerElement.value)
+      if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+        ownerDocument.value.body.style.pointerEvents = originalBodyPointerEvents
+      }
+    }
+  }
   layers.value.add(layerElement.value)
 
   cleanupFn(() => {
