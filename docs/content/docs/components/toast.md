@@ -339,16 +339,14 @@ When providing an icon (or font icon), remember to label it correctly for screen
       keys: ['Space'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          When focus is on a <Code>ToastAction</Code>, closes the toast when <Code>closeOnClick</Code> is <Code>true</Code>. When focus is on <Code>ToastClose</Code>, closes the toast.
         </span>`
     },
     {
       keys: ['Enter'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          When focus is on a <Code>ToastAction</Code>, closes the toast when <Code>closeOnClick</Code> is <Code>true</Code>. When focus is on <Code>ToastClose</Code>, closes the toast.
         </span>`
     },
     {
