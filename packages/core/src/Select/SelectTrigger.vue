@@ -47,6 +47,10 @@ function handlePointerOpen(event: PointerEvent) {
     y: Math.round(event.pageY),
   }
 }
+
+function isCtrlLeftClick(event: MouseEvent) {
+  return event.button === 0 && event.ctrlKey === false
+}
 </script>
 
 <template>
@@ -95,7 +99,7 @@ function handlePointerOpen(event: PointerEvent) {
 
           // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
           // but not when the control key is pressed (avoiding MacOS right click)
-          if (event.button === 0 && event.ctrlKey === false) {
+          if (isCtrlLeftClick(event)) {
             handlePointerOpen(event)
           }
         }
@@ -105,8 +109,9 @@ function handlePointerOpen(event: PointerEvent) {
           // Prevent trigger from stealing focus from the active item after opening.
           // We avoid calling `preventDefault` in `pointerdown` because that suppresses
           // compatibility mouse events (`mousedown`, `mouseup`, `click`).
-          if (event.button === 0 && event.ctrlKey === false)
+          if (isCtrlLeftClick(event)) {
             event.preventDefault();
+          }
         }
       "
       @pointerup.prevent="
