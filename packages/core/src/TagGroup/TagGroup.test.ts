@@ -95,6 +95,38 @@ describe('given default TagGroup', () => {
     expect(disabledWrapper.vm.tags).toEqual(['Vue', 'Reka UI'])
   })
 
+  it('should not remove a tag when a disabled delete control is rendered as a non-button element', async () => {
+    const DisabledDeleteAsDivDemo = defineComponent({
+      components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
+      setup() {
+        const tags = ref(['Vue', 'Reka UI'])
+        return { tags }
+      },
+      template: `
+        <TagGroupRoot v-model="tags" aria-label="Selected frameworks">
+          <TagGroupItem v-for="tag in tags" :key="tag" :value="tag">
+            <TagGroupItemText>{{ tag }}</TagGroupItemText>
+            <TagGroupItemDelete
+              as="div"
+              :disabled="tag === 'Vue'"
+              :aria-label="'Remove ' + tag"
+            />
+          </TagGroupItem>
+        </TagGroupRoot>
+      `,
+    })
+
+    const disabledWrapper = mount(DisabledDeleteAsDivDemo, { attachTo: document.body })
+    const disabledDelete = disabledWrapper.find('[aria-label="Remove Vue"]')
+
+    expect(disabledDelete.attributes('data-disabled')).toBe('')
+    expect(disabledDelete.attributes('disabled')).toBeUndefined()
+
+    await disabledDelete.trigger('click')
+
+    expect(disabledWrapper.vm.tags).toEqual(['Vue', 'Reka UI'])
+  })
+
   it('should reflect item selection state from the model value', () => {
     const items = wrapper.findAll('[role="listitem"]')
 

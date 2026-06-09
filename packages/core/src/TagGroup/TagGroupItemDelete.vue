@@ -22,6 +22,15 @@ const itemContext = injectTagGroupItemContext()
 const { forwardRef } = useForwardExpose()
 
 const disabled = computed(() => itemContext.disabled.value || props.disabled)
+
+function handleClick(event: MouseEvent) {
+  if (disabled.value) {
+    event.preventDefault()
+    return
+  }
+
+  itemContext.remove()
+}
 </script>
 
 <template>
@@ -31,8 +40,8 @@ const disabled = computed(() => itemContext.disabled.value || props.disabled)
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
     :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
-    @click.stop="itemContext.remove"
+    :disabled="props.as === 'button' ? disabled : undefined"
+    @click.stop="handleClick"
   >
     <slot />
   </Primitive>

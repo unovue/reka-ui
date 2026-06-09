@@ -157,6 +157,7 @@ export default defineConfig({
               { text: 'Select', link: '/docs/components/select' },
               { text: 'Slider', link: '/docs/components/slider' },
               { text: 'Switch', link: '/docs/components/switch' },
+              { text: `Tag Group ${BadgeHTML('Alpha', true)}`, link: '/docs/components/tag-group' },
               { text: 'Tags Input', link: '/docs/components/tags-input' },
               { text: 'Toggle', link: '/docs/components/toggle' },
               { text: 'Toggle Group', link: '/docs/components/toggle-group' },
