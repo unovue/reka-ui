@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -25,6 +26,7 @@ describe('given default TagGroup', () => {
   let wrapper: VueWrapper<InstanceType<typeof TagGroupDemo>>
 
   beforeEach(() => {
+    document.body.innerHTML = ''
     wrapper = mount(TagGroupDemo, { attachTo: document.body })
   })
 
@@ -86,7 +88,7 @@ describe('given default TagGroup', () => {
     const disabledWrapper = mount(DisabledTagGroupDemo, { attachTo: document.body })
     const disabledItem = disabledWrapper.findAll('[role="listitem"]')[0]
 
-    expect(disabledItem.attributes('tabindex')).toBeUndefined()
+    expect(disabledItem.attributes('tabindex')).toBe('-1')
     expect(disabledItem.attributes('data-disabled')).toBe('')
 
     await disabledItem.trigger('keydown', { key: 'Delete' })
@@ -131,5 +133,48 @@ describe('given default TagGroup', () => {
     const items = wrapper.findAll('[role="listitem"]')
 
     expect(items.every(item => item.attributes('data-state') === 'checked')).toBe(true)
+  })
+
+  it('should move focus between enabled tags with arrow keys', async () => {
+    const KeyboardTagGroupDemo = defineComponent({
+      components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
+      setup() {
+        const tags = ref(['Vue', 'Reka UI', 'Accessibility', 'Radix'])
+        return { tags }
+      },
+      template: `
+        <TagGroupRoot v-model="tags" aria-label="Selected frameworks" loop>
+          <TagGroupItem v-for="tag in tags" :key="tag" :value="tag" :disabled="tag === 'Accessibility'">
+            <TagGroupItemText>{{ tag }}</TagGroupItemText>
+            <TagGroupItemDelete :aria-label="'Remove ' + tag" />
+          </TagGroupItem>
+        </TagGroupRoot>
+      `,
+    })
+
+    wrapper.unmount()
+    document.body.innerHTML = ''
+
+    const keyboardWrapper = mount(KeyboardTagGroupDemo, { attachTo: document.body })
+    const items = () => keyboardWrapper.findAll('[role="listitem"]')
+
+    await userEvent.tab()
+    expect(document.activeElement).toBe(items()[0].element)
+
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).toBe(items()[1].element)
+
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).not.toBe(items()[2].element)
+    expect(document.activeElement).toBe(items()[3].element)
+
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).toBe(items()[0].element)
+
+    await userEvent.keyboard('[End]')
+    expect(document.activeElement).toBe(items()[3].element)
+
+    await userEvent.keyboard('[Home]')
+    expect(document.activeElement).toBe(items()[0].element)
   })
 })

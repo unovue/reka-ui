@@ -24,6 +24,7 @@ export const [injectTagGroupItemContext, provideTagGroupItemContext]
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { RovingFocusItem } from '@/RovingFocus'
 import { injectTagGroupRootContext } from './TagGroupRoot.vue'
 
 const props = withDefaults(defineProps<TagGroupItemProps<T>>(), {
@@ -50,17 +51,21 @@ provideTagGroupItemContext({
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
-    role="listitem"
-    :tabindex="disabled ? undefined : 0"
-    :data-disabled="disabled ? '' : undefined"
-    :data-state="isSelected ? 'checked' : 'unchecked'"
-    @keydown.delete.prevent="remove"
-    @keydown.backspace.prevent="remove"
+  <RovingFocusItem
+    as-child
+    :focusable="!disabled"
   >
-    <slot />
-  </Primitive>
+    <Primitive
+      :ref="forwardRef"
+      :as="as"
+      :as-child="asChild"
+      role="listitem"
+      :data-disabled="disabled ? '' : undefined"
+      :data-state="isSelected ? 'checked' : 'unchecked'"
+      @keydown.delete.prevent="remove"
+      @keydown.backspace.prevent="remove"
+    >
+      <slot />
+    </Primitive>
+  </RovingFocusItem>
 </template>

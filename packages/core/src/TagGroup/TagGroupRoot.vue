@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import type { AcceptableValue, FormFieldProps } from '@/shared/types'
+import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, isValueEqualOrExist, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface TagGroupRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the tags. Can be binded with `v-model`. */
@@ -12,6 +12,12 @@ export interface TagGroupRootProps<T = AcceptableValue> extends PrimitiveProps, 
   defaultValue?: T[]
   /** When `true`, prevents the user from interacting with the tag group and all its items. */
   disabled?: boolean
+  /** The orientation of the component, which determines how focus moves: `horizontal` for left/right arrows and `vertical` for up/down arrows. */
+  orientation?: DataOrientation
+  /** The reading direction of the tag group when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
+  dir?: Direction
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type TagGroupRootEmits<T = AcceptableValue> = {
@@ -35,11 +41,13 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<TagGroupRootProps<T>>(), {
   defaultValue: () => [],
   disabled: false,
+  loop: true,
   as: 'div',
 })
 const emits = defineEmits<TagGroupRootEmits<T>>()
@@ -51,7 +59,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled } = toRefs(props)
+const { disabled, loop, orientation, dir: propDir } = toRefs(props)
+const dir = useDirection(propDir)
 const { forwardRef, currentElement } = useForwardExpose()
 const isFormControl = useFormControl(currentElement)
 
@@ -74,21 +83,30 @@ provideTagGroupRootContext({
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
-    role="list"
-    :data-disabled="disabled ? '' : undefined"
+  <RovingFocusGroup
+    as-child
+    :orientation="orientation"
+    :dir="dir"
+    :loop="loop"
   >
-    <slot :model-value="modelValue" />
+    <Primitive
+      :ref="forwardRef"
+      :as="as"
+      :as-child="asChild"
+      role="list"
+      :data-disabled="disabled ? '' : undefined"
+      :data-orientation="orientation"
+      :dir="dir"
+    >
+      <slot :model-value="modelValue" />
 
-    <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
-      :value="modelValue"
-      :required="required"
-      :disabled="disabled"
-    />
-  </Primitive>
+      <VisuallyHiddenInput
+        v-if="isFormControl && name"
+        :name="name"
+        :value="modelValue"
+        :required="required"
+        :disabled="disabled"
+      />
+    </Primitive>
+  </RovingFocusGroup>
 </template>
