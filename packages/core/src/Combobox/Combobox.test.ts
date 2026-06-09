@@ -349,6 +349,65 @@ describe('given a Combobox with openOnFocus', () => {
   })
 })
 
+describe('given combobox with an associated label', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body })
+  })
+
+  it('should not dismiss when interacting with a label tied to a control inside', async () => {
+    // A `<label for="...">` pointing to the combobox input forwards its click/focus
+    // to that input. Clicking it should keep the content open instead of dismissing
+    // on `pointerdown` and immediately re-opening from the forwarded click.
+    const input = wrapper.find('input')
+    input.element.id = 'combobox-input'
+
+    const label = document.createElement('label')
+    label.setAttribute('for', 'combobox-input')
+    label.textContent = 'Fruit'
+    document.body.appendChild(label)
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    // The document `pointerdown` listener is registered via `setTimeout(0)`.
+    await sleep(1)
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    label.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    label.remove()
+  })
+
+  it('should dismiss when interacting with an unrelated label', async () => {
+    const externalLabel = document.createElement('label')
+    externalLabel.textContent = 'Unrelated'
+    document.body.appendChild(externalLabel)
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    await sleep(1)
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalLabel.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // dismiss is emitted after an internal `await nextTick()`.
+    await sleep(1)
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalLabel.remove()
+  })
+})
+
 describe('given combobox in a form', async () => {
   let wrapper: VueWrapper<InstanceType<any>>
   let valueBox: DOMWrapper<HTMLInputElement>
