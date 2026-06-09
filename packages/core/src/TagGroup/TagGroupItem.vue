@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<TagGroupItemProps<T>>(), {
   disabled: false,
 })
 
-const rootContext = injectTagGroupRootContext<T>()
+const rootContext = injectTagGroupRootContext()
 const { forwardRef } = useForwardExpose()
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
