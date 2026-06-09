@@ -46,6 +46,10 @@
       "import": "./dist/date.js",
       "require": "./dist/date.cjs"
     },
+    "./dismissable-layer": {
+      "import": "./dist/dismissable-layer.js",
+      "require": "./dist/dismissable-layer.cjs"
+    },
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs",
       "require": "./dist/namespaced/index.cjs"

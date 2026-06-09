@@ -53,12 +53,23 @@ export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
   dismiss: []
 }
 
-export const context = reactive({
+export interface DismissableLayerContext {
+  layersRoot: Set<HTMLElement>
+  layersWithOutsidePointerEventsDisabled: Set<HTMLElement>
+  originalBodyPointerEvents: string | undefined
+  branches: Set<HTMLElement>
+}
+
+export const context = reactive<DismissableLayerContext>({
   layersRoot: new Set<HTMLElement>(),
   layersWithOutsidePointerEventsDisabled: new Set<HTMLElement>(),
-  originalBodyPointerEvents: undefined as string | undefined,
+  originalBodyPointerEvents: undefined,
   branches: new Set<HTMLElement>(),
 })
+
+export function useDismissableLayerContext() {
+  return context
+}
 </script>
 
 <script setup lang="ts">

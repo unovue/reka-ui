@@ -34,11 +34,12 @@ function pureAnnotationPlugin(): OutputPlugin {
 
 export default defineConfig({
   entry: {
-    index: './src/index.ts',
-    internal: './src/internal.ts',
-    date: './src/date/index.ts',
-    constant: './constant/index.ts',
-    shared: './src/shared/index.ts',
+    'index': './src/index.ts',
+    'internal': './src/internal.ts',
+    'date': './src/date/index.ts',
+    'constant': './constant/index.ts',
+    'shared': './src/shared/index.ts',
+    'dismissable-layer': './src/DismissableLayer/index.ts',
   },
   fromVite: true,
   platform: 'neutral',

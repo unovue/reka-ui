@@ -3,6 +3,7 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { sleep } from '@/test'
+import { DismissableLayerBranch, DismissableLayer as PublicDismissableLayer, useDismissableLayerContext } from '..'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
@@ -17,6 +18,18 @@ describe('isLayerExist', () => {
 
     expect(isLayerExist(layer, document as any)).toBe(false)
     expect(isLayerExist(layer, document.createTextNode('x') as any)).toBe(false)
+  })
+})
+
+describe('public DismissableLayer API', () => {
+  it('should export the layer components and context accessor', () => {
+    expect(PublicDismissableLayer).toBeTruthy()
+    expect(DismissableLayerBranch).toBeTruthy()
+
+    const layerContext = useDismissableLayerContext()
+    expect(layerContext.layersRoot).toBeInstanceOf(Set)
+    expect(layerContext.layersWithOutsidePointerEventsDisabled).toBeInstanceOf(Set)
+    expect(layerContext.branches).toBeInstanceOf(Set)
   })
 })
 
