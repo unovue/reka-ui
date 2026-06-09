@@ -444,6 +444,13 @@ export const components = {
     'TabsIndicator',
   ] as const,
 
+  tagGroup: [
+    'TagGroupRoot',
+    'TagGroupItem',
+    'TagGroupItemText',
+    'TagGroupItemDelete',
+  ] as const,
+
   tagsInput: [
     'TagsInputRoot',
     'TagsInputInput',
