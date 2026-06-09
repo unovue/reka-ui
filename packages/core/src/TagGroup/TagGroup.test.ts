@@ -44,10 +44,13 @@ describe('given default TagGroup', () => {
   })
 
   it('should remove a tag from model value when delete button is clicked', async () => {
+    const rootComponent = wrapper.findComponent(TagGroupRoot)
+
     await wrapper.findAll('button[aria-label^="Remove"]')[1].trigger('click')
 
     expect(wrapper.vm.tags).toEqual(['Vue', 'Accessibility'])
     expect(wrapper.findAll('[role="listitem"]').map(item => item.text())).toEqual(['Vue', 'Accessibility'])
+    expect(rootComponent.emitted('removeTag')?.[0]?.[0]).toEqual('Reka UI')
   })
 
   it('should remove the focused tag with Delete', async () => {
