@@ -380,6 +380,9 @@ describe('given combobox with an associated label', () => {
     expect(wrapper.find('[role=group]').exists()).toBe(true)
 
     label.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // Wait as long as a real dismiss would take (emitted after an internal
+    // `await nextTick()`) so a regression that fails to prevent it is caught.
+    await sleep(1)
     await nextTick()
 
     expect(wrapper.find('[role=group]').exists()).toBe(true)
