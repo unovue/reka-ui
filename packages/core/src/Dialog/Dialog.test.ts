@@ -100,6 +100,12 @@ describe('given a Dialog with unmountOnHide=false', () => {
     trigger = wrapper.find('button')
   })
 
+  // The content is force-mounted, so unmount explicitly to avoid leaking the
+  // layer into `DismissableLayer`'s module-level tracking set across tests.
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
   it('should keep content in DOM when closed after being opened', async () => {
     await fireEvent.click(trigger.element)
     await nextTick()
@@ -186,6 +192,10 @@ describe('given a non-modal Dialog with unmountOnHide=false', () => {
     trigger = wrapper.find('button')
   })
 
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
   it('should keep content in DOM when closed after being opened', async () => {
     await fireEvent.click(trigger.element)
     await nextTick()
@@ -248,6 +258,70 @@ describe('given a Dialog with unmountOnHide=false, openAutoFocus', () => {
     await nextTick()
     await new Promise(resolve => setTimeout(resolve, 10))
     expect(onOpenAutoFocus).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+  })
+})
+
+// Reproduces https://github.com/unovue/reka-ui/issues/2677 — a modal Dialog
+// hardcoded `disableOutsidePointerEvents` to `true`, so the prop passed to
+// `DialogContent` was ignored. These are tested without a `DialogOverlay`,
+// because the overlay's `useBodyScrollLock` locks `body` pointer-events through
+// a separate mechanism unrelated to this prop.
+function makeModalDialog(contentBinding: string) {
+  return defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent ${contentBinding}>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+}
+
+describe('given a modal Dialog (#2677)', () => {
+  let consoleWarnMock: MockInstance
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    consoleWarnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleWarnMock.mockRestore()
+  })
+
+  it('should lock body pointer-events by default', async () => {
+    const wrapper = mount(makeModalDialog(''), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
+  })
+
+  it('should respect disableOutsidePointerEvents=false on the content', async () => {
+    const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="false"'), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).not.toBe('none')
+    wrapper.unmount()
+  })
+
+  it('should still lock body pointer-events when explicitly true', async () => {
+    const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="true"'), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
   })
 })
 

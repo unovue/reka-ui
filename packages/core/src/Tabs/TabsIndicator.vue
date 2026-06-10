@@ -22,10 +22,12 @@ const isMounted = useMounted()
 
 interface IndicatorStyle {
   size: number | null
+  thickness: number | null
   position: number | null
 }
 const indicatorStyle = ref<IndicatorStyle>({
   size: null,
+  thickness: null,
   position: null,
 })
 const tabs = ref<Array<HTMLElement>>([])
@@ -49,12 +51,14 @@ function updateIndicatorStyle() {
   if (context.orientation.value === 'horizontal') {
     indicatorStyle.value = {
       size: activeTab.offsetWidth,
+      thickness: activeTab.offsetHeight,
       position: activeTab.offsetLeft,
     }
   }
   else {
     indicatorStyle.value = {
       size: activeTab.offsetHeight,
+      thickness: activeTab.offsetWidth,
       position: activeTab.offsetTop,
     }
   }
@@ -67,6 +71,7 @@ function updateIndicatorStyle() {
     v-bind="props"
     :style="{
       '--reka-tabs-indicator-size': `${indicatorStyle.size}px`,
+      '--reka-tabs-indicator-thickness': `${indicatorStyle.thickness}px`,
       '--reka-tabs-indicator-position': `${indicatorStyle.position}px`,
     }"
   >

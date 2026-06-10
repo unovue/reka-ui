@@ -80,6 +80,7 @@ onUnmounted(() => {
     v-bind="props"
     :id="id"
     ref="primitiveElement"
+    v-memo="[isRender, rootContext.filterSearch.value, rootContext.disabled.value, disabled, props.value, props.as, props.asChild, ...Object.values($attrs)]"
     :disabled="rootContext.disabled.value || disabled"
     @select="(event) => {
       emits('select', event as any)

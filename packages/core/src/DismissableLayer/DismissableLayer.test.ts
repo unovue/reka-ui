@@ -2,10 +2,10 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
-import { DismissableLayer } from '.'
-import DismissableLayerStory from './story/_DismissableLayer.vue'
+import { DismissableLayer as DismissableLayerPrimitive } from '.'
+import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
 const OPEN_LABEL = 'Open'
@@ -22,13 +22,123 @@ describe('isLayerExist', () => {
   })
 })
 
+describe('nested layers with disableOutsidePointerEvents (#2674)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+  })
+
+  function mountNested() {
+    const outerOpen = ref(true)
+    const innerOpen = ref(false)
+    // Mirrors how a modal Menu drives the prop (`menuContext.open.value`):
+    // the layer stays mounted while the prop toggles back to `false`.
+    const innerDisable = ref(true)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          outerOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'outer' }, () => 'Outer')
+            : null,
+          innerOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': innerDisable.value, 'data-testid': 'inner' }, () => 'Inner')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { wrapper, outerOpen, innerOpen, innerDisable }
+  }
+
+  it('should keep body pointer-events none after a nested layer closes while outer stays open', async () => {
+    const { wrapper, innerOpen } = mountNested()
+    await sleep(1)
+
+    // Outer (dialog) open -> body locked
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Open inner (menu) layer
+    innerOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Close inner layer while outer is still open
+    innerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    wrapper.unmount()
+  })
+
+  it('should keep body pointer-events none when a nested layer toggles disableOutsidePointerEvents to false while mounted', async () => {
+    const { wrapper, innerOpen, innerDisable } = mountNested()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Open inner layer (still disabling outside pointer events)
+    innerOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Toggle the prop off without unmounting (a modal Menu closing)
+    innerDisable.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Now unmount the inner layer entirely; outer still open
+    innerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    wrapper.unmount()
+  })
+
+  it('should restore and re-lock body pointer-events as the only layer toggles disableOutsidePointerEvents', async () => {
+    const disable = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: disable.value }, () => 'Only')
+      },
+    }), { attachTo: document.body })
+
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Toggle off -> body restored, and the layer must leave the tracking set
+    disable.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    // Toggle back on -> body must lock again (would stay '' if a stale entry
+    // remained in the set, making `size === 0` false on re-add)
+    disable.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    wrapper.unmount()
+  })
+
+  it('should restore body pointer-events after the last layer closes', async () => {
+    const { wrapper, outerOpen } = mountNested()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    outerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+})
+
 describe('given a default DismissableLayer', () => {
-  let wrapper: VueWrapper<InstanceType<typeof DismissableLayerStory>>
+  let wrapper: VueWrapper<InstanceType<typeof DismissableLayer>>
   let trigger: DOMWrapper<HTMLElement>
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(DismissableLayerStory, { attachTo: document.body, props: { openLabel: OPEN_LABEL, closeLabel: CLOSE_LABEL, outsideLabel: OUTSIDE_LABEL } })
+    wrapper = mount(DismissableLayer, { attachTo: document.body, props: { openLabel: OPEN_LABEL, closeLabel: CLOSE_LABEL, outsideLabel: OUTSIDE_LABEL } })
     trigger = wrapper.find('button')
   })
 
@@ -94,7 +204,7 @@ describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents'
   // `disableOutsidePointerEvents` toggles `true` -> `false`. The body pointer-events
   // must be restored even though the component is never unmounted.
   it('should restore body pointer-events when toggled off while staying mounted', async () => {
-    const wrapper = mount(DismissableLayer, {
+    const wrapper = mount(DismissableLayerPrimitive, {
       attachTo: document.body,
       props: { disableOutsidePointerEvents: true },
     })
@@ -109,11 +219,11 @@ describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents'
   })
 
   it('should keep body locked while another layer still disables pointer events', async () => {
-    const first = mount(DismissableLayer, {
+    const first = mount(DismissableLayerPrimitive, {
       attachTo: document.body,
       props: { disableOutsidePointerEvents: true },
     })
-    const second = mount(DismissableLayer, {
+    const second = mount(DismissableLayerPrimitive, {
       attachTo: document.body,
       props: { disableOutsidePointerEvents: true },
     })

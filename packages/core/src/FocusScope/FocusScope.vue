@@ -215,21 +215,23 @@ watchEffect(async (cleanupFn) => {
   })
 })
 
-// Force-mounted scopes (e.g. Dialog `unmountOnHide: false`) physically mount
-// only once but are shown/hidden in place via `v-show` (`display: none`). The
-// mount `watchEffect` above keys auto-focus off physical mount, so it would
-// never re-focus on reopen and (without the visibility gate) would fire while
-// hidden. Drive auto-focus off the actual hidden -> visible transition instead:
-// this covers the first open and every reopen, for both trapped (modal) and
-// non-trapped (non-modal) scopes. Reacting to the style/class mutation means it
-// runs after the DOM updates, so the focus targets are already visible.
+// Force-mounted scopes that start hidden (e.g. Dialog `unmountOnHide: false`
+// while closed) physically mount once but are shown/hidden in place via
+// `v-show` (`display: none`). The mount `watchEffect` above keys auto-focus off
+// physical mount, so on its own it would fire while hidden and never re-focus
+// on reopen. For those scopes only, drive auto-focus off the hidden -> visible
+// transition (covers first open and every reopen, modal and non-modal).
+//
+// This is deliberately gated to scopes that *mount hidden*: normal scopes mount
+// visible and unmount on close, so they never set up this observer — we avoid
+// attaching a `MutationObserver` to every `FocusScope` consumer.
 if (isClient) {
   watchEffect((cleanupFn) => {
     const container = currentElement.value
-    if (!container)
+    if (!container || getComputedStyle(container).display !== 'none')
       return
 
-    let wasHidden = getComputedStyle(container).display === 'none'
+    let wasHidden = true
     const observer = new MutationObserver(() => {
       const isHidden = getComputedStyle(container).display === 'none'
       if (wasHidden && !isHidden) {
@@ -239,6 +241,8 @@ if (isClient) {
       }
       wasHidden = isHidden
     })
+    // Reacting to the style/class mutation runs after the DOM updates, so the
+    // focus targets are already visible by the time we focus them.
     observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'] })
 
     cleanupFn(() => observer.disconnect())

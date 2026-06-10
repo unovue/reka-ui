@@ -97,6 +97,19 @@ onUnmounted(() => {
     rootContext.triggerElement.value?.focus()
   }
 })
+
+function isEventTargetWithinCombobox(target: EventTarget | null) {
+  if (rootContext.parentElement.value?.contains(target as Node))
+    return true
+
+  // A `<label>` associated (via `for`) with an element inside the combobox forwards its
+  // click/focus to that control, so interacting with it should not dismiss the content.
+  // Without this, clicking such a label while open dismisses on `pointerdown` and the
+  // forwarded click/focus immediately re-opens it.
+  const label = target instanceof Element ? target.closest('label') : null
+  const control = label?.control
+  return !!control && !!rootContext.parentElement.value?.contains(control)
+}
 </script>
 
 <template>
@@ -111,15 +124,15 @@ onUnmounted(() => {
         :disable-outside-pointer-events="disableOutsidePointerEvents"
         @dismiss="rootContext.onOpenChange(false)"
         @focus-outside="(ev) => {
-          // if clicking inside the combobox, prevent dismiss
-          if (rootContext.parentElement.value?.contains(ev.target as Node)) ev.preventDefault()
+          // if focusing inside the combobox (or a label tied to it), prevent dismiss
+          if (isEventTargetWithinCombobox(ev.target)) ev.preventDefault()
           emits('focusOutside', ev)
         }"
         @interact-outside="emits('interactOutside', $event)"
         @escape-key-down="emits('escapeKeyDown', $event)"
         @pointer-down-outside="(ev) => {
-          // if clicking inside the combobox, prevent dismiss
-          if (rootContext.parentElement.value?.contains(ev.target as Node)) ev.preventDefault()
+          // if clicking inside the combobox (or a label tied to it), prevent dismiss
+          if (isEventTargetWithinCombobox(ev.target)) ev.preventDefault()
           emits('pointerDownOutside', ev)
         }"
       >
@@ -128,6 +141,9 @@ onUnmounted(() => {
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="forwardRef"
+          :memo-dependencies="position === 'popper'
+            ? [rootContext.filterSearch.value, rootContext.filterState.value]
+            : undefined"
           :data-state="rootContext.open.value ? 'open' : 'closed'"
           :data-empty="isEmpty ? '' : undefined"
           :style="{

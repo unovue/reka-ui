@@ -2,8 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
@@ -349,6 +350,68 @@ describe('given a Combobox with openOnFocus', () => {
   })
 })
 
+describe('given combobox with an associated label', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body })
+  })
+
+  it('should not dismiss when interacting with a label tied to a control inside', async () => {
+    // A `<label for="...">` pointing to the combobox input forwards its click/focus
+    // to that input. Clicking it should keep the content open instead of dismissing
+    // on `pointerdown` and immediately re-opening from the forwarded click.
+    const input = wrapper.find('input')
+    input.element.id = 'combobox-input'
+
+    const label = document.createElement('label')
+    label.setAttribute('for', 'combobox-input')
+    label.textContent = 'Fruit'
+    document.body.appendChild(label)
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    // The document `pointerdown` listener is registered via `setTimeout(0)`.
+    await sleep(1)
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    label.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // Wait as long as a real dismiss would take (emitted after an internal
+    // `await nextTick()`) so a regression that fails to prevent it is caught.
+    await sleep(1)
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    label.remove()
+  })
+
+  it('should dismiss when interacting with an unrelated label', async () => {
+    const externalLabel = document.createElement('label')
+    externalLabel.textContent = 'Unrelated'
+    document.body.appendChild(externalLabel)
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    await sleep(1)
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalLabel.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // dismiss is emitted after an internal `await nextTick()`.
+    await sleep(1)
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalLabel.remove()
+  })
+})
+
 describe('given combobox in a form', async () => {
   let wrapper: VueWrapper<InstanceType<any>>
   let valueBox: DOMWrapper<HTMLInputElement>
@@ -480,6 +543,54 @@ describe('given Combobox with TagsInput and addOnBlur', () => {
   })
 })
 
+describe('handle IME composition', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+  let input: DOMWrapper<HTMLInputElement>
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  beforeEach(() => {
+    // @ts-expect-error aXe throwing error complaining getComputedStyle
+    window.getComputedStyle = () => ({
+      animationName: '',
+    })
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body })
+    input = wrapper.find('input')
+  })
+
+  it('should not update filter during IME composition', async () => {
+    await input.trigger('compositionstart')
+    input.element.value = 'xiang'
+    await input.trigger('input')
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    expect(content.exists()).toBe(false)
+  })
+
+  it('should update filter after composition ends', async () => {
+    await input.trigger('compositionstart')
+    input.element.value = 'zzzzz'
+    await input.trigger('input')
+    await nextTick()
+
+    input.element.value = 'zzzzz'
+    await input.trigger('compositionend')
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    expect(content.exists()).toBe(true)
+    expect(content.attributes('data-empty')).toBeDefined()
+  })
+})
+
 describe('given combobox handleBlur with deferred close', () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
 
@@ -540,5 +651,95 @@ describe('given combobox handleBlur with deferred close', () => {
     expect(wrapper.find('[role=group]').exists()).toBe(false)
 
     externalButton.remove()
+  })
+})
+
+describe('comboboxContent with popper positioning', () => {
+  const getSlotRenderCount = vi.fn(() => ({ value: 0 }))
+
+  const PopperCombobox = defineComponent({
+    setup() {
+      const modelValue = ref('')
+      const slotRenderCount = getSlotRenderCount()
+      const options = Array.from({ length: 60 }, (_, index) => `Option ${index}`)
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              h(ComboboxInput),
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxContent, { position: 'popper' }, {
+            default: () => {
+              slotRenderCount.value += 1
+              return h(ComboboxViewport, null, {
+                default: () => options.map(option => h(ComboboxItem, { key: option, value: option }, { default: () => option })),
+              })
+            },
+          }),
+        ],
+      })
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSlotRenderCount.mockClear()
+    globalThis.ResizeObserver = class ResizeObserver {
+      private callback: ResizeObserverCallback
+
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback
+      }
+
+      observe(target: Element) {
+        this.callback([{ target } as ResizeObserverEntry], this)
+        this.callback([{ target } as ResizeObserverEntry], this)
+      }
+
+      unobserve() {}
+      disconnect() {}
+    }
+  })
+
+  it('does not rerender option slot content after popper position updates', async () => {
+    const slotRenderCount = { value: 0 }
+    getSlotRenderCount.mockReturnValue(slotRenderCount)
+
+    const wrapper = mount(PopperCombobox, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    expect(slotRenderCount.value).toBe(3)
+
+    await sleep(0)
+    await nextTick()
+
+    expect(slotRenderCount.value).toBe(4)
+  })
+
+  it('updates visible options when filtering while popper content is open', async () => {
+    const slotRenderCount = { value: 0 }
+    getSlotRenderCount.mockReturnValue(slotRenderCount)
+
+    const wrapper = mount(PopperCombobox, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Option 1')
+    expect(wrapper.text()).toContain('Option 59')
+
+    await wrapper.find('input').setValue('Option 59')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Option 59')
+    expect(wrapper.text()).not.toContain('Option 1')
   })
 })
