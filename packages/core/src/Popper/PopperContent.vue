@@ -390,6 +390,7 @@ providePopperContentContext({
   <div
     ref="floatingRef"
     data-reka-popper-content-wrapper=""
+    :dir="dir"
     :style="{
       ...floatingStyles,
       transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring

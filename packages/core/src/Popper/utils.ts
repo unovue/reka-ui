@@ -1,4 +1,5 @@
 import type { Middleware, Placement } from '@floating-ui/vue'
+import type { Direction } from '@/shared/types'
 
 const SIDE_OPTIONS = ['top', 'right', 'bottom', 'left'] as const
 const ALIGN_OPTIONS = ['start', 'center', 'end'] as const
@@ -13,7 +14,7 @@ export function isNotNull<T>(value: T | null): value is T {
 export function transformOrigin(options: {
   arrowWidth: number
   arrowHeight: number
-  dir?: 'ltr' | 'rtl'
+  dir?: Direction
 }): Middleware {
   return {
     name: 'transformOrigin',
