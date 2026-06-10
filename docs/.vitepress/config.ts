@@ -154,6 +154,7 @@ export default defineConfig({
               { text: 'Label', link: '/docs/components/label' },
               { text: 'Pin Input', link: '/docs/components/pin-input' },
               { text: 'Radio Group', link: '/docs/components/radio-group' },
+              { text: `Rating ${BadgeHTML('Alpha', true)}`, link: '/docs/components/rating' },
               { text: 'Select', link: '/docs/components/select' },
               { text: 'Slider', link: '/docs/components/slider' },
               { text: 'Switch', link: '/docs/components/switch' },

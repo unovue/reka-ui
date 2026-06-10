@@ -16,16 +16,19 @@ export interface RatingRootContext {
 
 export interface RatingRootProps extends Omit<RadioGroupRootProps, 'modelValue' | 'defaultValue'> {
   /**
-   * The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs
+   * The rating value when initially rendered. Use when you do not need to control the state of the rating.
    */
   defaultValue?: number
-  /** The controlled value of the tab to activate. Can be bind as `v-model`. */
+  /** The controlled rating value. Can be bound with `v-model`. */
   modelValue?: number
+  /** The number of rating items to render. */
   length?: number
+  /** When `true`, clicking the currently selected rating resets the value to `0`. */
   clearable?: boolean
+  /** When `true`, the rating previews the value under the pointer on hover. */
   hoverable?: boolean
+  /** The granularity each rating item is divided into. */
   step?: 1 | 0.5 | 0.25 | 0.1
-
 }
 export type RatingRootEmits = {
   /** Event handler called when the value changes */
