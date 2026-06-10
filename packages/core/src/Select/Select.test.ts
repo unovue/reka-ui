@@ -38,6 +38,69 @@ describe('given default Select', () => {
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
+  describe('trigger mouse interop', () => {
+    async function openSelectWithMouseClick() {
+      const button = wrapper.find('button')
+      // Open on pointerdown, then emit the compatibility mouse events that follow in browsers.
+      await button.trigger('pointerdown', { button: 0, ctrlKey: false })
+      fireEvent.mouseDown(button.element, { button: 0, ctrlKey: false })
+      fireEvent.mouseUp(button.element, { button: 0, ctrlKey: false })
+      fireEvent.click(button.element, { button: 0, ctrlKey: false })
+      await nextTick()
+      await nextTick()
+    }
+
+    it('should not suppress window mousedown listeners when opening (#1773)', async () => {
+      const button = wrapper.find('button').element
+      const onWindowMousedown = vi.fn()
+      window.addEventListener('mousedown', onWindowMousedown, true)
+
+      fireEvent.pointerDown(button, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+      const mousedownEvent = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ctrlKey: false,
+      })
+      button.dispatchEvent(mousedownEvent)
+
+      expect(onWindowMousedown).toHaveBeenCalled()
+      expect(mousedownEvent.defaultPrevented).toBe(true)
+
+      window.removeEventListener('mousedown', onWindowMousedown, true)
+    })
+
+    it('should focus the trigger on click without a preceding pointerdown', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+      const focusSpy = vi.spyOn(trigger, 'focus')
+
+      fireEvent.click(trigger, { button: 0, ctrlKey: false })
+
+      expect(focusSpy).toHaveBeenCalled()
+      focusSpy.mockRestore()
+    })
+
+    it('should not re-focus the trigger on click after opening via pointerdown', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+      const focusSpy = vi.spyOn(trigger, 'focus')
+
+      await wrapper.find('button').trigger('pointerdown', { button: 0, ctrlKey: false })
+      fireEvent.click(trigger, { button: 0, ctrlKey: false })
+
+      expect(focusSpy).not.toHaveBeenCalled()
+      focusSpy.mockRestore()
+    })
+
+    it('should not leave focus on the trigger after opening via mouse click', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element
+
+      await openSelectWithMouseClick()
+
+      expect(wrapper.html()).toContain('Apple')
+      expect(document.activeElement).not.toBe(trigger)
+    })
+  })
+
   describe('opening the modal', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('pointerdown', {
