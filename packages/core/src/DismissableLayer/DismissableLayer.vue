@@ -156,18 +156,25 @@ watch(
         ownerDocument.value.body.style.pointerEvents = 'none'
       }
       context.layersWithOutsidePointerEventsDisabled.add(element)
+
+      // Remove this layer from the set on cleanup (re-run via prop toggle, or
+      // unmount) and restore the body's `pointer-events` only once the last
+      // disabling layer is gone. Removing here — rather than relying solely on
+      // the unmount-only effect below — keeps the set accurate when
+      // `disableOutsidePointerEvents` toggles `true -> false` while still
+      // mounted (e.g. a modal Menu closing). Checking `size === 0` *after*
+      // deletion makes the restore independent of cleanup ordering (#2674).
+      onCleanup(() => {
+        context.layersWithOutsidePointerEventsDisabled.delete(element)
+        if (
+          context.layersWithOutsidePointerEventsDisabled.size === 0
+          && !isNullish(context.originalBodyPointerEvents)
+        ) {
+          ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
+        }
+      })
     }
     layers.value.add(element)
-
-    onCleanup(() => {
-      if (
-        disableOutsidePointerEvents
-        && context.layersWithOutsidePointerEventsDisabled.size === 1
-        && !isNullish(context.originalBodyPointerEvents)
-      ) {
-        ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
-      }
-    })
   },
   { immediate: true },
 )
