@@ -22,7 +22,13 @@ export interface UseSwipeDismissOptions {
   onProgress?: (progress: number, details?: SwipeProgressDetails) => void
   onCancel?: () => void
   onSwipeStart?: () => void
-  onRelease?: (velocity: { x: number, y: number }) => void
+  /**
+   * Fired on release with the measured velocity vector. Return `true` to signal
+   * that the callback fully owns the open/close + transform outcome (e.g. the
+   * snap-point release math), so `finishSwipe` skips its own dismiss-vs-cancel
+   * decision (no `data-swipe-dismissed`, no `onDismiss`/`onCancel`).
+   */
+  onRelease?: (velocity: { x: number, y: number }) => boolean | void
   onSwipingChange?: (swiping: boolean) => void
 }
 
@@ -341,28 +347,34 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     const velAge = lastDragSample ? now - lastDragSample.time : Infinity
     const velocity = velAge > MAX_RELEASE_VELOCITY_AGE_MS ? { x: 0, y: 0 } : lastVelocity
 
-    onRelease?.(velocity)
+    // When onRelease returns true (snap-point release), it owns the open/close
+    // and transform outcome — don't run the dismiss-vs-cancel branch, which
+    // would otherwise set a stray `data-swipe-dismissed` on a drawer that
+    // actually snapped to a point, or clear CSS vars onRelease already wrote.
+    const releaseHandled = onRelease?.(velocity) === true
 
-    const velInDirection = getDisplacement(
-      intendedDirection ?? toValue(directions)[0],
-      velocity.x,
-      velocity.y,
-    )
-    const shouldDismiss = !cancelledSwipe
-      && (displacement >= threshold || velInDirection > 0.3)
+    if (!releaseHandled) {
+      const velInDirection = getDisplacement(
+        intendedDirection ?? toValue(directions)[0],
+        velocity.x,
+        velocity.y,
+      )
+      const shouldDismiss = !cancelledSwipe
+        && (displacement >= threshold || velInDirection > 0.3)
 
-    if (shouldDismiss) {
-      // BaseUI parity: on dismiss, keep the drag transform in place so the
-      // close animation runs smoothly from the dragged position. Clearing the
-      // CSS vars here would cause a one-frame snap-back to resting before the
-      // closing transition begins (visible as a flicker).
-      el.setAttribute('data-swipe-dismissed', '')
-      onDismiss?.()
-    }
-    else {
-      // On cancel, reset the drag transform so the drawer animates back to rest.
-      clearCssVars(el)
-      onCancel?.()
+      if (shouldDismiss) {
+        // BaseUI parity: on dismiss, keep the drag transform in place so the
+        // close animation runs smoothly from the dragged position. Clearing the
+        // CSS vars here would cause a one-frame snap-back to resting before the
+        // closing transition begins (visible as a flicker).
+        el.setAttribute('data-swipe-dismissed', '')
+        onDismiss?.()
+      }
+      else {
+        // On cancel, reset the drag transform so the drawer animates back to rest.
+        clearCssVars(el)
+        onCancel?.()
+      }
     }
 
     reset()

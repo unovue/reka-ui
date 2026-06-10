@@ -16,17 +16,19 @@ export interface ResolvedSnapPoint {
 }
 
 function parseSnapPoint(value: DrawerSnapPoint, viewportHeight: number, rootFontSize: number): number | null {
-  if (typeof value === 'number') {
-    if (value >= 0 && value <= 1)
-      return Math.round(value * viewportHeight)
-    return Math.round(value)
-  }
-  if (value.endsWith('rem'))
-    return Math.round(Number.parseFloat(value) * rootFontSize)
-  if (value.endsWith('px'))
-    return Math.round(Number.parseFloat(value))
-  // Unknown units (e.g. '%', 'vh') are unsupported — drop the snap point
-  return null
+  let result: number | null = null
+  if (typeof value === 'number')
+    result = (value >= 0 && value <= 1) ? value * viewportHeight : value
+  else if (value.endsWith('rem'))
+    result = Number.parseFloat(value) * rootFontSize
+  else if (value.endsWith('px'))
+    result = Number.parseFloat(value)
+  // Unknown units (e.g. '%', 'vh') and non-finite/negative results (e.g.
+  // 'abcpx' → NaN, '-10px') are unsupported — drop the snap point so they
+  // never flow into the resolved geometry as `NaNpx`/out-of-range offsets.
+  if (result == null || !Number.isFinite(result) || result < 0)
+    return null
+  return Math.round(result)
 }
 
 export function useDrawerSnapPoints(options: {
@@ -72,20 +74,29 @@ export function useDrawerSnapPoints(options: {
     return resolved.sort((a, b) => a.height - b.height)
   })
 
-  const activeSnapPointOffset = computed<number | null>(() => {
+  /**
+   * Resolve the currently-active snap point to its resolved entry, matching by
+   * raw value OR by parsed-height equivalence. This lets a controlled drawer use
+   * interchangeable representations (`'16rem'` vs `256`, `0.5` vs `400`) without
+   * the release math falling back to offset `0` and jumping to the wrong target.
+   */
+  function findActiveResolvedPoint(): ResolvedSnapPoint | undefined {
     if (!activeSnapPoint.value || resolvedSnapPoints.value.length === 0)
-      return null
+      return undefined
     const activeHeight = parseSnapPoint(
       activeSnapPoint.value as DrawerSnapPoint,
       viewportHeight.value,
       rootFontSize.value,
     )
-    const match = resolvedSnapPoints.value.find(
+    return resolvedSnapPoints.value.find(
       r => r.value === activeSnapPoint.value
         || (activeHeight != null && Math.abs(r.height - activeHeight) <= 1),
     )
-    return match?.offset ?? null
-  })
+  }
+
+  const activeSnapPointOffset = computed<number | null>(
+    () => findActiveResolvedPoint()?.offset ?? null,
+  )
 
   /**
    * BaseUI-parity snap release math (ported from `DrawerViewport.tsx` lines ~577-714).
@@ -113,8 +124,10 @@ export function useDrawerSnapPoints(options: {
     const axisVel = (direction === 'up' || direction === 'down') ? velocity.y : velocity.x
     const velSigned = (direction === 'up' || direction === 'left') ? -axisVel : axisVel
 
-    // Current offset (from fully open): 0 = fully open, `ph` = fully closed
-    const activePoint = points.find(p => p.value === activeSnapPoint.value)
+    // Current offset (from fully open): 0 = fully open, `ph` = fully closed.
+    // Match by value OR parsed-height equivalence so equivalent representations
+    // start the release math from the real current snap, not offset 0.
+    const activePoint = findActiveResolvedPoint()
     const currentOffset = activePoint?.offset ?? 0
 
     // Where the drag alone would leave us (clamped to the popup's range)
@@ -151,7 +164,7 @@ export function useDrawerSnapPoints(options: {
       // if (a) velocity direction matches drag direction and is fast enough, OR
       // (b) the projected target has physically crossed the adjacent snap.
       const sorted = [...points].sort((a, b) => a.offset - b.offset)
-      const currentIdx = sorted.findIndex(p => p.value === activeSnapPoint.value)
+      const currentIdx = activePoint ? sorted.indexOf(activePoint) : -1
       if (currentIdx < 0) {
         onSnapPointChange(closest.value)
         return

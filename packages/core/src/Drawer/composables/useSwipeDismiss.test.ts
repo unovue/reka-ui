@@ -89,6 +89,7 @@ function dispatchPointer(
   type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
   x: number,
   y: number,
+  time = 0,
   extra: Partial<PointerEventInit> = {},
 ) {
   const event = new PointerEvent(type, {
@@ -106,9 +107,11 @@ function dispatchPointer(
   // real-clock `timeStamp` landing within milliseconds of `performance.now()`.
   // That makes a synchronous below-threshold "slow drag" read as a fast flick
   // (release velocity stays fresh and large) and dismiss when it should cancel.
-  // Pin every event to the same timestamp so gesture classification is decided
-  // purely by displacement — release velocity is zero, as in a real slow drag.
-  Object.defineProperty(event, 'timeStamp', { value: 0, configurable: true })
+  // Default every event to timestamp 0 so gesture classification is decided
+  // purely by displacement (release velocity reads as zero, as in a real slow
+  // drag). Tests that need a measurable velocity pass explicit timestamps
+  // anchored to `performance.now()` so the sample is still "fresh" at release.
+  Object.defineProperty(event, 'timeStamp', { value: time, configurable: true })
   el.dispatchEvent(event)
 }
 
@@ -182,16 +185,22 @@ describe('useSwipeDismiss — dismiss vs cancel CSS var clearing', () => {
     const el = elementRef.value!
 
     // Drag past threshold with a timed sequence so velocity is measurable.
-    dispatchPointer(el, 'pointerdown', 100, 100)
-    dispatchPointer(el, 'pointermove', 100, 120)
-    dispatchPointer(el, 'pointermove', 100, 180) // 80px, past threshold
-    dispatchPointer(el, 'pointerup', 100, 180)
+    // Anchor timestamps to performance.now() so the last sample is still within
+    // MAX_RELEASE_VELOCITY_AGE_MS of release and the velocity isn't zeroed out.
+    const t0 = performance.now()
+    dispatchPointer(el, 'pointerdown', 100, 100, t0)
+    dispatchPointer(el, 'pointermove', 100, 120, t0 + 16)
+    dispatchPointer(el, 'pointermove', 100, 180, t0 + 32) // 80px, past threshold
+    dispatchPointer(el, 'pointerup', 100, 180, t0 + 32)
     await nextTick()
 
     expect(onRelease).toHaveBeenCalledTimes(1)
     const velocity = onRelease.mock.calls[0][0]
     expect(typeof velocity.x).toBe('number')
     expect(typeof velocity.y).toBe('number')
+    // A real downward flick must propagate a non-zero positive y velocity —
+    // proving measured velocity reaches onRelease, not just numeric zeros.
+    expect(velocity.y).toBeGreaterThan(0)
 
     wrapper.unmount()
   })

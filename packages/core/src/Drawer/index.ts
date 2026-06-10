@@ -52,6 +52,8 @@ export {
   default as DrawerRoot,
   type DrawerRootEmits,
   type DrawerRootProps,
+  // Public advanced-composition contract: lets consumers read the Drawer root
+  // context to build custom parts (mirrors `injectDialogRootContext`).
   injectDrawerRootContext,
 } from './DrawerRoot.vue'
 export {

@@ -63,6 +63,30 @@ describe('useDrawerSnapPoints — snap release math', () => {
       expect(resolvedSnapPoints.value.map(p => p.height).sort((a, b) => a - b)).toEqual([300, 500])
     })
 
+    it('drops non-finite and negative snap points (NaN / negatives)', () => {
+      const { resolvedSnapPoints } = makeHook({
+        // 'abcpx' parses to NaN, '-100px' and -50 are negative — all must be
+        // dropped so they never flow into geometry as `NaNpx`/out-of-range.
+        snapPoints: ['abcpx' as any, '-100px' as any, -50 as any, 300, 500],
+        popupHeight: 500,
+      })
+      expect(resolvedSnapPoints.value.map(p => p.height).sort((a, b) => a - b)).toEqual([300, 500])
+    })
+
+    it('resolves the active snap by parsed-height equivalence, not just raw value', () => {
+      // activeSnapPoint is '400px' but resolved points store the numeric 400.
+      // A strict value match would miss it and start release math from offset 0
+      // (treating the drawer as fully open) → a tiny drag would wrongly snap to
+      // the fully-open 500 point. Equivalence matching keeps it at 400.
+      const { snapToNearest, changes } = makeHook({
+        snapPoints: [200, 400, 500],
+        activeSnapPoint: '400px' as any,
+        popupHeight: 500,
+      })
+      snapToNearest(20, { x: 0, y: 0 }, 'down', false)
+      expect(changes).toEqual([400])
+    })
+
     it('snaps to the closer snap point on small drag with zero velocity', () => {
       // Active = 400 (offset 100). Small drag down of 20px → targetOffset 120,
       // closest to 400 (distance 20). Not closer to fully-closed (ph=500, dist 380).

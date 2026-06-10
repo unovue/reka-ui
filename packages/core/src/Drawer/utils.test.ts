@@ -130,4 +130,47 @@ describe('computeSwipeReleaseScalar', () => {
     expect(scalar).not.toBeNull()
     expect(scalar!).toBeCloseTo(0.405, 1)
   })
+
+  it('respects snapPointOffset for horizontal (right) drawers', () => {
+    // A 'right' drawer must seed translation with snapPointOffset just like
+    // 'down'. With the same numbers as the 'down' snapPointOffset case the
+    // resulting scalar should match (translation = 100 + 50 = 150).
+    const right = computeSwipeReleaseScalar({
+      direction: 'right',
+      size: 500,
+      axisDelta: 50,
+      snapPointOffset: 100,
+      releaseVelocity: 2,
+    })
+    const down = computeSwipeReleaseScalar({
+      direction: 'down',
+      size: 500,
+      axisDelta: 50,
+      snapPointOffset: 100,
+      releaseVelocity: 2,
+    })
+    expect(right).not.toBeNull()
+    expect(right).toBeCloseTo(down!, 5)
+  })
+
+  it('respects snapPointOffset for horizontal (left) drawers', () => {
+    // 'left' mirrors 'up': drag left is negative axisDelta and negative
+    // velocity, and snapPointOffset seeds a negative base translation.
+    const left = computeSwipeReleaseScalar({
+      direction: 'left',
+      size: 500,
+      axisDelta: -50,
+      snapPointOffset: 100,
+      releaseVelocity: -2,
+    })
+    const up = computeSwipeReleaseScalar({
+      direction: 'up',
+      size: 500,
+      axisDelta: -50,
+      snapPointOffset: 100,
+      releaseVelocity: -2,
+    })
+    expect(left).not.toBeNull()
+    expect(left).toBeCloseTo(up!, 5)
+  })
 })

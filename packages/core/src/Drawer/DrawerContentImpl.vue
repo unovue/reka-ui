@@ -194,6 +194,11 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
         el.style.setProperty(DRAWER_CSS_VARS.swipeMovementY, '0px')
       }
     }
+
+    // For snap-point drawers, this callback fully decides the open/close +
+    // transform outcome above, so tell finishSwipe to skip its own
+    // dismiss-vs-cancel branch.
+    return hasSnapPoints.value
   },
   onSwipingChange(swiping) {
     rootContext.onSwipingChange(swiping)

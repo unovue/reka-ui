@@ -88,10 +88,13 @@ export function computeSwipeReleaseScalar(params: {
   if (!Number.isFinite(size) || size <= 0)
     return null
 
+  // Seed the translation with the active snap offset along the dismiss axis so
+  // horizontal drawers honor snap points too: down/right collapse toward
+  // positive translation, up/left toward negative.
   let baseOffset = 0
-  if (direction === 'down')
+  if (direction === 'down' || direction === 'right')
     baseOffset = snapPointOffset
-  else if (direction === 'up')
+  else if (direction === 'up' || direction === 'left')
     baseOffset = -snapPointOffset
 
   const translation = baseOffset + axisDelta
