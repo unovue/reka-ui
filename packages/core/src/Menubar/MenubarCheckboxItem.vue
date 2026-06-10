@@ -21,7 +21,10 @@ useForwardExpose()
 </script>
 
 <template>
-  <MenuCheckboxItem v-bind="{ ...props, ...emitsAsProps }">
-    <slot />
+  <MenuCheckboxItem
+    v-slot="slotProps"
+    v-bind="{ ...props, ...emitsAsProps }"
+  >
+    <slot v-bind="slotProps" />
   </MenuCheckboxItem>
 </template>

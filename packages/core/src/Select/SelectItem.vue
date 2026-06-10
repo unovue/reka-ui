@@ -177,7 +177,7 @@ provideSelectItemContext({
       @pointerleave="handlePointerLeave"
       @keydown="handleKeyDown"
     >
-      <slot />
+      <slot :selected="isSelected" />
     </Primitive>
   </CollectionItem>
 </template>

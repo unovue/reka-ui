@@ -26,6 +26,13 @@ import { ListboxItem } from '@/Listbox'
 const props = defineProps<ComboboxItemProps<T>>()
 const emits = defineEmits<ComboboxItemEmits<T>>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const id = useId(undefined, 'reka-combobox-item')
 const rootContext = injectComboboxRootContext()
 const groupContext = injectComboboxGroupContext(null)
@@ -80,6 +87,7 @@ onUnmounted(() => {
     v-bind="props"
     :id="id"
     ref="primitiveElement"
+    v-slot="slotProps"
     :disabled="rootContext.disabled.value || disabled"
     @select="(event) => {
       emits('select', event as any)
@@ -96,6 +104,8 @@ onUnmounted(() => {
       }
     }"
   >
-    <slot>{{ value }}</slot>
+    <slot v-bind="slotProps">
+      {{ value }}
+    </slot>
   </ListboxItem>
 </template>
