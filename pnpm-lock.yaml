@@ -263,7 +263,7 @@ importers:
         specifier: ^3.2.6
         version: 3.2.6(vitest@4.1.8)
       '@vue/server-renderer':
-        specifier: 3.5.17
+        specifier: ^3.5.17
         version: 3.5.17(vue@3.5.17(typescript@5.8.3))
       '@vue/test-utils':
         specifier: ^2.4.11
@@ -7450,7 +7450,7 @@ snapshots:
 
   '@babel/generator@7.28.0':
     dependencies:
-      '@babel/parser': 7.28.0
+      '@babel/parser': 7.29.7
       '@babel/types': 7.28.0
       '@jridgewell/gen-mapping': 0.3.12
       '@jridgewell/trace-mapping': 0.3.29
@@ -7514,7 +7514,7 @@ snapshots:
   '@babel/template@7.25.9':
     dependencies:
       '@babel/code-frame': 7.26.2
-      '@babel/parser': 7.28.0
+      '@babel/parser': 7.29.7
       '@babel/types': 7.28.0
 
   '@babel/traverse@7.26.7':
@@ -9204,7 +9204,7 @@ snapshots:
 
   '@vue/compiler-core@3.5.17':
     dependencies:
-      '@babel/parser': 7.28.0
+      '@babel/parser': 7.29.7
       '@vue/shared': 3.5.17
       entities: 4.5.0
       estree-walker: 2.0.2
@@ -9286,8 +9286,8 @@ snapshots:
   '@vue/language-core@3.2.6':
     dependencies:
       '@volar/language-core': 2.4.28
-      '@vue/compiler-dom': 3.5.17
-      '@vue/shared': 3.5.21
+      '@vue/compiler-dom': 3.5.35
+      '@vue/shared': 3.5.35
       alien-signals: 3.1.2
       muggle-string: 0.4.1
       path-browserify: 1.0.1
@@ -9540,7 +9540,7 @@ snapshots:
 
   ast-kit@2.1.1:
     dependencies:
-      '@babel/parser': 7.28.0
+      '@babel/parser': 7.29.7
       pathe: 2.0.3
 
   asynckit@0.4.0: {}
@@ -13434,8 +13434,8 @@ snapshots:
   rolldown-plugin-dts@0.13.13(rolldown@1.0.0-beta.26)(typescript@5.8.3)(vue-tsc@3.2.6(typescript@5.8.3)):
     dependencies:
       '@babel/generator': 7.28.0
-      '@babel/parser': 7.28.0
-      '@babel/types': 7.28.0
+      '@babel/parser': 7.29.7
+      '@babel/types': 7.29.7
       ast-kit: 2.1.1
       birpc: 2.4.0
       debug: 4.4.3
@@ -14311,7 +14311,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.26.7
       '@babel/standalone': 7.26.7
-      '@babel/types': 7.28.0
+      '@babel/types': 7.29.7
       citty: 0.1.6
       defu: 6.1.6
       jiti: 2.4.2
