@@ -9,7 +9,13 @@ import Toast from './story/_Toast.vue'
 
 const CLOSE_TEXT = 'Close'
 
-const ToastWithPersistentAction = defineComponent({
+const ToastWithAction = defineComponent({
+  props: {
+    closeOnClick: {
+      type: Boolean,
+      default: undefined,
+    },
+  },
   setup() {
     const open = ref(true)
     const actionClicks = ref(0)
@@ -31,8 +37,8 @@ const ToastWithPersistentAction = defineComponent({
           default: () => [
             h(ToastDescription, null, { default: () => 'Action available' }),
             h(ToastAction, {
-              altText: 'Keep toast open after action',
-              closeOnClick: false,
+              altText: 'Perform action',
+              closeOnClick: this.closeOnClick,
               onClick: () => {
                 this.actionClicks += 1
               },
@@ -103,8 +109,22 @@ describe('given a default Toast', () => {
     expect(text).toContain('Scheduled: Catch up')
   })
 
+  it('should close the toast when action is clicked by default', async () => {
+    const wrapper = mount(ToastWithAction, { attachTo: document.body })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(false)
+    expect(action.closest('li')?.getAttribute('data-state')).toBe('closed')
+  })
+
   it('should keep the toast open when action closeOnClick is false', async () => {
-    const wrapper = mount(ToastWithPersistentAction, { attachTo: document.body })
+    const wrapper = mount(ToastWithAction, {
+      attachTo: document.body,
+      props: { closeOnClick: false },
+    })
 
     const action = await findByText(document.body, 'Undo')
     await fireEvent.click(action)
