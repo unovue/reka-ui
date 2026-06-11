@@ -1,23 +1,56 @@
 <script lang="ts">
+import type {
+  FileTreeDensity,
+  FileTreeInitialExpansion,
+  FileTreePreparedInput,
+  FileTreeSortComparator,
+  GitStatusEntry,
+} from '@pierre/trees'
 import type { Direction } from '@/shared/types'
 import { createContext, getActiveElement, useDirection, useSelectionBehavior, useTypeahead } from '@/shared'
 import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
   /** The controlled value of the tree. Can be binded with `v-model`. */
-  modelValue?: M extends true ? U[] : U
+  modelValue?: (M extends true ? U[] : U) | string[]
   /** The value of the tree when initially rendered. Use when you do not need to control the state of the tree */
-  defaultValue?: M extends true ? U[] : U
+  defaultValue?: (M extends true ? U[] : U) | string[]
   /** List of items */
   items?: T[]
+  /** List of canonical paths. When provided, TreeRoot renders the Pierre-backed path mode. */
+  paths?: readonly string[]
+  /** Prepared path input from `prepareFileTreeInput` or `preparePresortedFileTreeInput`. */
+  preparedInput?: FileTreePreparedInput
+  /** Controls the initial expansion behavior for path mode. */
+  initialExpansion?: FileTreeInitialExpansion
   /** The controlled value of the expanded item. Can be binded with `v-model`. */
   expanded?: string[]
   /** The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree */
   defaultExpanded?: string[]
   /** This function is passed the index of each item and should return a unique key for that item */
-  getKey: (val: T) => string
+  getKey?: (val: T) => string
   /** This function is passed the index of each item and should return a list of children for that item */
   getChildren?: (val: T) => T[] | undefined
+  /** Whether empty directories should be collapsed into their visible descendants in path mode. */
+  flattenEmptyDirectories?: boolean
+  /** Whether the provided paths are already sorted in path mode. */
+  presorted?: boolean
+  /** Custom path sorting strategy in path mode. */
+  sort?: 'default' | FileTreeSortComparator
+  /** Enables built-in search UI in path mode. */
+  search?: boolean
+  /** Built-in density preset or density factor in path mode. */
+  density?: FileTreeDensity
+  /** Git status entries shown alongside file paths in path mode. */
+  gitStatus?: readonly GitStatusEntry[]
+  /** Estimated item height in pixels in path mode. */
+  itemHeight?: number
+  /** Number of rows rendered outside the visible area in path mode. */
+  overscan?: number
+  /** Whether parent folders remain visible while scrolling descendants in path mode. */
+  stickyFolders?: boolean
+  /** Raw CSS injected into the Pierre tree shadow root in path mode. */
+  unsafeCSS?: string
   /** How multiple selection should behave in the collection. */
   selectionBehavior?: 'toggle' | 'replace'
   /** Whether multiple options can be selected or not.  */
@@ -33,7 +66,7 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
 }
 
 export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = {
-  'update:modelValue': [val: M extends true ? T[] : T]
+  'update:modelValue': [val: (M extends true ? T[] : T) | string[]]
   'update:expanded': [val: string[]]
 }
 
@@ -84,10 +117,12 @@ import { computed, nextTick, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
+import TreePathRoot from './TreePathRoot.vue'
 
 const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
   as: 'ul',
   selectionBehavior: 'toggle',
+  getKey: (val: T) => String(val?.value ?? val?.id ?? val?.title ?? val),
   getChildren: (val: T) => val.children,
 })
 const emits = defineEmits<TreeRootEmits<U, M>>()
@@ -104,6 +139,10 @@ const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect }
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
+const isPathMode = computed(() => props.paths !== undefined || props.preparedInput !== undefined)
+const pathModeAs = computed(() => props.as === 'ul' ? 'div' : props.as)
+const pathModeModelValue = computed(() => props.modelValue as string[] | undefined)
+const pathModeDefaultValue = computed(() => props.defaultValue as string[] | undefined)
 
 // Virtualizer
 const isVirtual = ref(false)
@@ -270,10 +309,38 @@ provideTreeRootContext({
   virtualKeydownHook,
   handleMultipleReplace,
 })
+
+function handlePathModelValueUpdate(value: string[]) {
+  emits('update:modelValue', value)
+}
 </script>
 
 <template>
+  <TreePathRoot
+    v-if="isPathMode"
+    :as="pathModeAs"
+    :as-child="asChild"
+    :model-value="pathModeModelValue"
+    :default-value="pathModeDefaultValue"
+    :paths="paths"
+    :prepared-input="preparedInput"
+    :initial-expansion="initialExpansion"
+    :expanded="expanded"
+    :default-expanded="defaultExpanded"
+    :flatten-empty-directories="flattenEmptyDirectories"
+    :presorted="presorted"
+    :sort="sort"
+    :search="search"
+    :density="density"
+    :git-status="gitStatus"
+    :item-height="itemHeight"
+    :overscan="overscan"
+    :sticky-folders="stickyFolders"
+    :unsafe-c-s-s="unsafeCSS"
+    @update:model-value="handlePathModelValueUpdate"
+  />
   <RovingFocusGroup
+    v-else
     ref="rovingFocusGroupRef"
     as-child
     orientation="vertical"

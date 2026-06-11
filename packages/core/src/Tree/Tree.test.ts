@@ -406,3 +406,23 @@ describe('given a Tree with disabled items', () => {
     expect(items()[0].attributes('aria-selected')).toBe('false')
   })
 })
+
+describe('given a Tree with path mode', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should render a Pierre file tree when paths are provided', async () => {
+    const wrapper = mount(TreeRoot, {
+      props: {
+        paths: ['README.md', 'src/index.ts'],
+      },
+      attachTo: document.body,
+    })
+
+    await nextTick()
+
+    expect(wrapper.find('file-tree-container').exists()).toBe(true)
+    expect(wrapper.find('file-tree-container').attributes('data-file-tree-virtualized')).toBe('true')
+  })
+})

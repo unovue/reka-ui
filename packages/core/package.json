@@ -92,6 +92,7 @@
     "@floating-ui/vue": "^1.1.6",
     "@internationalized/date": "^3.5.0",
     "@internationalized/number": "^3.5.0",
+    "@pierre/trees": "1.0.0-beta.4",
     "@tanstack/vue-virtual": "^3.12.0",
     "@vueuse/core": "^14.1.0",
     "@vueuse/shared": "^14.1.0",

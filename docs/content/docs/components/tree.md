@@ -26,6 +26,7 @@ A tree view widget displays a hierarchical list of items that can be expanded or
     'Supports Right to Left direction.',
     'Supports multiple selection.',
     'Different selection behavior.',
+    'Supports Pierre-backed path mode for file trees.',
   ]"
 />
 
@@ -94,6 +95,37 @@ Virtual container to achieve list virtualization.
 <!-- @include: @/meta/TreeVirtualizer.md -->
 
 ## Examples
+
+### Path mode
+
+Pass `paths` to render a Pierre-backed file tree. Path mode is optimized for code editors, agents, and file explorers where the tree data already exists as canonical file paths.
+
+```vue
+<script setup lang="ts">
+import { TreeRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const selectedPaths = ref<string[]>([])
+
+const paths = [
+  'README.md',
+  'src/App.vue',
+  'src/components/Button.vue',
+]
+</script>
+
+<template>
+  <TreeRoot
+    v-model="selectedPaths"
+    :paths="paths"
+    initial-expansion="open"
+    search
+    style="height: 320px"
+  />
+</template>
+```
+
+Use the `items` slot API shown below when you need full control over item markup through `TreeItem`.
 
 ### Selecting multiple items
 
