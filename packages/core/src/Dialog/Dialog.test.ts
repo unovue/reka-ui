@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
+import { sleep } from '@/test'
 import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
 const OPEN_TEXT = 'Open'
@@ -126,29 +127,22 @@ describe('given a Dialog with unmountOnHide=false', () => {
 
   it('should focus the close button on open', async () => {
     await fireEvent.click(trigger.element)
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
     const closeButton = await findByText(document.body, CLOSE_TEXT)
-    expect(closeButton).toBe(document.activeElement)
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
   })
 
   it('should re-focus the content when reopened', async () => {
     // The content stays mounted, so focus must be re-applied on each open via
-    // the `trapped` false -> true transition (not just on physical mount).
+    // the `present` false -> true transition (not just on physical mount).
     await fireEvent.click(trigger.element)
     await nextTick()
 
     await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
-    expect(document.activeElement).toBe(trigger.element)
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
 
     await fireEvent.click(trigger.element)
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
-
     const closeButton = await findByText(document.body, CLOSE_TEXT)
-    expect(closeButton).toBe(document.activeElement)
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
   })
 
   it('should restore focus to trigger on close', async () => {
@@ -156,10 +150,7 @@ describe('given a Dialog with unmountOnHide=false', () => {
     await nextTick()
 
     await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
-
-    expect(document.activeElement).toBe(trigger.element)
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
   })
 
   it('should not apply aria-hidden to body after open then close', async () => {
@@ -168,7 +159,6 @@ describe('given a Dialog with unmountOnHide=false', () => {
 
     await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
     await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
 
     // Content stays mounted, but the rest of the page must stay accessible.
     expect(document.querySelector('[role="dialog"]')).not.toBeNull()
@@ -212,11 +202,8 @@ describe('given a non-modal Dialog with unmountOnHide=false', () => {
     expect(document.activeElement).toBe(document.body)
 
     await fireEvent.click(trigger.element)
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
-
     const closeButton = await findByText(document.body, CLOSE_TEXT)
-    expect(closeButton).toBe(document.activeElement)
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
   })
 
   it('should restore focus to trigger on close', async () => {
@@ -224,10 +211,7 @@ describe('given a non-modal Dialog with unmountOnHide=false', () => {
     await nextTick()
 
     await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
-
-    expect(document.activeElement).toBe(trigger.element)
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
   })
 })
 
@@ -255,11 +239,89 @@ describe('given a Dialog with unmountOnHide=false, openAutoFocus', () => {
     expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
 
     await fireEvent.click(trigger.element)
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
-    expect(onOpenAutoFocus).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
 
     wrapper.unmount()
+  })
+})
+
+// Two dialogs with `unmountOnHide: false` coexist on the page (e.g. a menu
+// drawer and a cart slideover), so both contents are force-mounted from the
+// start. Hidden layers/scopes must not participate in the global
+// `DismissableLayer` and `FocusScope` stacks: the later-mounted hidden one
+// would otherwise be treated as the topmost layer (swallowing Escape meant for
+// the open dialog) and would pause the open dialog's focus trap.
+describe('given two Dialogs with unmountOnHide=false', () => {
+  const TwoDialogsTest = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+    props: ['onInteractOutside'],
+    template: `<div>
+  <DialogRoot :unmount-on-hide="false">
+    <DialogTrigger data-testid="first-trigger">open first</DialogTrigger>
+    <DialogOverlay />
+    <DialogContent data-testid="first-content">
+      <DialogTitle>first</DialogTitle>
+      <DialogClose data-testid="first-close">close first</DialogClose>
+    </DialogContent>
+  </DialogRoot>
+  <DialogRoot :modal="false" :unmount-on-hide="false">
+    <DialogTrigger data-testid="second-trigger">open second</DialogTrigger>
+    <DialogContent data-testid="second-content" @interact-outside="onInteractOutside">
+      <DialogTitle>second</DialogTitle>
+      <DialogClose data-testid="second-close">close second</DialogClose>
+    </DialogContent>
+  </DialogRoot>
+</div>`,
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof TwoDialogsTest>>
+  let onInteractOutside: Mock
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    onInteractOutside = vi.fn()
+    wrapper = mount(TwoDialogsTest, { attachTo: document.body, props: { onInteractOutside } })
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
+  it('should close the open dialog on Escape even though a hidden one mounted after it', async () => {
+    const trigger = wrapper.find('[data-testid="first-trigger"]')
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    const content = document.querySelector('[data-testid="first-content"]') as HTMLElement
+    expect(content.style.display).not.toBe('none')
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    expect(content.style.display).toBe('none')
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
+  })
+
+  it('should keep the modal focus trap active despite the hidden later-mounted scope', async () => {
+    await fireEvent.click(wrapper.find('[data-testid="first-trigger"]').element)
+    await nextTick()
+    await vi.waitFor(() => expect(document.activeElement?.getAttribute('data-testid')).toBe('first-close'))
+
+    // Move focus outside the open modal dialog: the trap must pull it back.
+    const outside = document.querySelector('[data-testid="second-trigger"]') as HTMLElement
+    outside.focus()
+    await nextTick()
+
+    const content = document.querySelector('[data-testid="first-content"]') as HTMLElement
+    expect(content.contains(document.activeElement)).toBe(true)
+  })
+
+  it('should not emit interactOutside on a closed keep-mounted dialog', async () => {
+    // Wait out the `setTimeout(0)` before outside-pointerdown listeners attach.
+    await sleep(1)
+    await fireEvent.pointerDown(document.body)
+    await nextTick()
+    expect(onInteractOutside).not.toHaveBeenCalled()
   })
 })
 

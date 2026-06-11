@@ -30,12 +30,22 @@ export interface FocusScopeProps extends PrimitiveProps {
    * @defaultValue false
    */
   trapped?: boolean
+
+  /**
+   * Whether the scope is currently visible. Lets a consumer keep the scope
+   * mounted but hidden (e.g. `display: none`) and still get correct auto-focus:
+   * the mount auto-focus is skipped while not present, and re-runs when it
+   * becomes present again. Defaults to `true` so consumers that mount the scope
+   * only while visible are unaffected.
+   * @defaultValue true
+   */
+  present?: boolean
 }
 </script>
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { nextTick, reactive, ref, watchEffect } from 'vue'
+import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createFocusScopesStack } from './stack'
 import {
@@ -173,24 +183,27 @@ watchEffect(async (cleanupFn) => {
   await nextTick()
   if (!container)
     return
-  focusScopesStack.add(focusScope)
+  // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
+  // `unmountOnHide: false`) must stay out of the scope stack: adding it would
+  // pause the currently active scope and break its focus trap. The `present`
+  // watcher below adds/removes it as it becomes visible.
+  if (props.present !== false)
+    focusScopesStack.add(focusScope)
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
   const hasFocusedCandidate = container.contains(previouslyFocusedElement)
 
   // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
-  // scope physically mounts hidden via `v-show` (`display: none`). Skip the
+  // consumer keeps the scope mounted but flags it as not present. Skip the
   // mount auto-focus in that case, otherwise it fires `mountAutoFocus` and
-  // steals focus into a closed dialog. The visibility watcher below re-runs the
-  // auto-focus once the scope actually becomes visible.
-  const isHidden = isClient && getComputedStyle(container).display === 'none'
-
-  if (!hasFocusedCandidate && !isHidden)
+  // steals focus into a hidden scope. The `present` watcher below re-runs the
+  // auto-focus once the scope becomes present again.
+  // NOTE: `props.present` must stay read *after* the `await` above so this
+  // effect does not track it — re-running on `present` changes would dispatch
+  // the unmount auto-focus cleanup below on every close.
+  if (!hasFocusedCandidate && props.present !== false)
     dispatchMountAutoFocus(container, previouslyFocusedElement)
 
   cleanupFn(() => {
-    container.removeEventListener(AUTOFOCUS_ON_MOUNT, (ev: Event) =>
-      emits('mountAutoFocus', ev))
-
     const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
     const unmountEventHandler = (ev: Event) => {
       emits('unmountAutoFocus', ev)
@@ -215,39 +228,36 @@ watchEffect(async (cleanupFn) => {
   })
 })
 
-// Force-mounted scopes that start hidden (e.g. Dialog `unmountOnHide: false`
-// while closed) physically mount once but are shown/hidden in place via
-// `v-show` (`display: none`). The mount `watchEffect` above keys auto-focus off
-// physical mount, so on its own it would fire while hidden and never re-focus
-// on reopen. For those scopes only, drive auto-focus off the hidden -> visible
-// transition (covers first open and every reopen, modal and non-modal).
-//
-// This is deliberately gated to scopes that *mount hidden*: normal scopes mount
-// visible and unmount on close, so they never set up this observer — we avoid
-// attaching a `MutationObserver` to every `FocusScope` consumer.
-if (isClient) {
-  watchEffect((cleanupFn) => {
-    const container = currentElement.value
-    if (!container || getComputedStyle(container).display !== 'none')
-      return
+// Force-mounted scopes (e.g. Dialog `unmountOnHide: false`) stay mounted across
+// open/close and toggle `present` instead of unmounting, so mount/unmount-keyed
+// behavior must be re-keyed on `present`: stack membership (which pauses other
+// scopes' traps) and the mount auto-focus (which only fires on physical mount).
+// Awaiting `nextTick` lets the consumer's visibility change (e.g. `v-show`)
+// apply first, so the focus targets exist. Consumers that don't pass `present`
+// never hit this — it stays `undefined`.
+watch(() => props.present, async (present, prevPresent) => {
+  if (!isClient)
+    return
 
-    let wasHidden = true
-    const observer = new MutationObserver(() => {
-      const isHidden = getComputedStyle(container).display === 'none'
-      if (wasHidden && !isHidden) {
-        const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-        if (!container.contains(previouslyFocusedElement))
-          dispatchMountAutoFocus(container, previouslyFocusedElement)
-      }
-      wasHidden = isHidden
-    })
-    // Reacting to the style/class mutation runs after the DOM updates, so the
-    // focus targets are already visible by the time we focus them.
-    observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'] })
+  if (present === false && prevPresent === true) {
+    focusScopesStack.remove(focusScope)
+    return
+  }
 
-    cleanupFn(() => observer.disconnect())
-  })
-}
+  if (present !== true || prevPresent !== false)
+    return
+
+  focusScopesStack.add(focusScope)
+
+  await nextTick()
+  const container = currentElement.value
+  if (!container)
+    return
+
+  const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+  if (!container.contains(previouslyFocusedElement))
+    dispatchMountAutoFocus(container, previouslyFocusedElement)
+})
 
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.loop && !props.trapped)

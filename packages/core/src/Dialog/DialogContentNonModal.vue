@@ -36,6 +36,7 @@ watch(() => props.present, (isPresent, wasPresent) => {
 <template>
   <DialogContentImpl
     v-bind="{ ...forwardedProps, ...emitsAsProps }"
+    :present="present"
     :trap-focus="false"
     :disable-outside-pointer-events="false"
     @close-auto-focus="

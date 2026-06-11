@@ -37,8 +37,9 @@ watch(() => props.present, (isPresent, wasPresent) => {
   <DialogContentImpl
     v-bind="{ ...forwardedProps, ...emitsAsProps }"
     :ref="forwardRef"
+    :present="present"
     :trap-focus="rootContext.open.value"
-    :disable-outside-pointer-events="props.disableOutsidePointerEvents && present"
+    :disable-outside-pointer-events="props.disableOutsidePointerEvents"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {

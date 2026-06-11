@@ -72,8 +72,19 @@ import {
   usePointerDownOutside,
 } from './utils'
 
-const props = withDefaults(defineProps<DismissableLayerProps>(), {
+const props = withDefaults(defineProps<DismissableLayerProps & {
+  /**
+   * Whether the layer is currently active. A layer that stays mounted while
+   * hidden (e.g. a Dialog with `unmountOnHide: false`) must opt out of the
+   * layer stack, otherwise it would be treated as the topmost layer and
+   * swallow Escape / outside interactions meant for the visible one.
+   * Kept out of the public `DismissableLayerProps` on purpose — it is
+   * internal plumbing between primitives.
+   */
+  present?: boolean
+}>(), {
   disableOutsidePointerEvents: false,
+  present: true,
 })
 
 const emits = defineEmits<DismissableLayerPrivateEmits>()
@@ -108,7 +119,7 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
     branch?.contains(event.target as HTMLElement),
   )
 
-  if (!isPointerEventsEnabled.value || isPointerDownOnBranch)
+  if (!props.present || !isPointerEventsEnabled.value || isPointerDownOnBranch)
     return
   emits('pointerDownOutside', event)
   emits('interactOutside', event)
@@ -122,7 +133,7 @@ const focusOutside = useFocusOutside((event) => {
     branch?.contains(event.target as HTMLElement),
   )
 
-  if (isFocusInBranch)
+  if (!props.present || isFocusInBranch)
     return
   emits('focusOutside', event)
   emits('interactOutside', event)
@@ -146,9 +157,9 @@ onKeyStroke('Escape', (event) => {
 // layer would re-run this effect and its cleanup could prematurely restore the
 // body's `pointer-events` while an ancestor layer is still open (#2674).
 watch(
-  [layerElement, () => props.disableOutsidePointerEvents],
-  ([element, disableOutsidePointerEvents], _, onCleanup) => {
-    if (!element)
+  [layerElement, () => props.disableOutsidePointerEvents, () => props.present],
+  ([element, disableOutsidePointerEvents, present], _, onCleanup) => {
+    if (!element || !present)
       return
     if (disableOutsidePointerEvents) {
       if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
@@ -174,7 +185,24 @@ watch(
         }
       })
     }
+  },
+  { immediate: true },
+)
+
+// Membership in the layer stack follows presence, not mount: a hidden layer
+// (e.g. a closed Dialog with `unmountOnHide: false`) must leave the stack so
+// Escape and outside interactions target the layer that is actually visible.
+// Kept separate from the pointer-events watch above so a
+// `disableOutsidePointerEvents` toggle alone never re-orders the stack.
+watch(
+  [layerElement, () => props.present],
+  ([element, present], _, onCleanup) => {
+    if (!element || !present)
+      return
     layers.value.add(element)
+    onCleanup(() => {
+      layers.value.delete(element)
+    })
   },
   { immediate: true },
 )
