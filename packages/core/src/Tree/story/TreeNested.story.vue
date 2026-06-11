@@ -1,22 +1,41 @@
 <script setup lang="ts">
 import { TreeRoot } from '..'
-import Tree from './_TreeNested.vue'
-import { items } from './constants'
+
+const items = [
+  {
+    title: 'components',
+    children: [
+      {
+        title: 'Home',
+        children: [
+          { title: 'Card.vue' },
+          { title: 'Button.vue' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'composables',
+    children: [
+      { title: 'useAuth.ts' },
+      { title: 'useUser.ts' },
+    ],
+  },
+]
 </script>
 
 <template>
   <Story
-    title="Tree/Nested"
+    title="Tree/Items adapter"
     :layout="{ type: 'single', iframe: false }"
   >
     <Variant title="default">
       <TreeRoot
-        class="list-none select-none w-64 bg-white text-blackA11 rounded-lg p-2 text-sm font-medium"
+        class="w-64 h-80 bg-white text-blackA11 rounded-lg text-sm font-medium"
         :items="items"
-        :get-key="(item) => item.title"
-      >
-        <Tree :tree-items="items" />
-      </TreeRoot>
+        :get-key="item => item.title"
+        initial-expansion="open"
+      />
     </Variant>
   </Story>
 </template>

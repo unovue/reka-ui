@@ -1,18 +1,26 @@
+import {
+  prepareFileTreeInput as pierrePrepareFileTreeInput,
+  preparePresortedFileTreeInput as pierrePreparePresortedFileTreeInput,
+  themeToTreeStyles as pierreThemeToTreeStyles,
+} from '@pierre/trees'
+
 export {
-  default as TreeItem,
-  type TreeItemEmits,
-  type TreeItemProps,
-  type SelectEvent as TreeItemSelectEvent,
-  type ToggleEvent as TreeItemToggleEvent,
-} from './TreeItem.vue'
-export {
-  type FlattenedItem,
-  injectTreeRootContext,
   default as TreeRoot,
   type TreeRootEmits,
   type TreeRootProps,
 } from './TreeRoot.vue'
 export {
-  default as TreeVirtualizer,
-  type TreeVirtualizerProps,
-} from './TreeVirtualizer.vue'
+  type FileTreeCompositionOptions,
+  type FileTreeDensity,
+  type FileTreeInitialExpansion,
+  type FileTreePreparedInput,
+  type FileTreeRowDecorationRenderer,
+  type FileTreeSortComparator,
+  type GitStatusEntry,
+  type TreeThemeInput,
+  type TreeThemeStyles,
+} from '@pierre/trees'
+
+export const prepareFileTreeInput = pierrePrepareFileTreeInput
+export const preparePresortedFileTreeInput = pierrePreparePresortedFileTreeInput
+export const themeToTreeStyles = pierreThemeToTreeStyles

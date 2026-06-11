@@ -1,7 +1,7 @@
 ---
 
 title: Tree
-description: A tree view widget displays a hierarchical list of items that can be expanded or collapsed to show or hide their child items, such as in a file system navigator.
+description: A Pierre-backed file tree widget for rendering selectable, virtualized path hierarchies.
 name: tree
 aria: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
 ---
@@ -11,7 +11,7 @@ aria: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
 <Badge>Alpha</Badge>
 
 <Description>
-A tree view widget displays a hierarchical list of items that can be expanded or collapsed to show or hide their child items, such as in a file system navigator.
+A Pierre-backed file tree widget for rendering selectable, virtualized path hierarchies.
 </Description>
 
 <ComponentPreview name="Tree" />
@@ -20,13 +20,13 @@ A tree view widget displays a hierarchical list of items that can be expanded or
 
 <Highlights
   :features="[
+    'Renders through @pierre/trees.',
+    'Uses canonical file paths as public state.',
     'Can be controlled or uncontrolled.',
-    'Focus is fully managed.',
-    'Full keyboard navigation.',
-    'Supports Right to Left direction.',
-    'Supports multiple selection.',
-    'Different selection behavior.',
-    'Supports Pierre-backed path mode for file trees.',
+    'Supports prepared input for large trees.',
+    'Supports built-in search.',
+    'Supports git status and row decoration lanes.',
+    'Virtualizes rows by default.',
   ]"
 />
 
@@ -38,22 +38,15 @@ Install the component from your command line.
 
 ## Anatomy
 
-Import all parts and piece them together.
+Import the root and pass paths.
 
 ```vue
 <script setup>
-import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
+import { TreeRoot } from 'reka-ui'
 </script>
 
 <template>
-  <TreeRoot>
-    <TreeItem />
-
-    <!-- or with virtual -->
-    <TreeVirtualizer>
-      <TreeItem />
-    </TreeVirtualizer>
-  </TreeRoot>
+  <TreeRoot :paths="paths" />
 </template>
 ```
 
@@ -61,44 +54,15 @@ import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
 
 ### Root
 
-Contains all the parts of a tree.
+Contains the Pierre file tree.
 
 <!-- @include: @/meta/TreeRoot.md -->
 
-### Item
-
-The item component.
-
-<!-- @include: @/meta/TreeItem.md -->
-
-<DataAttributesTable
-  :data="[
-    {
-      attribute: '[data-indent]',
-      values: 'Number',
-    },
-    {
-      attribute: '[data-expanded]',
-      values: 'Present when expanded',
-    },
-    {
-      attribute: '[data-selected]',
-      values: 'Present when selected',
-    },
-  ]"
-/>
-
-### Virtualizer
-
-Virtual container to achieve list virtualization.
-
-<!-- @include: @/meta/TreeVirtualizer.md -->
-
 ## Examples
 
-### Path mode
+### File paths
 
-Pass `paths` to render a Pierre-backed file tree. Path mode is optimized for code editors, agents, and file explorers where the tree data already exists as canonical file paths.
+Pass canonical paths to render a file tree. `v-model` receives selected path strings.
 
 ```vue
 <script setup lang="ts">
@@ -111,6 +75,7 @@ const paths = [
   'README.md',
   'src/App.vue',
   'src/components/Button.vue',
+  'src/composables/useAuth.ts',
 ]
 </script>
 
@@ -125,231 +90,91 @@ const paths = [
 </template>
 ```
 
-Use the `items` slot API shown below when you need full control over item markup through `TreeItem`.
+### Prepared input
 
-### Selecting multiple items
+Prepare large path lists once, then pass the prepared value to `TreeRoot`.
 
-The `Tree` component allows you to select multiple items. You can enable this by providing an array of values instead of a single value and set `multiple="true"`.
-
-```vue line=12,17-18
+```vue
 <script setup lang="ts">
-import { TreeRoot } from 'reka-ui'
-import { ref } from 'vue'
+import { prepareFileTreeInput, TreeRoot } from 'reka-ui'
 
-const people = [
-  { id: 1, name: 'Durward Reynolds' },
-  { id: 2, name: 'Kenton Towne' },
-  { id: 3, name: 'Therese Wunsch' },
-  { id: 4, name: 'Benedict Kessler' },
-  { id: 5, name: 'Katelyn Rohan' },
+const paths = [
+  'README.md',
+  'packages/core/src/index.ts',
+  'packages/core/src/Tree/TreeRoot.vue',
 ]
-const selectedPeople = ref([people[0], people[1]])
+
+const preparedInput = prepareFileTreeInput(paths)
 </script>
 
 <template>
   <TreeRoot
-    v-model="selectedPeople"
-    multiple
-  >
-    ...
-  </TreeRoot>
+    :prepared-input="preparedInput"
+    initial-expansion="open"
+    style="height: 320px"
+  />
 </template>
 ```
 
-### Virtual List
+### Git status
 
-Rendering a long list of item can slow down the app, thus using virtualization would significantly improve the performance.
-
-See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
-
-```vue line=8-15
-<script setup lang="ts">
-import { TreeItem, TreeRoot, TreeVirtualizer } from 'reka-ui'
-import { ref } from 'vue'
-</script>
-
-<template>
-  <TreeRoot :items>
-    <TreeVirtualizer
-      v-slot="{ item }"
-      :text-content="(opt) => opt.name"
-    >
-      <TreeItem v-bind="item.bind">
-        {{ person.name }}
-      </TreeItem>
-    </TreeVirtualizer>
-  </TreeRoot>
-</template>
-```
-
-### With Checkbox
-
-Some `Tree` component might want to show `toggled/indeterminate` checkbox. We can change the behavior of the `Tree` component by using a few props and `preventDefault` event.
-
-We set `propagateSelect` to `true` because we want the parent checkbox to select/deselect it's descendants. Then, we add a checkbox that triggers `select` event.
-
-```vue line=10-11,17-25,27-30
-<script setup lang="ts">
-import { TreeItem, TreeRoot } from 'reka-ui'
-import { ref } from 'vue'
-</script>
-
-<template>
-  <TreeRoot
-    v-slot="{ flattenItems }"
-    :items
-    multiple
-    propagate-select
-  >
-    <TreeItem
-      v-for="item in flattenItems"
-      :key="item._id"
-      v-bind="item.bind"
-      v-slot="{ handleSelect, isSelected, isIndeterminate }"
-      @select="(event) => {
-        if (event.detail.originalEvent.type === 'click')
-          event.preventDefault()
-      }"
-      @toggle="(event) => {
-        if (event.detail.originalEvent.type === 'keydown')
-          event.preventDefault()
-      }"
-    >
-      <Icon
-        v-if="item.hasChildren"
-        icon="radix-icons:chevron-down"
-      />
-
-      <button
-        tabindex="-1"
-        @click.stop
-        @change="handleSelect"
-      >
-        <Icon
-          v-if="isSelected"
-          icon="radix-icons:check"
-        />
-        <Icon
-          v-else-if="isIndeterminate"
-          icon="radix-icons:dash"
-        />
-        <Icon
-          v-else
-          icon="radix-icons:box"
-        />
-      </button>
-
-      <div class="pl-2">
-        {{ item.value.title }}
-      </div>
-    </TreeItem>
-  </TreeRoot>
-</template>
-```
-
-### Nested Tree Node
-
-The default example shows flatten tree items and nodes, this enables [Virtualization](/docs/components/tree.html#virtual-list) and custom feature such as Drag & Drop easier. However, you can also build it to have nested DOM node.
-
-In `Tree.vue`,
+Pass Pierre git status entries to render file status affordances beside rows.
 
 ```vue
 <script setup lang="ts">
-import { TreeItem } from 'reka-ui'
+import type { GitStatusEntry } from 'reka-ui'
+import { TreeRoot } from 'reka-ui'
 
-interface TreeNode {
-  title: string
-  icon: string
-  children?: TreeNode[]
-}
+const paths = [
+  'README.md',
+  'src/App.vue',
+  'src/components/Button.vue',
+]
 
-withDefaults(defineProps<{
-  treeItems: TreeNode[]
-  level?: number
-}>(), { level: 0 })
+const gitStatus: GitStatusEntry[] = [
+  { path: 'src/App.vue', status: 'modified' },
+  { path: 'src/components/Button.vue', status: 'added' },
+]
 </script>
 
 <template>
-  <li
-    v-for=" tree in treeItems"
-    :key="tree.title"
-  >
-    <TreeItem
-      v-slot="{ isExpanded }"
-      as-child
-      :level="level"
-      :value="tree"
-    >
-      <button>…</button>
-
-      <ul v-if="isExpanded && tree.children">
-        <Tree
-          :tree-items="tree.children"
-          :level="level + 1"
-        />
-      </ul>
-    </TreeItem>
-  </li>
+  <TreeRoot
+    :paths="paths"
+    :git-status="gitStatus"
+    initial-expansion="open"
+    style="height: 320px"
+  />
 </template>
 ```
 
-In `CustomTree.vue`
+### Item adapter
+
+For migration, `items`, `getKey`, and `getChildren` are converted to canonical paths before being passed to Pierre. Prefer `paths` for new code.
 
 ```vue
-<template>
-  <TreeRoot
-    :items="items"
-    :get-key="(item) => item.title"
-  >
-    <Tree :tree-items="items" />
-  </TreeRoot>
-</template>
-```
-
-### Custom children schema
-
-By default, `<TreeRoot />` expects you to provide the list of node's children by passing a list of `children` for every node. You can override that by providing the `getChildren` prop.
-
-<Callout type="info">
-
-If the node doesn't have any children, `getChildren` should return `undefined` instead of an empty array.
-
-</Callout>
-
-```vue line=22
 <script setup lang="ts">
 import { TreeRoot } from 'reka-ui'
-import { ref } from 'vue'
 
-interface FileNode {
-  title: string
-  icon: string
-}
-
-interface DirectoryNode {
-  title: string
-  icon: string
-  directories?: DirectoryNode[]
-  files?: FileNode[]
-}
+const items = [
+  {
+    title: 'src',
+    children: [
+      { title: 'App.vue' },
+      { title: 'components/Button.vue' },
+    ],
+  },
+]
 </script>
 
 <template>
   <TreeRoot
     :items="items"
     :get-key="(item) => item.title"
-    :get-children="(item) => (!item.files) ? item.directories : (!item.directories) ? item.files : [...item.directories, ...item.files]"
-  >
-    ...
-  </TreeRoot>
+    initial-expansion="open"
+    style="height: 320px"
+  />
 </template>
 ```
-
-### Draggable/Sortable Tree
-
-For more complex draggable `Tree` component, in this example we will be using [pragmatic-drag-and-drop](https://github.com/atlassian/pragmatic-drag-and-drop), as the core package for handling dnd.
-
-[Stackblitz Demo](https://stackblitz.com/edit/github-8f3fzs?file=src%2FTreeDND.vue)
 
 ## Accessibility
 
@@ -361,31 +186,31 @@ Adheres to the [Tree WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
   :data="[
     {
       keys: ['Enter', 'Space'],
-      description: 'When highlight on <code>TreeItem</code>, selects the focused item.',
+      description: 'Selects the focused row.',
     },
     {
       keys: ['ArrowDown'],
-      description: 'When focus is on <code>TreeItem</code>, moves focus to the next item.',
+      description: 'Moves focus to the next row.',
     },
     {
       keys: ['ArrowUp'],
-      description: 'When focus is on <code>TreeItem</code>, moves focus to the previous item.',
+      description: 'Moves focus to the previous row.',
     },
     {
       keys: ['ArrowRight'],
-      description: 'When focus is on a closed <code>TreeItem</code> (node), it opens the node without moving focus. When on an open node, it moves focus to the first child node. When on an end node, it does nothing.',
+      description: 'Opens a closed directory row. When already open, moves focus to the first child row.',
     },
     {
       keys: ['ArrowLeft'],
-      description: 'When focus is on an open <code>TreeItem</code> (node), closes the node. When focus is on a child node that is also either an end node or a closed node, moves focus to its parent node. When focus is on a root node that is also either an end node or a closed node, does nothing.',
+      description: 'Closes an open directory row. When focused on a child row, moves focus to its parent row.',
     },
     {
       keys: ['Home', 'PageUp'],
-      description: '<span>Moves focus first <code>TreeItem</code></span>',
+      description: 'Moves focus to the first row.',
     },
     {
       keys: ['End', 'PageDown'],
-      description: '<span>Moves focus last <code>TreeItem</code></span>',
+      description: 'Moves focus to the last row.',
     },
   ]"
 />
