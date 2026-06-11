@@ -11,18 +11,28 @@ import type {
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface UnresolvedFileProps<LAnnotation = undefined> extends PrimitiveProps {
+  /** File contents that still contain merge conflict markers. */
   file?: FileContents
+  /** Precomputed Pierre metadata for an unresolved merge-conflict diff. */
   fileDiff?: FileDiffMetadata
+  /** Pierre unresolved-file options, including merge conflict action rendering and resolution callbacks. */
   options?: UnresolvedFileOptions<LAnnotation>
+  /** Annotations keyed by side and rendered line number. */
   lineAnnotations?: UnresolvedFileRenderProps<LAnnotation>['lineAnnotations']
+  /** Controlled merge conflict actions, typically returned by Pierre after resolving a conflict. */
   actions?: UnresolvedFileRenderProps<LAnnotation>['actions']
+  /** Controlled merge conflict marker rows, typically returned by Pierre after resolving a conflict. */
   markerRows?: MergeConflictMarkerRow[]
+  /** Line range to highlight as selected. */
   selectedLines?: SelectedLineRange | null
+  /** Server-rendered Pierre markup to hydrate before client updates take over. */
   prerenderedHTML?: string
 }
 
 export type UnresolvedFileEmits = {
+  /** Event handler called with the resolved file when a merge conflict action is applied. */
   mergeConflictResolve: [file: FileContents, payload: MergeConflictActionPayload]
+  /** Event handler called when a merge conflict action is requested. */
   mergeConflictAction: [payload: MergeConflictActionPayload]
 }
 </script>

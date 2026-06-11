@@ -3,17 +3,21 @@ import type { FileContents } from '@pierre/diffs'
 import type { FileDiffProps } from './FileDiff.vue'
 
 export interface MultiFileDiffProps<LAnnotation = undefined> extends Omit<FileDiffProps<LAnnotation>, 'fileDiff'> {
+  /** Previous file contents used to compute the diff. */
   oldFile: FileContents
+  /** Next file contents used to compute the diff. */
   newFile: FileContents
 }
 </script>
 
 <script setup lang="ts" generic="LAnnotation = undefined">
-import { parseDiffFromFile } from '@pierre/diffs'
+import { DIFFS_TAG_NAME, parseDiffFromFile } from '@pierre/diffs'
 import { computed, toRaw } from 'vue'
 import FileDiff from './FileDiff.vue'
 
-const props = defineProps<MultiFileDiffProps<LAnnotation>>()
+const props = withDefaults(defineProps<MultiFileDiffProps<LAnnotation>>(), {
+  as: DIFFS_TAG_NAME,
+})
 
 const fileDiff = computed(() => parseDiffFromFile(
   toRaw(props.oldFile),

@@ -1,0 +1,67 @@
+.DiffDemo {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.DiffDemoControls {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--background));
+  padding: 4px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.DiffDemoButton {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  height: 32px;
+  padding: 0 12px;
+  text-transform: capitalize;
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.DiffDemoButton:hover {
+  color: hsl(var(--foreground));
+}
+
+.DiffDemoButton:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.DiffDemoButton.is-active {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.DiffDemoDiff {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--background));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  font-size: 13px;
+  --diffs-font-family: var(--font-geist-mono);
+  --diffs-header-font-family: var(--font-geist-sans);
+  --diffs-font-size: 13px;
+  --diffs-line-height: 20px;
+  --diffs-light: hsl(var(--foreground));
+  --diffs-dark: hsl(var(--foreground));
+  --diffs-light-bg: hsl(var(--background));
+  --diffs-dark-bg: hsl(var(--background));
+  --diffs-modified-color: hsl(var(--primary));
+}

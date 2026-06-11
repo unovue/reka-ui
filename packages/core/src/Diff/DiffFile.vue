@@ -8,10 +8,15 @@ import type {
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface DiffFileProps<LAnnotation = undefined> extends PrimitiveProps {
+  /** File contents to render directly without computing a diff. */
   file: FileContents
+  /** Pierre file-rendering options for theming, line numbers, wrapping, headers, and interaction hooks. */
   options?: FileOptions<LAnnotation>
+  /** Annotations keyed by rendered file line number. */
   lineAnnotations?: LineAnnotation<LAnnotation>[]
+  /** Line range to highlight as selected. */
   selectedLines?: SelectedLineRange | null
+  /** Server-rendered Pierre markup to hydrate before client updates take over. */
   prerenderedHTML?: string
 }
 </script>

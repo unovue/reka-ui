@@ -8,10 +8,15 @@ import type {
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface FileDiffProps<LAnnotation = undefined> extends PrimitiveProps {
+  /** Parsed Pierre file diff metadata, such as the result of `parseDiffFromFile` or `parsePatchFiles`. */
   fileDiff: FileDiffMetadata
+  /** Pierre diff-rendering options for layout, theming, line diffs, headers, and interaction hooks. */
   options?: FileDiffOptions<LAnnotation>
+  /** Annotations keyed by side and rendered line number. */
   lineAnnotations?: DiffLineAnnotation<LAnnotation>[]
+  /** Line range to highlight as selected. */
   selectedLines?: SelectedLineRange | null
+  /** Server-rendered Pierre markup to hydrate before client updates take over. */
   prerenderedHTML?: string
 }
 </script>
