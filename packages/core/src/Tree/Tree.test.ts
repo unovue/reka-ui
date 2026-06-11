@@ -1,5 +1,6 @@
 import type { FileTree } from '@pierre/trees'
 import type { VueWrapper } from '@vue/test-utils'
+import { prepareFileTreeInput } from '@pierre/trees'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -83,6 +84,15 @@ describe('given a Pierre-backed Tree', () => {
         },
       ],
       getKey: (item: any) => item.title,
+    })
+
+    expect(getTree(wrapper).getItem('src/index.ts')).not.toBeNull()
+  })
+
+  it('should render prepared input without requiring paths', async () => {
+    const wrapper = await mountTree({
+      paths: undefined,
+      preparedInput: prepareFileTreeInput(['src/index.ts']),
     })
 
     expect(getTree(wrapper).getItem('src/index.ts')).not.toBeNull()

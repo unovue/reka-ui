@@ -92,7 +92,15 @@ defineExpose({
 
 const { currentElement, forwardRef } = useForwardExpose()
 const initialExpandedPaths = computed(() => props.expanded ?? props.defaultExpanded)
-const resolvedPaths = computed(() => props.paths ?? itemPathsFromTree(props.items ?? []))
+const resolvedPaths = computed(() => {
+  if (props.paths !== undefined)
+    return props.paths
+
+  if (props.items !== undefined)
+    return itemPathsFromTree(props.items)
+
+  return undefined
+})
 
 function itemPathsFromTree(items: T[], parentPath = ''): string[] {
   return items.flatMap((item) => {
@@ -106,9 +114,12 @@ function itemPathsFromTree(items: T[], parentPath = ''): string[] {
 }
 
 function createOptions(): FileTreeOptions {
+  const inputOptions = props.preparedInput !== undefined && resolvedPaths.value === undefined
+    ? { preparedInput: props.preparedInput }
+    : { paths: resolvedPaths.value ?? [], preparedInput: props.preparedInput }
+
   return {
-    paths: resolvedPaths.value,
-    preparedInput: props.preparedInput,
+    ...inputOptions,
     initialSelectedPaths: selectedPaths.value ?? [],
     initialExpandedPaths: initialExpandedPaths.value,
     initialExpansion: props.initialExpansion,
