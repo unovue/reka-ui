@@ -11,6 +11,9 @@ on:
     paths:
       - 'packages/**'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,14 +28,12 @@ jobs:
       - name: Build
         run: pnpm --filter reka-ui build
 
-      - name: Check for errors
-        run: |
-          if [ $? -eq 0 ]; then
-            echo "Build succeeded"
-          else
-            echo "Build failed"
-            exit 1
-          fi
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+          retention-days: 1
 
   test:
     needs: build
@@ -45,8 +46,16 @@ jobs:
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
-      - name: Test
-        run: pnpm test
+      - name: Test (with coverage)
+        run: pnpm --filter reka-ui test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: packages/core/coverage
+          retention-days: 7
 
   size:
     needs: build
@@ -59,8 +68,11 @@ jobs:
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
-      - name: Build
-        run: pnpm --filter reka-ui build
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
 
       - name: Check bundle size
         run: pnpm --filter reka-ui size

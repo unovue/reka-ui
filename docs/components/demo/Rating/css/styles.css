@@ -1,0 +1,35 @@
+.RatingRoot {
+  display: flex;
+  gap: 4px;
+}
+
+.RatingItem {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.RatingItemIndicator {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 4px;
+  color: var(--gray-6, #d7d3d0);
+  width: var(--reka-rating-item-step-width);
+  opacity: var(--reka-rating-item-step-opacity);
+  z-index: var(--reka-rating-item-step-z-index);
+}
+
+.RatingItemIndicator[data-state="active"] {
+  color: #facc15;
+}
+
+.RatingItemIndicator:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+.RatingStar {
+  width: 28px;
+  height: 28px;
+}
