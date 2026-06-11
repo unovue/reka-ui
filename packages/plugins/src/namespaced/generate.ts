@@ -4,11 +4,13 @@ import { components } from 'reka-ui/constant'
 const excludedComponents = ['configProvider', 'primitive', 'visuallyHidden']
 const filteredComponents = (Object.keys(components) as Array<keyof typeof components>).filter(component => !excludedComponents.includes(component))
 
-const flattenedComponents = filteredComponents.flatMap(component => components[component])
+const flattenedComponents = filteredComponents
+  .flatMap(component => components[component])
+  .sort((a, b) => a.localeCompare(b))
 const namespacedComponents = filteredComponents.map((component) => {
   const key = component.charAt(0).toUpperCase() + component.slice(1)
   const entries = components[component]
-    .map(value => [value.replace(key, ''), value] as const)
+    .map(value => [value.startsWith(key) ? value.slice(key.length) : value, value] as const)
     .filter(([name]) => Boolean(name))
 
   if (entries.length === 0) {
@@ -16,7 +18,7 @@ const namespacedComponents = filteredComponents.map((component) => {
   }
 
   return `export const ${key} = {\n${
-    entries.map(([name, value]) => `  ${name}: ${value},\n`).join('')
+    entries.map(([name, value]) => `  ${name}${name === value ? '' : `: ${value}`},\n`).join('')
   }} as {\n${
     entries.map(([name, value]) => `  ${name}: typeof ${value}\n`).join('')
   }}`
