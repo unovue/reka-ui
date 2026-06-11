@@ -93,5 +93,8 @@ onBeforeUnmount(cleanUpFile)
   <Primitive
     :ref="forwardRef"
     :as="as"
-  />
+    :as-child="asChild"
+  >
+    <slot />
+  </Primitive>
 </template>

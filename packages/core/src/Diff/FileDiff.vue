@@ -93,5 +93,8 @@ onBeforeUnmount(cleanUpDiff)
   <Primitive
     :ref="forwardRef"
     :as="as"
-  />
+    :as-child="asChild"
+  >
+    <slot />
+  </Primitive>
 </template>

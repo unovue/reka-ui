@@ -43,15 +43,23 @@ const instance = shallowRef<PierreUnresolvedFile<LAnnotation>>()
 const hasHydrated = shallowRef(false)
 
 function getOptions(): UnresolvedFileOptions<LAnnotation> | undefined {
+  const options = toRaw(props.options)
+
+  if (options?.onMergeConflictAction) {
+    return {
+      ...options,
+      onMergeConflictAction(payload, unresolvedFile) {
+        emits('mergeConflictAction', payload)
+        options.onMergeConflictAction?.(payload, unresolvedFile)
+      },
+    }
+  }
+
   return {
-    ...toRaw(props.options),
-    onMergeConflictAction(payload, unresolvedFile) {
-      emits('mergeConflictAction', payload)
-      props.options?.onMergeConflictAction?.(payload, unresolvedFile)
-    },
+    ...options,
     onMergeConflictResolve(file, payload) {
       emits('mergeConflictResolve', file, payload)
-      props.options?.onMergeConflictResolve?.(file, payload)
+      options?.onMergeConflictResolve?.(file, payload)
     },
   }
 }
@@ -128,5 +136,8 @@ onBeforeUnmount(cleanUpFile)
   <Primitive
     :ref="forwardRef"
     :as="as"
-  />
+    :as-child="asChild"
+  >
+    <slot />
+  </Primitive>
 </template>

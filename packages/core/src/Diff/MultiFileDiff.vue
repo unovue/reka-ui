@@ -31,5 +31,7 @@ const fileDiff = computed(() => parseDiffFromFile(
     :line-annotations="lineAnnotations"
     :selected-lines="selectedLines"
     :prerendered-h-t-m-l="prerenderedHTML"
-  />
+  >
+    <slot />
+  </FileDiff>
 </template>

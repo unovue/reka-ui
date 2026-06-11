@@ -25,5 +25,7 @@ const fileDiff = computed(() => getSingularPatch(props.patch))
     :line-annotations="lineAnnotations"
     :selected-lines="selectedLines"
     :prerendered-h-t-m-l="prerenderedHTML"
-  />
+  >
+    <slot />
+  </FileDiff>
 </template>
