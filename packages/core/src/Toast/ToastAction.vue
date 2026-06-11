@@ -22,7 +22,7 @@ export interface ToastActionProps extends ToastCloseProps {
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import ToastAnnounceExclude from './ToastAnnounceExclude.vue'
-import ToastClose from './ToastClose.vue'
+import { injectToastRootContext } from './ToastRootImpl.vue'
 
 const props = withDefaults(defineProps<ToastActionProps>(), {
   as: 'button',
@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<ToastActionProps>(), {
 if (!props.altText)
   throw new Error('Missing prop `altText` expected on `ToastAction`')
 
+const rootContext = injectToastRootContext()
 const { forwardRef } = useForwardExpose()
 </script>
 
@@ -41,21 +42,12 @@ const { forwardRef } = useForwardExpose()
     :alt-text="altText"
     as-child
   >
-    <ToastClose
-      v-if="closeOnClick"
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-    >
-      <slot />
-    </ToastClose>
-
     <Primitive
-      v-else
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
       :type="as === 'button' ? 'button' : undefined"
+      @click="closeOnClick ? rootContext.onClose() : undefined"
     >
       <slot />
     </Primitive>
