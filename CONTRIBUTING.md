@@ -78,10 +78,9 @@ All commands run from the repo root.
 
 ## Component architecture
 
-Reka UI is a headless port of Radix UI. A few patterns recur in every family —
-learn them once and the rest of the codebase reads the same way.
-`packages/core/src/Checkbox/` is a small, complete example to read alongside this
-section.
+A few patterns recur in every component family — learn them once and the rest of
+the codebase reads the same way. `packages/core/src/Checkbox/` is a small,
+complete example to read alongside this section.
 
 - **Family folders & naming.** Components are Vue SFCs named
   `<Family><Part>.vue` — `CheckboxRoot.vue`, `CheckboxIndicator.vue`,
@@ -99,8 +98,6 @@ section.
   a wrapper). Expose template refs with `useForwardExpose()`, and forward
   props/emits with `useForwardProps`, `useEmitAsProps`, or
   `useForwardPropsEmits` from `src/shared/`.
-- **Match Radix.** When porting behavior, mirror the Radix UI (React) component.
-  Intentional divergences should have a reason noted in the PR.
 
 ## Testing
 

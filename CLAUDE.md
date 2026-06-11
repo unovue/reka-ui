@@ -1,6 +1,6 @@
 # reka-ui — agent notes
 
-Vue 3 headless component library (port of Radix UI). pnpm monorepo. Node ≥ 22, pnpm 10.
+Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 
 ## Commands (from repo root)
 - Install: `pnpm i`
@@ -24,6 +24,5 @@ Vue 3 headless component library (port of Radix UI). pnpm monorepo. Node ≥ 22,
 - Rendering: `Primitive` with `as` / `asChild`; expose refs via `useForwardExpose()`.
 - Tests: colocated `*.test.ts`, vitest + jsdom + `@testing-library/vue` + `vitest-axe` (axe check expected for new components); jsdom quirks handled in `packages/core/vitest.setup.ts`.
 - Commits: Conventional Commits, scope = component family (`fix(Dialog): …`); commitlint enforces; lint-staged runs `eslint --fix` (lints JSON/MD/YAML too — intentional).
-- Match Radix UI (React) behavior when porting — divergence needs a reason.
 
 See CONTRIBUTING.md for the full guide.
