@@ -1,10 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
@@ -190,7 +190,103 @@ describe('given a Combobox with multiple prop', async () => {
     })
   })
 })
-// TODO: add Combobox Virtual story and test
+
+describe('given a virtualized Combobox', () => {
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  // jsdom reports zero-sized rects, so `@tanstack/virtual-core` would render no
+  // items. Give the virtualizer a non-zero viewport so items actually mount.
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 100 }, (_, i) => ({ label: `Item ${i}`, value: i }))
+
+  const VirtualCombobox = defineComponent({
+    setup() {
+      const modelValue = ref<{ label: string, value: number } | undefined>(undefined)
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'onUpdate:modelValue': (v: any) => { modelValue.value = v },
+        'open': true,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              h(ComboboxInput),
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxContent, null, {
+            default: () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, {
+              default: () => h(ComboboxVirtualizer, {
+                options,
+                estimateSize: 25,
+                textContent: (o: any) => o.label,
+              }, {
+                default: ({ option }: any) => h(ComboboxItem, { value: option }, { default: () => option.label }),
+              }),
+            }),
+          }),
+        ],
+      })
+    },
+  })
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    // @ts-expect-error aXe throwing error complaining getComputedStyle
+    window.getComputedStyle = () => ({ animationName: '' })
+    document.body.innerHTML = ''
+  })
+
+  it('should mount only a subset of the 100 options (virtualization working)', async () => {
+    const wrapper = mount(VirtualCombobox, { attachTo: document.body })
+    await flush()
+
+    const items = wrapper.findAll('[role=option]')
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.length).toBeLessThan(100)
+
+    wrapper.unmount()
+  })
+
+  it('should emit update:modelValue when a visible item is clicked', async () => {
+    const wrapper = mount(VirtualCombobox, { attachTo: document.body })
+    await flush()
+
+    const items = wrapper.findAll('[role=option]')
+    expect(items.length).toBeGreaterThan(0)
+
+    await items[0].trigger('click')
+    await nextTick()
+
+    expect(wrapper.emitted('update:modelValue')).toBeFalsy() // event handled internally
+    // verify item state changed: the clicked item should be checked
+    expect(items[0].attributes('data-state')).toBe('checked')
+
+    wrapper.unmount()
+  })
+})
 
 describe('given a Combobox with object', async () => {
   let wrapper: VueWrapper<InstanceType<typeof ComboboxObject>>
