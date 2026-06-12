@@ -23,7 +23,7 @@
     "@nuxt/kit": "^4.1.2",
     "@nuxt/schema": "^4.1.2",
     "reka-ui": "link:../core",
-    "unbuild": "^2.0.0",
+    "unbuild": "^3.0.0",
     "unplugin-vue-components": "^32.0.0"
   }
 }
