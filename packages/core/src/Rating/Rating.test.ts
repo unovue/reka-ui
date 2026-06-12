@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { sleep } from '@/test'
 import Rating from './story/_Rating.vue'
+import { RatingRoot } from '..'
 
 describe('given a default Rating', () => {
   let wrapper: VueWrapper<InstanceType<typeof Rating>>
@@ -33,9 +34,9 @@ describe('given a default Rating', () => {
       await sleep(0)
     })
 
-    it('should emit `select` event', async () => {
-      const radiosComponent = wrapper.findAllComponents('button') as VueWrapper[]
-      expect(radiosComponent[0].emitted('select')?.[0]?.[0]).toBeTruthy()
+    it('should emit `update:modelValue` on keyboard navigation', async () => {
+      const root = wrapper.findComponent(RatingRoot)
+      expect(root.emitted('update:modelValue')?.[0]?.[0]).toBe(2)
     })
 
     it('should select next item on keydown', async () => {
