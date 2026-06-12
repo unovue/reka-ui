@@ -1019,3 +1019,126 @@ describe('handle IME composition', () => {
     expect(day).toHaveFocus()
   })
 })
+
+// Baseline coverage (2026-06-12): lines 89.18%, branches 87.26%, functions 97.43%
+describe('useDateField – characterization tests (coverage gaps)', () => {
+  describe('deleteValue – null prevValue path (line 317)', () => {
+    it('pressing Backspace on an already-empty segment is a no-op (placeholder stays)', async () => {
+      // Branch 40:0 — deleteValue(null) early-return path
+      const { user, month } = setup()
+      // month is empty (no modelValue), backspace should be a no-op
+      await user.click(month)
+      expect(month).toHaveTextContent('mm')
+      await user.keyboard(kbd.BACKSPACE)
+      // NOTE: current behavior — backspace on null segment leaves it null (placeholder text stays)
+      expect(month).toHaveTextContent('mm')
+    })
+
+    it('pressing Backspace on a two-digit year value truncates to one digit', async () => {
+      // Covers the `str.length > 1` path of deleteValue returning Number.parseInt(str.slice(0,-1))
+      const { user, year, rerender } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data } })
+          },
+        },
+      })
+      // Year is 1980 (4 digits). First backspace removes the last digit → 198
+      await user.click(year)
+      await user.keyboard(kbd.BACKSPACE)
+      expect(year).toHaveTextContent('198')
+    })
+  })
+
+  describe('updateYear – str.length > 4 path (line 618)', () => {
+    it('typing a 5th digit in the year segment resets the year to that digit', async () => {
+      // Branch 77:0 — updateYear when accumulated str would exceed 4 digits
+      // Also covers branch 78:1 — num !== 0, so returns num directly
+      const { user, year, rerender } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data } })
+          },
+        },
+      })
+      // Type 4 digits to fill the year segment (auto-advances after 4th digit)
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}')
+      expect(year).toHaveTextContent('2024')
+      // Click back on year and type more to get to a 5-digit accumulated string
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}{5}')
+      // NOTE: current behavior — 5th digit resets: returns { value: 5, moveToNext: false }
+      expect(year).toHaveTextContent('5')
+    })
+
+    it('typing 0 as the 5th digit in the year segment resets to 1 (prevents year=0)', async () => {
+      // Branch 78:0 — num === 0 in updateYear overflow path, returns 1 instead of 0
+      const { user, year, rerender } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data } })
+          },
+        },
+      })
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}')
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}{0}')
+      // NOTE: current behavior — 5th digit of 0 returns 1 (year 0 is invalid)
+      expect(year).toHaveTextContent('1')
+    })
+  })
+
+  describe('compositionend – no data early return (line 988)', () => {
+    it('compositionend with empty string data does not crash or modify the segment', async () => {
+      // Branch 171:0 — handleSegmentCompositionEnd early return when data is falsy
+      const { day, user, getByTestId } = setup()
+      await user.click(day)
+      // Fire compositionend with empty string data
+      await fireEvent(day, new CompositionEvent('compositionend', { data: '' }))
+      await nextTick()
+      // NOTE: current behavior — no change, segment stays at placeholder
+      expect(getByTestId('day')).toHaveTextContent('dd')
+    })
+
+    it('compositionend with no data (undefined) does not crash or modify the segment', async () => {
+      // Branch 171:0 — handleSegmentCompositionEnd early return when data is null/undefined
+      const { day, user, getByTestId } = setup()
+      await user.click(day)
+      await fireEvent(day, new CompositionEvent('compositionend'))
+      await nextTick()
+      expect(getByTestId('day')).toHaveTextContent('dd')
+    })
+  })
+
+  describe('hourSegmentAttrs hourCycle=12 aria-value bounds (lines 129-130)', () => {
+    it('hour segment has aria-valuemin=1 and aria-valuemax=12 when hourCycle is 12', async () => {
+      // Covers the true branch of (hourCycle === 12 ? 1 : 0) and (hourCycle === 12 ? 12 : 23)
+      const { getByTestId } = setup({
+        dateFieldProps: {
+          modelValue: calendarDateTime,
+          hourCycle: 12,
+        },
+      })
+      const hour = getByTestId('hour')
+      expect(hour).toHaveAttribute('aria-valuemin', '1')
+      expect(hour).toHaveAttribute('aria-valuemax', '12')
+    })
+
+    it('hour segment has aria-valuemin=0 and aria-valuemax=23 when hourCycle is 24', async () => {
+      const { getByTestId } = setup({
+        dateFieldProps: {
+          modelValue: calendarDateTime,
+          hourCycle: 24,
+        },
+      })
+      const hour = getByTestId('hour')
+      expect(hour).toHaveAttribute('aria-valuemin', '0')
+      expect(hour).toHaveAttribute('aria-valuemax', '23')
+    })
+  })
+})
