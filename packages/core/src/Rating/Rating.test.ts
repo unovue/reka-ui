@@ -12,7 +12,7 @@ describe('given a default Rating', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(Rating, { props: { defaultValue: 1, length: 3, orientation: 'vertical' } })
+    wrapper = mount(Rating, { attachTo: document.body, props: { defaultValue: 1, length: 3, orientation: 'vertical' } })
     radios = wrapper.findAll('[role=radio]')
   })
 
@@ -26,9 +26,7 @@ describe('given a default Rating', () => {
     expect(radios[2].attributes('data-state')).toBeUndefined()
   })
 
-  // TODO: So far no idea why, but the focus is not working as expected even though
-  // it should be the same as in RadioGroup tests.
-  describe.skip('on keyboard navigation', () => {
+  describe('on keyboard navigation', () => {
     beforeEach(async () => {
       radios[0].element.focus()
       await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
