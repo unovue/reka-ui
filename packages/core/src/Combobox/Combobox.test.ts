@@ -270,7 +270,7 @@ describe('given a virtualized Combobox', () => {
     wrapper.unmount()
   })
 
-  it('should emit update:modelValue when a visible item is clicked', async () => {
+  it('should handle model update internally when a visible item is clicked', async () => {
     const wrapper = mount(VirtualCombobox, { attachTo: document.body })
     await flush()
 

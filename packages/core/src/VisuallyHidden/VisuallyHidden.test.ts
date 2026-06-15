@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import VisuallyHidden from './VisuallyHidden.vue'
 
 describe('given default VisuallyHidden', () => {
@@ -38,6 +38,10 @@ describe('given feature="focusable" (default)', () => {
     })
   })
 
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
   it('sets aria-hidden="true"', () => {
     expect(wrapper.attributes('aria-hidden')).toBe('true')
   })
@@ -60,6 +64,10 @@ describe('given feature="fully-hidden"', () => {
       props: { feature: 'fully-hidden' },
       attachTo: document.body,
     })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
   })
 
   it('sets data-hidden attribute', () => {
