@@ -239,6 +239,7 @@ export default defineConfig({
               { text: 'Collapsible', link: '/docs/components/collapsible' },
               { text: 'Context Menu', link: '/docs/components/context-menu' },
               { text: 'Dialog', link: '/docs/components/dialog' },
+              { text: `Drawer ${BadgeHTML('Alpha', true)}`, link: '/docs/components/drawer' },
               { text: 'Dropdown Menu', link: '/docs/components/dropdown-menu' },
               { text: 'Hover Card', link: '/docs/components/hover-card' },
               { text: 'Menubar', link: '/docs/components/menubar' },
