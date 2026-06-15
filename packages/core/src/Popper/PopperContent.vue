@@ -204,7 +204,6 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computedEager } from '@vueuse/core'
 import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
@@ -269,7 +268,7 @@ const flipOptions = computed(() => {
   }
 })
 
-const computedMiddleware = computedEager(() => {
+const computedMiddleware = computed(() => {
   return [
     offset({
       mainAxis: props.sideOffset + arrowHeight.value,
