@@ -28,8 +28,8 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^8.0.0",
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
     "bumpp": "^11.0.1",
     "eslint": "^10.2.0",
     "lint-staged": "^16.4.0",
