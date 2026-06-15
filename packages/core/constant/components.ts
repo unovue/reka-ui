@@ -208,6 +208,14 @@ export const components = {
     'DialogDescription',
   ] as const,
 
+  diff: [
+    'DiffFile',
+    'FileDiff',
+    'MultiFileDiff',
+    'PatchDiff',
+    'UnresolvedFile',
+  ] as const,
+
   dropdownMenu: [
     'DropdownMenuRoot',
     'DropdownMenuTrigger',
