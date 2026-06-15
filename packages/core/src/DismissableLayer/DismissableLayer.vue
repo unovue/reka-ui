@@ -9,6 +9,7 @@ import {
   computed,
   nextTick,
   reactive,
+  watch,
   watchEffect,
 } from 'vue'
 import { isNullish, useForwardExpose } from '@/shared'
@@ -138,28 +139,45 @@ onKeyStroke('Escape', (event) => {
     emits('dismiss')
 })
 
-watchEffect((cleanupFn) => {
-  if (!layerElement.value)
-    return
-  if (props.disableOutsidePointerEvents) {
-    if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-      context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
-      ownerDocument.value.body.style.pointerEvents = 'none'
-    }
-    context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
-  }
-  layers.value.add(layerElement.value)
+// Use `watch` with explicit sources (instead of `watchEffect`) so this effect
+// only re-runs when `layerElement` or `disableOutsidePointerEvents` change.
+// Reading `context.layersWithOutsidePointerEventsDisabled.size` inside the
+// callback must NOT make it reactive: otherwise adding/removing any other
+// layer would re-run this effect and its cleanup could prematurely restore the
+// body's `pointer-events` while an ancestor layer is still open (#2674).
+watch(
+  [layerElement, () => props.disableOutsidePointerEvents],
+  ([element, disableOutsidePointerEvents], _, onCleanup) => {
+    if (!element)
+      return
+    if (disableOutsidePointerEvents) {
+      if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+        context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
+        ownerDocument.value.body.style.pointerEvents = 'none'
+      }
+      context.layersWithOutsidePointerEventsDisabled.add(element)
 
-  cleanupFn(() => {
-    if (
-      props.disableOutsidePointerEvents
-      && context.layersWithOutsidePointerEventsDisabled.size === 1
-      && !isNullish(context.originalBodyPointerEvents)
-    ) {
-      ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
+      // Remove this layer from the set on cleanup (re-run via prop toggle, or
+      // unmount) and restore the body's `pointer-events` only once the last
+      // disabling layer is gone. Removing here — rather than relying solely on
+      // the unmount-only effect below — keeps the set accurate when
+      // `disableOutsidePointerEvents` toggles `true -> false` while still
+      // mounted (e.g. a modal Menu closing). Checking `size === 0` *after*
+      // deletion makes the restore independent of cleanup ordering (#2674).
+      onCleanup(() => {
+        context.layersWithOutsidePointerEventsDisabled.delete(element)
+        if (
+          context.layersWithOutsidePointerEventsDisabled.size === 0
+          && !isNullish(context.originalBodyPointerEvents)
+        ) {
+          ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
+        }
+      })
     }
-  })
-})
+    layers.value.add(element)
+  },
+  { immediate: true },
+)
 
 watchEffect((cleanupFn) => {
   cleanupFn(() => {

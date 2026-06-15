@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { sleep } from '@/test'
+import { RatingRoot } from '..'
 import Rating from './story/_Rating.vue'
 
 describe('given a default Rating', () => {
@@ -12,7 +13,7 @@ describe('given a default Rating', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(Rating, { props: { defaultValue: 1, length: 3, orientation: 'vertical' } })
+    wrapper = mount(Rating, { attachTo: document.body, props: { defaultValue: 1, length: 3, orientation: 'vertical' } })
     radios = wrapper.findAll('[role=radio]')
   })
 
@@ -26,18 +27,16 @@ describe('given a default Rating', () => {
     expect(radios[2].attributes('data-state')).toBeUndefined()
   })
 
-  // TODO: So far no idea why, but the focus is not working as expected even though
-  // it should be the same as in RadioGroup tests.
-  describe.skip('on keyboard navigation', () => {
+  describe('on keyboard navigation', () => {
     beforeEach(async () => {
       radios[0].element.focus()
       await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
       await sleep(0)
     })
 
-    it('should emit `select` event', async () => {
-      const radiosComponent = wrapper.findAllComponents('button') as VueWrapper[]
-      expect(radiosComponent[0].emitted('select')?.[0]?.[0]).toBeTruthy()
+    it('should emit `update:modelValue` on keyboard navigation', async () => {
+      const root = wrapper.findComponent(RatingRoot)
+      expect(root.emitted('update:modelValue')?.[0]?.[0]).toBe(2)
     })
 
     it('should select next item on keydown', async () => {

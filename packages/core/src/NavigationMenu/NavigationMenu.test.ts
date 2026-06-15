@@ -7,8 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { sleep } from '@/test'
-import NavigationMenuItem from './NavigationMenuItem.vue'
+import NavigationMenuUnmountOnHideFalse from './__test__/NavigationMenuUnmountOnHideFalse.vue'
 
+import NavigationMenuItem from './NavigationMenuItem.vue'
 import NavigationMenu from './story/_NavigationMenu.vue'
 
 vi.mock('@vueuse/core', async () => {
@@ -102,12 +103,44 @@ describe('given default NavigationMenu', () => {
     // })
   })
 
+  it('keeps active content open when clicking inside with unmountOnHide disabled', async () => {
+    const wrapper = mount(NavigationMenuUnmountOnHideFalse, { attachTo: document.body })
+
+    await wrapper.find('[data-testid="trigger-one"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    await sleep(0)
+
+    expect(wrapper.find('[data-testid="model-value"]').text()).toBe('one')
+
+    // Open second content; first stays mounted but becomes inactive
+    await wrapper.find('[data-testid="trigger-two"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    await sleep(0)
+
+    expect(wrapper.find('[data-testid="model-value"]').text()).toBe('two')
+
+    // Click inside active content-two; inactive content-one should not interfere
+    await fireEvent.pointerDown(wrapper.find('[data-testid="inside-two"]').element)
+    await wrapper.vm.$nextTick()
+    await sleep(0)
+
+    // Content-two should remain open (content-one's dismiss handler returned early)
+    expect(wrapper.find('[data-testid="model-value"]').text()).toBe('two')
+
+    wrapper.unmount()
+  })
+
   describe('menu triggers', () => {
     const findMenuItem = () => wrapper.findComponent(NavigationMenuItem)
 
     const findTriggerButton = () => findMenuItem().find('button')
 
     const findLinkContent = () => wrapper.find('[data-dismissable-layer]')
+
+    async function useRealDebounceFn() {
+      const { useDebounceFn: realUseDebounceFn } = await vi.importActual<typeof import('@vueuse/core')>('@vueuse/core')
+      vi.mocked(useDebounceFn).mockImplementation(realUseDebounceFn)
+    }
 
     it('should open menu on click by default', async () => {
       const button = findTriggerButton()
@@ -181,6 +214,59 @@ describe('given default NavigationMenu', () => {
 
       // Menu should be closed
       expect(findLinkContent().exists()).toBeFalsy()
+    })
+
+    it('switching triggers keeps menu open', async () => {
+      vi.useFakeTimers()
+      await useRealDebounceFn()
+
+      const localWrapper = mount(NavigationMenu, { attachTo: document.body })
+      const triggers = localWrapper.findAll('[data-navigation-menu-trigger]')
+      const findContent = () => localWrapper.find('[data-dismissable-layer]')
+
+      await triggers[0].trigger('pointermove', { pointerType: 'mouse' })
+      await vi.advanceTimersByTimeAsync(200)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(true)
+
+      await triggers[0].trigger('pointerleave', { pointerType: 'mouse' })
+      await triggers[1].trigger('pointermove', { pointerType: 'mouse' })
+      await nextTick()
+
+      expect(triggers[1].attributes('data-state')).toBe('open')
+      expect(findContent().exists()).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(150)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(true)
+
+      localWrapper.unmount()
+      vi.useRealTimers()
+    })
+
+    it('leaving content closes menu', async () => {
+      vi.useFakeTimers()
+      await useRealDebounceFn()
+
+      const localWrapper = mount(NavigationMenu, { attachTo: document.body })
+      const findContent = () => localWrapper.find('[data-dismissable-layer]')
+
+      await localWrapper.find('[data-navigation-menu-trigger]').trigger('pointermove', { pointerType: 'mouse' })
+      await vi.advanceTimersByTimeAsync(200)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(true)
+
+      await findContent().trigger('pointerleave', { pointerType: 'mouse' })
+      await vi.advanceTimersByTimeAsync(150)
+      await nextTick()
+
+      expect(findContent().exists()).toBe(false)
+
+      localWrapper.unmount()
+      vi.useRealTimers()
     })
   })
 })

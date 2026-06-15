@@ -12,7 +12,7 @@ interface PropOptions {
  * in the `defineProps` return type. Since `useForwardProps` only returns props that were
  * explicitly assigned, boolean-typed props should remain optional in the return type.
  */
-type WithOptionalBooleans<T> = {
+export type WithOptionalBooleans<T> = {
   [K in keyof T as [T[K]] extends [boolean] ? K : never]?: T[K]
 } & {
   [K in keyof T as [T[K]] extends [boolean] ? never : K]: T[K]

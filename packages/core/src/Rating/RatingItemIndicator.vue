@@ -7,13 +7,14 @@ import { useForwardExpose } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
-export interface RatingItemProps extends PrimitiveProps {
+export interface RatingItemIndicatorProps extends PrimitiveProps {
+  /** The step value this indicator represents. */
   step: number
 }
 </script>
 
 <script setup lang="ts">
-const props = defineProps<RatingItemProps>()
+const props = defineProps<RatingItemIndicatorProps>()
 
 const rootContext = injectRatingRootContext()
 const { currentElement, forwardRef } = useForwardExpose()

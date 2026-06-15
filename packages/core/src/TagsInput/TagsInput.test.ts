@@ -312,5 +312,42 @@ describe('given a TagsInput with objects', async () => {
       expect(tags[3].text()).toBe('tag3')
       expect(tags[4].text()).toBe('tag4')
     })
+
+    it('should not create tag when delimiter is typed during IME composition', async () => {
+      const { wrapper, input } = setupDelimiter(',')
+
+      input.element.focus()
+      await input.trigger('compositionstart')
+      input.element.value = ','
+      await input.trigger('input', { data: ',' })
+      await nextTick()
+
+      const tags = wrapper.findAll('[data-reka-collection-item]')
+      expect(tags.length).toBe(1)
+      expect(input.element.value).toBe(',')
+    })
+
+    it('should process value after composition ends', async () => {
+      const { wrapper, input } = setupDelimiter(',')
+
+      input.element.focus()
+      await input.trigger('compositionstart')
+      input.element.value = 'hello,'
+      await input.trigger('input', { data: ',' })
+      await nextTick()
+
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(1)
+
+      await input.trigger('compositionend')
+      await nextTick()
+
+      input.element.value = 'hello,'
+      await input.trigger('input', { data: ',' })
+      await nextTick()
+
+      const tags = wrapper.findAll('[data-reka-collection-item]')
+      expect(tags.length).toBe(2)
+      expect(tags[1].text()).toBe('hello')
+    })
   })
 })

@@ -140,4 +140,70 @@ describe('given DropdownMenu with Filter', () => {
       expect(filterInput?.getAttribute('data-disabled')).toBe('')
     })
   })
+
+  describe('handle IME composition', () => {
+    beforeEach(async () => {
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+    })
+
+    it('should not update search during IME composition', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      expect(filterInput).toBeTruthy()
+
+      const baseline = document.querySelectorAll('[role="menuitem"]').length
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.value = 'xiang'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      const items = document.querySelectorAll('[role="menuitem"]')
+      expect(items.length).toBe(baseline)
+    })
+
+    it('should update search after composition ends', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      expect(filterInput).toBeTruthy()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.value = 'zzzzz'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: 'zzzzz', bubbles: true }))
+      await nextTick()
+      await nextTick()
+
+      const items = document.querySelectorAll('[role="menuitem"]')
+      expect(items.length).toBe(0)
+    })
+
+    it('should not navigate items during IME composition (arrow keys are IME candidate navigation)', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      filterInput.focus()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      await nextTick()
+
+      // Arrow keys mid-composition navigate IME candidates: the menu must not
+      // highlight an item nor steal focus away from the filter input.
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+      Object.defineProperty(event, 'isComposing', { value: true })
+      filterInput.dispatchEvent(event)
+      await nextTick()
+
+      expect(document.querySelector('[role="menuitem"][data-highlighted]')).toBeNull()
+      expect(document.activeElement).toBe(filterInput)
+
+      // Once composition ends, navigation works again
+      filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: '', bubbles: true }))
+      await nextTick()
+      await nextTick()
+      filterInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await nextTick()
+
+      expect(document.querySelector('[role="menuitem"][data-highlighted]')).not.toBeNull()
+    })
+  })
 })

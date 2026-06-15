@@ -97,6 +97,20 @@ describe('month picker', async () => {
     expect(getByTestId('heading')).toHaveTextContent('1980')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { picker, rerender } = setup({ pickerProps: { modelValue: null } })
+
+    expect(getSelectedMonths(picker)).toHaveLength(0)
+
+    await rerender({
+      pickerProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(getSelectedMonth(picker)).toHaveTextContent('Jan')
+  })
+
   it('navigates to next year using next button', async () => {
     const { getByTestId, user } = setup({ pickerProps: { modelValue: calendarDate } })
 

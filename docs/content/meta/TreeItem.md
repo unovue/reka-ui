@@ -16,6 +16,12 @@
     'required': false
   },
   {
+    'name': 'disabled',
+    'description': '<p>When <code>true</code>, prevents the user from interacting with the item.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'level',
     'description': '<p>Level of depth</p>\n',
     'type': 'number',
@@ -57,6 +63,11 @@
     'name': 'isIndeterminate',
     'description': '',
     'type': 'boolean | undefined'
+  },
+  {
+    'name': 'isDisabled',
+    'description': '',
+    'type': 'boolean'
   },
   {
     'name': 'handleToggle',
