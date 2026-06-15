@@ -1027,8 +1027,10 @@ describe('rangeCalendar', () => {
       // When PageUp from Feb 15 targets Jan 15, which is < Jan 20 (minValue),
       // it gets clamped to Jan 20. Since Jan 20 is unavailable,
       // focus should fall to the next valid day (21st)
+      const spy = getRangeUpdateSpy()
       const { getByTestId, user } = setup({
         calendarProps: {
+          modelValue: calendarDateRange,
           placeholder: new CalendarDate(2024, 2, 15),
           minValue: new CalendarDate(2024, 1, 20),
           isDateUnavailable: (date: DateValue) => {
@@ -1036,6 +1038,7 @@ describe('rangeCalendar', () => {
             return date.month === 1 && date.day === 20
           },
         },
+        emits: { 'onUpdate:modelValue': spy.emit },
       })
 
       const heading = getByTestId('heading')
@@ -1049,6 +1052,7 @@ describe('rangeCalendar', () => {
       expect(heading).toHaveTextContent('January 2024')
       // Should land on the next available day after the clamped minValue
       expect(getByTestId('date-1-21')).toHaveFocus()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page down falls inward when clamped to unavailable maxValue', async () => {
@@ -1056,8 +1060,10 @@ describe('rangeCalendar', () => {
       // When PageDown from Jan 15 targets Feb 15, which is > Feb 5 (maxValue),
       // it gets clamped to Feb 5. Since Feb 5 is unavailable,
       // focus should fall to the previous valid day (4th)
+      const spy = getRangeUpdateSpy()
       const { getByTestId, user } = setup({
         calendarProps: {
+          modelValue: calendarDateRange,
           placeholder: new CalendarDate(2024, 1, 15),
           maxValue: new CalendarDate(2024, 2, 5),
           isDateUnavailable: (date: DateValue) => {
@@ -1065,6 +1071,7 @@ describe('rangeCalendar', () => {
             return date.month === 2 && date.day === 5
           },
         },
+        emits: { 'onUpdate:modelValue': spy.emit },
       })
 
       const heading = getByTestId('heading')
@@ -1078,12 +1085,15 @@ describe('rangeCalendar', () => {
       expect(heading).toHaveTextContent('February 2024')
       // Should land on the previous available day before the clamped maxValue
       expect(getByTestId('date-2-4')).toHaveFocus()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page up falls inward when clamped to disabled minValue', async () => {
       // Same test but with disabled instead of unavailable
+      const spy = getRangeUpdateSpy()
       const { getByTestId, user } = setup({
         calendarProps: {
+          modelValue: calendarDateRange,
           placeholder: new CalendarDate(2024, 2, 15),
           minValue: new CalendarDate(2024, 1, 20),
           isDateDisabled: (date: DateValue) => {
@@ -1091,6 +1101,7 @@ describe('rangeCalendar', () => {
             return date.month === 1 && date.day === 20
           },
         },
+        emits: { 'onUpdate:modelValue': spy.emit },
       })
 
       const heading = getByTestId('heading')
@@ -1101,12 +1112,15 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('January 2024')
       expect(getByTestId('date-1-21')).toHaveFocus()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page down falls inward when clamped to disabled maxValue', async () => {
       // Same test but with disabled instead of unavailable
+      const spy = getRangeUpdateSpy()
       const { getByTestId, user } = setup({
         calendarProps: {
+          modelValue: calendarDateRange,
           placeholder: new CalendarDate(2024, 1, 15),
           maxValue: new CalendarDate(2024, 2, 5),
           isDateDisabled: (date: DateValue) => {
@@ -1114,6 +1128,7 @@ describe('rangeCalendar', () => {
             return date.month === 2 && date.day === 5
           },
         },
+        emits: { 'onUpdate:modelValue': spy.emit },
       })
 
       const heading = getByTestId('heading')
@@ -1124,12 +1139,15 @@ describe('rangeCalendar', () => {
 
       expect(heading).toHaveTextContent('February 2024')
       expect(getByTestId('date-2-4')).toHaveFocus()
+      expect(spy.callCount).toBe(0)
     })
 
     it('page up terminates safely when entire boundary window is blocked', async () => {
       // Edge case: minValue equals maxValue and is unavailable - should not hang
+      const spy = getRangeUpdateSpy()
       const { getByTestId, user } = setup({
         calendarProps: {
+          modelValue: calendarDateRange,
           placeholder: new CalendarDate(2024, 2, 15),
           minValue: new CalendarDate(2024, 1, 10),
           maxValue: new CalendarDate(2024, 1, 10),
@@ -1138,23 +1156,27 @@ describe('rangeCalendar', () => {
             return date.month === 1 && date.day === 10
           },
         },
+        emits: { 'onUpdate:modelValue': spy.emit },
       })
 
+      const heading = getByTestId('heading')
       const currentDay = getByTestId('date-2-15')
       currentDay.focus()
 
-      // Should not hang - focus should stay on current day or move to a stable position
+      // Should terminate (a hang here would time out the test), leave the view
+      // unchanged rather than looping, and never mutate the range.
       await user.keyboard(kbd.PAGE_UP)
 
-      // The focus should remain stable - verify no infinite loop by checking test completes
-      // Either stays on current or moves to boundary (the test will hang if there's a loop)
-      expect(true).toBe(true)
+      expect(heading).toHaveTextContent('February 2024')
+      expect(spy.callCount).toBe(0)
     })
 
     it('page down terminates safely when entire boundary window is blocked', async () => {
       // Edge case: maxValue equals minValue and is unavailable - should not hang
+      const spy = getRangeUpdateSpy()
       const { getByTestId, user } = setup({
         calendarProps: {
+          modelValue: calendarDateRange,
           placeholder: new CalendarDate(2024, 1, 15),
           minValue: new CalendarDate(2024, 1, 10),
           maxValue: new CalendarDate(2024, 1, 10),
@@ -1163,17 +1185,63 @@ describe('rangeCalendar', () => {
             return date.month === 1 && date.day === 10
           },
         },
+        emits: { 'onUpdate:modelValue': spy.emit },
       })
 
+      const heading = getByTestId('heading')
       const currentDay = getByTestId('date-1-15')
       currentDay.focus()
 
-      // Should not hang - focus should stay on current day or move to a stable position
+      // Should terminate (a hang here would time out the test), leave the view
+      // unchanged rather than looping, and never mutate the range.
       await user.keyboard(kbd.PAGE_DOWN)
 
-      // The focus should remain stable - verify no infinite loop by checking test completes
-      // Either stays on current or moves to boundary (the test will hang if there's a loop)
-      expect(true).toBe(true)
+      expect(heading).toHaveTextContent('January 2024')
+      expect(spy.callCount).toBe(0)
+    })
+
+    it('home falls inward to the next available day when the week start is disabled', async () => {
+      const spy = getRangeUpdateSpy()
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          modelValue: calendarDateRange,
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 0,
+          isDateDisabled: (date: DateValue) => date.month === 1 && date.day === 7,
+        },
+        emits: { 'onUpdate:modelValue': spy.emit },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.HOME)
+
+      // Week start (Jan 7) is disabled, so focus stays within the week and moves
+      // forward to Jan 8 rather than spilling into the previous week.
+      expect(getByTestId('date-1-8')).toHaveFocus()
+      expect(spy.callCount).toBe(0)
+    })
+
+    it('end falls inward to the previous available day when the week end is disabled', async () => {
+      const spy = getRangeUpdateSpy()
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          modelValue: calendarDateRange,
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 0,
+          isDateDisabled: (date: DateValue) => date.month === 1 && date.day === 13,
+        },
+        emits: { 'onUpdate:modelValue': spy.emit },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.END)
+
+      // Week end (Jan 13) is disabled, so focus stays within the week and moves
+      // back to Jan 12 rather than spilling into the next week.
+      expect(getByTestId('date-1-12')).toHaveFocus()
+      expect(spy.callCount).toBe(0)
     })
   })
 })
