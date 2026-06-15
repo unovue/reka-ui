@@ -509,8 +509,6 @@ export const components = {
 
   tree: [
     'TreeRoot',
-    'TreeItem',
-    'TreeVirtualizer',
   ] as const,
 
   viewport: [

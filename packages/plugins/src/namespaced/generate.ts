@@ -4,7 +4,9 @@ import { components } from 'reka-ui/constant'
 const excludedComponents = ['configProvider', 'primitive', 'visuallyHidden']
 const filteredComponents = (Object.keys(components) as Array<keyof typeof components>).filter(component => !excludedComponents.includes(component))
 
-const flattenedComponents = filteredComponents.flatMap(component => components[component])
+const flattenedComponents = filteredComponents
+  .flatMap(component => components[component])
+  .toSorted((a, b) => a.localeCompare(b))
 const namespacedComponents = filteredComponents.map((component) => {
   const key = component.charAt(0).toUpperCase() + component.slice(1)
   const entries = components[component]
