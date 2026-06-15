@@ -37,7 +37,7 @@ import './styles.css'
             <input
               id="name"
               class="Input"
-              defaultValue="Pedro Duarte"
+              value="Pedro Duarte"
             >
           </fieldset>
           <div class="DrawerFooter">

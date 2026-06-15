@@ -3,7 +3,7 @@
 title: Drawer
 description: A panel that slides in from the edge of the screen, with support for swipe-to-dismiss, snap points, and nested drawers.
 name: drawer
-aria: https://www.w3.org/WAI/ARIA/apg/patterns/dialogmodal
+aria: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
 ---
 
 # Drawer
