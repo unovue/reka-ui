@@ -142,6 +142,12 @@ const focusOutside = useFocusOutside((event) => {
 }, layerElement)
 
 onKeyStroke('Escape', (event) => {
+  // A layer that stays mounted while hidden (e.g. a Dialog with
+  // `unmountOnHide: false`) is out of the layer stack, so its `index` is `-1`.
+  // When no layer is visible (`size === 0`), `-1 === size - 1` would otherwise
+  // make it look like the highest layer and emit `escapeKeyDown` / `dismiss`.
+  if (!props.present)
+    return
   const isHighestLayer = index.value === layers.value.size - 1
   if (!isHighestLayer)
     return

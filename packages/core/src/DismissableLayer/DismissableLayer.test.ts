@@ -244,3 +244,41 @@ describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents'
     expect(document.body.style.pointerEvents).toBe('')
   })
 })
+
+describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // Regression: a layer kept mounted while hidden (`present: false`) is out of
+  // the layer stack, so its `index` is `-1`. With no visible layer present,
+  // `-1 === size - 1` would otherwise make it look like the highest layer and
+  // emit `escapeKeyDown` / `dismiss` for a dialog that is already closed.
+  it('should not emit escapeKeyDown or dismiss on Escape while not present', async () => {
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: document.body,
+      props: { present: false },
+    })
+    await nextTick()
+
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(wrapper.emitted('escapeKeyDown')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+  })
+
+  it('should emit escapeKeyDown and dismiss on Escape once present', async () => {
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: document.body,
+      props: { present: true },
+    })
+    await nextTick()
+
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+})
