@@ -1,24 +1,15 @@
-import type { DateValue, DayOfWeek } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
 import type { WeekStartsOn } from '@/date'
-import { getDayOfWeek } from '@internationalized/date'
 import { nextTick } from 'vue'
-import { getDaysInMonth } from '@/date'
+import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from '@/date'
 
+/**
+ * Upper bound on focus-search steps when skipping over disabled/unavailable
+ * days or waiting for an async grid re-render. Covers a generous run of
+ * consecutive blocked days (more than three weeks) while guaranteeing the
+ * recursion terminates if no focusable day can be found.
+ */
 export const MAX_FOCUS_RETRIES = 24
-
-const weekStartsOnToDayOfWeek: Record<WeekStartsOn, DayOfWeek> = {
-  0: 'sun',
-  1: 'mon',
-  2: 'tue',
-  3: 'wed',
-  4: 'thu',
-  5: 'fri',
-  6: 'sat',
-}
-
-function toDayOfWeek(weekStartsOn: WeekStartsOn): DayOfWeek {
-  return weekStartsOnToDayOfWeek[weekStartsOn]
-}
 
 interface FocusDateOptions {
   parentElement: HTMLElement
@@ -50,7 +41,11 @@ interface FocusPaginationOptions extends Omit<FocusDateOptions, 'target' | 'dire
 
 export function focusWeekBoundary(options: FocusWeekBoundaryOptions) {
   const { baseDate, boundary, locale, weekStartsOn } = options
-  const target = getWeekBoundaryDay(baseDate, locale, weekStartsOn, boundary)
+  const target = boundary === 'start'
+    ? getLastFirstDayOfWeek(baseDate, weekStartsOn, locale)
+    : getNextLastDayOfWeek(baseDate, weekStartsOn, locale)
+  // The sign points outward toward the boundary; clamp/fallback logic in
+  // `focusDate` turns it inward when the boundary day itself is not focusable.
   const directionSign = boundary === 'start' ? -1 : 1
   focusDate({ ...options, target, directionSign, allowOutsideView: true })
 }
@@ -79,17 +74,6 @@ export function focusPagination(options: FocusPaginationOptions) {
   focusDate({ ...options, target, directionSign: amount })
 }
 
-export function getWeekBoundaryDay(
-  date: DateValue,
-  locale: string,
-  weekStartsOn: WeekStartsOn,
-  boundary: 'start' | 'end',
-): DateValue {
-  const dayOfWeek = getDayOfWeek(date, locale, toDayOfWeek(weekStartsOn))
-  const offset = boundary === 'start' ? -dayOfWeek : 6 - dayOfWeek
-  return date.add({ days: offset })
-}
-
 export function getTargetMonthDay(date: DateValue, unit: 'month' | 'year', amount: number): DateValue {
   const targetBase = date.add(unit === 'month' ? { months: amount } : { years: amount })
   const daysInTargetMonth = getDaysInMonth(targetBase)
@@ -112,18 +96,20 @@ export function clampTargetDate(date: DateValue, minValue?: DateValue, maxValue?
 function focusDate(options: FocusDateOptions) {
   const clampedTarget = clampTargetDate(options.target, options.minValue, options.maxValue)
 
-  // Determine safe direction:
-  // - unclamped target within bounds -> original directionSign
-  // - clamped to minValue from negative movement -> +1 (inward)
-  // - clamped to maxValue from positive movement -> -1 (inward)
-  // - otherwise -> 0
+  // Determine the direction to search when the target day is not focusable:
+  // - clamped to minValue from negative movement -> +1 (inward from the lower bound)
+  // - clamped to maxValue from positive movement -> -1 (inward from the upper bound)
+  // - unclamped week boundary -> search back toward the base day so focus stays
+  //   within the current week instead of spilling into the adjacent week
+  // - unclamped pagination -> keep travelling in the navigation direction
+  // - otherwise -> 0 (no search)
   let safeDirection = 0
   const isClampedToMin = options.minValue && clampedTarget.compare(options.minValue) === 0
   const isClampedToMax = options.maxValue && clampedTarget.compare(options.maxValue) === 0
   const wasClamped = isClampedToMin || isClampedToMax
 
   if (!wasClamped) {
-    safeDirection = options.directionSign
+    safeDirection = options.allowOutsideView ? -options.directionSign : options.directionSign
   }
   else if (isClampedToMin && options.directionSign < 0) {
     safeDirection = 1

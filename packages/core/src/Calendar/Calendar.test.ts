@@ -1071,15 +1071,15 @@ describe('calendar', async () => {
         },
       })
 
+      const heading = getByTestId('heading')
       const currentDay = getByTestId('date-2-15')
       currentDay.focus()
 
-      // Should not hang - focus should stay on current day or move to a stable position
+      // Should terminate (a hang here would time out the test) and leave the view
+      // unchanged rather than looping over the blocked window.
       await user.keyboard(kbd.PAGE_UP)
 
-      // The focus should remain stable - verify no infinite loop by checking test completes
-      // Either stays on current or moves to boundary (the test will hang if there's a loop)
-      expect(true).toBe(true)
+      expect(heading).toHaveTextContent('February 2024')
     })
 
     it('page down terminates safely when entire boundary window is blocked', async () => {
@@ -1096,15 +1096,51 @@ describe('calendar', async () => {
         },
       })
 
+      const heading = getByTestId('heading')
       const currentDay = getByTestId('date-1-15')
       currentDay.focus()
 
-      // Should not hang - focus should stay on current day or move to a stable position
+      // Should terminate (a hang here would time out the test) and leave the view
+      // unchanged rather than looping over the blocked window.
       await user.keyboard(kbd.PAGE_DOWN)
 
-      // The focus should remain stable - verify no infinite loop by checking test completes
-      // Either stays on current or moves to boundary (the test will hang if there's a loop)
-      expect(true).toBe(true)
+      expect(heading).toHaveTextContent('January 2024')
+    })
+
+    it('home falls inward to the next available day when the week start is disabled', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 0,
+          isDateDisabled: (date: DateValue) => date.month === 1 && date.day === 7,
+        },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.HOME)
+
+      // Week start (Jan 7) is disabled, so focus stays within the week and moves
+      // forward to Jan 8 rather than spilling into the previous week.
+      expect(getByTestId('date-1-8')).toHaveFocus()
+    })
+
+    it('end falls inward to the previous available day when the week end is disabled', async () => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDate(2024, 1, 10),
+          weekStartsOn: 0,
+          isDateDisabled: (date: DateValue) => date.month === 1 && date.day === 13,
+        },
+      })
+
+      const midWeekDay = getByTestId('date-1-10')
+      midWeekDay.focus()
+      await user.keyboard(kbd.END)
+
+      // Week end (Jan 13) is disabled, so focus stays within the week and moves
+      // back to Jan 12 rather than spilling into the next week.
+      expect(getByTestId('date-1-12')).toHaveFocus()
     })
   })
 })
