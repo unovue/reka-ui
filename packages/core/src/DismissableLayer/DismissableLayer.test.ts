@@ -2,10 +2,14 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
+import { nextTick } from 'vue'
 import { sleep } from '@/test'
 import { DismissableLayer as DismissableLayerPrimitive } from '.'
 import DismissableLayer from './story/_DismissableLayer.vue'
+import Dialog from './story/shadowDom/_Dialog.vue'
+import ShadowRootContainer from './story/shadowDom/ShadowRootContainer.vue'
 import { isLayerExist } from './utils'
 
 const OPEN_LABEL = 'Open'
@@ -189,6 +193,325 @@ describe('given a default DismissableLayer', () => {
         outsideEl.focus()
         await sleep(1)
         expect(document.body.innerHTML).toContain(CLOSE_LABEL)
+      })
+    })
+  })
+})
+
+type ShadowRootTestCase = {
+  description: string
+  testCase: 'shadowDomOnly' | 'mixedBodyAndShadowDom' | 'bodyOnly'
+}
+
+describe('shadow DOM dismissable layer tests', () => {
+  const testSuite: ShadowRootTestCase[] = [
+    {
+      description: 'given a Dialog inside a ShadowRoot, with nested dismissable layers also inside the ShadowRoot',
+      testCase: 'shadowDomOnly',
+    },
+    {
+      description: 'given a Dialog in the document body, with nested dismissable layers inside a ShadowRoot',
+      testCase: 'mixedBodyAndShadowDom',
+    },
+    {
+      description: 'given a Dialog in the document body, with nested dismissable layers also in the document body',
+      testCase: 'bodyOnly',
+    },
+  ]
+
+  testSuite.forEach(({ description, testCase }) => {
+    describe(description, () => {
+      let wrapper: VueWrapper<InstanceType<typeof ShadowRootContainer>>
+      let shadowHost: HTMLElement
+      let shadowRoot: ShadowRoot
+
+      globalThis.ResizeObserver = class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+
+      function getDialogOverlay(): HTMLElement | null {
+        if (testCase === 'shadowDomOnly') {
+          return shadowRoot.querySelector('[data-testid="dialog-overlay"]')
+        }
+        else {
+          return document.body.querySelector('[data-testid="dialog-overlay"]')
+        }
+      }
+
+      function getDialogTrigger(): HTMLElement | null {
+        if (testCase === 'shadowDomOnly') {
+          return shadowRoot.querySelector('[data-testid="dialog-trigger"]')
+        }
+        else {
+          return document.body.querySelector('[data-testid="dialog-trigger"]')
+        }
+      }
+
+      function getDialogContent(): HTMLElement | null {
+        if (testCase === 'shadowDomOnly') {
+          return shadowRoot.querySelector('[data-testid="dialog-content"]')
+        }
+        else {
+          return document.body.querySelector('[data-testid="dialog-content"]')
+        }
+      }
+
+      function getQueryRoot(): Document | ShadowRoot {
+        if (testCase === 'bodyOnly') {
+          return document
+        }
+        else {
+          return shadowRoot
+        }
+      }
+
+      beforeEach(async () => {
+        document.body.innerHTML = ''
+        if (testCase === 'shadowDomOnly') {
+          wrapper = mount(ShadowRootContainer, { attachTo: document.body, props: { withDialog: true } })
+          await nextTick()
+          shadowHost = wrapper.find('#shadow-root-container').element as HTMLElement
+          shadowRoot = (shadowHost as unknown as { shadowRoot: ShadowRoot }).shadowRoot!
+          // Open the dialog
+          const trigger = getDialogTrigger() as HTMLElement
+          await fireEvent.click(trigger)
+          await sleep(1)
+          const dialogOverlay = getDialogOverlay()
+          expect(dialogOverlay).toBeTruthy()
+          const dialogContent = getDialogContent()
+          expect(dialogContent).toBeTruthy()
+        }
+        else if (testCase === 'mixedBodyAndShadowDom') {
+          wrapper = mount(Dialog, { attachTo: document.body, props: { hasShadowRootInside: true } })
+          await nextTick()
+
+          // Open the dialog
+          const trigger = getDialogTrigger() as HTMLElement
+          await fireEvent.click(trigger)
+          await sleep(1)
+          const dialogOverlay = getDialogOverlay()
+          expect(dialogOverlay).toBeTruthy()
+          const dialogContent = getDialogContent()
+          expect(dialogContent).toBeTruthy()
+
+          shadowHost = dialogContent?.querySelector('#shadow-root-container') as HTMLElement
+          shadowRoot = (shadowHost as unknown as { shadowRoot: ShadowRoot }).shadowRoot!
+        }
+        else {
+          wrapper = mount(Dialog, { attachTo: document.body })
+          await nextTick()
+
+          // Open the dialog
+          const trigger = getDialogTrigger() as HTMLElement
+          await fireEvent.click(trigger)
+          await sleep(1)
+          const dialogOverlay = getDialogOverlay()
+          expect(dialogOverlay).toBeTruthy()
+          const dialogContent = getDialogContent()
+          expect(dialogContent).toBeTruthy()
+        }
+      })
+
+      afterEach(async () => {
+        await wrapper.unmount()
+        await nextTick()
+      })
+
+      if (testCase !== 'bodyOnly') {
+        it('shadowRoot should be defined', () => {
+          expect(shadowRoot).toBeDefined()
+        })
+      }
+
+      it('should be able to dismiss Dialog on pressing Escape', async () => {
+        await fireEvent.keyDown(document.body, { key: 'Escape' })
+        await sleep(1)
+        expect(getDialogContent()).toBeFalsy()
+      })
+
+      it('should dismiss Dialog when interacting outside via overlay', async () => {
+        await fireEvent.pointerDown(getDialogOverlay()!)
+        await sleep(1)
+        expect(getDialogContent()).toBeFalsy()
+      })
+
+      describe('nested Combobox (non-modal)', () => {
+        beforeEach(async () => {
+          const comboboxTrigger = getQueryRoot().querySelector('[data-testid="combobox-trigger"]') as HTMLElement
+          await fireEvent.click(comboboxTrigger)
+          await sleep(1)
+          const comboboxContent = getQueryRoot().querySelector('[data-testid="combobox-content"]') as HTMLElement
+          expect(comboboxContent).toBeTruthy()
+        })
+
+        it('interacting inside Combobox content should not close combobox content, nor the dialog', async () => {
+          const item = getQueryRoot().querySelector('[data-testid="combobox-item"]') as HTMLElement
+          expect(item).toBeTruthy()
+          await fireEvent.pointerDown(item)
+          await sleep(1)
+          expect(getQueryRoot().querySelector('[data-testid="combobox-content"]')).toBeTruthy()
+          expect(getDialogContent()).toBeTruthy()
+        })
+
+        it('pressing Escape inside Combobox content should close combobox content, but not the dialog', async () => {
+          await fireEvent.keyDown(document.body, { key: 'Escape' })
+          await sleep(1)
+          expect(getQueryRoot().querySelector('[data-testid="combobox-content"]')).toBeFalsy()
+          expect(getDialogContent()).toBeTruthy()
+        })
+
+        it('interacting outside Combobox content should close combobox and close dialog', async () => {
+          await fireEvent.pointerDown(getDialogOverlay()!)
+          await sleep(1)
+          expect(getQueryRoot().querySelector('[data-testid="combobox-content"]')).toBeFalsy()
+          expect(getDialogContent()).toBeFalsy()
+        })
+      })
+
+      describe('nested Popover', () => {
+        describe('modal popover', () => {
+          it('interacting inside popover content should not close the dialog', async () => {
+            const popoverTrigger = getQueryRoot().querySelector('[data-testid="popover-trigger-modal"]') as HTMLElement
+            await fireEvent.click(popoverTrigger)
+            const popoverContent = getQueryRoot().querySelector('[data-testid="popover-content-modal"]') as HTMLElement
+            expect(popoverContent).toBeTruthy()
+            const firstInput = getQueryRoot().querySelector('[data-testid="popover-first-input"]') as HTMLElement
+            await fireEvent.pointerDown(firstInput)
+            await sleep(1)
+            expect(popoverContent).toBeTruthy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('modal popover: pressing escape key should close popover, not dialog', async () => {
+            const popoverTrigger = getQueryRoot().querySelector('[data-testid="popover-trigger-modal"]') as HTMLElement
+            await fireEvent.click(popoverTrigger)
+            const popoverContent = getQueryRoot().querySelector('[data-testid="popover-content-modal"]') as HTMLElement
+            expect(popoverContent).toBeTruthy()
+            await fireEvent.keyDown(document.body, { key: 'Escape' })
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="popover-content-modal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('modal popover: interacting outside should close popover, not dialog', async () => {
+            const popoverTrigger = getQueryRoot().querySelector('[data-testid="popover-trigger-modal"]') as HTMLElement
+            await fireEvent.click(popoverTrigger)
+            await sleep(1)
+            const popoverContent = getQueryRoot().querySelector('[data-testid="popover-content-modal"]') as HTMLElement
+            expect(popoverContent).toBeTruthy()
+            await fireEvent.pointerDown(getDialogOverlay()!)
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="popover-content-modal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+        })
+
+        describe('non-modal popover', () => {
+          it('interacting inside popover content should not close the dialog', async () => {
+            const popoverTrigger = getQueryRoot().querySelector('[data-testid="popover-trigger-nonmodal"]') as HTMLElement
+            await fireEvent.click(popoverTrigger)
+            const popoverContent = getQueryRoot().querySelector('[data-testid="popover-content-nonmodal"]') as HTMLElement
+            expect(popoverContent).toBeTruthy()
+            const firstInput = getQueryRoot().querySelector('[data-testid="popover-first-input"]') as HTMLElement
+            await fireEvent.pointerDown(firstInput)
+            await sleep(1)
+            expect(popoverContent).toBeTruthy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('non-modal popover: pressing escape key should close popover, but not close the dialog', async () => {
+            const popoverTrigger = getQueryRoot().querySelector('[data-testid="popover-trigger-nonmodal"]') as HTMLElement
+            await fireEvent.click(popoverTrigger)
+            await sleep(1)
+            const popoverContent = getQueryRoot().querySelector('[data-testid="popover-content-nonmodal"]') as HTMLElement
+            expect(popoverContent).toBeTruthy()
+            await fireEvent.keyDown(document.body, { key: 'Escape' })
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="popover-content-nonmodal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('non-modal popover: interacting outside should close popover and the dialog', async () => {
+            const popoverTrigger = getQueryRoot().querySelector('[data-testid="popover-trigger-nonmodal"]') as HTMLElement
+            await fireEvent.click(popoverTrigger)
+            await sleep(1)
+            const popoverContent = getQueryRoot().querySelector('[data-testid="popover-content-nonmodal"]') as HTMLElement
+            expect(popoverContent).toBeTruthy()
+            await fireEvent.pointerDown(getDialogOverlay()!)
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="popover-content-nonmodal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeFalsy()
+          })
+        })
+      })
+
+      describe('nested Dropdown Menu', () => {
+        describe('modal dropdown', () => {
+          it('interacting inside dropdown and sub menus should not close the dialog', async () => {
+            const trigger = getQueryRoot().querySelector('[data-testid="dropdown-trigger-modal"]') as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dropdownContent = getQueryRoot().querySelector('[data-testid="dropdown-content-modal"]') as HTMLElement
+            expect(dropdownContent).toBeTruthy()
+            const moreTools = getQueryRoot().querySelector('[data-testid="more-tools-subtrigger"]') as HTMLElement
+            await fireEvent.pointerDown(moreTools)
+            await sleep(1)
+            expect(dropdownContent).toBeTruthy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('modal dropdown: pressing escape key should close dropdown, not the dialog', async () => {
+            const trigger = getQueryRoot().querySelector('[data-testid="dropdown-trigger-modal"]') as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogContent = getDialogContent() as HTMLElement
+            expect(dialogContent).toBeTruthy()
+            await fireEvent.keyDown(document.body, { key: 'Escape' })
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="dropdown-content-modal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('modal dropdown: interacting outside should close dropdown, not the dialog', async () => {
+            const trigger = getQueryRoot().querySelector('[data-testid="dropdown-trigger-modal"]') as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogContent = getDialogContent() as HTMLElement
+            expect(dialogContent).toBeTruthy()
+            await fireEvent.pointerDown(getDialogOverlay()!)
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="dropdown-content-modal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+        })
+
+        describe('non-modal dropdown', () => {
+          it('non-modal dropdown: pressing escape key should close dropdown, but not close the dialog', async () => {
+            const trigger = getQueryRoot().querySelector('[data-testid="dropdown-trigger-nonmodal"]') as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogContent = getDialogContent() as HTMLElement
+            expect(dialogContent).toBeTruthy()
+            await fireEvent.keyDown(document.body, { key: 'Escape' })
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="dropdown-content-nonmodal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeTruthy()
+          })
+
+          it('non-modal dropdown: interacting outside should close dropdown and close the dialog', async () => {
+            const trigger = getQueryRoot().querySelector('[data-testid="dropdown-trigger-nonmodal"]') as HTMLElement
+            await fireEvent.click(trigger)
+            await sleep(1)
+            const dialogContent = getDialogContent() as HTMLElement
+            expect(dialogContent).toBeTruthy()
+            await fireEvent.pointerDown(getDialogOverlay()!)
+            await sleep(1)
+            expect(getQueryRoot().querySelector('[data-testid="dropdown-content-nonmodal"]')).toBeFalsy()
+            expect(getDialogContent()).toBeFalsy()
+          })
+        })
       })
     })
   })
