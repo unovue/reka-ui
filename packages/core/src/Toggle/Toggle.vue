@@ -76,6 +76,7 @@ const isFormControl = useFormControl(currentElement)
 
 <template>
   <Primitive
+    v-bind="$attrs"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     :as-child="props.asChild"
@@ -92,13 +93,12 @@ const isFormControl = useFormControl(currentElement)
       :pressed="modelValue"
       :state="dataState"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name && !toggleGroupContext"
-      type="checkbox"
-      :name="name"
-      :value="modelValue"
-      :required="required"
-    />
   </Primitive>
+  <VisuallyHiddenInput
+    v-if="isFormControl && name && !toggleGroupContext"
+    type="checkbox"
+    :name="name"
+    :value="modelValue"
+    :required="required"
+  />
 </template>
