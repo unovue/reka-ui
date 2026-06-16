@@ -113,15 +113,14 @@ provideSwitchRootContext({
       :model-value="modelValue"
       :checked="checked"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      type="checkbox"
-      :name="name"
-      :disabled="disabled"
-      :required="required"
-      :value="value"
-      :checked="checked"
-    />
   </Primitive>
+  <VisuallyHiddenInput
+    v-if="isFormControl && name"
+    type="checkbox"
+    :name="name"
+    :disabled="disabled"
+    :required="required"
+    :value="value"
+    :checked="checked"
+  />
 </template>
