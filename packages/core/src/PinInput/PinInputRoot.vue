@@ -143,7 +143,6 @@ providePinInputRootContext({
     <VisuallyHiddenInput
       :id="id"
       as="input"
-      feature="focusable"
       tabindex="-1"
       :value="currentModelValue.join('')"
       :name="name ?? ''"
