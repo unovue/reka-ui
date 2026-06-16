@@ -165,15 +165,14 @@ provideCheckboxRootContext({
       :model-value="modelValue"
       :state="checkboxState"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name && !checkboxGroupContext"
-      type="checkbox"
-      :checked="!!checkboxState"
-      :name="name"
-      :value="value"
-      :disabled="disabled"
-      :required="required"
-    />
   </component>
+  <VisuallyHiddenInput
+    v-if="isFormControl && name && !checkboxGroupContext"
+    type="checkbox"
+    :checked="!!checkboxState"
+    :name="name"
+    :value="value"
+    :disabled="disabled"
+    :required="required"
+  />
 </template>
