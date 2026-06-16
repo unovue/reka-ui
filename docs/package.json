@@ -35,7 +35,7 @@
     "fast-glob": "^3.3.3",
     "hast": "^1.0.0",
     "mark.js": "^8.11.1",
-    "markdown-it": "^14.1.1",
+    "markdown-it": "^14.2.0",
     "markdown-it-anchor": "^9.2.0",
     "minisearch": "^6.3.0",
     "postcss": "^8.5.10",
