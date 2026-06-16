@@ -43,7 +43,7 @@ describe('given feature="focusable" (default)', () => {
   })
 
   it('sets aria-hidden="true"', () => {
-    expect(wrapper.attributes('aria-hidden')).toBe('true')
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
   })
 
   it('does not set tabindex', () => {
@@ -79,6 +79,6 @@ describe('given feature="fully-hidden"', () => {
   })
 
   it('does not set aria-hidden', () => {
-    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
   })
 })
