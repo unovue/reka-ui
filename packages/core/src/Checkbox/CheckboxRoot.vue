@@ -47,7 +47,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { isEqual } from 'ohash'
-import { computed } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -122,9 +122,16 @@ function handleClick() {
 }
 
 const isFormControl = useFormControl(currentElement)
-const ariaLabel = computed(() => props.id && currentElement.value
-  ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
-  : undefined)
+const attrs = useAttrs()
+const ariaLabel = computed(() => {
+  // An explicit `aria-label` always wins, so skip the (potentially expensive)
+  // label lookup entirely — this matters when rendering many checkboxes at once.
+  if (attrs['aria-label'])
+    return undefined
+  return props.id && currentElement.value
+    ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
+    : undefined
+})
 
 provideCheckboxRootContext({
   disabled,

@@ -1,8 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { handleSubmit } from '@/test'
+import { CheckboxRoot } from '.'
 import Checkbox from './story/_Checkbox.vue'
 import CheckboxGroup from './story/_CheckboxGroup.vue'
 
@@ -59,6 +61,34 @@ describe('given a default Checkbox', () => {
         expect(wrapper.find('span').exists()).toBe(false)
       })
     })
+  })
+})
+
+describe('given a Checkbox with an explicit aria-label', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('should not query the DOM for a label', () => {
+    const querySpy = vi.spyOn(document, 'querySelector')
+    const wrapper = mount(CheckboxRoot, {
+      attachTo: document.body,
+      attrs: { 'id': 'with-label', 'aria-label': 'Accept terms' },
+    })
+
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Accept terms')
+    expect(querySpy).not.toHaveBeenCalledWith('[for="with-label"]')
+  })
+
+  it('should query for the associated label when no aria-label is given', async () => {
+    const querySpy = vi.spyOn(document, 'querySelector')
+    mount(CheckboxRoot, {
+      attachTo: document.body,
+      attrs: { id: 'without-label' },
+    })
+    await nextTick()
+
+    expect(querySpy).toHaveBeenCalledWith('[for="without-label"]')
   })
 })
 
