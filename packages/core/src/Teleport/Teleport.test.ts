@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import Teleport from './Teleport.vue'
 
 describe('given default Teleport', () => {
@@ -81,5 +82,60 @@ describe('given default Teleport', () => {
 
     wrapper.unmount()
     container.remove()
+  })
+
+  it('uses the ConfigProvider `teleportTo` target as the default', async () => {
+    const container = document.createElement('div')
+    container.id = 'config-container'
+    document.body.appendChild(container)
+
+    const Host = defineComponent({
+      setup() {
+        return () => h(ConfigProvider, { teleportTo: '#config-container' }, {
+          default: () => h(Teleport, { forceMount: true }, {
+            default: () => h('span', { id: 'config-teleported' }, 'config target'),
+          }),
+        })
+      },
+    })
+
+    const wrapper = mount(Host, { attachTo: document.body })
+    await nextTick()
+
+    const teleported = document.getElementById('config-teleported')
+    expect(teleported).not.toBeNull()
+    expect(container.contains(teleported)).toBe(true)
+
+    wrapper.unmount()
+    container.remove()
+  })
+
+  it('prefers an explicit `to` prop over the ConfigProvider `teleportTo`', async () => {
+    const configContainer = document.createElement('div')
+    configContainer.id = 'config-fallback'
+    const explicitContainer = document.createElement('div')
+    explicitContainer.id = 'explicit-target'
+    document.body.append(configContainer, explicitContainer)
+
+    const Host = defineComponent({
+      setup() {
+        return () => h(ConfigProvider, { teleportTo: '#config-fallback' }, {
+          default: () => h(Teleport, { to: '#explicit-target', forceMount: true }, {
+            default: () => h('span', { id: 'override-teleported' }, 'override target'),
+          }),
+        })
+      },
+    })
+
+    const wrapper = mount(Host, { attachTo: document.body })
+    await nextTick()
+
+    const teleported = document.getElementById('override-teleported')
+    expect(explicitContainer.contains(teleported)).toBe(true)
+    expect(configContainer.contains(teleported)).toBe(false)
+
+    wrapper.unmount()
+    configContainer.remove()
+    explicitContainer.remove()
   })
 })
