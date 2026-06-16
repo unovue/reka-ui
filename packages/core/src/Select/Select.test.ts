@@ -358,6 +358,10 @@ describe('given Select in a form', async () => {
     expect(wrapper.find('select').exists()).toBe(true)
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
   it('should use the nullableValue for the hidden select when the value is nullish', async () => {
     const wrapper = mount({
       components: { Select },

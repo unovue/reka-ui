@@ -515,6 +515,10 @@ describe('given Listbox in a form', async () => {
     expect(wrapper.find('input[data-hidden]').exists()).toBe(true)
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
   describe('after selecting option and clicking submit button', () => {
     beforeEach(async () => {
       await wrapper.find('form').trigger('submit')

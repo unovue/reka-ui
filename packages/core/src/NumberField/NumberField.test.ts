@@ -22,12 +22,17 @@ function setup(props?: NumberFieldRootProps) {
 
 const kbd = useKbd()
 describe('numberField', () => {
+  const originalGetComputedStyle = window.getComputedStyle
   beforeEach(() => {
     // @ts-expect-error aXe throwing error complaining getComputedStyle
     window.getComputedStyle = () => ({
       display: '',
     })
     document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    window.getComputedStyle = originalGetComputedStyle
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -358,7 +363,7 @@ describe('numberField', () => {
   })
 })
 
-describe('given checkbox in a form', async () => {
+describe('given checkbox in a form', () => {
   const wrapper = mount({
     props: ['handleSubmit'],
     components: { NumberField },
@@ -369,6 +374,10 @@ describe('given checkbox in a form', async () => {
 
   it('should have hidden input field', async () => {
     expect(wrapper.find('[type="text"]').exists()).toBe(true)
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
   describe('after clicking submit button', () => {

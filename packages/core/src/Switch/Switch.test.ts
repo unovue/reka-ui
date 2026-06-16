@@ -63,6 +63,10 @@ describe('given switch in a form', async () => {
     expect(wrapper.find('[type="checkbox"]').exists()).toBe(true)
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
   describe('after clicking submit button', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('click')

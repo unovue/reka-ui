@@ -184,3 +184,14 @@ describe('given multiple value Toggle Group', () => {
     })
   })
 })
+
+describe('given a ToggleGroup in a form', () => {
+  const wrapper = mount({
+    components: { ToggleGroup },
+    template: '<form><ToggleGroup name="test" /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})

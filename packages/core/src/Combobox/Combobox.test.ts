@@ -113,37 +113,37 @@ describe('given default Combobox', () => {
       })
     })
 
-    // describe('after keypress input', () => {
-    //   beforeEach(async () => {
-    //     await valueBox.setValue('B')
-    //   })
+    describe('after keypress input', () => {
+      beforeEach(async () => {
+        await valueBox.setValue('B')
+      })
 
-    //   describe('if filter-function provided', () => {
-    //     beforeEach(async () => {
-    //       await wrapper.setProps({
-    //         filterFunction: (list: any[], term: string) => {
-    //           return list.filter(i => i.toLowerCase().includes(term.toLowerCase()))
-    //         },
-    //       })
-    //     })
-    //     it('should filter with the searchTerm (Bl', async () => {
-    //       await valueBox.setValue('Bl')
+      describe('if filter-function provided', () => {
+        beforeEach(async () => {
+          await wrapper.setProps({
+            filterFunction: (list: any[], term: string) => {
+              return list.filter(i => i.toLowerCase().includes(term.toLowerCase()))
+            },
+          })
+        })
+        it('should filter with the searchTerm (Bl', async () => {
+          await valueBox.setValue('Bl')
 
-    //       const selection = wrapper.findAll('[data-highlighted]').filter(i => i.attributes('style') !== 'display: none;')
-    //       expect(selection.length).toBe(1)
-    //       expect(selection[0].element.innerHTML).contains('Blueberry')
-    //     })
+          const selection = wrapper.findAll('[data-highlighted]').filter(i => i.attributes('style') !== 'display: none;')
+          expect(selection.length).toBe(1)
+          expect(selection[0].element.innerHTML).contains('Blueberry')
+        })
 
-    //     it('should filter with the searchTerm (B', async () => {
-    //       await valueBox.setValue('Bl')
-    //       await valueBox.setValue('B')
+        it('should filter with the searchTerm (B', async () => {
+          await valueBox.setValue('Bl')
+          await valueBox.setValue('B')
 
-    //       const selection = wrapper.findAll('[data-highlighted]').filter(i => i.attributes('style') !== 'display: none;')
-    //       expect(selection.length).toBe(1)
-    //       expect(selection[0].element.innerHTML).contains('Banana')
-    //     })
-    //   })
-    // })
+          const selection = wrapper.findAll('[data-highlighted]').filter(i => i.attributes('style') !== 'display: none;')
+          expect(selection.length).toBe(1)
+          expect(selection[0].element.innerHTML).contains('Banana')
+        })
+      })
+    })
   })
 })
 
@@ -204,6 +204,7 @@ describe('given a virtualized Combobox', () => {
   // jsdom reports zero-sized rects, so `@tanstack/virtual-core` would render no
   // items. Give the virtualizer a non-zero viewport so items actually mount.
   const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  const originalGetComputedStyle = window.getComputedStyle
   beforeAll(() => {
     window.HTMLElement.prototype.getBoundingClientRect = function () {
       return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
@@ -211,6 +212,7 @@ describe('given a virtualized Combobox', () => {
   })
   afterAll(() => {
     window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+    window.getComputedStyle = originalGetComputedStyle
   })
 
   const options = Array.from({ length: 100 }, (_, i) => ({ label: `Item ${i}`, value: i }))
@@ -536,6 +538,10 @@ describe('given combobox in a form', async () => {
 
   it('should have hidden input field', async () => {
     expect(wrapper.find('input[data-hidden]').exists()).toBe(true)
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
   describe('after selecting option and clicking submit button', () => {

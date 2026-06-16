@@ -75,3 +75,14 @@ describe('given disabled Toggle', () => {
     })
   })
 })
+
+describe('given a Toggle in a form', () => {
+  const wrapper = mount({
+    components: { Toggle },
+    template: '<form><Toggle name="test" aria-label="Toggle" /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})

@@ -409,6 +409,10 @@ describe('given slider in a form', async () => {
     expect(wrapper.find('[type="number"]').exists()).toBe(true)
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
   describe('after clicking submit button', () => {
     beforeEach(async () => {
       await wrapper.find('form').trigger('submit')

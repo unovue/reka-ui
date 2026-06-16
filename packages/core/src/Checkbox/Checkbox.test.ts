@@ -104,6 +104,17 @@ describe('given a required Checkbox', () => {
   })
 })
 
+describe('given a Checkbox in a form', () => {
+  const wrapper = mount({
+    components: { Checkbox },
+    template: '<form><Checkbox name="test" /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})
+
 describe('given CheckboxGroup', () => {
   it('should pass axe accessibility tests', async () => {
     const wrapper = mount(CheckboxGroup, { attachTo: document.body })

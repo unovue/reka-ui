@@ -351,3 +351,14 @@ describe('given a TagsInput with objects', async () => {
     })
   })
 })
+
+describe('given a TagInput in a form', () => {
+  const wrapper = mount({
+    components: { TagsInput },
+    template: '<form><TagsInput name="test" /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})

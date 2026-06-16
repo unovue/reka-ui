@@ -1,6 +1,7 @@
 import type { EditableRootProps } from './EditableRoot.vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
@@ -170,5 +171,16 @@ describe('editable', () => {
     await userEvent.type(input, 'lorem ipsum dolor sit amet')
 
     expect(input).toHaveValue('lorem ipsu')
+  })
+})
+
+describe('given a Editable in a form', () => {
+  const wrapper = mount({
+    components: { Editable },
+    template: '<form><Editable name="test" /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 })

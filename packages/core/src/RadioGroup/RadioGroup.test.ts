@@ -129,3 +129,14 @@ describe('given radio in a form', async () => {
     })
   })
 })
+
+describe('given a RadioGroup in a form', () => {
+  const wrapper = mount({
+    components: { RadioGroup },
+    template: '<form><RadioGroup name="test" /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})

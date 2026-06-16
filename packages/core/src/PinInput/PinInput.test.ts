@@ -473,3 +473,14 @@ describe('give OTP PinInput', () => {
     expect(document.activeElement).toBe(inputs[0].element)
   })
 })
+
+describe('given a PinInput in a form', () => {
+  const wrapper = mount({
+    components: { PinInput },
+    template: '<form><PinInput /></form>',
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})
