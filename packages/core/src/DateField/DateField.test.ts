@@ -3,9 +3,10 @@ import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { DateFieldRootProps } from './DateFieldRoot.vue'
 import { CalendarDate, CalendarDateTime, now, parseAbsoluteToLocal, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
 import DateField from './story/_DateField.vue'
 
@@ -673,5 +674,471 @@ describe('dateField', async () => {
 
     const timeZone = getByTestId('timeZoneName')
     expect(timeZone).toHaveTextContent(thisTimeZone('2023-10-12T12:30:00Z'))
+  })
+
+  describe('stepSnapping', () => {
+    function setupStepSnappingTest({
+      step,
+      stepSnapping,
+      modelValue = new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+      hourCycle,
+    }: {
+      step: DateFieldRootProps['step']
+      stepSnapping: boolean
+      modelValue?: DateValue
+      hourCycle?: DateFieldRootProps['hourCycle']
+    }) {
+      let rerender: ReturnType<typeof setup>['rerender']
+      const returned = setup({
+        dateFieldProps: {
+          modelValue,
+          granularity: 'second',
+          hourCycle,
+          step,
+          stepSnapping,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                hourCycle,
+                step,
+                stepSnapping,
+              },
+            })
+          },
+        },
+      })
+      rerender = returned.rerender
+      return returned
+    }
+
+    it('snaps typed minute value to nearest step', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { minute: 15 },
+        stepSnapping: true,
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{3}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('30')
+    })
+
+    it('does not change typed minute value already on the step boundary', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { minute: 15 },
+        stepSnapping: true,
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{1}{5}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('15')
+    })
+
+    it('snaps typed minute value using custom step', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { minute: 10 },
+        stepSnapping: true,
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{6}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('30')
+    })
+
+    it('snaps typed minute value down to the nearest step', async () => {
+      const { user, getByTestId, rerender } = setup({
+        dateFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({
+              dateFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { minute: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{0}{7}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('0')
+    })
+
+    it('does not snap typed minute value when step is 1', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { minute: 1 },
+        stepSnapping: true,
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{3}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('23')
+    })
+
+    it('snaps typed minute value to nearest non-divisor step', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { minute: 7 },
+        stepSnapping: true,
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{3}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('21')
+    })
+
+    it('snaps typed hour value to nearest step', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        modelValue: new CalendarDateTime(1980, 1, 20, 0, 0, 0, 0),
+        hourCycle: 24,
+        step: { hour: 4 },
+        stepSnapping: true,
+      })
+
+      const hour = getByTestId('hour')
+      await user.click(hour)
+      await user.keyboard('{1}{0}')
+      await user.click(getByTestId('minute'))
+
+      expect(hour).toHaveTextContent('12')
+    })
+
+    it('snaps typed second value to nearest step', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { second: 7 },
+        stepSnapping: true,
+      })
+
+      const second = getByTestId('second')
+      await user.click(second)
+      await user.keyboard('{1}{0}')
+      await user.click(getByTestId('minute'))
+
+      expect(second).toHaveTextContent('7')
+    })
+
+    it('does not snap typed values when stepSnapping is false', async () => {
+      const { user, getByTestId } = setupStepSnappingTest({
+        step: { minute: 15 },
+        stepSnapping: false,
+      })
+
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      await user.keyboard('{2}{3}')
+      await user.click(getByTestId('second'))
+
+      expect(minute).toHaveTextContent('23')
+    })
+  })
+})
+
+describe('handle IME composition', () => {
+  it('should block direct text insertion into the segment (Safari fires beforeinput before keydown with an IME active)', async () => {
+    const { day, user } = setup()
+
+    await user.click(day)
+
+    // Safari inserts the raw character at `input` (before `keydown`) while an IME
+    // is active; blocking `beforeinput` is the only way to stop it leaking in.
+    const event = new InputEvent('beforeinput', { data: '1', inputType: 'insertText', cancelable: true })
+    Object.defineProperty(event, 'isComposing', { value: false })
+    day.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should let composition input through beforeinput', async () => {
+    const { day, user } = setup()
+
+    await user.click(day)
+
+    const event = new InputEvent('beforeinput', { data: 'n', inputType: 'insertCompositionText', cancelable: true })
+    Object.defineProperty(event, 'isComposing', { value: true })
+    day.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should still apply a directly-typed digit when a CJK IME is active (keyCode 229, not composing)', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+    expect(day).toHaveFocus()
+
+    // Pinyin active but NOT composing: Safari flags the keydown with keyCode 229
+    // while passing the real digit through (key === '1', isComposing false).
+    await fireEvent.keyDown(day, { key: '1', keyCode: 229 })
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('1')
+  })
+
+  it('should not update segment during IME keydown (keyCode 229)', async () => {
+    const { day, user } = setup()
+
+    await user.click(day)
+    expect(day).toHaveFocus()
+
+    await fireEvent.keyDown(day, { key: 'Process', keyCode: 229, isComposing: true })
+
+    expect(day).toHaveTextContent('dd')
+  })
+
+  it('should process committed digit after compositionend', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    await fireEvent.keyDown(day, { key: 'Process', keyCode: 229, isComposing: true })
+    expect(day).toHaveTextContent('dd')
+
+    await fireEvent(day, new CompositionEvent('compositionend', { data: '5' }))
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('5')
+  })
+
+  it('should ignore non-digit characters from compositionend', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    await fireEvent(day, new CompositionEvent('compositionend', { data: 'あ' }))
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('dd')
+  })
+
+  it('should restore the placeholder after composing non-numeric text into the segment', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    // The IME mutates the contenteditable directly: capture Vue's nodes on
+    // compositionstart, then simulate the IME prepending text to the value node.
+    await fireEvent(day, new CompositionEvent('compositionstart', { data: '' }))
+    const valueNode = [...day.childNodes].find(n => n.nodeType === 3 && n.nodeValue) as Text
+    valueNode.nodeValue = `你${valueNode.nodeValue}`
+    expect(getByTestId('day')).toHaveTextContent('你dd')
+
+    // On commit, the IME text must be reverted and Vue's node restored so it stays
+    // patchable (Vue won't reconcile it since the segment value never changed).
+    await fireEvent(day, new CompositionEvent('compositionend', { data: '你' }))
+    await nextTick()
+
+    expect(getByTestId('day')).toHaveTextContent('dd')
+  })
+
+  it('should still apply a digit typed right after a non-numeric composition', async () => {
+    const { day, user, getByTestId } = setup()
+
+    await user.click(day)
+
+    // Compose a non-numeric character and commit it.
+    await fireEvent(day, new CompositionEvent('compositionstart', { data: '' }))
+    const valueNode = [...day.childNodes].find(n => n.nodeType === 3 && n.nodeValue) as Text
+    valueNode.nodeValue = `你${valueNode.nodeValue}`
+    await fireEvent(day, new CompositionEvent('compositionend', { data: '你' }))
+    await nextTick()
+    expect(getByTestId('day')).toHaveTextContent('dd')
+
+    // Typing a digit afterwards must still update the segment (regression: Vue's
+    // text node was being detached, freezing the display).
+    await fireEvent.keyDown(day, { key: '5' })
+    await nextTick()
+    expect(getByTestId('day')).toHaveTextContent('5')
+  })
+
+  it('should not advance to next segment during composition', async () => {
+    const { month, day, user } = setup()
+
+    await user.click(month)
+    expect(month).toHaveFocus()
+
+    await fireEvent.keyDown(month, { key: 'Process', keyCode: 229, isComposing: true })
+
+    expect(month).toHaveFocus()
+    expect(day).not.toHaveFocus()
+  })
+
+  it('should route multi-digit commit to following segments after focus advances', async () => {
+    const { month, day, user, getByTestId } = setup()
+
+    await user.click(month)
+
+    // Committing "45": 4 fills month and auto-advances, 5 lands in the next segment
+    await fireEvent(month, new CompositionEvent('compositionend', { data: '45' }))
+    await nextTick()
+
+    expect(getByTestId('month')).toHaveTextContent('4')
+    expect(getByTestId('day')).toHaveTextContent('5')
+  })
+
+  it('should not navigate between segments during composition (arrow keys are IME candidate navigation)', async () => {
+    const { month, day, user } = setup()
+
+    await user.click(month)
+    expect(month).toHaveFocus()
+
+    // Arrow keys mid-composition are used to navigate IME candidates, not segments
+    await fireEvent.keyDown(month, { key: 'ArrowRight', isComposing: true })
+    expect(month).toHaveFocus()
+    expect(day).not.toHaveFocus()
+
+    // Once composition ends, arrow keys navigate segments again
+    await fireEvent.keyDown(month, { key: 'ArrowRight' })
+    expect(day).toHaveFocus()
+  })
+})
+
+// Baseline coverage (2026-06-12): lines 89.18%, branches 87.26%, functions 97.43%
+describe('useDateField – characterization tests (coverage gaps)', () => {
+  describe('deleteValue – null prevValue path (line 317)', () => {
+    it('pressing Backspace on an already-empty segment is a no-op (placeholder stays)', async () => {
+      // Branch 40:0 — deleteValue(null) early-return path
+      const { user, month } = setup()
+      // month is empty (no modelValue), backspace should be a no-op
+      await user.click(month)
+      expect(month).toHaveTextContent('mm')
+      await user.keyboard(kbd.BACKSPACE)
+      // NOTE: current behavior — backspace on null segment leaves it null (placeholder text stays)
+      expect(month).toHaveTextContent('mm')
+    })
+
+    it('pressing Backspace on a two-digit year value truncates to one digit', async () => {
+      // Covers the `str.length > 1` path of deleteValue returning Number.parseInt(str.slice(0,-1))
+      const { user, year, rerender } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data } })
+          },
+        },
+      })
+      // Year is 1980 (4 digits). First backspace removes the last digit → 198
+      await user.click(year)
+      await user.keyboard(kbd.BACKSPACE)
+      expect(year).toHaveTextContent('198')
+    })
+  })
+
+  describe('updateYear – str.length > 4 path (line 618)', () => {
+    it('typing a 5th digit in the year segment resets the year to that digit', async () => {
+      // Branch 77:0 — updateYear when accumulated str would exceed 4 digits
+      // Also covers branch 78:1 — num !== 0, so returns num directly
+      const { user, year, rerender } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data } })
+          },
+        },
+      })
+      // Type 4 digits to fill the year segment (auto-advances after 4th digit)
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}')
+      expect(year).toHaveTextContent('2024')
+      // Click back on year and type more to get to a 5-digit accumulated string
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}{5}')
+      // NOTE: current behavior — 5th digit resets: returns { value: 5, moveToNext: false }
+      expect(year).toHaveTextContent('5')
+    })
+
+    it('typing 0 as the 5th digit in the year segment resets to 1 (prevents year=0)', async () => {
+      // Branch 78:0 — num === 0 in updateYear overflow path, returns 1 instead of 0
+      const { user, year, rerender } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data } })
+          },
+        },
+      })
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}')
+      await user.click(year)
+      await user.keyboard('{2}{0}{2}{4}{0}')
+      // NOTE: current behavior — 5th digit of 0 returns 1 (year 0 is invalid)
+      expect(year).toHaveTextContent('1')
+    })
+  })
+
+  describe('compositionend – no data early return (line 988)', () => {
+    it('compositionend with empty string data does not crash or modify the segment', async () => {
+      // Branch 171:0 — handleSegmentCompositionEnd early return when data is falsy
+      const { day, user, getByTestId } = setup()
+      await user.click(day)
+      // Fire compositionend with empty string data
+      await fireEvent(day, new CompositionEvent('compositionend', { data: '' }))
+      await nextTick()
+      // NOTE: current behavior — no change, segment stays at placeholder
+      expect(getByTestId('day')).toHaveTextContent('dd')
+    })
+
+    it('compositionend with no data (undefined) does not crash or modify the segment', async () => {
+      // Branch 171:0 — handleSegmentCompositionEnd early return when data is null/undefined
+      const { day, user, getByTestId } = setup()
+      await user.click(day)
+      await fireEvent(day, new CompositionEvent('compositionend'))
+      await nextTick()
+      expect(getByTestId('day')).toHaveTextContent('dd')
+    })
+  })
+
+  describe('hourSegmentAttrs hourCycle=12 aria-value bounds (lines 129-130)', () => {
+    it('hour segment has aria-valuemin=1 and aria-valuemax=12 when hourCycle is 12', async () => {
+      // Covers the true branch of (hourCycle === 12 ? 1 : 0) and (hourCycle === 12 ? 12 : 23)
+      const { getByTestId } = setup({
+        dateFieldProps: {
+          modelValue: calendarDateTime,
+          hourCycle: 12,
+        },
+      })
+      const hour = getByTestId('hour')
+      expect(hour).toHaveAttribute('aria-valuemin', '1')
+      expect(hour).toHaveAttribute('aria-valuemax', '12')
+    })
+
+    it('hour segment has aria-valuemin=0 and aria-valuemax=23 when hourCycle is 24', async () => {
+      const { getByTestId } = setup({
+        dateFieldProps: {
+          modelValue: calendarDateTime,
+          hourCycle: 24,
+        },
+      })
+      const hour = getByTestId('hour')
+      expect(hour).toHaveAttribute('aria-valuemin', '0')
+      expect(hour).toHaveAttribute('aria-valuemax', '23')
+    })
   })
 })

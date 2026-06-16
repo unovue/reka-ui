@@ -2,7 +2,7 @@
 import type { PinInputContextValue } from './PinInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { getActiveElement, useArrowNavigation } from '@/shared'
+import { getActiveElement, useArrowNavigation, useComposing } from '@/shared'
 import { injectPinInputRootContext } from './PinInputRoot.vue'
 
 export interface PinInputInputProps extends PrimitiveProps {
@@ -32,7 +32,45 @@ const NUMBER_REG = /^\d*$/
 const NON_NUMBER_REG = /\D/g
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
+
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  const target = event.target as HTMLInputElement
+  const value = event.data || target.value
+
+  if (context.isNumericMode.value) {
+    const filtered = value.replace(NON_NUMBER_REG, '')
+    if (!filtered) {
+      target.value = ''
+      return
+    }
+    if (filtered.length > 1) {
+      handleMultipleCharacter(filtered)
+      return
+    }
+    target.value = filtered
+    updateModelValueAt(props.index, filtered)
+    const nextEl = inputElements.value[props.index + 1]
+    if (nextEl)
+      nextEl.focus()
+    return
+  }
+
+  if (value.length > 1) {
+    handleMultipleCharacter(value)
+    return
+  }
+
+  target.value = value
+  updateModelValueAt(props.index, value)
+
+  const nextEl = inputElements.value[props.index + 1]
+  if (nextEl)
+    nextEl.focus()
+})
+
 function handleInput(event: InputEvent) {
+  if (isComposing.value || event.isComposing)
+    return
   const target = event.target as HTMLInputElement
 
   if ((event.data?.length ?? 0) > 1) {
@@ -69,6 +107,9 @@ function updatePlaceholder() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
+  // Don't move between inputs mid-composition, arrow keys are used for IME candidate navigation
+  if (isComposing.value || event.isComposing)
+    return
   useArrowNavigation(event, getActiveElement() as HTMLElement, undefined, {
     itemsArray: inputElements.value,
     focus: true,
@@ -223,6 +264,8 @@ onUnmounted(() => {
     @focus="handleFocus"
     @blur="handleBlur"
     @paste="handlePaste"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </Primitive>

@@ -984,3 +984,430 @@ describe('timeField', async () => {
     })
   })
 })
+
+// Baseline coverage (2026-06-12): lines 89.18%, branches 87.26%, functions 97.43%
+describe('useDateField – time segment characterization tests (coverage gaps)', () => {
+  describe('backspace on empty/null time segments (lines 785, 814, 842)', () => {
+    it('backspace on an empty hour segment is a no-op (data-placeholder stays)', async () => {
+      // Branch 125:0 — deleteValue(null) from handleHourSegmentKeydown
+      // Also covers isNumberString false-branch (branch 111:1) for Backspace on hour
+      const { user, hour } = setup()
+      await user.click(hour)
+      // Empty segments show a placeholder (data-placeholder attribute is present and empty string)
+      expect(hour).toHaveAttribute('data-placeholder', '')
+      await user.keyboard(kbd.BACKSPACE)
+      // NOTE: current behavior — backspace on null segment leaves it null (placeholder stays)
+      expect(hour).toHaveAttribute('data-placeholder', '')
+    })
+
+    it('backspace on an empty minute segment is a no-op (data-placeholder stays)', async () => {
+      // Branch 132:0 — deleteValue(null) from handleMinuteSegmentKeydown
+      const { user, getByTestId } = setup({ timeFieldProps: { granularity: 'second' } })
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      expect(minute).toHaveAttribute('data-placeholder', '')
+      await user.keyboard(kbd.BACKSPACE)
+      // NOTE: current behavior — backspace on null segment leaves it null (placeholder stays)
+      expect(minute).toHaveAttribute('data-placeholder', '')
+    })
+
+    it('backspace on an empty second segment is a no-op (data-placeholder stays)', async () => {
+      // Branch 139:0 — deleteValue(null) from handleSecondSegmentKeydown
+      const { user, getByTestId } = setup({ timeFieldProps: { granularity: 'second' } })
+      const second = getByTestId('second')
+      await user.click(second)
+      expect(second).toHaveAttribute('data-placeholder', '')
+      await user.keyboard(kbd.BACKSPACE)
+      // NOTE: current behavior — backspace on null segment leaves it null (placeholder stays)
+      expect(second).toHaveAttribute('data-placeholder', '')
+    })
+
+    it('backspace on a non-null hour segment clears it to empty', async () => {
+      // Branch 111:1 — isNumberString false in handleHourSegmentKeydown (Backspace key)
+      // Branch 125:0 (via deleteValue) — single-digit value → modelValue=undefined, segment=null
+      const { user, hour } = setup({
+        timeFieldProps: { modelValue: new Time(9, 30, 0) },
+      })
+      // Segment is filled (no data-placeholder attribute when value is set)
+      expect(hour).not.toHaveAttribute('data-placeholder')
+      await user.click(hour)
+      await user.keyboard(kbd.BACKSPACE)
+      // NOTE: current behavior — single-digit value is cleared to null (placeholder shown)
+      expect(hour).toHaveAttribute('data-placeholder', '')
+    })
+
+    it('backspace on a two-digit minute segment truncates to one digit', async () => {
+      // deleteValue: str.length===2 > 1 → returns parseInt(str.slice(0,-1))
+      const { user, getByTestId } = setup({
+        timeFieldProps: { modelValue: new Time(9, 30, 0), granularity: 'second' },
+      })
+      const minute = getByTestId('minute')
+      expect(minute).not.toHaveAttribute('data-placeholder')
+      await user.click(minute)
+      await user.keyboard(kbd.BACKSPACE)
+      // deleteValue(30) → '30'.slice(0,-1) = '3', returns 3
+      // NOTE: current behavior — minute=30 after backspace becomes 3
+      expect(minute).not.toHaveAttribute('data-placeholder')
+      expect(minute).toHaveTextContent('3')
+    })
+
+    it('backspace on a single-digit second segment clears it to empty', async () => {
+      // Branch 139:0 via deleteValue on single-digit second
+      const { user, getByTestId } = setup({
+        timeFieldProps: { modelValue: new Time(9, 30, 5), granularity: 'second' },
+      })
+      const second = getByTestId('second')
+      expect(second).not.toHaveAttribute('data-placeholder')
+      await user.click(second)
+      await user.keyboard(kbd.BACKSPACE)
+      // deleteValue(5): str='5', length===1 → modelValue=undefined, returns null
+      // NOTE: current behavior — single-digit second cleared to null (placeholder shows)
+      expect(second).toHaveAttribute('data-placeholder', '')
+    })
+  })
+
+  describe('minuteSecondIncrementation – null prevValue paths (lines 308-309)', () => {
+    it('arrow Up on empty minute sets it to 0 (min) — fills data-placeholder', async () => {
+      // Branch 38:0 — minuteSecondIncrementation with prevValue=null, sign>0 → returns min (0)
+      // Branch 39:0 — cond-expr sign > 0 → min path
+      const { user, getByTestId } = setup({ timeFieldProps: { granularity: 'second' } })
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      expect(minute).toHaveAttribute('data-placeholder', '')
+      await user.keyboard(kbd.ARROW_UP)
+      // NOTE: current behavior — null minute + arrow up → returns 0 (the min), segment is filled
+      expect(minute).not.toHaveAttribute('data-placeholder')
+      expect(minute).toHaveTextContent('0')
+    })
+
+    it('arrow Down on empty minute sets it to 59 (max) — fills data-placeholder', async () => {
+      // Branch 38:0 — minuteSecondIncrementation with prevValue=null, sign<0 → returns max (59)
+      // Branch 39:1 — cond-expr sign > 0 → max path
+      const { user, getByTestId } = setup({ timeFieldProps: { granularity: 'second' } })
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      expect(minute).toHaveAttribute('data-placeholder', '')
+      await user.keyboard(kbd.ARROW_DOWN)
+      // NOTE: current behavior — null minute + arrow down → returns 59 (the max)
+      expect(minute).not.toHaveAttribute('data-placeholder')
+      expect(minute).toHaveTextContent('59')
+    })
+
+    it('arrow Down on empty second sets it to 59 (max)', async () => {
+      const { user, getByTestId } = setup({ timeFieldProps: { granularity: 'second' } })
+      const second = getByTestId('second')
+      await user.click(second)
+      await user.keyboard(kbd.ARROW_DOWN)
+      // NOTE: current behavior — null second + arrow down → returns 59
+      expect(second).toHaveTextContent('59')
+    })
+
+    it('arrow Up on empty second with custom step uses the step value', async () => {
+      // Branch 36:1 — step ?? 1 when step IS explicitly provided
+      // The step for arrow is used directly (not just for snap): sign = step, min=0
+      const { user, getByTestId } = setup({
+        timeFieldProps: {
+          granularity: 'second',
+          step: { second: 15 },
+        },
+      })
+      const second = getByTestId('second')
+      await user.click(second)
+      await user.keyboard(kbd.ARROW_UP)
+      // NOTE: current behavior — null second with step=15, arrow up: sign>0 → returns min (0)
+      expect(second).toHaveTextContent('0')
+    })
+  })
+
+  describe('updateMinuteOrSecond – boundary and overflow branches (lines 473, 502, 508)', () => {
+    it('typing a first digit > 5 in minute auto-advances to next segment', async () => {
+      // Branch 61:0 — updateMinuteOrSecond: num > maxStart (5) on first digit → moveToNext=true
+      const { user, getByTestId } = setup({
+        timeFieldProps: { modelValue: new Time(9, 15, 0), granularity: 'second' },
+      })
+      const minute = getByTestId('minute')
+      const second = getByTestId('second')
+      await user.click(minute)
+      await user.keyboard('{7}')
+      // NOTE: current behavior — typing 7 (> maxStart=5) sets minute=7 and moves to next segment
+      // hasLeftFocus=true resets prev to null; 7>5 → moveToNext=true
+      expect(minute).not.toHaveAttribute('data-placeholder')
+      expect(second).toHaveFocus()
+    })
+
+    it('typing 12h hour overflow (e.g. 13 > 12) resets hour segment to the new digit', async () => {
+      // Branch 73:0 — updateHour: total > max in 12h mode (max=12): resets to the new digit
+      // Branch 65:0 equivalent in updateMinuteOrSecond but for hour
+      const { user, hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(1, 30, 0),
+          hourCycle: 12,
+        },
+      })
+      const minute = getByTestId('minute')
+      await user.click(hour)
+      // Type 1, then 3: total=13 > 12 → resets to 3
+      await user.keyboard('{1}{3}')
+      // NOTE: current behavior — '13' > 12 → hour resets to 3 (and 3>maxStart=1 → moves to minute)
+      expect(minute).toHaveFocus()
+    })
+
+    it('typing two valid digits in minute advances to next segment', async () => {
+      // Branch 63 false path (total <= 59) → moveToNext=true at the end (line 515)
+      const { user, getByTestId } = setup({
+        timeFieldProps: { modelValue: new Time(9, 15, 0), granularity: 'second' },
+      })
+      const minute = getByTestId('minute')
+      const second = getByTestId('second')
+      await user.click(minute)
+      await user.keyboard('{3}{5}')
+      // NOTE: current behavior — '35' is valid (≤59), sets minute=35 and advances to second
+      expect(minute).toHaveTextContent('35')
+      expect(second).toHaveFocus()
+    })
+  })
+
+  describe('updateHour – boundary and overflow branches (lines 582, 588)', () => {
+    it('typing a first 24h digit > 2 in hour auto-advances to next segment', async () => {
+      // Branch 71:0 — updateHour: num > maxStart (2 for max=24) on first digit → moveToNext=true
+      const { user, hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(9, 30, 0),
+          hourCycle: 24,
+        },
+      })
+      const minute = getByTestId('minute')
+      await user.click(hour)
+      await user.keyboard('{3}')
+      // NOTE: current behavior — typing 3 (> maxStart=2 for max=24) sets hour=3 and advances
+      expect(hour).not.toHaveAttribute('data-placeholder')
+      expect(minute).toHaveFocus()
+    })
+
+    it('typing a second 24h digit that overflows resets hour to the new digit', async () => {
+      // Branch 73:0 — updateHour: total > max (25 > 24) → resets to new digit
+      // Branch 73:1 — num (5) > maxStart (2) → moveToNext=true
+      const { user, hour, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(9, 30, 0),
+          hourCycle: 24,
+        },
+      })
+      const minute = getByTestId('minute')
+      await user.click(hour)
+      // Type 2 then 5: total=25 > 24 → resets hour to 5, 5>2=maxStart → moveToNext
+      await user.keyboard('{2}{5}')
+      // NOTE: current behavior — '25' > 24 → hour resets to 5, advances to minute
+      expect(minute).toHaveFocus()
+    })
+  })
+
+  describe('handleDayPeriodSegmentKeydown – arrow key toggle (lines 852-858)', () => {
+    it('arrow Up on dayPeriod segment toggles from AM to PM', async () => {
+      // Branch 142:0 — ARROW_UP || ARROW_DOWN true branch (not previously covered)
+      // Branch 144:0 — inner if(dayPeriod === 'AM') true branch
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(9, 30, 0),
+          granularity: 'second',
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: { modelValue: data, granularity: 'second' },
+            })
+          },
+        },
+      })
+      const dayPeriod = getByTestId('dayPeriod')
+      expect(dayPeriod).toHaveTextContent('AM')
+      await user.click(dayPeriod)
+      await user.keyboard(kbd.ARROW_UP)
+      // NOTE: current behavior — AM + arrow up → PM, hour += 12 (9 → 21)
+      expect(dayPeriod).toHaveTextContent('PM')
+    })
+
+    it('arrow Down on dayPeriod segment when AM toggles to PM', async () => {
+      // Branch 142:0 — ARROW_DOWN true branch
+      // Branch 144:0 — inner if(dayPeriod === 'AM') true branch
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(9, 30, 0),
+          granularity: 'second',
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: { modelValue: data, granularity: 'second' },
+            })
+          },
+        },
+      })
+      const dayPeriod = getByTestId('dayPeriod')
+      expect(dayPeriod).toHaveTextContent('AM')
+      await user.click(dayPeriod)
+      await user.keyboard(kbd.ARROW_DOWN)
+      // NOTE: current behavior — AM + arrow down → PM (same as arrow up when currently AM)
+      expect(dayPeriod).toHaveTextContent('PM')
+    })
+
+    it('arrow Up on dayPeriod when it is PM toggles to AM', async () => {
+      // Branch 144:1 — inner if(dayPeriod === 'AM') is false → falls to lines 858-859 (set AM)
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new Time(21, 30, 0), // 9 PM
+          granularity: 'second',
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: { modelValue: data, granularity: 'second' },
+            })
+          },
+        },
+      })
+      const dayPeriod = getByTestId('dayPeriod')
+      expect(dayPeriod).toHaveTextContent('PM')
+      await user.click(dayPeriod)
+      await user.keyboard(kbd.ARROW_UP)
+      // NOTE: current behavior — PM + arrow up → AM, hour -= 12 (21 → 9)
+      expect(dayPeriod).toHaveTextContent('AM')
+    })
+
+    it('pressing p key when dayPeriod is already PM has no effect', async () => {
+      // Branch 147:1 — ['p','P'].includes(key) && dayPeriod !== 'PM' → false when already PM
+      const { user, getByTestId } = setup({
+        timeFieldProps: {
+          modelValue: new Time(21, 30, 0), // 9 PM
+          granularity: 'second',
+        },
+      })
+      const dayPeriod = getByTestId('dayPeriod')
+      expect(dayPeriod).toHaveTextContent('PM')
+      await user.click(dayPeriod)
+      await user.keyboard('{p}')
+      // NOTE: current behavior — pressing p when already PM has no effect
+      expect(dayPeriod).toHaveTextContent('PM')
+    })
+  })
+
+  describe('handleSegmentFocusOut – hour step snapping with dayPeriod (lines 927-931)', () => {
+    it('hour step snap sets dayPeriod to AM when snapped value < 12', async () => {
+      // Branch 162:0 — after hour snap, if (hour < 12) → set dayPeriod = 'AM'
+      const { user, hour, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 9, 0, 0, 0),
+          granularity: 'second',
+          step: { hour: 6 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { hour: 6 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+      const dayPeriod = getByTestId('dayPeriod')
+      await user.click(hour)
+      // Type 7 — auto-advances (7 > maxStart=1 for 12h max=12) → focusout on hour triggers snap
+      await user.keyboard('{7}')
+      // snapValueToStep(7, 0, 23, 6) = 6; 6 < 12 → dayPeriod set to 'AM'
+      // NOTE: current behavior — after snapping 7 → 6, dayPeriod is set to AM
+      expect(dayPeriod).toHaveTextContent('AM')
+    })
+
+    it('hour step snap sets dayPeriod to PM when snapped value >= 12', async () => {
+      // Branch 163:0 — else if (hour) truthy branch → set dayPeriod = 'PM' when hour >= 12
+      const { user, hour, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 14, 0, 0, 0),
+          granularity: 'second',
+          step: { hour: 6 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { hour: 6 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+      const dayPeriod = getByTestId('dayPeriod')
+      await user.click(hour)
+      // Type 9 — auto-advances (9 > maxStart=1 for 12h) → focusout triggers snap
+      // snapValueToStep(9, 0, 23, 6) = 6; but we want a PM result
+      // Use value that snaps to >=12: type a 2-digit 12h hour like 2 (display=2, internal depends on PM context)
+      // Actually type 1 then 4 in 12h mode: total=14, 12h max=12, 14>12 → resets to 4
+      // Let me type 2: 2>1=maxStart → moveToNext, internal=2+12=14 (PM), snap(14,0,23,6)=12 → PM
+      await user.keyboard('{2}')
+      // snapValueToStep(14, 0, 23, 6) = 12; 12 not < 12, else if (12) truthy → PM
+      // NOTE: current behavior — after snapping 14 → 12, dayPeriod is set to PM
+      expect(dayPeriod).toHaveTextContent('PM')
+    })
+
+    it('second step snapping works on focusout', async () => {
+      // Covers the 'second' branch in handleSegmentFocusOut (third else-if at line 937)
+      const { user, getByTestId, rerender } = setup({
+        timeFieldProps: {
+          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          granularity: 'second',
+          step: { second: 15 },
+          stepSnapping: true,
+        },
+        emits: {
+          'onUpdate:modelValue': (data: TimeValue) => {
+            return rerender({
+              timeFieldProps: {
+                modelValue: data,
+                granularity: 'second',
+                step: { second: 15 },
+                stepSnapping: true,
+              },
+            })
+          },
+        },
+      })
+      const second = getByTestId('second')
+      await user.click(second)
+      // Type 17 — should snap to 15 (nearest multiple of 15)
+      await user.keyboard('{1}{7}')
+      expect(second).toHaveTextContent('15')
+    })
+  })
+
+  describe('handleSegmentFocusOut – not all segments filled skips modelValue update (line 941)', () => {
+    it('partial fill with stepSnapping does not crash and preserves partial values', async () => {
+      // Branch 168:1 — handleSegmentFocusOut: Object.values(segmentValues).every(item=>item!==null)
+      // False branch: not all segments filled → no modelValue update on focusout
+      const { user, getByTestId } = setup({
+        timeFieldProps: {
+          granularity: 'second',
+          step: { minute: 15 },
+          stepSnapping: true,
+        },
+      })
+      const minute = getByTestId('minute')
+      await user.click(minute)
+      // Type just one digit (minute has value but hour is still null)
+      // Then tab away to trigger focusout — not all segments filled, so no modelValue update
+      await user.keyboard('{3}')
+      await user.keyboard(kbd.TAB)
+      // NOTE: current behavior — partial fill with stepSnapping doesn't crash
+      // minute snaps to 0 (nearest multiple of 15 to 3), but all-filled check fails so no emit
+      expect(minute).not.toHaveAttribute('data-placeholder')
+    })
+  })
+})

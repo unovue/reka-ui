@@ -3,6 +3,7 @@ import type { PrimitiveProps } from '..'
 import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useComposing } from '@/shared'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 
@@ -59,6 +60,39 @@ onMounted(() => {
 onUnmounted(() => {
   rootContext.focusable.value = true
 })
+
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  modelValue.value = (event.target as HTMLInputElement).value
+  rootContext.onCompositionEnd()
+  rootContext.highlightFirstItem()
+})
+
+function onCompositionStart() {
+  rootContext.onCompositionStart()
+  handleCompositionStart()
+}
+
+function handleInput(event: InputEvent) {
+  if (isComposing.value)
+    return
+  modelValue.value = (event.target as HTMLInputElement).value
+  rootContext.highlightFirstItem()
+}
+
+function handleKeydownNavigation(event: KeyboardEvent) {
+  // Don't navigate mid-composition, arrow keys are used for IME candidate navigation
+  if (isComposing.value)
+    return
+  event.preventDefault()
+  rootContext.onKeydownNavigation(event)
+}
+
+function handleKeydownEnter(event: KeyboardEvent) {
+  // Don't select mid-composition, Enter commits the IME candidate
+  if (isComposing.value)
+    return
+  rootContext.onKeydownEnter(event)
+}
 </script>
 
 <template>
@@ -72,14 +106,11 @@ onUnmounted(() => {
     :aria-disabled="disabled ?? undefined"
     :aria-activedescendant="activedescendant"
     type="text"
-    @keydown.down.up.home.end.prevent="rootContext.onKeydownNavigation"
-    @keydown.enter="rootContext.onKeydownEnter"
-    @input="(event: InputEvent) => {
-      modelValue = (event.target as HTMLInputElement).value
-      rootContext.highlightFirstItem()
-    }"
-    @compositionstart="rootContext.onCompositionStart"
-    @compositionend="rootContext.onCompositionEnd"
+    @keydown.down.up.home.end="handleKeydownNavigation"
+    @keydown.enter="handleKeydownEnter"
+    @input="handleInput"
+    @compositionstart="onCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot :model-value="modelValue" />
   </Primitive>

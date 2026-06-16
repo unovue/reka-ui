@@ -22,7 +22,13 @@ import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
-const props = defineProps<DialogContentProps>()
+const props = withDefaults(defineProps<DialogContentProps>(), {
+  // Keep `undefined` (instead of Vue's boolean coercion to `false`) so the
+  // modal/non-modal child can apply its own default. This lets a modal
+  // `DialogContent` stay locked by default while still honoring an explicit
+  // `:disable-outside-pointer-events="false"` (#2677).
+  disableOutsidePointerEvents: undefined,
+})
 const emits = defineEmits<DialogContentEmits>()
 
 const rootContext = injectDialogRootContext()
@@ -32,17 +38,25 @@ const { forwardRef } = useForwardExpose()
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    v-slot="{ present }"
+    :present="forceMount || rootContext.open.value"
+    :force-mount="forceMount || !rootContext.unmountOnHide.value"
+  >
     <DialogContentModal
       v-if="rootContext.modal.value"
+      v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
+      :present="rootContext.unmountOnHide.value || present"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />
     </DialogContentModal>
     <DialogContentNonModal
       v-else
+      v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
+      :present="rootContext.unmountOnHide.value || present"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />

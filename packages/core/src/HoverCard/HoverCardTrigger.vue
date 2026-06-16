@@ -25,6 +25,16 @@ function handleLeave() {
     }
   }, 0)
 }
+
+function handleTouch(event: PointerEvent) {
+  if (!rootContext.enableTouch.value || event.pointerType !== 'touch')
+    return
+
+  if (rootContext.open.value)
+    rootContext.onDismiss()
+  else
+    rootContext.onOpenChange(true)
+}
 </script>
 
 <template>
@@ -40,6 +50,7 @@ function handleLeave() {
       data-grace-area-trigger
       @pointerenter="excludeTouch(rootContext.onOpen)($event)"
       @pointerleave="excludeTouch(handleLeave)($event)"
+      @pointerup="handleTouch"
       @focus="rootContext.onOpen()"
       @blur="rootContext.onClose()"
     >

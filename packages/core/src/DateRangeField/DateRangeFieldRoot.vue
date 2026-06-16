@@ -84,7 +84,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
 
 export type DateRangeFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [DateRange]
+  'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
@@ -337,6 +337,9 @@ const prevFocusableSegment = computed(() => {
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)

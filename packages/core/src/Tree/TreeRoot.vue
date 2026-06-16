@@ -26,9 +26,9 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   dir?: Direction
   /** When `true`, prevents the user from interacting with tree  */
   disabled?: boolean
-  /** When `true`, selecting parent will select the descendants. */
+  /** When `true`, selecting parent will select the descendants. Requires `multiple` to be `true`. */
   propagateSelect?: boolean
-  /** When `true`, selecting children will update the parent state. */
+  /** When `true`, selecting children will update the parent state. Requires `multiple` to be `true`. */
   bubbleSelect?: boolean
 }
 

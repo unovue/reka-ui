@@ -17,7 +17,7 @@
   },
   {
     'name': 'bubbleSelect',
-    'description': '<p>When <code>true</code>, selecting children will update the parent state.</p>\n',
+    'description': '<p>When <code>true</code>, selecting children will update the parent state. Requires <code>multiple</code> to be <code>true</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -84,7 +84,7 @@
   },
   {
     'name': 'propagateSelect',
-    'description': '<p>When <code>true</code>, selecting parent will select the descendants.</p>\n',
+    'description': '<p>When <code>true</code>, selecting parent will select the descendants. Requires <code>multiple</code> to be <code>true</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -137,7 +137,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"ul"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `bubbleSelect` | When true, selecting children will update the parent state. | `boolean` | No | - |
+| `bubbleSelect` | When true, selecting children will update the parent state. Requires multiple to be true. | `boolean` | No | - |
 | `defaultExpanded` | The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree | `string[]` | No | - |
 | `defaultValue` | The value of the tree when initially rendered. Use when you do not need to control the state of the tree | `Record<string, any> \| Record<string, any>[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
@@ -148,7 +148,7 @@
 | `items` | List of items | `Record<string, any>[]` | No | - |
 | `modelValue` | The controlled value of the tree. Can be binded with v-model. | `Record<string, any> \| Record<string, any>[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
-| `propagateSelect` | When true, selecting parent will select the descendants. | `boolean` | No | - |
+| `propagateSelect` | When true, selecting parent will select the descendants. Requires multiple to be true. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
 
 **Events**

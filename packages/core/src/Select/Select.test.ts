@@ -1,10 +1,11 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { handleSubmit } from '@/test'
+import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
@@ -35,6 +36,69 @@ describe('given default Select', () => {
     expect(valueBox.html()).toContain('Please select a fruit')
     const selectTrigger = wrapper.find('[role="combobox"]')
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
+  })
+
+  describe('trigger mouse interop', () => {
+    async function openSelectWithMouseClick() {
+      const button = wrapper.find('button')
+      // Open on pointerdown, then emit the compatibility mouse events that follow in browsers.
+      await button.trigger('pointerdown', { button: 0, ctrlKey: false })
+      fireEvent.mouseDown(button.element, { button: 0, ctrlKey: false })
+      fireEvent.mouseUp(button.element, { button: 0, ctrlKey: false })
+      fireEvent.click(button.element, { button: 0, ctrlKey: false })
+      await nextTick()
+      await nextTick()
+    }
+
+    it('should not suppress window mousedown listeners when opening (#1773)', async () => {
+      const button = wrapper.find('button').element
+      const onWindowMousedown = vi.fn()
+      window.addEventListener('mousedown', onWindowMousedown, true)
+
+      fireEvent.pointerDown(button, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+      const mousedownEvent = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ctrlKey: false,
+      })
+      button.dispatchEvent(mousedownEvent)
+
+      expect(onWindowMousedown).toHaveBeenCalled()
+      expect(mousedownEvent.defaultPrevented).toBe(true)
+
+      window.removeEventListener('mousedown', onWindowMousedown, true)
+    })
+
+    it('should focus the trigger on click without a preceding pointerdown', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+      const focusSpy = vi.spyOn(trigger, 'focus')
+
+      fireEvent.click(trigger, { button: 0, ctrlKey: false })
+
+      expect(focusSpy).toHaveBeenCalled()
+      focusSpy.mockRestore()
+    })
+
+    it('should not re-focus the trigger on click after opening via pointerdown', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+      const focusSpy = vi.spyOn(trigger, 'focus')
+
+      await wrapper.find('button').trigger('pointerdown', { button: 0, ctrlKey: false })
+      fireEvent.click(trigger, { button: 0, ctrlKey: false })
+
+      expect(focusSpy).not.toHaveBeenCalled()
+      focusSpy.mockRestore()
+    })
+
+    it('should not leave focus on the trigger after opening via mouse click', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element
+
+      await openSelectWithMouseClick()
+
+      expect(wrapper.html()).toContain('Apple')
+      expect(document.activeElement).not.toBe(trigger)
+    })
   })
 
   describe('opening the modal', () => {
@@ -251,6 +315,35 @@ describe('given Select with object type', async () => {
   })
 })
 
+describe('given SelectContent cleanup', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('should clear delayed presence updates when unmounted after closing', async () => {
+    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+    const wrapper = mount(SelectUnmountCleanup, { attachTo: document.body })
+
+    await nextTick()
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    const timerCountAfterClose = vi.getTimerCount()
+    expect(timerCountAfterClose).toBeGreaterThan(0)
+
+    await wrapper.findAll('button')[1].trigger('click')
+    await nextTick()
+
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBeLessThan(timerCountAfterClose)
+  })
+})
+
 describe('given Select in a form', async () => {
   const wrapper = mount({
     props: ['handleSubmit'],
@@ -263,6 +356,18 @@ describe('given Select in a form', async () => {
 
   it('should have hidden input field', async () => {
     expect(wrapper.find('select').exists()).toBe(true)
+  })
+
+  it('should use the nullableValue for the hidden select when the value is nullish', async () => {
+    const wrapper = mount({
+      components: { Select },
+      template: '<form><Select name="test" nullable-value="null" /></form>',
+    }, {
+      attachTo: document.body,
+    })
+
+    const options = wrapper.findAll('select option')
+    expect((options[0].element as HTMLOptionElement).value).toBe('null')
   })
 
   describe('after selecting option and clicking submit button', () => {

@@ -33,9 +33,10 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     if (!collectionNode)
       return []
     const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`))
+    const orderMap = new Map(orderedNodes.map((node, index) => [node, index]))
     const items = Array.from(context.itemMap.value.values())
     const orderedItems = items.sort(
-      (a, b) => orderedNodes.indexOf(a.ref) - orderedNodes.indexOf(b.ref),
+      (a, b) => (orderMap.get(a.ref) ?? -1) - (orderMap.get(b.ref) ?? -1),
     )
 
     if (includeDisabledItem)

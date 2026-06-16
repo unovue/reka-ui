@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
-import { useTimeout } from '@vueuse/shared'
-import { ref } from 'vue'
+import { isClient, useTimeout } from '@vueuse/shared'
+import { onScopeDispose, ref } from 'vue'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectToastProviderContext } from './ToastProvider.vue'
 
@@ -10,9 +9,21 @@ const providerContext = injectToastProviderContext()
 const isAnnounced = useTimeout(1000)
 const renderAnnounceText = ref(false)
 
-useRafFn(() => {
-  renderAnnounceText.value = true
-})
+// Render text content in the next frame to ensure toast is announced in NVDA.
+// Double rAF mirrors Radix UI's `useNextFrame` behavior.
+let raf1 = 0
+let raf2 = 0
+if (isClient) {
+  raf1 = requestAnimationFrame(() => {
+    raf2 = requestAnimationFrame(() => {
+      renderAnnounceText.value = true
+    })
+  })
+  onScopeDispose(() => {
+    cancelAnimationFrame(raf1)
+    cancelAnimationFrame(raf2)
+  })
+}
 </script>
 
 <template>

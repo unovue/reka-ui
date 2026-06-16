@@ -8,7 +8,7 @@ export interface TabsIndicatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
+import { useMounted, useResizeObserver } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 
 const props = defineProps<TabsIndicatorProps>()
@@ -18,12 +18,16 @@ defineExpose({
 })
 useForwardExpose()
 
+const isMounted = useMounted()
+
 interface IndicatorStyle {
   size: number | null
+  thickness: number | null
   position: number | null
 }
 const indicatorStyle = ref<IndicatorStyle>({
   size: null,
+  thickness: null,
   position: null,
 })
 const tabs = ref<Array<HTMLElement>>([])
@@ -47,12 +51,14 @@ function updateIndicatorStyle() {
   if (context.orientation.value === 'horizontal') {
     indicatorStyle.value = {
       size: activeTab.offsetWidth,
+      thickness: activeTab.offsetHeight,
       position: activeTab.offsetLeft,
     }
   }
   else {
     indicatorStyle.value = {
       size: activeTab.offsetHeight,
+      thickness: activeTab.offsetWidth,
       position: activeTab.offsetTop,
     }
   }
@@ -61,10 +67,11 @@ function updateIndicatorStyle() {
 
 <template>
   <Primitive
-    v-if="typeof indicatorStyle.size === 'number'"
+    v-if="isMounted && typeof indicatorStyle.size === 'number'"
     v-bind="props"
     :style="{
       '--reka-tabs-indicator-size': `${indicatorStyle.size}px`,
+      '--reka-tabs-indicator-thickness': `${indicatorStyle.thickness}px`,
       '--reka-tabs-indicator-position': `${indicatorStyle.position}px`,
     }"
   >

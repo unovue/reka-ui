@@ -21,6 +21,13 @@
     'description': '<p>The controlled open state of the dialog. Can be binded as <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the dialog content will not be unmounted when closed, but instead hidden with CSS. Useful for SEO or when you want to improve performance by not remounting the component on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -55,6 +62,7 @@
 | `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `modal` | The modality of the dialog When set to true, <br> interaction with outside elements will be disabled and only dialog content will be visible to screen readers. | `boolean` | No | `true` |
 | `open` | The controlled open state of the dialog. Can be binded as v-model:open. | `boolean` | No | - |
+| `unmountOnHide` | When set to `false`, the dialog content will not be unmounted when closed, but instead hidden with CSS. Useful for SEO or when you want to improve performance by not remounting the component on every open. | `boolean` | No | `true` |
 
 **Events**
 

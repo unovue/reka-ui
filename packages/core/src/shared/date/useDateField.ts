@@ -7,8 +7,10 @@ import {
 } from '@internationalized/date'
 import { computed } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
-import { snapValueToStep, useKbd } from '@/shared'
+import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
+
+const DIGIT_REG = /^\d$/
 
 type MinuteSecondIncrementProps = {
   e: KeyboardEvent
@@ -877,6 +879,13 @@ export function useDateField(props: UseDateFieldProps) {
   }
 
   function handleSegmentKeydown(e: KeyboardEvent) {
+    // A genuine composition keydown sets `isComposing` or reports `key === 'Process'`.
+    // Don't use `keyCode === 229` alone: a CJK IME (e.g. Pinyin) keeps that flag set
+    // while passing a directly-typed key through, so a real digit (`key === '1'`)
+    // would be dropped and leak into the contenteditable as raw text.
+    if (e.isComposing || e.key === 'Process')
+      return
+
     const disabled = props.disabled.value
     const readonly = props.readonly.value
     if (disabled || readonly)
@@ -935,9 +944,74 @@ export function useDateField(props: UseDateFieldProps) {
     }
   }
 
+  // Snapshot of the segment's child nodes (and their text) before the IME mutates
+  // the contenteditable. Vue renders the value into one text node but may keep
+  // empty sibling text nodes around it, so we must preserve EVERY node it owns and
+  // restore them verbatim on `compositionend`. Recreating nodes (textContent) would
+  // detach Vue's binding and freeze the segment; recreating the element isn't an
+  // option either, since the root captures segment elements once via
+  // `getSegmentElements` and a fresh node would break navigation.
+  let preCompositionNodes: { node: ChildNode, value: string | null }[] | null = null
+
+  function handleSegmentBeforeInput(e: InputEvent) {
+    // The segment's text is driven programmatically (keydown -> segmentValues ->
+    // Vue render), so the contenteditable must never be edited directly. Safari
+    // dispatches `beforeinput`/`input` BEFORE `keydown` while an IME is active,
+    // so a passed-through key (e.g. a digit typed while Pinyin is selected) would
+    // leak into the DOM as raw text before `handleSegmentKeydown` can prevent it.
+    // Composition input keeps `isComposing` true, so let it through and reconcile
+    // on `compositionend`.
+    if (!e.isComposing)
+      e.preventDefault()
+  }
+
+  function handleSegmentCompositionStart(e: CompositionEvent) {
+    const el = e.target as HTMLElement
+    preCompositionNodes = Array.from(el.childNodes, node => ({ node, value: node.nodeValue }))
+  }
+
+  function handleSegmentCompositionEnd(e: CompositionEvent) {
+    const el = e.target as HTMLElement
+    const original = preCompositionNodes
+    preCompositionNodes = null
+
+    // Restore Vue's original nodes (with their text) and drop anything the IME
+    // inserted, keeping Vue's bindings intact so later renders still patch the DOM.
+    // When no composition was tracked (e.g. synthetic events in tests) leave it be.
+    if (original) {
+      for (const { node, value } of original)
+        node.nodeValue = value
+      el.replaceChildren(...original.map(o => o.node))
+    }
+
+    const data = e.data
+    if (!data)
+      return
+
+    for (const char of data) {
+      if (!DIGIT_REG.test(char))
+        continue
+
+      // Dispatch to the focused segment so subsequent digits follow focus
+      // after `focusNext()` advances to the next segment (e.g. "34" → 3 in day, 4 in month).
+      const target = getActiveElement()
+      if (!(target instanceof HTMLElement))
+        break
+
+      target.dispatchEvent(new KeyboardEvent('keydown', {
+        key: char,
+        bubbles: true,
+        cancelable: true,
+      }))
+    }
+  }
+
   return {
     handleSegmentClick,
     handleSegmentKeydown,
+    handleSegmentBeforeInput,
+    handleSegmentCompositionStart,
+    handleSegmentCompositionEnd,
     handleSegmentFocusOut,
     attributes,
   }

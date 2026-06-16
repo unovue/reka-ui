@@ -156,6 +156,9 @@ provideTagsInputRootContext({
   },
   onRemoveValue: handleRemoveTag,
   onInputKeydown: (event) => {
+    // Don't navigate/select tags mid-composition, keys are used for IME candidate navigation
+    if (event.isComposing)
+      return
     const target = event.target as HTMLInputElement
     const collection = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
     if (!collection.length)

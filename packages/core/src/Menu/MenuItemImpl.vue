@@ -33,7 +33,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem } = useCollection()
 
 const isFocused = ref(false)
-const isHighlighted = computed(() => isFocused.value || (contentContext.highlightedElement.value === currentElement.value))
+const isHighlighted = computed(() => isFocused.value || (currentElement.value != null && contentContext.highlightedElement.value === currentElement.value))
 
 async function handlePointerMove(event: PointerEvent) {
   if (event.defaultPrevented || !isMouseEvent(event))

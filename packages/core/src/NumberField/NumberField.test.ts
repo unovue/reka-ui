@@ -395,3 +395,45 @@ describe('given checkbox in a form', async () => {
     })
   })
 })
+
+describe('handle IME composition', () => {
+  it('should not block beforeinput during IME composition', () => {
+    const { input } = setup()
+    input.focus()
+
+    const event = new InputEvent('beforeinput', {
+      data: 'あ',
+      cancelable: true,
+    })
+    Object.defineProperty(event, 'isComposing', { value: true })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should block invalid beforeinput when NOT composing', () => {
+    const { input } = setup()
+    input.focus()
+
+    const event = new InputEvent('beforeinput', {
+      data: 'abc',
+      cancelable: true,
+    })
+    Object.defineProperty(event, 'isComposing', { value: false })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should not step the value during composition (arrow keys are IME candidate navigation)', async () => {
+    const { input } = setup({ defaultValue: 0, min: 0, max: 10 })
+
+    // Arrow keys mid-composition navigate IME candidates, they must not step the value
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP, isComposing: true })
+    expect(input.value).toBe('0')
+    await fireEvent.keyDown(input, { key: kbd.END, isComposing: true })
+    expect(input.value).toBe('0')
+
+    // Once composition ends, stepping works again
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+    expect(input.value).toBe('1')
+  })
+})

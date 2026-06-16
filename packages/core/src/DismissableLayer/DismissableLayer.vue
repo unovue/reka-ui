@@ -9,6 +9,7 @@ import {
   computed,
   nextTick,
   reactive,
+  watch,
   watchEffect,
 } from 'vue'
 import { isNullish, useForwardExpose } from '@/shared'
@@ -71,8 +72,19 @@ import {
   usePointerDownOutside,
 } from './utils'
 
-const props = withDefaults(defineProps<DismissableLayerProps>(), {
+const props = withDefaults(defineProps<DismissableLayerProps & {
+  /**
+   * Whether the layer is currently active. A layer that stays mounted while
+   * hidden (e.g. a Dialog with `unmountOnHide: false`) must opt out of the
+   * layer stack, otherwise it would be treated as the topmost layer and
+   * swallow Escape / outside interactions meant for the visible one.
+   * Kept out of the public `DismissableLayerProps` on purpose — it is
+   * internal plumbing between primitives.
+   */
+  present?: boolean
+}>(), {
   disableOutsidePointerEvents: false,
+  present: true,
 })
 
 const emits = defineEmits<DismissableLayerPrivateEmits>()
@@ -107,7 +119,7 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
     branch?.contains(event.target as HTMLElement),
   )
 
-  if (!isPointerEventsEnabled.value || isPointerDownOnBranch)
+  if (!props.present || !isPointerEventsEnabled.value || isPointerDownOnBranch)
     return
   emits('pointerDownOutside', event)
   emits('interactOutside', event)
@@ -121,7 +133,7 @@ const focusOutside = useFocusOutside((event) => {
     branch?.contains(event.target as HTMLElement),
   )
 
-  if (isFocusInBranch)
+  if (!props.present || isFocusInBranch)
     return
   emits('focusOutside', event)
   emits('interactOutside', event)
@@ -130,6 +142,12 @@ const focusOutside = useFocusOutside((event) => {
 }, layerElement)
 
 onKeyStroke('Escape', (event) => {
+  // A layer that stays mounted while hidden (e.g. a Dialog with
+  // `unmountOnHide: false`) is out of the layer stack, so its `index` is `-1`.
+  // When no layer is visible (`size === 0`), `-1 === size - 1` would otherwise
+  // make it look like the highest layer and emit `escapeKeyDown` / `dismiss`.
+  if (!props.present)
+    return
   const isHighestLayer = index.value === layers.value.size - 1
   if (!isHighestLayer)
     return
@@ -138,28 +156,62 @@ onKeyStroke('Escape', (event) => {
     emits('dismiss')
 })
 
-watchEffect((cleanupFn) => {
-  if (!layerElement.value)
-    return
-  if (props.disableOutsidePointerEvents) {
-    if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-      context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
-      ownerDocument.value.body.style.pointerEvents = 'none'
-    }
-    context.layersWithOutsidePointerEventsDisabled.add(layerElement.value)
-  }
-  layers.value.add(layerElement.value)
+// Use `watch` with explicit sources (instead of `watchEffect`) so this effect
+// only re-runs when `layerElement` or `disableOutsidePointerEvents` change.
+// Reading `context.layersWithOutsidePointerEventsDisabled.size` inside the
+// callback must NOT make it reactive: otherwise adding/removing any other
+// layer would re-run this effect and its cleanup could prematurely restore the
+// body's `pointer-events` while an ancestor layer is still open (#2674).
+watch(
+  [layerElement, () => props.disableOutsidePointerEvents, () => props.present],
+  ([element, disableOutsidePointerEvents, present], _, onCleanup) => {
+    if (!element || !present)
+      return
+    if (disableOutsidePointerEvents) {
+      if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+        context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
+        ownerDocument.value.body.style.pointerEvents = 'none'
+      }
+      context.layersWithOutsidePointerEventsDisabled.add(element)
 
-  cleanupFn(() => {
-    if (
-      props.disableOutsidePointerEvents
-      && context.layersWithOutsidePointerEventsDisabled.size === 1
-      && !isNullish(context.originalBodyPointerEvents)
-    ) {
-      ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
+      // Remove this layer from the set on cleanup (re-run via prop toggle, or
+      // unmount) and restore the body's `pointer-events` only once the last
+      // disabling layer is gone. Removing here — rather than relying solely on
+      // the unmount-only effect below — keeps the set accurate when
+      // `disableOutsidePointerEvents` toggles `true -> false` while still
+      // mounted (e.g. a modal Menu closing). Checking `size === 0` *after*
+      // deletion makes the restore independent of cleanup ordering (#2674).
+      onCleanup(() => {
+        context.layersWithOutsidePointerEventsDisabled.delete(element)
+        if (
+          context.layersWithOutsidePointerEventsDisabled.size === 0
+          && !isNullish(context.originalBodyPointerEvents)
+        ) {
+          ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
+        }
+      })
     }
-  })
-})
+  },
+  { immediate: true },
+)
+
+// Membership in the layer stack follows presence, not mount: a hidden layer
+// (e.g. a closed Dialog with `unmountOnHide: false`) must leave the stack so
+// Escape and outside interactions target the layer that is actually visible.
+// Kept separate from the pointer-events watch above so a
+// `disableOutsidePointerEvents` toggle alone never re-orders the stack.
+watch(
+  [layerElement, () => props.present],
+  ([element, present], _, onCleanup) => {
+    if (!element || !present)
+      return
+    layers.value.add(element)
+    onCleanup(() => {
+      layers.value.delete(element)
+    })
+  },
+  { immediate: true },
+)
 
 watchEffect((cleanupFn) => {
   cleanupFn(() => {

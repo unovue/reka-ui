@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
-const props = defineProps<DialogContentImplProps>()
+const props = defineProps<DialogContentImplProps & { present: boolean }>()
 const emits = defineEmits<DialogContentImplEmits>()
 
 const emitsAsProps = useEmitAsProps(emits)
@@ -14,11 +14,29 @@ useForwardExpose()
 const rootContext = injectDialogRootContext()
 const hasInteractedOutsideRef = ref(false)
 const hasPointerDownOutsideRef = ref(false)
+
+const forwardedProps = computed(() => {
+  const { present: _, ...rest } = props
+  return rest
+})
+
+// When `unmountOnHide` is `false` the content stays mounted on close, so
+// `close-auto-focus` never fires. Restore focus to the trigger manually once
+// the content is no longer present, unless the user interacted outside.
+watch(() => props.present, (isPresent, wasPresent) => {
+  if (!isPresent && wasPresent) {
+    if (!hasInteractedOutsideRef.value)
+      rootContext.triggerElement.value?.focus()
+    hasInteractedOutsideRef.value = false
+    hasPointerDownOutsideRef.value = false
+  }
+})
 </script>
 
 <template>
   <DialogContentImpl
-    v-bind="{ ...props, ...emitsAsProps }"
+    v-bind="{ ...forwardedProps, ...emitsAsProps }"
+    :present="present"
     :trap-focus="false"
     :disable-outside-pointer-events="false"
     @close-auto-focus="
