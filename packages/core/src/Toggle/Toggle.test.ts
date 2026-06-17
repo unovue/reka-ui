@@ -22,8 +22,8 @@ describe('given default Toggle', () => {
   })
 
   describe('after toggling', () => {
-    beforeEach(() => {
-      wrapper.get('button').trigger('click')
+    beforeEach(async () => {
+      await wrapper.get('button').trigger('click')
     })
 
     it('should be toggled on', () => {
@@ -31,8 +31,8 @@ describe('given default Toggle', () => {
     })
 
     describe('after toggling again', () => {
-      beforeEach(() => {
-        wrapper.get('button').trigger('click')
+      beforeEach(async () => {
+        await wrapper.get('button').trigger('click')
       })
 
       it('should be toggled off', () => {
@@ -61,8 +61,8 @@ describe('given disabled Toggle', () => {
   })
 
   describe('try toggling', () => {
-    beforeEach(() => {
-      wrapper.get('button').trigger('click')
+    beforeEach(async () => {
+      await wrapper.get('button').trigger('click')
     })
 
     it('should be toggled off', () => {
