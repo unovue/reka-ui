@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import NoScopeCheckbox from '@/Checkbox/story/_NoScopeCheckbox.vue'
 import ScopedCheckbox from '@/Checkbox/story/_ScopedCheckbox.vue'
 
 function scopeIdOf(el: Element): string | undefined {
@@ -19,6 +20,18 @@ describe('useForwardScopeId', () => {
 
     expect(parentScopeId).toBeTruthy()
     expect(button.hasAttribute(parentScopeId!)).toBe(true)
+
+    wrapper.unmount()
+  })
+
+  // When the parent has no `<style scoped>`, `vnode.scopeId` is null and there is
+  // nothing to forward — the control should carry no scope id. This is a no-op, not
+  // a bug (a parent that doesn't scope its styles has no selector to apply).
+  it('forwards nothing when the parent has no scoped styles', () => {
+    const wrapper = mount(NoScopeCheckbox, { attachTo: document.body })
+
+    const button = wrapper.find('button').element
+    expect(scopeIdOf(button)).toBeUndefined()
 
     wrapper.unmount()
   })
