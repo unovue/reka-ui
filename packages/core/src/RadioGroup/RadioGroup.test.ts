@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { handleSubmit, sleep } from '@/test'
+import { RadioGroupItem } from '..'
 import Radio from './story/_Radio.vue'
 import RadioGroup from './story/_RadioGroup.vue'
 
@@ -37,7 +38,7 @@ describe('given a default RadioGroup', () => {
     })
 
     it('should emit `select` event', async () => {
-      const radiosComponent = wrapper.findAllComponents('button') as VueWrapper[]
+      const radiosComponent = wrapper.findAllComponents(RadioGroupItem) as VueWrapper[]
       expect(radiosComponent[2].emitted('select')?.[0]?.[0]).toBeTruthy()
     })
 
@@ -103,6 +104,14 @@ describe('given radio in a form', async () => {
 
   it('should have hidden input field', async () => {
     expect(wrapper.find('[type="Radio"]').exists()).toBe(true)
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('should not nest the hidden input inside the interactive control', () => {
+    expect(wrapper.find('button input').exists()).toBe(false)
   })
 
   describe('after clicking submit button', () => {

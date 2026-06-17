@@ -226,6 +226,14 @@ describe('given checkbox in a form', async () => {
     expect(wrapper.find('[type="checkbox"]').exists()).toBe(true)
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('should not nest the hidden input inside the interactive control', () => {
+    expect(wrapper.find('button input').exists()).toBe(false)
+  })
+
   describe('after clicking submit button', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('click')

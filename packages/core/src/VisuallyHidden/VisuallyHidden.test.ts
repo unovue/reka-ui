@@ -78,7 +78,10 @@ describe('given feature="fully-hidden"', () => {
     expect(wrapper.attributes('tabindex')).toBe('-1')
   })
 
-  it('does not set aria-hidden', () => {
-    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  it('sets aria-hidden="true"', () => {
+    // `fully-hidden` is `tabindex="-1"` (non-focusable), so removing it from the
+    // accessibility tree is safe and prevents axe `label`/`nested-interactive`
+    // violations for the hidden form inputs that rely on it.
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
   })
 })
