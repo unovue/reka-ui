@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'clearValue',
+    'description': '<p>The value to set the <code>modelValue</code> to when the combobox is cleared\nand <code>resetModelValueOnClear</code> is <code>true</code>. When not provided, defaults to\n<code>null</code> for single select or <code>[]</code> for multiple select.</p>\n',
+    'type': 'T',
+    'required': false
+  },
+  {
     'name': 'defaultOpen',
     'description': '<p>The open state of the combobox when it is initially rendered. &lt;br&gt; Use when you do not need to control its open state.</p>\n',
     'type': 'boolean',
@@ -166,6 +172,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
+| `clearValue` | The value to set the modelValue to when the combobox is cleared and resetModelValueOnClear is true. When not provided, defaults to null for single select or [] for multiple select. | `T` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
