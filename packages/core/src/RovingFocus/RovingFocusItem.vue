@@ -16,7 +16,7 @@ export interface RovingFocusItemProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useId } from '@/shared'
@@ -44,6 +44,17 @@ onMounted(() => {
 onUnmounted(() => {
   if (props.focusable)
     context.onFocusableItemRemove()
+})
+
+watch(() => props.focusable, (newVal, oldVal) => {
+  if (newVal === oldVal)
+    return
+  if (newVal) {
+    context.onFocusableItemAdd()
+  }
+  else {
+    context.onFocusableItemRemove()
+  }
 })
 
 function handleKeydown(event: KeyboardEvent) {
