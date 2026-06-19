@@ -19,6 +19,6 @@
     "@nuxtjs/tailwindcss": "^6.13.1",
     "@radix-ui/colors": "^3.0.0",
     "@types/node": "^22.13.5",
-    "nuxt": "^3.21.6"
+    "nuxt": "^3.21.7"
   }
 }
