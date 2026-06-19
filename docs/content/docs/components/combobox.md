@@ -592,7 +592,7 @@ import { ref } from 'vue'
 
 ### Custom clear value
 
-When `resetModelValueOnClear` is `true`, clicking `ComboboxCancel` will reset the `modelValue` back to `null` (or `[]` for multiple). Use `clearValue` to override this default and reset to a custom value instead.
+When `resetModelValueOnClear` is `true`, clicking `ComboboxCancel` will reset the `modelValue`. In single-select mode, it resets to `null` by default, but you can use `clearValue` to specify a custom value. In multiple-select mode, it always resets to `[]`, regardless of `clearValue`.
 
 ```vue line=5-6,14
 <script setup lang="ts">
