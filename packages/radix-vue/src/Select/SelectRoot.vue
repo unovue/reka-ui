@@ -51,6 +51,8 @@ export interface SelectRootContext {
 export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext>('SelectRoot')
 
+const openSelects = new Set<(open: boolean) => void>()
+
 export interface SelectNativeOptionsContext {
   onNativeOptionAdd: (option: VNode) => void
   onNativeOptionRemove: (option: VNode) => void
@@ -61,7 +63,7 @@ export const [injectSelectNativeOptionsContext, provideSelectNativeOptionsContex
 </script>
 
 <script setup lang="ts">
-import { computed, ref, toRefs } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
 import BubbleSelect from './BubbleSelect.vue'
 import { PopperRoot } from '@/Popper'
 import { useVModel } from '@vueuse/core'
@@ -101,6 +103,25 @@ const triggerPointerDownPosRef = ref({
 })
 const valueElementHasChildren = ref(false)
 
+function handleOpenChange(value: boolean) {
+  open.value = value
+
+  if (value) {
+    openSelects.forEach((onOpenChange) => {
+      if (onOpenChange !== handleOpenChange)
+        onOpenChange(false)
+    })
+  }
+}
+
+onMounted(() => {
+  openSelects.add(handleOpenChange)
+})
+
+onUnmounted(() => {
+  openSelects.delete(handleOpenChange)
+})
+
 const { required, disabled, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 provideSelectRootContext({
@@ -123,9 +144,7 @@ provideSelectRootContext({
   },
   open,
   required,
-  onOpenChange: (value) => {
-    open.value = value
-  },
+  onOpenChange: handleOpenChange,
   dir,
   triggerPointerDownPosRef,
   disabled,

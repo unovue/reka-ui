@@ -3,9 +3,59 @@ import { axe } from 'vitest-axe'
 import Select from './story/_SelectTest.vue'
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { fireEvent } from '@testing-library/vue'
+import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from './'
 import { handleSubmit } from '@/test'
+
+const TwoSelects = defineComponent({
+  setup() {
+    const first = ref('')
+    const second = ref('')
+
+    return { first, second }
+  },
+  template: `
+    <SelectRoot v-model="first">
+      <SelectTrigger style="pointer-events: auto">
+        <SelectValue placeholder="First" />
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectContent>
+          <SelectViewport>
+            <SelectItem value="first-option">
+              First option
+            </SelectItem>
+          </SelectViewport>
+        </SelectContent>
+      </SelectPortal>
+    </SelectRoot>
+
+    <SelectRoot v-model="second">
+      <SelectTrigger style="pointer-events: auto">
+        <SelectValue placeholder="Second" />
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectContent>
+          <SelectViewport>
+            <SelectItem value="second-option">
+              Second option
+            </SelectItem>
+          </SelectViewport>
+        </SelectContent>
+      </SelectPortal>
+    </SelectRoot>
+  `,
+  components: {
+    SelectContent,
+    SelectItem,
+    SelectPortal,
+    SelectRoot,
+    SelectTrigger,
+    SelectValue,
+    SelectViewport,
+  },
+})
 
 describe('given default Select', () => {
   let wrapper: VueWrapper<InstanceType<typeof Select>>
@@ -148,6 +198,35 @@ describe('given select in a form', async () => {
     it('should trigger submit once', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
       expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: 'Pineapple' })
+    })
+  })
+
+  describe('after opening another select', () => {
+    it('should close the previously opened select', async () => {
+      const wrapper = mount(TwoSelects, {
+        attachTo: document.body,
+      })
+      const triggers = wrapper.findAll('button')
+
+      await triggers[0].trigger('pointerdown', {
+        button: 0,
+        ctrlKey: false,
+      })
+      await nextTick()
+
+      expect(document.querySelectorAll('[role=listbox]')).toHaveLength(1)
+
+      await triggers[1].trigger('pointerdown', {
+        button: 0,
+        ctrlKey: false,
+      })
+      await nextTick()
+
+      expect(document.querySelectorAll('[role=listbox]')).toHaveLength(1)
+      expect(triggers[0].attributes('aria-expanded')).toBe('false')
+      expect(triggers[1].attributes('aria-expanded')).toBe('true')
+
+      wrapper.unmount()
     })
   })
 })
