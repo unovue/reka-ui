@@ -13,7 +13,7 @@ export interface ScrollAreaScrollbarProps extends PrimitiveProps {
   forceMount?: boolean
 }
 
-export interface ScrollAreaScollbarContext {
+export interface ScrollAreaScrollbarContext {
   as: Ref<PrimitiveProps['as']>
   orientation: Ref<'vertical' | 'horizontal'>
   forceMount?: Ref<boolean>
@@ -22,7 +22,7 @@ export interface ScrollAreaScollbarContext {
 }
 
 export const [injectScrollAreaScrollbarContext, provideScrollAreaScrollbarContext]
-  = createContext<ScrollAreaScollbarContext>('ScrollAreaScrollbar')
+  = createContext<ScrollAreaScrollbarContext>('ScrollAreaScrollbar')
 </script>
 
 <script setup lang="ts">
