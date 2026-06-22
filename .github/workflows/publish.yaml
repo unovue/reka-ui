@@ -2,8 +2,9 @@ name: Publish Docs
 
 on:
   push:
-    paths:
-      - 'docs/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   publish:

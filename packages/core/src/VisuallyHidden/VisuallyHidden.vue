@@ -16,7 +16,7 @@ withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusab
   <Primitive
     :as="as"
     :as-child="asChild"
-    :aria-hidden="feature === 'focusable' ? 'true' : undefined"
+    :aria-hidden="feature === 'focusable' || feature === 'fully-hidden' ? 'true' : undefined"
     :data-hidden="feature === 'fully-hidden' ? '' : undefined"
     :tabindex="feature === 'fully-hidden' ? '-1' : undefined"
     :style="{

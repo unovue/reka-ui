@@ -1,11 +1,11 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import { ListboxItem, ListboxRoot } from '.'
+import { ListboxContent, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -160,6 +160,104 @@ describe('given a Listbox on initial mount', () => {
   })
 
   it('should focus and scroll once the user interacts', async () => {
+    await wrapper.find('[role=listbox]').trigger('focus')
+    const items = wrapper.findAll('[role=option]')
+    expect(document.activeElement).toBe(items[0].element)
+    expect(scrollSpy).toHaveBeenCalled()
+  })
+})
+
+describe('given a virtualized Listbox on initial mount', () => {
+  let scrollSpy: ReturnType<typeof vi.fn>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  // jsdom reports zero-sized rects, so `@tanstack/virtual-core` would render no
+  // items. Give the virtualizer a non-zero viewport so items actually mount.
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const VirtualListbox = defineComponent({
+    props: { multiple: Boolean, modelValue: { type: null, default: undefined } },
+    setup(props) {
+      const options = Array.from({ length: 100 }, (_, i) => ({ label: `Item ${i}`, value: i }))
+      return () => h(ListboxRoot, { multiple: props.multiple, modelValue: props.modelValue }, () =>
+        h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
+          h(ListboxVirtualizer, { options, textContent: (o: any) => o.label }, {
+            default: ({ option }: any) => h(ListboxItem, { value: option }, () => option.label),
+          })))
+    },
+  })
+
+  async function flush() {
+    // watcher → nextTick → highlightSelected (await nextTick) → virtualFocusHook → rAF
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    scrollSpy = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy
+    document.body.innerHTML = ''
+  })
+
+  it('should highlight the first item without scrolling the page or stealing focus', async () => {
+    const wrapper = mount(VirtualListbox, { props: { multiple: true }, attachTo: document.body })
+    await flush()
+
+    const items = wrapper.findAll('[role=option]')
+    expect(items.length).toBeGreaterThan(0)
+    // the first item is highlighted for keyboard entry...
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    // ...but the mount highlight must not focus it or scroll, otherwise a
+    // virtualized Listbox below the fold scrolls the whole page on load.
+    expect(scrollSpy).not.toHaveBeenCalled()
+    expect(document.activeElement).not.toBe(items[0].element)
+  })
+
+  it('should highlight a pre-selected item on mount without scrolling the page or stealing focus', async () => {
+    // A selected value below the fold must not pull the page to the listbox on
+    // mount. The checked item is brought into the internal scroll container
+    // (`scrollToIndex`) and made the roving-tabindex target, but it is neither
+    // focused nor scrolled into view at the document level.
+    // `modelValue` is the option object (items hold the whole option as value);
+    // it matches option #3 structurally via the default `isEqual` comparison.
+    const wrapper = mount(VirtualListbox, { props: { modelValue: { label: 'Item 3', value: 3 } }, attachTo: document.body })
+    await flush()
+
+    const checked = wrapper.find('[data-index="3"]')
+    expect(checked.exists()).toBe(true)
+    // the checked item (not the first item) becomes the highlight target...
+    expect(checked.attributes('data-highlighted')).toBe('')
+    expect(wrapper.find('[data-index="0"]').attributes('data-highlighted')).toBeUndefined()
+    // ...without focusing it or scrolling the page.
+    expect(scrollSpy).not.toHaveBeenCalled()
+    expect(document.activeElement).not.toBe(checked.element)
+  })
+
+  it('should focus and scroll the first item when the user enters the listbox', async () => {
+    // Entry focus (`onEnter`) is user-driven, so focusing and scrolling the
+    // first item into view is expected here — unlike the mount highlight above.
+    const wrapper = mount(VirtualListbox, { props: { multiple: true }, attachTo: document.body })
+    await flush()
+    scrollSpy.mockClear()
+
     await wrapper.find('[role=listbox]').trigger('focus')
     const items = wrapper.findAll('[role=option]')
     expect(document.activeElement).toBe(items[0].element)

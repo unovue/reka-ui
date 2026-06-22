@@ -22,6 +22,19 @@ md.use(transformJSDocLinks)
 const checkerOptions: MetaCheckerOptions = {
   forceUseTs: true,
   printer: { newLine: 1 },
+  // vue-component-meta v3 defaults `schema` to `false`, which stops it from
+  // expanding type aliases/unions into nested enum schemas (props collapse to
+  // alias names like `Direction`, and slot tables are dropped). v2 expanded by
+  // default; restore that so `parseTypeFromSchema` sees the enum members again.
+  schema: true,
+  // KNOWN v3 LIMITATION: generic SFC params (`<script setup generic="T ...">`)
+  // are no longer instantiated to their default/constraint type. v2 resolved
+  // them (e.g. `T` -> `string | string[]`, `T[]` -> `AcceptableValue[]`); v3
+  // emits the bare `T` / `Type` / conditional type. Affects the value props of
+  // generic components (Accordion, Combobox, Listbox, Select, Tree, Checkbox,
+  // PinInput, Tabs, TagsInput, Switch). No clean fix via the public API yet
+  // (getBaseConstraintOfType / manual constraint substitution diverge from v2),
+  // so a full regen will regress those few files until upstream resolves it.
 }
 
 const tsconfigChecker = createChecker(

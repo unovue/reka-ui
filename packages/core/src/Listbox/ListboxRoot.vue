@@ -16,7 +16,7 @@ type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<Event | null | undefined>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
   virtualHighlightHook: EventHook<any>
   by?: string | ((a: T, b: T) => boolean)
@@ -150,7 +150,7 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<Event | null | undefined>()
+const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<T>()
 
@@ -333,8 +333,11 @@ async function highlightSelected(event?: Event, scroll = true) {
     return
   await nextTick()
   if (isVirtual.value) {
-    // Trigger on nextTick for Virtualizer to be mounted
-    virtualFocusHook.trigger(event)
+    // Trigger on nextTick for Virtualizer to be mounted.
+    // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
+    // its roving-tabindex target without focusing/scrolling — otherwise a
+    // virtualized Listbox below the fold would pull the page to it on load.
+    virtualFocusHook.trigger({ event, scroll })
   }
   else {
     const collection = getCollectionItem()

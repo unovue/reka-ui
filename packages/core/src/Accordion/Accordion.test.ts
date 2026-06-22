@@ -1,9 +1,79 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { findByText, fireEvent } from '@testing-library/vue'
+import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { createSSRApp, defineComponent, h, nextTick } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
+import {
+  AccordionContent,
+  AccordionHeader,
+  AccordionItem,
+  AccordionRoot,
+  AccordionTrigger,
+} from '.'
 import Accordion from './story/_Accordion.vue'
+
+const AccordionHydrationFixture = defineComponent({
+  setup() {
+    const items = ['One', 'Two']
+    let count = 0
+    const useId = () => `nuxt-${++count}`
+
+    return () =>
+      h(ConfigProvider, { useId }, () =>
+        h(
+          AccordionRoot,
+          { type: 'single', collapsible: true },
+          () => items.map(item =>
+            h(AccordionItem, { value: item }, () => [
+              h(AccordionHeader, () =>
+                h(AccordionTrigger, () => `Trigger ${item}`)),
+              h(AccordionContent, () => `Content ${item}`),
+            ]),
+          ),
+        ))
+  },
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('ssr hydration', () => {
+  it('uses ConfigProvider ids when Vue app id prefixes differ', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Nuxt prerender can produce a different Vue useId app prefix than the
+    // hydrating client. ConfigProvider's useId must remain the stable source.
+    const serverApp = createSSRApp(AccordionHydrationFixture)
+    serverApp.config.idPrefix = 'v-1'
+
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(serverApp)
+    document.body.innerHTML = ''
+    document.body.append(container)
+
+    expect(container.innerHTML).toContain('id="reka-accordion-trigger-nuxt-1"')
+    expect(container.innerHTML).toContain('id="reka-collapsible-content-nuxt-2"')
+    const triggerId = container.querySelector('button')?.id
+    const contentId = container.querySelector('[role="region"]')?.id
+
+    const clientApp = createSSRApp(AccordionHydrationFixture)
+    clientApp.config.idPrefix = 'v-0'
+    clientApp.mount(container)
+    await nextTick()
+
+    expect(container.querySelector('button')?.id).toBe(triggerId)
+    expect(container.querySelector('[role="region"]')?.id).toBe(contentId)
+
+    const warnings = warn.mock.calls.flat().join('\n')
+    expect(warnings).not.toContain('Hydration attribute mismatch')
+    expect(error.mock.calls.flat().join('\n')).not.toContain('Hydration completed but contains mismatches')
+  })
+})
 
 describe('given a single Accordion', () => {
   let wrapper: VueWrapper<InstanceType<typeof Accordion>>

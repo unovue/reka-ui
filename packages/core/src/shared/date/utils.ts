@@ -62,7 +62,7 @@ export function handleCalendarInitialFocus(calendar: HTMLElement) {
   if (today)
     return today.focus()
 
-  const firstDay = calendar.querySelector<HTMLElement>('[data-reka-calendar-day]')
+  const firstDay = calendar.querySelector<HTMLElement>('[data-value]:not([data-outside-view]):not([data-disabled])')
   if (firstDay)
     return firstDay.focus()
 }

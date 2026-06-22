@@ -6,6 +6,7 @@ import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { handleCalendarInitialFocus } from '@/shared/date'
 import Calendar from './story/_Calendar.vue'
 import CalendarMultiple from './story/_CalendarMultiple.vue'
 
@@ -898,6 +899,19 @@ describe('calendar - edge cases', () => {
 
     await user.keyboard(kbd.ARROW_LEFT)
     expect(getByTestId('date-0-1-31')).toHaveFocus()
+  })
+
+  it('handles initial focus when no date is selected and today is out of view', async () => {
+    const { calendar, getByTestId } = setup({
+      calendarProps: { defaultPlaceholder: edgeCaseCalendarDate },
+    })
+
+    expect(calendar.querySelector('[data-selected]')).toBeNull()
+    expect(calendar.querySelector('[data-today]')).toBeNull()
+
+    handleCalendarInitialFocus(calendar)
+
+    expect(getByTestId('date-1-1')).toHaveFocus()
   })
 })
 

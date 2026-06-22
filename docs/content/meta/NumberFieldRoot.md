@@ -43,7 +43,7 @@
   {
     'name': 'formatOptions',
     'description': '<p>Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user.</p>\n',
-    'type': 'NumberFormatOptions',
+    'type': 'Intl.NumberFormatOptions',
     'required': false
   },
   {
@@ -155,7 +155,7 @@
 | `disabled` | When true, prevents the user from interacting with the Number Field. | `boolean` | No | - |
 | `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | - |
 | `focusOnChange` | When true, the input will be focused when the value changes. | `boolean` | No | `true` |
-| `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `NumberFormatOptions` | No | - |
+| `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `Intl.NumberFormatOptions` | No | - |
 | `id` | Id of the element | `string` | No | - |
 | `invertWheelChange` | When true, inverts the direction of the wheel change. | `boolean` | No | - |
 | `locale` | The locale to use for formatting and currencies | `string` | No | - |

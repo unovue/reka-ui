@@ -133,7 +133,9 @@ rootContext.virtualKeydownHook.on((event) => {
     const index = intent === 'first' ? 0 : rootContext.expandedItems.value.length - 1
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
-      const items = getItems()
+      const items = getItems().filter(i => i.ref.dataset.disabled !== '')
+      if (!items.length)
+        return
       const item = intent === 'first' ? items[0] : items.at(-1)!
       item.ref.focus()
     })

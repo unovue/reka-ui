@@ -208,6 +208,22 @@ export const components = {
     'DialogDescription',
   ] as const,
 
+  drawer: [
+    'DrawerRoot',
+    'DrawerTrigger',
+    'DrawerPortal',
+    'DrawerOverlay',
+    'DrawerContent',
+    'DrawerClose',
+    'DrawerTitle',
+    'DrawerDescription',
+    'DrawerHandle',
+    'DrawerSwipeArea',
+    'DrawerViewport',
+    'DrawerIndent',
+    'DrawerIndentBackground',
+  ] as const,
+
   dropdownMenu: [
     'DropdownMenuRoot',
     'DropdownMenuTrigger',
@@ -375,6 +391,12 @@ export const components = {
     'RangeCalendarGridBody',
     'RangeCalendarGridRow',
     'RangeCalendarCellTrigger',
+  ] as const,
+
+  rating: [
+    'RatingRoot',
+    'RatingItem',
+    'RatingItemIndicator',
   ] as const,
 
   scrollArea: [

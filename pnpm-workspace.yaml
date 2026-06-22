@@ -6,6 +6,12 @@ packages:
   - 'packages/*'
   - docs
   - .histoire
+overrides:
+  minimatch@>=5.0.0 <5.1.8: '>=5.1.8'
+  picomatch@<2.3.2: '>=2.3.2'
+  rollup@>=3.0.0 <3.30.0: '>=3.30.0'
+  rollup@>=4.0.0 <4.59.0: '>=4.59.0'
+  svgo@>=3.0.0 <3.3.3: '>=3.3.3'
 patchedDependencies:
   vitepress: patches/vitepress.patch
 onlyBuiltDependencies:

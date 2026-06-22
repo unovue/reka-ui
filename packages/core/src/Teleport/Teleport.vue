@@ -29,10 +29,14 @@ export interface TeleportProps {
 
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
+import { computed } from 'vue'
+import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 
-withDefaults(defineProps<TeleportProps>(), {
-  to: 'body',
-})
+const props = defineProps<TeleportProps>()
+
+const configContext = injectConfigProviderContext({})
+
+const target = computed(() => props.to ?? configContext.teleportTo?.value ?? 'body')
 
 const isMounted = useMounted()
 </script>
@@ -40,7 +44,7 @@ const isMounted = useMounted()
 <template>
   <Teleport
     v-if="isMounted || forceMount"
-    :to="to"
+    :to="target"
     :disabled="disabled"
     :defer="defer"
   >

@@ -10,7 +10,8 @@ import type {
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useSize } from '@/shared'
+import type { Direction } from '@/shared/types'
+import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -32,6 +33,11 @@ export const PopperContentPropsDefaultValue = {
 }
 
 export interface PopperContentProps extends PrimitiveProps {
+  /**
+   * Reactive dependencies that should invalidate the memoized content subtree.
+   */
+  memoDependencies?: unknown[]
+
   /**
    * The preferred side of the trigger to render against when open.
    * Will be reversed when collisions occur and avoidCollisions
@@ -173,6 +179,11 @@ export interface PopperContentProps extends PrimitiveProps {
    *  If provided, it will replace the default anchor element.
    */
   reference?: ReferenceElement
+
+  /**
+   * The reading direction of the popper content when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
+   */
+  dir?: Direction
 }
 
 export interface PopperContentContext {
@@ -199,7 +210,6 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computedEager } from '@vueuse/core'
 import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
@@ -224,6 +234,7 @@ const emits = defineEmits<{
 
 const rootContext = injectPopperRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const dir = useDirection(computed(() => props.dir))
 
 const floatingRef = ref<HTMLElement>()
 
@@ -264,7 +275,7 @@ const flipOptions = computed(() => {
   }
 })
 
-const computedMiddleware = computedEager(() => {
+const computedMiddleware = computed(() => {
   return [
     offset({
       mainAxis: props.sideOffset + arrowHeight.value,
@@ -317,6 +328,7 @@ const computedMiddleware = computedEager(() => {
     transformOrigin({
       arrowWidth: arrowWidth.value,
       arrowHeight: arrowHeight.value,
+      dir: dir.value,
     }),
     props.hideWhenDetached
     && hide({ strategy: 'referenceHidden', ...detectOverflowOptions.value }),
@@ -382,6 +394,7 @@ providePopperContentContext({
   <div
     ref="floatingRef"
     data-reka-popper-content-wrapper=""
+    :dir="dir"
     :style="{
       ...floatingStyles,
       transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
@@ -402,12 +415,40 @@ providePopperContentContext({
     }"
   >
     <Primitive
+      v-if="props.memoDependencies"
+      :ref="forwardRef"
+      v-memo="[
+        props.asChild,
+        props.as,
+        placedSide,
+        placedAlign,
+        isPositioned,
+        ...Object.values($attrs),
+        ...props.memoDependencies,
+      ]"
+      v-bind="$attrs"
+      :as-child="props.asChild"
+      :as="props.as"
+      :data-side="placedSide"
+      :data-align="placedAlign"
+      :style="{
+        // if the PopperContent hasn't been placed yet (not all measurements done)
+        // we prevent animations so that users's animation don't kick in too early referring wrong sides
+        animation: !isPositioned ? 'none' : undefined,
+      }"
+    >
+      <slot />
+    </Primitive>
+
+    <Primitive
+      v-else
       :ref="forwardRef"
       v-bind="$attrs"
       :as-child="props.asChild"
-      :as="as"
+      :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
+      :dir="dir"
       :style="{
         // if the PopperContent hasn't been placed yet (not all measurements done)
         // we prevent animations so that users's animation don't kick in too early referring wrong sides

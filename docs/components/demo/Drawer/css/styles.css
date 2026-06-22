@@ -1,0 +1,171 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/green.css';
+@import '@radix-ui/colors/mauve.css';
+@import '@radix-ui/colors/grass.css';
+
+/* reset */
+button,
+fieldset,
+input {
+  all: unset;
+}
+
+.DrawerOverlay {
+  background-color: var(--black-a9);
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+.DrawerOverlay[data-state='open'] {
+  animation: drawerOverlayShow 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.DrawerOverlay[data-state='closed'] {
+  animation: drawerOverlayHide 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.DrawerContent {
+  background-color: white;
+  border-radius: 16px 16px 0 0;
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  margin-inline: auto;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  z-index: 100;
+  /* `--drawer-swipe-movement-y` is written by DrawerContent while dragging. */
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+/* Enter/exit keyframes animate the independent `translate` property so they
+   compose with the inline `transform` carrying the live drag offset. */
+.DrawerContent[data-state='open'] {
+  animation: drawerSlideBottomIn 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.DrawerContent[data-state='closed'] {
+  animation: drawerSlideBottomOut 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* Silence the transform transition during an active drag so it tracks the
+   pointer in real time. */
+.DrawerContent[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+.DrawerHandle {
+  width: 48px;
+  height: 6px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: var(--mauve-6);
+}
+
+.DrawerBody {
+  padding: 24px;
+}
+
+.DrawerTitle {
+  margin: 0;
+  color: var(--mauve-12);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.DrawerDescription {
+  margin: 10px 0 20px;
+  color: var(--mauve-11);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.DrawerFooter {
+  display: flex;
+  margin-top: 25px;
+  justify-content: flex-end;
+}
+
+.Fieldset {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.Label {
+  width: 90px;
+  text-align: right;
+  font-size: 15px;
+  color: var(--grass-11);
+}
+
+.Input {
+  width: 100%;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 35px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--grass-11);
+  background-color: #fafafa;
+  box-shadow: 0 0 0 1px var(--green-7);
+}
+.Input:focus {
+  box-shadow: 0 0 0 2px var(--green-8);
+}
+
+.Button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 15px;
+  font-size: 15px;
+  line-height: 1;
+  height: 35px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.Button.grass {
+  background-color: white;
+  color: var(--grass-11);
+  box-shadow: 0 2px 10px var(--black-a7);
+}
+.Button.grass:hover {
+  background-color: var(--mauve-3);
+}
+.Button.green {
+  background-color: var(--green-4);
+  color: var(--green-11);
+}
+.Button.green:hover {
+  background-color: var(--green-5);
+}
+
+@keyframes drawerOverlayShow {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes drawerOverlayHide {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes drawerSlideBottomIn {
+  from {
+    translate: 0 100%;
+  }
+}
+@keyframes drawerSlideBottomOut {
+  to {
+    translate: 0 100%;
+  }
+}

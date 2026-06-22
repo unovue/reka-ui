@@ -4,7 +4,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
@@ -47,7 +47,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { isEqual } from 'ohash'
-import { computed } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -122,9 +122,20 @@ function handleClick() {
 }
 
 const isFormControl = useFormControl(currentElement)
-const ariaLabel = computed(() => props.id && currentElement.value
-  ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
-  : undefined)
+// The hidden form input is rendered as a sibling (not nested) of the interactive
+// control to avoid the `nested-interactive` a11y violation. That makes this a
+// multi-root component, so the parent's scoped-style id must be forwarded manually.
+const scopeIdAttrs = useForwardScopeId()
+const attrs = useAttrs()
+const ariaLabel = computed(() => {
+  // An explicit `aria-label` always wins, so skip the (potentially expensive)
+  // label lookup entirely — this matters when rendering many checkboxes at once.
+  if (attrs['aria-label'])
+    return undefined
+  return props.id && currentElement.value
+    ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
+    : undefined
+})
 
 provideCheckboxRootContext({
   disabled,
@@ -134,7 +145,7 @@ provideCheckboxRootContext({
 
 <template>
   <component
-    v-bind="$attrs"
+    v-bind="{ ...$attrs, ...scopeIdAttrs }"
     :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
     :id="id"
     :ref="forwardRef"
@@ -158,15 +169,16 @@ provideCheckboxRootContext({
       :model-value="modelValue"
       :state="checkboxState"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name && !checkboxGroupContext"
-      type="checkbox"
-      :checked="!!checkboxState"
-      :name="name"
-      :value="value"
-      :disabled="disabled"
-      :required="required"
-    />
   </component>
+
+  <VisuallyHiddenInput
+    v-if="isFormControl && name && !checkboxGroupContext"
+    type="checkbox"
+    :checked="!!checkboxState"
+    :name="name"
+    :value="value"
+    :disabled="disabled"
+    :required="required"
+    v-bind="scopeIdAttrs"
+  />
 </template>
