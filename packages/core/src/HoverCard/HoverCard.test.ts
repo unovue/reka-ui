@@ -35,6 +35,29 @@ describe('given a default HoverCard', () => {
       await sleep(100)
       expect(wrapper.find('a').attributes('data-state')).toBe('closed')
     })
+
+    it('should not open from the focus a tap triggers', async () => {
+      const trigger = wrapper.find('a')
+
+      // a real touch tap fires pointerdown then focuses the trigger, which would
+      // otherwise schedule a focus-driven open even when enableTouch is disabled
+      await trigger.trigger('pointerdown', { pointerType: 'touch' })
+      await trigger.trigger('focus')
+      await trigger.trigger('pointerup', { pointerType: 'touch' })
+      await sleep(150)
+      expect(trigger.attributes('data-state')).toBe('closed')
+    })
+  })
+
+  describe('keyboard focus on the trigger', () => {
+    it('should open the hover card', async () => {
+      const trigger = wrapper.find('a')
+
+      // focus not preceded by a touch pointer should still open (a11y)
+      await trigger.trigger('focus')
+      await sleep(150)
+      expect(trigger.attributes('data-state')).toBe('open')
+    })
   })
 
   // HoverCard mainly depends on Popper, test for Popper is not required here
