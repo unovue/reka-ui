@@ -160,6 +160,8 @@ export function usePresence(
     if (state.value !== 'unmountSuspended')
       return
 
+    // For `transition: all`, pendingCount is Infinity and never reaches 0;
+    // the fallback timeout (duration + 50ms) serves as the completion path.
     if (transitionPendingCount !== undefined && transitionPendingCount > 0) {
       transitionPendingCount--
       if (transitionPendingCount > 0)
