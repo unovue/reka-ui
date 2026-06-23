@@ -189,6 +189,9 @@ function highlightItem(value: T) {
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
     event.preventDefault()
+    // Allow Ctrl+Enter / Cmd+Enter to bubble so parent listeners can handle it
+    if (!event.ctrlKey && !event.metaKey && !event.altKey)
+      event.stopPropagation()
 
     if (!isComposing.value) {
       highlightedElement.value.click()
