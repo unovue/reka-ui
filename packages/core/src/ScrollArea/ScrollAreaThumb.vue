@@ -64,7 +64,7 @@ watchOnce(sizes, () => {
 
 onUnmounted(() => {
   viewport.value!.removeEventListener('scroll', handleScroll)
-  rootContext.viewport.value?.removeEventListener('scroll', handleScroll)
+  removeUnlinkedScrollListenerRef.value?.()
 })
 </script>
 
