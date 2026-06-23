@@ -38,14 +38,14 @@ const TwoSelects = defineComponent({
     SelectViewport,
   },
   setup() {
-    const first = ref('')
-    const second = ref('')
+    const first = ref()
+    const second = ref()
 
     return { first, second }
   },
   template: `
     <SelectRoot v-model="first">
-      <SelectTrigger style="pointer-events: auto">
+      <SelectTrigger aria-label="First" style="pointer-events: auto">
         <SelectValue placeholder="First" />
       </SelectTrigger>
       <SelectPortal>
@@ -60,7 +60,7 @@ const TwoSelects = defineComponent({
     </SelectRoot>
 
     <SelectRoot v-model="second">
-      <SelectTrigger style="pointer-events: auto">
+      <SelectTrigger aria-label="Second" style="pointer-events: auto">
         <SelectValue placeholder="Second" />
       </SelectTrigger>
       <SelectPortal>
@@ -495,6 +495,7 @@ describe('given two Selects', () => {
     expect(document.querySelectorAll('[role=listbox]')).toHaveLength(1)
     expect(triggers[0].attributes('aria-expanded')).toBe('false')
     expect(triggers[1].attributes('aria-expanded')).toBe('true')
+    expect(await axe(wrapper.element)).toHaveNoViolations()
 
     wrapper.unmount()
   })
