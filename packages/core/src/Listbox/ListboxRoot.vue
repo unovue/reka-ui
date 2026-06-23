@@ -421,7 +421,16 @@ provideListboxRootContext({
     @focusout="async (event: FocusEvent) => {
       const target = (event.relatedTarget || event.target) as HTMLElement | null
       await nextTick()
-      if (highlightedElement && currentElement && !currentElement.contains(target)) {
+      // Only treat a focusout as 'focus left the listbox' when the items are
+      // themselves focusable (standalone Listbox). When the listbox is driven by
+      // a filter input (`focusable === false`, e.g. Combobox/Select), DOM focus
+      // deliberately lives on that input while items are highlighted via
+      // `aria-activedescendant`, and that input is often portaled outside
+      // `currentElement` (Combobox content). In that mode `currentElement` can
+      // never contain the focus target, so this check would always fire and wipe
+      // the highlight (e.g. the just-set on-open highlight). Highlight lifecycle
+      // there is owned by the filter input's blur handling and the dismiss layer.
+      if (focusable && highlightedElement && currentElement && !currentElement.contains(target)) {
         onLeave(event)
       }
     }"
