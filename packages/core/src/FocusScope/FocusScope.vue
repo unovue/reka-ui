@@ -61,6 +61,13 @@ import {
 const props = withDefaults(defineProps<FocusScopeProps>(), {
   loop: false,
   trapped: false,
+  // `present` MUST default to `true`. It is typed `boolean`, so Vue's boolean
+  // prop casting would otherwise coerce an absent prop to `false` (not
+  // `undefined`), and the `props.present !== false` gates below would then skip
+  // adding the scope to the stack for every consumer that doesn't pass `present`
+  // (e.g. Combobox/Select content). That scope would never pause an ancestor
+  // trap, so a Combobox input inside a Dialog could not be focused (#2749).
+  present: true,
 })
 const emits = defineEmits<FocusScopeEmits>()
 
@@ -234,7 +241,8 @@ watchEffect(async (cleanupFn) => {
 // scopes' traps) and the mount auto-focus (which only fires on physical mount).
 // Awaiting `nextTick` lets the consumer's visibility change (e.g. `v-show`)
 // apply first, so the focus targets exist. Consumers that don't pass `present`
-// never hit this — it stays `undefined`.
+// default it to `true` (see `withDefaults`); since it never changes for them,
+// this watcher never fires and the main effect above owns their stack membership.
 watch(() => props.present, async (present, prevPresent) => {
   if (!isClient)
     return
