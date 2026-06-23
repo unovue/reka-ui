@@ -111,22 +111,28 @@ function handleClick() {
 function handleArrowKey(e: KeyboardEvent) {
   if (isDisabled.value)
     return
-  e.preventDefault()
-  e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
   const indexIncrementation = 7
   const sign = rootContext.dir.value === 'rtl' ? -1 : 1
   switch (e.code) {
     case kbd.ARROW_RIGHT:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.day, sign)
       break
     case kbd.ARROW_LEFT:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.day, -sign)
       break
     case kbd.ARROW_UP:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.day, -indexIncrementation)
       break
     case kbd.ARROW_DOWN:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.day, indexIncrementation)
       break
     case kbd.ENTER:

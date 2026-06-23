@@ -165,28 +165,38 @@ function handleFocus() {
 function handleArrowKey(e: KeyboardEvent) {
   if (isDisabled.value)
     return
-  e.preventDefault()
-  e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
   const sign = rootContext.dir.value === 'rtl' ? -1 : 1
 
   switch (e.code) {
     case kbd.ARROW_RIGHT:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.year, sign)
       break
     case kbd.ARROW_LEFT:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.year, -sign)
       break
     case kbd.ARROW_UP:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.year, -4)
       break
     case kbd.ARROW_DOWN:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocus(props.year, 4)
       break
     case kbd.PAGE_UP:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocusPage(-1)
       break
     case kbd.PAGE_DOWN:
+      e.preventDefault()
+      e.stopPropagation()
       shiftFocusPage(1)
       break
     case kbd.ENTER:

@@ -189,7 +189,6 @@ function highlightItem(value: T) {
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
     event.preventDefault()
-    event.stopPropagation()
 
     if (!isComposing.value) {
       highlightedElement.value.click()
