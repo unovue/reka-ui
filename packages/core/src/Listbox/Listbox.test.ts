@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import { ListboxContent, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -536,5 +536,56 @@ describe('given Listbox in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
       expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: items[4].text() })
     })
+  })
+})
+
+// Regression for the 2.10.0 on-open highlight loss in filter-driven listboxes
+// (Combobox/Select, e.g. Nuxt UI's USelectMenu). When a `ListboxFilter` is
+// present the root is `focusable === false`: DOM focus stays on the input and
+// items are highlighted via `aria-activedescendant`, never DOM-focused. The
+// input is also frequently portaled outside the root, so the root `focusout`
+// target is never contained by the root — which previously made the handler
+// treat every focus move as "left the listbox" and wipe the highlight.
+describe('given a filter-driven Listbox (focusable === false)', () => {
+  const FilterListbox = defineComponent({
+    components: { ListboxRoot, ListboxFilter, ListboxContent, ListboxItem },
+    template: `
+      <div>
+        <ListboxRoot data-testid="root">
+          <ListboxFilter data-testid="filter" />
+          <ListboxContent>
+            <ListboxItem value="apple" data-testid="apple">Apple</ListboxItem>
+            <ListboxItem value="banana" data-testid="banana">Banana</ListboxItem>
+          </ListboxContent>
+        </ListboxRoot>
+        <button data-testid="outside">outside</button>
+      </div>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should keep the highlight when focus leaves the root via focusout', async () => {
+    const wrapper = mount(FilterListbox, { attachTo: document.body })
+    // `ListboxFilter` flips `focusable` to false on mount.
+    await nextTick()
+
+    // Highlight the first item the filter-driven way (no DOM focus moves).
+    await wrapper.find('[data-testid=filter]').trigger('keydown', { key: 'ArrowDown' })
+    const apple = wrapper.find('[data-testid=apple]')
+    expect(apple.attributes('data-highlighted')).toBe('')
+
+    // Focus moves to an element outside the root (as the portaled input does).
+    const outside = wrapper.find('[data-testid=outside]').element
+    await wrapper.find('[data-testid=root]').trigger('focusout', { relatedTarget: outside })
+    // The handler awaits `nextTick` before deciding; let it settle.
+    await nextTick()
+    await nextTick()
+
+    // The highlight must survive — it is owned by `aria-activedescendant`, not
+    // by DOM focus, so a root `focusout` must not clear it in this mode.
+    expect(apple.attributes('data-highlighted')).toBe('')
   })
 })
