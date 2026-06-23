@@ -14,6 +14,7 @@ export function usePresence(
   const initialState = present.value ? 'mounted' : 'unmounted'
   let timeoutId: number | undefined
   let transitionTimeout: number | undefined
+  let transitionPendingCount: number | undefined
   const ownerWindow = node.value?.ownerDocument.defaultView ?? defaultWindow
 
   const { state, dispatch } = useStateMachine(initialState, {
@@ -68,12 +69,14 @@ export function usePresence(
 
             const duration = getTransitionDuration(node.value)
             if (duration > 0) {
+              transitionPendingCount = getTransitionPropertyCount(node.value)
               transitionTimeout = ownerWindow?.setTimeout(() => {
                 if (state.value === 'unmountSuspended') {
                   dispatchCustomEvent('after-leave')
                   dispatch('ANIMATION_END')
                 }
                 transitionTimeout = undefined
+                transitionPendingCount = undefined
               }, duration + 50)
             }
             else {
@@ -154,16 +157,21 @@ export function usePresence(
   const handleTransitionEnd = (event: TransitionEvent) => {
     if (event.target !== node.value)
       return
-    if (state.value !== 'unmountSuspended' && state.value !== 'mounted')
+    if (state.value !== 'unmountSuspended')
       return
+
+    if (transitionPendingCount !== undefined && transitionPendingCount > 0) {
+      transitionPendingCount--
+      if (transitionPendingCount > 0)
+        return
+    }
 
     if (transitionTimeout !== undefined) {
       ownerWindow?.clearTimeout(transitionTimeout)
       transitionTimeout = undefined
     }
 
-    const directionName = state.value === 'mounted' ? 'enter' : 'leave'
-    dispatchCustomEvent(`after-${directionName}`)
+    dispatchCustomEvent('after-leave')
     dispatch('ANIMATION_END')
   }
 
@@ -190,7 +198,6 @@ export function usePresence(
         newNode.addEventListener('animationstart', handleAnimationStart)
         newNode.addEventListener('animationcancel', handleAnimationEnd)
         newNode.addEventListener('animationend', handleAnimationEnd)
-        newNode.addEventListener('transitionrun', handleTransitionEnd as EventListener)
         newNode.addEventListener('transitioncancel', handleTransitionCancel)
         newNode.addEventListener('transitionend', handleTransitionEnd)
       }
@@ -205,10 +212,10 @@ export function usePresence(
           ownerWindow?.clearTimeout(transitionTimeout)
           transitionTimeout = undefined
         }
+        transitionPendingCount = undefined
         oldNode?.removeEventListener('animationstart', handleAnimationStart)
         oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
         oldNode?.removeEventListener('animationend', handleAnimationEnd)
-        oldNode?.removeEventListener('transitionrun', handleTransitionEnd as EventListener)
         oldNode?.removeEventListener('transitioncancel', handleTransitionCancel)
         oldNode?.removeEventListener('transitionend', handleTransitionEnd)
       }
@@ -248,19 +255,45 @@ function hasTransition(node?: HTMLElement) {
   if (!node)
     return false
   const { transitionProperty, transitionDuration } = getComputedStyle(node)
-  return transitionProperty !== 'none' && transitionDuration !== '0s'
+  return (
+    typeof transitionProperty === 'string'
+    && transitionProperty !== 'none'
+    && typeof transitionDuration === 'string'
+    && transitionDuration !== ''
+    && transitionDuration !== '0s'
+  )
+}
+
+function getTransitionPropertyCount(node?: HTMLElement): number {
+  if (!node)
+    return 0
+  const { transitionProperty } = getComputedStyle(node)
+  if (!transitionProperty || transitionProperty === 'none')
+    return 0
+  if (transitionProperty === 'all')
+    return Infinity
+  return transitionProperty.split(',').length
 }
 
 function getTransitionDuration(node?: HTMLElement): number {
   if (!node)
     return 0
-  const { transitionDuration: durations, transitionDelay: delays } = getComputedStyle(node)
+  const style = getComputedStyle(node)
+  const durations = style.transitionDuration
+  const delays = style.transitionDelay
+  if (typeof durations !== 'string' || typeof delays !== 'string')
+    return 0
+
   const durationArray = durations.split(',').map((d) => {
     const val = parseFloat(d)
+    if (Number.isNaN(val))
+      return 0
     return d.endsWith('ms') ? val : val * 1000
   })
   const delayArray = delays.split(',').map((d) => {
     const val = parseFloat(d)
+    if (Number.isNaN(val))
+      return 0
     return d.endsWith('ms') ? val : val * 1000
   })
 
