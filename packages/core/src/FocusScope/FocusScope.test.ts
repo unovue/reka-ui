@@ -1,12 +1,12 @@
 import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
-import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '../Select'
+import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '../Select'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -238,6 +238,59 @@ describe('focusScope', () => {
       input.focus()
       await nextTick()
       expect(input).toHaveFocus()
+    })
+  })
+
+  // The Combobox case above is one instance of a general contract: every scope
+  // that omits `present` (Combobox/Select/Popover/Menu/Drawer content all do)
+  // must still register in the focus-scope stack and pause an active ancestor
+  // trap. A Select with its content portaled out of the Dialog exercises the
+  // same path through a different consumer.
+  describe('given a FocusScope with portaled Select content inside Dialog (#2749)', () => {
+    const DialogWithSelect = defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, SelectRoot, SelectPortal, SelectTrigger, SelectValue, SelectContent, SelectViewport, SelectItem },
+      template: `
+        <DialogRoot>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Test Dialog</DialogTitle>
+            <SelectRoot>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectPortal>
+                <SelectContent data-testid="select-content" position="popper">
+                  <SelectViewport>
+                    <SelectItem value="a">Option A</SelectItem>
+                    <SelectItem value="b">Option B</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </SelectPortal>
+            </SelectRoot>
+          </DialogContent>
+        </DialogRoot>
+      `,
+    })
+
+    beforeAll(() => {
+      // Select's trigger uses pointer capture and items scroll into view — both
+      // unimplemented in jsdom.
+      window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+      window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+      window.HTMLElement.prototype.scrollIntoView = vi.fn()
+    })
+
+    it('should move focus into the Select content, not trap it back to the Dialog', async () => {
+      const rendered = render(DialogWithSelect)
+
+      await userEvent.click(rendered.getByRole('button', { name: 'Open' }))
+      await userEvent.click(rendered.getByRole('combobox'))
+      await nextTick()
+
+      const content = rendered.getByTestId('select-content')
+      // The Select content traps focus; its FocusScope must pause the Dialog's
+      // trap so focus lands inside the Select rather than being yanked back.
+      expect(content.contains(document.activeElement)).toBe(true)
     })
   })
 })
