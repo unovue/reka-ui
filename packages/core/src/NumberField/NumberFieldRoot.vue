@@ -120,13 +120,38 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
     modelValue.value = min.value ?? 0
+    return
+  }
+
+  const stepValue = step.value ?? 1
+  const operator = type === 'increase' ? '+' : '-'
+  let nextValue: number
+
+  // When snapping is enabled and the current value is off the step grid, a single tick should
+  // snap to the nearest grid line in the requested direction (HTML stepUp/stepDown semantics),
+  // not add a whole step and then round to nearest — which overshoots
+  // (e.g. 18.98 + step 1 -> 19.98 -> 20 instead of 19).
+  if (stepSnapping.value && !isNaN(stepValue)) {
+    const snapped = snapValueToStep(currentInputValue, min.value, max.value, stepValue)
+    if (snapped === currentInputValue) {
+      nextValue = handleDecimalOperation(operator, currentInputValue, stepValue * multiplier)
+    }
+    else {
+      // Align to the grid line in the requested direction first…
+      const aligned = type === 'increase'
+        ? (snapped > currentInputValue ? snapped : handleDecimalOperation('+', snapped, stepValue))
+        : (snapped < currentInputValue ? snapped : handleDecimalOperation('-', snapped, stepValue))
+      // …then apply any remaining steps for multi-step keys (PageUp/PageDown).
+      nextValue = multiplier > 1
+        ? handleDecimalOperation(operator, aligned, stepValue * (multiplier - 1))
+        : aligned
+    }
   }
   else {
-    if (type === 'increase')
-      modelValue.value = clampInputValue(currentInputValue + ((step.value ?? 1) * multiplier))
-    else
-      modelValue.value = clampInputValue(currentInputValue - ((step.value ?? 1) * multiplier))
+    nextValue = handleDecimalOperation(operator, currentInputValue, stepValue * multiplier)
   }
+
+  modelValue.value = clampInputValue(nextValue)
 }
 
 function handleIncrease(multiplier = 1) {

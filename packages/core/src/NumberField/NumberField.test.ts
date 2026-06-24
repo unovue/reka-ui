@@ -300,6 +300,30 @@ describe('numberField', () => {
       await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 21 (max not snapped to step)
       expect(input.value).toBe('21')
     })
+
+    it('should snap an off-grid value to the next grid line when incrementing', async () => {
+      // Seed the off-grid value via defaultValue: typing it would snap on commit.
+      const { input, increment } = setup({ step: 1, stepSnapping: true, defaultValue: 18.98 })
+
+      await userEvent.click(increment) // snap up to the nearest grid line, not 18.98 + 1 -> 20
+      expect(input.value).toBe('19')
+    })
+
+    it('should snap an off-grid value to the previous grid line when decrementing', async () => {
+      const { input, decrement } = setup({ step: 1, stepSnapping: true, defaultValue: 18.11 })
+
+      await userEvent.click(decrement) // snap down to the nearest grid line, not 18.11 - 1 -> 17
+      expect(input.value).toBe('18')
+    })
+
+    it('should add a full step when the value is already on the grid', async () => {
+      const { input, increment, decrement } = setup({ step: 1, stepSnapping: true, defaultValue: 5 })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('6')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('5')
+    })
   })
 
   describe('given setting the input value manually', async () => {
