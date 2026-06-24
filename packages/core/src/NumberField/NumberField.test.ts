@@ -364,6 +364,50 @@ describe('numberField', () => {
     })
   })
 
+  describe('given allowInvalid prop', async () => {
+    it('should keep a typed value above max without clamping', async () => {
+      const { input } = setup({ max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('50')
+    })
+
+    it('should keep a typed value below min without clamping', async () => {
+      const { input } = setup({ min: 5, allowInvalid: true })
+
+      input.value = '1'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('1')
+    })
+
+    it('should keep an off-grid typed value without snapping', async () => {
+      const { input } = setup({ step: 1, stepSnapping: true, allowInvalid: true })
+
+      input.value = '2.5'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('2.5')
+    })
+
+    it('should still clamp and snap a typed value when allowInvalid is false', async () => {
+      const { input } = setup({ max: 10 })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('10')
+    })
+
+    it('should still clamp step interactions even when allowInvalid is true', async () => {
+      const { input, decrement } = setup({ max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('50')
+      await userEvent.click(decrement) // stepping clamps back into range
+      expect(input.value).toBe('10')
+    })
+  })
+
   describe('given setting the input value manually', async () => {
     it('should it increase/decrease the value appropriately', async () => {
       const { input, increment, decrement } = setup({ defaultValue: 6 })

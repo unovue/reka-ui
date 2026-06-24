@@ -17,6 +17,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** When `false`, prevents the value from snapping to the nearest increment of the step value */
   stepSnapping?: boolean
+  /** When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. */
+  allowInvalid?: boolean
   /** When `true`, the input will be focused when the value changes. */
   focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
@@ -81,7 +83,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, allowInvalid, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -211,7 +213,13 @@ function clampInputValue(val: number) {
 
 function applyInputValue(val: string) {
   const parsedValue = numberParser.parse(val)
-  modelValue.value = isNaN(parsedValue) ? undefined : clampInputValue(parsedValue)
+  if (isNaN(parsedValue))
+    modelValue.value = undefined
+  else if (allowInvalid.value)
+    // Keep the typed value as-is, only normalize formatting precision
+    modelValue.value = numberParser.parse(numberFormatter.format(parsedValue))
+  else
+    modelValue.value = clampInputValue(parsedValue)
   // Set to empty state if input value is empty
   if (!val.length)
     return setInputValue(val)
