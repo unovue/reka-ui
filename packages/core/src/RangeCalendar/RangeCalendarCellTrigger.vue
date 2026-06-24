@@ -187,6 +187,10 @@ function handleFocus() {
 function handleArrowKey(e: KeyboardEvent) {
   if (isDisabled.value)
     return
+  // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
+  // let them bubble so parent listeners can react (e.g. submit a form).
+  if ((e.code === kbd.ENTER || e.code === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
