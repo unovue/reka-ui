@@ -540,11 +540,13 @@ describe('calendar', async () => {
       }
     }
     document.addEventListener('keydown', handler)
-
-    await user.keyboard(kbd.ENTER)
-    await user.keyboard(`{Control>}${kbd.ENTER}{/Control}`)
-
-    document.removeEventListener('keydown', handler)
+    try {
+      await user.keyboard(kbd.ENTER)
+      await user.keyboard(`{Control>}${kbd.ENTER}{/Control}`)
+    }
+    finally {
+      document.removeEventListener('keydown', handler)
+    }
 
     // plain Enter is handled by the cell (selection) → propagation stopped
     expect(plainEnterBubbled).toBe(false)
