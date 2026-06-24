@@ -17,6 +17,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** When `false`, prevents the value from snapping to the nearest increment of the step value */
   stepSnapping?: boolean
+  /** When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no `aria-invalid`/`data-invalid`), so validating and surfacing the error is up to the consumer. */
+  allowInvalid?: boolean
   /** When `true`, the input will be focused when the value changes. */
   focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
@@ -35,8 +37,11 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   id?: string
 }
 
+// `undefined` is emitted when the input is cleared. Documented here rather than on the member
+// itself: the docs generator keys event descriptions by name globally, so a comment on
+// `update:modelValue` leaks into every other component that emits it.
 export type NumberFieldRootEmits = {
-  'update:modelValue': [val: number]
+  'update:modelValue': [val: number | undefined]
 }
 
 interface NumberFieldRootContext {
@@ -81,7 +86,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, allowInvalid, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -189,6 +194,11 @@ const textValueFormatter = useNumberFormatter(locale, formatOptions)
 const textValue = computed(() => isNullish(modelValue.value) || isNaN(modelValue.value) ? '' : textValueFormatter.format(modelValue.value))
 
 function validate(val: string) {
+  // `allowInvalid` lets out-of-range values be typed, so the bounds are skipped here — they
+  // would otherwise reject a leading minus sign whenever `min >= 0`. The value still has to
+  // parse as a number, so non-numeric input stays rejected.
+  if (allowInvalid.value)
+    return numberParser.isValidPartialNumber(val)
   return numberParser.isValidPartialNumber(val, min.value, max.value)
 }
 
@@ -211,7 +221,13 @@ function clampInputValue(val: number) {
 
 function applyInputValue(val: string) {
   const parsedValue = numberParser.parse(val)
-  modelValue.value = isNaN(parsedValue) ? undefined : clampInputValue(parsedValue)
+  if (isNaN(parsedValue))
+    modelValue.value = undefined
+  else if (allowInvalid.value)
+    // Keep the typed value as-is, only normalize formatting precision
+    modelValue.value = numberParser.parse(numberFormatter.format(parsedValue))
+  else
+    modelValue.value = clampInputValue(parsedValue)
   // Set to empty state if input value is empty
   if (!val.length)
     return setInputValue(val)

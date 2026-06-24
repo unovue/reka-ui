@@ -3,6 +3,12 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allowInvalid',
+    'description': '<p>When <code>true</code>, a typed value is kept as-is even if invalid (out of <code>min</code>/<code>max</code> range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no <code>aria-invalid</code>/<code>data-invalid</code>), so validating and surfacing the error is up to the consumer.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -149,6 +155,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allowInvalid` | When true, a typed value is kept as-is even if invalid (out of min/max range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no aria-invalid/data-invalid), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` |  | `number` | No | - |
