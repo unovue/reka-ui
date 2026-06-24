@@ -1,6 +1,7 @@
+import type { VueWrapper } from '@vue/test-utils'
 import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, nextTick } from 'vue'
 import ConfigProvider from '@/ConfigProvider/ConfigProvider.vue'
 import PopperAnchor from './PopperAnchor.vue'
@@ -21,11 +22,21 @@ function tree(configProps: Record<string, unknown> = {}) {
 }
 
 describe('popperContent CSP-safe positioning (issue #2732)', () => {
-  globalThis.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
+  let wrappers: VueWrapper[] = []
+
+  beforeAll(() => {
+    vi.stubGlobal('ResizeObserver', class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
+  })
+  afterEach(() => {
+    wrappers.forEach(w => w.unmount())
+    wrappers = []
+    document.body.innerHTML = ''
+  })
+  afterAll(() => vi.unstubAllGlobals())
 
   describe('sSR output', () => {
     it('emits the positioning style attribute by default (unchanged behavior)', async () => {
@@ -52,6 +63,7 @@ describe('popperContent CSP-safe positioning (issue #2732)', () => {
       const wrapper = mount(defineComponent({ render: () => tree({ cspSafePositioning: true }) }), {
         attachTo: document.body,
       })
+      wrappers.push(wrapper)
       await nextTick()
       await nextTick()
 
@@ -63,6 +75,7 @@ describe('popperContent CSP-safe positioning (issue #2732)', () => {
       const wrapper = mount(defineComponent({ render: () => tree() }), {
         attachTo: document.body,
       })
+      wrappers.push(wrapper)
       await nextTick()
 
       const el = wrapper.find('[data-reka-popper-content-wrapper]')
