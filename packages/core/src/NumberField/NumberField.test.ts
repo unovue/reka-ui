@@ -326,6 +326,36 @@ describe('numberField', () => {
     })
   })
 
+  describe('given step alignment near min/max boundaries', () => {
+    it('should keep increment enabled when an off-grid value can still align below max', async () => {
+      const { input, increment } = setup({ max: 10, step: 3, stepSnapping: true, defaultValue: 8 })
+
+      expect(increment).not.toHaveAttribute('disabled')
+      await userEvent.click(increment) // aligns to 9, not 8 + 3
+      expect(input.value).toBe('9')
+    })
+
+    it('should keep decrement enabled when an off-grid value can still align above min', async () => {
+      const { input, decrement } = setup({ min: 2, step: 3, stepSnapping: true, defaultValue: 4 })
+
+      expect(decrement).not.toHaveAttribute('disabled')
+      await userEvent.click(decrement) // aligns to 2, not 4 - 3
+      expect(input.value).toBe('2')
+    })
+
+    it('should disable increment once the next aligned value cannot exceed max', async () => {
+      const { increment } = setup({ max: 10, step: 3, stepSnapping: true, defaultValue: 9 })
+
+      expect(increment).toHaveAttribute('disabled')
+    })
+
+    it('should disable decrement once the next aligned value cannot go below min', async () => {
+      const { decrement } = setup({ min: 2, step: 3, stepSnapping: true, defaultValue: 2 })
+
+      expect(decrement).toHaveAttribute('disabled')
+    })
+  })
+
   describe('given setting the input value manually', async () => {
     it('should it increase/decrease the value appropriately', async () => {
       const { input, increment, decrement } = setup({ defaultValue: 6 })
