@@ -2,7 +2,6 @@
 import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
 import {
-
   getLocalTimeZone,
   isSameDay,
   isSameMonth,
@@ -10,7 +9,7 @@ import {
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { toDate } from '@/date'
-import { useKbd } from '@/shared'
+import { focusPagination, focusWeekBoundary, useKbd } from '@/shared'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -51,7 +50,6 @@ defineSlots<CalendarCellTriggerSlot>()
 
 const kbd = useKbd()
 const rootContext = injectCalendarRootContext()
-
 const { primitiveElement, currentElement } = usePrimitiveElement()
 
 const dayValue = computed(() => props.day.day.toLocaleString(rootContext.locale.value))
@@ -129,6 +127,62 @@ function handleArrowKey(e: KeyboardEvent) {
     case kbd.ARROW_DOWN:
       shiftFocus(props.day, indexIncrementation)
       break
+    case kbd.HOME:
+      focusWeekBoundary({
+        parentElement,
+        baseDate: props.day,
+        boundary: 'start',
+        locale: rootContext.locale.value,
+        weekStartsOn: rootContext.weekStartsOn.value,
+        minValue: rootContext.minValue.value,
+        maxValue: rootContext.maxValue.value,
+        onPlaceholderChange: rootContext.onPlaceholderChange,
+      })
+      break
+    case kbd.END:
+      focusWeekBoundary({
+        parentElement,
+        baseDate: props.day,
+        boundary: 'end',
+        locale: rootContext.locale.value,
+        weekStartsOn: rootContext.weekStartsOn.value,
+        minValue: rootContext.minValue.value,
+        maxValue: rootContext.maxValue.value,
+        onPlaceholderChange: rootContext.onPlaceholderChange,
+      })
+      break
+    case kbd.PAGE_UP:
+      focusPagination({
+        parentElement,
+        baseDate: props.day,
+        isNext: false,
+        isYear: e.shiftKey,
+        minValue: rootContext.minValue.value,
+        maxValue: rootContext.maxValue.value,
+        isOutsideVisibleView: rootContext.isOutsideVisibleView,
+        isNextButtonDisabled: rootContext.isNextButtonDisabled,
+        isPrevButtonDisabled: rootContext.isPrevButtonDisabled,
+        nextPage: rootContext.nextPage,
+        prevPage: rootContext.prevPage,
+        onPlaceholderChange: rootContext.onPlaceholderChange,
+      })
+      break
+    case kbd.PAGE_DOWN:
+      focusPagination({
+        parentElement,
+        baseDate: props.day,
+        isNext: true,
+        isYear: e.shiftKey,
+        minValue: rootContext.minValue.value,
+        maxValue: rootContext.maxValue.value,
+        isOutsideVisibleView: rootContext.isOutsideVisibleView,
+        isNextButtonDisabled: rootContext.isNextButtonDisabled,
+        isPrevButtonDisabled: rootContext.isPrevButtonDisabled,
+        nextPage: rootContext.nextPage,
+        prevPage: rootContext.prevPage,
+        onPlaceholderChange: rootContext.onPlaceholderChange,
+      })
+      break
     case kbd.ENTER:
     case kbd.SPACE_CODE:
       changeDate(props.day)
@@ -187,7 +241,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-focused="isFocusedDate ? '' : undefined"
     :tabindex="isFocusedDate ? 0 : isOutsideView || isDisabled ? undefined : -1"
     @click="handleClick"
-    @keydown.up.down.left.right.space.enter="handleArrowKey"
+    @keydown.up.down.left.right.space.enter.home.end.page-up.page-down="handleArrowKey"
     @keydown.enter.prevent
   >
     <slot

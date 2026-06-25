@@ -78,6 +78,7 @@
     "build-only": "tsdown && tsx scripts/postbuild.ts",
     "watch": "tsdown --watch",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
+    "test:run": "vitest run",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test-update": "vitest -u",
