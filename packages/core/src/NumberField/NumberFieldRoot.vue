@@ -147,7 +147,9 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
     return
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
-    modelValue.value = min.value ?? 0
+    // Route the fallback through clampInputValue so the min/max contract still holds
+    // (e.g. a negative max would otherwise be violated by the bare 0 fallback).
+    modelValue.value = clampInputValue(min.value ?? 0)
     return
   }
 

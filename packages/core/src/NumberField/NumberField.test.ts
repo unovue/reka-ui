@@ -354,6 +354,14 @@ describe('numberField', () => {
 
       expect(decrement).toHaveAttribute('disabled')
     })
+
+    it('should clamp the empty/NaN fallback to the range', async () => {
+      const { input, increment } = setup({ max: -5 })
+
+      // Empty input: the bare fallback would be 0, which is above max; it must be clamped.
+      await userEvent.click(increment)
+      expect(input.value).toBe('-5')
+    })
   })
 
   describe('given setting the input value manually', async () => {
