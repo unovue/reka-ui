@@ -17,6 +17,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   step?: number
   /** When `false`, prevents the value from snapping to the nearest increment of the step value */
   stepSnapping?: boolean
+  /** When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. */
+  allowInvalid?: boolean
   /** When `true`, the input will be focused when the value changes. */
   focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
@@ -81,7 +83,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, allowInvalid, formatOptions, id, locale: propLocale } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -94,22 +96,50 @@ const locale = useLocale(propLocale)
 const isFormControl = useFormControl(currentElement)
 const inputEl = ref<HTMLInputElement>()
 
-const isDecreaseDisabled = computed(() => (
-  !isNullish(modelValue.value) && (
-    clampInputValue(modelValue.value) === min.value
-    || (min.value && !isNaN(modelValue.value)
-    )
-      ? (handleDecimalOperation('-', modelValue.value, step.value) < min.value)
-      : false)),
-)
-const isIncreaseDisabled = computed(() => (
-  !isNullish(modelValue.value) && (
-    clampInputValue(modelValue.value) === max.value
-    || (max.value && !isNaN(modelValue.value)
-    )
-      ? (handleDecimalOperation('+', modelValue.value, step.value) > max.value)
-      : false)),
-)
+const isDecreaseDisabled = computed(() => {
+  if (isNullish(modelValue.value) || isNaN(modelValue.value))
+    return false
+  // Disabled when a decrement can't produce a smaller in-range value.
+  return getNextValue('decrease', modelValue.value) >= modelValue.value
+})
+const isIncreaseDisabled = computed(() => {
+  if (isNullish(modelValue.value) || isNaN(modelValue.value))
+    return false
+  // Disabled when an increment can't produce a larger in-range value.
+  return getNextValue('increase', modelValue.value) <= modelValue.value
+})
+
+// Compute the clamped value a single increment/decrement (or multi-step key) would land on.
+// When snapping is enabled and `from` is off the step grid, a tick snaps to the nearest grid
+// line in the requested direction (HTML stepUp/stepDown semantics), instead of adding a whole
+// step and rounding to nearest — which overshoots (e.g. 18.98 + step 1 -> 19.98 -> 20 not 19).
+function getNextValue(type: 'increase' | 'decrease', from: number, multiplier = 1): number {
+  const stepValue = step.value ?? 1
+  const operator = type === 'increase' ? '+' : '-'
+  let nextValue: number
+
+  if (stepSnapping.value && !isNaN(stepValue)) {
+    const snapped = snapValueToStep(from, min.value, max.value, stepValue)
+    if (snapped === from) {
+      nextValue = handleDecimalOperation(operator, from, stepValue * multiplier)
+    }
+    else {
+      // Align to the grid line in the requested direction first…
+      const aligned = type === 'increase'
+        ? (snapped > from ? snapped : handleDecimalOperation('+', snapped, stepValue))
+        : (snapped < from ? snapped : handleDecimalOperation('-', snapped, stepValue))
+      // …then apply any remaining steps for multi-step keys (PageUp/PageDown).
+      nextValue = multiplier > 1
+        ? handleDecimalOperation(operator, aligned, stepValue * (multiplier - 1))
+        : aligned
+    }
+  }
+  else {
+    nextValue = handleDecimalOperation(operator, from, stepValue * multiplier)
+  }
+
+  return clampInputValue(nextValue)
+}
 
 function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
   if (props.focusOnChange) {
@@ -119,14 +149,13 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
     return
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
-    modelValue.value = min.value ?? 0
+    // Route the fallback through clampInputValue so the min/max contract still holds
+    // (e.g. a negative max would otherwise be violated by the bare 0 fallback).
+    modelValue.value = clampInputValue(min.value ?? 0)
+    return
   }
-  else {
-    if (type === 'increase')
-      modelValue.value = clampInputValue(currentInputValue + ((step.value ?? 1) * multiplier))
-    else
-      modelValue.value = clampInputValue(currentInputValue - ((step.value ?? 1) * multiplier))
-  }
+
+  modelValue.value = getNextValue(type, currentInputValue, multiplier)
 }
 
 function handleIncrease(multiplier = 1) {
@@ -184,7 +213,13 @@ function clampInputValue(val: number) {
 
 function applyInputValue(val: string) {
   const parsedValue = numberParser.parse(val)
-  modelValue.value = isNaN(parsedValue) ? undefined : clampInputValue(parsedValue)
+  if (isNaN(parsedValue))
+    modelValue.value = undefined
+  else if (allowInvalid.value)
+    // Keep the typed value as-is, only normalize formatting precision
+    modelValue.value = numberParser.parse(numberFormatter.format(parsedValue))
+  else
+    modelValue.value = clampInputValue(parsedValue)
   // Set to empty state if input value is empty
   if (!val.length)
     return setInputValue(val)
