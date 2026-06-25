@@ -238,10 +238,7 @@ function handleKeyDown(event: KeyboardEvent) {
   const collectionItems = rovingFocusGroupRef.value?.getItems() ?? []
 
   if (isKeyDownInside) {
-    // menus should not be navigated using tab key so we prevent it
-    // when the menu is modal (trapFocus). For non-modal menus, allow
-    // Tab to move focus to the next focusable element on the page.
-    if (event.key === 'Tab' && trapFocus.value)
+    if (event.key === 'Tab' && rootContext.modal.value)
       event.preventDefault()
     if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
       handleTypeaheadSearch(event.key, collectionItems)
