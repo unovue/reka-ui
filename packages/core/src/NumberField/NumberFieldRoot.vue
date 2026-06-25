@@ -33,6 +33,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   invertWheelChange?: boolean
   /** Id of the element */
   id?: string
+  /** The value at which increment/decrement starts at when no value is given. */
+  startingValue?: number
 }
 
 export type NumberFieldRootEmits = {
@@ -81,7 +83,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, formatOptions, id, locale: propLocale, startingValue } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -119,7 +121,7 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
     return
   const currentInputValue = numberParser.parse(inputEl.value?.value ?? '')
   if (isNaN(currentInputValue)) {
-    modelValue.value = min.value ?? 0
+    modelValue.value = startingValue.value !== undefined ? clampInputValue(startingValue.value) : min.value ?? 0
   }
   else {
     if (type === 'increase')
