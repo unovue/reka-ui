@@ -234,10 +234,20 @@ export function usePresence(
   onUnmounted(() => {
     watcher()
     stateWatcher()
+    if (node.value) {
+      node.value.removeEventListener('animationstart', handleAnimationStart)
+      node.value.removeEventListener('animationcancel', handleAnimationEnd)
+      node.value.removeEventListener('animationend', handleAnimationEnd)
+      node.value.removeEventListener('transitioncancel', handleTransitionCancel)
+      node.value.removeEventListener('transitionend', handleTransitionEnd)
+    }
+    if (timeoutId !== undefined)
+      ownerWindow?.clearTimeout(timeoutId)
     if (transitionTimeout !== undefined) {
       ownerWindow?.clearTimeout(transitionTimeout)
       transitionTimeout = undefined
     }
+    transitionPendingCount = undefined
   })
 
   const isPresent = computed(() =>
