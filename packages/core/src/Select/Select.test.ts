@@ -412,3 +412,29 @@ describe('given Select in a form', async () => {
     })
   })
 })
+
+describe('placeholder flash on close (#2638)', () => {
+  it('should keep showing the selected value while the content is closing', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(Select, { attachTo: document.body })
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+
+    // Open then select an item, which closes the content in a single-select.
+    await wrapper.find('button').trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+    const selection = wrapper.findAll('[role=option]')[1];
+    (selection.element as HTMLElement).focus()
+    await selection.trigger('pointerup')
+    // Needs 2 pointerup because SelectContentImpl prevents accidental pointerup's
+    await fireEvent.pointerUp(selection.element)
+
+    // While closing, `Presence` unmounts the popper items (clearing `optionsSet`)
+    // a few microtasks before the fallback fragment remounts them on the
+    // `renderPresence` setTimeout (macrotask). Draining only microtasks keeps us
+    // inside that handoff window, where the placeholder used to flash.
+    for (let i = 0; i < 5; i++) {
+      await nextTick()
+      expect(valueBox.text()).toBe('Banana')
+    }
+  })
+})
