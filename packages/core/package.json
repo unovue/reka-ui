@@ -34,18 +34,373 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./internal": {
-      "import": "./dist/internal.js",
-      "require": "./dist/internal.cjs"
+    "./accordion": {
+      "types": "./dist/accordion.d.ts",
+      "import": "./dist/accordion.js",
+      "require": "./dist/accordion.cjs"
+    },
+    "./alert-dialog": {
+      "types": "./dist/alert-dialog.d.ts",
+      "import": "./dist/alert-dialog.js",
+      "require": "./dist/alert-dialog.cjs"
+    },
+    "./aspect-ratio": {
+      "types": "./dist/aspect-ratio.d.ts",
+      "import": "./dist/aspect-ratio.js",
+      "require": "./dist/aspect-ratio.cjs"
+    },
+    "./autocomplete": {
+      "types": "./dist/autocomplete.d.ts",
+      "import": "./dist/autocomplete.js",
+      "require": "./dist/autocomplete.cjs"
+    },
+    "./avatar": {
+      "types": "./dist/avatar.d.ts",
+      "import": "./dist/avatar.js",
+      "require": "./dist/avatar.cjs"
+    },
+    "./calendar": {
+      "types": "./dist/calendar.d.ts",
+      "import": "./dist/calendar.js",
+      "require": "./dist/calendar.cjs"
+    },
+    "./checkbox": {
+      "types": "./dist/checkbox.d.ts",
+      "import": "./dist/checkbox.js",
+      "require": "./dist/checkbox.cjs"
+    },
+    "./collapsible": {
+      "types": "./dist/collapsible.d.ts",
+      "import": "./dist/collapsible.js",
+      "require": "./dist/collapsible.cjs"
+    },
+    "./collection": {
+      "types": "./dist/collection.d.ts",
+      "import": "./dist/collection.js",
+      "require": "./dist/collection.cjs"
+    },
+    "./color-area": {
+      "types": "./dist/color-area.d.ts",
+      "import": "./dist/color-area.js",
+      "require": "./dist/color-area.cjs"
+    },
+    "./color-field": {
+      "types": "./dist/color-field.d.ts",
+      "import": "./dist/color-field.js",
+      "require": "./dist/color-field.cjs"
+    },
+    "./color-slider": {
+      "types": "./dist/color-slider.d.ts",
+      "import": "./dist/color-slider.js",
+      "require": "./dist/color-slider.cjs"
+    },
+    "./color-swatch": {
+      "types": "./dist/color-swatch.d.ts",
+      "import": "./dist/color-swatch.js",
+      "require": "./dist/color-swatch.cjs"
+    },
+    "./color-swatch-picker": {
+      "types": "./dist/color-swatch-picker.d.ts",
+      "import": "./dist/color-swatch-picker.js",
+      "require": "./dist/color-swatch-picker.cjs"
+    },
+    "./combobox": {
+      "types": "./dist/combobox.d.ts",
+      "import": "./dist/combobox.js",
+      "require": "./dist/combobox.cjs"
+    },
+    "./config-provider": {
+      "types": "./dist/config-provider.d.ts",
+      "import": "./dist/config-provider.js",
+      "require": "./dist/config-provider.cjs"
     },
     "./constant": {
       "import": "./dist/constant.js",
       "require": "./dist/constant.cjs"
     },
+    "./context-menu": {
+      "types": "./dist/context-menu.d.ts",
+      "import": "./dist/context-menu.js",
+      "require": "./dist/context-menu.cjs"
+    },
     "./date": {
       "import": "./dist/date.js",
       "require": "./dist/date.cjs"
     },
+    "./date-field": {
+      "types": "./dist/date-field.d.ts",
+      "import": "./dist/date-field.js",
+      "require": "./dist/date-field.cjs"
+    },
+    "./date-picker": {
+      "types": "./dist/date-picker.d.ts",
+      "import": "./dist/date-picker.js",
+      "require": "./dist/date-picker.cjs"
+    },
+    "./date-range-field": {
+      "types": "./dist/date-range-field.d.ts",
+      "import": "./dist/date-range-field.js",
+      "require": "./dist/date-range-field.cjs"
+    },
+    "./date-range-picker": {
+      "types": "./dist/date-range-picker.d.ts",
+      "import": "./dist/date-range-picker.js",
+      "require": "./dist/date-range-picker.cjs"
+    },
+    "./dialog": {
+      "types": "./dist/dialog.d.ts",
+      "import": "./dist/dialog.js",
+      "require": "./dist/dialog.cjs"
+    },
+    "./dismissable-layer": {
+      "types": "./dist/dismissable-layer.d.ts",
+      "import": "./dist/dismissable-layer.js",
+      "require": "./dist/dismissable-layer.cjs"
+    },
+    "./drawer": {
+      "types": "./dist/drawer.d.ts",
+      "import": "./dist/drawer.js",
+      "require": "./dist/drawer.cjs"
+    },
+    "./dropdown-menu": {
+      "types": "./dist/dropdown-menu.d.ts",
+      "import": "./dist/dropdown-menu.js",
+      "require": "./dist/dropdown-menu.cjs"
+    },
+    "./editable": {
+      "types": "./dist/editable.d.ts",
+      "import": "./dist/editable.js",
+      "require": "./dist/editable.cjs"
+    },
+    "./focus-guards": {
+      "types": "./dist/focus-guards.d.ts",
+      "import": "./dist/focus-guards.js",
+      "require": "./dist/focus-guards.cjs"
+    },
+    "./focus-scope": {
+      "types": "./dist/focus-scope.d.ts",
+      "import": "./dist/focus-scope.js",
+      "require": "./dist/focus-scope.cjs"
+    },
+    "./hover-card": {
+      "types": "./dist/hover-card.d.ts",
+      "import": "./dist/hover-card.js",
+      "require": "./dist/hover-card.cjs"
+    },
+    "./internal": {
+      "import": "./dist/internal.js",
+      "require": "./dist/internal.cjs"
+    },
+    "./label": {
+      "types": "./dist/label.d.ts",
+      "import": "./dist/label.js",
+      "require": "./dist/label.cjs"
+    },
+    "./listbox": {
+      "types": "./dist/listbox.d.ts",
+      "import": "./dist/listbox.js",
+      "require": "./dist/listbox.cjs"
+    },
+    "./menu": {
+      "types": "./dist/menu.d.ts",
+      "import": "./dist/menu.js",
+      "require": "./dist/menu.cjs"
+    },
+    "./menubar": {
+      "types": "./dist/menubar.d.ts",
+      "import": "./dist/menubar.js",
+      "require": "./dist/menubar.cjs"
+    },
+    "./month-picker": {
+      "types": "./dist/month-picker.d.ts",
+      "import": "./dist/month-picker.js",
+      "require": "./dist/month-picker.cjs"
+    },
+    "./month-range-picker": {
+      "types": "./dist/month-range-picker.d.ts",
+      "import": "./dist/month-range-picker.js",
+      "require": "./dist/month-range-picker.cjs"
+    },
+    "./navigation-menu": {
+      "types": "./dist/navigation-menu.d.ts",
+      "import": "./dist/navigation-menu.js",
+      "require": "./dist/navigation-menu.cjs"
+    },
+    "./number-field": {
+      "types": "./dist/number-field.d.ts",
+      "import": "./dist/number-field.js",
+      "require": "./dist/number-field.cjs"
+    },
+    "./pagination": {
+      "types": "./dist/pagination.d.ts",
+      "import": "./dist/pagination.js",
+      "require": "./dist/pagination.cjs"
+    },
+    "./pin-input": {
+      "types": "./dist/pin-input.d.ts",
+      "import": "./dist/pin-input.js",
+      "require": "./dist/pin-input.cjs"
+    },
+    "./popover": {
+      "types": "./dist/popover.d.ts",
+      "import": "./dist/popover.js",
+      "require": "./dist/popover.cjs"
+    },
+    "./popper": {
+      "types": "./dist/popper.d.ts",
+      "import": "./dist/popper.js",
+      "require": "./dist/popper.cjs"
+    },
+    "./presence": {
+      "types": "./dist/presence.d.ts",
+      "import": "./dist/presence.js",
+      "require": "./dist/presence.cjs"
+    },
+    "./primitive": {
+      "types": "./dist/primitive.d.ts",
+      "import": "./dist/primitive.js",
+      "require": "./dist/primitive.cjs"
+    },
+    "./progress": {
+      "types": "./dist/progress.d.ts",
+      "import": "./dist/progress.js",
+      "require": "./dist/progress.cjs"
+    },
+    "./radio-group": {
+      "types": "./dist/radio-group.d.ts",
+      "import": "./dist/radio-group.js",
+      "require": "./dist/radio-group.cjs"
+    },
+    "./range-calendar": {
+      "types": "./dist/range-calendar.d.ts",
+      "import": "./dist/range-calendar.js",
+      "require": "./dist/range-calendar.cjs"
+    },
+    "./rating": {
+      "types": "./dist/rating.d.ts",
+      "import": "./dist/rating.js",
+      "require": "./dist/rating.cjs"
+    },
+    "./roving-focus": {
+      "types": "./dist/roving-focus.d.ts",
+      "import": "./dist/roving-focus.js",
+      "require": "./dist/roving-focus.cjs"
+    },
+    "./scroll-area": {
+      "types": "./dist/scroll-area.d.ts",
+      "import": "./dist/scroll-area.js",
+      "require": "./dist/scroll-area.cjs"
+    },
+    "./select": {
+      "types": "./dist/select.d.ts",
+      "import": "./dist/select.js",
+      "require": "./dist/select.cjs"
+    },
+    "./separator": {
+      "types": "./dist/separator.d.ts",
+      "import": "./dist/separator.js",
+      "require": "./dist/separator.cjs"
+    },
+    "./shared": {
+      "import": "./dist/shared.js",
+      "require": "./dist/shared.cjs"
+    },
+    "./slider": {
+      "types": "./dist/slider.d.ts",
+      "import": "./dist/slider.js",
+      "require": "./dist/slider.cjs"
+    },
+    "./splitter": {
+      "types": "./dist/splitter.d.ts",
+      "import": "./dist/splitter.js",
+      "require": "./dist/splitter.cjs"
+    },
+    "./stepper": {
+      "types": "./dist/stepper.d.ts",
+      "import": "./dist/stepper.js",
+      "require": "./dist/stepper.cjs"
+    },
+    "./switch": {
+      "types": "./dist/switch.d.ts",
+      "import": "./dist/switch.js",
+      "require": "./dist/switch.cjs"
+    },
+    "./tabs": {
+      "types": "./dist/tabs.d.ts",
+      "import": "./dist/tabs.js",
+      "require": "./dist/tabs.cjs"
+    },
+    "./tags-input": {
+      "types": "./dist/tags-input.d.ts",
+      "import": "./dist/tags-input.js",
+      "require": "./dist/tags-input.cjs"
+    },
+    "./teleport": {
+      "types": "./dist/teleport.d.ts",
+      "import": "./dist/teleport.js",
+      "require": "./dist/teleport.cjs"
+    },
+    "./time-field": {
+      "types": "./dist/time-field.d.ts",
+      "import": "./dist/time-field.js",
+      "require": "./dist/time-field.cjs"
+    },
+    "./time-range-field": {
+      "types": "./dist/time-range-field.d.ts",
+      "import": "./dist/time-range-field.js",
+      "require": "./dist/time-range-field.cjs"
+    },
+    "./toast": {
+      "types": "./dist/toast.d.ts",
+      "import": "./dist/toast.js",
+      "require": "./dist/toast.cjs"
+    },
+    "./toggle": {
+      "types": "./dist/toggle.d.ts",
+      "import": "./dist/toggle.js",
+      "require": "./dist/toggle.cjs"
+    },
+    "./toggle-group": {
+      "types": "./dist/toggle-group.d.ts",
+      "import": "./dist/toggle-group.js",
+      "require": "./dist/toggle-group.cjs"
+    },
+    "./toolbar": {
+      "types": "./dist/toolbar.d.ts",
+      "import": "./dist/toolbar.js",
+      "require": "./dist/toolbar.cjs"
+    },
+    "./tooltip": {
+      "types": "./dist/tooltip.d.ts",
+      "import": "./dist/tooltip.js",
+      "require": "./dist/tooltip.cjs"
+    },
+    "./tree": {
+      "types": "./dist/tree.d.ts",
+      "import": "./dist/tree.js",
+      "require": "./dist/tree.cjs"
+    },
+    "./viewport": {
+      "types": "./dist/viewport.d.ts",
+      "import": "./dist/viewport.js",
+      "require": "./dist/viewport.cjs"
+    },
+    "./visually-hidden": {
+      "types": "./dist/visually-hidden.d.ts",
+      "import": "./dist/visually-hidden.js",
+      "require": "./dist/visually-hidden.cjs"
+    },
+    "./year-picker": {
+      "types": "./dist/year-picker.d.ts",
+      "import": "./dist/year-picker.js",
+      "require": "./dist/year-picker.cjs"
+    },
+    "./year-range-picker": {
+      "types": "./dist/year-range-picker.d.ts",
+      "import": "./dist/year-range-picker.js",
+      "require": "./dist/year-range-picker.cjs"
+    },
+    "./package.json": "./package.json",
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs",
       "require": "./dist/namespaced/index.cjs"
@@ -57,12 +412,11 @@
     "./resolver": {
       "import": "./dist/resolver/index.mjs",
       "require": "./dist/resolver/index.cjs"
-    },
-    "./package.json": "./package.json"
+    }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "files": [
     "src",
     "dist",
@@ -75,7 +429,7 @@
   ],
   "scripts": {
     "build": "pnpm type-check && pnpm build-only",
-    "build-only": "tsdown && tsx scripts/postbuild.ts",
+    "build-only": "tsdown",
     "watch": "tsdown --watch",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
     "test": "vitest",
@@ -119,7 +473,7 @@
     "@vue/tsconfig": "^0.7.0",
     "jsdom": "^26.1.0",
     "size-limit": "^12.0.1",
-    "tsdown": "^0.12.9",
+    "tsdown": "^0.22.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8",
     "vitest-axe": "0.1.0",

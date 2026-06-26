@@ -1,5 +1,11 @@
 import type { OutputPlugin } from 'rolldown'
 import { defineConfig } from 'tsdown'
+import { getComponentFamilies } from './scripts/families.ts'
+
+const componentEntries = Object.fromEntries(
+  getComponentFamilies().map(family => [family.key, family.entry]),
+)
+const componentKeys = Object.keys(componentEntries)
 
 // Match `defineComponent(`, `createContext(`, `reactive(` at word boundaries,
 // skipping calls already preceded by a PURE annotation or prefixed with a
@@ -7,7 +13,6 @@ import { defineConfig } from 'tsdown'
 // (function declarations should not be annotated).
 const PURE_PATTERN = /(?<!function\s)(?<=^|[^.\w$])(defineComponent|createContext|reactive)\s*\(/g
 const ALREADY_PURE = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
-const PATH_SEP = /[\\/]/g
 
 /**
  * Rolldown output plugin that inserts `/*#__PURE__* /` annotations before
@@ -27,7 +32,7 @@ function pureAnnotationPlugin(): OutputPlugin {
         }
         return `${PURE} ${match}`
       })
-      return result === code ? null : result
+      return result === code ? null : { code: result, map: null }
     },
   }
 }
@@ -39,12 +44,44 @@ export default defineConfig({
     date: './src/date/index.ts',
     constant: './constant/index.ts',
     shared: './src/shared/index.ts',
+    ...componentEntries,
   },
   fromVite: true,
   platform: 'neutral',
   format: ['esm', 'cjs'],
+  unbundle: true,
+  deps: { onlyBundle: false },
   tsconfig: './tsconfig.app.json',
   dts: { vue: true, sourcemap: true },
+  exports: {
+    inlinedDependencies: false,
+    customExports(exports) {
+      for (const key of componentKeys) {
+        const exportKey = `./${key}`
+        const value = exports[exportKey]
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          exports[exportKey] = {
+            types: `./dist/${key}.d.ts`,
+            ...value,
+          }
+        }
+      }
+
+      exports['./namespaced'] = {
+        import: './dist/namespaced/index.mjs',
+        require: './dist/namespaced/index.cjs',
+      }
+      exports['./nuxt'] = {
+        import: './dist/nuxt/index.mjs',
+        require: './dist/nuxt/index.cjs',
+      }
+      exports['./resolver'] = {
+        import: './dist/resolver/index.mjs',
+        require: './dist/resolver/index.cjs',
+      }
+      return exports
+    },
+  },
   sourcemap: true,
   hash: false,
 
@@ -61,34 +98,11 @@ export default defineConfig({
 
   inputOptions: {
     preserveEntrySignatures: 'allow-extension',
-    experimental: {
-      // Causes major issues with advancedChunks. Not really important here anyway.
-      strictExecutionOrder: false,
-    },
   },
   outputOptions: {
     minifyInternalExports: false,
+    sourcemapExcludeSources: true,
+    strictExecutionOrder: false,
     plugins: [pureAnnotationPlugin()],
-
-    // Don't rely on unbundle: it creates a lot of unwanted files because of the multiple sections of SFC files
-    advancedChunks: {
-      groups: [
-        {
-          // Exclude d.ts files so they get bundled up
-          // Also not possible when using unbundle mode...
-          test: /(?<!\.d\.c?ts)$/,
-          name: (id) => {
-            const [namespace, file] = id.split('?')[0].split(PATH_SEP).slice(-2)
-            return (
-              file
-                ? namespace === 'src'
-                  ? file.slice(0, file.lastIndexOf('.'))
-                  : `${namespace}/${file.slice(0, file.lastIndexOf('.'))}`
-                : namespace
-            )
-          },
-        },
-      ],
-    },
   },
 })
