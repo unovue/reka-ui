@@ -10,9 +10,9 @@ export interface SelectValueProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { isNullish, useForwardExpose } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
 
 const props = withDefaults(defineProps<SelectValueProps>(), {
@@ -41,8 +41,30 @@ const selectedLabel = computed(() => {
   return list.filter(Boolean)
 })
 
+// Cache the selected label to prevent placeholder flash during close transition
+// when optionsSet is transiently empty during the Presence-to-DocumentFragment handoff
+// @see https://github.com/unovue/reka-ui/issues/2767
+const cachedSelectedLabel = ref<string[]>([])
+watch(selectedLabel, (newVal) => {
+  if (newVal.length > 0) {
+    cachedSelectedLabel.value = newVal
+  }
+}, { immediate: true })
+
+const displayLabel = computed(() => {
+  // Use cached label if current is empty but we still have a modelValue
+  // (this prevents the one-frame placeholder flash during transition)
+  if (selectedLabel.value.length > 0) {
+    return selectedLabel.value
+  }
+  const hasValue = Array.isArray(rootContext.modelValue.value)
+    ? rootContext.modelValue.value.length > 0
+    : !isNullish(rootContext.modelValue.value)
+  return hasValue ? cachedSelectedLabel.value : []
+})
+
 const slotText = computed(() => {
-  return selectedLabel.value.length ? selectedLabel.value.join(', ') : props.placeholder
+  return displayLabel.value.length ? displayLabel.value.join(', ') : props.placeholder
 })
 </script>
 
@@ -52,10 +74,10 @@ const slotText = computed(() => {
     :as="as"
     :as-child="asChild"
     :style="{ pointerEvents: 'none' }"
-    :data-placeholder="selectedLabel.length ? undefined : props.placeholder"
+    :data-placeholder="displayLabel.length ? undefined : props.placeholder"
   >
     <slot
-      :selected-label="selectedLabel"
+      :selected-label="displayLabel"
       :model-value="rootContext.modelValue.value"
     >
       {{ slotText }}
