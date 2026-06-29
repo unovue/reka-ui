@@ -58,7 +58,6 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   return {
     item,
     is: cloneVNode(targetNode, {
-      'key': `${item.key}`,
       'data-index': item.index,
       'style': {
         position: 'absolute',

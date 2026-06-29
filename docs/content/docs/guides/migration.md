@@ -145,7 +145,9 @@ Large scrollable collections can migrate from rendering every item inside `Scrol
 
 ```vue
 <script setup lang="ts">
-import { ScrollAreaRoot, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
+
+const items = Array.from({ length: 10_000 }, (_, index) => `Item ${index + 1}`)
 </script>
 
 <template>
@@ -156,11 +158,14 @@ import { ScrollAreaRoot, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-
         :options="items"
         :estimate-size="32"
       >
-        <div :key="option.id">
-          {{ option.label }}
+        <div>
+          {{ option }}
         </div>
       </ScrollAreaVirtualizer>
     </ScrollAreaViewport>
+    <ScrollAreaScrollbar orientation="vertical">
+      <ScrollAreaThumb />
+    </ScrollAreaScrollbar>
   </ScrollAreaRoot>
 </template>
 ```
