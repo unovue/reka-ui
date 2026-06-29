@@ -38,6 +38,15 @@ describe('given default Select', () => {
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
+  it('should only render aria-controls while content is mounted', async () => {
+    const trigger = wrapper.find('[role="combobox"]')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+    expect(trigger.attributes('aria-controls')).toBeDefined()
+  })
+
   describe('trigger mouse interop', () => {
     async function openSelectWithMouseClick() {
       const button = wrapper.find('button')

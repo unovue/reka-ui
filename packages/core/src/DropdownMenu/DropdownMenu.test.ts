@@ -1,9 +1,9 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { fireEvent, findAllByRole, findByRole, render } from '@testing-library/vue'
+import { findAllByRole, findByRole, fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -72,6 +72,15 @@ describe('given default DropdownMenu', () => {
 
   it('should render trigger button', () => {
     expect(wrapper.find('button').exists()).toBeTruthy()
+  })
+
+  it('should only render aria-controls while content is mounted', async () => {
+    const trigger = wrapper.find('button')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(trigger.attributes('aria-controls')).toBeDefined()
   })
 
   it('should pass axe accessibility tests', async () => {

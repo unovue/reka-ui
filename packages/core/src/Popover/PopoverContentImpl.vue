@@ -32,6 +32,7 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { onUnmounted, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
@@ -42,9 +43,11 @@ const props = defineProps<PopoverContentImplPrivateProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
 
 const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
+watchEffect(() => rootContext.contentElement.value = currentElement.value)
+onUnmounted(() => rootContext.contentElement.value = undefined)
 useFocusGuards()
 </script>
 
