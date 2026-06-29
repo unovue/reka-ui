@@ -80,7 +80,14 @@ describe('given default DropdownMenu', () => {
 
     await trigger.trigger('click')
     await nextTick()
-    expect(trigger.attributes('aria-controls')).toBeDefined()
+    const contentId = trigger.attributes('aria-controls')
+    expect(contentId).toBeDefined()
+    expect(document.getElementById(contentId!)).not.toBeNull()
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+    expect(document.getElementById(contentId!)).toBeNull()
   })
 
   it('should pass axe accessibility tests', async () => {

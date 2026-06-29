@@ -44,7 +44,9 @@ describe('given default Select', () => {
 
     await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
     await nextTick()
-    expect(trigger.attributes('aria-controls')).toBeDefined()
+    const contentId = trigger.attributes('aria-controls')
+    expect(contentId).toBeDefined()
+    expect(document.getElementById(contentId!)).not.toBeNull()
   })
 
   describe('trigger mouse interop', () => {

@@ -48,8 +48,16 @@ describe('given default Combobox', () => {
 
     await trigger.trigger('click')
     await nextTick()
-    expect(input.attributes('aria-controls')).toBeDefined()
-    expect(trigger.attributes('aria-controls')).toBeDefined()
+    const contentId = input.attributes('aria-controls')
+    expect(contentId).toBeDefined()
+    expect(trigger.attributes('aria-controls')).toBe(contentId)
+    expect(document.getElementById(contentId!)).not.toBeNull()
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await nextTick()
+    expect(input.attributes('aria-controls')).toBeUndefined()
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+    expect(document.getElementById(contentId!)).toBeNull()
   })
 
   describe('opening the popup', () => {
