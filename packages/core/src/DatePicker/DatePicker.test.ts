@@ -274,7 +274,7 @@ describe('datePicker', async () => {
   })
 
   it('resets stale placeholder time when selecting a date after the model value is cleared', async () => {
-    const emittedValues: (DateValue | undefined)[] = []
+    const emittedValues: (TemporalDate | undefined)[] = []
     const { user, trigger, getByTestId, rerender } = setup({
       datePickerProps: {
         modelValue: calendarDateTime,
@@ -299,16 +299,16 @@ describe('datePicker', async () => {
     await user.click(getByTestId('date-1-1'))
 
     const selectedValue = emittedValues.at(-1)
-    expect(selectedValue).toBeInstanceOf(CalendarDateTime)
-    expect((selectedValue as CalendarDateTime).hour).toBe(0)
-    expect((selectedValue as CalendarDateTime).minute).toBe(0)
-    expect((selectedValue as CalendarDateTime).second).toBe(0)
-    expect((selectedValue as CalendarDateTime).millisecond).toBe(0)
+    expect(selectedValue).toBeInstanceOf(Temporal.PlainDateTime)
+    expect((selectedValue as Temporal.PlainDateTime).hour).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).minute).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).second).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).millisecond).toBe(0)
   })
 
   it('resets stale ZonedDateTime placeholder time when selecting a date after the model value is cleared', async () => {
-    const emittedValues: (DateValue | undefined)[] = []
-    const zonedValue = toZoned(new CalendarDateTime(1980, 1, 20, 12, 30, 45, 123), 'America/New_York')
+    const emittedValues: (TemporalDate | undefined)[] = []
+    const zonedValue = new Temporal.PlainDateTime(1980, 1, 20, 12, 30, 45, 123).toZonedDateTime('America/New_York')
     const { user, trigger, getByTestId, rerender } = setup({
       datePickerProps: {
         modelValue: zonedValue,
@@ -333,7 +333,7 @@ describe('datePicker', async () => {
     await user.click(getByTestId('date-1-1'))
 
     const selectedValue = emittedValues.at(-1)
-    expect(selectedValue).toHaveProperty('timeZone', 'America/New_York')
+    expect(selectedValue).toHaveProperty('timeZoneId', 'America/New_York')
     expect(selectedValue?.hour).toBe(0)
     expect(selectedValue?.minute).toBe(0)
     expect(selectedValue?.second).toBe(0)
@@ -341,9 +341,9 @@ describe('datePicker', async () => {
   })
 
   it('preserves typed time when typing a date after the model value is cleared', async () => {
-    const emittedValues: (DateValue | undefined)[] = []
+    const emittedValues: (TemporalDate | undefined)[] = []
     let rerender: ReturnType<typeof setup>['rerender']
-    const handleUpdateModelValue = (value: DateValue | undefined) => {
+    const handleUpdateModelValue = (value: TemporalDate | undefined) => {
       emittedValues.push(value)
       return rerender({
         datePickerProps: {

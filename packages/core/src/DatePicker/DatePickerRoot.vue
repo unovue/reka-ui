@@ -147,7 +147,7 @@ function resetTime(date: TemporalDate) {
   if (!('hour' in date))
     return date
 
-  return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+  return date.with({ hour: 0, minute: 0, second: 0, millisecond: 0 })
 }
 
 watch(modelValue, (value) => {
