@@ -3,10 +3,53 @@ import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
 
 const CLOSE_TEXT = 'Close'
+
+const ToastWithAction = defineComponent({
+  props: {
+    closeOnClick: {
+      type: Boolean,
+      default: undefined,
+    },
+  },
+  setup() {
+    const open = ref(true)
+    const actionClicks = ref(0)
+
+    return {
+      open,
+      actionClicks,
+    }
+  },
+  render() {
+    return h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, {
+          'open': this.open,
+          'onUpdate:open': (value: boolean) => {
+            this.open = value
+          },
+        }, {
+          default: () => [
+            h(ToastDescription, null, { default: () => 'Action available' }),
+            h(ToastAction, {
+              altText: 'Perform action',
+              closeOnClick: this.closeOnClick,
+              onClick: () => {
+                this.actionClicks += 1
+              },
+            }, { default: () => 'Undo' }),
+          ],
+        }),
+        h(ToastViewport),
+      ],
+    })
+  },
+})
 
 describe('given a default Toast', () => {
   let wrapper: VueWrapper<InstanceType<typeof Toast>>
@@ -64,6 +107,31 @@ describe('given a default Toast', () => {
     // The toast title and description must both be part of the announced
     // text so screen-reader users actually hear the toast.
     expect(text).toContain('Scheduled: Catch up')
+  })
+
+  it('should close the toast when action is clicked by default', async () => {
+    const wrapper = mount(ToastWithAction, { attachTo: document.body })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(false)
+    expect(action.closest('li')?.getAttribute('data-state')).toBe('closed')
+  })
+
+  it('should keep the toast open when action closeOnClick is false', async () => {
+    const wrapper = mount(ToastWithAction, {
+      attachTo: document.body,
+      props: { closeOnClick: false },
+    })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(true)
+    expect(document.body.innerHTML).toContain('Action available')
   })
 
   describe('after clicking the trigger', () => {
