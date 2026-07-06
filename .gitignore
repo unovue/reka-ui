@@ -41,3 +41,6 @@ vite.config.ts.timestamp*
 
 .storybook/storybook-static
 *storybook.log
+
+# Agent orchestration scratch
+.superpowers/

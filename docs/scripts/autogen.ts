@@ -52,7 +52,7 @@ function toSingleQuotedJson(obj: unknown): string {
     .replace(/"/g, '\'')
 }
 
-const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
+const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.stories.vue'], {
   cwd: resolve(__dirname, '../../packages/core'),
   absolute: true,
 })
