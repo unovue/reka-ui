@@ -293,4 +293,39 @@ describe('focusScope', () => {
       expect(content.contains(document.activeElement)).toBe(true)
     })
   })
+
+  // https://github.com/unovue/reka-ui/issues/1667
+  // A trapped FocusScope teleported into a shadow root must observe focus on its
+  // own root node. Listening on `document` sees focus events retargeted to the
+  // shadow host, so `container.contains(target)` never matches and focus is not
+  // trapped — Tab escapes to the background. jsdom does not retarget focus
+  // events, so the escape can't be reproduced behaviourally here; instead we
+  // assert the listeners are bound to the shadow root rather than `document`.
+  describe('given a trapped FocusScope rendered inside a shadow root (#1667)', () => {
+    const ShadowScope = defineComponent({
+      components: { FocusScope },
+      template: `<FocusScope asChild loop trapped>
+        <form>
+          <input data-testid="inner-first" />
+          <input data-testid="inner-second" />
+        </form>
+      </FocusScope>`,
+    })
+
+    it('should bind focus listeners to the shadow root rather than document', async () => {
+      const host = document.createElement('div')
+      document.body.appendChild(host)
+      const shadowRoot = host.attachShadow({ mode: 'open' })
+      const container = document.createElement('div')
+      shadowRoot.appendChild(container)
+
+      const rootAddSpy = vi.spyOn(shadowRoot, 'addEventListener')
+
+      render(ShadowScope, { container })
+      await nextTick()
+
+      expect(rootAddSpy).toHaveBeenCalledWith('focusin', expect.any(Function))
+      expect(rootAddSpy).toHaveBeenCalledWith('focusout', expect.any(Function))
+    })
+  })
 })

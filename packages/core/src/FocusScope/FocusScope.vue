@@ -92,6 +92,13 @@ watchEffect((cleanupFn) => {
   if (!props.trapped)
     return
 
+  // Attach focus listeners to the scope's root node (a shadow root when
+  // teleported into one, otherwise the document). On `document`, focus events
+  // originating inside a shadow root are retargeted to the host, so
+  // `container.contains(target)` never matches and focus escapes the trap.
+  // -- related: https://github.com/unovue/reka-ui/issues/1667
+  const ownerRoot = (container?.getRootNode() as Document | ShadowRoot | null) ?? document
+
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
       return
@@ -153,15 +160,15 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  ownerRoot.addEventListener('focusin', handleFocusIn as EventListener)
+  ownerRoot.addEventListener('focusout', handleFocusOut as EventListener)
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    ownerRoot.removeEventListener('focusin', handleFocusIn as EventListener)
+    ownerRoot.removeEventListener('focusout', handleFocusOut as EventListener)
     mutationObserver.disconnect()
   })
 })
