@@ -38,3 +38,6 @@ playwright-report/
 vite.config.ts.timestamp*
 */.vitepress/cache
 .eslintcache
+
+.storybook/storybook-static
+*storybook.log
