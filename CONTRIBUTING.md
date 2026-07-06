@@ -23,7 +23,7 @@ This is a pnpm monorepo. The pieces you are most likely to touch:
 | `packages/plugins` | Build-tool integration (auto-import resolver, Nuxt module). |
 | `docs/` | The VitePress documentation site (its own workspace — install separately). |
 | `playground/` | Local sandboxes for trying things out. |
-| `.histoire/` | Histoire setup for the component stories. |
+| `.storybook/` | Storybook setup for the component stories. |
 
 Inside `packages/core/src/`:
 
@@ -47,7 +47,7 @@ pnpm i
 
 Recommended dev loops, depending on what you're working on:
 
-- **Visual / interactive work** — `pnpm story:dev` opens Histoire with the
+- **Visual / interactive work** — `pnpm story:dev` opens Storybook with the
   component stories.
 - **TDD on a component or composable** — `pnpm --filter reka-ui exec vitest <path>`
   runs that file in watch mode.
