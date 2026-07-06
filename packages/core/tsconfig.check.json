@@ -3,7 +3,7 @@
   "extends": "./tsconfig.app.json",
   "exclude": [
     "**/*.test.ts",
-    "src/**/*.story.vue",
+    "src/**/*.stories.vue",
     "src/**/story/*",
     "src/**/stories/*"
   ]

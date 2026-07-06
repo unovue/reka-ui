@@ -43,7 +43,7 @@ export default antfu(
     },
   },
   {
-    files: ['*.story.vue'],
+    files: ['*.stories.vue'],
     rules: {
       'no-console': 'off',
       'no-alert': 'off',
