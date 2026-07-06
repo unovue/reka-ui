@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { defineMeta } from 'sb-addon-vue-csf'
+import { EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from '..'
 
 const { Story } = defineMeta({
   title: 'Editable/Default',
 })
-</script>
-
-<script lang="ts" setup>
-import { EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from '..'
 </script>
 
 <template>
