@@ -74,12 +74,13 @@ const { Story } = defineMeta({
     name="Controlled"
     as-child
   >
-    <template #controls>
+    <div class="mb-4 text-sm text-white">
       modelValue: <input
         v-model="selectedValue"
         type="text"
+        class="text-black"
       >
-    </template>
+    </div>
 
     <AccordionRoot
       v-model="selectedValue"

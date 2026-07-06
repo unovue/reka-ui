@@ -36,6 +36,7 @@ const { Story } = defineMeta({
 
   <Story
     name="0 case"
+    export-name="ZeroCase"
     as-child
   >
     <SliderRoot

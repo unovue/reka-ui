@@ -30,6 +30,19 @@ const { Story } = defineMeta({
     name="Default"
     as-child
   >
+    <div class="mb-4 text-sm text-white">
+      Delay Duration: <input
+        v-model="state.delayDuration"
+        type="number"
+        class="text-black"
+      >
+      Skip Delay Duration: <input
+        v-model="state.skipDelayDuration"
+        type="number"
+        class="text-black"
+      >
+    </div>
+
     <StoryFrame>
       <NavigationMenuRoot
         v-model="currentTrigger"
@@ -122,16 +135,5 @@ const { Story } = defineMeta({
         </NavigationMenuList>
       </NavigationMenuRoot>
     </StoryFrame>
-
-    <template #controls>
-      <HstNumber
-        v-model="state.delayDuration"
-        title="Delay Duration"
-      />
-      <HstNumber
-        v-model="state.skipDelayDuration"
-        title="Skip Delay Duration"
-      />
-    </template>
   </Story>
 </template>

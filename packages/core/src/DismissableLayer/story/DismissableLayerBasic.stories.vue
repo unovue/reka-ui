@@ -31,20 +31,26 @@ const { Story } = defineMeta({
     name="default"
     as-child
   >
-    <template #controls>
-      <HstCheckbox
-        v-model="state.isEscapeKeyDownPrevented"
-        title="Dismiss on escape?"
-      />
-      <HstCheckbox
-        v-model="state.isPointerDownOutsidePrevented"
-        title="Dismiss on pointer down outside?"
-      />
-      <HstCheckbox
-        v-model="state.isFocusOutsidePrevented"
-        title="Dismiss on focus outside?"
-      />
-    </template>
+    <div class="mb-4 text-sm text-white">
+      <label>
+        <input
+          v-model="state.isEscapeKeyDownPrevented"
+          type="checkbox"
+        > Dismiss on escape?
+      </label>
+      <label>
+        <input
+          v-model="state.isPointerDownOutsidePrevented"
+          type="checkbox"
+        > Dismiss on pointer down outside?
+      </label>
+      <label>
+        <input
+          v-model="state.isFocusOutsidePrevented"
+          type="checkbox"
+        > Dismiss on focus outside?
+      </label>
+    </div>
 
     <div class="flex flex-col">
       <button @click="open = !open">

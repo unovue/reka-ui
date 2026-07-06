@@ -40,12 +40,12 @@ const { Story } = defineMeta({
     name="Closed by default"
     as-child
   >
-    <template #controls>
+    <div class="mb-4 text-sm text-white">
       modelValue: <input
         v-model="hasDynamicContent"
         type="checkbox"
       >
-    </template>
+    </div>
 
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"
@@ -81,12 +81,12 @@ const { Story } = defineMeta({
     name="Open by default"
     as-child
   >
-    <template #controls>
+    <div class="mb-4 text-sm text-white">
       modelValue: <input
         v-model="hasDynamicContent"
         type="checkbox"
       >
-    </template>
+    </div>
 
     <AccordionRoot
       class="w-[300px] rounded-md bg-[--line-color] shadow-lg"

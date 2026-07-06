@@ -55,11 +55,6 @@ const { Story } = defineMeta({
   </Story>
 
   <Story
-    name="Empty"
-    as-child
-  />
-
-  <Story
     name="Horizontal (Scroll with overflow)"
     as-child
   >

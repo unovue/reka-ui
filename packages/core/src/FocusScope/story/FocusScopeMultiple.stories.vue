@@ -12,98 +12,103 @@ const { Story } = defineMeta({
 </script>
 
 <template>
-  <div>
+  <Story
+    name="Default"
+    as-child
+  >
     <div>
-      <button
-        type="button"
-        @click="trapped1 = true"
-      >
-        Trap 1
-      </button>
-
-      <FocusScope
-        v-if="trapped1"
-        as-child
-        :loop="trapped1"
-        :trapped="trapped1"
-      >
-        <form
-          :style="{
-            display: 'inline-flex',
-            flexDirection: 'column',
-            gap: 20,
-            padding: 20,
-            maxWidth: 500,
-            border: '2px solid',
-          }"
+      <div>
+        <button
+          type="button"
+          @click="trapped1 = true"
         >
-          <h1>One</h1>
-          <input
-            type="text"
-            placeholder="First name"
-          >
-          <input
-            type="text"
-            placeholder="Last name"
-          >
-          <input
-            type="number"
-            placeholder="Age"
-          >
-          <button
-            type="button"
-            @click="trapped1 = false"
-          >
-            Close
-          </button>
-        </form>
-      </FocusScope>
-    </div>
-    <div>
-      <button
-        type="button"
-        @click="trapped2 = true"
-      >
-        Trap 2
-      </button>
+          Trap 1
+        </button>
 
-      <FocusScope
-        v-if="trapped2"
-        as-child
-        :loop="trapped2"
-        :trapped="trapped2"
-      >
-        <form
-          :style="{
-            display: 'inline-flex',
-            flexDirection: 'column',
-            gap: 20,
-            padding: 20,
-            maxWidth: 500,
-            border: '2px solid',
-          }"
+        <FocusScope
+          v-if="trapped1"
+          as-child
+          :loop="trapped1"
+          :trapped="trapped1"
         >
-          <h1>One</h1>
-          <input
-            type="text"
-            placeholder="First name"
+          <form
+            :style="{
+              display: 'inline-flex',
+              flexDirection: 'column',
+              gap: 20,
+              padding: 20,
+              maxWidth: 500,
+              border: '2px solid',
+            }"
           >
-          <input
-            type="text"
-            placeholder="Last name"
+            <h1>One</h1>
+            <input
+              type="text"
+              placeholder="First name"
+            >
+            <input
+              type="text"
+              placeholder="Last name"
+            >
+            <input
+              type="number"
+              placeholder="Age"
+            >
+            <button
+              type="button"
+              @click="trapped1 = false"
+            >
+              Close
+            </button>
+          </form>
+        </FocusScope>
+      </div>
+      <div>
+        <button
+          type="button"
+          @click="trapped2 = true"
+        >
+          Trap 2
+        </button>
+
+        <FocusScope
+          v-if="trapped2"
+          as-child
+          :loop="trapped2"
+          :trapped="trapped2"
+        >
+          <form
+            :style="{
+              display: 'inline-flex',
+              flexDirection: 'column',
+              gap: 20,
+              padding: 20,
+              maxWidth: 500,
+              border: '2px solid',
+            }"
           >
-          <input
-            type="number"
-            placeholder="Age"
-          >
-          <button
-            type="button"
-            @click="trapped2 = false"
-          >
-            Close
-          </button>
-        </form>
-      </FocusScope>
+            <h1>One</h1>
+            <input
+              type="text"
+              placeholder="First name"
+            >
+            <input
+              type="text"
+              placeholder="Last name"
+            >
+            <input
+              type="number"
+              placeholder="Age"
+            >
+            <button
+              type="button"
+              @click="trapped2 = false"
+            >
+              Close
+            </button>
+          </form>
+        </FocusScope>
+      </div>
     </div>
-  </div>
+  </Story>
 </template>

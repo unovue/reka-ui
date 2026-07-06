@@ -63,7 +63,7 @@ const { Story } = defineMeta({
     name="Errors"
     as-child
   >
-    <template #controls>
+    <div class="mb-4 text-sm text-white">
       <div class="flex flex-col">
         Value:
         <input
@@ -78,7 +78,7 @@ const { Story } = defineMeta({
           type="number"
         >
       </div>
-    </template>
+    </div>
 
     <div class="px-2 py-3 rounded-sm bg-slate-600 text-slate-200">
       <p class="mb-4 text-sm rounded-md text-amber-300">

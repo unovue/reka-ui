@@ -25,20 +25,27 @@ const { Story } = defineMeta({
     name="Basic"
     as-child
   >
+    <div class="mb-4 text-sm text-white">
+      type: <select
+        v-model="state.type"
+        class="text-black"
+      >
+        <option
+          v-for="opt in ['auto', 'always', 'scroll', 'hover']"
+          :key="opt"
+          :value="opt"
+        >
+          {{ opt }}
+        </option>
+      </select>
+    </div>
+
     <ScrollAreaStory :type="state.type">
       <ScrollAreaCopy
         v-for="i in 30"
         :key="i"
       />
     </ScrollAreaStory>
-
-    <template #controls>
-      <HstSelect
-        v-model="state.type"
-        title="type"
-        :options="['auto', 'always', 'scroll', 'hover']"
-      />
-    </template>
   </Story>
 
   <Story
@@ -59,6 +66,21 @@ const { Story } = defineMeta({
     name="Content Change"
     as-child
   >
+    <div class="mb-4 text-sm text-white">
+      Vertical count: <input
+        v-model="contentChangeState.verticalCount"
+        type="number"
+        step="1"
+        class="text-black"
+      >
+      Horizontal count: <input
+        v-model="contentChangeState.horizontalCount"
+        type="number"
+        step="1"
+        class="text-black"
+      >
+    </div>
+
     <div class="w-[400px] h-[400px]">
       <ScrollAreaStory
         type="always"
@@ -71,25 +93,27 @@ const { Story } = defineMeta({
         />
       </ScrollAreaStory>
     </div>
-
-    <template #controls>
-      <HstNumber
-        v-model="contentChangeState.verticalCount"
-        title="Vertical count"
-        :step="1"
-      />
-      <HstNumber
-        v-model="contentChangeState.horizontalCount"
-        title="Horizontal count"
-        :step="1"
-      />
-    </template>
   </Story>
 
   <Story
     name="Animated"
     as-child
   >
+    <div class="mb-4 text-sm text-white">
+      type: <select
+        v-model="state.type"
+        class="text-black"
+      >
+        <option
+          v-for="opt in ['auto', 'always', 'scroll', 'hover']"
+          :key="opt"
+          :value="opt"
+        >
+          {{ opt }}
+        </option>
+      </select>
+    </div>
+
     <ScrollAreaStory
       animated
       :type="state.type"
@@ -99,13 +123,5 @@ const { Story } = defineMeta({
         :key="i"
       />
     </ScrollAreaStory>
-
-    <template #controls>
-      <HstSelect
-        v-model="state.type"
-        title="type"
-        :options="['auto', 'always', 'scroll', 'hover']"
-      />
-    </template>
   </Story>
 </template>
