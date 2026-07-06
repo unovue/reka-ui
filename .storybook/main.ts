@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url'
 const config: StorybookConfig = {
   stories: ['../packages/core/src/**/*.stories.vue'],
   addons: ['sb-addon-vue-csf'],
+  // Reuse the docs' public assets (logo.svg, Geist fonts) for the manager
+  // theme instead of duplicating them here.
+  staticDirs: ['../docs/content/public'],
   framework: {
     name: '@storybook/vue3-vite',
     options: {

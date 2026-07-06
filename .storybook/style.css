@@ -18,3 +18,11 @@
     @apply overflow-hidden bg-gray-100 text-sm text-gray-900;
   }
 }
+
+/*
+ * With the centered layout, #storybook-root shrink-wraps its content, which
+ * collapses stories sized with `w-full` (ported from the Histoire setup).
+ */
+#storybook-root:has(div.w-full) {
+  width: 100%;
+}
