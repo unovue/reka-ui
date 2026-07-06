@@ -8,14 +8,13 @@ const config: StorybookConfig = {
     name: '@storybook/vue3-vite',
     options: {
       // Storybook's default docgen (vue-docgen-api) chokes on `<script setup
-      // generic="T">` SFCs (e.g. VisuallyHiddenInput.vue) with a hard parse
-      // error ("Unexpected token, expected ','"), which breaks the preview
-      // for any story that transitively imports one. reka-ui's own
-      // `docs:gen` tooling hits the same class of limitation with generic
-      // SFCs (see project memory: "vue-component-meta v3 regresses generic
-      // SFC params"). Disable docgen here rather than working around it
-      // per-component; Controls auto-population is not required for this
-      // pilot and can be revisited separately.
+      // lang="ts" generic="T">` SFCs (e.g. VisuallyHidden.vue,
+      // VisuallyHiddenInput.vue) with a hard parse error ("Unexpected token,
+      // expected ','"), which breaks the preview for any story that
+      // transitively imports one. There's no per-file disable knob at this
+      // config layer, so it can't be scoped to just the offending files.
+      // Disable docgen entirely here; these stories don't use Controls or
+      // auto-generated prop tables, so this is a no-op for them.
       docgen: false,
     },
   },

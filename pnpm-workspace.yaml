@@ -12,6 +12,7 @@ overrides:
   rollup@>=3.0.0 <3.30.0: '>=3.30.0'
   rollup@>=4.0.0 <4.59.0: '>=4.59.0'
   svgo@>=3.0.0 <3.3.3: '>=3.3.3'
+  typescript: 5.8.3
 patchedDependencies:
   vitepress: patches/vitepress.patch
 onlyBuiltDependencies:

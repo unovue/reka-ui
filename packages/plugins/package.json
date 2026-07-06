@@ -25,5 +25,8 @@
     "reka-ui": "link:../core",
     "unbuild": "^3.0.0",
     "unplugin-vue-components": "^32.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
   }
 }
