@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import TagsInput from './story/_TagsInput.vue'
+import TagsInputDisabled from './story/_TagsInputDisabled.vue'
 import TagsInputObject from './story/_TagsInputObject.vue'
 
 describe('given default TagsInput', () => {
@@ -349,5 +350,41 @@ describe('given a TagsInput with objects', async () => {
       expect(tags.length).toBe(2)
       expect(tags[1].text()).toBe('hello')
     })
+  })
+})
+
+describe('given TagsInput with a disabled item before a removable one', () => {
+  // @ts-expect-error we return empty object
+  window.getComputedStyle = () => ({})
+  let wrapper: VueWrapper<InstanceType<typeof TagsInputDisabled>>
+  let input: DOMWrapper<HTMLInputElement>
+  let rootComponent: Omit<VueWrapper, 'exists'>
+
+  beforeEach(() => {
+    wrapper = mount(TagsInputDisabled, { attachTo: document.body })
+    rootComponent = wrapper.getComponent({ name: 'TagsInputRoot' })
+    input = wrapper.find('input')
+    input.element.focus()
+  })
+
+  it('removes the selected removable tag, not the disabled one', async () => {
+    // First Backspace selects the last removable tag, second removes it.
+    await input.trigger('keydown', { key: 'Backspace' })
+    await input.trigger('keydown', { key: 'Backspace' })
+
+    const tags = wrapper.findAll('[data-reka-collection-item]')
+    expect(tags.map(tag => tag.text())).toEqual(['Disabled'])
+    expect(rootComponent.emitted('removeTag')?.[0]?.[0]).toEqual('Removable')
+  })
+
+  it('does not remove the disabled tag when it is the only remaining tag', async () => {
+    await input.trigger('keydown', { key: 'Backspace' })
+    await input.trigger('keydown', { key: 'Backspace' })
+    // Only the disabled tag remains; further backspaces must not remove it.
+    await input.trigger('keydown', { key: 'Backspace' })
+    await input.trigger('keydown', { key: 'Backspace' })
+
+    const tags = wrapper.findAll('[data-reka-collection-item]')
+    expect(tags.map(tag => tag.text())).toEqual(['Disabled'])
   })
 })
