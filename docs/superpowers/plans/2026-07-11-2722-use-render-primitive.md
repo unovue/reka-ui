@@ -22,6 +22,23 @@ Pressure-tested against the installed `@vue/runtime-core@3.5.17` and `@vue/compi
 
 Net: `useRender` = Base UI Vue's merge core (`state→data-*`, `stateAttributesMapping`, `class`/`style`-as-`(state)=>…`, Vue-native `mergeProps`) + reka's `Slot` for `asChild` + a `#render` opt-in. The two renderless contracts coexist exactly as Radix (`asChild`) and Base UI (`render`) already do in React.
 
+## Performance Premise (measured)
+
+Validated before implementation with a vitest bench (`vitest bench`) over the **real `Primitive`/`Slot`**, modeling the exact delta: a "part" component rendered through the wrapper (today) vs the `useRender` paths, at **200 parts/tree**. Ratios are what matter (jsdom, not a real browser — absolute hz is meaningless).
+
+| Path | today | `useRender` | client mount+unmount | SSR render |
+|---|---|---|---|---|
+| **Common (non-`asChild`, ~99% of parts)** | part → `Primitive` → el | part → el (direct) | **~1.6× faster** | ~2.4× faster |
+| **`asChild`, hybrid (keeps `Slot`)** | part → `Primitive` → `Slot` → child | part → `Slot` → child | **~1.3× faster** | — |
+| **`asChild`, explicit `#render` (no `Slot`)** | part → `Primitive` → `Slot` → child | part → consumer's child | **~2.2× faster** | ~3.6× faster |
+
+**Takeaways for implementation:**
+- The wrapper instance is a real, measurable cost — dropping it on the common path (~1.6× mount) applies to **every** one of the ~271 parts. This is the headline win of #2722.
+- The hybrid `asChild` path (~1.3×) improves things **without touching the `asChild` DX** (Slot stays). The extra jump to ~2.2× is opt-in via `#render` — so the explicit contract earns its keep exactly in perf-critical spots (virtualized lists, large menus), not just as an ergonomic escape hatch.
+- Corroborates keeping `Slot` a `defineComponent` (Design Decision #1): the measured wrapper cost is the component *instance*, which a functional `Slot` does **not** remove (it still allocates one) — so functional-Slot would not move these numbers, only risk the ref regression.
+
+**Reproduce:** temp `packages/core/src/Primitive/_perf.bench.ts` with `createSSRApp`+`renderToString` and `createApp().mount()/unmount()` over `Primitive` / direct / `Slot`-only trees; run `pnpm --filter reka-ui exec vitest bench <path>`. Caveat: isolates *bare wrapper* cost, so a real app's whole-render improvement is smaller than these per-part ratios (real parts do shared work on both paths). The permanent version of this belongs in the render-count/bench harness from #2724.
+
 ## Global Constraints
 
 - Node ≥ 22, pnpm 10. All commands from repo root.
