@@ -6,9 +6,21 @@
 
 **Goal:** Provide a `useRender()` composable that resolves the render target (`tag`), merges internal props + state-as-`data-*` attributes (`renderProps`), forwards refs, and supports a renderless mode via the existing `Slot` sentinel — rendered by parts via `<component :is="tag" v-bind="renderProps" :ref="elementRef">`. This lets a component render without the extra `Primitive` wrapper instance.
 
-**Architecture:** New `packages/core/src/Primitive/useRender.ts` composable modeled on Base UI's `use-render` but adapted to reka's existing `Slot` merge engine and `useForwardExpose` ref/`$el` semantics. `Primitive` is rewritten as a thin compat shim on top of `useRender` (keeping its exact public props/behavior), so the 271 existing parts keep working untouched. One pilot part (`Label`) migrates off the wrapper to prove parity end-to-end.
+**Architecture:** New `packages/core/src/Primitive/useRender.ts` composable modeled on Base UI Vue's `use-render` **merge core** but adapted to reka's existing `Slot` merge engine and `useForwardExpose` ref/`$el` semantics. The common (non-`asChild`) path renders `<component :is="tag" v-bind="renderProps" :ref="forwardRef">` directly — **removing the `Primitive` wrapper instance from every part** (the headline win). The `asChild` path resolves `tag` to reka's **existing stateful `Slot` component**, keeping the implicit auto-merge DX byte-identical. An **opt-in explicit renderless contract** is added via a named `#render` slot. `Primitive` is rewritten as a thin compat shim on top of `useRender`, so the ~271 existing parts keep working untouched. One pilot part (`Label`) migrates off the wrapper to prove parity end-to-end.
 
-**Tech Stack:** Vue 3 (`h`, `cloneVNode`, `mergeProps`, `<component :is>`, `defineComponent`), TypeScript, vitest + jsdom + `@vue/test-utils` + `@testing-library/vue` + `vitest-axe`.
+**Tech Stack:** Vue 3 (`h`, `cloneVNode`, `mergeProps`, `<component :is>`, `defineComponent`, named slots), TypeScript, vitest + jsdom + `@vue/test-utils` + `@testing-library/vue` + `vitest-axe`.
+
+## Design Decision: keep the `Slot` component; adopt Base UI Vue's merge core; add a `#render` contract
+
+Pressure-tested against the installed `@vue/runtime-core@3.5.17` and `@vue/compiler-dom@3.5.17`. Three findings drive the design:
+
+1. **Functional components are NOT instance-free in Vue 3.** `mountComponent` calls `createComponentInstance` for functional and stateful components alike (`runtime-core:5168`); functional only skips `setupStatefulComponent` (proxy/`setup()`/`exposed`, `runtime-core:7864`). So converting `Slot` to a plain function saves ~a microsecond per `asChild` and **changes ref semantics** (a template ref on a functional component resolves to raw `vnode.el` — the Comment node in the tested leading-comment case, `runtime-core:1543`), regressing `Primitive.test.ts:21-40`. Verdict: **keep the current `defineComponent` `Slot`** for `asChild`; treat Slot→functional as a *separate later PR behind a benchmark*, not part of this foundation. The real win — deleting the `Primitive` wrapper on the common path — is captured regardless, and `asChild` is the rare path.
+
+2. **Slot-arity detection is impossible; a `Slot`/`template` sentinel collides with reka's public API.** `withCtx` wraps every compiled slot in a rest-args closure, so `slots.default.length` is always `0` whether or not the user destructured (verified by compiling `<template #default="{ props }">`). And reka already publicly exports the `Slot` component and treats `as="template"`/`as={Slot}` as `asChild` (`Primitive.ts:56,61-62`), so those can't double as a renderless sentinel. Verdict: the explicit contract is triggered by the **presence of a named `#render` slot** (`slots.render !== undefined`) — zero new props, declarative, reliably detectable. Precedence: `#render` wins over `as-child` (dev-warn if both).
+
+3. **Do not replace `useForwardExpose` with `useMergedRefs`.** `useForwardExpose` deliberately keeps the instance and chains the child's `exposed` (`useForwardExpose.ts:79-93`) — that's how `as={Component}` method-forwarding and the public `part.$el` contract work; `useMergedRefs` eagerly unwraps to `$el` and loses both. Verdict: keep `useForwardExpose` as the ref/expose mechanism; *fold in* `useMergedRefs`' cleanup-callback + no-op-optimization ideas into `forwardRef` internals only.
+
+Net: `useRender` = Base UI Vue's merge core (`state→data-*`, `stateAttributesMapping`, `class`/`style`-as-`(state)=>…`, Vue-native `mergeProps`) + reka's `Slot` for `asChild` + a `#render` opt-in. The two renderless contracts coexist exactly as Radix (`asChild`) and Base UI (`render`) already do in React.
 
 ## Global Constraints
 
@@ -36,9 +48,10 @@ Files this plan creates/modifies:
 - **Create** `packages/core/src/Primitive/useRender.ts` — the composable + types + `getStateAttributes` helper.
 - **Create** `packages/core/src/Primitive/useRender.test.ts`.
 - **Modify** `packages/core/src/Primitive/Primitive.ts` — shim on `useRender` (keep `AsTag`, `PrimitiveProps`, `SELF_CLOSING_TAGS`).
-- **Modify** `packages/core/src/Primitive/Slot.ts` — optional dev warning only (no behavior change).
+- **Modify** `packages/core/src/Primitive/Slot.ts` — **stays a `defineComponent`** (do NOT convert to functional — see Design Decision); optional dev warning only (no behavior change).
+- **Modify** `packages/core/src/Primitive/usePrimitiveElement.ts` — harden against plain-`Element` refs (Task 9): today `primitiveElement.value?.$el.nodeName` throws a TypeError when the ref is a raw `Element` (which `<component :is="'div'">` delivers). Must land before any part using it migrates.
 - **Modify** `packages/core/src/Primitive/index.ts` + `packages/core/src/index.ts:40` — export `useRender` + types.
-- **Modify** `packages/core/src/Label/Label.vue` — pilot migration off `Primitive`.
+- **Modify** `packages/core/src/Label/Label.vue` — pilot migration off `Primitive` (demonstrates both the direct path and the `#render` contract).
 
 Not touched here: the other ~270 parts (follow-up migrations under #2723), `packages/plugins`.
 
@@ -555,13 +568,14 @@ const { tag, renderProps, elementRef } = useRender({
 </script>
 
 <template>
-  <component :is="tag" v-bind="renderProps" :ref="elementRef">
+  <slot v-if="$slots.render" name="render" :props="renderProps" :state="state" :forward-ref="elementRef" />
+  <component :is="tag" v-else v-bind="renderProps" :ref="elementRef">
     <slot />
   </component>
 </template>
 ```
 
-Copy the current `@mousedown` handler body from `Label.vue` **verbatim** — do not idealize it.
+Copy the current `@mousedown` handler body from `Label.vue` **verbatim** — do not idealize it. The `#render` branch is the canonical dual-contract template shape every migrated part adopts (see Task 8); `Label` is the first to carry it.
 
 - [ ] **Step 2: Run the existing Label suite unchanged**
 
@@ -588,25 +602,168 @@ git commit -m "refactor(Label): render via useRender instead of Primitive wrappe
 
 ---
 
+## Task 8: Explicit `#render` renderless contract (opt-in, dual-contract)
+
+**Files:**
+- Modify: `packages/core/src/Primitive/useRender.ts` (expose the slot-facing shape), `packages/core/src/Label/Label.vue` (already carries the branch from Task 7)
+- Test: `packages/core/src/Primitive/useRender.test.ts`
+
+**Interfaces:**
+- Consumes: `renderProps`, `state`, `elementRef` (bound as slot prop `forward-ref`).
+- Produces: a second, opt-in renderless contract. A part exposes `<slot name="render" :props="renderProps" :state="state" :forward-ref="elementRef" />`; the consumer writes:
+  ```vue
+  <Label v-slot:render="{ props, state, forwardRef }">
+    <label v-bind="props" :ref="forwardRef">…
+  </label>
+  </Label>
+  ```
+  Named-slot presence (`$slots.render`) is the trigger — **not** slot arity (impossible through `withCtx`) and **not** an `as`/`template` sentinel (collides with the `asChild` contract). `forward-ref` is a plain slot prop the consumer binds — it is NOT a Vue template ref (verified: `<slot :ref>` compiles to a slot prop, not `setElementRef`), hence the name `forwardRef` (not `ref`).
+
+- [ ] **Step 1: Write the failing test for the explicit contract**
+
+```ts
+// append to useRender.test.ts
+describe('useRender — explicit #render contract', () => {
+  const WithRender = {
+    setup() {
+      const { renderProps, state, elementRef } = useRender({
+        as: () => 'div',
+        props: { 'data-part': '' },
+        state: () => ({ open: true }),
+      })
+      return { renderProps, state, elementRef }
+    },
+    template: `<slot v-if="$slots.render" name="render" :props="renderProps" :state="state" :forward-ref="elementRef" />
+               <div v-else v-bind="renderProps" />`,
+  }
+
+  it('routes rendering to the consumer element when #render is provided', () => {
+    const wrapper = mount(WithRender, {
+      slots: { render: `<template #render="{ props }"><section v-bind="props" /></template>` },
+    })
+    expect(wrapper.find('section[data-part]').exists()).toBe(true)
+    expect(wrapper.find('div').exists()).toBe(false)
+  })
+
+  it('exposes state to the render slot', () => {
+    const wrapper = mount(WithRender, {
+      slots: { render: `<template #render="{ props, state }"><section v-bind="props" :data-open="state.open" /></template>` },
+    })
+    expect(wrapper.find('section').attributes('data-open')).toBe('true')
+  })
+})
+```
+
+- [ ] **Step 2: Run to verify it fails, then wire the slot-facing exposure**
+
+Run: `pnpm --filter reka-ui exec vitest run src/Primitive/useRender.test.ts` → FAIL.
+`useRender` already returns `renderProps`/`state`/`elementRef`; the work is confirming they are ergonomic as slot props (plain objects, not refs) and documenting the `forward-ref` binding. No new return fields required.
+
+- [ ] **Step 3: Add the precedence dev-warning**
+
+When a part receives BOTH a `#render` slot AND `asChild`/`as:'template'`, `#render` wins; `console.warn` under `process.env.NODE_ENV !== 'production'`. Add a test asserting the warning fires and `#render` takes effect.
+
+- [ ] **Step 4: Run + type-check + commit**
+
+Run: `pnpm --filter reka-ui exec vitest run src/Primitive`
+
+```bash
+pnpm --filter reka-ui type-check
+git add packages/core/src/Primitive/useRender.ts packages/core/src/Primitive/useRender.test.ts
+git commit -m "feat(Primitive): add opt-in #render renderless contract"
+```
+
+---
+
+## Task 9: Harden `usePrimitiveElement` for plain-`Element` refs (prerequisite for part migrations)
+
+**Files:**
+- Modify: `packages/core/src/Primitive/usePrimitiveElement.ts`
+- Test: `packages/core/src/Primitive/usePrimitiveElement.test.ts` (create if absent)
+
+**Interfaces:**
+- Consumes: a template ref that may now be a raw `Element` (from `<component :is="'div'">`) OR a component instance (from `<component :is="Slot">` / `as={Component}`).
+- Produces: `currentElement` resolves correctly for both, without throwing.
+
+> **Why:** ~20/38 consumers do `primitiveElement.value?.$el.nodeName`. Under the direct path the ref delivers a raw `Element` (no `$el`) → `TypeError: Cannot read properties of undefined`. This must land **before** any `usePrimitiveElement` consumer migrates (Label does not use it, so Task 7 is safe; the broader #2723 migrations are not).
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// packages/core/src/Primitive/usePrimitiveElement.test.ts
+import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import { usePrimitiveElement } from './usePrimitiveElement'
+
+describe('usePrimitiveElement', () => {
+  it('resolves currentElement when the ref is a raw Element (component :is path)', () => {
+    const Harness = {
+      setup() {
+        const { primitiveElement, currentElement } = usePrimitiveElement()
+        return { primitiveElement, currentElement }
+      },
+      template: `<div :ref="(el) => primitiveElement = el" />`,
+    }
+    const wrapper = mount(Harness)
+    expect(wrapper.vm.currentElement).toBeInstanceOf(HTMLElement)
+  })
+})
+```
+
+- [ ] **Step 2: Run to verify it fails, then guard**
+
+Run: `pnpm --filter reka-ui exec vitest run src/Primitive/usePrimitiveElement.test.ts` → FAIL (TypeError).
+Harden the resolver to branch on whether the value is an `Element` vs an instance with `$el`, e.g.:
+
+```ts
+const node = primitiveElement.value
+const el = node instanceof Element ? node : node?.$el
+currentElement.value = ['#text', '#comment'].includes(el?.nodeName)
+  ? el?.nextElementSibling
+  : el
+```
+
+Keep the existing component-instance/text-comment behavior intact (existing consumers must not regress).
+
+- [ ] **Step 3: Run the Primitive suite + a broad sweep**
+
+Run: `pnpm --filter reka-ui exec vitest run src/Primitive` then `pnpm --filter reka-ui exec vitest run`
+Expected: PASS (all `usePrimitiveElement` consumers still resolve `$el`).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add packages/core/src/Primitive/usePrimitiveElement.ts packages/core/src/Primitive/usePrimitiveElement.test.ts
+git commit -m "fix(Primitive): harden usePrimitiveElement for raw Element refs"
+```
+
+---
+
 ## Self-Review
 
-- **Spec coverage:** `useRender({defaultTagName, as, props, state, ref})` → Tasks 1–3; returns `{tag, renderProps, renderless, …}` → Task 1 + return type; renderless via `Slot` sentinel → Task 1 (mapping) + Task 4 (parity); integrated prop/ref/state merging → Tasks 2–3; no wrapper instance → Task 7 (`<component :is>` directly); `mergeProps`/`useMergedRefs` primitives → Vue's `mergeProps` (Task 2) + `elementRef` fold into `useForwardExpose` (Task 3, justified in Risks); keep `Primitive` as thin compat shim → Task 5. Covered.
+- **Spec coverage:** `useRender({defaultTagName, as, props, state, ref})` → Tasks 1–3; returns `{tag, renderProps, renderless, …}` → Task 1 + return type; renderless via `Slot` sentinel (implicit `asChild`) → Task 1 (mapping) + Task 4 (parity); explicit `#render` contract → Task 8; integrated prop/ref/state merging → Tasks 2–3; no wrapper instance → Task 7 (`<component :is>` directly); `mergeProps`/`useMergedRefs` primitives → Vue's `mergeProps` (Task 2) + `elementRef` fold into `useForwardExpose` (Task 3, justified in Risks); keep `Primitive` as thin compat shim → Task 5; `usePrimitiveElement` hardening → Task 9. Covered.
+- **Dual-contract coherence:** implicit (`asChild` → `Slot` component) and explicit (`#render` slot) share one slot-prop shape (`{ props, state, forwardRef }`); precedence `#render` > `asChild` with a dev-warn (Task 8). Grounded in the Design Decision section (runtime-verified).
 - **Type consistency:** `UseRenderOptions`/`UseRenderReturn`/`PrimitiveState`/`StateAttributesMapping` used identically across Tasks 1–3 and exported unchanged in Task 6. `elementRef` signature `(el) => void` consistent Task 3 ↔ Task 7 template.
 - **Attrs double-apply guard:** `renderProps` deliberately excludes `useAttrs()` — parts stay single-root and rely on Vue's native fallthrough; the shim (Task 5) forwards `attrs` as `props` because it is itself the wrapper.
 
 ## Risks / Gotchas
 
-1. **Double-applied attrs** — never include `useAttrs()` in `renderProps` for a part root; rely on fallthrough. `inheritAttrs: false` parts bind `$attrs` explicitly. Vue's `mergeProps` dedupes identical fn refs but not re-created inline handlers.
-2. **`import.meta.env.DEV` neutered in dist** — use `process.env.NODE_ENV !== 'production'` for dev warnings (Task 6).
-3. **Self-closing hydration** — `area/img/input` must render with no children (`selfClosing`); ~10 parts default `as:'input'`.
-4. **Ref/expose contract (484 imports)** — the shim must not mutate its own `instance.exposed`; `useForwardExpose.forwardRef` already handles Element vs component-instance refs.
-5. **Text/comment first-root** — `currentElement` must resolve to `nextElementSibling` (reuse `useForwardExpose`).
-6. **Scoped CSS** — single-root fallthrough carries `data-v-*`; multi-root migrated parts (later, #2723) keep `useForwardScopeId`; verify `<component :is="Slot">` still carries the part's scopeId onto the cloned child.
-7. **`asChild` becomes reactive** — an improvement over today's setup-frozen value; `ComboboxItem.vue` `v-memo` already keys on `props.as, props.asChild`.
-8. **`as="template"` compat** — keep accepting it (tested heavily in `Primitive.test.ts`).
-9. **`Slot`'s `delete child.props.ref`** is load-bearing — do not remove when reusing `Slot`.
-10. **SSR** — no `document` access in `useRender` computeds; `onUpdated`/callback refs are client-only (fine).
+1. **Keep `Slot` a `defineComponent`; do NOT convert to functional.** Verified against `runtime-core@3.5.17`: functional components still allocate an instance + render effect (`createComponentInstance`, `:5168`), so the saving is ~a microsecond, and a template ref on a functional component resolves to raw `vnode.el` (`:1543`) — the Comment node in the leading-comment case (`Primitive.test.ts:21-40`), a regression. Slot→functional is a separate later PR behind a benchmark, not this foundation.
+2. **`usePrimitiveElement` crashes on plain-`Element` refs** — `primitiveElement.value?.$el.nodeName` throws when the ref is a raw `Element` (the direct-path case). Harden it (Task 9) before any consumer migrates.
+3. **Do NOT swap `useForwardExpose` for `useMergedRefs`** — `useForwardExpose` keeps the instance and chains the child's `exposed` (`useForwardExpose.ts:79-93`), preserving `as={Component}` method-forwarding and the public `part.$el` contract; `useMergedRefs` unwraps to `$el` and loses both. Fold `useMergedRefs`' cleanup-callback + no-op optimizations into `forwardRef` internals only.
+4. **Use Vue-native `mergeProps`, not Base UI's per-render handler wrapping** — Base UI wraps handlers in new closures each compute, which double-fire when a user puts `as-child` AND `v-bind="props"` on the child. Vue's `mergeProps` identity-dedupes handlers (`runtime-core:7701`), so it does not. Keep classes-may-duplicate (`"x x"`) as a documented footgun of doing both.
+5. **`#render` disambiguation must be by named-slot presence** — slot arity is unreadable through `withCtx` (rest-args closure; `slots.default.length === 0` always), and `as="template"`/`as={Slot}` are already claimed by the `asChild` contract. Precedence: `#render` > `as-child`, dev-warn on both (Task 8).
+6. **`#render`'s `forward-ref` is a slot prop, not a template ref** — `<slot :ref>` compiles to a plain slot prop; name it `forwardRef` so consumers know to bind `:ref="forwardRef"` themselves.
+7. **Double-applied attrs** — never include `useAttrs()` in `renderProps` for a part root; rely on fallthrough. `inheritAttrs: false` parts bind `$attrs` explicitly.
+8. **`import.meta.env.DEV` neutered in dist** — use `process.env.NODE_ENV !== 'production'` for dev warnings (Tasks 6, 8).
+9. **Self-closing hydration** — `area/img/input` must render with no children (`selfClosing`); ~10 parts default `as:'input'`.
+10. **Ref/expose contract (484 imports)** — the shim must not mutate its own `instance.exposed`; `useForwardExpose.forwardRef` already handles Element vs component-instance refs. On the direct path the ref receives the element itself, so `useForwardExpose`'s `onUpdated`+`triggerRef` workaround (`:13-20`) is unnecessary there.
+11. **Scoped CSS** — single-root fallthrough carries `data-v-*`; multi-root migrated parts (later, #2723) keep `useForwardScopeId`; verify `<component :is="Slot">` still carries the part's scopeId onto the cloned child.
+12. **`asChild` becomes reactive** — an improvement over today's setup-frozen value; `ComboboxItem.vue` `v-memo` already keys on `props.as, props.asChild`.
+13. **`as="template"` compat** — keep accepting it (tested heavily in `Primitive.test.ts`).
+14. **`Slot`'s `delete child.props.ref`** is load-bearing — do not remove when reusing `Slot`. Note the latent hazard: it mutates a possibly-cached/hoisted vnode (`v-memo`, cached slots) — carry the existing behavior forward with a comment, don't "fix" it in this PR.
+15. **SSR** — no `document` access in `useRender` computeds; `onUpdated`/callback refs are client-only (fine).
 
 ## Execution Handoff
 
-Recommended: **Subagent-Driven** (superpowers:subagent-driven-development). Tasks 1–4 build + prove `useRender` in isolation; Task 5 is the highest-scrutiny gate (Primitive shim parity); Tasks 6–7 export + prove one real part. Only after this lands do #2723 (headless composables) and #2724 (overlay perf, template swap) build on it.
+Recommended: **Subagent-Driven** (superpowers:subagent-driven-development). Tasks 1–4 build + prove `useRender` in isolation; Task 5 is the highest-scrutiny gate (Primitive shim parity); Tasks 6–7 export + prove one real part; Task 8 adds the opt-in `#render` contract; Task 9 hardens `usePrimitiveElement` (prerequisite for the broader #2723 migrations, not for Label). Only after this lands do #2723 (headless composables) and #2724 (overlay perf, template swap) build on it.
