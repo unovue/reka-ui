@@ -59,18 +59,32 @@ export const Primitive = defineComponent({
     // public instance. This is behaviour-compatible for all `$`-keys and props
     // (verified against @vue/runtime-core; see #2722): `$el` and props still
     // resolve, and in prod it removes a pre-existing expose-snapshot staleness.
-    // We only consume tag/renderProps here (no `:ref="elementRef"` on the node).
-    const { tag, renderProps, selfClosing } = useRender({
+    const { tag, renderProps, selfClosing, state, elementRef } = useRender({
       defaultTagName: 'div',
       as: () => props.as,
       asChild: () => props.asChild,
       props: attrs,
     })
 
-    return () => h(
-      tag.value,
-      renderProps.value,
-      selfClosing.value ? undefined : { default: slots.default },
-    )
+    return () => {
+      // Honor the opt-in `#render` contract (parity with parts built on
+      // useRender): the consumer owns the element and binds `props`/`forwardRef`
+      // itself, so `#render` takes precedence over the default/`asChild` render.
+      if (slots.render) {
+        return slots.render({
+          props: renderProps.value,
+          state: state.value,
+          forwardRef: elementRef,
+        })
+      }
+
+      // Default path binds no `:ref` on the node — the shim must not mutate its
+      // own instance.exposed beyond what useRender already did.
+      return h(
+        tag.value,
+        renderProps.value,
+        selfClosing.value ? undefined : { default: slots.default },
+      )
+    }
   },
 })

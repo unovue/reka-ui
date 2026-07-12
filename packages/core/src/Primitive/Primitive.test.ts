@@ -266,4 +266,15 @@ describe('test Primitive functionalities', () => {
       expect(element.attributes('class')).toBe('parent-class child-class')
     })
   })
+
+  it('honors the #render slot, letting the consumer own the element', () => {
+    const wrapper = mount(Primitive, {
+      slots: {
+        render: ({ props }: any) => h('section', { ...props, 'data-x': '' }),
+      },
+    })
+    // #render takes precedence: the consumer's element renders, not the default div
+    expect(wrapper.find('section[data-x]').exists()).toBe(true)
+    expect(wrapper.find('div').exists()).toBe(false)
+  })
 })
