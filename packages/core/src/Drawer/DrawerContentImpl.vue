@@ -34,7 +34,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
-import { useForwardExpose } from '@/shared'
+import { getElementByIdFrom, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
@@ -347,7 +347,7 @@ onUnmounted(() => {
 // Dev warning for missing DrawerTitle
 if (process.env.NODE_ENV !== 'production') {
   onMounted(() => {
-    if (!document.getElementById(rootContext.titleId)) {
+    if (!getElementByIdFrom(currentElement.value, rootContext.titleId)) {
       console.warn(
         `Warning: \`DrawerContent\` requires a \`DrawerTitle\` for accessibility.`,
       )

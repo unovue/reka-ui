@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { onMounted } from 'vue'
+import { getElementByIdFrom } from '@/shared'
 
 const DEFAULT_TITLE_NAME = 'DialogTitle'
 const DEFAULT_CONTENT_NAME = 'DialogContent'
@@ -30,14 +31,14 @@ For more information, see https://www.reka-ui.com/docs/components/${componentLin
   const DESCRIPTION_MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby="undefined"\` for ${contentName}.`
 
   onMounted(() => {
-    const hasTitle = document.getElementById(titleId)
+    const hasTitle = getElementByIdFrom(contentElement.value, titleId)
     if (!hasTitle)
       console.warn(TITLE_MESSAGE)
 
     const describedById = contentElement.value?.getAttribute('aria-describedby')
     // if we have an id and the user hasn't set aria-describedby="undefined"
     if (descriptionId && describedById) {
-      const hasDescription = document.getElementById(descriptionId)
+      const hasDescription = getElementByIdFrom(contentElement.value, descriptionId)
       if (!hasDescription)
         console.warn(DESCRIPTION_MESSAGE)
     }

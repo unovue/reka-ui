@@ -3,7 +3,7 @@ import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
 import { useVModel } from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
-import { useComposing } from '@/shared'
+import { getActiveElement, getElementByIdFrom, useComposing } from '@/shared'
 
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
@@ -87,7 +87,7 @@ function handleBlur(ev: FocusEvent) {
     return
 
   const isInsideRoot = rootContext.parentElement.value?.contains(nextFocus)
-  const isInsideContent = document.getElementById(rootContext.contentId)?.contains(nextFocus)
+  const isInsideContent = getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(nextFocus)
 
   if (!isInsideRoot && !isInsideContent) {
     // Delay to let FocusScope's focus-restoration (handleFocusOut) run first.
@@ -96,9 +96,9 @@ function handleBlur(ev: FocusEvent) {
     requestAnimationFrame(() => {
       if (!rootContext.open.value)
         return
-      const active = document.activeElement
+      const active = getActiveElement(rootContext.parentElement.value)
       const isStillOutside = !rootContext.parentElement.value?.contains(active)
-        && !document.getElementById(rootContext.contentId)?.contains(active)
+        && !getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(active)
       if (isStillOutside) {
         rootContext.onOpenChange(false)
       }
