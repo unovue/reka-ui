@@ -1,6 +1,6 @@
 import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { AsTag } from './Primitive'
-import { computed, mergeProps, toValue } from 'vue'
+import { computed, getCurrentInstance, mergeProps, toValue } from 'vue'
 import { useForwardExpose } from '../shared/useForwardExpose'
 import { SELF_CLOSING_TAGS } from './Primitive'
 import { Slot } from './Slot'
@@ -78,6 +78,20 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
   })
 
   const renderless = computed(() => tag.value === Slot)
+
+  // Dev-only: `#render` slot takes precedence over `asChild`/`as="template"`.
+  // Warn when both are provided so the ignored `asChild` isn't a silent surprise.
+  // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
+  // eslint-disable-next-line node/prefer-global/process
+  if (process.env.NODE_ENV !== 'production') {
+    const instance = getCurrentInstance()
+    if (instance?.slots?.render && renderless.value) {
+      console.warn(
+        '[reka-ui] `useRender`: both a `#render` slot and `asChild`/`as="template"` were provided. '
+        + 'The `#render` slot takes precedence; `asChild` is ignored.',
+      )
+    }
+  }
 
   const selfClosing = computed(() => {
     const t = tag.value

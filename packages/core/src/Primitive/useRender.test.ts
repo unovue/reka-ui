@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick, ref } from 'vue'
 import * as Reka from '../index'
 import { Slot } from './Slot'
@@ -139,5 +139,51 @@ describe('useRender — renderless (Slot)', () => {
 describe('useRender — public export', () => {
   it('is exported from the package barrel path', () => {
     expect(typeof Reka.useRender).toBe('function')
+  })
+})
+
+describe('useRender — explicit #render contract', () => {
+  const WithRender = {
+    props: ['asChild'],
+    setup(props: any) {
+      const { tag, renderProps, state, elementRef } = useRender({
+        as: () => 'div',
+        asChild: () => props.asChild,
+        props: { 'data-part': '' },
+        state: () => ({ open: true }),
+      })
+      return { tag, renderProps, state, elementRef }
+    },
+    template: `<slot v-if="$slots.render" name="render" :props="renderProps" :state="state" :forward-ref="elementRef" />
+               <component :is="tag" v-else v-bind="renderProps"><slot /></component>`,
+  }
+
+  it('routes rendering to the consumer element when #render is provided', () => {
+    const wrapper = mount(WithRender, {
+      slots: { render: `<template #render="{ props }"><section v-bind="props" /></template>` },
+    })
+    expect(wrapper.find('section[data-part]').exists()).toBe(true)
+    expect(wrapper.find('div').exists()).toBe(false)
+  })
+
+  it('exposes state to the render slot', () => {
+    const wrapper = mount(WithRender, {
+      slots: { render: `<template #render="{ props, state }"><section v-bind="props" :data-open="state.open" /></template>` },
+    })
+    expect(wrapper.find('section').attributes('data-open')).toBe('true')
+  })
+
+  it('warns when both #render and asChild are provided, and #render still wins', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = mount(WithRender, {
+      props: { asChild: true },
+      slots: {
+        render: `<template #render="{ props }"><section v-bind="props" /></template>`,
+        default: '<b />',
+      },
+    })
+    expect(wrapper.find('section[data-part]').exists()).toBe(true) // #render wins
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('#render'))
+    spy.mockRestore()
   })
 })
