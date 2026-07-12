@@ -1,6 +1,6 @@
 import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { AsTag } from './Primitive'
-import { computed, toValue } from 'vue'
+import { computed, mergeProps, toValue } from 'vue'
 import { SELF_CLOSING_TAGS } from './Primitive'
 import { Slot } from './Slot'
 
@@ -8,6 +8,30 @@ export type PrimitiveState = Record<string, string | boolean | number | null | u
 
 export type StateAttributesMapping<S extends PrimitiveState>
   = { [K in keyof S]?: (value: S[K]) => Record<string, string | undefined> | undefined }
+
+function kebab(key: string): string {
+  return key.replace(/([a-z\d])([A-Z])/g, '$1-$2').toLowerCase()
+}
+
+function getStateAttributes<S extends PrimitiveState>(
+  state: S | undefined,
+  mapping?: StateAttributesMapping<S>,
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (!state)
+    return out
+  for (const key in state) {
+    const value = state[key]
+    if (mapping?.[key]) {
+      Object.assign(out, mapping[key]!(value) ?? {})
+      continue
+    }
+    if (value === false || value == null)
+      continue
+    out[`data-${kebab(key)}`] = value === true ? '' : String(value)
+  }
+  return out
+}
 
 export interface UseRenderOptions<S extends PrimitiveState = PrimitiveState> {
   /** Fallback tag when `as` is undefined. @default 'div' */
@@ -61,8 +85,8 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
 
   const state = computed(() => toValue(options.state))
 
-  // Task 2: state → data-* + prop merging
-  const renderProps = computed<Record<string, any>>(() => ({}))
+  const stateAttrs = computed(() => getStateAttributes(toValue(options.state), options.stateAttributesMapping))
+  const renderProps = computed<Record<string, any>>(() => mergeProps(stateAttrs.value, toValue(options.props) ?? {}))
 
   // Task 3: ref forwarding
   const elementRef = (_el: Element | ComponentPublicInstance | null) => {}

@@ -50,3 +50,28 @@ describe('useRender — tag resolution', () => {
     expect(api.tag.value).toBe('span')
   })
 })
+
+describe('useRender — renderProps', () => {
+  it('passes through options.props', () => {
+    expect(setup({ props: { id: 'x' } }).renderProps.value).toMatchObject({ id: 'x' })
+  })
+  it('boolean true state → empty-string data attribute', () => {
+    expect(setup({ state: { disabled: true } }).renderProps.value).toMatchObject({ 'data-disabled': '' })
+  })
+  it('omits data attribute for false/undefined state', () => {
+    const rp = setup({ state: { disabled: false, open: undefined } }).renderProps.value
+    expect(rp).not.toHaveProperty('data-disabled')
+    expect(rp).not.toHaveProperty('data-open')
+  })
+  it('string/number state → value data attribute (kebab-cased key)', () => {
+    expect(setup({ state: { orientation: 'horizontal' } }).renderProps.value)
+      .toMatchObject({ 'data-orientation': 'horizontal' })
+  })
+  it('applies stateAttributesMapping overrides', () => {
+    const rp = setup({
+      state: { checked: true },
+      stateAttributesMapping: { checked: v => ({ 'aria-checked': String(v) }) },
+    }).renderProps.value
+    expect(rp).toMatchObject({ 'aria-checked': 'true' })
+  })
+})
