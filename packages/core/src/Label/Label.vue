@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 
 export interface LabelProps extends PrimitiveProps {
   /** The id of the element the label is associated with. */
@@ -9,23 +8,40 @@ export interface LabelProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { useRender } from '@/Primitive'
 
 const props = withDefaults(defineProps<LabelProps>(), {
   as: 'label',
 })
 
-useForwardExpose()
+function onMousedown(event: MouseEvent) {
+  // prevent text selection when double clicking label
+  if (!event.defaultPrevented && event.detail > 1)
+    event.preventDefault()
+}
+
+const { tag, renderProps, state, elementRef } = useRender({
+  defaultTagName: 'label',
+  as: () => props.as,
+  asChild: () => props.asChild,
+  props: () => ({ for: props.for, onMousedown }),
+})
 </script>
 
 <template>
-  <Primitive
-    v-bind="props"
-    @mousedown="(event: MouseEvent) => {
-      // prevent text selection when double clicking label
-      if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
-    }"
+  <slot
+    v-if="$slots.render"
+    name="render"
+    :props="renderProps"
+    :state="state"
+    :forward-ref="elementRef"
+  />
+  <component
+    :is="tag"
+    v-else
+    v-bind="renderProps"
+    :ref="elementRef"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>
