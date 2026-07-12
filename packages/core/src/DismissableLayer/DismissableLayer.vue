@@ -10,7 +10,6 @@ import {
   nextTick,
   watch,
 } from 'vue'
-import { useForwardExpose } from '@/shared'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -56,7 +55,7 @@ export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
 <script setup lang="ts">
 import type { StackLayer } from './layerStack'
 import {
-  Primitive,
+  useRender,
 } from '@/Primitive'
 import {
   acquireBodyPointerEventsLock,
@@ -88,7 +87,12 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
 
 const emits = defineEmits<DismissableLayerPrivateEmits>()
 
-const { forwardRef, currentElement: layerElement } = useForwardExpose()
+// Render via `useRender` (no `Primitive` wrapper instance). `elementRef` is the
+// forwarded callback ref; `layerElement` the resolved root element.
+const { tag, currentElement: layerElement, elementRef } = useRender({
+  as: () => props.as,
+  asChild: () => props.asChild,
+})
 const ownerDocument = computed(
   () => layerElement.value?.ownerDocument ?? globalThis.document,
 )
@@ -182,10 +186,9 @@ watch(
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
+  <component
+    :is="tag"
+    :ref="elementRef"
     data-dismissable-layer
     :style="{
       pointerEvents: isBodyPointerEventsDisabled
@@ -199,5 +202,5 @@ watch(
     @pointerdown.capture="pointerDownOutside.onPointerDownCapture"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>
