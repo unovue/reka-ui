@@ -75,7 +75,9 @@ export function useSwitch<T = boolean>(props: UseSwitchProps<T> = {}): UseSwitch
     props: computed(() => ({
       'role': 'switch',
       'aria-checked': checked.value,
-      'aria-required': toValue(props.required) || undefined,
+      // Pass-through (not `|| undefined`) to match SwitchRoot's `:aria-required`
+      // exactly: undefined omits, `false` renders "false".
+      'aria-required': toValue(props.required),
       'value': toValue(props.value) ?? 'on',
       'disabled': disabled.value || undefined,
       'onClick': () => toggle(),
