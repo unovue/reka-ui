@@ -1,6 +1,6 @@
 import type { Component, PropType } from 'vue'
 import { defineComponent, h } from 'vue'
-import { Slot } from './Slot'
+import { useRender } from './useRender'
 
 export type AsTag
   = | 'a'
@@ -53,14 +53,20 @@ export const Primitive = defineComponent({
     },
   },
   setup(props, { attrs, slots }) {
-    const asTag = props.asChild ? 'template' : props.as
+    // Compat shim over useRender. NOTE: do not bind `elementRef` here — the shim
+    // must not mutate its own instance.exposed (parts put `:ref="forwardRef"` on
+    // <Primitive> and read instance.vnode.el). We only consume tag/renderProps.
+    const { tag, renderProps, selfClosing } = useRender({
+      defaultTagName: 'div',
+      as: () => props.as,
+      asChild: () => props.asChild,
+      props: attrs,
+    })
 
-    if (typeof asTag === 'string' && SELF_CLOSING_TAGS.includes(asTag))
-      return () => h(asTag, attrs)
-
-    if (asTag !== 'template')
-      return () => h(props.as, attrs, { default: slots.default })
-
-    return () => h(Slot, attrs, { default: slots.default })
+    return () => h(
+      tag.value,
+      renderProps.value,
+      selfClosing.value ? undefined : { default: slots.default },
+    )
   },
 })
