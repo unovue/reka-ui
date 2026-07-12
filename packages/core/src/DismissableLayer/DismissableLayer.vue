@@ -63,10 +63,11 @@ export const context = reactive({
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke } from '@vueuse/core'
+import type { StackLayer } from './layerStack'
 import {
   Primitive,
 } from '@/Primitive'
+import { registerStackLayer } from './layerStack'
 import {
   useFocusOutside,
   usePointerDownOutside,
@@ -141,20 +142,20 @@ const focusOutside = useFocusOutside((event) => {
     emits('dismiss')
 }, layerElement)
 
-onKeyStroke('Escape', (event) => {
-  // A layer that stays mounted while hidden (e.g. a Dialog with
-  // `unmountOnHide: false`) is out of the layer stack, so its `index` is `-1`.
-  // When no layer is visible (`size === 0`), `-1 === size - 1` would otherwise
-  // make it look like the highest layer and emit `escapeKeyDown` / `dismiss`.
-  if (!props.present)
-    return
-  const isHighestLayer = index.value === layers.value.size - 1
-  if (!isHighestLayer)
-    return
-  emits('escapeKeyDown', event)
-  if (!event.defaultPrevented)
-    emits('dismiss')
-})
+// Participation in the shared stack manager. The manager routes Escape to the
+// top *present* layer only (replacing the per-layer `window` keydown listener),
+// so `onEscapeKeyDown` here just carries the emit + dismiss. Membership is driven
+// by the presence watch below.
+const stackLayer: StackLayer = {
+  element: () => layerElement.value,
+  isPresent: () => props.present,
+  disableOutsidePointerEvents: () => props.disableOutsidePointerEvents,
+  onEscapeKeyDown: (event) => {
+    emits('escapeKeyDown', event)
+    if (!event.defaultPrevented)
+      emits('dismiss')
+  },
+}
 
 // Use `watch` with explicit sources (instead of `watchEffect`) so this effect
 // only re-runs when `layerElement` or `disableOutsidePointerEvents` change.
@@ -206,8 +207,10 @@ watch(
     if (!element || !present)
       return
     layers.value.add(element)
+    const unregisterStackLayer = registerStackLayer(stackLayer)
     onCleanup(() => {
       layers.value.delete(element)
+      unregisterStackLayer()
     })
   },
   { immediate: true },
