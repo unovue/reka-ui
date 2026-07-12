@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { markRaw, nextTick, ref } from 'vue'
+import * as Reka from '../index'
 import { Slot } from './Slot'
 import { useRender } from './useRender'
 
@@ -132,5 +133,11 @@ describe('useRender — renderless (Slot)', () => {
   it('bypasses leading comment nodes', () => {
     const wrapper = mount(Slotted, { props: { asChild: true }, slots: { default: '<!-- c --><a>x</a>' } })
     expect(wrapper.find('a').classes()).toContain('parent')
+  })
+})
+
+describe('useRender — public export', () => {
+  it('is exported from the package barrel path', () => {
+    expect(typeof Reka.useRender).toBe('function')
   })
 })
