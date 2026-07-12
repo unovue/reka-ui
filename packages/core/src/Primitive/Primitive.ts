@@ -37,7 +37,7 @@ export interface PrimitiveProps {
 }
 
 // For self closing tags, don't provide default slots because of hydration issue
-const SELF_CLOSING_TAGS = ['area', 'img', 'input']
+export const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 
 export const Primitive = defineComponent({
   name: 'Primitive',
