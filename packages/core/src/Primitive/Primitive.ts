@@ -1,6 +1,6 @@
 import type { Component, PropType } from 'vue'
 import { defineComponent, h } from 'vue'
-import { Slot } from './Slot'
+import { useRender } from './useRender'
 
 export type AsTag
   = | 'a'
@@ -37,7 +37,7 @@ export interface PrimitiveProps {
 }
 
 // For self closing tags, don't provide default slots because of hydration issue
-const SELF_CLOSING_TAGS = ['area', 'img', 'input']
+export const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 
 export const Primitive = defineComponent({
   name: 'Primitive',
@@ -53,14 +53,38 @@ export const Primitive = defineComponent({
     },
   },
   setup(props, { attrs, slots }) {
-    const asTag = props.asChild ? 'template' : props.as
+    // Compat shim over useRender. useRender unconditionally populates
+    // instance.exposed (prop getters + a live `$el` getter over vnode.el), so the
+    // value a parent `:ref` receives becomes the expose proxy rather than the raw
+    // public instance. This is behaviour-compatible for all `$`-keys and props
+    // (verified against @vue/runtime-core; see #2722): `$el` and props still
+    // resolve, and in prod it removes a pre-existing expose-snapshot staleness.
+    const { tag, renderProps, selfClosing, state, elementRef } = useRender({
+      defaultTagName: 'div',
+      as: () => props.as,
+      asChild: () => props.asChild,
+      props: attrs,
+    })
 
-    if (typeof asTag === 'string' && SELF_CLOSING_TAGS.includes(asTag))
-      return () => h(asTag, attrs)
+    return () => {
+      // Honor the opt-in `#render` contract (parity with parts built on
+      // useRender): the consumer owns the element and binds `props`/`forwardRef`
+      // itself, so `#render` takes precedence over the default/`asChild` render.
+      if (slots.render) {
+        return slots.render({
+          props: renderProps.value,
+          state: state.value,
+          forwardRef: elementRef,
+        })
+      }
 
-    if (asTag !== 'template')
-      return () => h(props.as, attrs, { default: slots.default })
-
-    return () => h(Slot, attrs, { default: slots.default })
+      // Default path binds no `:ref` on the node — the shim must not mutate its
+      // own instance.exposed beyond what useRender already did.
+      return h(
+        tag.value,
+        renderProps.value,
+        selfClosing.value ? undefined : { default: slots.default },
+      )
+    }
   },
 })
