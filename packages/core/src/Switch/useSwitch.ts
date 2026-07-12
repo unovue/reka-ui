@@ -41,7 +41,7 @@ export interface UseSwitchReturn<T = boolean> {
 /**
  * Headless Switch logic. The `.vue` shell composes this; standalone consumers
  * can drive a Switch entirely from JS. Keep this SSR-safe (no `document` at call
- * scope) and reactive (read props via `toValue`).
+ * scope) and reactive — read props with `toValue`.
  */
 export function useSwitch<T = boolean>(props: UseSwitchProps<T> = {}): UseSwitchReturn<T> {
   const trueValue = () => (props.trueValue !== undefined ? toValue(props.trueValue) : (true as unknown as T))
