@@ -1,9 +1,9 @@
 # Headless Composable Migration Recipe (`useX()`)
 
-> Status: **validated on Switch (form-control archetype).** The collection-family
-> section below is derived from reading Tabs end-to-end; **Tabs is the next
-> conversion and the recipe-validation gate** — amend this recipe with whatever
-> it forces. Do NOT batch-apply to all ~57 families before Tabs is converted.
+> Status: **validated on Switch (form-control archetype) + Tabs (collection /
+> per-item / roving-focus archetype).** The two pilots have shipped; the recipe is
+> ready to batch-apply to the tiers below, still one family per PR with its own
+> characterization gate.
 
 Every component family gains a `useX()` composable holding its logic/state; the
 `.vue` SFC becomes a thin shell. Components keep their exact public API — this is
@@ -11,7 +11,8 @@ an internal re-architecture that additively exposes the logic as a new public AP
 
 ## The contract
 
-Each rendered part returns a **`PartSurface`**:
+Each rendered part returns a **`PartSurface`**, the shared contract homed in
+`@/shared` (`shared/partSurface.ts`), imported as `import type { PartSurface } from '@/shared'`:
 
 ```ts
 export interface PartSurface<S extends Record<string, any> = Record<string, any>> {
@@ -57,24 +58,50 @@ through `useRender` the SFC passes `state` straight in and the helper drops away
    `type-check` + family-scoped `docs:gen` (real diff must be empty — build first;
    generic SFCs may show tool noise, re-diff on a clean checkout).
 
-## Collection / per-item families (from Tabs)
+## Collection / per-item families (validated on Tabs)
 
 The Switch archetype has one attr-bearing root. Collection families (Tabs,
 RadioGroup, Accordion, ToggleGroup) differ — the attr-bearing logic is **per item**,
-computed from `(context, itemValue)`:
+computed from `(context, itemValue)`. What converting Tabs settled:
 
-- **Per-item surfaces are GETTERS, not fixed properties:**
-  `getTriggerSurface(value, disabled?)` / `getContentSurface(value)` returning a
-  `PartSurface`. (`TabsTrigger` computes `makeTriggerId(baseId, value)`,
-  `aria-controls`, `aria-selected`, `data-state` from `(rootContext, props.value)`.)
+- **Per-item surfaces are exported, context-PURE builders — not just getters and
+  not methods on the return.** Define free functions
+  `get<Family><Part>Surface(context, value, disabled?)` returning a `PartSurface`,
+  deriving everything from the **context** (`makeTriggerId(context.baseId, value)`,
+  `aria-controls` from `context.contentIds`, `aria-selected`/`data-state` from
+  `context.modelValue`). This is the crux: the **descendant part SFC injects the
+  context, NOT the `useX()` return** (exactly like `SwitchThumb` derives from
+  context). If the SFC re-derived its own attrs, that logic would drift from the
+  composable — so BOTH the SFC and `useX().getTriggerSurface` call the SAME pure
+  builder. One derivation, two callers, zero drift. The `useX()` return still
+  exposes `getTriggerSurface(value)` = `builder(context, value)` for standalone use.
+- **Pass `value` as `MaybeRefOrGetter<StringOrNumber>`**, read via `toValue`, so the
+  SFC's reactive `() => props.value` keeps the ids/state live (the pre-refactor
+  `computed(() => makeTriggerId(baseId, props.value))` was reactive — match it).
 - **Registration methods stay in context** (`registerContent`/`unregisterContent`,
-  the `contentIds` Set). The composable exposes them; the context shape stays frozen.
+  the `contentIds` Set) and the registration *lifecycle* (`onMounted`/`onBeforeUnmount`)
+  stays in the content SFC. The composable builds the context value and exposes the
+  methods; the context shape stays frozen (byte-for-byte — descendant `import`s and
+  `injectX` consumers must not break). The root SFC calls `provideX(context)`.
+- **`inheritAttrs` differs by part-count, not by archetype.** Switch set
+  `inheritAttrs: false` because it renders **two siblings** (control + hidden input)
+  and had to steer `$attrs`. Tabs parts render a **single root inside a wrapper**
+  (`<RovingFocusItem as-child>`), so they keep the default `inheritAttrs: true`:
+  `$attrs` auto-inherit through the wrapper and chain with the surface's handlers,
+  and `v-bind="mergeProps(part.props.value, stateToDataAttrs(part.state.value))"`
+  needs **no explicit `$attrs`**. Only add `$attrs` to `mergeProps` when the SFC
+  sets `inheritAttrs: false`.
 - **Component-wrapper behaviors stay wrappers in v1.** `TabsTrigger` wraps
-  `<RovingFocusItem as-child>` for arrow-key nav. A pure `useTabs()` **cannot**
-  absorb `RovingFocus`/`Collection`/`Presence`/`Popper` (they are component
-  families). So a standalone `useTabs()` consumer gets ids/aria/selection but NOT
-  roving-focus keyboard nav unless they also compose `RovingFocus`. **State this
-  limit in the docs** — "headless" is bounded in v1.
+  `<RovingFocusItem as-child>` for arrow-key nav; `TabsContent` wraps `<Presence>`.
+  A pure `useTabs()` **cannot** absorb `RovingFocus`/`Collection`/`Presence`/`Popper`
+  (they are component families). So a standalone `useTabs()` consumer gets
+  ids/aria/selection but NOT roving-focus keyboard nav or presence mount/unmount
+  unless they also compose those components. **State this limit in the docs** —
+  "headless" is bounded in v1.
+- **`useId`/SSR-ids stay in the shell.** The root SFC passes
+  `baseId: useId(undefined, 'reka-<family>')` in; the composable defaults `baseId`
+  to a literal so it stays callable outside `setup()` (Tabs is computed-only — no
+  watchers/lifecycle in the composable). Never call `useId` inside the composable.
 
 ## Dependency- and structure-ordered migration (not size)
 
