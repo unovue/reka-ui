@@ -106,11 +106,12 @@ const emits = defineEmits<SelectContentImplEmits>()
 
 const rootContext = injectSelectRootContext()
 
-useFocusGuards()
 useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
+// Scope focus guards to the content's root (shadow-safe); set up after `content`.
+useFocusGuards(content)
 useHideOthers(content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()

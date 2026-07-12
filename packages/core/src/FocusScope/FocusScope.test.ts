@@ -1,8 +1,9 @@
 import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import { getActiveElement } from '@/shared'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
@@ -292,5 +293,59 @@ describe('focusScope', () => {
       // trap so focus lands inside the Select rather than being yanked back.
       expect(content.contains(document.activeElement)).toBe(true)
     })
+  })
+})
+
+describe('given a trapped FocusScope inside a shadow root', () => {
+  let host: HTMLElement
+  let shadowRoot: ShadowRoot
+  let inner1: HTMLInputElement
+  let inner2: HTMLInputElement
+  let outsideButton: HTMLButtonElement
+
+  beforeEach(() => {
+    outsideButton = document.createElement('button')
+    document.body.appendChild(outsideButton)
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    shadowRoot = host.attachShadow({ mode: 'open' })
+    const target = shadowRoot.appendChild(document.createElement('div'))
+
+    render(defineComponent({
+      components: { FocusScope },
+      template: `
+        <FocusScope as-child loop trapped>
+          <form><input name="one" /><input name="two" /></form>
+        </FocusScope>`,
+    }), { container: target })
+
+    inner1 = shadowRoot.querySelector('input[name="one"]')!
+    inner2 = shadowRoot.querySelector('input[name="two"]')!
+  })
+
+  afterEach(() => {
+    host.remove()
+    outsideButton.remove()
+  })
+
+  it('keeps focus on the inner element when focus moves within the scope', async () => {
+    inner1.focus()
+    inner2.focus()
+    await nextTick()
+    expect(getActiveElement()).toBe(inner2)
+  })
+
+  it('returns focus to the scope when focus escapes to a light-DOM element', async () => {
+    inner2.focus()
+    outsideButton.focus()
+    await nextTick()
+    expect(getActiveElement()).toBe(inner2)
+  })
+
+  it('focuses the container when the focused element is removed', async () => {
+    inner1.focus()
+    inner1.remove()
+    await nextTick()
+    expect(getActiveElement()).toBe(shadowRoot.querySelector('form'))
   })
 })

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { getActiveElement, useForwardExpose } from '@/shared'
+import { containsComposed, getActiveElement, getEventTarget, getOwnerDocument, getRootNode, useForwardExpose } from '@/shared'
 
 export type FocusScopeEmits = {
   /**
@@ -92,6 +92,13 @@ watchEffect((cleanupFn) => {
   if (!props.trapped)
     return
 
+  // Attach the trap listeners to the container's own root (the ShadowRoot inside
+  // a web component, or the Document in light DOM) so focus targets aren't
+  // retargeted to the shadow host. In light DOM `root === ownerDocument`, so this
+  // is byte-for-byte the previous behavior.
+  const root = getRootNode(container)
+  const ownerDocument = getOwnerDocument(container)
+
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
       return
@@ -153,15 +160,32 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  // Second-chance recall. A `focusout` recall loses the race to the pending
+  // focus commit, so in light DOM the recall that actually wins is the document
+  // `focusin`. A ShadowRoot listener never sees a light-DOM `focusin`, so when
+  // `root` is a shadow root we also listen on the owner document and recall via
+  // the composed (deep) target.
+  function handleDocumentFocusIn(event: FocusEvent) {
+    if (focusScope.paused || !container)
+      return
+    const target = getEventTarget<HTMLElement>(event)
+    if (!containsComposed(container, target))
+      focus(lastFocusedElementRef.value, { select: true })
+  }
+
+  root.addEventListener('focusin', handleFocusIn as EventListener)
+  root.addEventListener('focusout', handleFocusOut as EventListener)
+  if (root !== ownerDocument)
+    ownerDocument.addEventListener('focusin', handleDocumentFocusIn)
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    root.removeEventListener('focusin', handleFocusIn as EventListener)
+    root.removeEventListener('focusout', handleFocusOut as EventListener)
+    if (root !== ownerDocument)
+      ownerDocument.removeEventListener('focusin', handleDocumentFocusIn)
     mutationObserver.disconnect()
   })
 })
@@ -224,7 +248,7 @@ watchEffect(async (cleanupFn) => {
 
     setTimeout(() => {
       if (!unmountEvent.defaultPrevented)
-        focus(previouslyFocusedElement ?? document.body, { select: true })
+        focus(previouslyFocusedElement ?? getOwnerDocument(container).body, { select: true })
 
       // we need to remove the listener after we `dispatchEvent`
       container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)

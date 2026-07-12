@@ -123,7 +123,6 @@ const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 
-useFocusGuards()
 useBodyScrollLock(disableOutsidePointerEvents.value)
 
 const searchRef = ref('')
@@ -136,6 +135,9 @@ const currentItemId = ref<string | null>(null)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+// Scope focus guards to the content's root (shadow-safe); anchored on the
+// content element, so it's set up after `contentElement` is resolved.
+useFocusGuards(contentElement)
 const { handleTypeaheadSearch } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()
