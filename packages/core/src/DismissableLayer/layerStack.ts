@@ -231,6 +231,27 @@ export function registerBranch(el: HTMLElement): () => void {
   }
 }
 
+// --- body pointer-events lock (#2674) ---
+// Reference-counted: the first disabling layer saves the original body
+// `pointer-events` and sets `none`; the last one to leave restores it. Counting
+// (rather than a per-component copy) is what lets layer B restore the value
+// layer A saved after A unmounts.
+let bodyLockCount = 0
+export function acquireBodyPointerEventsLock(doc: Document): void {
+  if (bodyLockCount === 0) {
+    bodyPointerEvents.original = doc.body.style.pointerEvents
+    doc.body.style.pointerEvents = 'none'
+  }
+  bodyLockCount++
+}
+export function releaseBodyPointerEventsLock(doc: Document): void {
+  bodyLockCount = Math.max(0, bodyLockCount - 1)
+  // Restore only once the last disabling layer is gone. `!== undefined` mirrors
+  // the previous `!isNullish` check ('' is a valid saved value → still restored).
+  if (bodyLockCount === 0 && bodyPointerEvents.original !== undefined)
+    doc.body.style.pointerEvents = bodyPointerEvents.original
+}
+
 // --- queries ---
 export function indexOfLayer(layer: StackLayer): number {
   return layers.indexOf(layer)
@@ -253,6 +274,7 @@ export function resetLayerStack(): void {
   for (const timer of armingTimers)
     window.clearTimeout(timer)
   armingTimers.clear()
+  bodyLockCount = 0
   layers.splice(0)
   outsideSubscribers.splice(0)
   branches.splice(0)

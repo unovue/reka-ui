@@ -8,16 +8,18 @@ export interface DismissableLayerBranchProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { context } from './DismissableLayer.vue'
+import { registerBranch } from './layerStack'
 
 const props = defineProps<DismissableLayerBranchProps>()
 
 const { forwardRef, currentElement } = useForwardExpose()
+let unregisterBranch: (() => void) | undefined
 onMounted(() => {
-  context.branches.add(currentElement.value)
+  if (currentElement.value)
+    unregisterBranch = registerBranch(currentElement.value)
 })
 onUnmounted(() => {
-  context.branches.delete(currentElement.value)
+  unregisterBranch?.()
 })
 </script>
 
