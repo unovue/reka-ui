@@ -1,0 +1,73 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/mauve.css';
+
+.color-slider-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.color-slider-demo__root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 200px;
+  height: 20px;
+  touch-action: none;
+  user-select: none;
+}
+
+.color-slider-demo__track {
+  position: relative;
+  flex: 1;
+  height: 12px;
+  border-radius: 9999px;
+}
+
+.color-slider-demo__track-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+}
+
+.color-slider-demo__thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  background-color: white;
+  border: 2px solid var(--mauve-8);
+  border-radius: 9999px;
+  box-shadow: 0 2px 10px var(--black-a7);
+  transition: transform 150ms;
+}
+
+.color-slider-demo__thumb:hover {
+  transform: scale(1.1);
+}
+
+.color-slider-demo__thumb:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--grass-7);
+}
+
+.color-slider-demo__value {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--mauve-11);
+  font-size: 12px;
+}
+
+.color-slider-demo__swatch {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--mauve-6);
+  border-radius: 4px;
+}
+
+.color-slider-demo__code {
+  font-family: monospace;
+}

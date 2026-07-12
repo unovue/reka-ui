@@ -1,0 +1,56 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/mauve.css';
+
+.color-field-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.color-field-demo__root {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.color-field-demo__label {
+  color: var(--mauve-12);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.color-field-demo__control {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-field-demo__swatch {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--black-a7);
+}
+
+.color-field-demo__input {
+  width: 128px;
+  padding: 8px 12px;
+  color: var(--mauve-12);
+  font-size: 14px;
+  background-color: var(--black-a5);
+  border: none;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--black-a9);
+}
+
+.color-field-demo__input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--grass-7);
+}
+
+.color-field-demo__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
