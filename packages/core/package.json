@@ -81,6 +81,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test-update": "vitest -u",
+    "bench": "vitest bench --run",
     "pub:release": "npm publish --access public --provenance",
     "size": "size-limit"
   },
