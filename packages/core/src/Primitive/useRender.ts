@@ -1,6 +1,7 @@
 import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { AsTag } from './Primitive'
 import { computed, mergeProps, toValue } from 'vue'
+import { useForwardExpose } from '../shared/useForwardExpose'
 import { SELF_CLOSING_TAGS } from './Primitive'
 import { Slot } from './Slot'
 
@@ -88,9 +89,14 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
   const stateAttrs = computed(() => getStateAttributes(toValue(options.state), options.stateAttributesMapping))
   const renderProps = computed<Record<string, any>>(() => mergeProps(stateAttrs.value, toValue(options.props) ?? {}))
 
-  // Task 3: ref forwarding
-  const elementRef = (_el: Element | ComponentPublicInstance | null) => {}
-  const currentElement = computed<HTMLElement | undefined>(() => undefined)
+  const { forwardRef, currentElement } = useForwardExpose()
+  function elementRef(el: Element | ComponentPublicInstance | null) {
+    forwardRef(el)
+    if (typeof options.ref === 'function')
+      options.ref(el)
+    else if (options.ref)
+      options.ref.value = (el && '$el' in el ? el.$el : el) as HTMLElement | null | undefined
+  }
 
   return { tag, renderProps, renderless, selfClosing, elementRef, currentElement, state }
 }

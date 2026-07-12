@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { markRaw, nextTick, ref } from 'vue'
 import { Slot } from './Slot'
@@ -73,5 +73,29 @@ describe('useRender — renderProps', () => {
       stateAttributesMapping: { checked: v => ({ 'aria-checked': String(v) }) },
     }).renderProps.value
     expect(rp).toMatchObject({ 'aria-checked': 'true' })
+  })
+})
+
+describe('useRender — element rendering & ref', () => {
+  const Harness = {
+    props: ['as', 'externalRef'],
+    setup(props: any) {
+      const { tag, renderProps, elementRef, currentElement } = useRender({
+        as: () => props.as,
+        props: { 'data-testid': 'el' },
+        ref: props.externalRef,
+      })
+      return { tag, renderProps, elementRef, currentElement }
+    },
+    template: `<component :is="tag" v-bind="renderProps" :ref="elementRef"><span/></component>`,
+  }
+
+  it('renders the tag with props and populates currentElement + options.ref', async () => {
+    const external = ref<HTMLElement | null>(null)
+    const wrapper = mount(Harness, { props: { as: 'section', externalRef: external } })
+    await flushPromises()
+    expect(wrapper.find('section[data-testid="el"]').exists()).toBe(true)
+    expect(external.value).toBeInstanceOf(HTMLElement)
+    expect(wrapper.vm.currentElement).toBeInstanceOf(HTMLElement)
   })
 })
