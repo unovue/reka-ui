@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { handleSubmit } from '@/test'
 import Switch from './_Switch.vue'
+import SwitchRoot from './SwitchRoot.vue'
 
 describe('test switch functionalities', () => {
   beforeEach(() => {
@@ -47,6 +49,61 @@ describe('test switch functionalities', () => {
 
     await fireEvent.keyDown(button, { key: 'Enter' })
     screen.getByText('unchecked')
+  })
+})
+
+// Locks the surface the black-box suite above misses (id, aria-label / [for]
+// label, consumer-listener chaining, disabled, controlled emit) BEFORE the
+// useSwitch refactor — a regression there fails here instead of shipping.
+describe('switchRoot characterization (pre-refactor contract)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('renders the id attribute on the control', () => {
+    const wrapper = mount(SwitchRoot, { props: { id: 'sw1' } })
+    expect(wrapper.find('button').attributes('id')).toBe('sw1')
+  })
+
+  it('resolves aria-label from an associated [for] label', async () => {
+    document.body.innerHTML = '<label for="sw1">Wifi</label>'
+    // jsdom has no real `innerText`; mock it so the `[for]` lookup is exercised.
+    Object.defineProperty(document.querySelector('[for="sw1"]'), 'innerText', { value: 'Wifi', configurable: true })
+    const wrapper = mount(SwitchRoot as any, { props: { id: 'sw1' }, attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Wifi')
+    wrapper.unmount()
+  })
+
+  it('prefers an explicit aria-label over the [for] label', async () => {
+    document.body.innerHTML = '<label for="sw2">Wifi</label>'
+    Object.defineProperty(document.querySelector('[for="sw2"]'), 'innerText', { value: 'Wifi', configurable: true })
+    const wrapper = mount(SwitchRoot as any, { props: { id: 'sw2' }, attrs: { 'aria-label': 'Explicit' }, attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Explicit')
+    wrapper.unmount()
+  })
+
+  it('chains a consumer @click with the internal toggle (both fire)', async () => {
+    const onClick = vi.fn()
+    const wrapper = mount(SwitchRoot as any, { attrs: { onClick } })
+    await wrapper.find('button').trigger('click')
+    expect(onClick).toHaveBeenCalledTimes(1)
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+  })
+
+  it('does not toggle when disabled', async () => {
+    const wrapper = mount(SwitchRoot as any, { props: { disabled: true } })
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('emits update:modelValue without mutating a controlled model', async () => {
+    const wrapper = mount(SwitchRoot as any, { props: { modelValue: false } })
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+    // controlled: the rendered state stays until the parent updates the prop
+    expect(wrapper.find('button').attributes('data-state')).toBe('unchecked')
   })
 })
 

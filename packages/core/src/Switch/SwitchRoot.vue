@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, stateToDataAttrs, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -41,9 +41,10 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
+import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useSwitch } from './useSwitch'
 
 defineOptions({
   inheritAttrs: false,
@@ -67,54 +68,42 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled } = toRefs(props)
-
+// `useVModel` + `passive` (controlled/uncontrolled) stays in the shell; the
+// resulting ref is handed to the composable so emit semantics are untouched.
 const modelValue = useVModel(props as any, 'modelValue', emit as any, {
   defaultValue: props.defaultValue ?? props.falseValue,
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T>
 
-const checked = computed(() => modelValue.value === props.trueValue)
-
-function toggleCheck() {
-  if (disabled.value)
-    return
-
-  modelValue.value = checked.value ? props.falseValue as T : props.trueValue as T
-}
-
 const { forwardRef, currentElement } = useForwardExpose()
-const isFormControl = useFormControl(currentElement)
-// Hidden form input is a sibling (not nested) of the control to avoid the
-// `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
 const scopeIdAttrs = useForwardScopeId()
+const isFormControl = useFormControl(currentElement)
+// DOM-bound: resolves the associated `[for]` label text through the element's
+// root (shadow-safe, #2792). Stays in the shell (needs `currentElement`,
+// SSR-guarded) — not in the composable.
 const ariaLabel = computed(() => props.id && currentElement.value ? (getRootNode(currentElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
 
-provideSwitchRootContext({
-  checked,
-  toggleCheck,
-  disabled,
+const { checked, root, context } = useSwitch<T>({
+  modelValue,
+  disabled: () => props.disabled,
+  required: () => props.required,
+  value: () => props.value,
+  trueValue: () => props.trueValue as T,
+  falseValue: () => props.falseValue as T,
 })
+
+provideSwitchRootContext(context)
 </script>
 
 <template>
   <Primitive
     :id="id"
     :ref="forwardRef"
-    role="switch"
     :type="as === 'button' ? 'button' : undefined"
-    :value="value"
     :aria-label="$attrs['aria-label'] || ariaLabel"
-    :aria-checked="checked"
-    :aria-required="required"
-    :data-state="checked ? 'checked' : 'unchecked'"
-    :data-disabled="disabled ? '' : undefined"
     :as-child="asChild"
     :as="as"
-    :disabled="disabled"
-    v-bind="{ ...scopeIdAttrs, ...$attrs }"
-    @click="toggleCheck"
-    @keydown.enter.prevent="toggleCheck"
+    v-bind="mergeProps(root.props.value, stateToDataAttrs(root.state.value), scopeIdAttrs, $attrs)"
   >
     <slot
       :model-value="modelValue"
