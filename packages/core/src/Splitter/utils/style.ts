@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'vue'
 import type { PanelData } from '../SplitterPanel.vue'
 import type { DragState } from './types'
+import { injectStyle } from '@/shared'
 import {
   EXCEEDED_HORIZONTAL_MAX,
   EXCEEDED_HORIZONTAL_MIN,
@@ -11,7 +12,7 @@ import {
 type CursorState = 'horizontal' | 'intersection' | 'vertical'
 
 let currentCursorStyle: string | null = null
-let styleElement: HTMLStyleElement | null = null
+let cursorHandle: ReturnType<typeof injectStyle> | null = null
 
 export function getCursorStyle(
   state: CursorState,
@@ -58,11 +59,10 @@ export function getCursorStyle(
 }
 
 export function resetGlobalCursorStyle() {
-  if (styleElement !== null) {
-    document.head.removeChild(styleElement)
-
+  if (cursorHandle !== null) {
+    cursorHandle.dispose()
     currentCursorStyle = null
-    styleElement = null
+    cursorHandle = null
   }
 }
 
@@ -78,14 +78,15 @@ export function setGlobalCursorStyle(
 
   currentCursorStyle = style
 
-  if (styleElement === null) {
-    styleElement = document.createElement('style')
-    if (nonce)
-      styleElement.nonce = nonce
-    document.head.appendChild(styleElement)
-  }
-
-  styleElement.textContent = `*{cursor: ${style}!important;}`
+  // Inject via the shared helper (adopted stylesheet where supported, `<style>`
+  // fallback, nonce threaded) into the host document. `cursor` is inherited, so
+  // shadow content without its own cursor rule still picks up the drag cursor;
+  // shadow elements with an explicit cursor keep theirs (a minor visual limit).
+  const css = `*{cursor: ${style}!important;}`
+  if (cursorHandle)
+    cursorHandle.update(css)
+  else
+    cursorHandle = injectStyle(document, css, { nonce })
 }
 
 // the % of the group's overall space this panel should occupy.
