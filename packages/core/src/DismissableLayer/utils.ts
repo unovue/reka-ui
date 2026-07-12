@@ -1,7 +1,9 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { OutsideSubscriber } from './layerStack'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
+import { registerOutsideSubscriber } from './layerStack'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -152,36 +154,43 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
-
-  const isFocusInsideDOMTree = ref(false)
-  watchEffect((cleanupFn) => {
-    if (!isClient || !toValue(enabled))
-      return
-    const handleFocus = async (event: FocusEvent) => {
+  const subscriber: OutsideSubscriber = {
+    // Focus has NO arming today (the `focusin` listener attaches synchronously),
+    // so a focus subscriber is always "armed" and must never gate on it.
+    armed: true,
+    isPointerInside: false,
+    isFocusInside: false,
+    // Ported from the previous `handleFocus` body. Keeps the double `nextTick`
+    // so focus-driven DOM updates settle before the gate reads. Uses the
+    // composed `ctx.target` (captured synchronously by the manager) but a FRESH
+    // `isLayerExist` query AFTER the awaits — the DOM may have changed, and a
+    // stale snapshot would diverge from today's behavior.
+    handleFocus: async (event, ctx) => {
       if (!element?.value)
         return
 
       await nextTick()
       await nextTick()
-      const target = event.target as HTMLElement | undefined
+      const target = ctx.target as HTMLElement | null
       if (!element.value || !target || isLayerExist(element.value, target))
         return
 
-      if (event.target && !isFocusInsideDOMTree.value) {
+      if (!subscriber.isFocusInside) {
         const eventDetail = { originalEvent: event }
         handleAndDispatchCustomEvent(
           FOCUS_OUTSIDE,
           onFocusOutside,
           eventDetail,
+          target,
         )
       }
-    }
+    },
+  }
 
-    ownerDocument.addEventListener('focusin', handleFocus)
-
-    cleanupFn(() => ownerDocument.removeEventListener('focusin', handleFocus))
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled))
+      return
+    cleanupFn(registerOutsideSubscriber(subscriber))
   })
 
   return {
@@ -189,13 +198,13 @@ export function useFocusOutside(
       if (!toValue(enabled))
         return
 
-      isFocusInsideDOMTree.value = true
+      subscriber.isFocusInside = true
     },
     onBlurCapture: () => {
       if (!toValue(enabled))
         return
 
-      isFocusInsideDOMTree.value = false
+      subscriber.isFocusInside = false
     },
   }
 }
