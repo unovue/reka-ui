@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { StringOrNumber } from '@/shared/types'
-import { useForwardExpose } from '@/shared'
+import { stateToDataAttrs, useForwardExpose } from '@/shared'
 
 export interface TabsContentProps extends PrimitiveProps {
   /** A unique value that associates the content with a trigger. */
@@ -15,19 +15,21 @@ export interface TabsContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, mergeProps, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId } from './utils'
+import { getTabsContentSurface } from './useTabs'
 
 const props = defineProps<TabsContentProps>()
 
 const { forwardRef } = useForwardExpose()
 const rootContext = injectTabsRootContext()
-const triggerId = computed(() => makeTriggerId(rootContext.baseId, props.value))
-const contentId = computed(() => makeContentId(rootContext.baseId, props.value))
 
+// id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
+// surface builder; the Presence wrapper, the registration lifecycle, `hidden`,
+// and the mount-animation `style` stay in the SFC.
+const surface = getTabsContentSurface(rootContext, () => props.value)
 const isSelected = computed(() => props.value === rootContext.modelValue.value)
 
 const isMountAnimationPreventedRef = ref(isSelected.value)
@@ -51,16 +53,11 @@ onBeforeUnmount(() => {
     force-mount
   >
     <Primitive
-      :id="contentId"
       :ref="forwardRef"
-      :as-child="asChild"
       :as="as"
-      role="tabpanel"
-      :data-state="isSelected ? 'active' : 'inactive'"
-      :data-orientation="rootContext.orientation.value"
-      :aria-labelledby="triggerId"
+      :as-child="asChild"
       :hidden="!present"
-      tabindex="0"
+      v-bind="mergeProps(surface.props.value, stateToDataAttrs(surface.state.value))"
       :style="{
         animationDuration: isMountAnimationPreventedRef ? '0s' : undefined,
       }"

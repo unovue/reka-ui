@@ -1,16 +1,11 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { SwitchRootContext } from './SwitchRoot.vue'
+import type { PartSurface } from '@/shared'
 import { computed, ref, toValue } from 'vue'
 
-/**
- * A rendered part's headless surface: `props` (aria/role/value/handlers — NO
- * `data-*`) to spread onto the element, and `state` (the semantic object) that
- * `stateToDataAttrs` / `useRender` maps to `data-*`.
- */
-export interface PartSurface<S extends Record<string, any> = Record<string, any>> {
-  props: ComputedRef<Record<string, any>>
-  state: ComputedRef<S>
-}
+// `PartSurface` is the shared headless-part contract (see `@/shared`). Re-exported
+// here so the long-standing `Switch/index.ts` public path stays byte-identical.
+export type { PartSurface }
 
 export type SwitchState = { state: 'checked' | 'unchecked', disabled: boolean }
 
