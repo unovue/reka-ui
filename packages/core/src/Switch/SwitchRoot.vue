@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, stateToDataAttrs, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, stateToDataAttrs, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -78,9 +78,10 @@ const modelValue = useVModel(props as any, 'modelValue', emit as any, {
 const { forwardRef, currentElement } = useForwardExpose()
 const scopeIdAttrs = useForwardScopeId()
 const isFormControl = useFormControl(currentElement)
-// DOM-bound: resolves the associated `[for]` label text. Stays in the shell
-// (needs `currentElement`, SSR-guarded) — not in the composable.
-const ariaLabel = computed(() => props.id && currentElement.value ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
+// DOM-bound: resolves the associated `[for]` label text through the element's
+// root (shadow-safe, #2792). Stays in the shell (needs `currentElement`,
+// SSR-guarded) — not in the composable.
+const ariaLabel = computed(() => props.id && currentElement.value ? (getRootNode(currentElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
 
 const { checked, root, context } = useSwitch<T>({
   modelValue,

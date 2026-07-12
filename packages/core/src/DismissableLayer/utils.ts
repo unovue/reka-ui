@@ -1,7 +1,9 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { OutsideSubscriber } from './layerStack'
 import { isClient } from '@vueuse/shared'
-import { nextTick, ref, toValue, watchEffect } from 'vue'
+import { nextTick, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
+import { registerOutsideSubscriber } from './layerStack'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -9,11 +11,18 @@ export type PointerDownOutsideEvent = CustomEvent<{
 export type FocusOutsideEvent = CustomEvent<{ originalEvent: FocusEvent }>
 
 export const DISMISSABLE_LAYER_NAME = 'DismissableLayer'
-export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+export function isLayerExist(
+  layerElement: HTMLElement,
+  targetElement: HTMLElement,
+  // Optional pre-computed `[data-dismissable-layer]` snapshot. The manager hoists
+  // ONE snapshot per pointerdown event and passes it here so N subscribers share
+  // a single `querySelectorAll` (the synchronous pointer path — see layerStack).
+  // Omitted (focus path / direct callers) → a fresh query, matching prior behavior.
+  snapshot?: Element[],
+) {
   if (!(targetElement instanceof Element))
     return false
 
@@ -27,7 +36,7 @@ export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLEleme
       '[data-dismissable-layer]',
     ) as HTMLElement
 
-  const nodeList = Array.from(
+  const nodeList = snapshot ?? Array.from(
     layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
   )
 
@@ -49,27 +58,28 @@ export function usePointerDownOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
+  const subscriber: OutsideSubscriber = {
+    armed: false, // set true a macrotask after registration by the manager
+    isPointerInside: false,
+    isFocusInside: false,
+    // Ported from the previous `handlePointerDown` body, branch-for-branch.
+    handlePointerDown: (event, ctx) => {
+      // Arming guard MUST be first — before any flag write. During the arming
+      // window the whole body is skipped, so `isPointerInside` (set by the
+      // capture handler) survives until the next post-arming event.
+      if (!subscriber.armed)
+        return
 
-  const isPointerInsideDOMTree = ref(false)
-  const handleClickRef = ref(() => {})
-
-  watchEffect((cleanupFn) => {
-    if (!isClient || !toValue(enabled))
-      return
-    const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement | undefined
-
+      const target = ctx.target as HTMLElement | null
       if (!element?.value || !target)
         return
 
-      if (isLayerExist(element.value, target)) {
-        isPointerInsideDOMTree.value = false
+      if (isLayerExist(element.value, target, ctx.nodeList)) {
+        subscriber.isPointerInside = false
         return
       }
 
-      if (event.target && !isPointerInsideDOMTree.value) {
+      if (!subscriber.isPointerInside) {
         const eventDetail = { originalEvent: event }
 
         function handleAndDispatchPointerDownOutsideEvent() {
@@ -77,6 +87,7 @@ export function usePointerDownOutside(
             POINTER_DOWN_OUTSIDE,
             onPointerDownOutside,
             eventDetail,
+            target,
           )
         }
 
@@ -89,56 +100,35 @@ export function usePointerDownOutside(
          * Additionally, this also lets us deal automatically with cancellations when a click event
          * isn't raised because the page was considered scrolled/drag-scrolled, long-pressed, etc.
          *
-         * This is why we also continuously remove the previous listener, because we cannot be
-         * certain that it was raised, and therefore cleaned-up.
+         * `deferTouch` replaces the previous pending dispatch (= the "continuously
+         * remove the previous listener" behavior) via the manager's shared click listener.
          */
-        if (event.pointerType === 'touch') {
-          ownerDocument.removeEventListener('click', handleClickRef.value)
-          handleClickRef.value = handleAndDispatchPointerDownOutsideEvent
-          ownerDocument.addEventListener('click', handleClickRef.value, {
-            once: true,
-          })
-        }
-        else {
+        if (event.pointerType === 'touch')
+          ctx.deferTouch(subscriber, handleAndDispatchPointerDownOutsideEvent)
+        else
           handleAndDispatchPointerDownOutsideEvent()
-        }
       }
       else {
-        // We need to remove the event listener in case the outside click has been canceled.
+        // Cancel a pending deferred dispatch when the outside click was canceled.
         // See: https://github.com/radix-ui/primitives/issues/2171
-        ownerDocument.removeEventListener('click', handleClickRef.value)
+        // NB: only here, NOT on the isLayerExist early-return above (parity).
+        ctx.cancelTouch(subscriber)
       }
-      isPointerInsideDOMTree.value = false
-    }
-    /**
-     * if this hook executes in a component that mounts via a `pointerdown` event, the event
-     * would bubble up to the document and trigger a `pointerDownOutside` event. We avoid
-     * this by delaying the event listener registration on the document.
-     * This is how the DOM works, ie:
-     * ```
-     * button.addEventListener('pointerdown', () => {
-     *   console.log('I will log');
-     *   document.addEventListener('pointerdown', () => {
-     *     console.log('I will also log');
-     *   })
-     * });
-     */
-    const timerId = window.setTimeout(() => {
-      ownerDocument.addEventListener('pointerdown', handlePointerDown)
-    }, 0)
+      subscriber.isPointerInside = false
+    },
+  }
 
-    cleanupFn(() => {
-      window.clearTimeout(timerId)
-      ownerDocument.removeEventListener('pointerdown', handlePointerDown)
-      ownerDocument.removeEventListener('click', handleClickRef.value)
-    })
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled))
+      return
+    cleanupFn(registerOutsideSubscriber(subscriber))
   })
 
   return {
     onPointerDownCapture: () => {
       if (!toValue(enabled))
         return
-      isPointerInsideDOMTree.value = true
+      subscriber.isPointerInside = true
     },
   }
 }
@@ -152,36 +142,43 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
-
-  const isFocusInsideDOMTree = ref(false)
-  watchEffect((cleanupFn) => {
-    if (!isClient || !toValue(enabled))
-      return
-    const handleFocus = async (event: FocusEvent) => {
+  const subscriber: OutsideSubscriber = {
+    // Focus has NO arming today (the `focusin` listener attaches synchronously),
+    // so a focus subscriber is always "armed" and must never gate on it.
+    armed: true,
+    isPointerInside: false,
+    isFocusInside: false,
+    // Ported from the previous `handleFocus` body. Keeps the double `nextTick`
+    // so focus-driven DOM updates settle before the gate reads. Uses the
+    // composed `ctx.target` (captured synchronously by the manager) but a FRESH
+    // `isLayerExist` query AFTER the awaits — the DOM may have changed, and a
+    // stale snapshot would diverge from today's behavior.
+    handleFocus: async (event, ctx) => {
       if (!element?.value)
         return
 
       await nextTick()
       await nextTick()
-      const target = event.target as HTMLElement | undefined
+      const target = ctx.target as HTMLElement | null
       if (!element.value || !target || isLayerExist(element.value, target))
         return
 
-      if (event.target && !isFocusInsideDOMTree.value) {
+      if (!subscriber.isFocusInside) {
         const eventDetail = { originalEvent: event }
         handleAndDispatchCustomEvent(
           FOCUS_OUTSIDE,
           onFocusOutside,
           eventDetail,
+          target,
         )
       }
-    }
+    },
+  }
 
-    ownerDocument.addEventListener('focusin', handleFocus)
-
-    cleanupFn(() => ownerDocument.removeEventListener('focusin', handleFocus))
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled))
+      return
+    cleanupFn(registerOutsideSubscriber(subscriber))
   })
 
   return {
@@ -189,18 +186,13 @@ export function useFocusOutside(
       if (!toValue(enabled))
         return
 
-      isFocusInsideDOMTree.value = true
+      subscriber.isFocusInside = true
     },
     onBlurCapture: () => {
       if (!toValue(enabled))
         return
 
-      isFocusInsideDOMTree.value = false
+      subscriber.isFocusInside = false
     },
   }
-}
-
-export function dispatchUpdate() {
-  const event = new CustomEvent(CONTEXT_UPDATE)
-  document.dispatchEvent(event)
 }

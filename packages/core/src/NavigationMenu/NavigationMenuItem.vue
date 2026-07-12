@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, getElementByIdFrom, useArrowNavigation, useForwardExpose, useId } from '@/shared'
 
 export interface NavigationMenuItemProps extends PrimitiveProps {
   /**
@@ -59,7 +59,7 @@ let restoreContentTabOrderRef: () => void = () => ({})
 
 const wasEscapeCloseRef = ref(false)
 async function handleContentEntry(side = 'start') {
-  const el = document.getElementById(contentId)
+  const el = getElementByIdFrom(triggerRef.value, contentId)
   if (el) {
     restoreContentTabOrderRef()
     const candidates = getTabbableCandidates(el)
@@ -69,7 +69,7 @@ async function handleContentEntry(side = 'start') {
 }
 
 function handleContentExit() {
-  const el = document.getElementById(contentId)
+  const el = getElementByIdFrom(triggerRef.value, contentId)
   if (el) {
     const candidates = getTabbableCandidates(el)
     if (candidates.length)

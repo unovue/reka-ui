@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
 import { DismissableLayer as DismissableLayerPrimitive } from '.'
+import { resetLayerStack } from './layerStack'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
@@ -280,5 +281,31 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
 
     expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+})
+
+describe('stacked layers Escape routing', () => {
+  beforeEach(() => {
+    resetLayerStack()
+    document.body.innerHTML = ''
+  })
+
+  it('routes Escape to the top present layer, then falls through after it dismisses', async () => {
+    const bottom = mount(DismissableLayerPrimitive, { attachTo: document.body, props: { present: true } })
+    const top = mount(DismissableLayerPrimitive, { attachTo: document.body, props: { present: true } })
+    await nextTick()
+
+    await fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(top.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(bottom.emitted('escapeKeyDown')).toBeUndefined()
+
+    // Top layer closes → leaves the stack; Escape now targets the lower layer.
+    top.unmount()
+    await nextTick()
+
+    await fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(bottom.emitted('escapeKeyDown')?.length).toBe(1)
+
+    bottom.unmount()
   })
 })

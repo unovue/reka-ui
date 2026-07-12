@@ -99,6 +99,37 @@ complete example to read alongside this section.
   props/emits with `useForwardProps`, `useEmitAsProps`, or
   `useForwardPropsEmits` from `src/shared/`.
 
+## Shadow DOM & document access
+
+Components must work inside a **shadow root** (web components, micro-frontends,
+embedded design systems). A component mounted in a shadow root can't find its own
+elements through the global `document` — so **never reach for `document`/`window`
+for anything scoped to a component's own tree.** Use the root-aware helpers in
+`src/shared/`, anchored on an element you already have (`useForwardExpose().currentElement`,
+a trigger/content ref, …):
+
+| Instead of… | Use |
+| --- | --- |
+| `document.getElementById(id)` | `getElementByIdFrom(anchorEl, id)` — dual-root: the anchor's root, then the owner document (still finds content Teleported to `body`) |
+| `document.querySelector('[for="…"]')` | `getRootNode(anchorEl).querySelector('[for="…"]')` |
+| `document.activeElement` | `getActiveElement(anchorEl)` (descends shadow roots) |
+| `document.body` / `document.head` | `getOwnerDocument(anchorEl).body` / `.head` |
+| `window.…` | `getOwnerWindow(anchorEl)` |
+| `event.target` in a listener above a shadow boundary | `getEventTarget(event)` — `composedPath()[0]`, read **synchronously** (empty after dispatch) |
+| Injecting a `<style>` into `document.head` | `injectStyle(getRootNode(anchorEl), css, { nonce })` — adopted stylesheets + `<style>` fallback |
+
+- **Anchor on a real element ref**, not the global document — every part already
+  exposes `currentElement` via `useForwardExpose()`.
+- `for`/`id` associations never cross shadow boundaries, so root-scoping label
+  lookups is semantically correct, not just a shadow workaround.
+- **Guard for SSR at the caller** (`isClient` / inside `watchEffect`/`onMounted`),
+  as the existing code does — the helpers assume a client context.
+- **Test in a shadow root** with `createShadowHost()` (`src/shared/test/shadowDom.ts`);
+  query via `shadowRoot.querySelector` — testing-library queries don't pierce shadow roots.
+- **Out of scope / known limits:** closed shadow roots, aria idrefs for content
+  Teleported out of the root, and `composed: false` APIs (selection, scroll). Plain
+  `setTimeout`/`window.innerWidth`-style reads don't need scoping — leave them.
+
 ## Testing
 
 - Tests are **colocated** with the code as `<Name>.test.ts` inside each family
