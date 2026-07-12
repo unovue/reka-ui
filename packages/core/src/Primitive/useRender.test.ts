@@ -99,3 +99,38 @@ describe('useRender — element rendering & ref', () => {
     expect(wrapper.vm.currentElement).toBeInstanceOf(HTMLElement)
   })
 })
+
+describe('useRender — renderless (Slot)', () => {
+  const Slotted = {
+    props: ['as', 'asChild'],
+    setup(props: any) {
+      const { tag, renderProps, elementRef } = useRender({
+        as: () => props.as,
+        asChild: () => props.asChild,
+        props: { 'class': 'parent', 'data-parent': '' },
+      })
+      return { tag, renderProps, elementRef }
+    },
+    template: `<component :is="tag" v-bind="renderProps" :ref="elementRef"><slot/></component>`,
+  }
+
+  it('merges renderProps onto the first non-comment child', () => {
+    const wrapper = mount(Slotted, { props: { asChild: true }, slots: { default: '<a class="child" href="#">x</a>' } })
+    const a = wrapper.find('a')
+    expect(a.exists()).toBe(true)
+    expect(a.classes()).toContain('parent')
+    expect(a.classes()).toContain('child')
+    expect(a.attributes('data-parent')).toBe('')
+  })
+  it('gives child props priority over parent (child href wins)', () => {
+    const wrapper = mount(Slotted, {
+      props: { asChild: true },
+      slots: { default: '<a data-parent="overridden">x</a>' },
+    })
+    expect(wrapper.find('a').attributes('data-parent')).toBe('overridden')
+  })
+  it('bypasses leading comment nodes', () => {
+    const wrapper = mount(Slotted, { props: { asChild: true }, slots: { default: '<!-- c --><a>x</a>' } })
+    expect(wrapper.find('a').classes()).toContain('parent')
+  })
+})
