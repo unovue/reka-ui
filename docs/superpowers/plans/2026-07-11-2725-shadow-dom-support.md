@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> Tracks GitHub issue **#2725** (Phase 2 — Built on the foundation), part of the reka-ui v3 roadmap **#2721**. Independent of #2722/#2724 — can land any time.
+> Tracks GitHub issue **#2725** (Phase 2 — Built on the foundation), part of the reka-ui v3 roadmap **#2721**. **Sequenced AFTER #2724** (overlay perf): #2724 rewrites `DismissableLayer/utils.ts` into `layerStack.ts` and bakes the shadow-safe composed-target reads + `handleAndDispatchCustomEvent` target threading in from day one — so **this plan does NOT touch `DismissableLayer/utils.ts`** (that retargeting work is done). If #2724 has not merged, do that first.
 
 **Goal:** Every DOM lookup, active-element read, focus/dismiss listener, per-root style injection, and scroll/focus-guard mutation respects the element's `getRootNode()` / `ownerDocument`, so components work correctly inside shadow roots (web components / micro-frontends / embedded design systems).
 
-**Architecture:** Introduce a small set of shared root-resolution helpers (`getRootNode`, `getOwnerDocument`, `getOwnerWindow`, `getElementByIdFrom`, `getEventTarget`) plus a feature-detected `injectStyle` (adopted stylesheets with a `<style>` fallback). Every affected site already holds an element ref (`useForwardExpose().currentElement`, `triggerElement`, `contentElement`, `layerElement`, `scrollbar`), so the migration is mechanical: swap `document.*` for the anchored helper. Per-root state (focus-guards, scroll-lock, Splitter cursor) is keyed by `Document`/`ShadowRoot` instead of a bare module global. The scope is **shadow-DOM correctness only** — the ~35 benign `window.setTimeout`-class references are explicitly out of scope.
+**Architecture:** Introduce a small set of shared root-resolution helpers (`getRootNode`, `getOwnerDocument`, `getOwnerWindow`, `getElementByIdFrom`, `getEventTarget`) plus a feature-detected `injectStyle` (adopted stylesheets with a `<style>` fallback). `getElementByIdFrom` is **dual-root by contract** (anchor's root, then owner document) so it keeps finding content that Teleports out of the shadow root. Every affected site already holds an element ref (`useForwardExpose().currentElement`, `triggerElement`, `contentElement`, `layerElement`, `scrollbar`), so the migration is mechanical: swap `document.*` for the anchored helper. Per-root state (focus-guards, scroll-lock, Splitter cursor) is keyed by `Document`/`ShadowRoot` instead of a bare module global. The scope is **shadow-DOM correctness only** — the ~35 benign `window.setTimeout`-class references are explicitly out of scope. Some sites remain browser-only or genuinely unfixable in a shadow root (Task 9 documents them honestly, not silently).
 
 **Tech Stack:** Vue 3, TypeScript, `getRootNode()`/`composedPath()`, `adoptedStyleSheets`/`CSSStyleSheet`, vitest + jsdom 26 (shadow DOM + retargeting supported; `adoptedStyleSheets` NOT — needs a polyfill for the adopted path).
 
@@ -16,7 +16,8 @@
 - Test (one-shot): `pnpm --filter reka-ui exec vitest run <path>` — never `pnpm test` (watch).
 - Type-check: `pnpm --filter reka-ui type-check`. Build: `pnpm --filter reka-ui build`. Lint fix: `pnpm lint:fix`.
 - **Non-shadow behavior is frozen.** All existing suites must pass unchanged. Public API changes are limited to **additive optional params** (`useFocusGuards(element?)`, `useBodyScrollLock(state, element?)`, `getActiveElement(anchor?)`) — no signature breaks.
-- SSR-safe: every helper guards `typeof document === 'undefined'` (`isClient`/`isBrowser`); only call in client paths (existing `watchEffect`/`isClient` convention).
+- **SSR = client-only helpers, not guarded.** The helpers are NOT internally SSR-guarded (`getRootNode(null)` returns `globalThis.document`, which is `undefined` in Node, so `getElementByIdFrom(null, id)` would throw). The contract is: **callers gate with `isClient`/`watchEffect`** (the existing convention), exactly as the current `document.*` call sites already do. Do not add per-helper `typeof document` guards that mask a mis-timed call — keep the constraint on the caller.
+- **`getElementByIdFrom` is dual-root** — anchor's root, then owner document (`getRootNode(anchor).getElementById(id) ?? getOwnerDocument(anchor).getElementById(id)`). Light-DOM behavior is unchanged (anchor's root IS the document); shadow behavior finds both in-root and Teleported-out content. This is the fix for the Combobox/NavigationMenu portal case, not a parenthetical fallback.
 - Feature-detect `adoptedStyleSheets` + `CSSStyleSheet.prototype.replaceSync`; keep the `<style>` fallback **permanently** (older Safari), threading `useNonce`/ConfigProvider `nonce`.
 - Cross-realm safe: resolve roots via `nodeType`/`host` duck-typing, NOT `instanceof ShadowRoot`.
 - **Out of scope (do not churn):** the ~35 `window.setTimeout`/`setInterval`/`rAF` refs; `window.getComputedStyle`/`innerWidth` (work across roots); cross-realm constructors (`new window.Image()` etc.). `createTreeWalker`/`createElement` `ownerDocument` changes are optional (iframe-only benefit).
@@ -30,13 +31,14 @@ Scope (verified against `v2`, paths relative to `packages/core/src`):
 - **id/label wiring (11 sites):** `Combobox/ComboboxInput.vue:90,101` + raw `document.activeElement:99`; `NavigationMenu/NavigationMenuItem.vue:62,72`; `NavigationMenu/NavigationMenuTrigger.vue:131`; `Dialog/utils.ts:33,40`; `Drawer/DrawerContentImpl.vue:350`; `RadioGroup/Radio.vue:58`, `Checkbox/CheckboxRoot.vue:136`, `Switch/SwitchRoot.vue:91` (`querySelector('[for=…]')`).
 - **activeElement:** `shared/getActiveElement.ts` (already descends shadow roots; always starts at global `document`).
 - **per-root mutation:** `shared/useBodyScrollLock.ts` (body/head), `shared/useFocusGuards.ts` (body guards, module-global `count`), `Splitter/utils/style.ts` (head `<style>` cursor), `ScrollArea/ScrollAreaScrollbarImpl.vue:50-51,68` (body).
-- **retargeting-sensitive document listeners:** `FocusScope/FocusScope.vue:156-164` (+`:227` body fallback), `DismissableLayer/utils.ts:62,168` (target reads) + `isLayerExist:16-40`, `ScrollArea/ScrollAreaScrollbarImpl.vue:86,89` (wheel), and `contains`-based checks in `Select/SelectContentImpl.vue`, `HoverCard/HoverCardContentImpl.vue`, `Tooltip/TooltipTrigger.vue`.
+- **retargeting-sensitive document listeners (excl. DismissableLayer — that's #2724):** `FocusScope/FocusScope.vue:156-164` (+`:227` body fallback; also `handleFocusOut` `relatedTarget` at `:107`), `ScrollArea/ScrollAreaScrollbarImpl.vue:86,89` (wheel), and `contains`-based checks in `Select/SelectContentImpl.vue:163` (`pointerup`), `HoverCard/HoverCardContentImpl.vue`, `Tooltip/TooltipTrigger.vue`. **`DismissableLayer/utils.ts` (`:62,72,168,172` target reads, `isLayerExist`) and `shared/handleAndDispatchCustomEvent.ts` are handled by #2724** — do not touch them here.
+- **known browser-only / unfixable-in-shadow (Task 9 documents, does not "fix"):** `HoverCard/HoverCardContentImpl.vue:60` `document.getSelection()` (shadow selections are host-collapsed; `shadowRoot.getSelection` is Chrome-only, absent in jsdom) and `:73-77` `window` `scroll` capture (scroll is `composed:false` — shadow-internal scrollers never reach window); `useHideOthers` (walks `document.body`, and is `import.meta.env.MODE==='test'`-disabled); body-portalled content's cross-boundary aria idrefs; closed shadow roots.
 - **anchors already present:** every site holds an element ref (`useForwardExpose().currentElement`, `triggerElement`, `contentElement`, `rootContext.parentElement`, `layerElement`, `scrollbar`). No new plumbing needed.
 - **test env:** `packages/core/vitest.setup.ts` (30 lines; no shadow helpers). jsdom 26 supports `attachShadow`, `shadowRoot.getElementById`, `getRootNode`, retargeting, `composedPath`; does NOT implement `adoptedStyleSheets` or `CSSStyleSheet.replaceSync`.
 
 Files this plan creates/modifies (grouped by phase — see tasks):
-- **Create** `shared/getRootNode.ts` (+ test), `shared/injectStyle.ts` (+ test), a shadow test util, `shared/useFocusGuards.test.ts`.
-- **Modify** `shared/index.ts`, `packages/core/vitest.setup.ts`, `shared/getActiveElement.ts`, `shared/useBodyScrollLock.ts`, `shared/useFocusGuards.ts`, the 11 id/label sites, the 4 named component files, Splitter registry/style, and the focus-guard/scroll-lock callers.
+- **Create** `shared/getRootNode.ts` (+ test), `shared/injectStyle.ts` (+ test, incl. the per-suite polyfill), a shadow test util, `shared/useFocusGuards.test.ts`.
+- **Modify** `shared/index.ts`, `shared/getActiveElement.ts`, `shared/useBodyScrollLock.ts`, `shared/useFocusGuards.ts`, the 11 id/label sites, `FocusScope.vue`, `ScrollAreaScrollbarImpl.vue`, the `contains`-based sites (Select/HoverCard/Tooltip), Splitter registry/style, and the focus-guard/scroll-lock callers. **NOT** `DismissableLayer/utils.ts`, `handleAndDispatchCustomEvent.ts`, or `vitest.setup.ts` (DismissableLayer retargeting → #2724; polyfill → `injectStyle.test.ts`).
 
 ---
 
@@ -142,7 +144,12 @@ export function getOwnerWindow(node?: Node | null): Window & typeof globalThis {
 }
 
 export function getElementByIdFrom(anchor: Node | null | undefined, id: string): HTMLElement | null {
-  return (getRootNode(anchor).getElementById(id) as HTMLElement | null) ?? null
+  // Dual-root: the anchor's root first (in-shadow content), then the owner
+  // document (content Teleported out to body). Light-DOM: both are the document.
+  const inRoot = getRootNode(anchor).getElementById(id) as HTMLElement | null
+  if (inRoot)
+    return inRoot
+  return getOwnerDocument(anchor).getElementById(id) as HTMLElement | null
 }
 
 export function getEventTarget<T extends EventTarget = EventTarget>(event: Event): T | null {
@@ -150,7 +157,7 @@ export function getEventTarget<T extends EventTarget = EventTarget>(event: Event
 }
 ```
 
-Add exports to `shared/index.ts`.
+Add exports to `shared/index.ts`. Add a test proving the dual-root fallback: an id that lives in `document.body` (Teleported) is found via a shadow anchor whose own root does NOT contain it.
 
 - [ ] **Step 4: Run to verify it passes**
 
@@ -170,20 +177,24 @@ git commit -m "feat(shared): add root-node resolution helpers for shadow DOM"
 
 **Files:**
 - Create: `packages/core/src/shared/injectStyle.ts`, `packages/core/src/shared/injectStyle.test.ts`
-- Modify: `packages/core/src/shared/index.ts`, `packages/core/vitest.setup.ts`
+- Modify: `packages/core/src/shared/index.ts`
 
 **Interfaces:**
 - Produces:
   ```ts
   import type { RootNode } from './getRootNode'
 
-  export function injectStyle(root: RootNode, css: string, nonce?: string): { update: (css: string) => void, dispose: () => void }
+  export function supportsAdoptedStyleSheets(): boolean // lazy, not a module const
+  export function _setAdoptedSupportForTests(value: boolean | undefined): void // test override
+  export function injectStyle(root: RootNode, css: string, options?: { nonce?: string }): { update: (css: string) => void, dispose: () => void }
   ```
 - Consumes: `RootNode` from Task 1.
 
-- [ ] **Step 1: Add a minimal `adoptedStyleSheets` polyfill to `vitest.setup.ts`**
+> **Do NOT add a global polyfill to `vitest.setup.ts`.** A global adoptedStyleSheets polyfill makes `supportsAdopted` true everywhere, so Task 8's Splitter test (which asserts the **`<style>` fallback** in the shadow root) would fail, and the "permanently kept" Safari fallback would ship untested. Instead: (a) detection is a **lazy function** with a test override, so each test can drive either branch; (b) the polyfill lives **only in `injectStyle.test.ts`** (per-suite), exercising the adopted path there; (c) component tests (Splitter Task 8) run against raw jsdom, which naturally exercises the `<style>` fallback — the branch jsdom can actually assert.
 
-Define `adoptedStyleSheets` as a plain array property on `Document.prototype` and `ShadowRoot.prototype`, and `replaceSync`/`replace` on `CSSStyleSheet.prototype` storing raw text — so the adopted path is exercised and its bookkeeping (sheet added/removed) is assertable. Document that real cascade behavior needs a browser.
+- [ ] **Step 1: Write detection as a lazy function with a test override**
+
+`supportsAdoptedStyleSheets()` evaluates `typeof CSSStyleSheet !== 'undefined' && typeof CSSStyleSheet.prototype.replaceSync === 'function' && typeof document !== 'undefined' && 'adoptedStyleSheets' in document` on each call (memoize behind the test-override so `_setAdoptedSupportForTests(true|false|undefined)` forces/relaxes it). The polyfill in `injectStyle.test.ts` must use an **accessor + per-instance `WeakMap`** for `adoptedStyleSheets` (a plain array on the prototype is shared across all instances until first assignment) and a `replaceSync` that stores raw text.
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -225,13 +236,19 @@ Run: `pnpm --filter reka-ui exec vitest run src/shared/injectStyle.test.ts` → 
 // packages/core/src/shared/injectStyle.ts
 import type { RootNode } from './getRootNode'
 
-const supportsAdopted = typeof CSSStyleSheet !== 'undefined'
-  && typeof CSSStyleSheet.prototype.replaceSync === 'function'
-  && typeof document !== 'undefined'
-  && 'adoptedStyleSheets' in document
+let testOverride: boolean | undefined
+export function _setAdoptedSupportForTests(v: boolean | undefined) { testOverride = v }
+export function supportsAdoptedStyleSheets(): boolean {
+  if (testOverride !== undefined)
+    return testOverride
+  return typeof CSSStyleSheet !== 'undefined'
+    && typeof CSSStyleSheet.prototype.replaceSync === 'function'
+    && typeof document !== 'undefined'
+    && 'adoptedStyleSheets' in document
+}
 
-export function injectStyle(root: RootNode, css: string, nonce?: string) {
-  if (supportsAdopted) {
+export function injectStyle(root: RootNode, css: string, options: { nonce?: string } = {}) {
+  if (supportsAdoptedStyleSheets()) {
     const sheet = new CSSStyleSheet()
     sheet.replaceSync(css)
     root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet]
@@ -243,8 +260,8 @@ export function injectStyle(root: RootNode, css: string, nonce?: string) {
   const isDoc = root.nodeType === Node.DOCUMENT_NODE
   const doc = isDoc ? root as Document : (root as ShadowRoot).ownerDocument
   const el = doc.createElement('style')
-  if (nonce)
-    el.nonce = nonce
+  if (options.nonce)
+    el.nonce = options.nonce
   el.textContent = css
   const mount = isDoc ? (root as Document).head : root as ShadowRoot
   mount.appendChild(el)
@@ -252,12 +269,12 @@ export function injectStyle(root: RootNode, css: string, nonce?: string) {
 }
 ```
 
-Run again → PASS. Add to `shared/index.ts`.
+The `injectStyle.test.ts` suite drives BOTH branches: install the accessor+WeakMap polyfill and `_setAdoptedSupportForTests(true)` for the adopted-path bookkeeping test; `_setAdoptedSupportForTests(false)` for the `<style>`-fallback test (assert nonce + `<style>` in the shadow root + dispose). Run again → PASS. Add to `shared/index.ts`.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add packages/core/src/shared/injectStyle.ts packages/core/src/shared/injectStyle.test.ts packages/core/src/shared/index.ts packages/core/vitest.setup.ts
+git add packages/core/src/shared/injectStyle.ts packages/core/src/shared/injectStyle.test.ts packages/core/src/shared/index.ts
 git commit -m "feat(shared): add root-scoped injectStyle with adoptedStyleSheets + fallback"
 ```
 
@@ -315,9 +332,9 @@ git add packages/core/src/Dialog/utils.ts packages/core/src/Drawer/DrawerContent
 git commit -m "fix(Dialog): resolve title/description ids through the root node"
 ```
 
-- [ ] **Step 2: Combobox focus containment — TDD**
+- [ ] **Step 2: Combobox focus containment — TDD (portal matrix)**
 
-Failing shadow test: open a Combobox in a shadow root, move focus into its content, assert it stays open. Then in `ComboboxInput.vue:90,101` swap `document.getElementById(rootContext.contentId)` → `getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)`, and `:99` `document.activeElement` → `getActiveElement(rootContext.parentElement.value)`. (Note the teleport caveat in Risks — content may live in `document`, so anchor resolution must also find teleported content; if content teleports to `body`, keep a document fallback.) Run → PASS.
+`ComboboxRoot` context exposes only `parentElement` (no `contentElement` ref), and `ComboboxPortal` Teleports content to `body` by default — so today shadow-trigger + body-portalled content **works** precisely because `document.getElementById` finds the portalled listbox. A naive shadow-root-only lookup would **regress** this. The dual-root `getElementByIdFrom` (Global Constraints) handles it: `ComboboxInput.vue:90,101` → `getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)` (finds in-root OR body-portalled), and `:99` `document.activeElement` → `getActiveElement(rootContext.parentElement.value)`. Test **matrix** {trigger in shadow} × {content in-root, content body-portalled} — both must keep the combobox open on inner focus. (Optional cleaner long-term fix: add a `contentElement` ref to Combobox root context; out of scope here.)
 
 ```bash
 git add packages/core/src/Combobox/ComboboxInput.vue
@@ -344,10 +361,12 @@ git commit -m "fix(RadioGroup,Checkbox,Switch): resolve label [for] through the 
 
 ---
 
-## Task 5: activeElement + focus/dismiss retargeting
+## Task 5: activeElement + focus retargeting (DismissableLayer excluded — see #2724)
 
 **Files:**
-- Modify: `shared/getActiveElement.ts`, `FocusScope/FocusScope.vue`, `DismissableLayer/utils.ts`, `ScrollArea/ScrollAreaScrollbarImpl.vue`, and `contains`-based sites in `Select/SelectContentImpl.vue`, `HoverCard/HoverCardContentImpl.vue`, `Tooltip/TooltipTrigger.vue`
+- Modify: `shared/getActiveElement.ts`, `FocusScope/FocusScope.vue`, `ScrollArea/ScrollAreaScrollbarImpl.vue`, and `contains`-based sites in `Select/SelectContentImpl.vue`, `HoverCard/HoverCardContentImpl.vue`, `Tooltip/TooltipTrigger.vue`
+
+> `DismissableLayer/utils.ts` target reads (`:62,72,168,172`) + `handleAndDispatchCustomEvent` are done in **#2724** (`layerStack.ts` uses `getEventTarget` + threads the captured target). Do not touch them here.
 
 **Interfaces:**
 - Consumes: `getEventTarget`, `getRootNode`, `getOwnerDocument`, `getActiveElement(anchor?)`.
@@ -356,27 +375,18 @@ git commit -m "fix(RadioGroup,Checkbox,Switch): resolve label [for] through the 
 
 Add an optional `anchor?: Node | null` param; start from `getOwnerDocument(anchor).activeElement` instead of the bare `document.activeElement`, keeping the existing shadow-descent loop. Existing `getActiveElement.test.ts` (no arg) must pass unchanged. Add a test with a shadow anchor.
 
-- [ ] **Step 2: FocusScope listeners → root node — TDD**
+- [ ] **Step 2: FocusScope → root node — TDD (document the trade-off; test the Tab/relatedTarget case)**
 
-Failing shadow test: mount a trapping `FocusScope` (e.g. a Dialog) in a shadow root, tab within it, assert `lastFocusedElementRef` is the inner element (NOT the host) and focus stays trapped. Then in `FocusScope.vue:156-164` attach `focusin`/`focusout` to `getRootNode(container)` (ShadowRoot is an EventTarget; targets are un-retargeted there) — falling back to `getOwnerDocument`. Also read the effective target via `getEventTarget(event)` at the `container.contains(...)` checks (L99,124). `:227` `document.body` → `getOwnerDocument(container).body`. Run → PASS + existing FocusScope suite green.
+**Design note (must be in a code comment):** attach `focusin`/`focusout` to `getRootNode(container)` (the ShadowRoot), NOT keep them on `document`. Reason — `handleFocusOut` reads `event.relatedTarget` (`FocusScope.vue:107`), and **`relatedTarget` has no `composedPath()` equivalent**: with a document listener, an intra-scope Tab inside a shadow root sees `relatedTarget` retargeted to the host → `container.contains(relatedTarget)` fails → focus is yanked backward on every Tab. Root-attachment un-retargets it (verified in jsdom). The accepted cost: focusin from light-DOM elements *outside* the host won't reach the listener; that escape-hole is mitigated by the per-root focus guards (Task 7) — **this is why the guards must live in the same root the listeners attach to.**
+
+Then: `FocusScope.vue:156-164` attach to `getRootNode(container)` (fallback `getOwnerDocument`); `:227` `document.body` → `getOwnerDocument(container).body`. Tests (shadow-mounted trap): (a) Tab between two elements *within* the scope does NOT yank focus (the relatedTarget case — the one that actually regresses today); (b) `lastFocusedElementRef` is the inner element, not the host; (c) existing FocusScope suite green.
 
 ```bash
 git add packages/core/src/shared/getActiveElement.ts packages/core/src/FocusScope/FocusScope.vue
 git commit -m "fix(FocusScope): scope focus listeners to the root node for shadow DOM"
 ```
 
-- [ ] **Step 3: DismissableLayer target reads — TDD**
-
-Failing shadow test: mount an open dismissable layer (Popover) in a shadow root; `pointerdown` on inner content; assert it does NOT dismiss; `pointerdown` outside → dismisses. Then in `DismissableLayer/utils.ts:62,168` read the target via `const target = getEventTarget(event)` (capture synchronously, BEFORE the `await nextTick()` at L166-167). Resolve `ownerDocument` lazily inside the handler/`watchEffect` (currently captured once at L52-53 before the ref populates). For `isLayerExist` ordering (L31 `querySelectorAll`), keep DOM-order semantics but note it can't see cross-root layers — acceptable for single-root parity; document the limitation. Run → PASS.
-
-> If #2724 (overlay perf) has landed, apply these changes inside `layerStack.ts` instead — coordinate to avoid conflicts.
-
-```bash
-git add packages/core/src/DismissableLayer/utils.ts
-git commit -m "fix(DismissableLayer): use composed event target for shadow DOM"
-```
-
-- [ ] **Step 4: ScrollArea wheel + body mutation — TDD**
+- [ ] **Step 3: ScrollArea wheel + body mutation — TDD**
 
 Failing shadow test: wheel over a shadow-mounted scrollbar triggers scroll. Then in `ScrollAreaScrollbarImpl.vue:76` use `getEventTarget(event)` for the `scrollbar.value?.contains(...)` check; `:86,89` attach `wheel` to `getOwnerDocument(scrollbar.value)`; `:50-51,68` body mutation → `getOwnerDocument(scrollbar.value).body`. Run → PASS.
 
@@ -385,9 +395,9 @@ git add packages/core/src/ScrollArea/ScrollAreaScrollbarImpl.vue
 git commit -m "fix(ScrollArea): scope wheel listener and body mutation to owner document"
 ```
 
-- [ ] **Step 5: `contains`-based document-listener sites**
+- [ ] **Step 4: `contains`-based document-listener sites**
 
-`Select/SelectContentImpl.vue`, `HoverCard/HoverCardContentImpl.vue`, `Tooltip/TooltipTrigger.vue`: where a `document` listener's callback does `el.contains(event.target)`, read `getEventTarget(event)`; where it attaches to `document`, prefer `getOwnerDocument(<el>.value)`. Run each suite.
+`Select/SelectContentImpl.vue:163` (`content.value?.contains(event.target)` in a document-capture `pointerup`), `HoverCard/HoverCardContentImpl.vue`, `Tooltip/TooltipTrigger.vue`: where a `document` listener's callback does `el.contains(event.target)`, read `getEventTarget(event)` (capture synchronously if any `await` precedes the read); where it attaches to `document`, prefer `getOwnerDocument(<el>.value)`. Run each suite.
 
 ```bash
 git add packages/core/src/Select/SelectContentImpl.vue packages/core/src/HoverCard/HoverCardContentImpl.vue packages/core/src/Tooltip/TooltipTrigger.vue
@@ -407,7 +417,7 @@ git commit -m "fix(Select,HoverCard,Tooltip): use composed target for containmen
 
 - [ ] **Step 1: Migrate + keep tests green**
 
-Key the `createSharedComposable` state by `getOwnerDocument(element)`; route body/head/documentElement and the iOS `touchmove` `useEventListener(document, …)` through that Document. Preserve `flush: 'sync'` semantics. All six callers pass their `currentElement`. Existing `useBodyScrollLock.test.ts` must pass unchanged; add a test asserting two locks in one document + correct restore order.
+The current code is NOT a bare module Map — it's a single `createSharedComposable` holding one `ref(Map)`, one `initialOverflow`, one `flush:'sync'` watch, **and `injectConfigProviderContext()` called inside the factory** (`useBodyScrollLock.ts:23`, captured from the first caller's component scope). Target shape: per-Document state `WeakMap<Document, { map: Map<string, boolean>, initialOverflow?: string, stopTouchMove?: () => void }>` keyed by `getOwnerDocument(element)`; route body/head/documentElement and the iOS `touchmove` `useEventListener(document, …)` through that Document; preserve `flush:'sync'`. **Caveat:** `createSharedComposable` disposes its scope when the last subscriber unmounts — verify per-Document teardown doesn't strand another document's lock, and that the `ConfigProvider` inject still resolves (it's read once at factory init). All six callers pass their `currentElement`. Existing `useBodyScrollLock.test.ts` passes unchanged; add two-locks-one-document + restore-order tests.
 
 > Note: locking `document.body` is *correct* for a shadow child (a shadow root has no body; scrolling is owned by the host document). This task is really multi-document hardening + removing bare globals; the shadow benefit is derived-document correctness.
 
@@ -429,7 +439,7 @@ git commit -m "fix(shared): key body scroll lock per owner document"
 - Create: `shared/useFocusGuards.test.ts`
 
 **Interfaces:**
-- Produces: `useFocusGuards(element?: MaybeRefOrGetter<HTMLElement | undefined>)` — additive optional param; guards inserted at the edges of `root === document ? document.body : shadowRoot`; refcount per root via `WeakMap<RootNode, number>` instead of module-global `count`; reuse via `root.querySelectorAll('[data-reka-focus-guard]')`; `getOwnerDocument(el).createElement('span')`. `FocusGuards.vue` keeps its no-arg public API (gains an internal ref).
+- Produces: `useFocusGuards(element?: MaybeRefOrGetter<HTMLElement | undefined>)` — additive optional param; guards inserted at the edges of `root === document ? document.body : shadowRoot`; refcount per root via `WeakMap<RootNode, number>` instead of module-global `count`; reuse via `root.querySelectorAll('[data-reka-focus-guard]')`; `getOwnerDocument(el).createElement('span')`. **`FocusGuards.vue` mechanism:** it renders only `<slot/>` (no element/Primitive to ref), so it CANNOT gain a template ref cleanly. Keep its no-arg call as **document-body behavior unchanged** (light-DOM default); shadow users get per-root guards by calling the composable directly with an element (Combobox/Popover/Menu/Select already have `currentElement`). Document that the public `FocusGuards` component is light-DOM-scoped.
 
 - [ ] **Step 1: TDD**
 
@@ -455,9 +465,11 @@ git commit -m "fix(shared): scope focus guards per root node for shadow DOM"
 - Consumes: `injectStyle`, `getRootNode`.
 - Produces: `setGlobalCursorStyle`/`resetGlobalCursorStyle` inject into every registered root (`Map<RootNode, ReturnType<typeof injectStyle>>`) instead of a single module-global `document.head` `<style>`.
 
+> **Calibration:** `cursor` is an *inherited* property, so a document-level `*{cursor:X!important}` already reaches shadow content that has no explicit cursor rule — piercing only matters for elements with their own author/UA cursor (buttons, links, resizers). And injecting "into every registered root" still won't cover roots the pointer merely travels *over* mid-drag. So the right fix is **belt-and-braces: host document AND every registered shadow root**, and the residual gap (unregistered roots under the pointer) goes in the browser-story note — don't claim full coverage.
+
 - [ ] **Step 1: TDD**
 
-Failing test: start a drag on a shadow-mounted Splitter → assert the cursor CSS is present in the panel's root (in jsdom, the `<style>` fallback appended to the shadow root); reset removes it; two roots get independent sheets. `registry.ts` records `getRootNode(element)` alongside its existing `ownerDocument` map (L42) and passes the root set to the style fns (call sites L80,253-259). Then implement.
+Failing test: start a drag on a shadow-mounted Splitter → assert the cursor CSS is present in the panel's root (in jsdom, the `<style>` fallback appended to the shadow root — this suite runs against raw jsdom, so `supportsAdoptedStyleSheets()` is false and the fallback is exercised); reset removes it; the host document AND two registered roots each get their own sheet. `registry.ts` records `getRootNode(element)` alongside its existing `ownerDocument` map (L42) and passes the root set (incl. the host document) to the style fns (call sites L80,253-259). Then implement.
 
 - [ ] **Step 2: Run + commit**
 
@@ -480,9 +492,9 @@ git commit -m "fix(Splitter): inject drag cursor per root via adopted stylesheet
 
 Using `createShadowHost()`, mount each component into the shadow root and assert the previously-broken behavior now works (Dialog: no false title warning + inside pointerdown doesn't dismiss; NavigationMenu: content entry/exit focus; Combobox: stays open on inside focus; DismissableLayer: inside vs outside dismissal). Query via `shadowRoot.querySelector`.
 
-- [ ] **Step 2: Docs note + story**
+- [ ] **Step 2: Docs note + story + a "known limitations in shadow roots" list**
 
-Document that embedding in a shadow root requires `ConfigProvider`'s `teleportTo` to point **inside** the shadow root (otherwise Dialog/Popover teleport to `body` and escape the root, breaking cross-boundary aria id refs). Add a Histoire `*.story.vue` with a custom-element wrapper for manual browser verification of: adopted-stylesheet cursor cascade, `:focus-visible` in shadow trees, native `delegatesFocus`. If any public props changed, run `pnpm --filter reka-ui build` then family-scoped `pnpm docs:gen` (avoid blanket regen — vue-component-meta v3 regresses generic SFC params).
+Document that embedding in a shadow root requires `ConfigProvider`'s `teleportTo` to point **inside** the shadow root (otherwise Dialog/Popover teleport to `body` and escape the root, breaking cross-boundary aria id refs at the AT level — not fixable by root-scoping). Add a Histoire `*.story.vue` with a custom-element wrapper for manual **browser** verification of the jsdom-untestable paths: adopted-stylesheet cursor cascade, `:focus-visible` in shadow trees, native `delegatesFocus` (probe confirmed jsdom ignores it), `shadowRoot.getSelection`. Publish an explicit **"known limitations in shadow roots"** list: closed shadow roots (composedPath returns the host); body-portalled content's cross-boundary aria idrefs; `useHideOthers` (`aria-hidden` from body, test-disabled); `HoverCard` selection containment (`document.getSelection`) and dismiss-on-scroll (scroll is `composed:false`); anything a user Teleports out of the root. If any public props changed, `pnpm --filter reka-ui build` then family-scoped `pnpm docs:gen`.
 
 - [ ] **Step 3: Full suite + type-check + commit**
 
@@ -497,23 +509,23 @@ git commit -m "test(shadow-dom): integration coverage + embedding docs"
 
 ## Self-Review
 
-- **Spec coverage:** "every DOM lookup respects getRootNode/ownerDocument" → Tasks 4–5; "route aria/id queries through the root node" → Task 4; "scope focus-guards & scroll-lock per root" → Tasks 6–7; "adopted stylesheets for injected CSS" → Tasks 2 + 8; "shadow-DOM test harness" → Task 3 + Task 9. Every key file from the issue (`useBodyScrollLock`, `useFocusGuards`, `getActiveElement`, `FocusScope.vue`, `DismissableLayer/utils.ts`, `Splitter/utils/style.ts`, `ScrollAreaScrollbarImpl.vue`, the getElementById sites) is addressed. Covered.
+- **Spec coverage:** "every DOM lookup respects getRootNode/ownerDocument" → Tasks 4–5; "route aria/id queries through the root node" → Task 4 (dual-root); "scope focus-guards & scroll-lock per root" → Tasks 6–7; "adopted stylesheets for injected CSS" → Tasks 2 + 8; "shadow-DOM test harness" → Task 3 + Task 9. Every key file from the issue is addressed EXCEPT `DismissableLayer/utils.ts` (its retargeting is done in #2724 by design — see Sequencing): `useBodyScrollLock`, `useFocusGuards`, `getActiveElement`, `FocusScope.vue`, `Splitter/utils/style.ts`, `ScrollAreaScrollbarImpl.vue`, the getElementById/label sites. Covered.
 - **Additive-only API changes:** `getActiveElement(anchor?)`, `useBodyScrollLock(state, element?)`, `useFocusGuards(element?)` — all optional; existing callers/tests unaffected.
 - **Type consistency:** `RootNode` (Task 1) is the single type used by `injectStyle` (Task 2), Splitter map (Task 8), and focus-guard `WeakMap` (Task 7). `getEventTarget`/`getElementByIdFrom`/`getOwnerDocument` signatures stable across Tasks 4–8.
 
 ## Risks / Gotchas
 
-1. **jsdom has no `adoptedStyleSheets`/`replaceSync`** — feature-detect; unit tests cover the `<style>` fallback; the polyfill (Task 2 Step 1) only asserts bookkeeping. Real cascade = browser-only (Histoire story). Keep the fallback permanently (older Safari).
-2. **Event retargeting is the subtle killer**, not `getElementById`: `composedPath()[0]` gives the deep target for **open** roots (closed roots stay broken — out of scope). Read `composedPath()` **synchronously** — `useFocusOutside` awaits `nextTick` before reading `event.target`, so capture the deep target first.
-3. **`DismissableLayer/utils.ts:52-53` resolves `ownerDocument` once, non-reactively, before the ref populates** — resolve lazily inside handlers or it silently keeps `globalThis.document`.
-4. **Teleport** — Dialog/Popover teleport to `body` by default, so portalled content escapes the shadow root and cross-boundary aria id refs genuinely break at the AT level. Fix + docs: `ConfigProvider teleportTo` inside the root; root-scoped `getElementByIdFrom` anchored on the *trigger* won't find content that teleported out — anchor such lookups on the *content* element or fall back to searching both the anchor's root and the document (Combobox, Task 4 Step 2).
-5. **SSR** — every helper guards `typeof document === 'undefined'`; only call in client paths (`isClient`/`watchEffect`).
-6. **`createSharedComposable` scope** — scroll-lock shared state → `WeakMap<Document, …>` must keep `flush: 'sync'` and existing tests green.
+1. **Sequencing: land AFTER #2724.** #2724 rewrites `DismissableLayer/utils.ts` → `layerStack.ts` with `getEventTarget` + captured-target threading baked in. This plan does NOT touch `utils.ts`/`handleAndDispatchCustomEvent.ts`. Landing #2725 first guarantees a merge conflict in the exact lines #2724 deletes.
+2. **jsdom masks the retargeting crash — do NOT trust jsdom green.** After dispatch, `composedPath()` is `[]`; post-`await` `event.target` degrades to the retargeted **host** in jsdom but to **null** in real browsers (spec *clearTargets* for shadow-origin events). Any code reading a retargeted/null target after an `await` (the FocusScope/contains sites here; DismissableLayer in #2724) must capture the composed target **synchronously** and assert on the captured value.
+3. **Teleport is the residual limitation, not fully fixable.** Dialog/Popover/Combobox Teleport to `body` by default → content escapes the shadow root; cross-boundary aria idrefs break at the AT level even after root-scoping. Mitigations: dual-root `getElementByIdFrom` (finds portalled content for JS logic), `ConfigProvider teleportTo` inside the root (docs), and the Task 9 limitations list for what stays broken.
+4. **adoptedStyleSheets absent in jsdom** — lazy detection + test override (Task 2); polyfill lives in `injectStyle.test.ts` only (a global polyfill would break Task 8's fallback assertion); keep the `<style>` fallback permanently (older Safari). Real cascade = browser story.
+5. **SSR = caller-gated, not helper-guarded** — helpers return `globalThis.document` for null anchors; callers gate with `isClient`/`watchEffect` (the existing convention). Do not add per-helper guards that mask mis-timed calls.
+6. **`createSharedComposable` scope** — scroll-lock per-`Document` `WeakMap` must keep `flush:'sync'`, survive last-subscriber disposal without stranding other docs' locks, and keep the factory-time `ConfigProvider` inject resolving.
 7. **Cross-realm `instanceof`** fails for iframe nodes — use `nodeType`/`host` duck-typing (Task 1).
 8. **testing-library queries don't pierce shadow roots** — query via `shadowRoot.querySelector` in shadow tests.
-9. **Out of scope** — do not touch the ~35 benign `window.setTimeout`-class refs, `getComputedStyle`, `innerWidth`, or cross-realm constructors; scoping them churns the diff for zero shadow-DOM benefit. `useHideOthers` (`aria-hidden` from `document.body`) is a flagged follow-up.
-10. **Coordinate with #2724** — if the overlay perf overhaul lands first, apply Task 5 Step 3's DismissableLayer target changes inside `layerStack.ts` instead of `utils.ts`.
+9. **FocusScope root-attachment trade-off** — chosen because `relatedTarget` has no `composedPath` (document listeners break intra-shadow Tab); the escape-hole is covered by per-root guards (Task 7). Test the Tab case, not just focusin.
+10. **Out of scope / known-broken** — the ~35 benign `window.setTimeout`-class refs, `getComputedStyle`, `innerWidth`, cross-realm constructors (churn for zero benefit); and the honestly-unfixable set (closed roots, body-portalled idrefs, `useHideOthers`, HoverCard selection/scroll) → Task 9 limitations list, not silent gaps.
 
 ## Execution Handoff
 
-Recommended: **Subagent-Driven** (superpowers:subagent-driven-development). Tasks 1–3 build the shared foundation (helpers + `injectStyle` + harness) and must land first; Tasks 4–8 are independent per-area migrations that can be parallelized across subagents (each has its own suite as the gate); Task 9 integrates and documents. The highest-scrutiny items are Task 5 (retargeting correctness) and Tasks 6–7 (per-root state keying).
+Recommended: **Subagent-Driven** (superpowers:subagent-driven-development), **after #2724 merges**. Tasks 1–3 build the shared foundation (helpers + `injectStyle` + harness) and must land first; Tasks 4–8 are independent per-area migrations that can be parallelized (each has its own suite as the gate); Task 9 integrates and documents (incl. the limitations list). Highest-scrutiny: Task 4 (dual-root portal matrix), Task 5 (FocusScope relatedTarget/Tab case), Tasks 6–7 (per-root state keying + createSharedComposable disposal).
