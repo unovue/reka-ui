@@ -1,7 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { markRaw, nextTick, ref } from 'vue'
+import { defineComponent, markRaw, nextTick, onMounted, ref } from 'vue'
 import * as Reka from '../index'
+import { useForwardExpose } from '../shared/useForwardExpose'
+import { Primitive } from './Primitive'
 import { Slot } from './Slot'
 import { useRender } from './useRender'
 
@@ -139,6 +141,37 @@ describe('useRender — renderless (Slot)', () => {
 describe('useRender — public export', () => {
   it('is exported from the package barrel path', () => {
     expect(typeof Reka.useRender).toBe('function')
+  })
+})
+
+describe('useRender — Primitive shim expose contract', () => {
+  // Locks the behaviour verified in #2722: the shim populates instance.exposed,
+  // so a parent ref receives an expose proxy — but $el / currentElement still work.
+  it('a parent forwardRef onto <Primitive> gets a working $el via the expose proxy', async () => {
+    let refValue: any
+    let currentEl: any
+    const Parent = defineComponent({
+      components: { Primitive },
+      setup() {
+        const { forwardRef, currentElement } = useForwardExpose()
+        const bind = (r: any) => {
+          refValue = r
+          forwardRef(r)
+        }
+        onMounted(() => {
+          currentEl = currentElement.value
+        })
+        return { bind }
+      },
+      template: `<Primitive :ref="bind" as="section"><span /></Primitive>`,
+    })
+    mount(Parent)
+    await flushPromises()
+    expect(refValue).toBeTruthy()
+    expect(Object.hasOwn(refValue, '$el')).toBe(true)
+    expect(refValue.$el).toBeInstanceOf(HTMLElement)
+    expect(refValue.$el.tagName).toBe('SECTION')
+    expect(currentEl).toBeInstanceOf(HTMLElement)
   })
 })
 

@@ -53,9 +53,13 @@ export const Primitive = defineComponent({
     },
   },
   setup(props, { attrs, slots }) {
-    // Compat shim over useRender. NOTE: do not bind `elementRef` here — the shim
-    // must not mutate its own instance.exposed (parts put `:ref="forwardRef"` on
-    // <Primitive> and read instance.vnode.el). We only consume tag/renderProps.
+    // Compat shim over useRender. useRender unconditionally populates
+    // instance.exposed (prop getters + a live `$el` getter over vnode.el), so the
+    // value a parent `:ref` receives becomes the expose proxy rather than the raw
+    // public instance. This is behaviour-compatible for all `$`-keys and props
+    // (verified against @vue/runtime-core; see #2722): `$el` and props still
+    // resolve, and in prod it removes a pre-existing expose-snapshot staleness.
+    // We only consume tag/renderProps here (no `:ref="elementRef"` on the node).
     const { tag, renderProps, selfClosing } = useRender({
       defaultTagName: 'div',
       as: () => props.as,
