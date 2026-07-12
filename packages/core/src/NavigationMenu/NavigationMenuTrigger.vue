@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { getElementByIdFrom, useForwardExpose } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -128,7 +128,7 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
 }
 
 function handleVisuallyHiddenFocus(ev: FocusEvent) {
-  const content = document.getElementById(itemContext.contentId)
+  const content = getElementByIdFrom(triggerElement.value, itemContext.contentId)
   const prevFocusedElement = ev.relatedTarget as HTMLElement | null
 
   const wasTriggerFocused = prevFocusedElement === triggerElement.value

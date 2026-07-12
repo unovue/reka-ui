@@ -4,7 +4,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
@@ -133,7 +133,7 @@ const ariaLabel = computed(() => {
   if (attrs['aria-label'])
     return undefined
   return props.id && currentElement.value
-    ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
+    ? (getRootNode(currentElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
     : undefined
 })
 

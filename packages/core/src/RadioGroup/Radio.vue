@@ -22,7 +22,7 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { handleSelect } from './utils'
 
@@ -55,7 +55,7 @@ const isFormControl = useFormControl(triggerElement)
 // `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
 const scopeIdAttrs = useForwardScopeId()
 
-const ariaLabel = computed(() => props.id && triggerElement.value ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText ?? props.value : undefined)
+const ariaLabel = computed(() => props.id && triggerElement.value ? (getRootNode(triggerElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText ?? props.value : undefined)
 
 function handleClick(event: MouseEvent) {
   if (props.disabled)
