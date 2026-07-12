@@ -41,7 +41,11 @@ export interface DispatchContext {
 }
 
 export interface OutsideSubscriber {
-  /** false until a macrotask after registration (mount-via-pointerdown guard). */
+  /**
+   * false until a macrotask after registration (mount-via-pointerdown guard).
+   * POINTER PATH ONLY — the focus path has no arming today (`utils.ts` attaches
+   * `focusin` synchronously at L182), so `handleFocus` must NOT check `armed`.
+   */
   armed: boolean
   isPointerInside: boolean
   isFocusInside: boolean
@@ -66,6 +70,7 @@ let outsideListenersInstalled = false
 let keydownListenerInstalled = false
 let touchClickInstalled = false
 const pendingTouch = new Map<OutsideSubscriber, () => void>()
+const armingTimers = new Set<number>()
 
 function installOutsideListeners() {
   if (outsideListenersInstalled || !isClient)
@@ -109,11 +114,14 @@ function removeTouchClick() {
   document.removeEventListener('click', handleTouchClick)
 }
 function handleTouchClick() {
-  const dispatches = [...pendingTouch.values()]
+  const entries = [...pendingTouch.entries()]
   pendingTouch.clear()
   removeTouchClick()
-  for (const dispatch of dispatches)
+  for (const [sub, dispatch] of entries) {
+    if (!outsideSubscribers.includes(sub))
+      continue
     dispatch()
+  }
 }
 function deferTouch(sub: OutsideSubscriber, dispatch: () => void) {
   pendingTouch.set(sub, dispatch) // replace = re-arm
@@ -145,15 +153,23 @@ function buildContext(event: Event): DispatchContext {
 
 function handlePointerDown(event: PointerEvent) {
   const ctx = buildContext(event)
-  // Snapshot: a dispatch may unregister subscribers mid-iteration.
-  for (const sub of [...outsideSubscribers])
+  // Snapshot: a dispatch may unregister subscribers mid-iteration. The liveness
+  // guard skips a subscriber synchronously unregistered by an earlier dispatch
+  // (matches the DOM `removed` semantics).
+  for (const sub of [...outsideSubscribers]) {
+    if (!outsideSubscribers.includes(sub))
+      continue
     sub.handlePointerDown?.(event, ctx)
+  }
 }
 
 function handleFocusIn(event: FocusEvent) {
   const ctx = buildContext(event)
-  for (const sub of [...outsideSubscribers])
+  for (const sub of [...outsideSubscribers]) {
+    if (!outsideSubscribers.includes(sub))
+      continue
     sub.handleFocus?.(event, ctx)
+  }
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -182,11 +198,21 @@ export function registerOutsideSubscriber(sub: OutsideSubscriber): () => void {
   // Arm a macrotask later: the shared listener is already live, so if this layer
   // mounted *via* a pointerdown, an unarmed handle ignores that same event.
   sub.armed = false
-  const timer = isClient ? window.setTimeout(() => { sub.armed = true }, 0) : undefined
+  let timer: number | undefined
+  if (isClient) {
+    timer = window.setTimeout(() => {
+      sub.armed = true
+      if (timer !== undefined)
+        armingTimers.delete(timer)
+    }, 0)
+    armingTimers.add(timer)
+  }
   installOutsideListeners()
   return () => {
-    if (timer !== undefined)
+    if (timer !== undefined) {
       window.clearTimeout(timer)
+      armingTimers.delete(timer)
+    }
     const i = outsideSubscribers.indexOf(sub)
     if (i !== -1)
       outsideSubscribers.splice(i, 1)
@@ -224,13 +250,15 @@ export function highestDisabledIndex(): number {
 
 /** Test-only: clear ALL manager state and shared listeners. */
 export function resetLayerStack(): void {
+  for (const timer of armingTimers)
+    window.clearTimeout(timer)
+  armingTimers.clear()
   layers.splice(0)
   outsideSubscribers.splice(0)
   branches.splice(0)
   pendingTouch.clear()
-  teardownOutsideListeners()
+  teardownOutsideListeners() // also removes the touch-click listener
   teardownKeydownListener()
-  removeTouchClick()
   if (isClient && bodyPointerEvents.original !== undefined)
     document.body.style.pointerEvents = bodyPointerEvents.original
   bodyPointerEvents.original = undefined
