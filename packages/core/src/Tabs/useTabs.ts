@@ -5,7 +5,8 @@ import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
 import { computed, ref, shallowRef, toValue } from 'vue'
 import { makeContentId, makeTriggerId } from './utils'
 
-export type { PartSurface }
+// `PartSurface` is the shared contract in `@/shared` and is already published via
+// `@/Switch`; NOT re-exported here to avoid an ambiguous duplicate in the barrel.
 
 export type TabsTriggerState = {
   state: 'active' | 'inactive'

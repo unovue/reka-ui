@@ -20,3 +20,12 @@ export {
   default as TabsTrigger,
   type TabsTriggerProps,
 } from './TabsTrigger.vue'
+export {
+  getTabsContentSurface,
+  getTabsTriggerSurface,
+  type TabsContentState,
+  type TabsTriggerState,
+  useTabs,
+  type UseTabsProps,
+  type UseTabsReturn,
+} from './useTabs'

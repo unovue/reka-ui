@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
+import * as Reka from '../index'
 import { useTabs } from './useTabs'
 import { makeContentId, makeTriggerId } from './utils'
 
@@ -131,5 +132,13 @@ describe('useTabs — context', () => {
     expect(t.context.contentIds.value.has('a')).toBe(false)
     t.context.changeModelValue('b')
     expect(t.modelValue.value).toBe('b')
+  })
+})
+
+describe('useTabs — public export', () => {
+  it('is exported from the package barrel with its surface builders', () => {
+    expect(typeof Reka.useTabs).toBe('function')
+    expect(typeof Reka.getTabsTriggerSurface).toBe('function')
+    expect(typeof Reka.getTabsContentSurface).toBe('function')
   })
 })
