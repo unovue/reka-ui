@@ -8,3 +8,10 @@ export {
   default as SwitchThumb,
   type SwitchThumbProps,
 } from './SwitchThumb.vue'
+export {
+  type PartSurface,
+  type SwitchState,
+  useSwitch,
+  type UseSwitchProps,
+  type UseSwitchReturn,
+} from './useSwitch'
