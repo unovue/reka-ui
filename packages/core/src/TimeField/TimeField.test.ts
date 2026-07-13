@@ -1442,3 +1442,36 @@ describe('useDateField – time segment characterization tests (coverage gaps)',
     })
   })
 })
+
+// Covers the shared shell seam: TimeField's invalidity check must respect time-of-day,
+// not just the calendar date, so that `minValue`/`maxValue` at the same day boundary work.
+describe('timeField invalidity at the shared shell seam', () => {
+  it('marks the field as invalid when modelValue is before minValue on the same day', async () => {
+    const min = Temporal.PlainTime.from({ hour: 9, minute: 0, second: 0 })
+    const earlier = Temporal.PlainTime.from({ hour: 8, minute: 0, second: 0 })
+    const { input } = setup({
+      timeFieldProps: { modelValue: earlier, minValue: min },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('does not mark the field as invalid when modelValue is on or after minValue', async () => {
+    const min = Temporal.PlainTime.from({ hour: 9, minute: 0, second: 0 })
+    const { input } = setup({
+      timeFieldProps: {
+        modelValue: Temporal.PlainTime.from({ hour: 9, minute: 0, second: 0 }),
+        minValue: min,
+      },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks the field as invalid when modelValue is after maxValue on the same day', async () => {
+    const max = Temporal.PlainTime.from({ hour: 17, minute: 0, second: 0 })
+    const later = Temporal.PlainTime.from({ hour: 18, minute: 0, second: 0 })
+    const { input } = setup({
+      timeFieldProps: { modelValue: later, maxValue: max },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+})
