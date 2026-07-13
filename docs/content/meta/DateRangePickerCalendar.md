@@ -6,12 +6,12 @@
   {
     'name': 'date',
     'description': '',
-    'type': 'DateValue'
+    'type': 'TemporalDate'
   },
   {
     'name': 'grid',
     'description': '',
-    'type': 'Grid&lt;DateValue&gt;[]'
+    'type': 'Grid&lt;TemporalDate&gt;[]'
   },
   {
     'name': 'weekDays',
@@ -42,8 +42,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `date` |  | `DateValue` |
-| `grid` |  | `Grid<DateValue>[]` |
+| `date` |  | `TemporalDate` |
+| `grid` |  | `Grid<TemporalDate>[]` |
 | `weekDays` |  | `string[]` |
 | `weekStartsOn` |  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
 | `locale` |  | `string` |

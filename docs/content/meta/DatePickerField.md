@@ -11,7 +11,7 @@
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'DateValue | undefined'
+    'type': 'TemporalDate | undefined'
   }
 ]" />
 </llm-exclude>
@@ -23,6 +23,6 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `segments` |  | `{ part: SegmentPart; value: string; }[]` |
-| `modelValue` |  | `DateValue \| undefined` |
+| `modelValue` |  | `TemporalDate \| undefined` |
 
 </llm-only>
