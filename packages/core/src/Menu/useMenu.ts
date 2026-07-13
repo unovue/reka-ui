@@ -1,15 +1,15 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { MenuContentContext } from './MenuContentImpl.vue'
 import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
-import type { Direction } from './utils'
+import type { Direction, GraceIntent, Side } from './utils'
 // POC NOTE: `PartSurface` is the shared headless-part contract. On v3 it is only
 // published from `@/Switch`; it belongs in `@/shared` (the Tabs PR #2795 moves it
 // there). Imported from `@/Switch` here to keep this POC self-contained on v3.
 import type { PartSurface } from '@/Switch'
-import { computed, nextTick, ref, toValue } from 'vue'
-import { getActiveElement } from '@/shared'
+import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
+import { getActiveElement, useArrowNavigation, useTypeahead } from '@/shared'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { isMouseEvent, ITEM_SELECT, SELECTION_KEYS } from './utils'
+import { FIRST_LAST_KEYS, focusFirst, getOpenState, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // POC: headless composables for the Menu (overlay) family — issue #2723.
@@ -17,7 +17,7 @@ import { isMouseEvent, ITEM_SELECT, SELECTION_KEYS } from './utils'
 // This proves the useX() pattern extends to an OVERLAY family, and documents
 // where it must bend. Findings live in docs/superpowers/pocs/2723-menu-*.md.
 //
-// Three shapes are exercised:
+// Four shapes are exercised:
 //  1. useMenuRoot()            — state-only root (NO surface); returns the two
 //                                context objects the SFC provides. This is the
 //                                overlay-root contract: `{ state, context }`.
@@ -31,6 +31,9 @@ import { isMouseEvent, ITEM_SELECT, SELECTION_KEYS } from './utils'
 //                                the CustomEvent-token close-on-select). Pure
 //                                handlers, no data-*. `onSelect` is a callback
 //                                channel (never a merged DOM listener).
+//  4. useMenuContent()         — the overlay BRAIN (typeahead/arrow-nav/pointer-
+//                                grace/highlight). Returns the role=menu surface +
+//                                MenuContentContext; the 4 wrappers stay in the SFC.
 // =============================================================================
 
 // -----------------------------------------------------------------------------
@@ -281,4 +284,243 @@ export function getMenuItemSelectSurface(
     })),
     isPointerDownRef,
   }
+}
+
+// -----------------------------------------------------------------------------
+// 4. useMenuContent — the overlay BRAIN (MenuContentImpl)
+//
+// The finding this proves: the recipe deferred overlays because "their logic
+// lives in content-part wrappers", but the MAJORITY of MenuContentImpl's logic —
+// typeahead, arrow-nav, the pointer-grace/direction machine, and highlight
+// ownership — is wrapper-INDEPENDENT and extracts here. FocusScope/DismissableLayer/
+// RovingFocusGroup/PopperContent (+ the two mount side-effects useFocusGuards /
+// useBodyScrollLock) stay in the SFC. The wrappers are the shell; this is the brain.
+//
+// The one genuine seam: `RovingFocusGroup.getItems()` is a template-instance-ref
+// call the composable cannot make — the SFC injects it as `getItems`.
+// -----------------------------------------------------------------------------
+
+export interface MenuContentItem { ref: HTMLElement, value?: any }
+
+export interface UseMenuContentOptions {
+  menuContext: MenuContext
+  rootContext: MenuRootContext
+  /** The content element ref (the SFC's `useForwardExpose` currentElement). */
+  contentElement: Ref<HTMLElement | undefined>
+  /**
+   * Roving-focus/collection items. `rovingFocusGroupRef.getItems()` is a
+   * template-instance-ref call the composable can't make — the SFC injects it.
+   * This is the wrapper seam.
+   */
+  getItems: () => MenuContentItem[]
+  /** @defaultValue `false` */
+  loop?: MaybeRefOrGetter<boolean | undefined>
+  /** `openAutoFocus` passthrough (SFC: `e => emits('openAutoFocus', e)`). */
+  onOpenAutoFocus?: (event: Event) => void
+}
+
+export type MenuContentState = { state: 'open' | 'closed' }
+
+export interface UseMenuContentReturn {
+  /** The `role=menu` surface for `PopperContent`; positioning props stay in the SFC. */
+  content: PartSurface<MenuContentState>
+  /** The context the SFC provides via `provideMenuContentContext`. */
+  contentContext: MenuContentContext
+  /** `FocusScope` `@mount-auto-focus` — focuses content, honors the openAutoFocus veto. */
+  handleMountAutoFocus: (event: Event) => void
+  /** `RovingFocusGroup` `v-model:current-tab-stop-id`. */
+  currentItemId: Ref<string | null>
+  highlightedElement: Ref<HTMLElement | undefined>
+  searchRef: Ref<string>
+}
+
+/**
+ * Headless Menu content — the keyboard/pointer/highlight brain. Returns the
+ * `role=menu` surface + the `MenuContentContext` value; the SFC keeps the four
+ * component wrappers and the two mount side-effects. Owns watchers + `onUnmounted`,
+ * so it runs inside the mounted content's `setup()` (not standalone-callable).
+ */
+export function useMenuContent(options: UseMenuContentOptions): UseMenuContentReturn {
+  const { menuContext, rootContext, contentElement, getItems } = options
+  const loop = () => toValue(options.loop) ?? false
+
+  const searchRef = ref('')
+  const timerRef = ref(0)
+  const pointerGraceTimerRef = ref(0)
+  const pointerGraceIntentRef = ref<GraceIntent | null>(null)
+  const pointerDirRef = ref<Side>('right')
+  const lastPointerXRef = ref(0)
+  const currentItemId = ref<string | null>(null)
+  const highlightedElement = ref<HTMLElement>()
+  const filterElement = ref<HTMLElement>()
+  const activeSubmenuContext = ref<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> }>()
+
+  const { handleTypeaheadSearch } = useTypeahead()
+
+  function onKeydownNavigation(event: KeyboardEvent) {
+    const el = useArrowNavigation(
+      event,
+      (highlightedElement.value || getActiveElement()) as HTMLElement,
+      contentElement.value,
+      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus: false, attributeName: '[data-reka-collection-item]:not([data-disabled])' },
+    )
+    if (el) {
+      highlightedElement.value = el
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  }
+
+  function onKeydownEnter() {
+    if (highlightedElement.value)
+      highlightedElement.value.click()
+  }
+
+  function isPointerMovingToSubmenu(event: PointerEvent) {
+    const isMovingTowards = pointerDirRef.value === pointerGraceIntentRef.value?.side
+    return isMovingTowards && isPointerInGraceArea(event, pointerGraceIntentRef.value?.area)
+  }
+
+  function handleMountAutoFocus(event: Event) {
+    options.onOpenAutoFocus?.(event)
+    if (event.defaultPrevented)
+      return
+    // focus the content area only; onEntryFocus controls focusing the first item
+    event.preventDefault()
+    contentElement.value?.focus({ preventScroll: true })
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.defaultPrevented)
+      return
+    // submenu key events bubble through portals; only handle keys in this menu.
+    const target = event.target as HTMLElement
+    const isKeyDownInside = target.closest('[data-reka-menu-content]') === event.currentTarget
+    const isKeyDownInTextField = ['input', 'textarea'].includes(target.tagName.toLowerCase())
+    const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
+    const isCharacterKey = event.key.length === 1
+
+    const el = useArrowNavigation(
+      event,
+      getActiveElement() as HTMLElement,
+      contentElement.value,
+      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus: true, attributeName: '[data-reka-collection-item]:not([data-disabled])' },
+    )
+    if (el)
+      return el?.focus()
+
+    // prevent "Space" being taken into typeahead
+    if (event.code === 'Space')
+      return
+
+    const collectionItems = getItems() ?? []
+    if (isKeyDownInside) {
+      if (event.key === 'Tab' && rootContext.modal.value)
+        event.preventDefault()
+      if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
+        handleTypeaheadSearch(event.key, collectionItems)
+    }
+
+    if (event.target !== contentElement.value)
+      return
+    if (!FIRST_LAST_KEYS.includes(event.key))
+      return
+    event.preventDefault()
+    const candidateNodes = [...collectionItems.map(item => item.ref)]
+    if (LAST_KEYS.includes(event.key))
+      candidateNodes.reverse()
+    focusFirst(candidateNodes)
+  }
+
+  function handleBlur(event: FocusEvent) {
+    // clear the search buffer when focus leaves the menu
+    // @ts-expect-error the provided currentTarget and target should be HTMLElement
+    if (!event?.currentTarget?.contains?.(event.target)) {
+      window.clearTimeout(timerRef.value)
+      searchRef.value = ''
+    }
+  }
+
+  function handlePointerMove(event: PointerEvent) {
+    if (!isMouseEvent(event))
+      return
+    const target = event.target as HTMLElement
+    const pointerXHasChanged = lastPointerXRef.value !== event.clientX
+    // not `event.movementX` — Safari always returns 0 on a pointer event.
+    if ((event?.currentTarget as HTMLElement)?.contains(target) && pointerXHasChanged) {
+      pointerDirRef.value = event.clientX > lastPointerXRef.value ? 'right' : 'left'
+      lastPointerXRef.value = event.clientX
+    }
+  }
+
+  function handlePointerEnter(event: PointerEvent) {
+    if (!isMouseEvent(event))
+      return
+    // hovering a menu content (main or sub) focuses its filter element if present
+    if (filterElement.value)
+      filterElement.value.focus()
+  }
+
+  watch(highlightedElement, (el) => {
+    if (activeSubmenuContext.value && (el === undefined || el !== activeSubmenuContext.value.trigger.value)) {
+      // Only close when the highlight moves to a DIFFERENT parent item; a
+      // disappearing highlight (pointer left all items) must not close it.
+      if (el === undefined)
+        return
+      activeSubmenuContext.value.onOpenChange(false)
+      activeSubmenuContext.value = undefined
+    }
+  })
+
+  watch(contentElement, (el) => {
+    menuContext.onContentChange(el)
+  })
+
+  onUnmounted(() => {
+    window.clearTimeout(timerRef.value)
+  })
+
+  const contentContext: MenuContentContext = {
+    onItemEnter: event => isPointerMovingToSubmenu(event),
+    onItemLeave: (event) => {
+      if (isPointerMovingToSubmenu(event))
+        return true
+      const isInputFocused = ['INPUT', 'TEXTAREA'].includes(getActiveElement()?.tagName || '')
+      if (!isInputFocused)
+        contentElement.value?.focus()
+      currentItemId.value = null
+      return false
+    },
+    onTriggerLeave: event => isPointerMovingToSubmenu(event),
+    searchRef,
+    highlightedElement,
+    onKeydownNavigation,
+    onKeydownEnter,
+    filterElement,
+    onFilterElementChange: (el) => {
+      filterElement.value = el
+    },
+    activeSubmenuContext,
+    pointerGraceTimerRef,
+    onPointerGraceIntentChange: (intent) => {
+      pointerGraceIntentRef.value = intent
+    },
+  }
+
+  const content: PartSurface<MenuContentState> = {
+    props: computed(() => ({
+      'role': 'menu',
+      'aria-orientation': 'vertical',
+      // Functional selector (submenu `closest()` scoping) — lives in `props`,
+      // exempt from the no-`data-*` rule; NOT routed through stateToDataAttrs.
+      'data-reka-menu-content': '',
+      'dir': rootContext.dir.value,
+      'onKeydown': handleKeyDown,
+      'onBlur': handleBlur,
+      'onPointermove': handlePointerMove,
+      'onPointerenter': handlePointerEnter,
+    })),
+    state: computed(() => ({ state: getOpenState(menuContext.open.value) })),
+  }
+
+  return { content, contentContext, handleMountAutoFocus, currentItemId, highlightedElement, searchRef }
 }

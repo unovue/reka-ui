@@ -1,10 +1,10 @@
 import type { MenuContentContext } from './MenuContentImpl.vue'
-import type { MenuRootContext } from './MenuRoot.vue'
-import type { UseMenuRootReturn } from './useMenu'
+import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
+import type { UseMenuContentReturn, UseMenuRootReturn } from './useMenu'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
-import { getMenuItemBaseSurface, getMenuItemSelectSurface, useMenuRoot } from './useMenu'
+import { getMenuItemBaseSurface, getMenuItemSelectSurface, useMenuContent, useMenuRoot } from './useMenu'
 
 // Minimal fakes — the builders only touch a handful of context fields.
 function mockContentContext(overrides: Partial<MenuContentContext> = {}): MenuContentContext {
@@ -26,6 +26,15 @@ function mockRootContext(overrides: Partial<MenuRootContext> = {}): MenuRootCont
     modal: ref(true),
     ...overrides,
   } as unknown as MenuRootContext
+}
+
+function mockMenuContext(open = true): MenuContext {
+  return {
+    open: ref(open),
+    onOpenChange: vi.fn(),
+    content: ref<HTMLElement | undefined>(undefined),
+    onContentChange: vi.fn(),
+  } as unknown as MenuContext
 }
 
 describe('useMenuRoot — state-only overlay root', () => {
@@ -207,5 +216,76 @@ describe('getMenuItemSelectSurface — the select protocol', () => {
     await select.props.value.onPointerup(evt)
     await nextTick()
     expect(clickSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('useMenuContent — the overlay brain', () => {
+  function harness(overrides: Partial<Parameters<typeof useMenuContent>[0]> = {}) {
+    let api!: UseMenuContentReturn
+    const contentEl = document.createElement('div')
+    const contentElement = ref<HTMLElement | undefined>(contentEl)
+    mount(defineComponent({
+      setup() {
+        api = useMenuContent({
+          menuContext: mockMenuContext(true),
+          rootContext: mockRootContext(),
+          contentElement,
+          getItems: () => [],
+          ...overrides,
+        })
+        return () => null
+      },
+    }))
+    return { api, contentEl }
+  }
+
+  it('content.props is the role=menu surface incl. the functional data-reka-menu-content selector', () => {
+    const { api } = harness()
+    expect(api.content.props.value).toMatchObject({
+      'role': 'menu',
+      'aria-orientation': 'vertical',
+      'data-reka-menu-content': '',
+      'dir': 'ltr',
+    })
+    expect(typeof api.content.props.value.onKeydown).toBe('function')
+    expect(typeof api.content.props.value.onPointermove).toBe('function')
+  })
+
+  it('content.state maps the open state to data-state', () => {
+    expect(harness().api.content.state.value.state).toBe('open')
+  })
+
+  it('provides the pointer-grace closure trio + the shared highlight/search refs', () => {
+    const { api } = harness()
+    expect(typeof api.contentContext.onItemEnter).toBe('function')
+    expect(typeof api.contentContext.onItemLeave).toBe('function')
+    expect(typeof api.contentContext.onTriggerLeave).toBe('function')
+    expect(api.contentContext.searchRef).toBe(api.searchRef)
+    expect(api.contentContext.highlightedElement).toBe(api.highlightedElement)
+  })
+
+  it('onItemLeave (not moving to a submenu) refocuses content and clears currentItemId', () => {
+    const { api, contentEl } = harness()
+    const focusSpy = vi.spyOn(contentEl, 'focus')
+    api.currentItemId.value = 'x'
+    const movingToSubmenu = api.contentContext.onItemLeave({} as PointerEvent)
+    expect(movingToSubmenu).toBe(false)
+    expect(focusSpy).toHaveBeenCalled()
+    expect(api.currentItemId.value).toBe(null)
+  })
+
+  it('handleMountAutoFocus focuses content, and the openAutoFocus veto suppresses it', () => {
+    const onOpenAutoFocus = vi.fn()
+    const open = harness({ onOpenAutoFocus })
+    const openFocus = vi.spyOn(open.contentEl, 'focus')
+    const evt = new Event('focus', { cancelable: true })
+    open.api.handleMountAutoFocus(evt)
+    expect(onOpenAutoFocus).toHaveBeenCalledWith(evt)
+    expect(openFocus).toHaveBeenCalled()
+
+    const vetoed = harness({ onOpenAutoFocus: (e: Event) => e.preventDefault() })
+    const vetoedFocus = vi.spyOn(vetoed.contentEl, 'focus')
+    vetoed.api.handleMountAutoFocus(new Event('focus', { cancelable: true }))
+    expect(vetoedFocus).not.toHaveBeenCalled()
   })
 })

@@ -9,10 +9,14 @@
 
 The pattern extends — but overlays **bend two axioms** from the Switch/Tabs recipe,
 and the recipe's stated reason for deferring overlays ("overlay logic lives in
-Content-part wrappers") turns out to be **only ~half true**. The wrappers are a thin
-shell; the overlay *brain* (typeahead, arrow-nav, the pointer-grace machine,
-highlight ownership) is plain state+handlers and **extracts cleanly**. That reframe
-is the most useful input to #2724.
+Content-part wrappers") is **wrong by half**. The wrappers are a thin shell; the
+overlay *brain* (typeahead, arrow-nav, the pointer-grace machine, highlight
+ownership) is plain state+handlers and extracts cleanly — **now demonstrated, not
+just argued**: `useMenuContent()` pulls ~215 lines out of `MenuContentImpl.vue`
+(**405 → 191 lines**), leaving the SFC as the four wrappers + positioning props.
+The single thing that couldn't move is `RovingFocusGroup.getItems()` (a template-
+instance ref), injected as one `getItems` option. That reframe is the most useful
+input to #2724.
 
 ## What was built
 
@@ -27,10 +31,15 @@ All on branch `poc-2723-menu-composable` (off `v3`). `packages/core/src/Menu/use
 3. **`getMenuItemSelectSurface(rootContext, { disabled, currentElement, onSelect, searchRef })`**
    — the select protocol (click/pointerdown/pointerup/keydown + close-on-select).
    `MenuItem.vue` composes it.
+4. **`useMenuContent(options)`** — the overlay **brain**: typeahead, arrow-nav
+   (`handleKeyDown`/`onKeydownNavigation`), the pointer-grace/direction machine, and
+   `highlightedElement` ownership. Returns the `role=menu` `PartSurface` + the
+   `MenuContentContext` value. `MenuContentImpl.vue` composes it, keeping the four
+   wrappers + the two mount side-effects. **Extracted ~215 lines (405 → 191).**
 
-**Verification:** `Menu` + `DropdownMenu` + `ContextMenu` suites (the compatibility
-oracle for these SFCs) **37/37 green**; full suite **2028 green**; `type-check`
-clean; **14** POC unit tests for the three shapes.
+**Verification:** `Menu` + `DropdownMenu` + `ContextMenu` + `Menubar` suites (the
+compatibility oracle for these SFCs) **51/51 green**; full suite **2042 green**;
+`type-check` clean; **19** POC unit tests across the four shapes.
 
 ## Findings — the questions overlays force
 
@@ -104,24 +113,33 @@ their own layer. Not layering the base would strand SubTrigger.
 - **Overlay item builders are context-scoped factories** (finding #2) — the recipe's
   "pure builder" wording needs the factory caveat for overlays.
 
-## The reframe for #2724 (most valuable output)
+## The reframe for #2724 (most valuable output) — now PROVEN
 
 The deferral said "overlay logic lives in Content-part component wrappers." Reality
 for Menu: `MenuContentImpl` composes **4** wrappers (FocusScope/DismissableLayer/
-RovingFocusGroup/PopperContent), but the **majority** of its 405 lines — typeahead,
+RovingFocusGroup/PopperContent), but the **majority** of its logic — typeahead,
 `onKeydownNavigation`, `handleKeyDown`, `handleBlur`, the pointer-direction tracker,
-and the grace machine (`isPointerMovingToSubmenu`, `pointerGraceIntentRef`,
-`pointerDirRef`, `lastPointerXRef`) plus `highlightedElement` ownership — is
-**wrapper-independent and extractable** into a `useMenuContent()` that returns the
-`role=menu` surface and provides `MenuContentContext`, with the 4 wrappers left in
-the SFC. **The wrappers are the shell; the overlay brain is the composable.** That's
-the seam #2724 should target.
+the grace machine (`isPointerMovingToSubmenu`, `pointerGraceIntentRef`,
+`pointerDirRef`, `lastPointerXRef`), and `highlightedElement` ownership — is
+**wrapper-independent**. `useMenuContent()` extracts it: it returns the `role=menu`
+surface and the `MenuContentContext` value, and **`MenuContentImpl.vue` drops from
+405 to 191 lines** — the residue is the 4 wrappers, the positioning props, and the
+two mount side-effects (`useFocusGuards`/`useBodyScrollLock`).
+
+**The wrappers are the shell; the overlay brain is the composable.** The only piece
+that resisted extraction is `RovingFocusGroup.getItems()` (a template-instance ref
+for typeahead candidates), injected as a single `getItems` option — a clean,
+named seam. That is exactly the boundary #2724 should build the overlay contract on.
 
 ## Scope NOT covered (recommended next depth)
-- **`useMenuContent()`** — extract the brain above. Highest information yield for #2724.
 - Reuse `getMenuItemBaseSurface` in **`MenuSubTrigger`/`MenuCheckboxItem`/`MenuRadioItem`**
-  (proves the base+variant layering end-to-end).
-- **`useMenuSub()`** — the `MenuContext` symmetry.
+  (proves the base+variant layering end-to-end; SubTrigger adds the open-timer +
+  grace-polygon layer).
+- **`useMenuSub()`** — the `MenuContext` symmetry (`MenuSub` re-provides a
+  `MenuContext`-shaped object).
+- Fold `useFocusGuards`/`useBodyScrollLock` into `useMenuContent` behind a flag, so a
+  standalone consumer opts into the mount side-effects (kept in the SFC here so the
+  brain stays side-effect-free).
 - Move `PartSurface` to `@/shared` (this POC imports it from `@/Switch` on `v3`; the
   Tabs PR #2795 relocates it — rebase onto that).
 
@@ -129,4 +147,7 @@ the seam #2724 should target.
 `useX()` works for overlays. It costs two axiom amendments (state-only root;
 context-scoped factories) and one exemption (functional `data-*`). The real prize
 isn't the item surface — it's that the overlay brain in the Content part extracts,
-which is exactly what #2724 needs to know before it rewrites overlay internals.
+and this POC **proves it**: `useMenuContent()` takes 405→191 lines out of the SFC
+with one named seam (`getItems`), all 51 consumer tests still green. That is the
+concrete evidence #2724 needs before it rewrites overlay internals — the overlay
+contract can be "state-only root + brain composable + wrappers stay wrappers."
