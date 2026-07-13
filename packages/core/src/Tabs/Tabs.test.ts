@@ -140,3 +140,142 @@ describe('given Tabs without TabsContent', () => {
     expect(triggers[1].attributes('aria-controls')).toBeUndefined()
   })
 })
+
+// Characterization tests: lock the real contract the thin suite above misses
+// (id/aria wiring, data-state, activation mode, consumer-listener chaining,
+// orientation, disabled) against the UNMODIFIED Tabs, so the useTabs refactor
+// fails HERE on any parity gap instead of shipping. See #2723 recipe step 1.
+describe('tabs characterization (pre-refactor contract)', () => {
+  const twoTabFixture = {
+    components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+    props: ['activationMode'],
+    template: `
+      <TabsRoot default-value="tab1" :activation-mode="activationMode">
+        <TabsList>
+          <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+          <TabsTrigger value="tab2">Tab 2</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tab1">Content 1</TabsContent>
+        <TabsContent value="tab2">Content 2</TabsContent>
+      </TabsRoot>
+    `,
+  }
+
+  it('wires aria-controls/aria-labelledby to the matching trigger/content id pair', async () => {
+    const wrapper = mount(twoTabFixture, { attachTo: document.body })
+    await flushPromises()
+    const trigger = wrapper.find('[role="tab"]')
+    const panel = wrapper.find('[role="tabpanel"]')
+    expect(trigger.attributes('id')).toMatch(/-trigger-tab1$/)
+    expect(panel.attributes('id')).toMatch(/-content-tab1$/)
+    expect(trigger.attributes('aria-controls')).toBe(panel.attributes('id'))
+    expect(panel.attributes('aria-labelledby')).toBe(trigger.attributes('id'))
+    wrapper.unmount()
+  })
+
+  it('marks the selected trigger active and others inactive (data-state + aria-selected)', async () => {
+    const wrapper = mount(twoTabFixture, { attachTo: document.body })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    expect(t1.attributes('data-state')).toBe('active')
+    expect(t1.attributes('aria-selected')).toBe('true')
+    expect(t2.attributes('data-state')).toBe('inactive')
+    expect(t2.attributes('aria-selected')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('keeps the trigger id stable across selection changes', async () => {
+    const wrapper = mount(twoTabFixture, { attachTo: document.body })
+    await flushPromises()
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    const idBefore = t2.attributes('id')
+    await t2.trigger('mousedown')
+    await flushPromises()
+    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('id')).toBe(idBefore)
+    wrapper.unmount()
+  })
+
+  it('automatic activation: focusing a trigger activates its tab', async () => {
+    const wrapper = mount(twoTabFixture, { attachTo: document.body })
+    await flushPromises()
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    await t2.trigger('focus')
+    await flushPromises()
+    expect(t2.attributes('data-state')).toBe('active')
+    wrapper.unmount()
+  })
+
+  it('manual activation: focus does not activate, but Enter/Space does', async () => {
+    const wrapper = mount(twoTabFixture, { attachTo: document.body, props: { activationMode: 'manual' } })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    await t2.trigger('focus')
+    await flushPromises()
+    expect(t1.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('inactive')
+    await t2.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(t2.attributes('data-state')).toBe('active')
+    wrapper.unmount()
+  })
+
+  it('reflects orientation as data-orientation on triggers and panels', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      template: `
+        <TabsRoot default-value="tab1" orientation="vertical">
+          <TabsList><TabsTrigger value="tab1">Tab 1</TabsTrigger></TabsList>
+          <TabsContent value="tab1">Content 1</TabsContent>
+        </TabsRoot>`,
+    }, { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('[role="tab"]').attributes('data-orientation')).toBe('vertical')
+    expect(wrapper.find('[role="tabpanel"]').attributes('data-orientation')).toBe('vertical')
+    wrapper.unmount()
+  })
+
+  it('chains a consumer mousedown listener with the internal activation', async () => {
+    const spy = vi.fn()
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      setup() {
+        return { spy }
+      },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+            <TabsTrigger value="tab2" @mousedown="spy">Tab 2</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tab1">Content 1</TabsContent>
+          <TabsContent value="tab2">Content 2</TabsContent>
+        </TabsRoot>`,
+    }, { attachTo: document.body })
+    await flushPromises()
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    await t2.trigger('mousedown')
+    await flushPromises()
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(t2.attributes('data-state')).toBe('active')
+    wrapper.unmount()
+  })
+
+  it('marks a disabled trigger with data-disabled and the disabled attribute', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+            <TabsTrigger value="tab2" disabled>Tab 2</TabsTrigger>
+          </TabsList>
+        </TabsRoot>`,
+    }, { attachTo: document.body })
+    await flushPromises()
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    expect(t2.attributes('data-disabled')).toBe('')
+    expect(t2.attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+  })
+})

@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { createContext, stateToDataAttrs, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: Ref<StringOrNumber | undefined>
@@ -58,8 +58,9 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { ref, shallowRef, toRefs } from 'vue'
+import { mergeProps, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useTabs } from './useTabs'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
   orientation: 'horizontal',
@@ -75,7 +76,9 @@ defineSlots<{
   }) => any
 }>()
 
-const { orientation, unmountOnHide, dir: propDir } = toRefs(props)
+// `dir` resolution (ConfigProvider-aware) + `useVModel`'s controlled/uncontrolled
+// gate stay in the shell; the composable receives the resolved values.
+const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 useForwardExpose()
 
@@ -84,38 +87,24 @@ const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'
   passive: (props.modelValue === undefined) as false,
 })
 
-const tabsList = ref<HTMLElement>()
-const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
-
-provideTabsRootContext({
-  modelValue,
-  changeModelValue: (value: StringOrNumber) => {
-    modelValue.value = value as T
-  },
-  orientation,
+const { root, context } = useTabs({
+  modelValue: modelValue as Ref<StringOrNumber | undefined>,
+  orientation: () => props.orientation,
   dir,
-  unmountOnHide,
+  unmountOnHide: () => props.unmountOnHide,
   activationMode: props.activationMode,
+  // `useId` (SSR-stable id) stays in the shell — the composable derives ids from it.
   baseId: useId(undefined, 'reka-tabs'),
-  tabsList,
-  contentIds,
-  registerContent: (value: StringOrNumber) => {
-    contentIds.value = new Set([...contentIds.value, value])
-  },
-  unregisterContent: (value: StringOrNumber) => {
-    const newSet = new Set(contentIds.value)
-    newSet.delete(value)
-    contentIds.value = newSet
-  },
 })
+
+provideTabsRootContext(context)
 </script>
 
 <template>
   <Primitive
-    :dir="dir"
-    :data-orientation="orientation"
-    :as-child="asChild"
     :as="as"
+    :as-child="asChild"
+    v-bind="mergeProps(root.props.value, stateToDataAttrs(root.state.value))"
   >
     <slot :model-value="modelValue" />
   </Primitive>
