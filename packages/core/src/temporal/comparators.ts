@@ -2,8 +2,7 @@
  * Date comparison utilities using the Temporal API.
  */
 
-import type { Matcher, TemporalDate, TemporalDateTime } from './types'
-import type { DayOfWeek } from '@/shared/date'
+import type { DayOfWeek, Matcher, TemporalDate, TemporalDateTime } from './types'
 import { Temporal } from 'temporal-polyfill'
 
 // Type guards
@@ -66,6 +65,63 @@ export function isSameDay(date1: TemporalDate, date2: TemporalDate): boolean {
   const d1 = toPlainDate(date1)
   const d2 = toPlainDate(date2)
   return Temporal.PlainDate.compare(d1, d2) === 0
+}
+
+export function getMonthsBetween(start: TemporalDate, end: TemporalDate): number {
+  const s = toPlainDate(start)
+  const e = toPlainDate(end)
+  return Math.abs((e.year - s.year) * 12 + (e.month - s.month)) + 1
+}
+
+export function getYearsBetween(start: TemporalDate, end: TemporalDate): number {
+  return Math.abs(toPlainDate(end).year - toPlainDate(start).year) + 1
+}
+
+export function isMonthBetweenInclusive(date: TemporalDate, start: TemporalDate, end: TemporalDate): boolean {
+  return compareYearMonth(date, start) >= 0 && compareYearMonth(date, end) <= 0
+}
+
+export function isYearBetweenInclusive(date: TemporalDate, start: TemporalDate, end: TemporalDate): boolean {
+  const y = toPlainDate(date).year
+  const ys = toPlainDate(start).year
+  const ye = toPlainDate(end).year
+  return y >= ys && y <= ye
+}
+
+export function areAllMonthsBetweenValid(
+  start: TemporalDate,
+  end: TemporalDate,
+  isUnavailable: ((date: TemporalDate) => boolean) | undefined,
+  isDisabled: ((date: TemporalDate) => boolean) | undefined,
+): boolean {
+  let current = startOfMonth(start).add({ months: 1 })
+  const endMonth = startOfMonth(end)
+
+  while (Temporal.PlainDate.compare(current, endMonth) < 0) {
+    if (isUnavailable?.(current) || isDisabled?.(current))
+      return false
+    current = current.add({ months: 1 })
+  }
+
+  return true
+}
+
+export function areAllYearsBetweenValid(
+  start: TemporalDate,
+  end: TemporalDate,
+  isUnavailable: ((date: TemporalDate) => boolean) | undefined,
+  isDisabled: ((date: TemporalDate) => boolean) | undefined,
+): boolean {
+  let current = startOfYear(start).add({ years: 1 })
+  const endYearDate = startOfYear(end)
+
+  while (Temporal.PlainDate.compare(current, endYearDate) < 0) {
+    if (isUnavailable?.(current) || isDisabled?.(current))
+      return false
+    current = current.add({ years: 1 })
+  }
+
+  return true
 }
 
 export function isEqualMonth(date1: TemporalDate, date2: TemporalDate): boolean {
@@ -225,6 +281,33 @@ export function getNextLastDayOfWeek<T extends TemporalDate = TemporalDate>(
     return date.add({ days: 7 - day + lastDayOfWeek }) as T
 
   return date.add({ days: lastDayOfWeek - day }) as T
+}
+
+// Month/year comparison helpers
+export function isSameYear(date1: TemporalDate, date2: TemporalDate): boolean {
+  return toPlainDate(date1).year === toPlainDate(date2).year
+}
+
+/**
+ * Check if two dates fall in the same year and month.
+ * Canonical name; {@link isEqualMonth} is an alias.
+ */
+export function isSameYearMonth(date1: TemporalDate, date2: TemporalDate): boolean {
+  const d1 = toPlainDate(date1)
+  const d2 = toPlainDate(date2)
+  return d1.year === d2.year && d1.month === d2.month
+}
+
+/**
+ * Compare two dates by year-month ordering.
+ * Returns negative if `date1` < `date2`, 0 if equal, positive if `date1` > `date2`.
+ */
+export function compareYearMonth(date1: TemporalDate, date2: TemporalDate): number {
+  const d1 = toPlainDate(date1)
+  const d2 = toPlainDate(date2)
+  if (d1.year !== d2.year)
+    return d1.year - d2.year
+  return d1.month - d2.month
 }
 
 // Array utilities

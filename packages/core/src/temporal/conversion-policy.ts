@@ -12,8 +12,7 @@
  * the internal temporal barrel for use by formatter and calendar code.
  */
 
-import type { TemporalDate, TemporalDateTime } from './types'
-import type { Granularity } from '@/shared/date'
+import type { Granularity, TemporalDate, TemporalDateTime } from './types'
 import { Temporal } from 'temporal-polyfill'
 import { isNullish } from '@/shared'
 import { isPlainTime, isZonedDateTime } from './comparators'

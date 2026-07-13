@@ -4,8 +4,8 @@ import type { Formatter } from '@/shared'
 import type { TemporalDate } from '@/temporal/types'
 import { computed } from 'vue'
 import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
-import { toNativeDate } from '@/temporal/conversion-policy'
 import { getDaysInMonth } from '@/temporal/comparators'
+import { toNativeDate } from '@/temporal/conversion-policy'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/

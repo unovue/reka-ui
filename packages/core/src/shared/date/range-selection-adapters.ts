@@ -8,8 +8,7 @@
 
 import type { GranularityAdapter } from './range-selection-state'
 import type { TemporalDate } from '@/temporal/types'
-import { areAllMonthsBetweenValid, areAllYearsBetweenValid, compareYearMonth, getMonthsBetween, getYearsBetween, isSameYear, isSameYearMonth } from '@/date'
-import { areAllDaysBetweenValid, isBefore, isBetweenInclusive, isSameDay, toPlainDate } from '@/temporal/comparators'
+import { areAllDaysBetweenValid, areAllMonthsBetweenValid, areAllYearsBetweenValid, compareYearMonth, getMonthsBetween, getYearsBetween, isBefore, isBetweenInclusive, isSameDay, isSameYear, isSameYearMonth, toPlainDate } from '@/temporal/comparators'
 
 /**
  * Day granularity adapter. Uses Temporal.PlainDate comparison for day-level range selection.

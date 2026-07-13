@@ -5,13 +5,8 @@
 import type { TemporalDate, TemporalDateTime, TemporalTime } from '@/temporal/types'
 
 export type { TemporalDate, TemporalTime }
+export type { DateRange, DayOfWeek } from '@/temporal/types'
 import type { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, NON_EDITABLE_SEGMENT_PARTS, TIME_SEGMENT_PARTS } from './parts'
-
-// Days of the week, starting with Sunday
-const daysOfWeek = [0, 1, 2, 3, 4, 5, 6] as const
-export type DayOfWeek = {
-  daysOfWeek: (typeof daysOfWeek)[number][]
-}
 
 export type DateStep = {
   year?: number
@@ -21,11 +16,6 @@ export type DateStep = {
   minute?: number
   second?: number
   millisecond?: number
-}
-
-export type DateRange = {
-  start: TemporalDate | undefined
-  end: TemporalDate | undefined
 }
 
 export type TimeRange = {
