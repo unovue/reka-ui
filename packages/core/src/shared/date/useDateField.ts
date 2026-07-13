@@ -4,8 +4,8 @@ import type { Formatter } from '@/shared'
 import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { computed } from 'vue'
-import { getDaysInMonth, isPlainDateTime, isZonedDateTime } from '@/temporal/comparators'
 import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
+import { getDaysInMonth, isPlainDateTime, isZonedDateTime } from '@/temporal/comparators'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/
@@ -1004,8 +1004,8 @@ export function useDateField(props: UseDateFieldProps) {
   // empty sibling text nodes around it, so we must preserve EVERY node it owns and
   // restore them verbatim on `compositionend`. Recreating nodes (textContent) would
   // detach Vue's binding and freeze the segment; recreating the element isn't an
-  // option either, since the root captures segment elements once via
-  // `getSegmentElements` and a fresh node would break navigation.
+  // option either, since the shell captures segment elements once on mount and
+  // a fresh node would break navigation.
   let preCompositionNodes: { node: ChildNode, value: string | null }[] | null = null
 
   function handleSegmentBeforeInput(e: InputEvent) {

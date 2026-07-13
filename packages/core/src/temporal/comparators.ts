@@ -77,6 +77,22 @@ export function isBefore(dateToCompare: TemporalDate, referenceDate: TemporalDat
   ) < 0
 }
 
+/**
+ * Compare two TemporalDate values, returning a negative number, zero, or a positive number.
+ *
+ * - When both sides are `PlainDateTime` (have time and no zone), uses `PlainDateTime.compare`
+ *   so time-of-day matters. This is the path TimeField needs to validate `minValue`/`maxValue`.
+ * - Otherwise falls back to `PlainDate.compare` via `toPlainDate`, which preserves
+ *   `DateField` semantics: a `PlainDateTime` and a `PlainDate` on the same day are
+ *   considered equal, since `DateField` only validates the calendar day.
+ */
+export function compareTemporalDate(a: TemporalDate, b: TemporalDate): number {
+  if (a instanceof Temporal.PlainDateTime && b instanceof Temporal.PlainDateTime)
+    return Temporal.PlainDateTime.compare(a, b)
+
+  return Temporal.PlainDate.compare(toPlainDate(a), toPlainDate(b))
+}
+
 export function isAfter(dateToCompare: TemporalDate, referenceDate: TemporalDate): boolean {
   return Temporal.PlainDate.compare(
     toPlainDate(dateToCompare),
