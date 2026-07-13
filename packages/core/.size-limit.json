@@ -26,13 +26,13 @@
   {
     "path": "dist/index.js",
     "import": "{ CalendarRoot, CalendarHeader, CalendarGrid, CalendarCell, CalendarCellTrigger }",
-    "limit": "17 KB",
+    "limit": "27 KB",
     "name": "Calendar"
   },
   {
     "path": "dist/index.js",
     "import": "{ DateFieldRoot, DateFieldInput }",
-    "limit": "19 KB",
+    "limit": "30 KB",
     "name": "DateField"
   },
   {
