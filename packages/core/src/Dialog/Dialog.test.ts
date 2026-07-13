@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
 import { sleep } from '@/test'
 import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '.'
+import { DialogAttributes } from './DialogRoot.vue'
 
 const OPEN_TEXT = 'Open'
 const CLOSE_TEXT = 'Close'
@@ -480,7 +481,7 @@ describe('given a default Dialog', () => {
         // Find the overlay: the only element with data-state="open" that
         // isn't the trigger button or the dialog content.
         const overlayEl = Array.from(
-          document.querySelectorAll('[data-state="open"]'),
+          document.querySelectorAll(`[${DialogAttributes.state}="open"]`),
         ).find(el => el.tagName === 'DIV' && !el.getAttribute('role')) as HTMLElement
         await fireEvent.pointerDown(overlayEl)
         await nextTick()

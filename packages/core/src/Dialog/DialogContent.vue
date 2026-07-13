@@ -3,6 +3,8 @@ import type {
   DialogContentImplEmits,
   DialogContentImplProps,
 } from './DialogContentImpl.vue'
+import { computed } from 'vue'
+import DialogContentContained from './DialogContentContained.vue'
 
 export type DialogContentEmits = DialogContentImplEmits
 
@@ -20,7 +22,7 @@ import { Presence } from '@/Presence'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
-import { injectDialogRootContext } from './DialogRoot.vue'
+import { DialogAttributes, injectDialogRootContext } from './DialogRoot.vue'
 
 const props = withDefaults(defineProps<DialogContentProps>(), {
   // Keep `undefined` (instead of Vue's boolean coercion to `false`) so the
@@ -35,6 +37,14 @@ const rootContext = injectDialogRootContext()
 
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef } = useForwardExpose()
+const contained = computed(() => rootContext.container.value !== undefined)
+const contentComponent = computed(() => {
+  if (contained.value)
+    return DialogContentContained
+  if (!rootContext.modal.value)
+    return DialogContentNonModal
+  return DialogContentModal
+})
 </script>
 
 <template>
@@ -43,23 +53,14 @@ const { forwardRef } = useForwardExpose()
     :present="forceMount || rootContext.open.value"
     :force-mount="forceMount || !rootContext.unmountOnHide.value"
   >
-    <DialogContentModal
-      v-if="rootContext.modal.value"
+    <component
+      :is="contentComponent"
       v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="rootContext.unmountOnHide.value || present"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, [DialogAttributes.contained]: contained ? '' : undefined }"
     >
       <slot />
-    </DialogContentModal>
-    <DialogContentNonModal
-      v-else
-      v-show="rootContext.unmountOnHide.value || present"
-      :ref="forwardRef"
-      :present="rootContext.unmountOnHide.value || present"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
-    >
-      <slot />
-    </DialogContentNonModal>
+    </component>
   </Presence>
 </template>

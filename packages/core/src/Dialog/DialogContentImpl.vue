@@ -38,7 +38,7 @@ import { onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { getOpenState } from '@/Menu/utils'
-import { injectDialogRootContext } from './DialogRoot.vue'
+import { DialogAttributes, injectDialogRootContext } from './DialogRoot.vue'
 import { useWarning } from './utils'
 
 const props = defineProps<DialogContentImplProps & {
@@ -94,7 +94,7 @@ if (process.env.NODE_ENV !== 'production') {
       role="dialog"
       :aria-describedby="rootContext.descriptionId"
       :aria-labelledby="rootContext.titleId"
-      :data-state="getOpenState(rootContext.open.value)"
+      :[DialogAttributes.state]="getOpenState(rootContext.open.value)"
       v-bind="$attrs"
       @dismiss="rootContext.onOpenChange(false)"
       @escape-key-down="emits('escapeKeyDown', $event)"

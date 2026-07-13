@@ -20,6 +20,7 @@ export {
   type DialogPortalProps,
 } from './DialogPortal.vue'
 export {
+  DialogAttributes,
   default as DialogRoot,
   type DialogRootEmits,
   type DialogRootProps,

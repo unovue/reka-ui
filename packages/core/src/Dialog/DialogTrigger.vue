@@ -8,7 +8,7 @@ export interface DialogTriggerProps extends PrimitiveProps {}
 import { onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId } from '@/shared'
-import { injectDialogRootContext } from './DialogRoot.vue'
+import { DialogAttributes, injectDialogRootContext } from './DialogRoot.vue'
 
 const props = withDefaults(defineProps<DialogTriggerProps>(), {
   as: 'button',
@@ -30,7 +30,7 @@ onMounted(() => {
     aria-haspopup="dialog"
     :aria-expanded="rootContext.open.value || false"
     :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :[DialogAttributes.state]="rootContext.open.value ? 'open' : 'closed'"
     @click="rootContext.onOpenToggle"
   >
     <slot />

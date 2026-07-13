@@ -32,6 +32,9 @@ describe('given a default ConfigProvider', async () => {
     document.body.innerHTML = ''
     wrapper = mount(ConfigProviderTest, { attachTo: document.body })
   })
+  // afterEach(() => {
+  //   wrapper.unmount()
+  // })
 
   it('it should render config provider, and all it\'s slot correctly', () => {
     expect(wrapper.exists()).toBeTruthy()

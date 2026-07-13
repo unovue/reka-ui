@@ -1,22 +1,28 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 
-export interface DialogOverlayImplProps extends PrimitiveProps {}
+export interface DialogOverlayImplProps extends PrimitiveProps {
+  lockTarget?: HTMLElement | string | null
+}
 </script>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { toValue, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
-import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
-import { injectDialogRootContext } from './DialogRoot.vue'
+import { resolveElement, useForwardExpose } from '@/shared'
+import { useScrollLock } from '@/shared/useScrollLock'
+import { DialogAttributes, injectDialogRootContext } from './DialogRoot.vue'
 
 const props = withDefaults(defineProps<DialogOverlayImplProps & { present?: boolean }>(), {
   present: true,
 })
 const rootContext = injectDialogRootContext()
 
-const scrollLocked = useBodyScrollLock(props.present)
+const scrollLocked = useScrollLock(() => resolveElement(toValue(
+  // the `undefined` check for when `:lockTarget="null"` which should
+  // explicitly indicate to not lock anything
+  props.lockTarget !== undefined ? props.lockTarget : rootContext.container.value,
+)), props.present)
 watch(() => props.present, val => scrollLocked.value = val)
 
 useForwardExpose()
@@ -26,7 +32,8 @@ useForwardExpose()
   <Primitive
     :as="as"
     :as-child="asChild"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :[DialogAttributes.state]="rootContext.open.value ? 'open' : 'closed'"
+    :[DialogAttributes.contained]="rootContext.container.value ? '' : undefined"
     style="pointer-events: auto"
     @pointerdown.left.self.prevent
   >
