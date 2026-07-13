@@ -1,9 +1,11 @@
-# POC: headless composables for an OVERLAY family (Menu) — #2723
+# Headless composables for an OVERLAY family (Menu) — #2723
 
-> **Status: proof-of-concept, throwaway branch `poc-2723-menu-composable`.** Not a
-> parity-gated production PR. Purpose: test whether the `useX()` pattern (validated
-> on Switch + Tabs) extends to an overlay family, and produce the findings that
-> should shape the deferred overlay contract (**joint with #2724**).
+> **Status: overlay archetype validated + core Menu parts converted** (parity-gated,
+> 51 consumer tests green). Began as a spike; graduated to a real conversion. This
+> establishes the overlay contract that the deferred overlay work (**joint with
+> #2724**) should build on. Scope: `MenuRoot`/`MenuItem`/`MenuItemImpl`/
+> `MenuContentImpl`; `MenuSubTrigger`/`Checkbox`/`Radio`/`Sub` reuse the same builders
+> as follow-ups (see "Scope NOT covered").
 
 ## TL;DR
 
@@ -20,7 +22,7 @@ input to #2724.
 
 ## What was built
 
-All on branch `poc-2723-menu-composable` (off `v3`). `packages/core/src/Menu/useMenu.ts`:
+In `packages/core/src/Menu/useMenu.ts`:
 
 1. **`useMenuRoot()`** — the state-only overlay root. Renders no attrs, so **no
    `PartSurface`**; returns `{ open, onOpenChange, onClose, menuContext, menuRootContext }`
@@ -140,8 +142,7 @@ named seam. That is exactly the boundary #2724 should build the overlay contract
 - Fold `useFocusGuards`/`useBodyScrollLock` into `useMenuContent` behind a flag, so a
   standalone consumer opts into the mount side-effects (kept in the SFC here so the
   brain stays side-effect-free).
-- Move `PartSurface` to `@/shared` (this POC imports it from `@/Switch` on `v3`; the
-  Tabs PR #2795 relocates it — rebase onto that).
+- `PartSurface` is imported from `@/shared` (relocated there by #2795).
 
 ## Bottom line
 `useX()` works for overlays. It costs two axiom amendments (state-only root;

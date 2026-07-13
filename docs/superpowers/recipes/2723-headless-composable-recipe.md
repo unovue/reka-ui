@@ -103,21 +103,56 @@ computed from `(context, itemValue)`. What converting Tabs settled:
   to a literal so it stays callable outside `setup()` (Tabs is computed-only — no
   watchers/lifecycle in the composable). Never call `useId` inside the composable.
 
+## Overlay families (validated on Menu)
+
+Overlays (Menu/DropdownMenu, Dialog, Popover, Select, Combobox) differ again: the
+ROOT renders no attrs, and the behavior lives in a Content part wrapped by component
+families (FocusScope/DismissableLayer/Presence/Popper/RovingFocus). Converting the
+core Menu parts settled the overlay contract:
+
+- **The root is state-only: `{ state, context }`, no `PartSurface`.** `useMenuRoot()`
+  returns `open`/`onOpenChange`/`onClose` + the context object(s) the SFC provides.
+  The family is not surface-free — surfaces begin at Trigger/Content. Positioning
+  (`PopperRoot`) and portal stay wrappers.
+- **Per-item overlay builders are context-SCOPED FACTORIES, not pure builders.**
+  Unlike Tabs' idempotent `(context, value)` derivations, `getMenuItemBaseSurface`
+  creates per-instance state (`isFocused`) and closes over the item's `currentElement`
+  — call it EXACTLY ONCE per instance. `state`/`props` computeds stay pure; the
+  factory instantiates. **This is the Tabs axiom that does NOT survive overlays.**
+- **Functional `data-*` selectors are exempt from the no-`data-*` rule.**
+  `data-reka-menu-content` (submenu `closest()` scoping), `data-reka-collection-item`,
+  and `[data-disabled]` (read by `useArrowNavigation`) are selectors, not semantic
+  state — put them in `props`, not through `stateToDataAttrs`. Dropping one degrades
+  UX with no test failure.
+- **Close-on-select is a callback channel, not a merged listener.** The item's
+  `CustomEvent(ITEM_SELECT, { cancelable })` is a token: emit it, `await nextTick()`,
+  close unless `defaultPrevented`. Expose it as an `onSelect(event)` option; the SFC
+  passes `e => emits('select', e)`. Never bind it as a DOM listener.
+- **The Content "brain" extracts; the wrappers are the shell.** Typeahead, arrow-nav,
+  the pointer-grace machine, and `highlightedElement` ownership are wrapper-independent
+  — `useMenuContent()` took `MenuContentImpl` from 405→191 lines, returning the
+  `role=menu` surface + the content context; FocusScope/DismissableLayer/
+  RovingFocusGroup/PopperContent + `useFocusGuards`/`useBodyScrollLock` stay in the
+  SFC. The one seam that can't move is `RovingFocusGroup.getItems()` (a template-
+  instance ref) — inject it as a `getItems` option.
+- **Overlay composables are mount-lifecycle-bound** (`useIsUsingKeyboard`, the content
+  watchers/`onUnmounted`) — NOT callable outside `setup()`; test in a mount harness.
+
 ## Dependency- and structure-ordered migration (not size)
 
-- **Overlays are deferred.** Dialog/Popover/Tooltip/HoverCard/DropdownMenu/Select/
-  Combobox render **no root attrs** (`PopoverRoot` is `<PopperRoot><slot/></PopperRoot>`);
-  their logic lives in Content-part component wrappers. Define the overlay contract
-  **jointly with #2724** (which rewrites overlay internals) — converting them here
-  first is double churn.
+- **Overlays: contract validated on Menu (see above).** The remaining overlays
+  (Dialog/Popover/Tooltip/HoverCard/Select/Combobox) render **no root attrs**
+  (`PopoverRoot` is `<PopperRoot><slot/></PopperRoot>`) and share Menu's shape. Convert
+  them **jointly with #2724** (which rewrites overlay internals) so the state-only-root
+  + brain-composable + wrappers-stay-wrappers contract lands once, not twice.
 - **Convert dependencies first.** Families that snapshot a child's `exposed`
   (`ComboboxRoot` reads `ListboxRoot`'s exposed methods) require the dependency
   converted first: **Listbox → Combobox → Select**.
 - **Tiers:** (1) form/toggle: Checkbox, RadioGroup, ToggleGroup, Toggle; (2)
   collection/disclosure: Tabs ✓(gate), Accordion, Collapsible; (3) delegation
-  chains: Listbox → Combobox → Select; (4) overlays — deferred (joint with #2724);
-  (5) date/calendar family last (heavy generics; `useDateField` is already
-  composable-shaped — the house prior art for this whole effort).
+  chains: Listbox → Combobox → Select; (4) overlays — Menu ✓(contract), rest joint
+  with #2724; (5) date/calendar family last (heavy generics; `useDateField` is
+  already composable-shaped — the house prior art for this whole effort).
 
 ## Footguns
 
