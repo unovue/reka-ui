@@ -2,6 +2,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import ColorSliderRoot from './ColorSliderRoot.vue'
+import ColorSliderThumb from './ColorSliderThumb.vue'
 import ColorSlider from './story/_ColorSlider.vue'
 
 globalThis.ResizeObserver = class ResizeObserver {
@@ -126,6 +128,40 @@ describe('given different channels', () => {
     expect(thumb.attributes('aria-valuemax')).toBe('100')
   })
 
+  it('should render and increment OKLCH chroma with its native range', async () => {
+    const wrapper = mount(ColorSlider, {
+      props: {
+        defaultValue: { space: 'oklch', l: 60, c: 0.2, h: 240, alpha: 1 },
+        channel: 'chroma',
+        colorSpace: 'oklch',
+      },
+    })
+    await wrapper.vm.$nextTick()
+    const thumb = wrapper.find('[role="slider"]')
+    expect(thumb.attributes('aria-label')).toBe('Chroma')
+    expect(thumb.attributes('aria-valuenow')).toBe('0.2')
+    expect(thumb.attributes('aria-valuemax')).toBe('0.4')
+
+    await thumb.trigger('keydown', { key: 'ArrowRight' })
+    expect(thumb.attributes('aria-valuenow')).toBe('0.201')
+    expect(thumb.attributes('aria-valuetext')).toBe('0.201')
+  })
+
+  it('should preserve OKLCH hue for an achromatic color', async () => {
+    const wrapper = mount(ColorSlider, {
+      props: {
+        defaultValue: { space: 'oklch', l: 60, c: 0, h: 240, alpha: 1 },
+        channel: 'hue',
+        colorSpace: 'oklch',
+      },
+    })
+    await wrapper.vm.$nextTick()
+    const thumb = wrapper.find('[role="slider"]')
+    expect(thumb.attributes('aria-valuenow')).toBe('240')
+    await thumb.trigger('keydown', { key: 'ArrowRight' })
+    expect(thumb.attributes('aria-valuenow')).toBe('241')
+  })
+
   it('should render alpha slider', () => {
     const wrapper = mount(ColorSlider, {
       props: {
@@ -150,6 +186,26 @@ describe('given different channels', () => {
     const thumb = wrapper.find('[role="slider"]')
     expect(thumb.attributes('aria-label')).toBe('Red')
     expect(thumb.attributes('aria-valuemax')).toBe('255')
+  })
+})
+
+describe('given a controlled OKLCH color object', () => {
+  it('should apply object updates even when their sRGB hex value is unchanged', async () => {
+    const wrapper = mount(ColorSliderRoot, {
+      props: {
+        modelValue: { space: 'oklch', l: 60, c: 0, h: 120, alpha: 1 },
+        channel: 'hue',
+        colorSpace: 'oklch',
+      },
+      slots: { default: ColorSliderThumb },
+    })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[role="slider"]').attributes('aria-valuenow')).toBe('120')
+
+    await wrapper.setProps({
+      modelValue: { space: 'oklch', l: 60, c: 0, h: 240, alpha: 1 },
+    })
+    expect(wrapper.find('[role="slider"]').attributes('aria-valuenow')).toBe('240')
   })
 })
 

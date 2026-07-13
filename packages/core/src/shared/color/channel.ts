@@ -1,5 +1,5 @@
-import type { ChannelRange, Color, ColorChannel, ColorSpace, HSBColor, HSLColor, RGBColor } from './types'
-import { convertToHsb, convertToHsl, convertToRgb } from './convert'
+import type { ChannelRange, Color, ColorChannel, ColorSpace, HSBColor, HSLColor, OKLCHColor, RGBColor } from './types'
+import { convertToHsb, convertToHsl, convertToOklch, convertToRgb } from './convert'
 
 /**
  * Gets the range (min, max, step) for a color channel.
@@ -8,6 +8,8 @@ export function getChannelRange(channel: ColorChannel): ChannelRange {
   switch (channel) {
     case 'hue':
       return { min: 0, max: 360, step: 1 }
+    case 'chroma':
+      return { min: 0, max: 0.4, step: 0.001 }
     case 'saturation':
     case 'lightness':
     case 'brightness':
@@ -34,6 +36,7 @@ export function getChannelName(channel: ColorChannel): string {
     saturation: 'Saturation',
     lightness: 'Lightness',
     brightness: 'Brightness',
+    chroma: 'Chroma',
     alpha: 'Alpha',
   }
   return names[channel] ?? channel
@@ -52,7 +55,9 @@ export function getChannelValue(color: Color, channel: ColorChannel): number {
     case 'blue':
       return color.space === 'rgb' ? (color as RGBColor).b : convertToRgb(color).b
     case 'hue':
-      return color.space === 'hsl' ? (color as HSLColor).h : convertToHsl(color).h
+      if (color.space === 'hsl' || color.space === 'hsb' || color.space === 'oklch')
+        return color.h
+      return convertToHsl(color).h
     case 'saturation':
       if (color.space === 'hsl')
         return (color as HSLColor).s
@@ -60,9 +65,13 @@ export function getChannelValue(color: Color, channel: ColorChannel): number {
         return (color as HSBColor).s
       return convertToHsl(color).s
     case 'lightness':
-      return color.space === 'hsl' ? (color as HSLColor).l : convertToHsl(color).l
+      if (color.space === 'hsl' || color.space === 'oklch')
+        return color.l
+      return convertToHsl(color).l
     case 'brightness':
       return color.space === 'hsb' ? (color as HSBColor).b : convertToHsb(color).b
+    case 'chroma':
+      return color.space === 'oklch' ? color.c : convertToOklch(color).c
     case 'alpha':
       return color.alpha * 100
     default:
@@ -93,8 +102,14 @@ export function setChannelValue(color: Color, channel: ColorChannel, value: numb
     return convertFromRgb(newRgb, color.space)
   }
 
-  // For HSL channels
+  // Hue and lightness are shared by HSL and OKLCH.
   if (channel === 'hue' || channel === 'lightness') {
+    if (color.space === 'oklch') {
+      return {
+        ...color,
+        [channel === 'hue' ? 'h' : 'l']: clamped,
+      }
+    }
     const hsl = convertToHsl(color)
     const newHsl: HSLColor = {
       ...hsl,
@@ -113,6 +128,11 @@ export function setChannelValue(color: Color, channel: ColorChannel, value: numb
     const hsl = convertToHsl(color)
     const newHsl: HSLColor = { ...hsl, s: clamped }
     return convertFromHsl(newHsl, color.space)
+  }
+
+  if (channel === 'chroma') {
+    const oklch = convertToOklch(color)
+    return convertFromOklch({ ...oklch, c: clamped }, color.space)
   }
 
   // For brightness (HSB-only)
@@ -143,12 +163,16 @@ export function setChannelValues(
   const channelNames = channels.map(c => c.channel)
   const hasBrightness = channelNames.includes('brightness')
   const hasLightness = channelNames.includes('lightness')
+  const hasChroma = channelNames.includes('chroma')
   const hasRgb = channelNames.some(c => c === 'red' || c === 'green' || c === 'blue')
 
   let workingColor: Color
 
   if (hasRgb) {
     workingColor = convertToRgb(color)
+  }
+  else if (hasChroma || (color.space === 'oklch' && channelNames.every(channel => channel === 'hue' || channel === 'lightness' || channel === 'alpha'))) {
+    workingColor = convertToOklch(color)
   }
   else if (hasBrightness) {
     // HSB mode
@@ -183,6 +207,13 @@ export function setChannelValues(
       const key = channel === 'hue' ? 'h' : channel === 'saturation' ? 's' : 'b'
       workingColor = { ...workingColor, [key]: clamped } as HSBColor
     }
+    else if (workingColor.space === 'oklch' && (channel === 'hue' || channel === 'chroma' || channel === 'lightness')) {
+      const key = channel === 'hue' ? 'h' : channel === 'chroma' ? 'c' : 'l'
+      workingColor = { ...workingColor, [key]: clamped } as OKLCHColor
+    }
+    else {
+      workingColor = setChannelValue(workingColor, channel, clamped)
+    }
   }
 
   // For color areas, keep the working color space to preserve precision
@@ -213,6 +244,9 @@ function convertFromRgb(rgb: RGBColor, targetSpace: ColorSpace): Color {
   if (targetSpace === 'hsb') {
     return rgbToHsb(rgb)
   }
+  if (targetSpace === 'oklch') {
+    return convertToOklch(rgb)
+  }
   throw new Error(`Unknown color space: ${targetSpace}`)
 }
 
@@ -229,6 +263,9 @@ function convertFromHsl(hsl: HSLColor, targetSpace: ColorSpace): Color {
   }
   if (targetSpace === 'hsb') {
     return rgbToHsb(rgb)
+  }
+  if (targetSpace === 'oklch') {
+    return convertToOklch(hsl)
   }
   throw new Error(`Unknown color space: ${targetSpace}`)
 }
@@ -247,6 +284,21 @@ function convertFromHsb(hsb: HSBColor, targetSpace: ColorSpace): Color {
   if (targetSpace === 'hsl') {
     return rgbToHsl(rgb)
   }
+  if (targetSpace === 'oklch') {
+    return convertToOklch(hsb)
+  }
+  throw new Error(`Unknown color space: ${targetSpace}`)
+}
+
+function convertFromOklch(oklch: OKLCHColor, targetSpace: ColorSpace): Color {
+  if (targetSpace === 'oklch')
+    return oklch
+  if (targetSpace === 'rgb')
+    return convertToRgb(oklch)
+  if (targetSpace === 'hsl')
+    return convertToHsl(oklch)
+  if (targetSpace === 'hsb')
+    return convertToHsb(oklch)
   throw new Error(`Unknown color space: ${targetSpace}`)
 }
 

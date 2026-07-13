@@ -42,8 +42,14 @@ const ariaLabel = computed(() => {
   return `${getChannelName(rootContext.xChannel.value)}, ${getChannelName(rootContext.yChannel.value)}`
 })
 
+function formatChannelValue(value: number, channel: typeof rootContext.xChannel.value): string {
+  return channel === 'chroma' ? String(Number(value.toFixed(3))) : String(Math.round(value))
+}
+
 const ariaValueText = computed(() => {
-  return `${getChannelName(rootContext.xChannel.value)} ${Math.round(rootContext.xValue.value)}, ${getChannelName(rootContext.yChannel.value)} ${Math.round(rootContext.yValue.value)}`
+  const x = formatChannelValue(rootContext.xValue.value, rootContext.xChannel.value)
+  const y = formatChannelValue(rootContext.yValue.value, rootContext.yChannel.value)
+  return `${getChannelName(rootContext.xChannel.value)} ${x}, ${getChannelName(rootContext.yChannel.value)} ${y}`
 })
 </script>
 

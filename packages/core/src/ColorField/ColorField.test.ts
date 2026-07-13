@@ -110,6 +110,20 @@ describe('given ColorField in channel mode', () => {
     expect(input.element.value).toBe('50')
   })
 
+  it('should render and increment fractional OKLCH chroma', async () => {
+    const wrapper = mount(ColorField, {
+      props: {
+        defaultValue: { space: 'oklch', l: 60, c: 0.2, h: 240, alpha: 1 },
+        channel: 'chroma',
+        colorSpace: 'oklch',
+      },
+    })
+    const input = wrapper.find('input')
+    expect(input.element.value).toBe('0.2')
+    await input.trigger('keydown', { key: 'ArrowUp' })
+    expect(input.element.value).toBe('0.201')
+  })
+
   it('should render alpha value', () => {
     const wrapper = mount(ColorField, {
       props: {

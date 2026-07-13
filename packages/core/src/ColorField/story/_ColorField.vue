@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ColorChannel, ColorSpace } from '@/shared/color'
+import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import { ref } from 'vue'
 import {
   ColorFieldInput,
@@ -7,7 +7,7 @@ import {
 } from '../'
 
 const props = defineProps<{
-  defaultValue?: string
+  defaultValue?: string | Color
   colorSpace?: ColorSpace
   channel?: ColorChannel
   placeholder?: string

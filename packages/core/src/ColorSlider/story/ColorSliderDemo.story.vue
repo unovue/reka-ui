@@ -32,6 +32,14 @@ import ColorSliderCompound from './_ColorSliderCompound.vue'
       />
     </Variant>
 
+    <Variant title="OKLCH Sliders (Compound)">
+      <ColorSliderCompound
+        default-value="oklch(62% 0.18 250)"
+        color-space="oklch"
+        :channels="['lightness', 'chroma', 'hue', 'alpha']"
+      />
+    </Variant>
+
     <Variant title="Hue (HSL)">
       <ColorSlider
         default-value="#7f007f"

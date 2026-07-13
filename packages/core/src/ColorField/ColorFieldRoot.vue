@@ -63,13 +63,16 @@ import { computed, ref, toRefs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import {
   colorToString,
+  convertToHsb,
+  convertToHsl,
+  convertToOklch,
   convertToRgb,
   getChannelRange,
-  getChannelValue,
+  getChannelValue as getNativeChannelValue,
   isValidColor,
   normalizeColor,
   parseColor,
-  setChannelValue,
+  setChannelValue as setNativeChannelValue,
 } from '@/shared/color'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
@@ -95,13 +98,47 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
+function toNativeSpace(value: Color): Color {
+  switch (colorSpace.value) {
+    case 'rgb':
+      return convertToRgb(value)
+    case 'hsl':
+      return convertToHsl(value)
+    case 'hsb':
+      return convertToHsb(value)
+    case 'oklch':
+      return convertToOklch(value)
+  }
+}
+
+function getChannelValue(value: Color, colorChannel: ColorChannel): number {
+  return getNativeChannelValue(toNativeSpace(value), colorChannel)
+}
+
+function setChannelValue(value: Color, colorChannel: ColorChannel, channelValue: number): Color {
+  return setNativeChannelValue(toNativeSpace(value), colorChannel, channelValue)
+}
+
+// Keep channel precision internally while preserving the existing hex v-model API.
+const internalColor = ref(toNativeSpace(normalizeColor(modelValue.value ?? '#000000')))
 const color = computed({
-  get: () => normalizeColor(modelValue.value ?? '#000000'),
+  get: () => internalColor.value,
   set: (newColor: Color) => {
-    const hexString = colorToString(newColor, 'hex')
-    modelValue.value = hexString
+    internalColor.value = newColor
+    modelValue.value = colorToString(newColor, 'hex')
     emits('update:color', newColor)
   },
+})
+
+watch(() => modelValue.value, (newValue) => {
+  if (newValue == null)
+    return
+  const parsed = normalizeColor(newValue)
+  if (typeof newValue !== 'string' || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
+    internalColor.value = toNativeSpace(parsed)
+})
+watch(colorSpace, () => {
+  internalColor.value = toNativeSpace(internalColor.value)
 })
 
 // Input value for the text field
@@ -118,9 +155,8 @@ watch(() => color.value, (newColor) => {
 function formatValue(c: Color): string {
   if (channel.value) {
     const value = getChannelValue(c, channel.value)
-    if (channel.value === 'alpha') {
-      return String(Math.round(value))
-    }
+    if (channel.value === 'chroma')
+      return String(Number(value.toFixed(3)))
     return String(Math.round(value))
   }
   // Hex mode

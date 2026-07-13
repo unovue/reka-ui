@@ -1,5 +1,5 @@
-import type { Color, ColorChannel, ColorSpace, RGBColor } from './types'
-import { colorToString, convertToHsb, convertToHsl, convertToRgb } from './convert'
+import type { Color, ColorChannel, ColorSpace, OKLCHColor, RGBColor } from './types'
+import { colorToString, convertToHsb, convertToHsl, convertToOklch, convertToRgb } from './convert'
 
 /**
  * Generates a CSS gradient for a color slider track.
@@ -11,14 +11,17 @@ export function getSliderGradient(
 ): string {
   const hsl = convertToHsl(color)
   const hsb = convertToHsb(color)
+  const oklch = convertToOklch(color)
 
   switch (channel) {
     case 'hue':
-      return getHueGradient()
+      return colorSpace === 'oklch' ? getOklchHueGradient(oklch) : getHueGradient()
     case 'saturation':
       return getSaturationGradient(hsl, colorSpace)
     case 'lightness':
-      return getLightnessGradient(hsl)
+      return colorSpace === 'oklch' ? getOklchLightnessGradient(oklch) : getLightnessGradient(hsl)
+    case 'chroma':
+      return getOklchChromaGradient(oklch)
     case 'brightness':
       return getBrightnessGradient(hsb)
     case 'red':
@@ -62,6 +65,25 @@ export function getAreaGradient(
 
 function getHueGradient(): string {
   return 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+}
+
+function getOklchHueGradient(color: OKLCHColor): string {
+  const start = colorToString({ ...color, h: 0, alpha: 1 }, 'oklch')
+  const end = colorToString({ ...color, h: 359.999, alpha: 1 }, 'oklch')
+  return `linear-gradient(to right in oklch longer hue, ${start}, ${end})`
+}
+
+function getOklchLightnessGradient(color: OKLCHColor): string {
+  const start = colorToString({ ...color, l: 0, alpha: 1 }, 'oklch')
+  const middle = colorToString({ ...color, l: 50, alpha: 1 }, 'oklch')
+  const end = colorToString({ ...color, l: 100, alpha: 1 }, 'oklch')
+  return `linear-gradient(to right in oklch, ${start}, ${middle}, ${end})`
+}
+
+function getOklchChromaGradient(color: OKLCHColor): string {
+  const start = colorToString({ ...color, c: 0, alpha: 1 }, 'oklch')
+  const end = colorToString({ ...color, c: 0.4, alpha: 1 }, 'oklch')
+  return `linear-gradient(to right in oklch, ${start}, ${end})`
 }
 
 function getSaturationGradient(hsl: { h: number, s: number, l: number, alpha: number }, colorSpace: ColorSpace): string {
@@ -188,6 +210,27 @@ export function getAreaBackgroundStyle(
 ): Record<string, string> {
   const hsl = convertToHsl(color)
   const hsb = convertToHsb(color)
+  const oklch = convertToOklch(color)
+
+  if (colorSpace === 'oklch') {
+    if (xChannel === 'hue' && yChannel === 'chroma') {
+      const hueGradient = getOklchHueGradient({ ...oklch, c: 0.4 })
+      const gray = colorToString({ ...oklch, c: 0, alpha: 1 }, 'oklch')
+      return { backgroundImage: `linear-gradient(to bottom, transparent, ${gray}), ${hueGradient}` }
+    }
+    if (xChannel === 'hue' && yChannel === 'lightness') {
+      const hueGradient = getOklchHueGradient({ ...oklch, l: 50 })
+      return { backgroundImage: `linear-gradient(to top in oklch, #000000, transparent, #ffffff), ${hueGradient}` }
+    }
+    if (xChannel === 'chroma' && yChannel === 'lightness') {
+      const hueColor = colorToString({ ...oklch, l: 50, c: 0.4, alpha: 1 }, 'oklch')
+      const gray = colorToString({ ...oklch, l: 50, c: 0, alpha: 1 }, 'oklch')
+      return {
+        backgroundColor: hueColor,
+        backgroundImage: `linear-gradient(to top in oklch, #000000, transparent, #ffffff), linear-gradient(to right in oklch, ${gray}, transparent)`,
+      }
+    }
+  }
 
   // Hue-based color picker (Hue/Saturation, Hue/Lightness, Hue/Brightness)
   // Shows full rainbow spectrum horizontally

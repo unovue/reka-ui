@@ -6,10 +6,12 @@ export {
   colorToHex,
   colorToHsb,
   colorToHsl,
+  colorToOklch,
   colorToRgb,
   colorToString,
   convertToHsb,
   convertToHsl,
+  convertToOklch,
   convertToRgb,
 } from './convert'
 
@@ -28,6 +30,7 @@ export type {
   ColorSpace,
   HSBColor,
   HSLColor,
+  OKLCHColor,
   RGBColor,
 } from './types'
 

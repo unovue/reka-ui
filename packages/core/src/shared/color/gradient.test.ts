@@ -62,6 +62,29 @@ describe('getSliderGradient', () => {
     })
   })
 
+  describe('oKLCH channels', () => {
+    const color = parseColor('oklch(60% 0.2 240)')
+
+    it('uses native OKLCH interpolation for hue', () => {
+      const gradient = getSliderGradient(color, 'hue', 'oklch')
+      expect(gradient).toContain('in oklch longer hue')
+      expect(gradient).toContain('oklch(60% 0.2 0)')
+    })
+
+    it('uses the CSS reference range for chroma', () => {
+      const gradient = getSliderGradient(color, 'chroma', 'oklch')
+      expect(gradient).toContain('in oklch')
+      expect(gradient).toContain('oklch(60% 0 240)')
+      expect(gradient).toContain('oklch(60% 0.4 240)')
+    })
+
+    it('keeps chroma and hue constant across perceptual lightness', () => {
+      const gradient = getSliderGradient(color, 'lightness', 'oklch')
+      expect(gradient).toContain('oklch(0% 0.2 240)')
+      expect(gradient).toContain('oklch(100% 0.2 240)')
+    })
+  })
+
   describe('rGB channels', () => {
     it('should return red gradient holding g/b constant', () => {
       const color = parseColor('#808080') // rgb(128, 128, 128)
@@ -91,6 +114,28 @@ describe('getSliderGradient', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('getAreaBackgroundStyle', () => {
+  describe('oKLCH channels', () => {
+    const color = parseColor('oklch(60% 0.2 240)')
+
+    it('renders the hue/chroma plane at the maximum chroma', () => {
+      const style = getAreaBackgroundStyle(color, 'hue', 'chroma', 'oklch')
+      expect(style.backgroundImage).toContain('oklch(60% 0.4 0)')
+      expect(style.backgroundImage).toContain('oklch(60% 0 240)')
+    })
+
+    it('renders the hue/lightness plane around 50% lightness', () => {
+      const style = getAreaBackgroundStyle(color, 'hue', 'lightness', 'oklch')
+      expect(style.backgroundImage).toContain('oklch(50% 0.2 0)')
+      expect(style.backgroundImage).toContain('#000000, transparent, #ffffff')
+    })
+
+    it('renders chroma/lightness while holding hue constant', () => {
+      const style = getAreaBackgroundStyle(color, 'chroma', 'lightness', 'oklch')
+      expect(style.backgroundColor).toBe('oklch(50% 0.4 240)')
+      expect(style.backgroundImage).toContain('oklch(50% 0 240)')
+    })
+  })
+
   describe('hue(x) / Saturation(y) — HSL', () => {
     const color = parseColor('hsl(180, 100%, 50%)')
 

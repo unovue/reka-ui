@@ -53,7 +53,7 @@ export const [injectColorSliderRootContext, provideColorSliderRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs, watch } from 'vue'
-import { colorToString, convertToHsb, convertToHsl, convertToRgb, getChannelRange, getChannelValue, normalizeColor, setChannelValue } from '@/shared/color'
+import { colorToString, convertToHsb, convertToHsl, convertToOklch, convertToRgb, getChannelRange, getChannelValue, normalizeColor, setChannelValue } from '@/shared/color'
 import { SliderRoot } from '@/Slider'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
@@ -89,7 +89,9 @@ function toNativeSpace(color: Color, ch: ColorChannelType, space: ColorSpace): C
   switch (ch) {
     case 'hue':
     case 'lightness':
-      return convertToHsl(color)
+      return space === 'oklch' ? convertToOklch(color) : convertToHsl(color)
+    case 'chroma':
+      return convertToOklch(color)
     case 'saturation':
       return space === 'hsb' ? convertToHsb(color) : convertToHsl(color)
     case 'brightness':
@@ -108,9 +110,14 @@ function toNativeSpace(color: Color, ch: ColorChannelType, space: ColorSpace): C
 // Internal color ref that preserves color space precision.
 // Convert to the channel's native space to avoid cross-space round-trips during drag.
 const internalColor = ref<Color>(toNativeSpace(normalizeColor(modelValue.value ?? props.defaultValue ?? '#000000'), channel.value, colorSpace.value))
+watch([channel, colorSpace], () => {
+  internalColor.value = toNativeSpace(internalColor.value, channel.value, colorSpace.value)
+})
 
 // Check if a color is achromatic (hue information is lost in hex round-trips)
 function isAchromatic(color: Color): boolean {
+  if (color.space === 'oklch')
+    return color.c === 0 || color.l === 0 || color.l >= 100
   const hsl = convertToHsl(color)
   return hsl.s === 0 || hsl.l === 0 || hsl.l >= 100
 }
@@ -120,6 +127,10 @@ watch(() => modelValue.value, (newVal) => {
   if (newVal == null)
     return
   const parsed = normalizeColor(newVal)
+  if (typeof newVal !== 'string') {
+    internalColor.value = toNativeSpace(parsed, channel.value, colorSpace.value)
+    return
+  }
   const currentHex = colorToString(internalColor.value, 'hex')
   const newHex = colorToString(parsed, 'hex')
   // Only update if the external value actually changed (avoid overwriting
