@@ -14,7 +14,7 @@ export interface ScrollAreaScrollbarImplProps {
 import { useResizeObserver } from '@vueuse/core'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { getEventTarget, getOwnerDocument, useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
@@ -47,8 +47,8 @@ function handlePointerDown(event: PointerEvent) {
 
     // pointer capture doesn't prevent text selection in Safari
     // so we remove text selection manually when scrolling
-    prevWebkitUserSelectRef.value = document.body.style.webkitUserSelect
-    document.body.style.webkitUserSelect = 'none'
+    prevWebkitUserSelectRef.value = getOwnerDocument(scrollbar.value).body.style.webkitUserSelect
+    getOwnerDocument(scrollbar.value).body.style.webkitUserSelect = 'none'
     if (rootContext.viewport)
       rootContext.viewport.value!.style.scrollBehavior = 'auto'
 
@@ -65,7 +65,7 @@ function handlePointerUp(event: PointerEvent) {
   if (element.hasPointerCapture(event.pointerId))
     element.releasePointerCapture(event.pointerId)
 
-  document.body.style.webkitUserSelect = prevWebkitUserSelectRef.value
+  getOwnerDocument(scrollbar.value).body.style.webkitUserSelect = prevWebkitUserSelectRef.value
   if (rootContext.viewport)
     rootContext.viewport.value!.style.scrollBehavior = ''
 
@@ -73,7 +73,10 @@ function handlePointerUp(event: PointerEvent) {
 }
 
 function handleWheel(event: WheelEvent) {
-  const element = event.target as HTMLElement
+  // Document-level listener: read the composed target so a wheel over a
+  // shadow-mounted scrollbar isn't retargeted to the host (which would fail the
+  // containment check and break wheel scrolling).
+  const element = getEventTarget<HTMLElement>(event)
   const isScrollbarWheel = scrollbar.value?.contains(element)
   const maxScrollPos
     = scrollbarVisibleContext.sizes.value.content
@@ -82,11 +85,13 @@ function handleWheel(event: WheelEvent) {
     scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
 }
 
+let wheelDoc: Document | undefined
 onMounted(() => {
-  document.addEventListener('wheel', handleWheel, { passive: false })
+  wheelDoc = getOwnerDocument(scrollbar.value)
+  wheelDoc.addEventListener('wheel', handleWheel, { passive: false })
 })
 onUnmounted(() => {
-  document.removeEventListener('wheel', handleWheel)
+  wheelDoc?.removeEventListener('wheel', handleWheel)
 })
 
 function handleSizeChange() {

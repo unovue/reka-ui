@@ -42,10 +42,10 @@ const props = defineProps<PopoverContentImplPrivateProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
 
 const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
-useFocusGuards()
+useFocusGuards(currentElement)
 </script>
 
 <template>

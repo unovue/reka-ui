@@ -54,7 +54,7 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 
 const { forwardRef, currentElement } = useForwardExpose()
 useBodyScrollLock(props.bodyLock)
-useFocusGuards()
+useFocusGuards(currentElement)
 useHideOthers(rootContext.parentElement)
 
 const pickedProps = computed(() => {

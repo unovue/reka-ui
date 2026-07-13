@@ -9,6 +9,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
   createContext,
+  getEventTarget,
   useFocusGuards,
   useForwardProps,
   useHideOthers,
@@ -105,11 +106,12 @@ const emits = defineEmits<SelectContentImplEmits>()
 
 const rootContext = injectSelectRootContext()
 
-useFocusGuards()
 useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
+// Scope focus guards to the content's root (shadow-safe); set up after `content`.
+useFocusGuards(content)
 useHideOthers(content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
@@ -159,8 +161,10 @@ watchEffect((cleanupFn) => {
       event.preventDefault()
     }
     else {
-      // otherwise, if the event was outside the content, close.
-      if (!content.value?.contains(event.target as HTMLElement))
+      // otherwise, if the event was outside the content, close. Document-level
+      // listener → read the composed target so a shadow-mounted content isn't
+      // seen as "outside" itself.
+      if (!content.value?.contains(getEventTarget<HTMLElement>(event)))
         onOpenChange(false)
     }
     document.removeEventListener('pointermove', handlePointerMove)

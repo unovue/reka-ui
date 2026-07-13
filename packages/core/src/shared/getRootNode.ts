@@ -42,3 +42,18 @@ export function getElementByIdFrom(anchor: Node | null | undefined, id: string):
 export function getEventTarget<T extends EventTarget = EventTarget>(event: Event): T | null {
   return (event.composedPath?.()[0] ?? event.target) as T | null
 }
+
+/**
+ * `container.contains(node)`, but crossing shadow boundaries: walks up through
+ * shadow hosts so a node inside a nested shadow tree still counts as contained.
+ * Used when checking a composed (deep) event target against a scope root.
+ */
+export function containsComposed(container: Node, node: Node | null): boolean {
+  let current: Node | null = node
+  while (current) {
+    if (container.contains(current))
+      return true
+    current = (current.getRootNode() as ShadowRoot).host ?? null
+  }
+  return false
+}

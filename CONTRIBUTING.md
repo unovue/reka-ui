@@ -126,9 +126,19 @@ a trigger/content ref, …):
   as the existing code does — the helpers assume a client context.
 - **Test in a shadow root** with `createShadowHost()` (`src/shared/test/shadowDom.ts`);
   query via `shadowRoot.querySelector` — testing-library queries don't pierce shadow roots.
-- **Out of scope / known limits:** closed shadow roots, aria idrefs for content
-  Teleported out of the root, and `composed: false` APIs (selection, scroll). Plain
-  `setTimeout`/`window.innerWidth`-style reads don't need scoping — leave them.
+- **Teleport:** portalled content (Dialog/Popover/Combobox/Select content) defaults
+  to `body`, which is OUTSIDE the shadow root. To keep it in the root, point
+  `ConfigProvider`'s `teleportTo` at a node inside the shadow root — otherwise the
+  content renders in light DOM and its cross-boundary aria idrefs won't resolve at
+  the AT level.
+- **Known limits (browser-only or genuinely unfixable):** closed shadow roots
+  (`composedPath()` returns the host); aria idrefs for content Teleported out of the
+  root; `HoverCard` text-selection containment (`document.getSelection`) and
+  dismiss-on-scroll (`scroll` is `composed: false`); `useHideOthers` (walks
+  `document.body`); the iOS `useBodyScrollLock` `touchmove` overflow check (walks the
+  host chain, not the shadow subtree). `useBodyScrollLock` itself is correct as-is —
+  a shadow root shares the host `document.body`, which is the right scroll surface.
+  Plain `setTimeout`/`window.innerWidth`-style reads don't need scoping — leave them.
 
 ## Testing
 
