@@ -1,5 +1,5 @@
 import type { TimeRangeFieldRootProps } from './TimeRangeFieldRoot.vue'
-import type { TimeValue } from '@/shared/date'
+import type { TimeRange, TimeValue } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -659,5 +659,127 @@ describe('timeRangeField – shared shell seam: range start/end sync & invalidit
       },
     })
     expect(input).not.toHaveAttribute('data-invalid')
+  })
+})
+
+// Ticket 0004 — public time value shape preservation for range endpoints
+describe('timeRangeField public value shape preservation (ticket 0004)', () => {
+  it('emits PlainTime shapes for start and end when range was PlainTime', async () => {
+    let captured: TimeRange | undefined
+    const original = {
+      start: Temporal.PlainTime.from({ hour: 9, minute: 15, second: 0 }),
+      end: Temporal.PlainTime.from({ hour: 17, minute: 45, second: 0 }),
+    }
+    const { user, start, rerender } = setup({
+      timeRangeFieldProps: { modelValue: original, locale: 'en-GB' },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data as unknown as TimeRange
+          rerender({ timeRangeFieldProps: { modelValue: data, locale: 'en-GB' } })
+        },
+      },
+    })
+
+    await user.click(start.hour)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(captured).toBeDefined()
+    expect(captured!.start).toBeInstanceOf(Temporal.PlainTime)
+    expect(captured!.end).toBeInstanceOf(Temporal.PlainTime)
+    expect(captured!.start!.hour).toBe(10)
+    expect(captured!.end!.hour).toBe(17)
+  })
+
+  it('emits PlainDateTime shapes for start and end when range was PlainDateTime', async () => {
+    let captured: TimeRange | undefined
+    const original = {
+      start: Temporal.PlainDateTime.from({ year: 2024, month: 1, day: 1, hour: 9, minute: 15, second: 0 }),
+      end: Temporal.PlainDateTime.from({ year: 2024, month: 1, day: 1, hour: 17, minute: 45, second: 0 }),
+    }
+    const { user, start, rerender } = setup({
+      timeRangeFieldProps: { modelValue: original, locale: 'en-GB' },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data as unknown as TimeRange
+          rerender({ timeRangeFieldProps: { modelValue: data, locale: 'en-GB' } })
+        },
+      },
+    })
+
+    await user.click(start.hour)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(captured).toBeDefined()
+    expect(captured!.start).toBeInstanceOf(Temporal.PlainDateTime)
+    expect(captured!.end).toBeInstanceOf(Temporal.PlainDateTime)
+    // Date preserved
+    expect((captured!.start as Temporal.PlainDateTime).year).toBe(2024)
+    expect((captured!.start as Temporal.PlainDateTime).month).toBe(1)
+    expect((captured!.start as Temporal.PlainDateTime).day).toBe(1)
+    expect((captured!.end as Temporal.PlainDateTime).year).toBe(2024)
+    // Time updated only for start
+    expect(captured!.start!.hour).toBe(10)
+    expect(captured!.end!.hour).toBe(17)
+  })
+
+  it('emits ZonedDateTime shapes preserving zone when range was ZonedDateTime', async () => {
+    let captured: TimeRange | undefined
+    const original = {
+      start: Temporal.ZonedDateTime.from('2024-01-01T09:15:00[America/New_York]'),
+      end: Temporal.ZonedDateTime.from('2024-01-01T17:45:00[America/New_York]'),
+    }
+    const { user, start, rerender } = setup({
+      timeRangeFieldProps: { modelValue: original, locale: 'en-US', hourCycle: 12 },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data as unknown as TimeRange
+          rerender({ timeRangeFieldProps: { modelValue: data, locale: 'en-US', hourCycle: 12 } })
+        },
+      },
+    })
+
+    await user.click(start.hour)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(captured).toBeDefined()
+    expect(captured!.start).toBeInstanceOf(Temporal.ZonedDateTime)
+    expect(captured!.end).toBeInstanceOf(Temporal.ZonedDateTime)
+    // Zone preserved on both
+    expect((captured!.start as Temporal.ZonedDateTime).timeZoneId).toBe('America/New_York')
+    expect((captured!.end as Temporal.ZonedDateTime).timeZoneId).toBe('America/New_York')
+    // Date preserved
+    expect((captured!.start as Temporal.ZonedDateTime).year).toBe(2024)
+    expect((captured!.end as Temporal.ZonedDateTime).year).toBe(2024)
+    // Time updated on start, unchanged on end
+    expect(captured!.start!.hour).toBe(10)
+    expect(captured!.end!.hour).toBe(17)
+  })
+
+  it('preserves shape when editing end side of a PlainTime range', async () => {
+    let captured: TimeRange | undefined
+    const original = {
+      start: Temporal.PlainTime.from({ hour: 9, minute: 15, second: 0 }),
+      end: Temporal.PlainTime.from({ hour: 17, minute: 45, second: 0 }),
+    }
+    const { user, end, rerender } = setup({
+      timeRangeFieldProps: { modelValue: original, locale: 'en-GB' },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data as unknown as TimeRange
+          rerender({ timeRangeFieldProps: { modelValue: data, locale: 'en-GB' } })
+        },
+      },
+    })
+
+    await user.click(end.hour)
+    await user.keyboard(kbd.ARROW_DOWN)
+
+    expect(captured).toBeDefined()
+    expect(captured!.start).toBeInstanceOf(Temporal.PlainTime)
+    expect(captured!.end).toBeInstanceOf(Temporal.PlainTime)
+    // Start unchanged
+    expect(captured!.start!.hour).toBe(9)
+    // End decremented
+    expect(captured!.end!.hour).toBe(16)
   })
 })

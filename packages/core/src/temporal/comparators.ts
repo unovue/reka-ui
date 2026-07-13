@@ -2,8 +2,8 @@
  * Date comparison utilities using the Temporal API.
  */
 
-import type { Matcher, TemporalDate, TemporalDateTime, TemporalTime } from './types'
-import type { DayOfWeek, Granularity } from '@/shared/date'
+import type { Matcher, TemporalDate, TemporalDateTime } from './types'
+import type { DayOfWeek } from '@/shared/date'
 import { Temporal } from 'temporal-polyfill'
 
 // Type guards
@@ -17,6 +17,10 @@ export function isPlainDateTime(date: TemporalDate): date is Temporal.PlainDateT
 
 export function isZonedDateTime(date: TemporalDate | TemporalDateTime): date is Temporal.ZonedDateTime {
   return date instanceof Temporal.ZonedDateTime
+}
+
+export function isPlainTime(date: TemporalDate | Temporal.PlainTime): date is Temporal.PlainTime {
+  return date instanceof Temporal.PlainTime
 }
 
 type LocaleWeekInfo = {
@@ -221,58 +225,6 @@ export function getNextLastDayOfWeek<T extends TemporalDate = TemporalDate>(
     return date.add({ days: 7 - day + lastDayOfWeek }) as T
 
   return date.add({ days: lastDayOfWeek - day }) as T
-}
-
-// Default date/time creation
-export function getDefaultDate(props: {
-  defaultValue?: TemporalDate | TemporalDate[]
-  defaultPlaceholder?: TemporalDate
-  granularity?: Granularity
-  locale?: string
-}): TemporalDate {
-  const { defaultValue, defaultPlaceholder, granularity = 'day' } = props
-
-  if (Array.isArray(defaultValue) && defaultValue.length) {
-    return defaultValue.at(-1)!
-  }
-
-  if (defaultValue && !Array.isArray(defaultValue)) {
-    return defaultValue
-  }
-
-  if (defaultPlaceholder) {
-    return defaultPlaceholder
-  }
-
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const day = now.getDate()
-
-  if (granularity === 'day') {
-    return Temporal.PlainDate.from({ year, month, day })
-  }
-  else {
-    // For time-based granularities, create PlainDateTime
-    return Temporal.PlainDateTime.from({ year, month, day, hour: 0, minute: 0, second: 0 })
-  }
-}
-
-export function getDefaultTime(props: {
-  defaultValue?: TemporalTime
-  defaultPlaceholder?: TemporalTime
-}): TemporalTime {
-  const { defaultValue, defaultPlaceholder } = props
-
-  if (defaultValue) {
-    return defaultValue
-  }
-
-  if (defaultPlaceholder) {
-    return defaultPlaceholder
-  }
-
-  return Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 })
 }
 
 // Array utilities

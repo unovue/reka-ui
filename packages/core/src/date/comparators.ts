@@ -2,6 +2,7 @@ import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { toCalendar } from '@/temporal/calendar'
 import { areAllDaysBetweenValid, endOfMonth, endOfYear, getDayOfWeek, getDaysInMonth, isAfter, isAfterOrSame, isBefore, isBeforeOrSame, isBetween, isBetweenInclusive, isPlainDateTime, isZonedDateTime, startOfMonth, startOfYear, toPlainDate } from '@/temporal/comparators'
+import { toNativeDate } from '@/temporal/conversion-policy'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the
@@ -28,21 +29,11 @@ export function parseStringToDateValue(dateStr: string, referenceVal: TemporalDa
  * Given a `DateValue` object, convert it to a native `Date` object.
  * If a timezone is provided, the date will be converted to that timezone.
  * If no timezone is provided, the date will be converted to the local timezone.
+ *
+ * Delegates to the canonical {@link toNativeDate} from the conversion policy seam.
  */
-export function toDate(dateValue: TemporalDate, tz: string = Temporal.Now.timeZoneId()) {
-  if (isZonedDateTime(dateValue))
-    return new Date(dateValue.toInstant().epochMilliseconds)
-
-  if (isPlainDateTime(dateValue)) {
-    const zoned = dateValue.toZonedDateTime(tz)
-    return new Date(zoned.toInstant().epochMilliseconds)
-  }
-
-  const zoned = dateValue.toZonedDateTime({
-    timeZone: tz,
-    plainTime: Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 }),
-  })
-  return new Date(zoned.toInstant().epochMilliseconds)
+export function toDate(dateValue: TemporalDate, tz?: string) {
+  return toNativeDate(dateValue, tz ? { timeZone: tz } : undefined)
 }
 
 export function isSameYear(date1: TemporalDate, date2: TemporalDate) {

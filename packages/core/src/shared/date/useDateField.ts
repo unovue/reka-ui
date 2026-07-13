@@ -2,10 +2,10 @@ import type { Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
 import type { TemporalDate } from '@/temporal/types'
-import { Temporal } from 'temporal-polyfill'
 import { computed } from 'vue'
 import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
-import { getDaysInMonth, isPlainDateTime, isZonedDateTime } from '@/temporal/comparators'
+import { toNativeDate } from '@/temporal/conversion-policy'
+import { getDaysInMonth } from '@/temporal/comparators'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
 const DIGIT_REG = /^\d$/
@@ -83,7 +83,7 @@ function monthSegmentAttrs(props: SegmentAttrProps) {
   const valueNow = date.month
   const valueMin = 1
   const valueMax = 12
-  const valueText = isEmpty ? 'Empty' : `${valueNow} - ${formatter.fullMonth(toDate(date))}`
+  const valueText = isEmpty ? 'Empty' : `${valueNow} - ${formatter.fullMonth(toNativeDate(date))}`
 
   return {
     ...commonSegmentAttrs(props),
@@ -138,25 +138,6 @@ function hourSegmentAttrs(props: SegmentAttrProps) {
     'aria-valuetext': valueText,
     'data-placeholder': isEmpty ? '' : undefined,
   }
-}
-
-function toDate(dateValue: TemporalDate): Date {
-  if (isZonedDateTime(dateValue)) {
-    return new Date(dateValue.toInstant().epochMilliseconds)
-  }
-
-  const timeZone = Temporal.Now.timeZoneId()
-
-  if (isPlainDateTime(dateValue)) {
-    const zoned = dateValue.toZonedDateTime(timeZone)
-    return new Date(zoned.toInstant().epochMilliseconds)
-  }
-
-  const zoned = dateValue.toZonedDateTime({
-    timeZone,
-    plainTime: Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 }),
-  })
-  return new Date(zoned.toInstant().epochMilliseconds)
 }
 
 function minuteSegmentAttrs(props: SegmentAttrProps) {

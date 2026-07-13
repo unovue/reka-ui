@@ -4,7 +4,8 @@ import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, Segmen
 import type { TemporalDate, TemporalDateTime } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle, TIME_SEGMENT_PARTS } from '@/shared/date'
-import { isZonedDateTime } from '@/temporal/comparators'
+import { isPlainTime, isZonedDateTime } from '@/temporal/comparators'
+import { toNativeDate } from '@/temporal/conversion-policy'
 
 const calendarDateTimeGranularities = ['hour', 'minute', 'second']
 
@@ -173,28 +174,14 @@ function createContentObj(props: CreateContentObjProps) {
 }
 
 function toDate(dateValue: TemporalDateTime): Date {
-  if (isZonedDateTime(dateValue)) {
-    return new Date(dateValue.toInstant().epochMilliseconds)
+  // Route through the canonical conversion policy.
+  // For PlainTime, anchor to today's date — the anchor only serves dayPeriod
+  // formatting and doesn't affect the public time value.
+  if (isPlainTime(dateValue)) {
+    const today = Temporal.Now.plainDateISO()
+    return toNativeDate(dateValue, { plainTimeAnchor: today })
   }
-
-  const timeZone = Temporal.Now.timeZoneId()
-
-  if (dateValue instanceof Temporal.PlainDateTime) {
-    const zoned = dateValue.toZonedDateTime(timeZone)
-    return new Date(zoned.toInstant().epochMilliseconds)
-  }
-
-  const today = Temporal.Now.plainDateISO()
-  const zoned = Temporal.PlainDateTime.from({
-    year: today.year,
-    month: today.month,
-    day: today.day,
-    hour: dateValue.hour,
-    minute: dateValue.minute,
-    second: dateValue.second,
-    millisecond: dateValue.millisecond,
-  }).toZonedDateTime(timeZone)
-  return new Date(zoned.toInstant().epochMilliseconds)
+  return toNativeDate(dateValue)
 }
 
 function getTimeFieldValue(dateValue: TemporalDateTime, part: TimeSegmentPart): number | null {

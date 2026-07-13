@@ -840,7 +840,7 @@ describe('calendar - `multiple`', () => {
     expect(selectedDays[1]).toHaveTextContent(String(d2.day))
   })
 
-  it('sets placeholder to last value in `value` prop', async () => {
+  it('sets placeholder to first value in `value` prop', async () => {
     const d1 = Temporal.PlainDate.from('1980-01-02')
     const d2 = Temporal.PlainDate.from('1980-05-05')
 
@@ -852,7 +852,7 @@ describe('calendar - `multiple`', () => {
     const heading = getByTestId('heading')
     const selectedDays = getSelectedDays(calendar)
     expect(selectedDays.length).toBe(1)
-    expect(heading).toHaveTextContent('May 1980')
+    expect(heading).toHaveTextContent('January 1980')
   })
 
   it('allows deselection', async () => {

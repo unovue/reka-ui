@@ -10,7 +10,8 @@ import { Temporal } from 'temporal-polyfill'
 import { computed, ref, watch } from 'vue'
 import { createMonths } from '@/date'
 import { useDateFormatter } from '@/shared'
-import { getDaysInMonth, isAfter, isBefore, isEqualMonth, isSameDay, isZonedDateTime, toPlainDate } from '@/temporal/comparators'
+import { toNativeDate } from '@/temporal/conversion-policy'
+import { getDaysInMonth, isAfter, isBefore, isEqualMonth, isSameDay, toPlainDate } from '@/temporal/comparators'
 
 export type UseCalendarProps = {
   locale: Ref<string>
@@ -34,23 +35,6 @@ export type UseCalendarStateProps = {
   isDateDisabled: Matcher
   isDateUnavailable: Matcher
   date: Ref<TemporalDate | TemporalDate[] | undefined>
-}
-
-function toDate(dateValue: TemporalDate, timeZone: string = Temporal.Now.timeZoneId()) {
-  if (isZonedDateTime(dateValue)) {
-    return new Date(dateValue.toInstant().epochMilliseconds)
-  }
-
-  if (dateValue instanceof Temporal.PlainDateTime) {
-    const zoned = dateValue.toZonedDateTime(timeZone)
-    return new Date(zoned.toInstant().epochMilliseconds)
-  }
-
-  const zoned = dateValue.toZonedDateTime({
-    timeZone,
-    plainTime: Temporal.PlainTime.from({ hour: 0, minute: 0, second: 0 }),
-  })
-  return new Date(zoned.toInstant().epochMilliseconds)
 }
 
 export function useCalendarState(props: UseCalendarStateProps) {
@@ -158,7 +142,7 @@ export function useCalendar(props: UseCalendarProps) {
       const parts = new Intl.DateTimeFormat(props.locale.value, {
         calendar: resolvedCalendar,
         era: 'short',
-      }).formatToParts(toDate(props.placeholder.value))
+      }).formatToParts(toNativeDate(props.placeholder.value))
       const eraPart = parts.find(p => p.type === 'era')
       if (eraPart && (eraPart.value.toLowerCase() === 'bc' || eraPart.value.toLowerCase() === 'bce')) {
         options.era = 'short'
@@ -237,7 +221,7 @@ export function useCalendar(props: UseCalendarProps) {
     if (!grid.value.length)
       return []
     return grid.value[0].rows[0].map((date) => {
-      return formatter.dayOfWeek(toDate(date), props.weekdayFormat.value)
+      return formatter.dayOfWeek(toNativeDate(date), props.weekdayFormat.value)
     })
   })
 
@@ -368,11 +352,11 @@ export function useCalendar(props: UseCalendarProps) {
 
     if (grid.value.length === 1) {
       const month = grid.value[0].value
-      return `${formatter.fullMonthAndYear(toDate(month), headingFormatOptions.value)}`
+      return `${formatter.fullMonthAndYear(toNativeDate(month), headingFormatOptions.value)}`
     }
 
-    const startMonth = toDate(grid.value[0].value)
-    const endMonth = toDate(grid.value.at(-1)!.value)
+    const startMonth = toNativeDate(grid.value[0].value)
+    const endMonth = toNativeDate(grid.value.at(-1)!.value)
 
     const startMonthName = formatter.fullMonth(startMonth, headingFormatOptions.value)
     const endMonthName = formatter.fullMonth(endMonth, headingFormatOptions.value)

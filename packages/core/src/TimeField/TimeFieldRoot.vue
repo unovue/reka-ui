@@ -1,13 +1,13 @@
 <script lang="ts">
+import type { Temporal } from 'temporal-polyfill'
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import type { TemporalDate } from '@/temporal/types'
-import { Temporal } from 'temporal-polyfill'
 import { createContext, useDirection, useLocale } from '@/shared'
-import { getDefaultTime, toPublicTimeValue, toShellDateTime, useDisplaySegmentContents, useSegmentFieldShell } from '@/shared/date'
+import { getDefaultDate, getDefaultTime, toPublicTimeValue, toShellDateTime, useDisplaySegmentContents, useSegmentFieldShell } from '@/shared/date'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
@@ -132,14 +132,7 @@ const convertedModelValue = computed<Temporal.PlainDateTime | undefined>({
 
 const convertedPlaceholder = computed<Temporal.PlainDateTime>({
   get() {
-    return toShellDateTime(placeholder.value) ?? Temporal.PlainDateTime.from({
-      year: Temporal.Now.plainDateISO().year,
-      month: Temporal.Now.plainDateISO().month,
-      day: Temporal.Now.plainDateISO().day,
-      hour: 0,
-      minute: 0,
-      second: 0,
-    })
+    return toShellDateTime(placeholder.value) ?? getDefaultDate({ granularity: 'hour' }) as Temporal.PlainDateTime
   },
   set(newValue) {
     placeholder.value = toPublicTimeValue(newValue, placeholder.value)

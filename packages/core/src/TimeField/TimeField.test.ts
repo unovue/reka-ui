@@ -1475,3 +1475,140 @@ describe('timeField invalidity at the shared shell seam', () => {
     expect(input).toHaveAttribute('data-invalid', '')
   })
 })
+
+// Ticket 0004 — public time value shape preservation
+// These tests assert that emitted update:modelValue events preserve the Temporal
+// type shape (PlainTime, PlainDateTime, ZonedDateTime) originally supplied.
+// They test the policy-backed round-trip through the component boundary.
+describe('timeField public value shape preservation (ticket 0004)', () => {
+  it('emits a PlainTime when modelValue was PlainTime', async () => {
+    let captured: TimeValue | undefined
+    const original = Temporal.PlainTime.from({ hour: 9, minute: 30, second: 0 })
+    const { user, hour, rerender } = setup({
+      timeFieldProps: { modelValue: original },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data
+          rerender({ timeFieldProps: { modelValue: data } })
+        },
+      },
+    })
+
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(captured).toBeDefined()
+    expect(captured).toBeInstanceOf(Temporal.PlainTime)
+    expect(captured!.hour).toBe(10)
+    expect(captured!.minute).toBe(30)
+  })
+
+  it('emits a PlainDateTime when modelValue was PlainDateTime', async () => {
+    let captured: TimeValue | undefined
+    const original = Temporal.PlainDateTime.from({ year: 2024, month: 6, day: 15, hour: 9, minute: 30, second: 0 })
+    const { user, hour, rerender } = setup({
+      timeFieldProps: { modelValue: original },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data
+          rerender({ timeFieldProps: { modelValue: data } })
+        },
+      },
+    })
+
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(captured).toBeDefined()
+    expect(captured).toBeInstanceOf(Temporal.PlainDateTime)
+    expect((captured as Temporal.PlainDateTime).year).toBe(2024)
+    expect((captured as Temporal.PlainDateTime).month).toBe(6)
+    expect((captured as Temporal.PlainDateTime).day).toBe(15)
+    expect(captured!.hour).toBe(10)
+    expect(captured!.minute).toBe(30)
+  })
+
+  it('emits a ZonedDateTime preserving zone when modelValue was ZonedDateTime', async () => {
+    let captured: TimeValue | undefined
+    const original = Temporal.ZonedDateTime.from('2024-06-15T09:30:00[America/New_York]')
+    const { user, hour, rerender } = setup({
+      timeFieldProps: { modelValue: original },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data
+          rerender({ timeFieldProps: { modelValue: data } })
+        },
+      },
+    })
+
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(captured).toBeDefined()
+    expect(captured).toBeInstanceOf(Temporal.ZonedDateTime)
+    expect((captured as Temporal.ZonedDateTime).timeZoneId).toBe('America/New_York')
+    // Date context preserved
+    expect((captured as Temporal.ZonedDateTime).year).toBe(2024)
+    expect((captured as Temporal.ZonedDateTime).month).toBe(6)
+    expect((captured as Temporal.ZonedDateTime).day).toBe(15)
+    // Time updated
+    expect(captured!.hour).toBe(10)
+    expect(captured!.minute).toBe(30)
+  })
+
+  it('emits a PlainTime when modelValue was PlainTime after typing a new minute value', async () => {
+    let captured: TimeValue | undefined
+    const original = Temporal.PlainTime.from({ hour: 9, minute: 0, second: 0 })
+    const { user, getByTestId, rerender } = setup({
+      timeFieldProps: {
+        modelValue: original,
+        granularity: 'second',
+      },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data
+          rerender({ timeFieldProps: { modelValue: data, granularity: 'second' } })
+        },
+      },
+    })
+
+    const minute = getByTestId('minute')
+    await user.click(minute)
+    await user.keyboard('{3}{0}')
+
+    expect(captured).toBeDefined()
+    expect(captured).toBeInstanceOf(Temporal.PlainTime)
+    expect(captured!.hour).toBe(9)
+    expect(captured!.minute).toBe(30)
+  })
+
+  it('preserves ZonedDateTime zone through multiple edits', async () => {
+    let captured: TimeValue | undefined
+    let emitCount = 0
+    const original = Temporal.ZonedDateTime.from('2024-06-15T09:30:00[Asia/Tokyo]')
+    const { user, hour, rerender } = setup({
+      timeFieldProps: { modelValue: original },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          captured = data
+          emitCount++
+          rerender({ timeFieldProps: { modelValue: data } })
+        },
+      },
+    })
+
+    // Arrow up twice
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_UP)
+    await user.keyboard(kbd.ARROW_UP)
+
+    expect(emitCount).toBe(2)
+    expect(captured).toBeDefined()
+    expect(captured).toBeInstanceOf(Temporal.ZonedDateTime)
+    expect((captured as Temporal.ZonedDateTime).timeZoneId).toBe('Asia/Tokyo')
+    expect((captured as Temporal.ZonedDateTime).year).toBe(2024)
+    expect((captured as Temporal.ZonedDateTime).month).toBe(6)
+    expect((captured as Temporal.ZonedDateTime).day).toBe(15)
+    expect(captured!.hour).toBe(11) // 9 + 2
+  })
+})
