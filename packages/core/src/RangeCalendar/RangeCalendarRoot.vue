@@ -14,9 +14,8 @@ import {
   useKbd,
   useLocale,
 } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
+import { dayAdapter, getDefaultDate, handleCalendarInitialFocus, useRangeSelectionState } from '@/shared/date'
 import { isBefore, isSameDay } from '@/temporal/comparators'
-import { useRangeCalendarState } from './useRangeCalendar'
 
 type RangeCalendarRootContext = {
   modelValue: Ref<DateRange>
@@ -299,27 +298,36 @@ const {
 const {
   isInvalid,
   isSelected,
-  isDateHighlightable,
   highlightedRange,
   isSelectionStart,
   isSelectionEnd,
   isHighlightedStart,
   isHighlightedEnd,
-  isDateDisabled: rangeIsDateDisabled,
-  hasSelectedDate,
-  isSelectedDisabled,
-  selectedFocusableDate,
-} = useRangeCalendarState({
+  isUnitDisabled,
+  selectedFocusableUnit,
+} = useRangeSelectionState({
+  adapter: dayAdapter,
   start: startValue,
   end: endValue,
-  isDateDisabled,
-  isDateUnavailable,
-  isDateHighlightable: propsIsDateHighlightable.value,
+  isEndpointDisabled: isDateDisabled,
+  isInteriorBlocked: (date: TemporalDate) => {
+    if (propsIsDateHighlightable.value?.(date))
+      return false
+    return isDateUnavailable(date)
+  },
   focusedValue,
   allowNonContiguousRanges,
-  fixedDate,
-  maximumDays,
+  fixedEndpoint: fixedDate,
+  maximumSpan: maximumDays,
 })
+
+const rangeIsDateDisabled = isUnitDisabled
+function isDateHighlightable(date: TemporalDate) {
+  return propsIsDateHighlightable.value?.(date) ?? false
+}
+const hasSelectedDate = computed(() => selectedFocusableUnit.value.hasSelectedUnit)
+const isSelectedDisabled = computed(() => !selectedFocusableUnit.value.areEndpointsSelectable)
+const selectedFocusableDate = computed(() => selectedFocusableUnit.value.preferredFocusUnit)
 
 watch(modelValue, (_modelValue, _prevValue) => {
   if (

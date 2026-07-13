@@ -9,8 +9,7 @@ import type { TemporalDate } from '@/temporal/types'
 import { compareYearMonth, isSameYearMonth } from '@/date'
 import { useMonthPicker } from '@/MonthPicker/useMonthPicker'
 import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { useRangeMonthPickerState } from './useRangeMonthPicker'
+import { getDefaultDate, handleCalendarInitialFocus, monthAdapter, useRangeSelectionState } from '@/shared/date'
 
 type MonthRangePickerRootContext = {
   modelValue: Ref<DateRange>
@@ -229,17 +228,20 @@ const {
   isSelectionEnd,
   isHighlightedStart,
   isHighlightedEnd,
-  isMonthDisabled: rangeIsMonthDisabled,
-} = useRangeMonthPickerState({
+  isUnitDisabled,
+} = useRangeSelectionState({
+  adapter: monthAdapter,
   start: startValue,
   end: endValue,
-  isMonthDisabled,
-  isMonthUnavailable,
+  isEndpointDisabled: isMonthDisabled,
+  isInteriorBlocked: (date: TemporalDate) => isMonthUnavailable(date),
   focusedValue,
   allowNonContiguousRanges,
-  fixedDate,
-  maximumMonths,
+  fixedEndpoint: fixedDate,
+  maximumSpan: maximumMonths,
 })
+
+const rangeIsMonthDisabled = isUnitDisabled
 
 watch(modelValue, (_modelValue) => {
   const next = normalizeRange(_modelValue)

@@ -333,6 +333,66 @@ describe('year range picker - maximumYears', () => {
     expect(year1983).toHaveAttribute('data-highlighted-end')
     expect(getByTestId('year-1980')).not.toHaveAttribute('data-highlighted')
   })
+
+  it('enforces maximumYears for out-of-bounds controlled ranges with fixedDate="start"', async () => {
+    const outOfBoundsRange = {
+      start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
+      end: Temporal.PlainDate.from({ year: 1986, month: 1, day: 1 }),
+    }
+
+    const { getByTestId, user, rerender } = setup({
+      pickerProps: {
+        modelValue: outOfBoundsRange,
+        fixedDate: 'start',
+        maximumYears: 3,
+      },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data, fixedDate: 'start', maximumYears: 3 } }) },
+    })
+
+    // 1983 is the 4th year from 1980 (inclusive span=4) → over max=3
+    expect(getByTestId('year-1983')).toHaveAttribute('data-disabled')
+
+    // Click year-1983 (disabled) → should remain disabled
+    await user.click(getByTestId('year-1983'))
+    expect(getByTestId('year-1986')).toHaveAttribute('data-selection-end')
+
+    // Click year-1982 (within max span from 1980) → range shrinks to valid
+    await user.click(getByTestId('year-1982'))
+    expect(getByTestId('year-1980')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('year-1981')).toHaveAttribute('data-selected')
+    expect(getByTestId('year-1982')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('year-1983')).not.toHaveAttribute('data-selected')
+  })
+
+  it('enforces maximumYears for out-of-bounds controlled ranges with fixedDate="end"', async () => {
+    const outOfBoundsRange = {
+      start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
+      end: Temporal.PlainDate.from({ year: 1986, month: 1, day: 1 }),
+    }
+
+    const { getByTestId, user, rerender } = setup({
+      pickerProps: {
+        modelValue: outOfBoundsRange,
+        fixedDate: 'end',
+        maximumYears: 3,
+      },
+      emits: { 'onUpdate:modelValue': data => rerender({ pickerProps: { modelValue: data, fixedDate: 'end', maximumYears: 3 } }) },
+    })
+
+    // 1983 is the 4th year backward from 1986 (inclusive span=4) → over max=3
+    expect(getByTestId('year-1983')).toHaveAttribute('data-disabled')
+
+    // Click year-1983 (disabled) → start should remain 1980 (unchanged)
+    await user.click(getByTestId('year-1983'))
+    expect(getByTestId('year-1980')).toHaveAttribute('data-selection-start')
+
+    // Click year-1984 (within max span from 1986) → range shrinks to valid
+    await user.click(getByTestId('year-1984'))
+    expect(getByTestId('year-1984')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('year-1985')).toHaveAttribute('data-selected')
+    expect(getByTestId('year-1986')).toHaveAttribute('data-selection-end')
+    expect(getByTestId('year-1983')).not.toHaveAttribute('data-selected')
+  })
 })
 
 describe('year range picker - keyboard navigation', () => {

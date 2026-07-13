@@ -19,7 +19,22 @@ export {
   TIME_SEGMENT_PARTS,
 } from './parts'
 export { getPlaceholder, type SupportedLocale } from './placeholders'
+export {
+  dayAdapter,
+  monthAdapter,
+  yearAdapter,
+} from './range-selection-adapters'
+export {
+  type EndpointSelectability,
+  type GranularityAdapter,
+  type InteriorBlocking,
+  type RangeSelectionState,
+  type RangeSelectionStateInput,
+  type SelectedFocusableUnit,
+  useRangeSelectionState,
+} from './range-selection-state'
 export * from './segment'
+
 export { toPublicTimeValue, toShellDateTime } from './timeValue'
 export type {
   AnyExceptLiteral,
@@ -39,7 +54,6 @@ export type {
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
-
 export { useDateField } from './useDateField'
 export {
   type DisplaySegment,

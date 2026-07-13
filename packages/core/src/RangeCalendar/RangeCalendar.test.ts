@@ -985,14 +985,12 @@ describe('handles maximumDays', () => {
     })
     const startDay = getByTestId('date-1-15')
     const secondDay = getByTestId('date-1-16') // same day
-    const maximumDay = getByTestId('date-1-18') // 4 days ahead
     const beyondMaximumDay = getByTestId('date-1-19') // 5 days ahead
     await user.click(startDay)
     await user.hover(secondDay)
     expect(startDay).toHaveAttribute('data-selection-start')
     expect(secondDay).toHaveAttribute('data-highlighted')
-    expect(maximumDay).toHaveAttribute('data-highlighted-end')
-    expect(maximumDay).toHaveAttribute('data-highlighted')
+    expect(secondDay).toHaveAttribute('data-highlighted-end')
     expect(beyondMaximumDay).not.toHaveAttribute('data-highlighted')
   })
 

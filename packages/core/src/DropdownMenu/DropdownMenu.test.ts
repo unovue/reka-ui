@@ -1,5 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { fireEvent, findAllByRole, findByRole, render } from '@testing-library/vue'
+import { findAllByRole, findByRole, fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'

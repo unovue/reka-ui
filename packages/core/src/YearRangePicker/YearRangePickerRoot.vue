@@ -8,9 +8,8 @@ import type { Direction } from '@/shared/types'
 import type { TemporalDate } from '@/temporal/types'
 import { isSameYear } from '@/date'
 import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
+import { getDefaultDate, handleCalendarInitialFocus, useRangeSelectionState, yearAdapter } from '@/shared/date'
 import { useYearPicker } from '@/YearPicker/useYearPicker'
-import { useRangeYearPickerState } from './useRangeYearPicker'
 
 type YearRangePickerRootContext = {
   modelValue: Ref<DateRange>
@@ -235,17 +234,20 @@ const {
   isSelectionEnd,
   isHighlightedStart,
   isHighlightedEnd,
-  isYearDisabled: rangeIsYearDisabled,
-} = useRangeYearPickerState({
+  isUnitDisabled,
+} = useRangeSelectionState({
+  adapter: yearAdapter,
   start: startValue,
   end: endValue,
-  isYearDisabled,
-  isYearUnavailable,
+  isEndpointDisabled: isYearDisabled,
+  isInteriorBlocked: (date: TemporalDate) => isYearUnavailable(date),
   focusedValue,
   allowNonContiguousRanges,
-  fixedDate,
-  maximumYears,
+  fixedEndpoint: fixedDate,
+  maximumSpan: maximumYears,
 })
+
+const rangeIsYearDisabled = isUnitDisabled
 
 watch(modelValue, (_modelValue) => {
   const next = normalizeRange(_modelValue)

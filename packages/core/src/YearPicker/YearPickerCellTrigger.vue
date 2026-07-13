@@ -4,8 +4,8 @@ import type { TemporalDate } from '@/temporal/types'
 import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
 import { isSameYear, toDate } from '@/date'
-import { toCalendar } from '@/temporal/calendar'
 import { useKbd } from '@/shared'
+import { toCalendar } from '@/temporal/calendar'
 import { endOfYear, startOfYear, toPlainDate } from '@/temporal/comparators'
 
 export interface YearPickerCellTriggerProps extends PrimitiveProps {
