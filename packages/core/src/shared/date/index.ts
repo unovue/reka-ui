@@ -20,7 +20,7 @@ export {
 } from './parts'
 export { getPlaceholder, type SupportedLocale } from './placeholders'
 export * from './segment'
-
+export { toPublicTimeValue, toShellDateTime } from './timeValue'
 export type {
   AnyExceptLiteral,
   DateAndTimeSegmentObj,
@@ -34,10 +34,34 @@ export type {
   SegmentContentObj,
   SegmentPart,
   SegmentValueObj,
-  TimeRange,
   TemporalDate,
+  TimeRange,
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
+
 export { useDateField } from './useDateField'
+export {
+  type DisplaySegment,
+  useDisplaySegmentContents,
+  type UseDisplaySegmentContentsProps,
+} from './useDisplaySegmentContents'
+export {
+  type RangeFieldFocusReturn,
+  useRangeFieldFocus,
+  type UseRangeFieldFocusProps,
+} from './useRangeFieldFocus'
+export {
+  useRangeFieldInvalidity,
+  type UseRangeFieldInvalidityProps,
+} from './useRangeFieldInvalidity'
+export {
+  useRangeFieldModel,
+  type UseRangeFieldModelProps,
+} from './useRangeFieldModel'
+export {
+  type SegmentFieldShellReturn,
+  useSegmentFieldShell,
+  type UseSegmentFieldShellProps,
+} from './useSegmentFieldShell'
 export * from './utils'
