@@ -18,13 +18,13 @@
   {
     'name': 'channel',
     'description': '<p>The color channel to display. If not provided, displays hex value.</p>\n',
-    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\'',
+    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\' | \'chroma\'',
     'required': false
   },
   {
     'name': 'colorSpace',
     'description': '<p>The color space to operate in when displaying a channel.</p>\n',
-    'type': '\'hsl\' | \'rgb\' | \'hsb\'',
+    'type': '\'hsl\' | \'rgb\' | \'hsb\' | \'oklch\'',
     'required': false,
     'default': '\'hsl\''
   },
@@ -116,8 +116,8 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `channel` | The color channel to display. If not provided, displays hex value. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | - |
-| `colorSpace` | The color space to operate in when displaying a channel. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
+| `channel` | The color channel to display. If not provided, displays hex value. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness" \| "chroma"` | No | - |
+| `colorSpace` | The color space to operate in when displaying a channel. | `"hsl" \| "rgb" \| "hsb" \| "oklch"` | No | `"hsl"` |
 | `defaultValue` | The default color value (uncontrolled). | `string \| Color` | No | `"#000000"` |
 | `disabled` | When true, prevents the user from interacting with the field. | `boolean` | No | `false` |
 | `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | `false` |
