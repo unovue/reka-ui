@@ -41,8 +41,8 @@ const useLockStackCount = createSharedComposable(() => {
     el.style.marginRight = initial?.marginRight ?? ''
     if (isBody)
       el.style.pointerEvents = ''
-    const cssVarTarget = isBody ? document.documentElement : el
-    cssVarTarget.style.removeProperty('--scrollbar-width')
+    const cssVarHolder = isBody ? document.documentElement : el
+    cssVarHolder.style.removeProperty('--scrollbar-width')
     el.style.overflow = initial?.overflow ?? ''
     isIOS && stopTouchMoveListeners.get(el)?.()
 
@@ -155,6 +155,15 @@ export function useScrollLock(
     return stacks.value.get(el)!
   }
 
+  const removeLock = (el: HTMLElement) => {
+    const ids = stacks.value.get(el)
+    if (!ids)
+      return
+    ids.delete(id)
+    if (ids.size === 0)
+      stacks.value.delete(el)
+  }
+
   // used to release the previously locked element if the target changed, so
   // we never leave a stale element locked.
   let registeredEl: HTMLElement | null = null
@@ -162,7 +171,7 @@ export function useScrollLock(
   const setLock = (value: boolean) => {
     const el = resolveTarget()
     if (registeredEl && registeredEl !== el)
-      stacks.value.get(registeredEl)?.delete(id)
+      removeLock(registeredEl)
     registeredEl = el
     if (el)
       getIds(el).set(id, value)
@@ -177,7 +186,7 @@ export function useScrollLock(
 
   tryOnBeforeUnmount(() => {
     if (registeredEl)
-      stacks.value.get(registeredEl)?.delete(id)
+      removeLock(registeredEl)
   })
 
   return locked
