@@ -77,7 +77,7 @@ const useLockStackCount = createSharedComposable(() => {
     // account for the existing padding and margin values
     const basePadding = Number.parseFloat(computedStyle.paddingRight) || 0
     const baseMargin = Number.parseFloat(computedStyle.marginRight) || 0
-    const defaultConfig = { padding: basePadding + verticalScrollbarWidth, margin: 0 }
+    const defaultConfig = { padding: basePadding + verticalScrollbarWidth, margin: baseMargin }
 
     const config = context.scrollBody?.value
       ? typeof context.scrollBody.value === 'object'
