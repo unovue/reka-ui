@@ -172,7 +172,7 @@ A contained dialog is modal within its container only:
 
 `DialogPortal`'s `:to` overrides the teleport target.
 
-`DialogOverlay`'s `:lock-target` overrides the scroll-lock target (with `:lock-target="null"` disables locking).
+`DialogOverlay`'s `:lock-target` overrides the scroll-lock target (setting `:lock-target="null"` disables locking).
 
 Both `DialogContent` and `DialogOverlay` render a `data-contained` attribute — use it to style it appropriately (e.g., switch positioning from `fixed` to `absolute`).
 
