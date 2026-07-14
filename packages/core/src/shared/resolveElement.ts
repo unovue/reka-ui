@@ -10,7 +10,13 @@ export function resolveElement(
   }
 
   if (typeof target === 'string') {
-    return document.querySelector<HTMLElement>(target)
+    try {
+      return document.querySelector<HTMLElement>(target)
+    }
+    catch {
+      // malformed selector - treat as unresolved
+      return null
+    }
   }
 
   return target
