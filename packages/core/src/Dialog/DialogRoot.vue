@@ -16,7 +16,7 @@ export interface DialogRootProps {
    * The element (or CSS selector) that contains this dialog:
    * - `DialogPortal` teleports into it,
    * - `DialogOverlay` positions against it, and scrolling is locked on it.
-   * Falls back to `document.body` if `undefined'.
+   * Falls back to `document.body` if `undefined`.
    */
   container?: HTMLElement | string | null
   /**
