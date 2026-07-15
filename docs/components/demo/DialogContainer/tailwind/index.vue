@@ -274,7 +274,6 @@ const isModal2 = ref(true)
     >
       <DialogTrigger
         class="text-grass11 font-semibold hover:bg-mauve3 inline-flex h-[35px] items-center justify-center rounded-md bg-white px-[15px] leading-none shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-black dark:focus:shadow-green8 focus:outline-none border"
-        @click="console.log(containerScroll2?.viewportElement)"
       >
         Open Dialog
       </DialogTrigger>
