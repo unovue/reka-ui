@@ -35,7 +35,7 @@ onMounted(() => {
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
 })
 
-const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
   const el = event.target as HTMLInputElement
   if (el)
     processInputValue(el.value)
@@ -66,7 +66,7 @@ function processInputValue(value: string) {
 }
 
 function handleInput(event: InputEvent) {
-  if (isComposing.value)
+  if (shouldDeferInput.value)
     return
   processInputValue((event.target as HTMLInputElement).value)
 }
@@ -170,6 +170,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     @focus="handleFocus"
     @blur="handleBlur"
     @compositionstart="handleCompositionStart"
+    @compositionupdate="handleCompositionUpdate"
     @compositionend="handleCompositionEnd"
   >
     <slot />
