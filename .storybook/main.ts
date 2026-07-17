@@ -61,6 +61,27 @@ const config: StorybookConfig = {
     // since ours runs last in the preset chain) so `.vue` files are compiled
     // before sb-addon-vue-csf processes them.
     merged.plugins = [vue(), ...(merged.plugins ?? [])]
+
+    // The vue-component-meta docgen plugin also transforms plain .ts modules,
+    // and its re-export guard (`export {.*name.*}` without a multiline flag)
+    // misses multiline `export { x } from '...'` blocks. On barrel files like
+    // `shared/date/index.ts` it then appends `x.__docgenInfo = ...` for names
+    // that have no local binding (re-exports don't create one), which throws
+    // "ReferenceError: x is not defined" at module evaluation in dev and
+    // breaks every story importing through the barrel. Constrain it to .vue
+    // files — Controls only reads docgen info from components anyway.
+    const metaPlugin = merged.plugins
+      .flat(Infinity)
+      .find((p: { name?: string }) => p?.name === 'storybook:vue-component-meta-plugin')
+    if (metaPlugin?.transform?.handler) {
+      const original = metaPlugin.transform.handler
+      metaPlugin.transform.handler = function (src: string, id: string) {
+        if (!id.split('?')[0].endsWith('.vue'))
+          return
+        return original.call(this, src, id)
+      }
+    }
+
     return merged
   },
 }
