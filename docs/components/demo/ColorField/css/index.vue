@@ -10,20 +10,20 @@ const color = ref('#56d799')
 </script>
 
 <template>
-  <div class="color-field-demo">
+  <div class="ColorFieldDemo">
     <ColorFieldRoot
       v-model="color"
-      class="color-field-demo__root"
+      class="ColorFieldRoot"
     >
-      <label class="color-field-demo__label">
+      <label class="ColorFieldLabel">
         Color
       </label>
-      <div class="color-field-demo__control">
+      <div class="ColorFieldControl">
         <div
-          class="color-field-demo__swatch"
+          class="ColorFieldSwatch"
           :style="{ background: color }"
         />
-        <ColorFieldInput class="color-field-demo__input" />
+        <ColorFieldInput class="ColorFieldInput" />
       </div>
     </ColorFieldRoot>
   </div>

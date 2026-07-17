@@ -11,24 +11,24 @@ const color = ref('#56d799')
 </script>
 
 <template>
-  <div class="color-slider-demo">
+  <div class="ColorSliderDemo">
     <ColorSliderRoot
       v-model="color"
       channel="hue"
-      class="color-slider-demo__root"
+      class="ColorSliderRoot"
     >
-      <ColorSliderTrack class="color-slider-demo__track">
-        <div class="color-slider-demo__track-fill" />
+      <ColorSliderTrack class="ColorSliderTrack">
+        <div class="ColorSliderTrackFill" />
       </ColorSliderTrack>
-      <ColorSliderThumb class="color-slider-demo__thumb" />
+      <ColorSliderThumb class="ColorSliderThumb" />
     </ColorSliderRoot>
 
-    <div class="color-slider-demo__value">
+    <div class="ColorSliderValue">
       <div
-        class="color-slider-demo__swatch"
+        class="ColorSliderSwatch"
         :style="{ background: color }"
       />
-      <span class="color-slider-demo__code">{{ color }}</span>
+      <span class="ColorSliderCode">{{ color }}</span>
     </div>
   </div>
 </template>

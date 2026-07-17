@@ -2,13 +2,13 @@
 @import '@radix-ui/colors/grass.css';
 @import '@radix-ui/colors/mauve.css';
 
-.color-slider-demo {
+.ColorSliderDemo {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.color-slider-demo__root {
+.ColorSliderRoot {
   position: relative;
   display: flex;
   align-items: center;
@@ -18,20 +18,20 @@
   user-select: none;
 }
 
-.color-slider-demo__track {
+.ColorSliderTrack {
   position: relative;
   flex: 1;
   height: 12px;
   border-radius: 9999px;
 }
 
-.color-slider-demo__track-fill {
+.ColorSliderTrackFill {
   position: absolute;
   inset: 0;
   border-radius: 9999px;
 }
 
-.color-slider-demo__thumb {
+.ColorSliderThumb {
   display: block;
   width: 20px;
   height: 20px;
@@ -43,16 +43,16 @@
   transition: transform 150ms;
 }
 
-.color-slider-demo__thumb:hover {
+.ColorSliderThumb:hover {
   transform: scale(1.1);
 }
 
-.color-slider-demo__thumb:focus {
+.ColorSliderThumb:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--grass-7);
 }
 
-.color-slider-demo__value {
+.ColorSliderValue {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -60,7 +60,7 @@
   font-size: 12px;
 }
 
-.color-slider-demo__swatch {
+.ColorSliderSwatch {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
@@ -68,6 +68,6 @@
   border-radius: 4px;
 }
 
-.color-slider-demo__code {
+.ColorSliderCode {
   font-family: monospace;
 }
