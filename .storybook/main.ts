@@ -10,15 +10,13 @@ const config: StorybookConfig = {
   framework: {
     name: '@storybook/vue3-vite',
     options: {
-      // Storybook's default docgen (vue-docgen-api) chokes on `<script setup
-      // lang="ts" generic="T">` SFCs (e.g. VisuallyHidden.vue,
-      // VisuallyHiddenInput.vue) with a hard parse error ("Unexpected token,
-      // expected ','"), which breaks the preview for any story that
-      // transitively imports one. There's no per-file disable knob at this
-      // config layer, so it can't be scoped to just the offending files.
-      // Disable docgen entirely here; these stories don't use Controls or
-      // auto-generated prop tables, so this is a no-op for them.
-      docgen: false,
+      // Storybook's default docgen engine (vue-docgen-api) hard-crashes on
+      // `<script setup lang="ts" generic="T">` SFCs (e.g. VisuallyHidden
+      // family), breaking the preview for any story that transitively imports
+      // one. The TS-based vue-component-meta engine handles them (verified:
+      // full build passes with docgen info emitted) — don't switch back
+      // without re-testing against the generic SFCs.
+      docgen: 'vue-component-meta',
     },
   },
   core: {
