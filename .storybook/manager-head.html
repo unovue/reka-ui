@@ -1,0 +1,32 @@
+<style>
+  /* Geist fonts served from staticDirs (../docs/content/public/fonts). */
+  @font-face {
+    font-family: 'Geist';
+    src: url('./fonts/Geist%5Bwght%5D.ttf');
+  }
+  @font-face {
+    font-family: 'GeistMono';
+    src: url('./fonts/GeistMono%5Bwght%5D.ttf');
+  }
+
+  /*
+   * Storybook hardcodes a few blues that theming's create() doesn't expose;
+   * recolor them to the reka-ui brand green.
+   */
+
+  /* Sidebar row hover/focus (defaults to #233952) */
+  #storybook-explorer-tree .sidebar-item:hover,
+  #storybook-explorer-tree .sidebar-item:focus {
+    --tree-node-background-hover: #222c24 !important;
+  }
+
+  /* Sidebar section action buttons pressed state (defaults to #233952) */
+  .sidebar-subheading-action:active {
+    background: rgba(22, 163, 74, 0.2) !important;
+  }
+
+  /* Addon tab count badge (defaults to #233952) */
+  [role='tab'] > div > div {
+    background: rgba(22, 163, 74, 0.2) !important;
+  }
+</style>

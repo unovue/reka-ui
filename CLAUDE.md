@@ -17,12 +17,13 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 - `packages/core/src/date/` — date/calendar utilities.
 - `packages/plugins` — build-tool integration (resolver, Nuxt module).
 - `docs/` — VitePress site; `docs/content/meta/*.md` is AUTO-GENERATED (never hand-edit).
-- Stories are Histoire (`*.story.vue`), not Storybook.
+- `.storybook/` — Storybook workspace package (`@reka-ui/storybook`); run via root scripts `pnpm story:dev` / `pnpm story:build`.
 
 ## Conventions
 - Context: `createContext('<Component>')` → `[inject, provide]`; `*Root.vue` provides, descendants inject.
 - Rendering: `Primitive` with `as` / `asChild`; expose refs via `useForwardExpose()`.
 - Tests: colocated `*.test.ts`, vitest + jsdom + `@testing-library/vue` + `vitest-axe` (axe check expected for new components); jsdom quirks handled in `packages/core/vitest.setup.ts`.
+- Stories are Storybook `*.stories.vue` files using sb-addon-vue-csf (Vue CSF: `defineMeta` + `<Story>`); config lives in `.storybook/`.
 - Commits: Conventional Commits, scope = component family (`fix(Dialog): …`); commitlint enforces; lint-staged runs `eslint --fix` (lints JSON/MD/YAML too — intentional).
 
 See CONTRIBUTING.md for the full guide.

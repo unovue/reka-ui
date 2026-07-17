@@ -14,7 +14,7 @@ import {
 
 // Shared "default" drawer used by the Default story variant. All styles
 // (keyframes, .drawer-content-bottom, .drawer-handle, .drawer-overlay,
-// .drawer-button) are defined once in Drawer.story.vue's global <style>
+// .drawer-button) are defined once in Drawer.stories.vue's global <style>
 // block — do not duplicate them here or both rules compete and the
 // enter/exit keyframes collide with the drag transform on release
 // (the "bounce" bug).

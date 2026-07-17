@@ -1,0 +1,24 @@
+{
+  "name": "@reka-ui/storybook",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "storybook dev -p 6006 -c .",
+    "build": "storybook build -c ."
+  },
+  "devDependencies": {
+    "@iconify/vue": "^4.3.0",
+    "@radix-ui/colors": "^3.0.0",
+    "@storybook/vue3-vite": "^10.4.6",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "sb-addon-vue-csf": "^0.0.3",
+    "storybook": "^10.4.6",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "1.0.7",
+    "vite": "^7.3.6",
+    "vue": "^3.5.17"
+  }
+}

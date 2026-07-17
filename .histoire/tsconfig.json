@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@iconify/vue": ["node_modules/@iconify/vue/dist/iconify.mjs"]
-    }
-  },
-  "includes": ["../packages/core/src/**/*.vue", "../packages/core/src/**/*.ts"]
-}

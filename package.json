@@ -10,7 +10,8 @@
     "packages/*"
   ],
   "scripts": {
-    "story:dev": "pnpm --filter histoire story:dev --open",
+    "story:dev": "pnpm --filter @reka-ui/storybook dev",
+    "story:build": "pnpm --filter @reka-ui/storybook build",
     "build": "pnpm run --filter reka-ui build && pnpm run --filter plugins build",
     "build-only": "pnpm run -r build-only",
     "docs:install": "pnpm --filter docs install",

@@ -7,10 +7,11 @@
 
     "paths": {
       "@/*": ["./src/*"],
-      "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
+      "@iconify/vue": ["../../.storybook/node_modules/@iconify/vue"],
+      "sb-addon-vue-csf": ["../../.storybook/node_modules/sb-addon-vue-csf"]
     },
     // TODO: set skipLibCheck to false (#2043)
-    // Ideally we should set this to false, but histoire and vueuse are being difficult...
+    // Ideally we should set this to false, but vueuse is being difficult...
     // For now, keep it disabled...
     "skipLibCheck": true
   },

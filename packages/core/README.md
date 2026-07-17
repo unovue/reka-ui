@@ -66,7 +66,7 @@ We would love to have your contributions! All PRs are welcome! We need help buil
 
 1. Clone the repo
 2. Run `pnpm i`
-3. Run `pnpm story:dev` to run histoire (storybook)
+3. Run `pnpm story:dev` to run Storybook
 4. Open `http://localhost:6006`
 5. Run `pnpm test` to test changes
 
