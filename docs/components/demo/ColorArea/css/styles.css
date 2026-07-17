@@ -2,22 +2,22 @@
 @import '@radix-ui/colors/grass.css';
 @import '@radix-ui/colors/mauve.css';
 
-.color-area-demo {
+.ColorAreaDemo {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.color-area-demo__value {
+.ColorAreaValue {
   color: var(--mauve-11);
   font-size: 14px;
 }
 
-.color-area-demo__root {
+.ColorAreaRoot {
   position: relative;
 }
 
-.color-area-demo__area {
+.ColorAreaArea {
   position: relative;
   width: 200px;
   height: 200px;
@@ -25,12 +25,12 @@
   border-radius: 8px;
 }
 
-.color-area-demo__area:focus {
+.ColorAreaArea:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--grass-7);
 }
 
-.color-area-demo__thumb {
+.ColorAreaThumb {
   display: block;
   width: 16px;
   height: 16px;

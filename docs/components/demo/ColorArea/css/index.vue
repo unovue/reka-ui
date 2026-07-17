@@ -11,21 +11,21 @@ const color = ref('#56d799')
 </script>
 
 <template>
-  <div class="color-area-demo">
-    <div class="color-area-demo__value">
+  <div class="ColorAreaDemo">
+    <div class="ColorAreaValue">
       Current: {{ color }}
     </div>
 
     <ColorAreaRoot
       v-slot="{ style }"
       v-model="color"
-      class="color-area-demo__root"
+      class="ColorAreaRoot"
     >
       <ColorAreaArea
-        class="color-area-demo__area"
+        class="ColorAreaArea"
         :style="style"
       >
-        <ColorAreaThumb class="color-area-demo__thumb" />
+        <ColorAreaThumb class="ColorAreaThumb" />
       </ColorAreaArea>
     </ColorAreaRoot>
   </div>
