@@ -10,8 +10,10 @@ export interface RatingRootContext {
   hoveredRating: Ref<number>
   disabled: Ref<boolean>
   step: Ref<number>
+  hoverable: Ref<boolean>
   changeModelValue: (rating: number) => void
   changeHoveredRating: (rating: number) => void
+  resetHoveredRating: () => void
 }
 
 export interface RatingRootProps extends Omit<RadioGroupRootProps, 'modelValue' | 'defaultValue'> {
@@ -91,6 +93,12 @@ function changeHoveredRating(rating: number) {
 
   hoveredRating.value = rating
 }
+function resetHoveredRating() {
+  if (disabled.value || !hoverable.value)
+    return
+
+  hoveredRating.value = 0
+}
 
 provideRatingRootContext({
   modelValue,
@@ -98,8 +106,10 @@ provideRatingRootContext({
   hoveredRating,
   disabled,
   step,
+  hoverable,
   changeModelValue,
   changeHoveredRating,
+  resetHoveredRating,
 })
 </script>
 
@@ -107,6 +117,7 @@ provideRatingRootContext({
   <RadioGroupRoot
     v-bind="reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step')"
     :disabled="disabled"
+    @mouseleave="resetHoveredRating"
   >
     <slot
       :items="items"
