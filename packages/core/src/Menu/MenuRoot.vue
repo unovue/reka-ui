@@ -2,7 +2,6 @@
 import type { Ref } from 'vue'
 import type { Direction } from './utils'
 import { createContext, useDirection } from '@/shared'
-import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
 
 export interface MenuContext {
   open: Ref<boolean>
@@ -48,44 +47,25 @@ export const [injectMenuRootContext, provideMenuRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import {
-  ref,
-  toRefs,
-} from 'vue'
+import { toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { useMenuRoot } from './useMenu'
 
 const props = withDefaults(defineProps<MenuProps>(), {
   open: false,
   modal: true,
 })
 const emits = defineEmits<MenuEmits>()
+// `useVModel` + `useDirection` (ConfigProvider-aware) stay in the shell; the
+// composable receives the resolved refs and builds the two context objects.
 const { modal, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-
 const open = useVModel(props, 'open', emits)
 
-const content = ref<HTMLElement>()
-const isUsingKeyboardRef = useIsUsingKeyboard()
+const { menuContext, menuRootContext } = useMenuRoot({ open, dir, modal })
 
-provideMenuContext({
-  open,
-  onOpenChange: (value) => {
-    open.value = value
-  },
-  content,
-  onContentChange: (element) => {
-    content.value = element
-  },
-})
-
-provideMenuRootContext({
-  onClose: () => {
-    open.value = false
-  },
-  isUsingKeyboardRef,
-  dir,
-  modal,
-})
+provideMenuContext(menuContext)
+provideMenuRootContext(menuRootContext)
 </script>
 
 <template>
