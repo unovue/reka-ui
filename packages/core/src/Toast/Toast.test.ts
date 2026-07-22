@@ -32,6 +32,23 @@ describe('given a default Toast', () => {
     expect(toastElement?.getAttribute('tabindex')).toBe('0')
   })
 
+  it('should have focus proxies that are focusable but not aria-hidden', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // The viewport renders head/tail focus proxies: tabbable sentinels
+    // (tabindex="0") that catch focus entering or leaving the viewport and
+    // redirect it onto a toast. A tabbable element must not be aria-hidden,
+    // otherwise axe reports an `aria-hidden-focus` violation.
+    const proxies = Array.from(
+      document.querySelectorAll<HTMLElement>('[tabindex="0"]'),
+    ).filter(el => el.style.position === 'fixed')
+
+    expect(proxies).toHaveLength(2)
+    for (const proxy of proxies)
+      expect(proxy.getAttribute('aria-hidden')).toBeNull()
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(document.body)).toHaveNoViolations()
 
