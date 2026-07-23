@@ -443,6 +443,23 @@ describe('dateField', async () => {
     }
   })
 
+  it('advances focus through segments in DOM order when typing in RTL', async () => {
+    const { user, month, day, year } = setup({
+      dateFieldProps: {
+        dir: 'rtl',
+      },
+    })
+
+    await user.click(month)
+    expect(month).toHaveFocus()
+    await user.keyboard('{2}')
+    expect(day).toHaveFocus()
+    await user.keyboard('{19}')
+    expect(year).toHaveFocus()
+    await user.keyboard('{1980}')
+    expect(year).toHaveTextContent('1980')
+  })
+
   it('adjusts the hour cycle with the `hourCycle` prop', async () => {
     const { getByTestId, queryByTestId, user } = setup({
       dateFieldProps: {

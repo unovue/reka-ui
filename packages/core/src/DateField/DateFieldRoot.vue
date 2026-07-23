@@ -287,7 +287,10 @@ provideDateFieldRootContext({
   elements: segmentElements,
   setFocusedElement,
   focusNext() {
-    nextFocusableSegment.value?.focus()
+    // Auto-advance follows the segments' DOM order (the locale's format
+    // order) regardless of writing direction; only arrow-key navigation is
+    // direction-aware via nextFocusableSegment/prevFocusableSegment.
+    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
   },
 })
 
