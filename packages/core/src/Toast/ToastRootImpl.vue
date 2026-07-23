@@ -141,10 +141,10 @@ watchEffect((cleanupFn) => {
     }
     viewport.addEventListener(VIEWPORT_PAUSE, handlePause)
     viewport.addEventListener(VIEWPORT_RESUME, handleResume)
-    return () => {
+    cleanupFn(() => {
       viewport.removeEventListener(VIEWPORT_PAUSE, handlePause)
       viewport.removeEventListener(VIEWPORT_RESUME, handleResume)
-    }
+    })
   }
 })
 
