@@ -47,6 +47,22 @@ it('should pass axe accessibility tests', async () => {
 })
 
 describe('timeField', () => {
+  it('advances focus through segments in DOM order when typing in RTL', async () => {
+    const { user, start, end } = setup({
+      timeRangeFieldProps: {
+        dir: 'rtl',
+        locale: 'en-GB',
+      },
+    })
+
+    await user.click(start.hour)
+    expect(start.hour).toHaveFocus()
+    await user.keyboard('{11}')
+    expect(start.minute).toHaveFocus()
+    await user.keyboard('{45}')
+    expect(end.hour).toHaveFocus()
+  })
+
   it('populates segment with value - `Time`', async () => {
     const { start, end } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
