@@ -51,6 +51,7 @@ import { createFocusScopesStack } from './stack'
 import {
   AUTOFOCUS_ON_MOUNT,
   AUTOFOCUS_ON_UNMOUNT,
+  containsComposed,
   EVENT_OPTIONS,
   focus,
   focusFirst,
@@ -97,7 +98,8 @@ watchEffect((cleanupFn) => {
   // originating inside a shadow root are retargeted to the host, so
   // `container.contains(target)` never matches and focus escapes the trap.
   // -- related: https://github.com/unovue/reka-ui/issues/1667
-  const ownerRoot = (container?.getRootNode() as Document | ShadowRoot | null) ?? document
+  const ownerDocument = container?.ownerDocument ?? document
+  const root = container ? (container.getRootNode() as Document | ShadowRoot) : ownerDocument
 
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
@@ -160,15 +162,32 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  ownerRoot.addEventListener('focusin', handleFocusIn as EventListener)
-  ownerRoot.addEventListener('focusout', handleFocusOut as EventListener)
+  // A shadow root never sees a light-DOM `focusin`: when focus escapes to an
+  // element outside the shadow tree, the event fires on the owner document, not
+  // the root. So when the scope lives in a shadow root we also listen on the
+  // document and use a composed (deep) containment check, since `event.target`
+  // is retargeted to the shadow host at the document level.
+  function handleDocumentFocusIn(event: FocusEvent) {
+    if (focusScope.paused || !container)
+      return
+    const target = event.composedPath()[0] as HTMLElement | null
+    if (!containsComposed(container, target))
+      focus(lastFocusedElementRef.value, { select: true })
+  }
+
+  root.addEventListener('focusin', handleFocusIn as EventListener)
+  root.addEventListener('focusout', handleFocusOut as EventListener)
+  if (root !== ownerDocument)
+    ownerDocument.addEventListener('focusin', handleDocumentFocusIn as EventListener)
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    ownerRoot.removeEventListener('focusin', handleFocusIn as EventListener)
-    ownerRoot.removeEventListener('focusout', handleFocusOut as EventListener)
+    root.removeEventListener('focusin', handleFocusIn as EventListener)
+    root.removeEventListener('focusout', handleFocusOut as EventListener)
+    if (root !== ownerDocument)
+      ownerDocument.removeEventListener('focusin', handleDocumentFocusIn as EventListener)
     mutationObserver.disconnect()
   })
 })
