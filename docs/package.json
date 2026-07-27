@@ -22,7 +22,7 @@
     "vue-sonner": "^2.0.9"
   },
   "devDependencies": {
-    "@babel/traverse": "^7.26.7",
+    "@babel/traverse": "^8.0.4",
     "@iconify/vue": "^4.3.0",
     "@radix-ui/colors": "^3.0.0",
     "@tailwindcss/typography": "^0.5.16",
