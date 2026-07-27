@@ -317,8 +317,9 @@ function handlePointerDown(event: PointerEvent) {
 
   valuesBeforeSlideStartRef.value = currentModelValue.value
 
-  if (thumbElements.value.includes(target)) {
-    target.focus()
+  const matchedThumb = thumbElements.value.find(thumb => thumb.contains(target))
+  if (matchedThumb) {
+    matchedThumb.focus()
   }
   else {
     handleSlideStart(event)

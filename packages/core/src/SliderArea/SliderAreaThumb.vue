@@ -46,14 +46,19 @@ const thumbInBoundsOffsetY = computed(() => {
 
 const isMounted = useMounted()
 
+let mountedEl: HTMLElement | undefined
 onMounted(() => {
-  if (currentElement.value)
-    rootContext.thumbElements.value.push(currentElement.value)
+  if (currentElement.value) {
+    mountedEl = currentElement.value
+    rootContext.thumbElements.value.push(mountedEl)
+  }
 })
 onUnmounted(() => {
-  const i = rootContext.thumbElements.value.findIndex(el => el === currentElement.value)
-  if (i >= 0)
-    rootContext.thumbElements.value.splice(i, 1)
+  if (mountedEl) {
+    const i = rootContext.thumbElements.value.findIndex(el => el === mountedEl)
+    if (i >= 0)
+      rootContext.thumbElements.value.splice(i, 1)
+  }
 })
 </script>
 
