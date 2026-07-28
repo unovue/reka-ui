@@ -38,7 +38,7 @@ export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCy
 }
 
 type GetDefaultDateStepProps = {
-  step?: DateStep
+  step?: DateStep | undefined
 }
 
 export function normalizeDateStep(props?: GetDefaultDateStepProps): DateStep {

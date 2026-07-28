@@ -7,32 +7,32 @@ import { computed, ref, toRefs } from 'vue'
 import { clamp, createContext, isNullish, snapValueToStep, useFormControl, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
-  defaultValue?: number
-  modelValue?: number | null
+  defaultValue?: number | undefined
+  modelValue?: number | null | undefined
   /** The smallest value allowed for the input. */
-  min?: number
+  min?: number | undefined
   /** The largest value allowed for the input. */
-  max?: number
+  max?: number | undefined
   /** The amount that the input value changes with each increment or decrement "tick". */
-  step?: number
+  step?: number | undefined
   /** When `false`, prevents the value from snapping to the nearest increment of the step value */
-  stepSnapping?: boolean
+  stepSnapping?: boolean | undefined
   /** When `true`, the input will be focused when the value changes. */
-  focusOnChange?: boolean
+  focusOnChange?: boolean | undefined
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
-  formatOptions?: Intl.NumberFormatOptions
+  formatOptions?: Intl.NumberFormatOptions | undefined
   /** The locale to use for formatting and currencies */
-  locale?: string
+  locale?: string | undefined
   /** When `true`, prevents the user from interacting with the Number Field. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** When `true`, the Number Field is read-only. */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** When `true`, prevents the value from changing on wheel scroll. */
-  disableWheelChange?: boolean
+  disableWheelChange?: boolean | undefined
   /** When `true`, inverts the direction of the wheel change. */
-  invertWheelChange?: boolean
+  invertWheelChange?: boolean | undefined
   /** Id of the element */
-  id?: string
+  id?: string | undefined
 }
 
 export type NumberFieldRootEmits = {

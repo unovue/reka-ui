@@ -8,7 +8,7 @@ export interface MenuSubContext {
   triggerId: string
   trigger: Ref<HTMLElement | undefined>
   onTriggerChange: (trigger: HTMLElement | undefined) => void
-  parentMenuContext?: MenuContext
+  parentMenuContext?: MenuContext | undefined
 }
 
 export const [injectMenuSubContext, provideMenuSubContext]
@@ -16,7 +16,7 @@ export const [injectMenuSubContext, provideMenuSubContext]
 
 export interface MenuSubProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
 }
 
 export type MenuSubEmits = {

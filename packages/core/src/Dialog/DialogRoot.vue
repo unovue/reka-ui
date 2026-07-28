@@ -4,20 +4,20 @@ import { createContext } from '@/shared'
 
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
   /** The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /**
    * The modality of the dialog When set to `true`, <br>
    * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
    */
-  modal?: boolean
+  modal?: boolean | undefined
   /**
    * When set to `false`, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br>
    * Useful for SEO or when you want to improve performance by not remounting the component on every open.
    * @defaultValue true
    */
-  unmountOnHide?: boolean
+  unmountOnHide?: boolean | undefined
 }
 
 export type DialogRootEmits = {
@@ -60,12 +60,12 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
 const emit = defineEmits<DialogRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
     /** Close the dialog */
     close: () => void
-  }) => any
+  }) => any) | undefined
 }>()
 
 const open = useVModel(props, 'open', emit, {

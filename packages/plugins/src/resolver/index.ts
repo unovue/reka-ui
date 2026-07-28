@@ -8,7 +8,7 @@ export interface ResolverOptions {
    *
    * @defaultValue ""
    */
-  prefix?: string
+  prefix?: string | undefined
 }
 
 export default function (options: ResolverOptions = {}): ComponentResolver {

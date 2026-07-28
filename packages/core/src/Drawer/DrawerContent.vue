@@ -3,7 +3,7 @@ import type { DrawerContentImplEmits, DrawerContentImplProps } from './DrawerCon
 
 export type DrawerContentEmits = DrawerContentImplEmits
 export interface DrawerContentProps extends Omit<DrawerContentImplProps, 'trapFocus'> {
-  forceMount?: boolean
+  forceMount?: boolean | undefined
 }
 </script>
 

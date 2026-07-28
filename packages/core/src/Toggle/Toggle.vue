@@ -16,15 +16,15 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
   /**
    * The pressed state of the toggle when it is initially rendered. Use when you do not need to control its open state.
    */
-  defaultValue?: boolean
+  defaultValue?: boolean | undefined
   /**
    * The controlled pressed state of the toggle. Can be bind as `v-model`.
    */
-  modelValue?: boolean | null
+  modelValue?: boolean | null | undefined
   /**
    * When `true`, prevents the user from interacting with the toggle.
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 
@@ -47,7 +47,7 @@ const props = withDefaults(defineProps<ToggleProps>(), {
 const emits = defineEmits<ToggleEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current value */
     modelValue: typeof modelValue.value
     /** Current state */
@@ -56,7 +56,7 @@ defineSlots<{
     pressed: typeof modelValue.value
     /** Current disabled state */
     disabled: boolean
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()

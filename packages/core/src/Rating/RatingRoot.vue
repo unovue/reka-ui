@@ -18,17 +18,17 @@ export interface RatingRootProps extends Omit<RadioGroupRootProps, 'modelValue' 
   /**
    * The rating value when initially rendered. Use when you do not need to control the state of the rating.
    */
-  defaultValue?: number
+  defaultValue?: number | undefined
   /** The controlled rating value. Can be bound with `v-model`. */
-  modelValue?: number
+  modelValue?: number | undefined
   /** The number of rating items to render. */
-  length?: number
+  length?: number | undefined
   /** When `true`, clicking the currently selected rating resets the value to `0`. */
-  clearable?: boolean
+  clearable?: boolean | undefined
   /** When `true`, the rating previews the value under the pointer on hover. */
-  hoverable?: boolean
+  hoverable?: boolean | undefined
   /** The granularity each rating item is divided into. */
-  step?: 1 | 0.5 | 0.25 | 0.1
+  step?: 1 | 0.5 | 0.25 | 0.1 | undefined
 }
 export type RatingRootEmits = {
   /** Event handler called when the value changes */
@@ -51,10 +51,10 @@ const props = withDefaults(defineProps<RatingRootProps>(), {
 const emits = defineEmits<RatingRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     modelValue: number | undefined
     items: number[]
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { length, disabled, clearable, hoverable, step } = toRefs(props)

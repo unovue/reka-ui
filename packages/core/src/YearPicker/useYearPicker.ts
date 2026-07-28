@@ -14,8 +14,8 @@ export type UseYearPickerProps = {
   maxValue: Ref<DateValue | undefined>
   disabled: Ref<boolean>
   yearsPerPage: Ref<number>
-  isYearDisabled?: Matcher | Ref<Matcher | undefined>
-  isYearUnavailable?: Matcher | Ref<Matcher | undefined>
+  isYearDisabled?: Matcher | Ref<Matcher | undefined> | undefined
+  isYearUnavailable?: Matcher | Ref<Matcher | undefined> | undefined
   calendarLabel: Ref<string | undefined>
   nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
   prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>

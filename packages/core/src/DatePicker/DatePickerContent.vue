@@ -8,7 +8,7 @@ export interface DatePickerContentProps extends PopoverContentProps {
   /**
    * Props to control the portal wrapped around the content.
    */
-  portal?: PopoverPortalProps
+  portal?: PopoverPortalProps | undefined
 }
 export interface DatePickerContentEmits extends PopoverContentEmits {}
 </script>

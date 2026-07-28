@@ -10,12 +10,12 @@ export type ToastRootEmits = Omit<ToastRootImplEmits, 'close'> & {
 
 export interface ToastRootProps extends ToastRootImplProps {
   /** The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
 }
 </script>
 
@@ -34,14 +34,14 @@ const props = withDefaults(defineProps<ToastRootProps>(), {
 const emits = defineEmits<ToastRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
     /** Remaining time (in ms) */
     remaining: number
     /** Total time the toast will remain visible for (in ms) */
     duration: number
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { forwardRef } = useForwardExpose()

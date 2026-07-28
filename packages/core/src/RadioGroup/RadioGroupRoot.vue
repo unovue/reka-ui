@@ -6,21 +6,21 @@ import { createContext, useDirection, useFormControl, useForwardExpose } from '@
 
 export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the radio item to check. Can be binded as `v-model`. */
-  modelValue?: AcceptableValue
+  modelValue?: AcceptableValue | undefined
   /**
    * The value of the radio item that should be checked when initially rendered.
    *
    * Use when you do not need to control the state of the radio items.
    */
-  defaultValue?: AcceptableValue
+  defaultValue?: AcceptableValue | undefined
   /** When `true`, prevents the user from interacting with radio items. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** The orientation of the component. */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
-  loop?: boolean
+  loop?: boolean | undefined
 }
 export type RadioGroupRootEmits = {
   /** Event handler called when the radio group value changes */
@@ -28,12 +28,12 @@ export type RadioGroupRootEmits = {
 }
 
 interface RadioGroupRootContext {
-  modelValue?: Readonly<Ref<AcceptableValue | undefined>>
+  modelValue?: Readonly<Ref<AcceptableValue | undefined>> | undefined
   changeModelValue: (value?: AcceptableValue) => void
   disabled: Ref<boolean>
   loop: Ref<boolean>
   orientation: Ref<DataOrientation | undefined>
-  name?: string
+  name?: string | undefined
   required: Ref<boolean>
 }
 
@@ -58,10 +58,10 @@ const props = withDefaults(defineProps<RadioGroupRootProps>(), {
 const emits = defineEmits<RadioGroupRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()

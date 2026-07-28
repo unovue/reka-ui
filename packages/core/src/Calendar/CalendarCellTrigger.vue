@@ -20,7 +20,7 @@ export interface CalendarCellTriggerProps extends PrimitiveProps {
 }
 
 export interface CalendarCellTriggerSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current day */
     dayValue: string
     /** Current disable state */
@@ -35,7 +35,7 @@ export interface CalendarCellTriggerSlot {
     outsideVisibleView: boolean
     /** Current unavailable state */
     unavailable: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

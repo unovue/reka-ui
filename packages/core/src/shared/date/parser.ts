@@ -85,7 +85,7 @@ type SharedContentProps = {
   formatter: Formatter
   hideTimeZone: boolean
   hourCycle: HourCycle
-  isTimeValue?: boolean
+  isTimeValue?: boolean | undefined
 }
 
 type CreateContentObjProps = SharedContentProps & {

@@ -14,7 +14,7 @@ export function isNotNull<T>(value: T | null): value is T {
 export function transformOrigin(options: {
   arrowWidth: number
   arrowHeight: number
-  dir?: Direction
+  dir?: Direction | undefined
 }): Middleware {
   return {
     name: 'transformOrigin',

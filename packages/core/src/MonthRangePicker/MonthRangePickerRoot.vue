@@ -30,7 +30,7 @@ type MonthRangePickerRootContext = {
   headingId: string
   isInvalid: Ref<boolean>
   isMonthDisabled: Matcher
-  isMonthUnavailable?: Matcher
+  isMonthUnavailable?: Matcher | undefined
   allowNonContiguousRanges: Ref<boolean>
   highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
   focusedValue: Ref<DateValue | undefined>
@@ -54,45 +54,45 @@ type MonthRangePickerRootContext = {
 
 export interface MonthRangePickerRootProps extends PrimitiveProps {
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The default value for the calendar */
-  defaultValue?: DateRange
+  defaultValue?: DateRange | undefined
   /** The controlled selected month range of the month range picker. Can be bound as `v-model`. */
-  modelValue?: DateRange | null
+  modelValue?: DateRange | null | undefined
   /** The placeholder date, which is used to determine what year to display when no date is selected. */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** When combined with `isMonthUnavailable`, determines whether non-contiguous ranges may be selected. */
-  allowNonContiguousRanges?: boolean
+  allowNonContiguousRanges?: boolean | undefined
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
-  preventDeselect?: boolean
+  preventDeselect?: boolean | undefined
   /** The maximum number of months that can be selected in a range */
-  maximumMonths?: number
+  maximumMonths?: number | undefined
   /** The accessible label for the calendar */
-  calendarLabel?: string
+  calendarLabel?: string | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** Whether or not the calendar is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether or not the calendar is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** If true, the calendar will focus the selected month on mount */
-  initialFocus?: boolean
+  initialFocus?: boolean | undefined
   /** A function that returns whether or not a month is disabled */
-  isMonthDisabled?: Matcher
+  isMonthDisabled?: Matcher | undefined
   /** A function that returns whether or not a month is unavailable */
-  isMonthUnavailable?: Matcher
+  isMonthUnavailable?: Matcher | undefined
   /** The reading direction of the calendar when applicable. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** A function that returns the next page of the calendar. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** A function that returns the previous page of the calendar. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** Which part of the range should be fixed */
-  fixedDate?: 'start' | 'end'
+  fixedDate?: 'start' | 'end' | undefined
 }
 
 export type MonthRangePickerRootEmits = {
@@ -129,7 +129,7 @@ const props = withDefaults(defineProps<MonthRangePickerRootProps>(), {
 const emits = defineEmits<MonthRangePickerRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of months */
@@ -138,7 +138,7 @@ defineSlots<{
     locale: string
     /** The current date range */
     modelValue: DateRange
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

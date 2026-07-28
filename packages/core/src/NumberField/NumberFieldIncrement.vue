@@ -5,7 +5,7 @@ import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 import { usePressedHold } from './utils'
 
 export interface NumberFieldIncrementProps extends PrimitiveProps {
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

@@ -5,7 +5,7 @@ import { unrefElement, useEventListener } from '@vueuse/core'
 import { createEventHook, isClient, reactiveComputed } from '@vueuse/shared'
 import { computed, ref } from 'vue'
 
-export function usePressedHold(options: { target?: MaybeComputedElementRef, disabled: Ref<boolean> }) {
+export function usePressedHold(options: { target?: MaybeComputedElementRef | undefined, disabled: Ref<boolean> }) {
   const { disabled } = options
   const timeout = ref<number>()
   const triggerHook = createEventHook()

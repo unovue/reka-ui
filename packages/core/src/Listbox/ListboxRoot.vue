@@ -16,12 +16,12 @@ type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
+  virtualFocusHook: EventHook<{ event?: Event | undefined, scroll: boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
   virtualHighlightHook: EventHook<any>
-  by?: string | ((a: T, b: T) => boolean)
-  firstValue?: Ref<T | undefined>
-  selectionBehavior?: Ref<'toggle' | 'replace'>
+  by?: string | ((a: T, b: T) => boolean) | undefined
+  firstValue?: Ref<T | undefined> | undefined
+  selectionBehavior?: Ref<'toggle' | 'replace'> | undefined
 
   focusable: Ref<boolean>
 
@@ -41,26 +41,26 @@ export const [injectListboxRootContext, provideListboxRootContext]
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
-  modelValue?: T | Array<T>
+  modelValue?: T | Array<T> | undefined
   /** The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox */
-  defaultValue?: T | Array<T>
+  defaultValue?: T | Array<T> | undefined
   /** Whether multiple options can be selected or not. */
-  multiple?: boolean
+  multiple?: boolean | undefined
   /** The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** When `true`, prevents the user from interacting with listbox */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * How multiple selection should behave in the collection.
    * @defaultValue 'toggle'
    */
-  selectionBehavior?: 'toggle' | 'replace'
+  selectionBehavior?: 'toggle' | 'replace' | undefined
   /** When `true`, hover over item will trigger highlight */
-  highlightOnHover?: boolean
+  highlightOnHover?: boolean | undefined
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
-  by?: string | ((a: T, b: T) => boolean)
+  by?: string | ((a: T, b: T) => boolean) | undefined
 }
 
 export type ListboxRootEmits<T = AcceptableValue> = {
@@ -92,10 +92,10 @@ const props = withDefaults(defineProps<ListboxRootProps>(), {
 const emits = defineEmits<ListboxRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current active value */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { multiple, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
@@ -150,7 +150,7 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
+const virtualFocusHook = createEventHook<{ event?: Event | undefined, scroll: boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<T>()
 

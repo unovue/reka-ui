@@ -4,8 +4,8 @@ import { useVModel } from '@vueuse/core'
 import { useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by'> {
-  defaultValue?: string | string[]
-  modelValue?: string | string[]
+  defaultValue?: string | string[] | undefined
+  modelValue?: string | string[] | undefined
 }
 
 export type ColorSwatchPickerRootEmits = ListboxRootEmits

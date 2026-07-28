@@ -36,7 +36,7 @@ export interface PopperContentProps extends PrimitiveProps {
   /**
    * Reactive dependencies that should invalidate the memoized content subtree.
    */
-  memoDependencies?: unknown[]
+  memoDependencies?: unknown[] | undefined
 
   /**
    * The preferred side of the trigger to render against when open.
@@ -45,21 +45,21 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue "bottom"
    */
-  side?: Side
+  side?: Side | undefined
 
   /**
    * The distance in pixels from the trigger.
    *
    * @defaultValue 0
    */
-  sideOffset?: number
+  sideOffset?: number | undefined
 
   /**
    * Flip to the opposite side when colliding with boundary.
    *
    * @defaultValue true
    */
-  sideFlip?: boolean
+  sideFlip?: boolean | undefined
 
   /**
    * The preferred alignment against the trigger.
@@ -67,14 +67,14 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue "center"
    */
-  align?: Align
+  align?: Align | undefined
 
   /**
    * An offset in pixels from the `start` or `end` alignment options.
    *
    * @defaultValue 0
    */
-  alignOffset?: number
+  alignOffset?: number | undefined
 
   /**
    * Flip alignment when colliding with boundary.
@@ -82,7 +82,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue true
    */
-  alignFlip?: boolean
+  alignFlip?: boolean | undefined
 
   /**
    * When `true`, overrides the side and align preferences
@@ -90,7 +90,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue true
    */
-  avoidCollisions?: boolean
+  avoidCollisions?: boolean | undefined
 
   /**
    * The element used as the collision boundary. By default
@@ -99,7 +99,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue []
    */
-  collisionBoundary?: Element | null | Array<Element | null>
+  collisionBoundary?: Element | null | Array<Element | null> | undefined
 
   /**
    * The distance in pixels from the boundary edges where collision
@@ -108,7 +108,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue 0
    */
-  collisionPadding?: number | Partial<Record<Side, number>>
+  collisionPadding?: number | Partial<Record<Side, number>> | undefined
 
   /**
    * The padding between the arrow and the edges of the content.
@@ -117,7 +117,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue 0
    */
-  arrowPadding?: number
+  arrowPadding?: number | undefined
 
   /**
    * When `true`, hides the arrow when it cannot be centered
@@ -125,7 +125,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue true
    */
-  hideShiftedArrow?: boolean
+  hideShiftedArrow?: boolean | undefined
 
   /**
    * The sticky behavior on the align axis. `partial` will keep the
@@ -135,33 +135,33 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue "partial"
    */
-  sticky?: 'partial' | 'always'
+  sticky?: 'partial' | 'always' | undefined
 
   /**
    * Whether to hide the content when the trigger becomes fully occluded.
    *
    * @defaultValue false
    */
-  hideWhenDetached?: boolean
+  hideWhenDetached?: boolean | undefined
 
   /**
    *  The type of CSS position property to use.
    */
-  positionStrategy?: 'absolute' | 'fixed'
+  positionStrategy?: 'absolute' | 'fixed' | undefined
 
   /**
    * Strategy to update the position of the floating element on every animation frame.
    *
    * @defaultValue 'optimized'
    */
-  updatePositionStrategy?: 'optimized' | 'always'
+  updatePositionStrategy?: 'optimized' | 'always' | undefined
 
   /**
    * Whether to disable the update position for the content when the layout shifted.
    *
    * @defaultValue false
    */
-  disableUpdateOnLayoutShift?: boolean
+  disableUpdateOnLayoutShift?: boolean | undefined
 
   /**
    * Force content to be position within the viewport.
@@ -170,7 +170,7 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    * @defaultValue false
    */
-  prioritizePosition?: boolean
+  prioritizePosition?: boolean | undefined
 
   /**
    *  The custom element or virtual element that will be set as the reference
@@ -178,19 +178,19 @@ export interface PopperContentProps extends PrimitiveProps {
    *
    *  If provided, it will replace the default anchor element.
    */
-  reference?: ReferenceElement
+  reference?: ReferenceElement | undefined
 
   /**
    * The reading direction of the popper content when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
-  dir?: Direction
+  dir?: Direction | undefined
 }
 
 export interface PopperContentContext {
   placedSide: Ref<Side>
   onArrowChange: (arrow: HTMLElement | undefined) => void
-  arrowX?: Ref<number>
-  arrowY?: Ref<number>
+  arrowX?: Ref<number> | undefined
+  arrowY?: Ref<number> | undefined
   shouldHideArrow: Ref<boolean>
 }
 

@@ -12,7 +12,7 @@ export type UseRangeYearPickerProps = {
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
-  maximumYears?: Ref<number | undefined>
+  maximumYears?: Ref<number | undefined> | undefined
 }
 
 export function useRangeYearPickerState(props: UseRangeYearPickerProps) {

@@ -41,8 +41,8 @@ type RangeCalendarRootContext = {
   headingValue: Ref<string>
   isInvalid: Ref<boolean>
   isDateDisabled: Matcher
-  isDateUnavailable?: Matcher
-  isDateHighlightable?: Matcher
+  isDateUnavailable?: Matcher | undefined
+  isDateHighlightable?: Matcher | undefined
   isOutsideVisibleView: (date: DateValue) => boolean
   allowNonContiguousRanges: Ref<boolean>
   highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
@@ -77,59 +77,59 @@ type RangeCalendarRootContext = {
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The default value for the calendar */
-  defaultValue?: DateRange
+  defaultValue?: DateRange | undefined
   /** The controlled selected date range of the calendar. Can be bound as `v-model`. */
-  modelValue?: DateRange | null
+  modelValue?: DateRange | null | undefined
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** When combined with `isDateUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. */
-  allowNonContiguousRanges?: boolean
+  allowNonContiguousRanges?: boolean | undefined
   /** This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month */
-  pagedNavigation?: boolean
+  pagedNavigation?: boolean | undefined
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
-  preventDeselect?: boolean
+  preventDeselect?: boolean | undefined
   /** The maximum number of days that can be selected in a range */
-  maximumDays?: number
+  maximumDays?: number | undefined
   /** The day of the week to start the calendar on */
-  weekStartsOn?: WeekStartsOn
+  weekStartsOn?: WeekStartsOn | undefined
   /** The format to use for the weekday strings provided via the weekdays slot prop */
-  weekdayFormat?: WeekDayFormat
+  weekdayFormat?: WeekDayFormat | undefined
   /** The accessible label for the calendar */
-  calendarLabel?: string
+  calendarLabel?: string | undefined
   /** Whether or not to always display 6 weeks in the calendar */
-  fixedWeeks?: boolean
+  fixedWeeks?: boolean | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** The number of months to display at once */
-  numberOfMonths?: number
+  numberOfMonths?: number | undefined
   /** Whether or not the calendar is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether or not the calendar is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted */
-  initialFocus?: boolean
+  initialFocus?: boolean | undefined
   /** A function that returns whether or not a date is disabled */
-  isDateDisabled?: Matcher
+  isDateDisabled?: Matcher | undefined
   /** A function that returns whether or not a date is unavailable */
-  isDateUnavailable?: Matcher
+  isDateUnavailable?: Matcher | undefined
   /** A function that returns whether or not a date is hightable */
-  isDateHighlightable?: Matcher
+  isDateHighlightable?: Matcher | undefined
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** Whether or not to disable days outside the current view. */
-  disableDaysOutsideCurrentView?: boolean
+  disableDaysOutsideCurrentView?: boolean | undefined
   /** Which part of the range should be fixed */
-  fixedDate?: 'start' | 'end'
+  fixedDate?: 'start' | 'end' | undefined
 
 }
 
@@ -176,7 +176,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
 const emits = defineEmits<RangeCalendarRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of dates */
@@ -191,7 +191,7 @@ defineSlots<{
     fixedWeeks: boolean
     /** The current date range */
     modelValue: DateRange
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

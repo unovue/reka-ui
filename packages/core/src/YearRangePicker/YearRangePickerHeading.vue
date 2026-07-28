@@ -11,10 +11,10 @@ import { injectYearRangePickerRootContext } from './YearRangePickerRoot.vue'
 const props = withDefaults(defineProps<YearRangePickerHeadingProps>(), { as: 'div' })
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current year range heading */
     headingValue: string
-  }) => any
+  }) => any) | undefined
 }>()
 
 const rootContext = injectYearRangePickerRootContext()

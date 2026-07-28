@@ -2,10 +2,10 @@
 export interface VisuallyHiddenInputBubbleProps<T> {
   name: string
   value: T
-  checked?: boolean
-  required?: boolean
-  disabled?: boolean
-  feature?: VisuallyHiddenProps['feature']
+  checked?: boolean | undefined
+  required?: boolean | undefined
+  disabled?: boolean | undefined
+  feature?: VisuallyHiddenProps['feature'] | undefined
 }
 </script>
 

@@ -37,7 +37,7 @@ export interface TooltipContentImplProps
    *
    * @defaultValue String
    */
-  ariaLabel?: string
+  ariaLabel?: string | undefined
 }
 </script>
 

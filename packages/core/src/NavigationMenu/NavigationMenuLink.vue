@@ -13,7 +13,7 @@ export type NavigationMenuLinkEmits = {
 }
 export interface NavigationMenuLinkProps extends PrimitiveProps {
   /** Used to identify the link as the currently active page. */
-  active?: boolean
+  active?: boolean | undefined
 }
 </script>
 

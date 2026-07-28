@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface VisuallyHiddenProps extends PrimitiveProps {
-  feature?: 'focusable' | 'fully-hidden'
+  feature?: 'focusable' | 'fully-hidden' | undefined
 }
 </script>
 

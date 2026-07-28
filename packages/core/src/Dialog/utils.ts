@@ -5,9 +5,9 @@ const DEFAULT_TITLE_NAME = 'DialogTitle'
 const DEFAULT_CONTENT_NAME = 'DialogContent'
 
 export type WarningProps = {
-  titleName?: string
-  contentName?: string
-  componentLink?: string
+  titleName?: string | undefined
+  contentName?: string | undefined
+  componentLink?: string | undefined
   titleId: string
   descriptionId: string
   contentElement: Ref<HTMLElement | undefined>

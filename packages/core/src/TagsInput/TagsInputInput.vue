@@ -4,11 +4,11 @@ import { useComposing, useForwardExpose } from '@/shared'
 
 export interface TagsInputInputProps extends PrimitiveProps {
   /** The placeholder character to use for empty tags input. */
-  placeholder?: string
+  placeholder?: string | undefined
   /** Focus on element when mounted. */
-  autoFocus?: boolean
+  autoFocus?: boolean | undefined
   /** Maximum number of character allowed. */
-  maxLength?: number
+  maxLength?: number | undefined
 }
 </script>
 

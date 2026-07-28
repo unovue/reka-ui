@@ -8,14 +8,14 @@ interface ArrowNavigationOptions {
    *
    * @defaultValue "both"
    */
-  arrowKeyOptions?: ArrowKeyOptions
+  arrowKeyOptions?: ArrowKeyOptions | undefined
 
   /**
    * The attribute name to find the collection items in the parent element.
    *
    * @defaultValue "data-reka-collection-item"
    */
-  attributeName?: string
+  attributeName?: string | undefined
 
   /**
    * The parent element where contains all the collection items, this will collect every item to be used when nav
@@ -23,21 +23,21 @@ interface ArrowNavigationOptions {
    *
    * @defaultValue []
    */
-  itemsArray?: HTMLElement[]
+  itemsArray?: HTMLElement[] | undefined
 
   /**
    * Allow loop navigation. If false, it will stop at the first and last element
    *
    * @defaultValue true
    */
-  loop?: boolean
+  loop?: boolean | undefined
 
   /**
    * The orientation of the collection
    *
    * @defaultValue "ltr"
    */
-  dir?: Direction
+  dir?: Direction | undefined
 
   /**
    * Prevent the scroll when navigating. This happens when the direction of the
@@ -45,21 +45,21 @@ interface ArrowNavigationOptions {
    *
    * @defaultValue true
    */
-  preventScroll?: boolean
+  preventScroll?: boolean | undefined
 
   /**
    * By default all currentElement would trigger navigation. If `true`, currentElement nodeName in the ignore list will return null
    *
    * @defaultValue false
    */
-  enableIgnoredElement?: boolean
+  enableIgnoredElement?: boolean | undefined
 
   /**
    * Focus the element after navigation
    *
    * @defaultValue false
    */
-  focus?: boolean
+  focus?: boolean | undefined
 }
 
 const ignoredElement = ['INPUT', 'TEXTAREA']
@@ -154,7 +154,7 @@ interface FindNextFocusableElementOptions {
    *
    * @default true
    */
-  loop?: boolean
+  loop?: boolean | undefined
 }
 
 /**

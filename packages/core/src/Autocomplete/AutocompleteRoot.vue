@@ -8,42 +8,42 @@ import { createContext, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
-  modelValue?: string
+  modelValue?: string | undefined
   /** The value of the autocomplete when initially rendered. Use when you do not need to control the state. */
-  defaultValue?: string
+  defaultValue?: string | undefined
   /** The controlled open state of the Autocomplete. Can be bound with `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
   /** The open state of the autocomplete when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /** When `true`, prevents the user from interacting with autocomplete */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** The reading direction of the autocomplete when applicable. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** The name of the field. Submitted with its owning form as part of a name/value pair. */
-  name?: string
+  name?: string | undefined
   /** When `true`, indicates that the user must set the value before the owning form can be submitted. */
-  required?: boolean
+  required?: boolean | undefined
   /**
    * Whether to reset the searchTerm when the Autocomplete input blurred
    * @defaultValue `false`
    */
-  resetSearchTermOnBlur?: boolean
+  resetSearchTermOnBlur?: boolean | undefined
   /**
    * Whether to open the autocomplete when the input is focused
    * @defaultValue `false`
    */
-  openOnFocus?: boolean
+  openOnFocus?: boolean | undefined
   /**
    * Whether to open the autocomplete when the input is clicked
    * @defaultValue `false`
    */
-  openOnClick?: boolean
+  openOnClick?: boolean | undefined
   /**
    * When `true`, disable the default filters
    */
-  ignoreFilter?: boolean
+  ignoreFilter?: boolean | undefined
   /** When `true`, hover over item will trigger highlight */
-  highlightOnHover?: boolean
+  highlightOnHover?: boolean | undefined
 }
 
 export type AutocompleteRootEmits = {
@@ -79,12 +79,12 @@ const props = withDefaults(defineProps<AutocompleteRootProps>(), {
 const emits = defineEmits<AutocompleteRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
     /** Current active value */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()

@@ -8,21 +8,21 @@ interface SingleOrMultipleProps<T = AcceptableValue | AcceptableValue[]> {
    *
    * This prop will overwrite the inferred type from `modelValue` and `defaultValue`.
    */
-  type?: SingleOrMultipleType
+  type?: SingleOrMultipleType | undefined
 
   /**
    * The controlled value of the active item(s).
    *
    * Use this when you need to control the state of the items. Can be binded with `v-model`
    */
-  modelValue?: T
+  modelValue?: T | undefined
 
   /**
    * The default active value of the item(s).
    *
    * Use when you do not need to control the state of the item(s).
    */
-  defaultValue?: T
+  defaultValue?: T | undefined
 }
 
 /**
@@ -31,8 +31,8 @@ interface SingleOrMultipleProps<T = AcceptableValue | AcceptableValue[]> {
  * otherwise, it will be passed string
  */
 type ScrollBodyOption = {
-  padding?: boolean | number | string
-  margin?: boolean | number | string
+  padding?: boolean | number | string | undefined
+  margin?: boolean | number | string | undefined
 }
 
 // Exclude `boolean` type to prevent type casting
@@ -47,7 +47,7 @@ import type { DefineComponent } from 'vue'
 type GenericComponentInstance<T> = T extends new (...args: any[]) => infer R
   ? R
   : T extends (...args: any[]) => infer R
-    ? R extends { __ctx?: infer K }
+    ? R extends { __ctx?: (infer K) | undefined }
       ? Exclude<K, void> extends { expose: (...args: infer Y) => void }
         ? Y[0] & InstanceType<DefineComponent>
         : any
@@ -56,9 +56,9 @@ type GenericComponentInstance<T> = T extends new (...args: any[]) => infer R
 
 interface FormFieldProps {
   /** The name of the field. Submitted with its owning form as part of a name/value pair. */
-  name?: string
+  name?: string | undefined
   /** When `true`, indicates that the user must set the value before the owning form can be submitted. */
-  required?: boolean
+  required?: boolean | undefined
 }
 
 export type { AcceptableValue, ArrayOrWrapped, DataOrientation, Direction, FormFieldProps, GenericComponentInstance, ScrollBodyOption, SingleOrMultipleProps, SingleOrMultipleType, StringOrNumber }

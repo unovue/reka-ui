@@ -35,7 +35,7 @@ export type PanelConfigurationState = {
   layout: number[]
   sizeUnits?: {
     [panelIndex: number]: 'px' | '%'
-  }
+  } | undefined
 }
 
 export type SerializedPanelGroupState = {

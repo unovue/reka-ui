@@ -9,7 +9,7 @@ export interface PopperAnchorProps extends PrimitiveProps {
    *
    *  If not provided will use the current component as anchor.
    */
-  reference?: ReferenceElement
+  reference?: ReferenceElement | undefined
 }
 </script>
 

@@ -9,7 +9,7 @@ export interface PinInputInputProps extends PrimitiveProps {
   /** Position of the value this input binds to. */
   index: number
   /** When `true`, prevents the user from interacting with the pin input */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

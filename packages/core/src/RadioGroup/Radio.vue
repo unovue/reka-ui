@@ -9,12 +9,12 @@ export type RadioEmits = {
 }
 
 export interface RadioProps extends PrimitiveProps, FormFieldProps {
-  id?: string
+  id?: string | undefined
   /** The value given as data when submitted with a `name`. */
-  value?: AcceptableValue
+  value?: AcceptableValue | undefined
   /** When `true`, prevents the user from interacting with the radio item. */
-  disabled?: boolean
-  checked?: boolean
+  disabled?: boolean | undefined
+  checked?: boolean | undefined
 }
 </script>
 
@@ -38,10 +38,10 @@ const props = withDefaults(defineProps<RadioProps>(), {
 const emits = defineEmits<RadioEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current checked state */
     checked: typeof checked.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const checked = useVModel(props, 'checked', emits, {

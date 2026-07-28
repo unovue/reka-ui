@@ -33,8 +33,8 @@ type DatePickerRootContext = {
   numberOfMonths: Ref<number>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
-  isDateDisabled?: Matcher
-  isDateUnavailable?: Matcher
+  isDateDisabled?: Matcher | undefined
+  isDateUnavailable?: Matcher | undefined
   defaultOpen: Ref<boolean>
   open: Ref<boolean>
   modal: Ref<boolean>
@@ -47,7 +47,7 @@ type DatePickerRootContext = {
 
 export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
   /** Whether or not to close the popover on date select */
-  closeOnSelect?: boolean
+  closeOnSelect?: boolean | undefined
 }
 
 export type DatePickerRootEmits = PopoverRootEmits & {

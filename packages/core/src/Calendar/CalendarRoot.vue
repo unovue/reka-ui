@@ -37,7 +37,7 @@ type CalendarRootContext = {
   isInvalid: Ref<boolean>
   isDateDisabled: Matcher
   isDateSelected: Matcher
-  isDateUnavailable?: Matcher
+  isDateUnavailable?: Matcher | undefined
   isOutsideVisibleView: (date: DateValue) => boolean
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
@@ -56,53 +56,53 @@ type CalendarRootContext = {
 
 export interface CalendarRootProps extends PrimitiveProps {
   /** The default value for the calendar */
-  defaultValue?: DateValue
+  defaultValue?: DateValue | undefined
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The placeholder date, which is used to determine what month to display when no date is selected */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month */
-  pagedNavigation?: boolean
+  pagedNavigation?: boolean | undefined
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
-  preventDeselect?: boolean
+  preventDeselect?: boolean | undefined
   /** The day of the week to start the calendar on */
-  weekStartsOn?: WeekStartsOn
+  weekStartsOn?: WeekStartsOn | undefined
   /** The format to use for the weekday strings provided via the weekdays slot prop */
-  weekdayFormat?: WeekDayFormat
+  weekdayFormat?: WeekDayFormat | undefined
   /** The accessible label for the calendar */
-  calendarLabel?: string
+  calendarLabel?: string | undefined
   /** Whether or not to always display 6 weeks in the calendar */
-  fixedWeeks?: boolean
+  fixedWeeks?: boolean | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** The number of months to display at once */
-  numberOfMonths?: number
+  numberOfMonths?: number | undefined
   /** Whether the calendar is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether the calendar is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted */
-  initialFocus?: boolean
+  initialFocus?: boolean | undefined
   /** A function that returns whether or not a date is disabled */
-  isDateDisabled?: Matcher
+  isDateDisabled?: Matcher | undefined
   /** A function that returns whether or not a date is unavailable */
-  isDateUnavailable?: Matcher
+  isDateUnavailable?: Matcher | undefined
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** The controlled selected date value of the calendar. Can be bound as `v-model`. */
-  modelValue?: DateValue | DateValue[] | null
+  modelValue?: DateValue | DateValue[] | null | undefined
   /** Whether multiple dates can be selected */
-  multiple?: boolean
+  multiple?: boolean | undefined
   /** Whether or not to disable days outside the current view. */
-  disableDaysOutsideCurrentView?: boolean
+  disableDaysOutsideCurrentView?: boolean | undefined
 }
 
 export type CalendarRootEmits = {
@@ -140,7 +140,7 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
 })
 const emits = defineEmits<CalendarRootEmits>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of dates */
@@ -155,7 +155,7 @@ defineSlots<{
     fixedWeeks: boolean
     /** The current date of the calendar */
     modelValue: DateValue | DateValue[] | undefined
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

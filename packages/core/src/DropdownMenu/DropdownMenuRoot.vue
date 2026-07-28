@@ -6,7 +6,7 @@ import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
 }
 export type DropdownMenuRootEmits = MenuEmits
 
@@ -37,10 +37,10 @@ const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
 const emit = defineEmits<DropdownMenuRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 useForwardExpose()

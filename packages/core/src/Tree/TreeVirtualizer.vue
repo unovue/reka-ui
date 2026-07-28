@@ -1,11 +1,11 @@
 <script lang="ts">
 export interface TreeVirtualizerProps {
   /** Number of items rendered outside the visible area */
-  overscan?: number
+  overscan?: number | undefined
   /** Estimated size (in px) of each item */
-  estimateSize?: number | ((index: number) => number)
+  estimateSize?: number | ((index: number) => number) | undefined
   /** Text content for each item to achieve type-ahead feature */
-  textContent?: (item: Record<string, any>) => string
+  textContent?: ((item: Record<string, any>) => string) | undefined
 }
 </script>
 
@@ -25,11 +25,11 @@ import { injectTreeRootContext } from './TreeRoot.vue'
 const props = defineProps<TreeVirtualizerProps>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     item: FlattenedItem<Record<string, any>>
     virtualizer: Virtualizer<Element | Window, Element>
     virtualItem: VirtualItem
-  }) => any
+  }) => any) | undefined
 }>()
 
 const slots = useSlots()

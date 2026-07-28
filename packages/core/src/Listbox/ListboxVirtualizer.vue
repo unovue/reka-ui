@@ -3,11 +3,11 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
   /** List of items */
   options: T[]
   /** Number of items rendered outside the visible area */
-  overscan?: number
+  overscan?: number | undefined
   /** Estimated size (in px) of each item */
-  estimateSize?: number | ((index: number) => number)
+  estimateSize?: number | ((index: number) => number) | undefined
   /** Text content for each item to achieve type-ahead feature */
-  textContent?: (option: T) => string
+  textContent?: ((option: T) => string) | undefined
 }
 </script>
 
@@ -29,11 +29,11 @@ import { compare, queryCheckedElement } from './utils'
 const props = defineProps<ListboxVirtualizerProps<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     option: T
     virtualizer: Virtualizer<HTMLElement, Element>
     virtualItem: VirtualItem
-  }) => any
+  }) => any) | undefined
 }>()
 
 const slots = useSlots()

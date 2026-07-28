@@ -4,7 +4,7 @@ import { useForwardExpose } from '@/shared'
 
 export interface LabelProps extends PrimitiveProps {
   /** The id of the element the label is associated with. */
-  for?: string
+  for?: string | undefined
 }
 </script>
 

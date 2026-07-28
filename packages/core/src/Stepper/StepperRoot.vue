@@ -20,21 +20,21 @@ export interface StepperRootProps extends PrimitiveProps {
   /**
    * The value of the step that should be active when initially rendered. Use when you do not need to control the state of the steps.
    */
-  defaultValue?: number
+  defaultValue?: number | undefined
   /**
    * The orientation the steps are laid out.
    * Mainly so arrow navigation is done accordingly (left & right vs. up & down).
    * @defaultValue horizontal
    */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /**
    * The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /** The controlled value of the step to activate. Can be bound as `v-model`. */
-  modelValue?: number
+  modelValue?: number | undefined
   /** Whether or not the steps must be completed in order. */
-  linear?: boolean
+  linear?: boolean | undefined
 }
 export type StepperRootEmits = {
   /** Event handler called when the value changes */
@@ -54,7 +54,7 @@ const props = withDefaults(defineProps<StepperRootProps>(), {
 const emits = defineEmits<StepperRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current step */
     modelValue: number | undefined
     /** Total number of steps */
@@ -77,7 +77,7 @@ defineSlots<{
     hasNext: () => boolean
     /** Whether or not there is a previous step */
     hasPrev: () => boolean
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { dir: propDir, orientation: propOrientation, linear } = toRefs(props)

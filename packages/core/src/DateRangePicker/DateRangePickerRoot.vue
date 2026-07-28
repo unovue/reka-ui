@@ -33,9 +33,9 @@ type DateRangePickerRootContext = {
   numberOfMonths: Ref<number>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
-  isDateDisabled?: Matcher
-  isDateUnavailable?: Matcher
-  isDateHighlightable?: Matcher
+  isDateDisabled?: Matcher | undefined
+  isDateUnavailable?: Matcher | undefined
+  isDateHighlightable?: Matcher | undefined
   defaultOpen: Ref<boolean>
   open: Ref<boolean>
   modal: Ref<boolean>
@@ -45,14 +45,14 @@ type DateRangePickerRootContext = {
   dir: Ref<Direction>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
-  maximumDays?: Ref<number | undefined>
+  maximumDays?: Ref<number | undefined> | undefined
   step: Ref<DateStep | undefined>
-  closeOnSelect?: Ref<boolean>
+  closeOnSelect?: Ref<boolean> | undefined
 }
 
 export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
   /** Whether or not to close the popover on range select */
-  closeOnSelect?: boolean
+  closeOnSelect?: boolean | undefined
 }
 
 export type DateRangePickerRootEmits = PopoverRootEmits & {

@@ -8,10 +8,10 @@ export interface DateRangePickerHeadingProps extends RangeCalendarHeadingProps {
 <script setup lang="ts">
 const props = defineProps<DateRangePickerHeadingProps>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current month and year */
     headingValue: string
-  }) => any
+  }) => any) | undefined
 }>()
 </script>
 

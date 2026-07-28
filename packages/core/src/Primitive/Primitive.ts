@@ -28,12 +28,12 @@ export interface PrimitiveProps {
    *
    * Read our [Composition](https://www.reka-ui.com/docs/guides/composition) guide for more details.
    */
-  asChild?: boolean
+  asChild?: boolean | undefined
   /**
    * The element or component this component should render as. Can be overwritten by `asChild`.
    * @defaultValue "div"
    */
-  as?: AsTag | Component
+  as?: AsTag | Component | undefined
 }
 
 // For self closing tags, don't provide default slots because of hydration issue

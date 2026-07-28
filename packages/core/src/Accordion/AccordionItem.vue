@@ -17,7 +17,7 @@ export interface AccordionItemProps
    *
    * @defaultValue false
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * A string value for the accordion item. All items within an accordion should use a unique value.
    */
@@ -51,10 +51,10 @@ const props = withDefaults(
 )
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const rootContext = injectAccordionRootContext()

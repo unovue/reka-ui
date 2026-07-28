@@ -9,30 +9,30 @@ export type AcceptableInputValue = string | number | bigint | Record<string, any
 
 export interface TagsInputRootProps<T = AcceptableInputValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the tags input. Can be bind as `v-model`. */
-  modelValue?: Array<T> | null
+  modelValue?: Array<T> | null | undefined
   /** The value of the tags that should be added. Use when you do not need to control the state of the tags input */
-  defaultValue?: Array<T>
+  defaultValue?: Array<T> | undefined
   /** When `true`, allow adding tags on paste. Work in conjunction with delimiter prop. */
-  addOnPaste?: boolean
+  addOnPaste?: boolean | undefined
   /** When `true` allow adding tags on tab keydown */
-  addOnTab?: boolean
+  addOnTab?: boolean | undefined
   /** When `true` allow adding tags blur input */
-  addOnBlur?: boolean
+  addOnBlur?: boolean | undefined
   /** When `true`, allow duplicated tags. */
-  duplicate?: boolean
+  duplicate?: boolean | undefined
   /** When `true`, prevents the user from interacting with the tags input. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** The character or regular expression to trigger the addition of a new tag. Also used to split tags for `@paste` event */
-  delimiter?: string | RegExp
+  delimiter?: string | RegExp | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** Maximum number of tags. */
-  max?: number
-  id?: string
+  max?: number | undefined
+  id?: string | undefined
   /** Convert the input value to the desired type. Mandatory when using objects as values and using `TagsInputInput` */
-  convertValue?: (value: string) => T
+  convertValue?: ((value: string) => T) | undefined
   /** Display the value of the tag. Useful when you want to apply modifications to the value like adding a suffix or when using object as values */
-  displayValue?: (value: T) => string
+  displayValue?: ((value: T) => string) | undefined
 }
 
 export type TagsInputRootEmits<T = AcceptableInputValue> = {
@@ -84,10 +84,10 @@ const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
 const emits = defineEmits<TagsInputRootEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { addOnPaste, disabled, delimiter, max, id, dir: propDir, addOnBlur, addOnTab } = toRefs(props)

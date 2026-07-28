@@ -9,11 +9,11 @@ import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxFilterProps extends PrimitiveProps {
   /** The controlled value of the filter. Can be binded with v-model. */
-  modelValue?: string
+  modelValue?: string | undefined
   /** Focus on element when mounted. */
-  autoFocus?: boolean
+  autoFocus?: boolean | undefined
   /** When `true`, prevents the user from interacting with item */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 
 export type ListboxFilterEmits = {
@@ -28,10 +28,10 @@ const props = withDefaults(defineProps<ListboxFilterProps>(), {
 const emits = defineEmits<ListboxFilterEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {

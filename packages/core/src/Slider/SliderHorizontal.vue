@@ -7,7 +7,7 @@ import { injectSliderRootContext } from './SliderRoot.vue'
 import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'
 
 interface SliderHorizontalProps extends SliderOrientationPrivateProps {
-  dir?: Direction
+  dir?: Direction | undefined
 }
 
 const props = defineProps<SliderHorizontalProps>()

@@ -18,26 +18,26 @@ import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { valueComparator } from './utils'
 
 export interface SelectContentContext {
-  content?: Ref<HTMLElement | undefined>
-  viewport?: Ref<HTMLElement | undefined>
+  content?: Ref<HTMLElement | undefined> | undefined
+  viewport?: Ref<HTMLElement | undefined> | undefined
   onViewportChange: (node: HTMLElement | undefined) => void
   itemRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
     disabled: boolean,
   ) => void
-  selectedItem?: Ref<HTMLElement | undefined>
-  onItemLeave?: () => void
+  selectedItem?: Ref<HTMLElement | undefined> | undefined
+  onItemLeave?: (() => void) | undefined
   itemTextRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
     disabled: boolean,
   ) => void
-  focusSelectedItem?: () => void
-  selectedItemText?: Ref<HTMLElement | undefined>
-  position?: 'item-aligned' | 'popper'
-  isPositioned?: Ref<boolean>
-  searchRef?: Ref<string>
+  focusSelectedItem?: (() => void) | undefined
+  selectedItemText?: Ref<HTMLElement | undefined> | undefined
+  position?: 'item-aligned' | 'popper' | undefined
+  isPositioned?: Ref<boolean> | undefined
+  searchRef?: Ref<string> | undefined
 }
 
 export const SelectContentDefaultContextValue: SelectContentContext = {
@@ -67,13 +67,13 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
    *  `item-aligned (default)` - behaves similarly to a native MacOS menu by positioning content relative to the active item. <br>
    *  `popper` - positions content in the same way as our other primitives, for example `Popover` or `DropdownMenu`.
    */
-  position?: 'item-aligned' | 'popper'
+  position?: 'item-aligned' | 'popper' | undefined
   /**
    * The document.body will be lock, and scrolling will be disabled.
    *
    * @defaultValue true
    */
-  bodyLock?: boolean
+  bodyLock?: boolean | undefined
 }
 
 export const [injectSelectContentContext, provideSelectContentContext]

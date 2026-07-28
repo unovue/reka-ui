@@ -13,8 +13,8 @@ export type TimeGranularity = 'hour' | 'minute' | 'second'
 type GetDefaultDateProps = {
   defaultValue?: DateValue | DateValue[] | undefined
   defaultPlaceholder?: DateValue | undefined
-  granularity?: Granularity
-  locale?: string
+  granularity?: Granularity | undefined
+  locale?: string | undefined
 }
 
 /**

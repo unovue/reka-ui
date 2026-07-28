@@ -9,14 +9,14 @@ export interface ToastViewportProps extends PrimitiveProps {
    * The keys to use as the keyboard shortcut that will move focus to the toast viewport.
    * @defaultValue ['F8']
    */
-  hotkey?: string[]
+  hotkey?: string[] | undefined
   /**
    * An author-localized label for the toast viewport to provide context for screen reader users
    * when navigating page landmarks. The available `{hotkey}` placeholder will be replaced for you.
    * Alternatively, you can pass in a custom function to generate the label.
    * @defaultValue 'Notifications ({hotkey})'
    */
-  label?: string | ((hotkey: string) => string)
+  label?: string | ((hotkey: string) => string) | undefined
 }
 </script>
 

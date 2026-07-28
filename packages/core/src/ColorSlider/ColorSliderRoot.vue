@@ -7,23 +7,23 @@ import { createContext, useDirection, useFormControl, useForwardExpose } from '@
 
 export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). Can be a hex string or Color object. */
-  modelValue?: string | Color
+  modelValue?: string | Color | undefined
   /** The default color value (uncontrolled). */
-  defaultValue?: string | Color
+  defaultValue?: string | Color | undefined
   /** The color space to operate in. */
-  colorSpace?: ColorSpace
+  colorSpace?: ColorSpace | undefined
   /** The color channel that this slider manipulates. */
   channel: ColorChannel
   /** The orientation of the slider. */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /** The reading direction of the slider. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** Whether the slider is visually inverted. */
-  inverted?: boolean
+  inverted?: boolean | undefined
   /** When `true`, prevents the user from interacting with the slider. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Custom step value for increment/decrement. Defaults to the channel's natural step. */
-  step?: number
+  step?: number | undefined
 }
 
 export type ColorSliderRootEmits = {

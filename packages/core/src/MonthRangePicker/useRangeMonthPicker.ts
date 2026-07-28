@@ -12,7 +12,7 @@ export type UseRangeMonthPickerProps = {
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
-  maximumMonths?: Ref<number | undefined>
+  maximumMonths?: Ref<number | undefined> | undefined
 }
 
 export function useRangeMonthPickerState(props: UseRangeMonthPickerProps) {

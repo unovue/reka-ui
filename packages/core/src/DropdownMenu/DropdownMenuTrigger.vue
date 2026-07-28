@@ -4,7 +4,7 @@ import { useForwardExpose, useId } from '@/shared'
 
 export interface DropdownMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

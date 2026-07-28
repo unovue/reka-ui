@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface ListboxGroupLabelProps extends PrimitiveProps {
-  for?: string
+  for?: string | undefined
 }
 </script>
 

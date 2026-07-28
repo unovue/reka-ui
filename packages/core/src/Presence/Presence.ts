@@ -27,7 +27,7 @@ export interface PresenceProps {
    *
    * @defaultValue false
    */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
 }
 
 export default defineComponent({

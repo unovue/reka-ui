@@ -13,7 +13,7 @@ export type MenuCheckboxItemEmits = MenuItemEmits & {
 
 export interface MenuCheckboxItemProps extends MenuItemProps {
   /** The controlled checked state of the item. Can be used as `v-model`. */
-  modelValue?: CheckedState
+  modelValue?: CheckedState | undefined
 }
 </script>
 
@@ -29,10 +29,10 @@ const props = withDefaults(defineProps<MenuCheckboxItemProps>(), {
 const emits = defineEmits<MenuCheckboxItemEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current modelValue state */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const delegatedProps = reactiveOmit(props, ['modelValue'])

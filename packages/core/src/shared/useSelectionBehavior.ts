@@ -4,7 +4,7 @@ import { findValuesBetween } from './arrays'
 
 export function useSelectionBehavior<T>(
   modelValue: Ref<T | T[]>,
-  props: UnwrapNestedRefs<{ multiple?: boolean, selectionBehavior?: 'toggle' | 'replace' }>,
+  props: UnwrapNestedRefs<{ multiple?: boolean | undefined, selectionBehavior?: 'toggle' | 'replace' | undefined }>,
 ) {
   const firstValue = ref()
 

@@ -5,18 +5,18 @@ import { createContext, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaScrollbarProps extends PrimitiveProps {
   /** The orientation of the scrollbar */
-  orientation?: 'vertical' | 'horizontal'
+  orientation?: 'vertical' | 'horizontal' | undefined
   /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
 }
 
 export interface ScrollAreaScrollbarContext {
   as: Ref<PrimitiveProps['as']>
   orientation: Ref<'vertical' | 'horizontal'>
-  forceMount?: Ref<boolean>
+  forceMount?: Ref<boolean> | undefined
   isHorizontal: Ref<boolean>
   asChild: Ref<boolean>
 }

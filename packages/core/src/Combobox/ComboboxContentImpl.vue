@@ -14,14 +14,14 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
    * `inline` is the default and you can control the position using CSS. <br>
    * `popper` positions content in the same way as our other primitives, for example `Popover` or `DropdownMenu`.
    */
-  position?: 'inline' | 'popper'
+  position?: 'inline' | 'popper' | undefined
   /** The document.body will be lock, and scrolling will be disabled. */
-  bodyLock?: boolean
+  bodyLock?: boolean | undefined
   /**
    * When `true`, hides the content when there are no items matching the filter.
    * @defaultValue false
    */
-  hideWhenEmpty?: boolean
+  hideWhenEmpty?: boolean | undefined
 }
 
 export const [injectComboboxContentContext, provideComboboxContentContext]

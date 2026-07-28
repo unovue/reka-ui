@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface SelectLabelProps extends PrimitiveProps {
-  for?: string
+  for?: string | undefined
 }
 </script>
 

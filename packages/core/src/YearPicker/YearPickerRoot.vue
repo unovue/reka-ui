@@ -29,7 +29,7 @@ type YearPickerRootContext = {
   isInvalid: Ref<boolean>
   isYearDisabled: Matcher
   isYearSelected: Matcher
-  isYearUnavailable?: Matcher
+  isYearUnavailable?: Matcher | undefined
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
   isNextButtonDisabled: (nextPageFunc?: (date: DateValue) => DateValue) => boolean
@@ -43,43 +43,43 @@ type YearPickerRootContext = {
 
 export interface YearPickerRootProps extends PrimitiveProps {
   /** The default value for the year picker */
-  defaultValue?: DateValue
+  defaultValue?: DateValue | undefined
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The placeholder date, which is used to determine what year range to display when no date is selected */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
-  preventDeselect?: boolean
+  preventDeselect?: boolean | undefined
   /** The accessible label for the year picker */
-  calendarLabel?: string
+  calendarLabel?: string | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** Whether the year picker is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether the year picker is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** If true, the year picker will focus the selected year, today, or the first year of the range on mount */
-  initialFocus?: boolean
+  initialFocus?: boolean | undefined
   /** A function that returns whether or not a year is disabled */
-  isYearDisabled?: Matcher
+  isYearDisabled?: Matcher | undefined
   /** A function that returns whether or not a year is unavailable */
-  isYearUnavailable?: Matcher
+  isYearUnavailable?: Matcher | undefined
   /** The reading direction of the calendar when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** A function that returns the next page of the year picker. Receives the current placeholder as an argument. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** A function that returns the previous page of the year picker. Receives the current placeholder as an argument. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** The controlled selected year value of the year picker. Can be bound as `v-model`. */
-  modelValue?: DateValue | DateValue[] | null
+  modelValue?: DateValue | DateValue[] | null | undefined
   /** Whether multiple years can be selected */
-  multiple?: boolean
+  multiple?: boolean | undefined
   /** Number of years to display per page */
-  yearsPerPage?: number
+  yearsPerPage?: number | undefined
 }
 
 export type YearPickerRootEmits = {
@@ -113,7 +113,7 @@ const props = withDefaults(defineProps<YearPickerRootProps>(), {
 })
 const emits = defineEmits<YearPickerRootEmits>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of years */
@@ -122,7 +122,7 @@ defineSlots<{
     locale: string
     /** The current selected value */
     modelValue: DateValue | DateValue[] | undefined
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

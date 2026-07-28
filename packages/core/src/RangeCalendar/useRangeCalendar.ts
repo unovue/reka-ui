@@ -14,11 +14,11 @@ export type UseRangeCalendarProps = {
   end: Ref<DateValue | undefined>
   isDateDisabled: Matcher
   isDateUnavailable: Matcher
-  isDateHighlightable?: Matcher
+  isDateHighlightable?: Matcher | undefined
   focusedValue: Ref<DateValue | undefined>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
-  maximumDays?: Ref<number | undefined>
+  maximumDays?: Ref<number | undefined> | undefined
 }
 
 export function useRangeCalendarState(props: UseRangeCalendarProps) {

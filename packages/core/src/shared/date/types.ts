@@ -15,13 +15,13 @@ export type DayOfWeek = {
 }
 
 export type DateStep = {
-  year?: number
-  month?: number
-  day?: number
-  hour?: number
-  minute?: number
-  second?: number
-  millisecond?: number
+  year?: number | undefined
+  month?: number | undefined
+  day?: number | undefined
+  hour?: number | undefined
+  minute?: number | undefined
+  second?: number | undefined
+  millisecond?: number | undefined
 }
 
 export type DateRange = {

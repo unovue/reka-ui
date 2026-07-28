@@ -27,23 +27,23 @@ export type PinInputRootEmits<Type extends PinInputType = 'text'> = {
 
 export interface PinInputRootProps<Type extends PinInputType = 'text'> extends PrimitiveProps, FormFieldProps {
   /** The controlled checked state of the pin input. Can be binded as `v-model`. */
-  modelValue?: PinInputValue<Type> | null
+  modelValue?: PinInputValue<Type> | null | undefined
   /** The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. */
-  defaultValue?: PinInputValue<Type>
+  defaultValue?: PinInputValue<Type> | undefined
   /** The placeholder character to use for empty pin-inputs. */
-  placeholder?: string
+  placeholder?: string | undefined
   /** When `true`, pin inputs will be treated as password. */
-  mask?: boolean
+  mask?: boolean | undefined
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
-  otp?: boolean
+  otp?: boolean | undefined
   /** Input type for the inputs. */
-  type?: Type
+  type?: Type | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** When `true`, prevents the user from interacting with the pin input */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Id of the element */
-  id?: string
+  id?: string | undefined
 }
 
 export interface PinInputRootContext<Type extends PinInputType = 'text'> {
@@ -56,7 +56,7 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   dir: Ref<Direction>
   disabled: Ref<boolean>
   isCompleted: ComputedRef<boolean>
-  inputElements?: Ref<Set<HTMLInputElement>>
+  inputElements?: Ref<Set<HTMLInputElement>> | undefined
   onInputElementChange: (el: HTMLInputElement) => void
   isNumericMode: ComputedRef<boolean>
 }
@@ -80,10 +80,10 @@ const props = withDefaults(defineProps<PinInputRootProps<Type>>(), {
 const emits = defineEmits<PinInputRootEmits<Type>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { mask, otp, placeholder, type, disabled, dir: propDir } = toRefs(props)

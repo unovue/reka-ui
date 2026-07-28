@@ -12,35 +12,35 @@ export interface AccordionRootProps<T = string | string[]>
    *
    * @defaultValue false
    */
-  collapsible?: boolean
+  collapsible?: boolean | undefined
 
   /**
    * When `true`, prevents the user from interacting with the accordion and all its items
    *
    * @defaultValue false
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
 
   /**
    * The reading direction of the accordion when applicable. If omitted, assumes LTR (left-to-right) reading mode.
    *
    * @defaultValue "ltr"
    */
-  dir?: Direction
+  dir?: Direction | undefined
 
   /**
    * The orientation of the accordion.
    *
    * @defaultValue "vertical"
    */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
 
   /**
    * When `true`, the element will be unmounted on closed state.
    *
    * @defaultValue `true`
    */
-  unmountOnHide?: boolean
+  unmountOnHide?: boolean | undefined
 }
 
 export type AccordionRootEmits<T extends SingleOrMultipleType = SingleOrMultipleType> = {
@@ -81,10 +81,10 @@ const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
 const emits = defineEmits<AccordionRootEmits<ExplicitType>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current active value */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { dir, disabled, unmountOnHide } = toRefs(props)

@@ -10,14 +10,14 @@ export interface TagsInputItemProps extends PrimitiveProps {
   /** Value associated with the tags */
   value: AcceptableInputValue
   /** When `true`, prevents the user from interacting with the tags input. */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 
 export interface TagsInputItemContext {
   value: Ref<AcceptableInputValue>
   displayValue: ComputedRef<string>
   isSelected: Ref<boolean>
-  disabled?: Ref<boolean>
+  disabled?: Ref<boolean> | undefined
   textId: string
 }
 

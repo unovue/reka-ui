@@ -9,9 +9,9 @@ import { useForwardExpose } from './useForwardExpose'
 // https://github.com/vuejs/core/blob/1f2a652a9d2e3bec472fb1786a4c16d6ccfa1fb1/packages/runtime-core/src/h.ts#L53-L58
 type RawProps = VNodeProps & {
   // used to differ from a single VNode object as children
-  __v_isVNode?: never
+  __v_isVNode?: never | undefined
   // used to differ from Array children
-  [Symbol.iterator]?: never
+  [Symbol.iterator]?: never | undefined
 } & Record<string, any>
 
 // types inspired from vue-test-utils
@@ -20,18 +20,18 @@ interface MountingOptions<Props> {
   /**
    * Default props for the component
    */
-  props?: (RawProps & Props) | ({} extends Props ? null : never) | ((attrs: Record<string, any>) => (RawProps & Props))
+  props?: (RawProps & Props) | ({} extends Props ? null : never) | ((attrs: Record<string, any>) => (RawProps & Props)) | undefined
   /**
    * Pass attributes into the component
    */
-  attrs?: Record<string, unknown>
+  attrs?: Record<string, unknown> | undefined
 }
 
 export function withDefault<
   T,
   C = T extends ((...args: any) => any) | (new (...args: any) => any)
     ? T
-    : T extends { props?: infer Props }
+    : T extends { props?: (infer Props) | undefined }
       ? DefineComponent<
         Props extends Readonly<(infer PropNames)[]> | (infer PropNames)[]
           ? { [key in PropNames extends string ? PropNames : string]?: any }

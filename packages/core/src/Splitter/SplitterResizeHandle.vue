@@ -6,17 +6,17 @@ import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useW
 
 export interface SplitterResizeHandleProps extends PrimitiveProps {
   /** Resize handle id (unique within group); falls back to `useId` when not provided */
-  id?: string
+  id?: string | undefined
   /** Allow this much margin when determining resizable handle hit detection */
-  hitAreaMargins?: PointerHitAreaMargins
+  hitAreaMargins?: PointerHitAreaMargins | undefined
   /** Tabindex for the handle */
-  tabindex?: number
+  tabindex?: number | undefined
   /** Disable drag handle */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * Will add `nonce` attribute to the style tag which can be used by Content Security Policy. <br> If omitted, inherits globally from `ConfigProvider`.
    */
-  nonce?: string
+  nonce?: string | undefined
 }
 
 export type PanelResizeHandleOnDragging = (isDragging: boolean) => void

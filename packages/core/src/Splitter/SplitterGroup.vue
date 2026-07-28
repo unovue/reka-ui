@@ -12,15 +12,15 @@ import {
 
 export interface SplitterGroupProps extends PrimitiveProps {
   /** Group id; falls back to `useId` when not provided. */
-  id?: string | null
+  id?: string | null | undefined
   /** Unique id used to auto-save group arrangement via `localStorage`. */
-  autoSaveId?: string | null
+  autoSaveId?: string | null | undefined
   /** The group orientation of splitter. */
   direction: Direction
   /** Step size when arrow key was pressed. */
-  keyboardResizeBy?: number | null
+  keyboardResizeBy?: number | null | undefined
   /** Custom storage API; defaults to localStorage */
-  storage?: PanelGroupStorage
+  storage?: PanelGroupStorage | undefined
 }
 
 export type SplitterGroupEmits = {
@@ -104,10 +104,10 @@ const props = withDefaults(defineProps<SplitterGroupProps>(), {
 const emits = defineEmits<SplitterGroupEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current size of layout */
     layout: typeof layout.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const debounceMap: {

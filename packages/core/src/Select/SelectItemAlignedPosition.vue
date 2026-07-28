@@ -6,8 +6,8 @@ import { useCollection } from '@/Collection'
 import { clamp, createContext, useForwardExpose } from '@/shared'
 
 interface SelectItemAlignedPositionContext {
-  contentWrapper?: Ref<HTMLElement | undefined>
-  shouldExpandOnScrollRef?: Ref<boolean>
+  contentWrapper?: Ref<HTMLElement | undefined> | undefined
+  shouldExpandOnScrollRef?: Ref<boolean> | undefined
   onScrollButtonChange: (node: HTMLElement | undefined) => void
 }
 

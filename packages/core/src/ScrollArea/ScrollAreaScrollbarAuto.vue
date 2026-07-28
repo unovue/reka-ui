@@ -1,6 +1,6 @@
 <script lang="ts">
 export interface ScrollAreaScrollbarAutoProps {
-  forceMount?: boolean
+  forceMount?: boolean | undefined
 }
 </script>
 

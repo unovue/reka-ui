@@ -12,7 +12,7 @@ export interface YearPickerCellTriggerProps extends PrimitiveProps {
 }
 
 export interface YearPickerCellTriggerSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current year value */
     yearValue: string
     /** Current disable state */
@@ -23,7 +23,7 @@ export interface YearPickerCellTriggerSlot {
     today: boolean
     /** Current unavailable state */
     unavailable: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

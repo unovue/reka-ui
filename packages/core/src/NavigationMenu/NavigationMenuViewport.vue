@@ -7,12 +7,12 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
   /**
    * Placement of the viewport for css variables `(--reka-navigation-menu-viewport-left, --reka-navigation-menu-viewport-top)`.
    * @defaultValue 'center'
    */
-  align?: 'start' | 'center' | 'end'
+  align?: 'start' | 'center' | 'end' | undefined
 }
 </script>
 

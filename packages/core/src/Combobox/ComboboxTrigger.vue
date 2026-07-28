@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface ComboboxTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

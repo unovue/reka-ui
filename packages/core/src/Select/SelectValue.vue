@@ -5,7 +5,7 @@ import { valueComparator } from './utils'
 
 export interface SelectValueProps extends PrimitiveProps {
   /** The content that will be rendered inside the `SelectValue` when no `value` or `defaultValue` is set. */
-  placeholder?: string
+  placeholder?: string | undefined
 }
 </script>
 

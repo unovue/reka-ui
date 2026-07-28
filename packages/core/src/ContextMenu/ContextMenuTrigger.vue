@@ -8,7 +8,7 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
    *
    * Note that this will also restore the native context menu.
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

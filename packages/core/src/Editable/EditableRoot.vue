@@ -31,31 +31,31 @@ type EditableRootContext = {
 
 export interface EditableRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value of the editable field */
-  defaultValue?: string
+  defaultValue?: string | undefined
   /** The value of the editable field */
-  modelValue?: string | null
+  modelValue?: string | null | undefined
   /** The placeholder for the editable field */
-  placeholder?: string | { edit: string, preview: string }
+  placeholder?: string | { edit: string, preview: string } | undefined
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** Whether the editable field is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether the editable field is read-only */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** The activation event of the editable field */
-  activationMode?: ActivationMode
+  activationMode?: ActivationMode | undefined
   /** Whether to select the text in the input when it is focused. */
-  selectOnFocus?: boolean
+  selectOnFocus?: boolean | undefined
   /** The submit event of the editable field */
-  submitMode?: SubmitMode
+  submitMode?: SubmitMode | undefined
   /** Whether to start with the edit mode active */
-  startWithEditMode?: boolean
+  startWithEditMode?: boolean | undefined
   /** The maximum number of characters allowed */
-  maxLength?: number
+  maxLength?: number | undefined
   /** Whether the editable field should auto resize */
-  autoResize?: boolean
+  autoResize?: boolean | undefined
   /** The id of the field */
-  id?: string
+  id?: string | undefined
 }
 
 export type EditableRootEmits = {
@@ -95,7 +95,7 @@ const props = withDefaults(defineProps<EditableRootProps>(), {
 
 const emits = defineEmits<EditableRootEmits>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Whether the editable field is in edit mode */
     isEditing: boolean
     /** The value of the editable field */
@@ -108,7 +108,7 @@ defineSlots<{
     cancel: () => void
     /** Function to set the editable in edit mode */
     edit: () => void
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

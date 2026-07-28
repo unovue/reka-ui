@@ -17,7 +17,7 @@ function resolveLoadingStatus(image: HTMLImageElement | null, src?: string): Ima
   return image.complete && image.naturalWidth > 0 ? 'loaded' : 'loading'
 }
 
-export function useImageLoadingStatus(src: Ref<string>, { referrerPolicy, crossOrigin }: { referrerPolicy?: Ref<ImgHTMLAttributes['referrerpolicy']>, crossOrigin?: Ref<ImgHTMLAttributes['crossorigin']> } = {}) {
+export function useImageLoadingStatus(src: Ref<string>, { referrerPolicy, crossOrigin }: { referrerPolicy?: Ref<ImgHTMLAttributes['referrerpolicy']> | undefined, crossOrigin?: Ref<ImgHTMLAttributes['crossorigin']> | undefined } = {}) {
   const isMounted = ref(false)
   const imageRef = ref<HTMLImageElement | null>(null)
   const image = computed(() => {
