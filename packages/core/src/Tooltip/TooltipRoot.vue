@@ -74,17 +74,17 @@ export const [injectTooltipRootContext, provideTooltipRootContext]
 import { useTimeoutFn, useVModel } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipRootProps>(), {
   defaultOpen: false,
-  open: undefined,
-  delayDuration: undefined,
-  disableHoverableContent: undefined,
-  disableClosingTrigger: undefined,
-  disabled: undefined,
-  ignoreNonKeyboardFocus: undefined,
+  open: UNDEFINED_DEFAULT,
+  disableHoverableContent: UNDEFINED_DEFAULT,
+  disableClosingTrigger: UNDEFINED_DEFAULT,
+  disabled: UNDEFINED_DEFAULT,
+  ignoreNonKeyboardFocus: UNDEFINED_DEFAULT,
 })
 
 const emit = defineEmits<TooltipRootEmits>()

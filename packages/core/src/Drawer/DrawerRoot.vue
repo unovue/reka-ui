@@ -95,17 +95,15 @@ export const [injectDrawerRootContext, provideDrawerRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, onUnmounted, ref, toRefs, watch } from 'vue'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { injectDrawerProviderContext } from './DrawerProvider.vue'
 import { createNestedSwipeProgressStore } from './utils'
 
 const props = withDefaults(defineProps<DrawerRootProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   defaultOpen: false,
   modal: true,
   swipeDirection: 'down',
-  snapPoints: undefined,
-  snapPoint: undefined,
-  defaultSnapPoint: undefined,
   snapToSequentialPoints: false,
 })
 const emit = defineEmits<DrawerRootEmits>()

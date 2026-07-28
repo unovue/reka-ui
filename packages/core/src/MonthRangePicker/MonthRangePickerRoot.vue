@@ -120,11 +120,7 @@ const props = withDefaults(defineProps<MonthRangePickerRootProps>(), {
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isMonthDisabled: undefined,
-  isMonthUnavailable: undefined,
   allowNonContiguousRanges: false,
-  maximumMonths: undefined,
 })
 const emits = defineEmits<MonthRangePickerRootEmits>()
 

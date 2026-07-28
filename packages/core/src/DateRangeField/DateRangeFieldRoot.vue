@@ -104,11 +104,8 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
-  defaultValue: undefined,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateUnavailable: undefined,
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
 defineSlots<{

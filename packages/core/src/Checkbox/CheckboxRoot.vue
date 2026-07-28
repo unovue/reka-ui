@@ -58,11 +58,10 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<CheckboxRootProps<T>>(), {
-  modelValue: undefined,
   value: 'on',
   as: 'button',
-  trueValue: (() => true) as unknown as undefined,
-  falseValue: (() => false) as unknown as undefined,
+  trueValue: (() => true) as unknown as never,
+  falseValue: (() => false) as unknown as never,
 })
 const emits = defineEmits<CheckboxRootEmits<T>>()
 

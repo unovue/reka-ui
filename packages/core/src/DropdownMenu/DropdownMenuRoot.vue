@@ -29,10 +29,11 @@ export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { MenuRoot } from '@/Menu'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
 })
 const emit = defineEmits<DropdownMenuRootEmits>()
 

@@ -42,11 +42,12 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
   {
-    unmountOnHide: undefined,
+    unmountOnHide: UNDEFINED_DEFAULT,
   },
 )
 

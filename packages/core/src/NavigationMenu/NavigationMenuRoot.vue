@@ -104,7 +104,6 @@ import {
 } from '@/Primitive'
 
 const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
-  modelValue: undefined,
   delayDuration: 200,
   skipDelayDuration: 300,
   orientation: 'horizontal',

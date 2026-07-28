@@ -51,10 +51,9 @@ defineOptions({
 
 const props = withDefaults(defineProps<SwitchRootProps<T>>(), {
   as: 'button',
-  modelValue: undefined,
   value: 'on',
-  trueValue: (() => true) as unknown as undefined,
-  falseValue: (() => false) as unknown as undefined,
+  trueValue: (() => true) as unknown as never,
+  falseValue: (() => false) as unknown as never,
 })
 const emit = defineEmits<SwitchRootEmits<T>>()
 

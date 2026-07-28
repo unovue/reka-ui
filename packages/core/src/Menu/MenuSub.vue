@@ -32,10 +32,11 @@ import {
   watchEffect,
 } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
 })
 const emits = defineEmits<MenuSubEmits>()
 

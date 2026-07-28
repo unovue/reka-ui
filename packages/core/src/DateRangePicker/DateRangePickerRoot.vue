@@ -71,6 +71,7 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs, watch } from 'vue'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 defineOptions({
   inheritAttrs: false,
@@ -78,7 +79,7 @@ defineOptions({
 const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   modal: false,
   pagedNavigation: false,
   preventDeselect: false,
@@ -87,12 +88,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateDisabled: undefined,
-  isDateUnavailable: undefined,
-  isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
-  maximumDays: undefined,
   closeOnSelect: false,
 })
 const emits = defineEmits<DateRangePickerRootEmits>()

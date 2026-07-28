@@ -51,7 +51,6 @@ import { VisuallyHiddenInput } from '@/VisuallyHidden'
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
   disabled: false,
   required: false,
-  orientation: undefined,
   loop: true,
 })
 

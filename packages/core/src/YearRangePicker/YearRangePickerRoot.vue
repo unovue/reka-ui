@@ -123,11 +123,7 @@ const props = withDefaults(defineProps<YearRangePickerRootProps>(), {
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isYearDisabled: undefined,
-  isYearUnavailable: undefined,
   allowNonContiguousRanges: false,
-  maximumYears: undefined,
   yearsPerPage: 12,
 })
 const emits = defineEmits<YearRangePickerRootEmits>()

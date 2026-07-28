@@ -44,10 +44,11 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   modal: false,
 })
 const emit = defineEmits<PopoverRootEmits>()

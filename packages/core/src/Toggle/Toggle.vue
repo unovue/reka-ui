@@ -33,13 +33,14 @@ import type { Ref } from 'vue'
 import { useVModel } from '@vueuse/core'
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 defineOptions({
   inheritAttrs: false,
 })
 
 const props = withDefaults(defineProps<ToggleProps>(), {
-  modelValue: undefined,
+  modelValue: UNDEFINED_DEFAULT,
   disabled: false,
   as: 'button',
 })

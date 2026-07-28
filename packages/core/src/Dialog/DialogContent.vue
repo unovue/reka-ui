@@ -18,6 +18,7 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -27,7 +28,7 @@ const props = withDefaults(defineProps<DialogContentProps>(), {
   // modal/non-modal child can apply its own default. This lets a modal
   // `DialogContent` stay locked by default while still honoring an explicit
   // `:disable-outside-pointer-events="false"` (#2677).
-  disableOutsidePointerEvents: undefined,
+  disableOutsidePointerEvents: UNDEFINED_DEFAULT,
 })
 const emits = defineEmits<DialogContentEmits>()
 

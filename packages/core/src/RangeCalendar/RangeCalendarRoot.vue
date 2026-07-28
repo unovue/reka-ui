@@ -164,12 +164,7 @@ const props = withDefaults(defineProps<RangeCalendarRootProps>(), {
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isDateDisabled: undefined,
-  isDateUnavailable: undefined,
-  isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
-  maximumDays: undefined,
   disableDaysOutsideCurrentView: false,
 
 })

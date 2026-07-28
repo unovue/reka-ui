@@ -61,9 +61,6 @@ const props = withDefaults(defineProps<ConfigProviderProps>(), {
   dir: 'ltr',
   locale: 'en',
   scrollBody: true,
-  nonce: undefined,
-  teleportTo: undefined,
-  useId: undefined,
 })
 
 const { dir, locale, scrollBody, nonce, teleportTo } = toRefs(props)

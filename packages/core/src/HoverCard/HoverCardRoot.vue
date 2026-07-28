@@ -40,10 +40,11 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   openDelay: 700,
   closeDelay: 300,
   enableTouch: false,

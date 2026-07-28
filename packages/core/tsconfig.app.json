@@ -9,6 +9,8 @@
       "@/*": ["./src/*"],
       "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"]
     },
+
+    "exactOptionalPropertyTypes": true,
     // TODO: set skipLibCheck to false (#2043)
     // Ideally we should set this to false, but histoire and vueuse are being difficult...
     // For now, keep it disabled...

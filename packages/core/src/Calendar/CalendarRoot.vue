@@ -122,7 +122,6 @@ import { computed, onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
-  defaultValue: undefined,
   as: 'div',
   pagedNavigation: false,
   preventDeselect: false,
@@ -133,9 +132,6 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isDateDisabled: undefined,
-  isDateUnavailable: undefined,
   disableDaysOutsideCurrentView: false,
 })
 const emits = defineEmits<CalendarRootEmits>()

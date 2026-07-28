@@ -86,9 +86,10 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
   openOnFocus: false,

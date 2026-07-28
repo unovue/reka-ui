@@ -16,10 +16,8 @@ import { ListboxContent, ListboxRoot } from '@/Listbox'
 
 const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
   as: 'div',
-  defaultValue: undefined,
   dir: 'ltr',
   disabled: false,
-  loop: false,
   orientation: 'horizontal',
 })
 

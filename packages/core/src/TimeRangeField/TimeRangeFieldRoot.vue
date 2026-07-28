@@ -109,11 +109,8 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
-  defaultValue: undefined,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isTimeUnavailable: undefined,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
 defineSlots<{

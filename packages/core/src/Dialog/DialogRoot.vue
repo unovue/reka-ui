@@ -46,13 +46,14 @@ export const [injectDialogRootContext, provideDialogRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 defineOptions({
   inheritAttrs: false,
 })
 
 const props = withDefaults(defineProps<DialogRootProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   defaultOpen: false,
   modal: true,
   unmountOnHide: true,

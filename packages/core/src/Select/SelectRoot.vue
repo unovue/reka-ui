@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { OptionHTMLAttributes, Ref } from 'vue'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
@@ -68,6 +68,7 @@ interface SelectOption { value: any, disabled?: boolean | undefined, textContent
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import BubbleSelect from './BubbleSelect.vue'
 
 defineOptions({
@@ -75,8 +76,7 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<SelectRootProps<T>>(), {
-  modelValue: undefined,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   nullableValue: '',
 })
 const emits = defineEmits<SelectRootEmits<T>>()
@@ -222,7 +222,7 @@ provideSelectRootContext({
       <option
         v-for="option in Array.from(optionsSet)"
         :key="option.value ?? ''"
-        v-bind="option"
+        v-bind="option as OptionHTMLAttributes"
       />
     </BubbleSelect>
   </PopperRoot>

@@ -291,7 +291,7 @@ const computedMiddleware = computed(() => {
     && shift({
       mainAxis: true,
       crossAxis: !!props.prioritizePosition,
-      limiter: props.sticky === 'partial' ? limitShift() : undefined,
+      ...(props.sticky === 'partial' ? { limiter: limitShift() } : {}),
       ...detectOverflowOptions.value,
     }),
     !props.prioritizePosition

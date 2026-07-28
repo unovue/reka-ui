@@ -13,9 +13,10 @@ export interface ContextMenuSubProps extends MenuSubProps {
 import { useVModel } from '@vueuse/core'
 import { MenuSub } from '@/Menu'
 import { useForwardExpose } from '@/shared'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<ContextMenuSubProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
 })
 const emit = defineEmits<ContextMenuSubEmits>()
 

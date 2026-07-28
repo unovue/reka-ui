@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SelectHTMLAttributes } from 'vue'
 import { ref, watch } from 'vue'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -58,7 +59,7 @@ function handleInput(event: Event) {
   <VisuallyHidden as-child>
     <select
       ref="selectElement"
-      v-bind="props"
+      v-bind="props as SelectHTMLAttributes"
       @input="handleInput"
     >
       <slot />

@@ -96,16 +96,12 @@ import { onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<MonthPickerRootProps>(), {
-  defaultValue: undefined,
   as: 'div',
   preventDeselect: false,
   multiple: false,
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isMonthDisabled: undefined,
-  isMonthUnavailable: undefined,
 })
 const emits = defineEmits<MonthPickerRootEmits>()
 defineSlots<{

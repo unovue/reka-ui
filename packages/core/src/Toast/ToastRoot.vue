@@ -22,11 +22,12 @@ export interface ToastRootProps extends ToastRootImplProps {
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { Presence } from '@/Presence'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import ToastRootImpl from './ToastRootImpl.vue'
 
 const props = withDefaults(defineProps<ToastRootProps>(), {
   type: 'foreground',
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   defaultOpen: true,
   as: 'li',
 })

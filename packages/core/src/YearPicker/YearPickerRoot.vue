@@ -99,16 +99,12 @@ import { onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<YearPickerRootProps>(), {
-  defaultValue: undefined,
   as: 'div',
   preventDeselect: false,
   multiple: false,
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isYearDisabled: undefined,
-  isYearUnavailable: undefined,
   yearsPerPage: 12,
 })
 const emits = defineEmits<YearPickerRootEmits>()

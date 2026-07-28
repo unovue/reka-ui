@@ -75,7 +75,6 @@ defineOptions({
 
 const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   as: 'div',
-  defaultValue: undefined,
   step: 1,
   stepSnapping: true,
   focusOnChange: true,

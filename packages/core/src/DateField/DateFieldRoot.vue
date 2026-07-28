@@ -99,11 +99,8 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<DateFieldRootProps>(), {
-  defaultValue: undefined,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateUnavailable: undefined,
   stepSnapping: false,
 })
 const emits = defineEmits<DateFieldRootEmits>()

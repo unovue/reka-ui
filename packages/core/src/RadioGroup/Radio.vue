@@ -23,6 +23,7 @@ import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { handleSelect } from './utils'
 
@@ -32,7 +33,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<RadioProps>(), {
   disabled: false,
-  checked: undefined,
+  checked: UNDEFINED_DEFAULT,
   as: 'button',
 })
 const emits = defineEmits<RadioEmits>()

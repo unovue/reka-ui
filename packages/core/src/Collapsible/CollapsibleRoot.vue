@@ -35,9 +35,10 @@ export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   defaultOpen: false,
   unmountOnHide: true,
 })
