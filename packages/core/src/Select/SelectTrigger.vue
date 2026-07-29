@@ -44,6 +44,13 @@ const mergedDescribedBy = computed(() => {
   const consumerValue = attrs['aria-describedby'] as string | undefined
   return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
 })
+// A consumer-provided `aria-invalid` always wins — read it explicitly (same
+// reasoning as `resolvedId`/`mergedDescribedBy` above) rather than relying on
+// attrs-merge order through the `PopperAnchor`/`asChild` layering.
+const mergedAriaInvalid = computed(() => {
+  const consumerValue = attrs['aria-invalid'] as string | boolean | undefined
+  return consumerValue ?? (fieldContext?.invalid.value || undefined)
+})
 
 function handleFieldFocus() {
   fieldContext?.reportControlState({ focused: true })
@@ -138,7 +145,7 @@ function onTriggerClick(event: MouseEvent) {
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
       :aria-describedby="mergedDescribedBy"
-      :aria-invalid="fieldContext?.invalid.value || undefined"
+      :aria-invalid="mergedAriaInvalid"
       aria-autocomplete="none"
       :disabled="isDisabled"
       :dir="rootContext?.dir.value"

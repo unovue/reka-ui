@@ -160,6 +160,15 @@ const mergedDescribedBy = computed(() => {
   return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
 })
 
+// A consumer-provided `aria-invalid` always wins — read it explicitly rather
+// than relying on the `$attrs` spread order, since our own explicit binding
+// below is written after that spread and would otherwise clobber it (even
+// with an `undefined` value) once merged.
+const mergedAriaInvalid = computed(() => {
+  const consumerValue = attrs['aria-invalid'] as string | boolean | undefined
+  return consumerValue ?? (fieldContext?.invalid.value || undefined)
+})
+
 function handleFocus() {
   fieldContext?.reportControlState({ focused: true })
 }
@@ -194,7 +203,7 @@ provideCheckboxRootContext({
     :aria-required="resolvedRequired"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :aria-describedby="mergedDescribedBy"
-    :aria-invalid="fieldContext?.invalid.value || undefined"
+    :aria-invalid="mergedAriaInvalid"
     :data-state="getState(checkboxState)"
     :data-disabled="disabled ? '' : undefined"
     :disabled="disabled"

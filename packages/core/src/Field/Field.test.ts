@@ -266,6 +266,14 @@ describe('given pilot controls participating in a Field', () => {
     expect(wrapper.find('[role="checkbox"]').attributes('aria-describedby')).toBeUndefined()
   })
 
+  it('a standalone Checkbox preserves a consumer-provided aria-invalid', () => {
+    const wrapper = mount({
+      components: { CheckboxRoot },
+      template: '<CheckboxRoot aria-invalid="true" />',
+    })
+    expect(wrapper.find('[role="checkbox"]').attributes('aria-invalid')).toBe('true')
+  })
+
   it('select trigger inside a Field gets the label association + describedby', async () => {
     const wrapper = mount({
       components: { ...components, SelectRoot, SelectTrigger },
@@ -296,6 +304,14 @@ describe('given pilot controls participating in a Field', () => {
     expect(wrapper.find('[role="combobox"]').attributes('aria-describedby')).toBeUndefined()
   })
 
+  it('a standalone Select trigger preserves a consumer-provided aria-invalid', () => {
+    const wrapper = mount({
+      components: { SelectRoot, SelectTrigger },
+      template: `<SelectRoot><SelectTrigger aria-invalid="true">Choose</SelectTrigger></SelectRoot>`,
+    })
+    expect(wrapper.find('[role="combobox"]').attributes('aria-invalid')).toBe('true')
+  })
+
   it('dateField inside a Field gets aria-labelledby + aria-describedby on the group', async () => {
     const wrapper = mount({
       components: { ...components, DateFieldRoot },
@@ -321,5 +337,13 @@ describe('given pilot controls participating in a Field', () => {
     const group = wrapper.find('[role="group"]')
     expect(group.attributes('aria-labelledby')).toBeUndefined()
     expect(group.attributes('aria-describedby')).toBeUndefined()
+  })
+
+  it('a standalone DateField preserves a consumer-provided aria-invalid', () => {
+    const wrapper = mount({
+      components: { DateFieldRoot },
+      template: '<DateFieldRoot aria-invalid="true" />',
+    })
+    expect(wrapper.find('[role="group"]').attributes('aria-invalid')).toBe('true')
   })
 })
