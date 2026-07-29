@@ -90,7 +90,8 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { injectFieldRootContext } from '@/Field'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 
@@ -270,6 +271,38 @@ function setFocusedElement(el: HTMLElement) {
   currentFocusedElement.value = el
 }
 
+// Optional Field participation: `injectFieldRootContext(null)` returns
+// `null` (instead of throwing) outside a `FieldRoot`, so every binding below
+// is inert — and byte-for-byte identical to before — when there is no Field.
+//
+// The root is a segmented `role="group"` of several focusable spans/inputs,
+// not a single form control: a native `<label for>` association (the
+// mechanism the other pilots use) doesn't apply to a group the same way, so
+// this wires `aria-labelledby`/`aria-describedby` on the group instead —
+// both merged with (never overwriting) whatever the consumer already passed,
+// same as the other pilots' `aria-describedby` merge.
+const fieldContext = injectFieldRootContext(null)
+const attrs = useAttrs()
+
+const mergedLabelledBy = computed(() => {
+  const consumerValue = attrs['aria-labelledby'] as string | undefined
+  return [consumerValue, fieldContext?.labelId.value].filter(Boolean).join(' ') || undefined
+})
+const mergedDescribedBy = computed(() => {
+  const consumerValue = attrs['aria-describedby'] as string | undefined
+  return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
+})
+
+onMounted(() => {
+  // Register the first segment (not the group container, which isn't
+  // itself focusable) so `FormRoot` can move focus into the field on an
+  // invalid submit.
+  fieldContext?.setControlElement(Array.from(segmentElements.value)[0])
+})
+onBeforeUnmount(() => {
+  fieldContext?.setControlElement(undefined)
+})
+
 provideDateFieldRootContext({
   isDateUnavailable: propsIsDateUnavailable.value,
   locale,
@@ -306,6 +339,9 @@ defineExpose({
     ref="primitiveElement"
     role="group"
     :aria-disabled="disabled ? true : undefined"
+    :aria-labelledby="mergedLabelledBy"
+    :aria-describedby="mergedDescribedBy"
+    :aria-invalid="fieldContext?.invalid.value || undefined"
     :data-disabled="disabled ? '' : undefined"
     :data-readonly="readonly ? '' : undefined"
     :data-invalid="isInvalid ? '' : undefined"
