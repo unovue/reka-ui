@@ -1,11 +1,23 @@
 import { render, screen } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import { CheckboxRoot } from '@/Checkbox'
+import { DateFieldRoot } from '@/DateField'
+import { SelectRoot, SelectTrigger } from '@/Select'
 import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot } from '.'
 
 const components = { FieldRoot, FieldLabel, FieldControl, FieldDescription, FieldError }
+
+beforeAll(() => {
+  // SelectTrigger's Popper machinery expects these during mount.
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 beforeEach(() => {
   document.body.innerHTML = ''
@@ -225,5 +237,89 @@ describe('a control outside any FieldRoot', () => {
     const input = screen.getByRole('textbox') as HTMLInputElement
     expect(input.getAttribute('aria-describedby')).toBeNull()
     expect(input.getAttribute('aria-invalid')).toBeNull()
+  })
+})
+
+describe('given pilot controls participating in a Field', () => {
+  it('checkbox inside a Field gets the label association + describedby', async () => {
+    const wrapper = mount({
+      components: { ...components, CheckboxRoot },
+      template: `
+        <FieldRoot name="terms">
+          <FieldLabel>Accept terms</FieldLabel>
+          <CheckboxRoot />
+          <FieldDescription>Required to continue</FieldDescription>
+        </FieldRoot>
+      `,
+    })
+    await nextTick()
+    const label = wrapper.find('label')
+    const checkbox = wrapper.find('[role="checkbox"]')
+    const description = wrapper.find('p')
+
+    expect(label.attributes('for')).toBe(checkbox.attributes('id'))
+    expect(checkbox.attributes('aria-describedby')).toContain(description.attributes('id'))
+  })
+
+  it('a standalone Checkbox (outside a Field) renders no aria-describedby', () => {
+    const wrapper = mount({ components: { CheckboxRoot }, template: '<CheckboxRoot />' })
+    expect(wrapper.find('[role="checkbox"]').attributes('aria-describedby')).toBeUndefined()
+  })
+
+  it('select trigger inside a Field gets the label association + describedby', async () => {
+    const wrapper = mount({
+      components: { ...components, SelectRoot, SelectTrigger },
+      template: `
+        <FieldRoot name="fruit">
+          <FieldLabel>Fruit</FieldLabel>
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+          </SelectRoot>
+          <FieldDescription>Pick your favorite</FieldDescription>
+        </FieldRoot>
+      `,
+    })
+    await nextTick()
+    const label = wrapper.find('label')
+    const trigger = wrapper.find('[role="combobox"]')
+    const description = wrapper.find('p')
+
+    expect(label.attributes('for')).toBe(trigger.attributes('id'))
+    expect(trigger.attributes('aria-describedby')).toContain(description.attributes('id'))
+  })
+
+  it('a standalone Select trigger (outside a Field) renders no aria-describedby', () => {
+    const wrapper = mount({
+      components: { SelectRoot, SelectTrigger },
+      template: `<SelectRoot><SelectTrigger>Choose</SelectTrigger></SelectRoot>`,
+    })
+    expect(wrapper.find('[role="combobox"]').attributes('aria-describedby')).toBeUndefined()
+  })
+
+  it('dateField inside a Field gets aria-labelledby + aria-describedby on the group', async () => {
+    const wrapper = mount({
+      components: { ...components, DateFieldRoot },
+      template: `
+        <FieldRoot name="dob">
+          <FieldLabel>Date of birth</FieldLabel>
+          <DateFieldRoot />
+          <FieldDescription>MM/DD/YYYY</FieldDescription>
+        </FieldRoot>
+      `,
+    })
+    await nextTick()
+    const label = wrapper.find('label')
+    const group = wrapper.find('[role="group"]')
+    const description = wrapper.find('p')
+
+    expect(group.attributes('aria-labelledby')).toContain(label.attributes('id'))
+    expect(group.attributes('aria-describedby')).toContain(description.attributes('id'))
+  })
+
+  it('a standalone DateField (outside a Field) renders no aria-labelledby/describedby', () => {
+    const wrapper = mount({ components: { DateFieldRoot }, template: '<DateFieldRoot />' })
+    const group = wrapper.find('[role="group"]')
+    expect(group.attributes('aria-labelledby')).toBeUndefined()
+    expect(group.attributes('aria-describedby')).toBeUndefined()
   })
 })
