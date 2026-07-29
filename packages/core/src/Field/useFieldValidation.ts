@@ -74,6 +74,7 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
 
   /**
    * Runs validation for the given value.
+   * @param value The current control value to validate.
    * @param immediate Skip the configured debounce (used for blur/submit).
    */
   async function triggerValidation(value: unknown, immediate = false) {
