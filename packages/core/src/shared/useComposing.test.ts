@@ -59,6 +59,44 @@ describe('useComposing', () => {
     expect(shouldDeferInput.value).toBe(true)
   })
 
+  it('should stay deferred once IME script appears mid-session (Android romaji → kana)', () => {
+    stubUserAgent(ANDROID_UA)
+    const { shouldDeferInput, handleCompositionStart, handleCompositionUpdate } = useComposing()
+    handleCompositionStart()
+
+    // romaji-mode Japanese IMEs compose Latin first, then convert within the
+    // same session — indistinguishable from autocorrect until kana shows up
+    handleCompositionUpdate(compositionUpdate('k'))
+    expect(shouldDeferInput.value).toBe(false)
+    handleCompositionUpdate(compositionUpdate('ka'))
+    expect(shouldDeferInput.value).toBe(false)
+
+    handleCompositionUpdate(compositionUpdate('か'))
+    expect(shouldDeferInput.value).toBe(true)
+    handleCompositionUpdate(compositionUpdate('かん'))
+    expect(shouldDeferInput.value).toBe(true)
+
+    // backspacing out of kana back into romaji must not flip back to live
+    handleCompositionUpdate(compositionUpdate('kan'))
+    expect(shouldDeferInput.value).toBe(true)
+  })
+
+  it('should not carry the IME verdict into the next composition session', async () => {
+    stubUserAgent(ANDROID_UA)
+    const { shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing()
+    handleCompositionStart()
+    handleCompositionUpdate(compositionUpdate('か'))
+    expect(shouldDeferInput.value).toBe(true)
+
+    handleCompositionEnd(new CompositionEvent('compositionend', { data: '感' }))
+    await nextTick()
+
+    // a fresh Latin session on Android filters live again
+    handleCompositionStart()
+    handleCompositionUpdate(compositionUpdate('Br'))
+    expect(shouldDeferInput.value).toBe(false)
+  })
+
   it('should keep the previous classification on empty compositionupdate data', () => {
     stubUserAgent(ANDROID_UA)
     const { shouldDeferInput, handleCompositionStart, handleCompositionUpdate } = useComposing()
