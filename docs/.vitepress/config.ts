@@ -149,6 +149,8 @@ export default defineConfig({
               { text: 'Checkbox', link: '/docs/components/checkbox' },
               { text: 'Combobox', link: '/docs/components/combobox' },
               { text: `Editable`, link: '/docs/components/editable' },
+              { text: `Field ${BadgeHTML('Alpha', true)}`, link: '/docs/components/field' },
+              { text: `Form ${BadgeHTML('Alpha', true)}`, link: '/docs/components/form' },
               { text: `Listbox`, link: '/docs/components/listbox' },
               { text: `Number Field`, link: '/docs/components/number-field' },
               { text: 'Label', link: '/docs/components/label' },
