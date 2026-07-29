@@ -334,6 +334,22 @@ describe('give PinInput type=number', async () => {
     })
   })
 
+  describe('after clearing a middle input', () => {
+    beforeEach(async () => {
+      await userEvent.keyboard('12345')
+      inputs[2].element.focus()
+      await inputs[2].trigger('keydown', { key: 'Backspace' })
+    })
+
+    it('should clear only the targeted box', () => {
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['1', '2', '', '4', '5'])
+    })
+
+    it('should emit \'update:modelValue\' with an explicit undefined at the gap', () => {
+      expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toStrictEqual([1, 2, undefined, 4, 5])
+    })
+  })
+
   describe('after user input numeric word consisting only of zeros', () => {
     beforeEach(async () => {
       await userEvent.keyboard('00000')
