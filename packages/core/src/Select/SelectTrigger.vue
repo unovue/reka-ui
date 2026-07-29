@@ -8,7 +8,8 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
+import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId, useTypeahead } from '@/shared'
@@ -28,6 +29,34 @@ const isDisabled = computed(() => rootContext.disabled?.value || props.disabled)
 rootContext.contentId ||= useId(undefined, 'reka-select-content')
 onMounted(() => {
   rootContext.onTriggerChange(triggerElement.value)
+})
+
+// Optional Field participation — the trigger is the combobox's focusable
+// element, so it (not SelectRoot) owns id/aria-describedby/aria-invalid and
+// focus-state reporting. `injectFieldRootContext(null)` returns `null`
+// (instead of throwing) outside a `FieldRoot`, so all of this is inert when
+// there is no ancestor Field: `resolvedId`/`mergedDescribedBy` fall back to
+// whatever the consumer already passed (or nothing), unchanged.
+const fieldContext = injectFieldRootContext(null)
+const attrs = useAttrs()
+const resolvedId = computed(() => (attrs.id as string | undefined) ?? fieldContext?.fieldId.value)
+const mergedDescribedBy = computed(() => {
+  const consumerValue = attrs['aria-describedby'] as string | undefined
+  return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
+})
+
+function handleFieldFocus() {
+  fieldContext?.reportControlState({ focused: true })
+}
+function handleFieldBlur() {
+  fieldContext?.reportControlState({ focused: false, touched: true })
+}
+
+onMounted(() => {
+  fieldContext?.setControlElement(triggerElement.value)
+})
+onBeforeUnmount(() => {
+  fieldContext?.setControlElement(undefined)
 })
 
 const { getItems } = useCollection()
@@ -101,12 +130,15 @@ function onTriggerClick(event: MouseEvent) {
     :reference="reference"
   >
     <Primitive
+      :id="resolvedId"
       :ref="forwardRef"
       role="combobox"
       :type="as === 'button' ? 'button' : undefined"
       :aria-controls="rootContext.contentId"
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
+      :aria-describedby="mergedDescribedBy"
+      :aria-invalid="fieldContext?.invalid.value || undefined"
       aria-autocomplete="none"
       :disabled="isDisabled"
       :dir="rootContext?.dir.value"
@@ -118,6 +150,8 @@ function onTriggerClick(event: MouseEvent) {
       @click="onTriggerClick"
       @pointerdown="onTriggerPointerDown"
       @mousedown="onTriggerMouseDown"
+      @focus="handleFieldFocus"
+      @blur="handleFieldBlur"
       @pointerup.prevent="
         (event: PointerEvent) => {
           // Only open on pointer up when using touch devices
