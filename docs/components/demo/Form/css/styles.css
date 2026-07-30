@@ -42,7 +42,7 @@
 
 .SubmitButton {
   border-radius: 6px;
-  background-color: #059669;
+  background-color: #047857;
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
@@ -52,7 +52,7 @@
 }
 
 .SubmitButton:hover {
-  background-color: #10b981;
+  background-color: #065f46;
 }
 
 .SuccessMessage {
