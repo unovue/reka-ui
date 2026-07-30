@@ -1,11 +1,12 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { CheckboxRoot } from '@/Checkbox'
 import { DateFieldRoot } from '@/DateField'
-import { SelectRoot, SelectTrigger } from '@/Select'
+import { FormRoot } from '@/Form'
+import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '@/Select'
 import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot } from '.'
 
 const components = { FieldRoot, FieldLabel, FieldControl, FieldDescription, FieldError }
@@ -17,11 +18,32 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   }
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
 })
 
 beforeEach(() => {
   document.body.innerHTML = ''
 })
+
+// Opens a mounted Select and picks its (only/first) option — mirrors the
+// interaction sequence already exercised in Select.test.ts. `SelectContent`
+// teleports to `document.body` by default (outside the wrapper's own mounted
+// subtree), so — unlike `Select.test.ts`'s fixture, which teleports to an
+// in-subtree `#here` target — the option must be looked up on `document`
+// rather than through `wrapper.find`.
+async function selectFirstOption(wrapper: ReturnType<typeof mount>) {
+  const trigger = wrapper.find('[role="combobox"]')
+  await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
+  await nextTick()
+  await nextTick()
+  const option = document.querySelector('[role="option"]') as HTMLElement
+  option.focus()
+  // Needs 2 pointerup events because SelectContentImpl ignores accidental first pointerups.
+  await fireEvent.pointerUp(option)
+  await fireEvent.pointerUp(option)
+  await nextTick()
+}
 
 describe('given a default Field', () => {
   const template = `
@@ -345,5 +367,130 @@ describe('given pilot controls participating in a Field', () => {
       template: '<DateFieldRoot aria-invalid="true" />',
     })
     expect(wrapper.find('[role="group"]').attributes('aria-invalid')).toBe('true')
+  })
+})
+
+describe('given a Field-wrapped Select', () => {
+  const selectComponents = { ...components, FormRoot, SelectRoot, SelectTrigger, SelectPortal, SelectContent, SelectViewport, SelectItem }
+
+  it('a programmatic modelValue change reports filled but not dirty', async () => {
+    const wrapper = mount({
+      components: selectComponents,
+      props: ['modelValue'],
+      template: `
+        <FieldRoot name="fruit" data-testid="field">
+          <SelectRoot :model-value="modelValue">
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+          </SelectRoot>
+        </FieldRoot>
+      `,
+    }, { props: { modelValue: undefined } })
+
+    const field = wrapper.find('[data-testid="field"]')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+    expect(field.attributes('data-filled')).toBeUndefined()
+
+    await wrapper.setProps({ modelValue: 'apple' })
+
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+  })
+
+  it('selecting an option via the trigger reports dirty (and filled)', async () => {
+    const wrapper = mount({
+      components: selectComponents,
+      template: `
+        <FieldRoot name="fruit" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+            <SelectPortal>
+              <SelectContent>
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+        </FieldRoot>
+      `,
+    }, { attachTo: document.body })
+
+    const field = wrapper.find('[data-testid="field"]')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+
+    await selectFirstOption(wrapper)
+
+    expect(field.attributes('data-dirty')).toBe('')
+    expect(field.attributes('data-filled')).toBe('')
+
+    // The open dropdown teleports to `document.body`, outside the wrapper's
+    // own subtree — unmount explicitly so no reactive effect is left running
+    // against it once the next test's `beforeEach` clears the DOM out from
+    // under it.
+    wrapper.unmount()
+  })
+
+  it('runs a custom validate with the Select\'s actual selected value on trigger blur', async () => {
+    const validate = vi.fn((value: unknown) => (value ? null : 'Required'))
+
+    const wrapper = mount({
+      components: selectComponents,
+      props: ['validate'],
+      template: `
+        <FieldRoot name="fruit" :validate="validate" validation-mode="onBlur">
+          <FieldLabel>Fruit</FieldLabel>
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+            <SelectPortal>
+              <SelectContent>
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+        </FieldRoot>
+      `,
+    }, { props: { validate }, attachTo: document.body })
+
+    await selectFirstOption(wrapper)
+
+    const trigger = wrapper.find('[role="combobox"]')
+    await trigger.trigger('blur')
+
+    expect(validate).toHaveBeenCalledWith('apple')
+
+    wrapper.unmount()
+  })
+
+  it('an empty required Select does not render data-valid after a Form submit', async () => {
+    const validate = vi.fn((value: unknown) => (value ? null : 'Required'))
+
+    const wrapper = mount({
+      components: selectComponents,
+      props: ['validate'],
+      template: `
+        <FormRoot>
+          <FieldRoot name="fruit" required :validate="validate" data-testid="field">
+            <FieldLabel>Fruit</FieldLabel>
+            <SelectRoot>
+              <SelectTrigger>Choose a fruit</SelectTrigger>
+            </SelectRoot>
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { props: { validate }, attachTo: document.body })
+
+    await wrapper.find('form').trigger('submit')
+    // Draining the whole microtask queue (not just one `nextTick`) is
+    // required here: our own submit handling awaits each field's async
+    // `validateNow`, which takes more microtask turns to settle than a
+    // single `nextTick()` guarantees.
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await nextTick()
+
+    const field = wrapper.find('[data-testid="field"]')
+    expect(field.attributes('data-valid')).toBeUndefined()
+    expect(field.attributes('data-invalid')).toBe('')
   })
 })

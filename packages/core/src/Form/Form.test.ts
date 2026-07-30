@@ -71,6 +71,33 @@ describe('given a Form with server errors', () => {
 
     expect(wrapper.text()).not.toContain('Taken')
   })
+
+  it('re-shows a repeat server error (same message, new errors object) after being cleared by an edit', async () => {
+    const wrapper = mount({
+      components,
+      props: ['errors'],
+      template: `
+        <FormRoot :errors="errors">
+          <FieldRoot name="email">
+            <FieldControl type="email" />
+            <FieldError v-slot="{ errors }">{{ errors[0] }}</FieldError>
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { props: { errors: { email: 'Taken' } } })
+
+    expect(wrapper.text()).toContain('Taken')
+
+    const input = wrapper.find('input')
+    await input.setValue('new-email@example.com')
+    expect(wrapper.text()).not.toContain('Taken')
+
+    // A fresh submit producing the *same* message is a brand-new `errors`
+    // object with an identical value for this field — watching only the
+    // extracted string (unchanged) would never re-fire.
+    await wrapper.setProps({ errors: { email: 'Taken' } })
+    expect(wrapper.text()).toContain('Taken')
+  })
 })
 
 describe('given a Form submission', () => {
@@ -144,6 +171,69 @@ describe('given a Form submission', () => {
 
     expect(onSubmit).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Already taken')
+  })
+})
+
+describe('given a Form submission race/error guard', () => {
+  it('two rapid submits on a valid form emit submit exactly once', async () => {
+    const onSubmit = vi.fn()
+    const validate = () => new Promise<string | null>(resolve => setTimeout(resolve, 10, null))
+
+    const wrapper = mount({
+      components,
+      props: ['validate'],
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="username" :validate="validate">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { props: { validate }, attachTo: document.body })
+
+    const form = wrapper.find('form')
+    // Fired back-to-back, before the first submit's async validation settles
+    // — the second must be ignored outright rather than running a second,
+    // overlapping validation pass.
+    await form.trigger('submit')
+    await form.trigger('submit')
+    await new Promise(resolve => setTimeout(resolve, 20))
+    await nextTick()
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('a rejecting validate does not produce an unhandled rejection, and does not submit', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onSubmit = vi.fn()
+    const validate = () => Promise.reject(new Error('boom'))
+
+    const wrapper = mount({
+      components,
+      props: ['validate'],
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="username" :validate="validate">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { props: { validate }, attachTo: document.body })
+
+    await wrapper.find('form').trigger('submit')
+    await flushAsync()
+    await nextTick()
+
+    // `useFieldValidation` swallows-and-warns the throw itself, so nothing
+    // propagates up to `FormRoot`'s own try/catch in this case — but the
+    // field is left with no error (a silent "no-op" outcome for `validate`),
+    // so the empty-but-optional field still submits successfully.
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+
+    consoleErrorSpy.mockRestore()
   })
 })
 
