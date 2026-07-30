@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 
 export type FieldValidationMode = 'onSubmit' | 'onBlur' | 'onChange'
 
@@ -64,7 +64,20 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
       return
 
     const currentToken = ++token
-    const result = await validateFn(value)
+    let result: FieldValidateResult
+    try {
+      result = await validateFn(value)
+    }
+    catch (error) {
+      // `triggerValidation` is fire-and-forget from blur/input, so a
+      // throwing/rejecting `validate` would otherwise surface as an
+      // unhandled rejection. Swallow and warn rather than turning the
+      // exception into a field error — the two are different failure modes
+      // and conflating them would hide real bugs in `validate` behind a
+      // generic "invalid" state.
+      console.error(error)
+      return
+    }
     // A newer validation call superseded this one; drop the stale result.
     if (currentToken !== token)
       return
@@ -108,6 +121,16 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
     validity.value = undefined
     hasValidated.value = false
   }
+
+  // A pending debounce timer must not outlive the component that created it —
+  // otherwise an unmounted field's `validate` could still fire later,
+  // touching refs whose effects have already been torn down. Bumping `token`
+  // also makes any validation promise already in flight (past its debounce
+  // wait, mid-`await validateFn`) a no-op once it resolves.
+  onScopeDispose(() => {
+    clearDebounce()
+    token++
+  })
 
   const nativeInvalid = computed(() => (validity.value ? !validity.value.valid : false))
   const customInvalid = computed(() => customErrors.value.length > 0)
