@@ -197,6 +197,8 @@ import { FieldDescription, FieldLabel, FieldRoot, SelectContent, SelectItem, Sel
 </template>
 ```
 
+`Select` reports focus/dirty/filled state and, on blur (or on every change with `validation-mode="onChange"`), runs a custom `validate` against its actual selected value. Native constraint attributes like `required` on a Field-wrapped `SelectRoot` are not yet wired into Field/Form validation — use `validate` to require a selection for now.
+
 ## Accessibility
 
 `FieldLabel` associates with the control via matching `for`/`id`. `FieldDescription` and any rendered `FieldError` are added to the control's `aria-describedby`, and `aria-invalid` is set once the field is known to be invalid.
