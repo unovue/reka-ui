@@ -38,7 +38,7 @@ export const [injectFormRootContext, provideFormRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<FormRootProps>(), {
@@ -59,23 +59,42 @@ function registerField(field: FormRegisteredField) {
   }
 }
 
+// Re-entrancy guard: a second submit fired while the first is still awaiting
+// async validation (e.g. a fast double click/Enter) is ignored outright,
+// rather than running two overlapping validation passes.
+const isSubmitting = ref(false)
+
 async function handleSubmit(event: Event) {
   // Always intercept: this lets us block submission for invalid fields (even
   // when validation is async) and only forward the event to the consumer
   // once every field has been confirmed valid.
   event.preventDefault()
 
-  const results = await Promise.all(
-    Array.from(fields).map(async field => ({ field, valid: await field.validateNow() })),
-  )
-  const firstInvalid = results.find(result => !result.valid)
-
-  if (firstInvalid) {
-    firstInvalid.field.focusControl()
+  if (isSubmitting.value)
     return
-  }
+  isSubmitting.value = true
 
-  emit('submit', event)
+  try {
+    const results = await Promise.all(
+      Array.from(fields).map(async field => ({ field, valid: await field.validateNow() })),
+    )
+    const firstInvalid = results.find(result => !result.valid)
+
+    if (firstInvalid) {
+      firstInvalid.field.focusControl()
+      return
+    }
+
+    emit('submit', event)
+  }
+  catch (error) {
+    // A field's `validateNow` (or `focusControl`) throwing shouldn't crash
+    // the app or silently submit an unvalidated form — surface it and stop.
+    console.error(error)
+  }
+  finally {
+    isSubmitting.value = false
+  }
 }
 
 function handleReset() {
