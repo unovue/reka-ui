@@ -53,10 +53,14 @@ const mergedAriaInvalid = computed(() => {
 })
 
 function handleFieldFocus() {
-  fieldContext?.reportControlState({ focused: true })
+  fieldContext?.handleControlFocus()
 }
 function handleFieldBlur() {
-  fieldContext?.reportControlState({ focused: false, touched: true })
+  // The trigger is a plain button — it doesn't carry the selected value —
+  // so report it explicitly from the root's `modelValue` instead of reading
+  // an element. This is what lets validation (native constraint checks
+  // aside) run against the Select's actual value.
+  fieldContext?.handleControlBlur({ value: rootContext.modelValue.value })
 }
 
 onMounted(() => {
