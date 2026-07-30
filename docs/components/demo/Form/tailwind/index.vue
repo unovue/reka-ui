@@ -56,7 +56,7 @@ function onSubmit(event: Event) {
 
     <button
       type="submit"
-      class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+      class="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
     >
       Submit
     </button>
