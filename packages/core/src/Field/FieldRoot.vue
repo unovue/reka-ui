@@ -36,6 +36,19 @@ export interface FieldRootProps extends PrimitiveProps {
 
 export type FieldRootEmits = object
 
+/**
+ * Describes a control interaction reported to `handleControlBlur`/
+ * `handleControlInput`. `element` is used to read `.value`/`ValidityState`
+ * for native form elements; `value` lets non-native controls (e.g. `Select`,
+ * whose focusable element doesn't carry the selected value) report their
+ * actual value directly. When both are omitted, `getElementValue` falls
+ * through to `undefined`.
+ */
+export interface FieldControlDetail {
+  element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  value?: unknown
+}
+
 export interface FieldRootContext {
   /** Id to associate the control with `FieldLabel` (`for`/`id`). */
   fieldId: Ref<string>
@@ -63,10 +76,15 @@ export interface FieldRootContext {
   reportControlState: (state: { focused?: boolean, filled?: boolean, dirty?: boolean, touched?: boolean }) => void
   /** Called by `FieldControl` (or a participating pilot control) on focus. */
   handleControlFocus: () => void
-  /** Called on blur, with the native element when available (for `ValidityState` + validation). */
-  handleControlBlur: (element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => void
-  /** Called on input, with the native element when available. */
-  handleControlInput: (element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => void
+  /**
+   * Called on blur. Pass the native element (for `ValidityState` + reading
+   * its `.value`), an explicit `value` (for non-native controls, e.g.
+   * `Select`), or omit entirely for a "bare" state-only ping — a bare call
+   * never touches `filled`.
+   */
+  handleControlBlur: (detail?: FieldControlDetail) => void
+  /** Called on input/value-change. Same `detail` semantics as `handleControlBlur`. */
+  handleControlInput: (detail?: FieldControlDetail) => void
   /** Registers the control's element, so the field can focus it (e.g. on invalid submit). */
   setControlElement: (element: HTMLElement | undefined) => void
   /** Runs validation immediately regardless of `validationMode`. Returns whether the field is valid. */
@@ -147,7 +165,13 @@ const serverError = computed(() => {
 
 // A new/changed server error (e.g. after a fresh submit) should show again
 // even if a previous instance of it was dismissed by editing the field.
-watch(serverError, () => {
+//
+// Watching `serverError` alone isn't enough: a repeat submit with the *same*
+// message for this field (a new `errors` object, identical string value)
+// leaves `serverError` unchanged by value, so that watcher alone would never
+// fire. Also watch the parent `errors` object's identity so a fresh object —
+// even with identical contents — re-shows the error.
+watch([serverError, () => formContext?.serverErrors.value], () => {
   clearedServerError.value = false
 })
 
@@ -193,33 +217,73 @@ function getElementValue(element?: HTMLInputElement | HTMLTextAreaElement | HTML
   return 'value' in element ? element.value : undefined
 }
 
+// A native control (barred from constraint validation — e.g. a plain
+// `<button type="button">`, which is what a `Select` trigger renders as)
+// reports `validity.valid === true` vacuously. Reading that into
+// `setNativeValidity` would stamp a false `data-valid` before any real
+// validation ran, so only trust `validity` when the element actually
+// participates in constraint validation.
+function canReadValidity(element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
+  return Boolean(element && 'validity' in element && element.willValidate)
+}
+
+function resolveDetailValue(detail?: FieldControlDetail) {
+  if (!detail)
+    return undefined
+  return detail.value ?? getElementValue(detail.element)
+}
+
+// The last value seen through `handleControlBlur`/`handleControlInput`.
+// Native `FieldControl` inputs don't strictly need this (their live DOM value
+// is always readable straight off `controlElement`), but a non-native
+// control like `Select` registers its *trigger* (a button) as the control
+// element — which doesn't carry the selected value — so `validateNow` (run
+// by `FormRoot` on submit, regardless of `validationMode`) needs a value
+// reported through this side channel instead.
+const lastKnownValue = ref<unknown>(undefined)
+
 function handleControlFocus() {
   reportControlState({ focused: true })
 }
 
 // Validation timing (native `ValidityState` sync + custom `validate()`) is
 // governed by `validationMode` — plain state bookkeeping (touched/dirty/
-// filled/focused) is not, and always reflects every interaction.
-function handleControlBlur(element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) {
-  reportControlState({ focused: false, touched: true, filled: Boolean(getElementValue(element)) })
+// filled/focused) is not, and always reflects every interaction. A "bare"
+// call (no `detail` at all) is a state-only ping and must not clobber
+// `filled` — only a real `detail` (even an empty `{}`) does that.
+function handleControlBlur(detail?: FieldControlDetail) {
+  if (detail !== undefined)
+    lastKnownValue.value = resolveDetailValue(detail)
+
+  reportControlState({
+    focused: false,
+    touched: true,
+    ...(detail !== undefined ? { filled: Boolean(resolveDetailValue(detail)) } : {}),
+  })
 
   if (validationModeRef.value === 'onBlur' || validationModeRef.value === 'onChange') {
-    if (element && 'validity' in element)
-      setNativeValidity(element.validity)
-    triggerValidation(getElementValue(element), true)
+    if (canReadValidity(detail?.element))
+      setNativeValidity(detail.element.validity)
+    triggerValidation(resolveDetailValue(detail), true)
   }
 }
 
-function handleControlInput(element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) {
-  reportControlState({ dirty: true, filled: Boolean(getElementValue(element)) })
+function handleControlInput(detail?: FieldControlDetail) {
+  if (detail !== undefined)
+    lastKnownValue.value = resolveDetailValue(detail)
+
+  reportControlState({
+    dirty: true,
+    ...(detail !== undefined ? { filled: Boolean(resolveDetailValue(detail)) } : {}),
+  })
 
   // Editing the field dismisses a previously shown server error for it.
   clearedServerError.value = true
 
   if (validationModeRef.value === 'onChange') {
-    if (element && 'validity' in element)
-      setNativeValidity(element.validity)
-    triggerValidation(getElementValue(element))
+    if (canReadValidity(detail?.element))
+      setNativeValidity(detail.element.validity)
+    triggerValidation(resolveDetailValue(detail))
   }
 }
 
@@ -229,10 +293,11 @@ function setControlElement(element: HTMLElement | undefined) {
 
 async function validateNow(): Promise<boolean> {
   const element = controlElement.value as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | undefined
-  if (element && 'validity' in element)
+  if (canReadValidity(element))
     setNativeValidity(element.validity)
 
-  await triggerValidation(getElementValue(element), true)
+  const value = lastKnownValue.value !== undefined ? lastKnownValue.value : getElementValue(element)
+  await triggerValidation(value, true)
 
   return props.invalid === undefined ? !(validationInvalid.value || hasServerError.value) : !props.invalid
 }
@@ -243,6 +308,7 @@ function resetField() {
   filled.value = false
   focused.value = false
   clearedServerError.value = true
+  lastKnownValue.value = undefined
   resetValidation()
 }
 

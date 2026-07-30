@@ -15,6 +15,7 @@ export {
   type FieldLabelProps,
 } from './FieldLabel.vue'
 export {
+  type FieldControlDetail,
   default as FieldRoot,
   type FieldRootContext,
   type FieldRootEmits,

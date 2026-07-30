@@ -47,10 +47,10 @@ function handleFocus() {
   fieldContext.handleControlFocus()
 }
 function handleBlur() {
-  fieldContext.handleControlBlur(getElement())
+  fieldContext.handleControlBlur({ element: getElement() })
 }
 function handleInput() {
-  fieldContext.handleControlInput(getElement())
+  fieldContext.handleControlInput({ element: getElement() })
 }
 
 onMounted(() => {
