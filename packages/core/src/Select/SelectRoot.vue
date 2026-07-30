@@ -137,8 +137,12 @@ const isEmptyModelValue = computed(() => {
     return isNullish(modelValue.value)
 })
 
+// `dirty` is reported from `handleValueChange` instead (the user-driven
+// path) — this watcher also fires for a programmatic/parent-driven
+// `modelValue` change, which should update `filled` but must not mark the
+// field dirty.
 watch(modelValue, () => {
-  fieldContext?.reportControlState({ dirty: true, filled: !isEmptyModelValue.value })
+  fieldContext?.reportControlState({ filled: !isEmptyModelValue.value })
 })
 
 useCollection({ isProvider: true })
@@ -168,6 +172,13 @@ function handleValueChange(value: T) {
   else {
     modelValue.value = value
   }
+
+  // User-driven selection (as opposed to a programmatic/parent-driven
+  // `modelValue` change, handled by the `watch` above) — this is what
+  // should mark the field dirty, and what lets a Field's custom `validate`
+  // run against the Select's actual value.
+  fieldContext?.reportControlState({ dirty: true })
+  fieldContext?.handleControlInput({ value })
 }
 
 function getOption(value: SelectOption['value']) {
