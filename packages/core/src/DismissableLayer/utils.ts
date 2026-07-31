@@ -1,7 +1,7 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toValue, watchEffect } from 'vue'
-import { handleAndDispatchCustomEvent } from '@/shared'
+import { closestAcrossShadowBoundaries, getComposedTarget, handleAndDispatchCustomEvent } from '@/shared'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -13,13 +13,18 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+/**
+ * `orderedLayers` is the layer stack in mount order (`context.layersRoot`, as a
+ * plain array). Ordering is derived from that, not from DOM document-position,
+ * so this stays correct even when `layerElement` and `targetElement` don't share
+ * a root at all (e.g. a Popover teleported into a shadow root, opened from a
+ * Dialog in the light DOM).
+ */
+export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement, orderedLayers: HTMLElement[] = []) {
   if (!(targetElement instanceof Element))
     return false
 
-  const targetLayer = targetElement.closest(
-    '[data-dismissable-layer]',
-  )
+  const targetLayer = closestAcrossShadowBoundaries(targetElement, '[data-dismissable-layer]')
 
   const mainLayer = layerElement.dataset.dismissableLayer === ''
     ? layerElement
@@ -27,16 +32,16 @@ export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLEleme
       '[data-dismissable-layer]',
     ) as HTMLElement
 
-  const nodeList = Array.from(
-    layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
-  )
-
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))) {
-    return true
-  }
-  else {
+  if (!targetLayer)
     return false
-  }
+
+  if (mainLayer === targetLayer)
+    return true
+
+  const mainIndex = orderedLayers.indexOf(mainLayer)
+  const targetIndex = orderedLayers.indexOf(targetLayer)
+
+  return mainIndex !== -1 && targetIndex !== -1 && mainIndex < targetIndex
 }
 
 /**
@@ -48,6 +53,7 @@ export function usePointerDownOutside(
   onPointerDownOutside?: (event: PointerDownOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
+  getOrderedLayers: () => HTMLElement[] = () => [],
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
@@ -59,12 +65,12 @@ export function usePointerDownOutside(
     if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement | undefined
+      const target = getComposedTarget(event)
 
       if (!element?.value || !target)
         return
 
-      if (isLayerExist(element.value, target)) {
+      if (isLayerExist(element.value, target, getOrderedLayers())) {
         isPointerInsideDOMTree.value = false
         return
       }
@@ -151,6 +157,7 @@ export function useFocusOutside(
   onFocusOutside?: (event: FocusOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
+  getOrderedLayers: () => HTMLElement[] = () => [],
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
@@ -163,10 +170,15 @@ export function useFocusOutside(
       if (!element?.value)
         return
 
+      // `composedPath()` only returns a non-empty path while the event is
+      // actively dispatching — it must be resolved synchronously, before the
+      // `await`s below, or it silently falls back to the (possibly retargeted)
+      // `event.target`.
+      const target = getComposedTarget(event)
+
       await nextTick()
       await nextTick()
-      const target = event.target as HTMLElement | undefined
-      if (!element.value || !target || isLayerExist(element.value, target))
+      if (!element.value || !target || isLayerExist(element.value, target, getOrderedLayers()))
         return
 
       if (event.target && !isFocusInsideDOMTree.value) {

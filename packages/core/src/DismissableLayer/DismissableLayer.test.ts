@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
-import { DismissableLayer as DismissableLayerPrimitive } from '.'
+import { DismissableLayerBranch, DismissableLayer as DismissableLayerPrimitive } from '.'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
@@ -280,5 +280,228 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
 
     expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+})
+
+describe('shadow DOM', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function createLightContainer(parent: Element = document.body): HTMLElement {
+    const el = document.createElement('div')
+    parent.appendChild(el)
+    return el
+  }
+
+  function createShadowHost(parent: Element = document.body, mode: 'open' | 'closed' = 'open') {
+    const host = document.createElement('div')
+    parent.appendChild(host)
+    const root = host.attachShadow({ mode })
+    const mountPoint = document.createElement('div')
+    root.appendChild(mountPoint)
+    return { host, root, mountPoint }
+  }
+
+  function mountLayerWithButton(container: Element, testId: string) {
+    return mount(DismissableLayerPrimitive, {
+      attachTo: container,
+      slots: { default: `<button data-testid="${testId}">${testId}</button>` },
+    })
+  }
+
+  // Every row is a real, physically-constructed DOM (no mocking `getRootNode`/
+  // `composedPath`) — the ancestor ("outer", e.g. a Dialog) and the nested
+  // layer ("inner", e.g. a Popover/Menu opened from inside it) each get their
+  // own container per the topology, mirroring how the inner layer's content
+  // would actually be teleported relative to the outer one.
+  const topologies: { name: string, build: () => { outerContainer: Element, innerContainer: Element } }[] = [
+    {
+      name: 'light DOM ancestor, light DOM nested (regression baseline)',
+      build: () => ({ outerContainer: createLightContainer(), innerContainer: createLightContainer() }),
+    },
+    {
+      name: 'same shadow root (the originally reported Popover-in-Dialog bug)',
+      build: () => {
+        const { mountPoint } = createShadowHost()
+        return { outerContainer: mountPoint, innerContainer: mountPoint }
+      },
+    },
+    {
+      name: 'ancestor in light DOM, nested layer teleported into a shadow root',
+      build: () => ({ outerContainer: createLightContainer(), innerContainer: createShadowHost().mountPoint }),
+    },
+    {
+      name: 'ancestor in a shadow root, nested layer teleported out to light DOM',
+      build: () => ({ outerContainer: createShadowHost().mountPoint, innerContainer: createLightContainer() }),
+    },
+    {
+      name: 'two levels of shadow nesting (inner layer in a shadow root nested inside the outer\'s)',
+      build: () => {
+        const { mountPoint: rootA } = createShadowHost()
+        const { mountPoint: rootB } = createShadowHost(rootA)
+        return { outerContainer: rootA, innerContainer: rootB }
+      },
+    },
+  ]
+
+  for (const topology of topologies) {
+    describe(topology.name, () => {
+      it('pointerdown inside the nested layer must not dismiss the ancestor layer', async () => {
+        const { outerContainer, innerContainer } = topology.build()
+        const outer = mountLayerWithButton(outerContainer, 'outer')
+        const inner = mountLayerWithButton(innerContainer, 'inner')
+        // Outside-pointerdown listeners register after a `setTimeout(0)`.
+        await sleep(1)
+
+        const innerButton = innerContainer.querySelector('[data-testid="inner"]') as HTMLElement
+        await fireEvent.pointerDown(innerButton)
+        await nextTick()
+
+        expect(outer.emitted('pointerDownOutside')).toBeUndefined()
+        expect(outer.emitted('dismiss')).toBeUndefined()
+
+        outer.unmount()
+        inner.unmount()
+      })
+
+      it('a genuinely outside pointerdown still dismisses the ancestor layer', async () => {
+        const { outerContainer, innerContainer } = topology.build()
+        const outer = mountLayerWithButton(outerContainer, 'outer')
+        const inner = mountLayerWithButton(innerContainer, 'inner')
+        await sleep(1)
+
+        const trulyOutside = createLightContainer()
+        await fireEvent.pointerDown(trulyOutside)
+        await nextTick()
+
+        expect(outer.emitted('pointerDownOutside')?.length).toBe(1)
+        expect(outer.emitted('dismiss')?.length).toBe(1)
+
+        outer.unmount()
+        inner.unmount()
+      })
+
+      it('focusing inside the nested layer must not dismiss the ancestor layer', async () => {
+        const { outerContainer, innerContainer } = topology.build()
+        const outer = mountLayerWithButton(outerContainer, 'outer')
+        const inner = mountLayerWithButton(innerContainer, 'inner')
+        await sleep(1)
+
+        const innerButton = innerContainer.querySelector('[data-testid="inner"]') as HTMLElement
+        innerButton.focus()
+        await sleep(1)
+
+        expect(outer.emitted('focusOutside')).toBeUndefined()
+        expect(outer.emitted('dismiss')).toBeUndefined()
+
+        outer.unmount()
+        inner.unmount()
+      })
+
+      it('escape while interacting with the nested layer dismisses only that layer, not the ancestor', async () => {
+        const { outerContainer, innerContainer } = topology.build()
+        const outer = mountLayerWithButton(outerContainer, 'outer')
+        const inner = mountLayerWithButton(innerContainer, 'inner')
+        await nextTick()
+
+        const innerButton = innerContainer.querySelector('[data-testid="inner"]') as HTMLElement
+        await fireEvent.keyDown(innerButton, { key: 'Escape' })
+        await nextTick()
+
+        expect(inner.emitted('dismiss')?.length).toBe(1)
+        expect(outer.emitted('dismiss')).toBeUndefined()
+
+        outer.unmount()
+        inner.unmount()
+      })
+    })
+  }
+
+  it('two unrelated shadow roots do not interfere with each other on Escape', async () => {
+    const { mountPoint: rootA } = createShadowHost()
+    const { mountPoint: rootB } = createShadowHost()
+
+    // Mount B after A, so under a flat/global "topmost wins" rule (the
+    // pre-fix behavior) only B — unrelated to A — would ever react to Escape.
+    const layerA = mountLayerWithButton(rootA, 'layer-a')
+    const layerB = mountLayerWithButton(rootB, 'layer-b')
+    await nextTick()
+
+    const buttonA = rootA.querySelector('[data-testid="layer-a"]') as HTMLElement
+    await fireEvent.keyDown(buttonA, { key: 'Escape' })
+    await nextTick()
+
+    expect(layerA.emitted('dismiss')?.length).toBe(1)
+    expect(layerB.emitted('dismiss')).toBeUndefined()
+
+    layerA.unmount()
+    layerB.unmount()
+  })
+
+  it('documents the accepted limitation: a closed shadow root cannot be seen through', async () => {
+    const { mountPoint } = createShadowHost(document.body, 'closed')
+    const outer = mountLayerWithButton(mountPoint, 'outer')
+    const inner = mountLayerWithButton(mountPoint, 'inner')
+    await sleep(1)
+
+    const innerButton = mountPoint.querySelector('[data-testid="inner"]') as HTMLElement
+    await fireEvent.pointerDown(innerButton)
+    await nextTick()
+
+    // `composedPath()` stops at a closed shadow root's host, so the real
+    // target can't be recovered here — this is a known, accepted gap, not a
+    // silent regression. If this ever starts passing, tighten the assertion.
+    expect(outer.emitted('dismiss')?.length).toBe(1)
+
+    outer.unmount()
+    inner.unmount()
+  })
+
+  it('dismissableLayerBranch exempts an interaction even when the branch and the layer are in different roots', async () => {
+    const outerContainer = createLightContainer()
+    const outer = mountLayerWithButton(outerContainer, 'outer')
+    await sleep(1)
+
+    const { mountPoint: branchRoot } = createShadowHost()
+    const branch = mount(DismissableLayerBranch, {
+      attachTo: branchRoot,
+      slots: { default: '<button data-testid="branch-btn">Branch</button>' },
+    })
+
+    const branchButton = branchRoot.querySelector('[data-testid="branch-btn"]') as HTMLElement
+    await fireEvent.pointerDown(branchButton)
+    await nextTick()
+
+    expect(outer.emitted('pointerDownOutside')).toBeUndefined()
+    expect(outer.emitted('dismiss')).toBeUndefined()
+
+    outer.unmount()
+    branch.unmount()
+  })
+
+  it('a modal (disableOutsidePointerEvents) nested layer stays interactive while the shadow-rooted ancestor is inert', async () => {
+    const { mountPoint } = createShadowHost()
+    const outer = mount(DismissableLayerPrimitive, {
+      attachTo: mountPoint,
+      props: { disableOutsidePointerEvents: true },
+      slots: { default: '<div data-testid="outer">Outer</div>' },
+    })
+    await nextTick()
+    const inner = mount(DismissableLayerPrimitive, {
+      attachTo: mountPoint,
+      props: { disableOutsidePointerEvents: true },
+      slots: { default: '<div data-testid="inner">Inner</div>' },
+    })
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    // The topmost (inner) modal layer must remain interactive itself.
+    expect((inner.element as HTMLElement).style.pointerEvents).not.toBe('none')
+
+    inner.unmount()
+    outer.unmount()
+    await nextTick()
+    expect(document.body.style.pointerEvents).toBe('')
   })
 })

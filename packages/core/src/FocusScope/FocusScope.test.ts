@@ -1,12 +1,14 @@
 import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '../Select'
+import { getTabbableCandidates } from './utils'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -291,6 +293,123 @@ describe('focusScope', () => {
       // The Select content traps focus; its FocusScope must pause the Dialog's
       // trap so focus lands inside the Select rather than being yanked back.
       expect(content.contains(document.activeElement)).toBe(true)
+    })
+  })
+
+  describe('shadow DOM', () => {
+    beforeEach(() => {
+      document.body.innerHTML = ''
+    })
+
+    function createLightContainer(): HTMLElement {
+      const el = document.createElement('div')
+      document.body.appendChild(el)
+      return el
+    }
+
+    // Appends a shadow-rooted `<input>` directly onto `parent` (bypassing
+    // Vue's render — this simulates a web-component/MFE island nested inside
+    // a scope's DOM subtree, not a separate Vue-managed FocusScope).
+    function appendShadowInput(parent: HTMLElement) {
+      const shadowHost = document.createElement('div')
+      parent.appendChild(shadowHost)
+      const shadowRoot = shadowHost.attachShadow({ mode: 'open' })
+      const input = document.createElement('input')
+      shadowRoot.appendChild(input)
+      return { shadowHost, shadowRoot, input }
+    }
+
+    it('getTabbableCandidates finds tabbable elements nested inside a shadow root', () => {
+      const container = createLightContainer()
+      const firstButton = document.createElement('button')
+      container.appendChild(firstButton)
+      const { input } = appendShadowInput(container)
+      const lastButton = document.createElement('button')
+      container.appendChild(lastButton)
+
+      const candidates = getTabbableCandidates(container)
+
+      expect(candidates).toContain(firstButton)
+      expect(candidates).toContain(input)
+      expect(candidates).toContain(lastButton)
+    })
+
+    // Regression for `handleFocusIn`: a descendant that lives inside a shadow
+    // root nested within the trap's own container (e.g. a web-component/MFE
+    // island rendered as part of the Dialog's own content, as opposed to a
+    // separate nested FocusScope teleported elsewhere) must be recognized as
+    // "inside" via `containsAcrossShadowBoundaries`. Before the fix, plain
+    // `container.contains(target)` can't see through the shadow boundary, so
+    // focusing it looked like focus left the scope and got yanked back.
+    it('does not yank focus back when it moves into a shadow-rooted descendant of the trap container', async () => {
+      const container = createLightContainer()
+      const wrapper = mount(FocusScope, {
+        attachTo: container,
+        props: { trapped: true },
+        slots: { default: () => h('button', 'Tabbable') },
+      })
+      await nextTick()
+
+      const scopeRoot = wrapper.element as HTMLElement
+      const { shadowRoot, input } = appendShadowInput(scopeRoot)
+
+      input.focus()
+      await nextTick()
+
+      expect(shadowRoot.activeElement).toBe(input)
+
+      wrapper.unmount()
+    })
+
+    // Regression for the trap boundary in general: an element genuinely
+    // outside the scope (not nested in it at all, shadow or otherwise) must
+    // still be pulled back — the fix must not loosen the trap itself.
+    it('still yanks focus back when it moves to an element genuinely outside the trap', async () => {
+      const container = createLightContainer()
+      const wrapper = mount(FocusScope, {
+        attachTo: container,
+        props: { trapped: true },
+        slots: { default: () => h('button', { 'data-testid': 'inside' }, 'Tabbable') },
+      })
+      await nextTick()
+
+      const insideButton = (wrapper.element as HTMLElement).querySelector('[data-testid="inside"]') as HTMLElement
+      insideButton.focus()
+      await nextTick()
+
+      const outsideButton = document.createElement('button')
+      document.body.appendChild(outsideButton)
+      outsideButton.focus()
+      await nextTick()
+
+      expect(document.activeElement).toBe(insideButton)
+
+      wrapper.unmount()
+    })
+
+    // Regression for the `present` watcher's mount-auto-focus gate: toggling
+    // a force-mounted scope from hidden to visible must not steal focus away
+    // from an already-focused descendant that lives across a shadow boundary.
+    it('does not steal focus on present:false -> true when an already-focused descendant is across a shadow boundary', async () => {
+      const container = createLightContainer()
+      const wrapper = mount(FocusScope, {
+        attachTo: container,
+        props: { present: false },
+        slots: { default: () => h('button', 'Tabbable') },
+      })
+      await nextTick()
+
+      const scopeRoot = wrapper.element as HTMLElement
+      const { shadowRoot, input } = appendShadowInput(scopeRoot)
+      input.focus()
+      expect(shadowRoot.activeElement).toBe(input)
+
+      await wrapper.setProps({ present: true })
+      await nextTick()
+
+      expect(shadowRoot.activeElement).toBe(input)
+
+      wrapper.unmount()
     })
   })
 })

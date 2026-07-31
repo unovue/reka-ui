@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { getActiveElement, useForwardExpose } from '@/shared'
+import { containsAcrossShadowBoundaries, getActiveElement, getComposedTarget, useForwardExpose } from '@/shared'
 
 export type FocusScopeEmits = {
   /**
@@ -95,8 +95,8 @@ watchEffect((cleanupFn) => {
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
       return
-    const target = event.target as HTMLElement | null
-    if (container.contains(target))
+    const target = getComposedTarget(event) ?? null
+    if (containsAcrossShadowBoundaries(container, target))
       lastFocusedElementRef.value = target
     else focus(lastFocusedElementRef.value, { select: true })
   }
@@ -121,7 +121,11 @@ watchEffect((cleanupFn) => {
 
     // If the focus has moved to an actual legitimate element (`relatedTarget !== null`)
     // that is outside the container, we move focus to the last valid focused element inside.
-    if (!container.contains(relatedTarget))
+    // NOTE: unlike `event.target`, `relatedTarget` has no `composedPath()`-based way to
+    // recover its non-retargeted value, so this check remains best-effort across shadow
+    // boundaries — the corrective case is also covered by the fixed `handleFocusIn` above,
+    // which runs for the same focus change with a target it CAN correctly resolve.
+    if (!containsAcrossShadowBoundaries(container, relatedTarget))
       focus(lastFocusedElementRef.value, { select: true })
   }
 
@@ -148,7 +152,7 @@ watchEffect((cleanupFn) => {
       return
     }
 
-    const isLastFocusedElementExist = container.contains(lastFocusedElement)
+    const isLastFocusedElementExist = containsAcrossShadowBoundaries(container, lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
   }
@@ -197,7 +201,7 @@ watchEffect(async (cleanupFn) => {
   if (props.present !== false)
     focusScopesStack.add(focusScope)
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-  const hasFocusedCandidate = container.contains(previouslyFocusedElement)
+  const hasFocusedCandidate = containsAcrossShadowBoundaries(container, previouslyFocusedElement)
 
   // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
   // consumer keeps the scope mounted but flags it as not present. Skip the
@@ -263,7 +267,7 @@ watch(() => props.present, async (present, prevPresent) => {
     return
 
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-  if (!container.contains(previouslyFocusedElement))
+  if (!containsAcrossShadowBoundaries(container, previouslyFocusedElement))
     dispatchMountAutoFocus(container, previouslyFocusedElement)
 })
 

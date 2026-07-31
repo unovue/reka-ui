@@ -12,7 +12,7 @@ import {
   watch,
   watchEffect,
 } from 'vue'
-import { isNullish, useForwardExpose } from '@/shared'
+import { containsAcrossShadowBoundaries, getComposedTarget, getRootNode, isNullish, useForwardExpose } from '@/shared'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -116,7 +116,7 @@ const isPointerEventsEnabled = computed(() => {
 
 const pointerDownOutside = usePointerDownOutside(async (event) => {
   const isPointerDownOnBranch = [...context.branches].some(branch =>
-    branch?.contains(event.target as HTMLElement),
+    containsAcrossShadowBoundaries(branch, getComposedTarget(event.detail.originalEvent)),
   )
 
   if (!props.present || !isPointerEventsEnabled.value || isPointerDownOnBranch)
@@ -126,11 +126,11 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
   await nextTick()
   if (!event.defaultPrevented)
     emits('dismiss')
-}, layerElement)
+}, layerElement, true, () => Array.from(layers.value))
 
 const focusOutside = useFocusOutside((event) => {
   const isFocusInBranch = [...context.branches].some(branch =>
-    branch?.contains(event.target as HTMLElement),
+    containsAcrossShadowBoundaries(branch, getComposedTarget(event.detail.originalEvent)),
   )
 
   if (!props.present || isFocusInBranch)
@@ -139,16 +139,21 @@ const focusOutside = useFocusOutside((event) => {
   emits('interactOutside', event)
   if (!event.defaultPrevented)
     emits('dismiss')
-}, layerElement)
+}, layerElement, true, () => Array.from(layers.value))
 
 onKeyStroke('Escape', (event) => {
   // A layer that stays mounted while hidden (e.g. a Dialog with
-  // `unmountOnHide: false`) is out of the layer stack, so its `index` is `-1`.
-  // When no layer is visible (`size === 0`), `-1 === size - 1` would otherwise
-  // make it look like the highest layer and emit `escapeKeyDown` / `dismiss`.
+  // `unmountOnHide: false`) is out of the layer stack, so it must never react.
   if (!props.present)
     return
-  const isHighestLayer = index.value === layers.value.size - 1
+  // Scope "topmost" to layers sharing the same root as the keypress, not the
+  // whole page: two unrelated stacks (e.g. an independent MFE dialog in its own
+  // shadow root, and the host page's dropdown) must not compete for Escape.
+  // This is a no-op in the common single-root case (identical to comparing
+  // against the full `layers` stack).
+  const eventRoot = getRootNode(getComposedTarget(event) ?? null)
+  const layersInEventRoot = Array.from(layers.value).filter(el => getRootNode(el) === eventRoot)
+  const isHighestLayer = !!layerElement.value && layersInEventRoot.at(-1) === layerElement.value
   if (!isHighestLayer)
     return
   emits('escapeKeyDown', event)

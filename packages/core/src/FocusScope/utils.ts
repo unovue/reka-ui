@@ -39,10 +39,15 @@ export function getTabbableEdges(container: HTMLElement) {
  * See: https://developer.mozilla.org/en-US/docs/Web/API/TreeWalker
  * Credit: https://github.com/discord/focus-layers/blob/master/src/util/wrapFocus.tsx#L1
  */
-export function getTabbableCandidates(container: HTMLElement) {
+export function getTabbableCandidates(container: HTMLElement | ShadowRoot) {
   const nodes: HTMLElement[] = []
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: any) => {
+      // A `TreeWalker` cannot cross shadow boundaries on its own, so recurse
+      // into any nested shadow root to also collect its tabbable candidates.
+      if (node.shadowRoot)
+        nodes.push(...getTabbableCandidates(node.shadowRoot as ShadowRoot))
+
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden'
       if (node.disabled || node.hidden || isHiddenInput)
         return NodeFilter.FILTER_SKIP
