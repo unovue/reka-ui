@@ -138,6 +138,10 @@ describe('sibling layers with disableOutsidePointerEvents', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     document.body.style.pointerEvents = ''
+    // Module-level layer registry: make this suite order-independent even if
+    // a failing test skipped its unmounts.
+    context.layersRoot.clear()
+    context.layersWithOutsidePointerEventsDisabled.clear()
   })
 
   // The mirrored direction of the #2674 tests above: the OLDER disabling
