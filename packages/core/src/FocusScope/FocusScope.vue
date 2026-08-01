@@ -148,7 +148,8 @@ watchEffect((cleanupFn) => {
       return
     }
 
-    const isLastFocusedElementExist = container.contains(lastFocusedElement)
+    // container is non-null here: `MutationObserver` observes only inside `if (container)`
+    const isLastFocusedElementExist = container!.contains(lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
   }

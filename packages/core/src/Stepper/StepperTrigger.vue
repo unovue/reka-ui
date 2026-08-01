@@ -66,7 +66,7 @@ function handleKeyDown(event: KeyboardEvent) {
 
 const { forwardRef, currentElement } = useForwardExpose()
 
-let registeredElement: HTMLElement | null = null
+let registeredElement: HTMLElement | undefined
 
 onMounted(() => {
   registeredElement = currentElement.value
@@ -77,7 +77,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (registeredElement) {
     rootContext.totalStepperItems.value.delete(registeredElement)
-    registeredElement = null
+    registeredElement = undefined
   }
 })
 </script>

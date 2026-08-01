@@ -57,7 +57,7 @@ export type PanelGroupContext = {
   startDragging: (dragHandleId: string, event: ResizeEvent) => void
   stopDragging: () => void
   unregisterPanel: (panelData: PanelData) => void
-  panelGroupElement: Ref<ParentNode | null>
+  panelGroupElement: Ref<ParentNode | null | undefined>
 
   // Exposed function for child component
   collapsePanel: (panelData: PanelData) => void

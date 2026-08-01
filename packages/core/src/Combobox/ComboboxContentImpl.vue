@@ -84,7 +84,8 @@ provideComboboxContentContext({ position })
 const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
-    isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
+    // TODO(currentElement): verify nullability; should probably be (?? false)
+    isInputWithinContent.value = currentElement.value!.contains(rootContext.inputElement.value)
     if (isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }

@@ -14,10 +14,10 @@ const props = defineProps<DismissableLayerBranchProps>()
 
 const { forwardRef, currentElement } = useForwardExpose()
 onMounted(() => {
-  context.branches.add(currentElement.value)
+  context.branches.add(currentElement.value!)
 })
 onUnmounted(() => {
-  context.branches.delete(currentElement.value)
+  context.branches.delete(currentElement.value!)
 })
 </script>
 

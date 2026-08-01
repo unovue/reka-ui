@@ -15,7 +15,7 @@ export function useWindowSplitterResizeHandlerBehavior({
   disabled: Ref<boolean>
   handleId: string
   resizeHandler: Ref<ResizeHandler | null>
-  panelGroupElement: Ref<ParentNode | null>
+  panelGroupElement: Ref<ParentNode | null | undefined>
 }): void {
   watchEffect((onCleanup) => {
     const _panelGroupElement = panelGroupElement.value

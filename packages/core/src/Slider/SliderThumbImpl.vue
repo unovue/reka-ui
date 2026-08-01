@@ -43,7 +43,7 @@ const thumbInBoundsOffset = computed(() => {
 
 const isMounted = useMounted()
 onMounted(() => {
-  rootContext.thumbElements.value.push(thumbElement.value)
+  rootContext.thumbElements.value.push(thumbElement.value!)
 })
 onUnmounted(() => {
   const i = rootContext.thumbElements.value.findIndex(i => i === thumbElement.value) ?? -1
