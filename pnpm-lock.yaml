@@ -121,8 +121,8 @@ importers:
         specifier: link:../packages/core
         version: link:../packages/core
       temporal-polyfill:
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^1.0.2
+        version: 1.0.2
       typescript:
         specifier: '*'
         version: 5.8.3
@@ -230,8 +230,8 @@ importers:
         specifier: ^2.0.11
         version: 2.0.11
       temporal-polyfill:
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^1.0.2
+        version: 1.0.2
     devDependencies:
       '@iconify/vue':
         specifier: ^4.3.0
@@ -6410,11 +6410,14 @@ packages:
     resolution: {integrity: sha512-rzS0heiNf8Xn7/mpdSVVSMAWAoy9bfb1WOTYC78Z0UQKeKa/CWS8FOq0lKGNa8DWKAn9gxjCvMLYc5PGXYlK2A==}
     engines: {node: '>= 0.8.0'}
 
-  temporal-polyfill@0.3.0:
-    resolution: {integrity: sha512-qNsTkX9K8hi+FHDfHmf22e/OGuXmfBm9RqNismxBrnSmZVJKegQ+HYYXT+R7Ha8F/YSm2Y34vmzD4cxMu2u95g==}
+  temporal-polyfill@1.0.2:
+    resolution: {integrity: sha512-pTyp/7kfStJQbJ8YOHmcJItkxvOGCZHu3PaVgLvLnxFS7O12EPiWLElnRre/rw77z4TGZX/gvdqMXWn6ispQvA==}
 
-  temporal-spec@0.3.0:
-    resolution: {integrity: sha512-n+noVpIqz4hYgFSMOSiINNOUOMFtV5cZQNCmmszA6GiVFVRt3G7AqVyhXjhCSmowvQn+NsGn+jMDMKJYHd3bSQ==}
+  temporal-spec@1.0.1:
+    resolution: {integrity: sha512-wxVoanmDeavXie1vu2JaQ3WIc3JZnWAOYFBsJyATaVsXsycKYUflGsyBmrRSnoCpZJpwPyr38VpgSUlQ8CbFxg==}
+
+  temporal-utils@1.0.1:
+    resolution: {integrity: sha512-HAixuesxFQIUaQk3ptX2jhfO/FsOkgVkDDMawvp6n/fkB1q6BKfs3lURw9I+pK/2e2e/q/vrLrxmeqauBoyGMQ==}
 
   term-size@1.2.0:
     resolution: {integrity: sha512-7dPUZQGy/+m3/wjVz3ZW5dobSoD/02NxJpoXUX0WIyjfVS3l0c+b/+9phIDFA7FHzkYtwtMFgeGZ/Y8jVTeqQQ==}
@@ -13877,11 +13880,14 @@ snapshots:
       to-buffer: 1.1.1
       xtend: 4.0.2
 
-  temporal-polyfill@0.3.0:
+  temporal-polyfill@1.0.2:
     dependencies:
-      temporal-spec: 0.3.0
+      temporal-spec: 1.0.1
+      temporal-utils: 1.0.1
 
-  temporal-spec@0.3.0: {}
+  temporal-spec@1.0.1: {}
+
+  temporal-utils@1.0.1: {}
 
   term-size@1.2.0:
     dependencies:
