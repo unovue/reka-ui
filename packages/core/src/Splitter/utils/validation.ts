@@ -12,6 +12,11 @@ export function validatePanelGroupLayout({
   panelConstraints: PanelConstraints[]
 }): number[] {
   const nextLayout = [...prevLayout]
+
+  // An empty group has no sizes to total, so 0 !== 100 here is not a misconfiguration
+  if (panelConstraints.length === 0)
+    return nextLayout
+
   const nextLayoutTotalSize = nextLayout.reduce(
     (accumulated, current) => accumulated + current,
     0,
