@@ -96,7 +96,7 @@ export interface CalendarRootProps extends PrimitiveProps {
   nextPage?: (placeholder: TemporalDate) => TemporalDate
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
   prevPage?: (placeholder: TemporalDate) => TemporalDate
-  /** The controlled checked state of the calendar */
+  /** The controlled selected value of the calendar */
   modelValue?: TemporalDate | TemporalDate[] | undefined
   /** Whether multiple dates can be selected */
   multiple?: boolean

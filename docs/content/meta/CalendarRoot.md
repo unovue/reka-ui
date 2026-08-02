@@ -99,7 +99,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar</p>\n',
+    'description': '<p>The controlled selected value of the calendar</p>\n',
     'type': 'TemporalDate | TemporalDate[]',
     'required': false
   },
@@ -244,7 +244,7 @@
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `TemporalDate` | No | - |
 | `minValue` | The minimum date that can be selected | `TemporalDate` | No | - |
-| `modelValue` | The controlled checked state of the calendar | `TemporalDate \| TemporalDate[]` | No | - |
+| `modelValue` | The controlled selected value of the calendar | `TemporalDate \| TemporalDate[]` | No | - |
 | `multiple` | Whether multiple dates can be selected | `boolean` | No | `false` |
 | `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
 | `numberOfMonths` | The number of months to display at once | `number` | No | `1` |

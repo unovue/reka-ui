@@ -21,6 +21,7 @@ Histoire (storybook-like) environment for component development and visual testi
 - Fixing story rendering issues (CSS, aliases, plugins).
 
 ## Commands
+
 | Command | What |
 |---|---|
 | `pnpm story:dev` | Start Histoire dev server (port 6006). |
