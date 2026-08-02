@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Temporal } from 'temporal-polyfill'
+import { Temporal } from 'temporal-polyfill/full'
 import Calendar from './_DummyCalendar.vue'
 
 const baseDate = Temporal.PlainDate.from({ year: 2024, month: 8, day: 31 })

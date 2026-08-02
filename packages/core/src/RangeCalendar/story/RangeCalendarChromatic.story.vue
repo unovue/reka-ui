@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import type { TemporalDate } from '@/temporal/types'
-import { Temporal } from 'temporal-polyfill'
+import { Temporal } from 'temporal-polyfill/full'
 import { ref } from 'vue'
 import RangeCalendar from './_DummyRangeCalendar.vue'
 
