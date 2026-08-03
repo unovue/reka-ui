@@ -454,4 +454,49 @@ describe('useForwardRef', async () => {
 
     expect(parentRef.value?.currentElement).toBeUndefined()
   })
+
+  it('should resolve the first element root of a multi-root fragment', async () => {
+    const Child = defineComponent({ template: `leading text <button id="own">ok</button>` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef }), h('div', { id: 'outsider' })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeInstanceOf(HTMLButtonElement)
+    expect(parentRef.value?.currentElement?.id).toBe('own')
+  })
+
+  it('should not resolve outside element when the fragment has no proper element', async () => {
+    const Child = defineComponent({ template: `<!-- a --><!-- b -->` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef }), h('div', { id: 'outsider' })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeUndefined()
+  })
 })
