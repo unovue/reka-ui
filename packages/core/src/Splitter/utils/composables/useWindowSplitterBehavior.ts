@@ -19,7 +19,7 @@ export function useWindowSplitterResizeHandlerBehavior({
 }): void {
   watchEffect((onCleanup) => {
     const _panelGroupElement = panelGroupElement.value
-    if (disabled.value || resizeHandler.value === null || _panelGroupElement === null)
+    if (disabled.value || resizeHandler.value === null || !_panelGroupElement)
       return
 
     const handleElement = getResizeHandleElement(handleId, _panelGroupElement)
