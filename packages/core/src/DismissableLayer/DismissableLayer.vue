@@ -12,7 +12,7 @@ import {
   watch,
   watchEffect,
 } from 'vue'
-import { isNullish, useForwardExpose } from '@/shared'
+import { getActiveElement, isNullish, useForwardExpose } from '@/shared'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -21,6 +21,12 @@ export interface DismissableLayerProps extends PrimitiveProps {
    * interact with them: once to close the `DismissableLayer`, and again to trigger the element.
    */
   disableOutsidePointerEvents?: boolean
+  /**
+   * The strategy used to determine if this layer should handle the Escape key.
+   * - 'topmost' (default): Handles Escape only if this is the highest layer in the stack.
+   * - 'focus': Handles Escape only if focus is currently within this layer.
+   */
+  escapeKeyBehavior?: 'topmost' | 'focus'
 }
 
 export type DismissableLayerEmits = {
@@ -85,6 +91,7 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
 }>(), {
   disableOutsidePointerEvents: false,
   present: true,
+  escapeKeyBehavior: 'topmost',
 })
 
 const emits = defineEmits<DismissableLayerPrivateEmits>()
@@ -148,8 +155,10 @@ onKeyStroke('Escape', (event) => {
   // make it look like the highest layer and emit `escapeKeyDown` / `dismiss`.
   if (!props.present)
     return
-  const isHighestLayer = index.value === layers.value.size - 1
-  if (!isHighestLayer)
+  const shouldActivate = props.escapeKeyBehavior === 'focus'
+    ? (layerElement.value?.contains(getActiveElement()) ?? false)
+    : index.value === layers.value.size - 1
+  if (!shouldActivate)
     return
   emits('escapeKeyDown', event)
   if (!event.defaultPrevented)

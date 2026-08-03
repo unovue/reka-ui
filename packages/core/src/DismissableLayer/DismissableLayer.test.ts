@@ -282,3 +282,69 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
   })
 })
+
+describe('given DismissableLayers with escapeKeyBehavior', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountStacked(escapeKeyBehavior: 'topmost' | 'focus') {
+    const wrapper = mount(defineComponent({
+      setup() {
+        // `focusOutside` is prevented so that moving focus between layers
+        // does not itself dismiss a layer.
+        return () => h('div', [
+          h(DismissableLayerPrimitive, {
+            escapeKeyBehavior,
+            onFocusOutside: (event: Event) => event.preventDefault(),
+          }, () => h('button', { id: 'lower-btn' }, 'lower')),
+          h(DismissableLayerPrimitive, {
+            escapeKeyBehavior,
+            onFocusOutside: (event: Event) => event.preventDefault(),
+          }, () => h('button', { id: 'upper-btn' }, 'upper')),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    const [lower, upper] = wrapper.findAllComponents(DismissableLayerPrimitive)
+    return { wrapper, lower, upper }
+  }
+
+  it('should route Escape to the topmost layer regardless of focus by default', async () => {
+    const { wrapper, lower, upper } = mountStacked('topmost')
+    await nextTick()
+
+    // Focus is inside the LOWER layer, but 'topmost' ignores focus.
+    document.getElementById('lower-btn')!.focus()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(upper.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(lower.emitted('escapeKeyDown')).toBeUndefined()
+  })
+
+  it('should route Escape to the focused layer when behavior is "focus"', async () => {
+    const { wrapper, lower, upper } = mountStacked('focus')
+    await nextTick()
+
+    // Focus is inside the LOWER layer, which is not the topmost one.
+    document.getElementById('lower-btn')!.focus()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(lower.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(upper.emitted('escapeKeyDown')).toBeUndefined()
+  })
+
+  it('should not route Escape to any layer when focus is outside every layer', async () => {
+    const { wrapper, lower, upper } = mountStacked('focus')
+    await nextTick()
+
+    document.body.focus()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(lower.emitted('escapeKeyDown')).toBeUndefined()
+    expect(upper.emitted('escapeKeyDown')).toBeUndefined()
+  })
+})
