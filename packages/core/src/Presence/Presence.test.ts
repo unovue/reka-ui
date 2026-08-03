@@ -147,22 +147,23 @@ describe('given a Presence with animated content', () => {
 describe('given a Presence with an animated descendant', () => {
   it('should ignore bubbled animation events before reading styles', async () => {
     const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle')
-    const wrapper = mount(defineComponent({
-      components: { Presence },
-      template: `<Presence :present="true">
-        <div data-testid="presence">
-          <span data-testid="animated-child">Child</span>
-        </div>
-      </Presence>`,
-    }))
-
     const createAnimationEndEvent = () => {
       const event = new Event('animationend', { bubbles: true })
       Object.defineProperty(event, 'animationName', { value: 'child-animation' })
       return event
     }
+    let wrapper: ReturnType<typeof mount> | undefined
 
     try {
+      wrapper = mount(defineComponent({
+        components: { Presence },
+        template: `<Presence :present="true">
+          <div data-testid="presence">
+            <span data-testid="animated-child">Child</span>
+          </div>
+        </Presence>`,
+      }))
+
       await nextTick()
       const presenceElement = wrapper.find('[data-testid="presence"]').element
       const animatedChild = wrapper.find('[data-testid="animated-child"]').element
@@ -176,7 +177,7 @@ describe('given a Presence with an animated descendant', () => {
       expect(getComputedStyleSpy).not.toHaveBeenCalledWith(presenceElement)
     }
     finally {
-      wrapper.unmount()
+      wrapper?.unmount()
       getComputedStyleSpy.mockRestore()
     }
   })
