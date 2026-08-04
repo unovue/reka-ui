@@ -162,7 +162,7 @@ You can nest multiple layers of dialogs.
 
 Pass an element (or a selector) to `DialogRoot`'s `:container` prop to scope the dialog to it:
 - `DialogPortal` teleports into it;
-- `DialogOverlay` locks its scrolling instead of the body;
+- When `:modal="true"`, `DialogOverlay` locks its scrolling instead of the body;
 
 A contained dialog is modal within its container only:
 - the rest of the page stays interactive and scrollable;
