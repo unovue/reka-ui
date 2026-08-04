@@ -38,12 +38,13 @@ const isModal2 = ref(true)
       <div class="flex gap-2 items-center">
         <label
           class="text-stone-700 dark:text-white text-sm leading-none pr-2 select-none"
-          for="airplane-mode"
+          for="native-scroll-modal"
         >
           Modal
         </label>
 
         <SwitchRoot
+          id="native-scroll-modal"
           v-model="isModal1"
           class="w-[32px] h-[20px] shadow-sm flex data-[state=unchecked]:bg-stone-300 data-[state=checked]:bg-stone-800 dark:data-[state=unchecked]:bg-stone-800 dark:data-[state=checked]:bg-stone-700 border border-stone-300 data-[state=checked]:border-stone-700  dark:border-stone-700 rounded-full relative transition-[background] focus-within:outline-none focus-within:shadow-[0_0_0_1px] focus-within:border-stone-800 focus-within:shadow-stone-800"
         >
@@ -91,10 +92,10 @@ const isModal2 = ref(true)
           <fieldset class="mb-[15px] flex items-center gap-5">
             <label
               class="text-grass11 w-[90px] text-right text-sm"
-              for="name"
+              for="native-scroll-name"
             > Name </label>
             <input
-              id="name"
+              id="native-scroll-name"
               class="text-grass11 bg-stone-50 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-lg px-[10px] text-sm leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
               defaultValue="Pedro Duarte"
             >
@@ -129,12 +130,13 @@ const isModal2 = ref(true)
       <div class="flex gap-2 items-center">
         <label
           class="text-stone-700 dark:text-white text-sm leading-none pr-2 select-none"
-          for="airplane-mode"
+          for="scroll-area-modal"
         >
           Modal
         </label>
 
         <SwitchRoot
+          id="scroll-area-modal"
           v-model="isModal2"
           class="w-[32px] h-[20px] shadow-sm flex data-[state=unchecked]:bg-stone-300 data-[state=checked]:bg-stone-800 dark:data-[state=unchecked]:bg-stone-800 dark:data-[state=checked]:bg-stone-700 border border-stone-300 data-[state=checked]:border-stone-700  dark:border-stone-700 rounded-full relative transition-[background] focus-within:outline-none focus-within:shadow-[0_0_0_1px] focus-within:border-stone-800 focus-within:shadow-stone-800"
         >
@@ -201,10 +203,10 @@ const isModal2 = ref(true)
           <fieldset class="mb-[15px] flex items-center gap-5">
             <label
               class="text-grass11 w-[90px] text-right text-sm"
-              for="name"
+              for="scroll-area-name"
             > Name </label>
             <input
-              id="name"
+              id="scroll-area-name"
               class="text-grass11 bg-stone-50 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-lg px-[10px] text-sm leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
               defaultValue="Pedro Duarte"
             >
@@ -256,10 +258,10 @@ const isModal2 = ref(true)
           <fieldset class="mb-[15px] flex items-center gap-5">
             <label
               class="text-grass11 w-[90px] text-right text-sm"
-              for="name"
+              for="full-page-name"
             > Name </label>
             <input
-              id="name"
+              id="full-page-name"
               class="text-grass11 bg-stone-50 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-lg px-[10px] text-sm leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]"
               defaultValue="Pedro Duarte"
             >
