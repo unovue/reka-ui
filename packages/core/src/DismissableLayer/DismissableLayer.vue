@@ -8,11 +8,11 @@ import type { PrimitiveProps } from '@/Primitive'
 import {
   computed,
   nextTick,
-  reactive,
   watch,
   watchEffect,
 } from 'vue'
 import { isNullish, useForwardExpose } from '@/shared'
+import { context } from './context'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -54,12 +54,7 @@ export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
   dismiss: []
 }
 
-export const context = reactive({
-  layersRoot: new Set<HTMLElement>(),
-  layersWithOutsidePointerEventsDisabled: new Set<HTMLElement>(),
-  originalBodyPointerEvents: undefined as string | undefined,
-  branches: new Set<HTMLElement>(),
-})
+export { context }
 </script>
 
 <script setup lang="ts">
