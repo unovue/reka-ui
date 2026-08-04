@@ -155,8 +155,17 @@ onKeyStroke('Escape', (event) => {
   // make it look like the highest layer and emit `escapeKeyDown` / `dismiss`.
   if (!props.present)
     return
+
+  function isInnermostFocusedLayer() {
+    const active = getActiveElement()
+    const focused = Array.from(layers.value).filter(layer => layer.contains(active))
+    // The innermost focused layer is the one that contains no other focused layer.
+    return focused.includes(layerElement.value)
+      && !focused.some(other => other !== layerElement.value && layerElement.value!.contains(other))
+  }
+
   const shouldActivate = props.escapeKeyBehavior === 'focus'
-    ? (layerElement.value?.contains(getActiveElement()) ?? false)
+    ? isInnermostFocusedLayer()
     : index.value === layers.value.size - 1
   if (!shouldActivate)
     return

@@ -321,6 +321,8 @@ describe('given DismissableLayers with escapeKeyBehavior', () => {
 
     expect(upper.emitted('escapeKeyDown')?.length).toBe(1)
     expect(lower.emitted('escapeKeyDown')).toBeUndefined()
+
+    wrapper.unmount()
   })
 
   it('should route Escape to the focused layer when behavior is "focus"', async () => {
@@ -334,6 +336,8 @@ describe('given DismissableLayers with escapeKeyBehavior', () => {
 
     expect(lower.emitted('escapeKeyDown')?.length).toBe(1)
     expect(upper.emitted('escapeKeyDown')).toBeUndefined()
+
+    wrapper.unmount()
   })
 
   it('should not route Escape to any layer when focus is outside every layer', async () => {
@@ -346,5 +350,83 @@ describe('given DismissableLayers with escapeKeyBehavior', () => {
 
     expect(lower.emitted('escapeKeyDown')).toBeUndefined()
     expect(upper.emitted('escapeKeyDown')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('should route Escape to the outer layer when focus is outside the nested one', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(DismissableLayerPrimitive, { escapeKeyBehavior: 'focus' }, () => [
+          h('button', { id: 'outer-btn' }, 'outer'),
+          h(DismissableLayerPrimitive, { escapeKeyBehavior: 'focus' }, () => h('button', { id: 'inner-btn' }, 'inner')),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    const [outer, inner] = wrapper.findAllComponents(DismissableLayerPrimitive)
+    await nextTick()
+
+    document.getElementById('outer-btn')!.focus()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(outer.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(inner.emitted('escapeKeyDown')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('should route Escape only to the innermost layer when nested and behavior is "focus"', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(DismissableLayerPrimitive, { escapeKeyBehavior: 'focus' }, () => [
+          h('button', { id: 'outer-btn' }, 'outer'),
+          h(DismissableLayerPrimitive, { escapeKeyBehavior: 'focus' }, () => h('button', { id: 'inner-btn' }, 'inner')),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    const [outer, inner] = wrapper.findAllComponents(DismissableLayerPrimitive)
+    await nextTick()
+
+    // Focus is inside the INNER layer, which is also inside the outer one.
+    document.getElementById('inner-btn')!.focus()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(inner.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(outer.emitted('escapeKeyDown')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('should route Escape to the innermost layer after an ancestor re-registers', async () => {
+    const outerPresent = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(DismissableLayerPrimitive, { escapeKeyBehavior: 'focus', present: outerPresent.value }, () => [
+          h('button', { id: 'outer-btn' }, 'outer'),
+          h(DismissableLayerPrimitive, { escapeKeyBehavior: 'focus' }, () => h('button', { id: 'inner-btn' }, 'inner')),
+        ])
+      },
+    }), { attachTo: document.body })
+    const [outer, inner] = wrapper.findAllComponents(DismissableLayerPrimitive)
+    await nextTick()
+
+    // outer leaves and rejoins the stack, moving it to the end of the set
+    outerPresent.value = false
+    await nextTick()
+    outerPresent.value = true
+    await nextTick()
+
+    document.getElementById('inner-btn')!.focus()
+    await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(inner.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(outer.emitted('escapeKeyDown')).toBeUndefined()
+
+    wrapper.unmount()
   })
 })
