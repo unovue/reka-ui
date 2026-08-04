@@ -86,7 +86,7 @@ const useLockStackCount = createSharedComposable(() => {
             margin: context.scrollBody.value.margin === true ? baseMargin + verticalScrollbarWidth : context.scrollBody.value.margin,
           }, defaultConfig)
         : defaultConfig
-      : ({ padding: 0, margin: 0 })
+      : ({ padding: basePadding, margin: baseMargin })
 
     if (verticalScrollbarWidth > 0) {
       el.style.paddingRight = typeof config.padding === 'number' ? `${config.padding}px` : String(config.padding)
