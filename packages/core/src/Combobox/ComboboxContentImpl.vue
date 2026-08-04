@@ -55,7 +55,7 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 
 const { forwardRef, currentElement } = useForwardExpose()
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
-watch(() => props.present, present => scrollLocked.value = present && props.bodyLock)
+watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards()
 const ariaHiddenTarget = computed(() => props.present ? rootContext.parentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
@@ -99,13 +99,15 @@ onMounted(() => {
 })
 
 watch(() => props.present, async (isPresent, wasPresent) => {
-  if (isPresent || !wasPresent || !isInputWithinContent.value)
+  if (isPresent || !wasPresent)
+    return
+
+  const activeElement = getActiveElement()
+  if (!activeElement || !currentElement.value.contains(activeElement))
     return
 
   await nextTick()
-  const activeElement = getActiveElement()
-  if (!activeElement || activeElement === document.body || currentElement.value.contains(activeElement))
-    rootContext.triggerElement.value?.focus()
+  rootContext.triggerElement.value?.focus()
 })
 
 onUnmounted(() => {

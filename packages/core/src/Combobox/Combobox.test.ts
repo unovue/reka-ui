@@ -79,8 +79,10 @@ describe('given a Combobox with unmountOnHide=false', () => {
     await nextTick()
     expect(content.style.display).not.toBe('none')
 
+    statefulInput.focus()
     statefulInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await vi.waitFor(() => expect(content.style.display).toBe('none'))
+    expect(document.activeElement).toBe(trigger.element)
 
     await trigger.trigger('click')
     await nextTick()
@@ -108,6 +110,14 @@ describe('given a Combobox with unmountOnHide=false', () => {
 
     expect(document.body.style.overflow).not.toBe('hidden')
     await trigger.trigger('click')
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    await wrapper.setProps({ bodyLock: false })
+    await nextTick()
+    expect(document.body.style.overflow).not.toBe('hidden')
+
+    await wrapper.setProps({ bodyLock: true })
     await nextTick()
     expect(document.body.style.overflow).toBe('hidden')
 
