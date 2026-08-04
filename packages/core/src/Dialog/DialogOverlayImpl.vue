@@ -24,7 +24,16 @@ const scrollLocked = useScrollLock(() => resolveDOMTarget(toValue(
   // explicitly indicate to not lock anything
   props.lockTarget !== undefined ? props.lockTarget : rootContext.container.value,
 )), props.present)
-watch(() => props.present, val => scrollLocked.value = val)
+watch(
+  [
+    () => props.present,
+    () => props.lockTarget,
+    () => rootContext.container.value,
+  ],
+  ([present]) => {
+    scrollLocked.value = present
+  },
+)
 
 useForwardExpose()
 </script>
