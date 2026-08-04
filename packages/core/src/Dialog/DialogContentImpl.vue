@@ -96,6 +96,7 @@ if (process.env.NODE_ENV !== 'production') {
       :aria-labelledby="rootContext.titleId"
       :data-state="getOpenState(rootContext.open.value)"
       v-bind="$attrs"
+      :escape-key-behavior="props.escapeKeyBehavior"
       @dismiss="rootContext.onOpenChange(false)"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @focus-outside="emits('focusOutside', $event)"

@@ -158,6 +158,26 @@ You can nest multiple layers of dialogs.
 
 <ComponentPreview name="DialogNested" />
 
+### Dialog in a container
+
+Pass an element (or a selector) to `DialogRoot`'s `:container` prop to scope the dialog to it:
+- `DialogPortal` teleports into it;
+- `DialogOverlay` locks its scrolling instead of the body;
+
+A contained dialog is modal within its container only:
+- the rest of the page stays interactive and scrollable;
+- the focus is not trapped (though Tab cycles within the dialog while focus is inside it);
+- clicking outside the container does not dismiss the dialog;
+- Escape closes the dialog only while focus is within the container;
+
+`DialogPortal`'s `:to` overrides the teleport target.
+
+`DialogOverlay`'s `:lock-target` overrides the scroll-lock target (setting `:lock-target="null"` disables locking).
+
+Both `DialogContent` and `DialogOverlay` render a `data-contained` attribute — use it to style it appropriately (e.g., switch positioning from `fixed` to `absolute`).
+
+<ComponentPreview name="DialogContainer" />
+
 ### Close after asynchronous form submission
 
 Use the controlled props to programmatically close the Dialog after an async operation has completed.
