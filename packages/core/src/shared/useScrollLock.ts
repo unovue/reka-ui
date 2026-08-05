@@ -11,6 +11,20 @@ import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue
 
 const initialStyles = new WeakMap<HTMLElement, { overflow: string, paddingRight: string, marginRight: string }>()
 
+/**
+ * Shared lock registry for every element that can be scroll-locked.
+ *
+ * Keyed by element so that locks on different elements never interact:
+ * `Map<element, Map<lockId, locked>>`. An element counts as locked while at
+ * least one of its ids is `true`, so nested or concurrent consumers stack —
+ * the element is only released once the last of them lets go.
+ *
+ * Styles are applied on the transitions only (first lock arriving, last lock
+ * leaving), never per lock. On lock the element's scrollbar width is measured
+ * and compensated for; on release its original inline styles are restored.
+ *
+ * @internal
+ */
 const useLockStackCount = createSharedComposable(() => {
   // element -> (lockId -> isLocked)
   const stacks = ref<Map<HTMLElement, Map<string, boolean>>>(new Map())
@@ -137,6 +151,30 @@ const useLockStackCount = createSharedComposable(() => {
 
 let lockIdCounter = 0
 
+/**
+ * Lock scrolling of an element, compensating for the scrollbar it hides so the
+ * content does not reflow.
+ *
+ * The target is resolved **when `locked` is written**, not reactively: pass a
+ * ref or getter and it will be read at that moment. A target that changes while
+ * the lock is held keeps the previous element locked until the next write, at
+ * which point the old element is released and the new one takes over.
+ *
+ * Locks stack per element — the element stays locked until every lock on it is
+ * released — and each lock is released automatically when its component unmounts.
+ *
+ * @param target Element to lock, or a ref/getter resolving to one. Omit it to
+ * lock the document body.
+ * @param initialState Whether the lock starts engaged.
+ * @returns A writable `boolean` ref controlling this lock.
+ *
+ * @example
+ * ```ts
+ * const container = useTemplateRef('container')
+ * const locked = useScrollLock(container)
+ * locked.value = isOpen.value
+ * ```
+ */
 export function useScrollLock(
   target?: MaybeRefOrGetter<HTMLElement | null | undefined>,
   initialState = false,

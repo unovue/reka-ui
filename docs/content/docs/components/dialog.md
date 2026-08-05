@@ -108,6 +108,10 @@ A layer that covers the inert portion of the view when the dialog is open.
       attribute: '[data-state]',
       values: ['open', 'closed'],
     },
+    {
+      attribute: '[data-contained]',
+      values: 'Present when contained'
+    },
   ]"
 />
 
@@ -124,6 +128,10 @@ Contains content to be rendered in the open dialog
     {
       attribute: '[data-state]',
       values: ['open', 'closed'],
+    },
+    {
+      attribute: '[data-contained]',
+      values: 'Present when contained'
     },
   ]"
 />
