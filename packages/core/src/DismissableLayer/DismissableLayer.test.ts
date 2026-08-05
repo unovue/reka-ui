@@ -3,8 +3,10 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
 import { DismissableLayer as DismissableLayerPrimitive } from '.'
+import { context } from './context'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
@@ -125,6 +127,177 @@ describe('nested layers with disableOutsidePointerEvents (#2674)', () => {
     expect(document.body.style.pointerEvents).toBe('none')
 
     outerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+})
+
+describe('sibling layers with disableOutsidePointerEvents', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    // Module-level layer registry: make this suite order-independent even if
+    // a failing test skipped its unmounts.
+    context.layersRoot.clear()
+    context.layersWithOutsidePointerEventsDisabled.clear()
+  })
+
+  // The mirrored direction of the #2674 tests above: the OLDER disabling
+  // layer leaves the set while a NEWER sibling is still present. This is the
+  // layer-registry half of the #2784 scenario (a closing animated Popover
+  // whose layer unmounts after a Dialog has already opened).
+  function mountSiblings() {
+    const popoverOpen = ref(true)
+    const dialogOpen = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          popoverOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'popover' }, () => 'Popover')
+            : null,
+          dialogOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'dialog' }, () => 'Dialog')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { wrapper, popoverOpen, dialogOpen }
+  }
+
+  it('should keep body pointer-events none after the older layer unmounts while a newer one is open', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountSiblings()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Dialog mounts while the popover is still animating out (still mounted)
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Popover's exit animation ends -> its layer unmounts; dialog still open
+    popoverOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Closing the dialog restores the body
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should keep body pointer-events none when the handoff happens in the same tick', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountSiblings()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // "Pick" action: close the popover and open the dialog in the same tick
+    popoverOpen.value = false
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+})
+
+describe('scroll-lock handoff to a modal layer without its own scroll lock (#2784)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    // Module-level layer registry: make this suite order-independent even if
+    // a failing test skipped its unmounts.
+    context.layersRoot.clear()
+    context.layersWithOutsidePointerEventsDisabled.clear()
+  })
+
+  // Mimics `PopoverContentModal`: a modal layer that also holds a body scroll
+  // lock, released when the content unmounts (for an animated popover that is
+  // the end of the exit animation).
+  const ModalLayerWithScrollLock = defineComponent({
+    setup() {
+      useBodyScrollLock(true)
+      return () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'popover')
+    },
+  })
+
+  // Mimics an overlay-less modal `DialogContent`: disables outside pointer
+  // events but registers no scroll lock (that lives on `DialogOverlayImpl`).
+  function mountHandoff() {
+    const popoverOpen = ref(false)
+    const dialogOpen = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          popoverOpen.value ? h(ModalLayerWithScrollLock) : null,
+          dialogOpen.value
+            ? h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'dialog')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { wrapper, popoverOpen, dialogOpen }
+  }
+
+  it('should keep body pointer-events none when the scroll-lock holder unmounts while a modal layer remains open', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountHandoff()
+
+    // Modal popover opens: dismissable layer + scroll lock
+    popoverOpen.value = true
+    await nextTick() // scroll lock applies its own pointer-events on next tick
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Modal dialog (no overlay -> no scroll lock) opens while the popover
+    // is still mounted (e.g. animating out)
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Popover unmounts: the last scroll lock releases and must not clear the
+    // body pointer-events still owned by the dialog's dismissable layer
+    popoverOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Closing the dialog restores the body
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should keep body pointer-events none when a scroll-locking layer opens and closes over a modal layer', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountHandoff()
+
+    // Overlay-less modal dialog open first
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // A modal popover (scroll-lock holder) opens on top, then closes
+    popoverOpen.value = true
+    await nextTick()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    popoverOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    dialogOpen.value = false
     await sleep(1)
     expect(document.body.style.pointerEvents).toBe('')
 

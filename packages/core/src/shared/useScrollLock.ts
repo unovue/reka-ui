@@ -8,6 +8,7 @@ import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import { context as dismissableLayerContext } from '@/DismissableLayer/context'
 
 const initialStyles = new WeakMap<HTMLElement, { overflow: string, paddingRight: string, marginRight: string }>()
 
@@ -53,7 +54,12 @@ const useLockStackCount = createSharedComposable(() => {
 
     el.style.paddingRight = initial?.paddingRight ?? ''
     el.style.marginRight = initial?.marginRight ?? ''
-    if (isBody)
+    // A mounted `DismissableLayer` with `disableOutsidePointerEvents` may
+    // still own the body pointer-events lock (e.g. a modal Dialog rendered
+    // without the Overlay that would hold a scroll lock). Clearing it here
+    // would make everything behind that layer clickable again (#2784); the
+    // layer restores it once its last disabling layer is gone.
+    if (isBody && dismissableLayerContext.layersWithOutsidePointerEventsDisabled.size === 0)
       el.style.pointerEvents = ''
     const cssVarHolder = isBody ? document.documentElement : el
     cssVarHolder.style.removeProperty('--scrollbar-width')
