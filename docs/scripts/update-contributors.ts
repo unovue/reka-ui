@@ -17,10 +17,11 @@ async function fetchContributors(page = 1) {
     },
   })
 
-  if (!res.ok) {
-    console.error(`Failed to fetch contributors page #${page}: ${res.status} ${res.statusText} ${await res.text()}`)
-    return []
-  }
+  // Throw rather than return an empty page: earlier pages have already been
+  // collected, and treating a failure as "no more contributors" would silently
+  // truncate the list.
+  if (!res.ok)
+    throw new Error(`Failed to fetch contributors page #${page}: ${res.status} ${res.statusText} ${await res.text()}`)
 
   const data: Contributor[] = await res.json()
 
@@ -33,13 +34,14 @@ async function fetchContributors(page = 1) {
 async function generate() {
   const collaborators = await fetchContributors()
 
-  // A failed request resolves to an empty list — never overwrite a good file with it.
-  if (!collaborators.length) {
-    console.error('No contributors fetched, skipping write.')
-    return
-  }
+  // Never overwrite a good file with nothing.
+  if (!collaborators.length)
+    throw new Error('No contributors fetched')
 
   await fs.writeFile('.vitepress/contributor-names.json', `${JSON.stringify(collaborators, null, 2)}\n`, 'utf8')
 }
 
-generate()
+generate().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})

@@ -25,15 +25,21 @@ jobs:
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
+      # The two updates are independent, and each script leaves its file
+      # untouched when it fails. `!cancelled()` lets the rest of the job carry on
+      # so one failure still commits the other update — the job itself is still
+      # marked failed, so the error stays visible.
       - name: Update contributors
         run: pnpm docs:contributors
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update sponsors
+        if: ${{ !cancelled() }}
         run: pnpm docs:sponsors
 
       - name: Commit and push
+        if: ${{ !cancelled() }}
         run: |
           FILES="docs/.vitepress/contributor-names.json docs/content/public/sponsors.svg"
 
