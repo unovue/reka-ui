@@ -135,11 +135,13 @@ const useLockStackCount = createSharedComposable(() => {
   return stacks
 })
 
+let lockIdCounter = 0
+
 export function useScrollLock(
   target?: MaybeRefOrGetter<HTMLElement | null | undefined>,
   initialState = false,
 ) {
-  const id = Math.random().toString(36).substring(2, 7) // just simple random id, need not to be cryptographically secure
+  const id = `scroll-lock-${lockIdCounter++}`
   const stacks = useLockStackCount()
 
   const resolveTarget = () => {
