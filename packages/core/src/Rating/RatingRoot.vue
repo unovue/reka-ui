@@ -10,10 +10,8 @@ export interface RatingRootContext {
   hoveredRating: Ref<number>
   disabled: Ref<boolean>
   step: Ref<number>
-  hoverable: Ref<boolean>
   changeModelValue: (rating: number) => void
   changeHoveredRating: (rating: number) => void
-  resetHoveredRating: () => void
 }
 
 export interface RatingRootProps extends Omit<RadioGroupRootProps, 'modelValue' | 'defaultValue'> {
@@ -93,10 +91,10 @@ function changeHoveredRating(rating: number) {
 
   hoveredRating.value = rating
 }
-function resetHoveredRating() {
-  if (disabled.value || !hoverable.value)
-    return
 
+// Unconditional, so a preview left over from a `hoverable`/`disabled` toggle
+// mid-hover still clears once the pointer leaves.
+function resetHoveredRating() {
   hoveredRating.value = 0
 }
 
@@ -106,10 +104,8 @@ provideRatingRootContext({
   hoveredRating,
   disabled,
   step,
-  hoverable,
   changeModelValue,
   changeHoveredRating,
-  resetHoveredRating,
 })
 </script>
 
