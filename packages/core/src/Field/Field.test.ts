@@ -2,12 +2,24 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { CheckboxRoot } from '@/Checkbox'
 import { DateFieldRoot } from '@/DateField'
 import { FormRoot } from '@/Form'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '@/Select'
-import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot } from '.'
+import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot, injectFieldRootContext } from '.'
+
+// Reports arbitrary (non-string) values through the same side channel a
+// non-native control uses, so `filled` can be exercised for values a native
+// `input` could never produce.
+const FieldProbe = defineComponent({
+  name: 'FieldProbe',
+  setup(_, { expose }) {
+    const context = injectFieldRootContext()
+    expose({ report: (value: unknown) => context.handleControlInput({ value }) })
+    return () => null
+  },
+})
 
 const components = { FieldRoot, FieldLabel, FieldControl, FieldDescription, FieldError }
 
@@ -41,6 +53,17 @@ async function selectFirstOption(wrapper: ReturnType<typeof mount>) {
   option.focus()
   // Needs 2 pointerup events because SelectContentImpl ignores accidental first pointerups.
   await fireEvent.pointerUp(option)
+  await fireEvent.pointerUp(option)
+  await nextTick()
+}
+
+// Toggles the first option of an already-open Select (`multiple` mode keeps
+// the content open after a selection). Unlike `selectFirstOption` this needs
+// only one `pointerup`: `SelectContentImpl`'s open-from-pointerdown guard is
+// registered `once`, so it has already been spent by the first selection.
+async function toggleFirstOption() {
+  const option = document.querySelector('[role="option"]') as HTMLElement
+  option.focus()
   await fireEvent.pointerUp(option)
   await nextTick()
 }
@@ -492,5 +515,109 @@ describe('given a Field-wrapped Select', () => {
     const field = wrapper.find('[data-testid="field"]')
     expect(field.attributes('data-valid')).toBeUndefined()
     expect(field.attributes('data-invalid')).toBe('')
+  })
+
+  it('a multiple Select reports the resulting selection, not the toggled option', async () => {
+    const validate = vi.fn(() => null)
+
+    const wrapper = mount({
+      components: selectComponents,
+      props: ['validate'],
+      template: `
+        <FieldRoot name="fruit" :validate="validate" validation-mode="onChange" data-testid="field">
+          <SelectRoot multiple>
+            <SelectTrigger>Choose fruits</SelectTrigger>
+            <SelectPortal>
+              <SelectContent>
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+        </FieldRoot>
+      `,
+    }, { props: { validate }, attachTo: document.body })
+
+    const field = wrapper.find('[data-testid="field"]')
+
+    await selectFirstOption(wrapper)
+    expect(validate).toHaveBeenLastCalledWith(['apple'])
+    expect(field.attributes('data-filled')).toBe('')
+
+    // Deselecting must report the (now empty) selection — reporting the
+    // toggled item would hand `validate` the item that was just removed and
+    // leave the field looking filled.
+    await toggleFirstOption()
+    expect(validate).toHaveBeenLastCalledWith([])
+    expect(field.attributes('data-filled')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field control reporting non-string values', () => {
+  it('treats 0 as filled and an empty array as empty', async () => {
+    const wrapper = mount({
+      components: { ...components, FieldProbe },
+      template: `
+        <FieldRoot name="quantity" data-testid="field">
+          <FieldProbe ref="probe" />
+        </FieldRoot>
+      `,
+    })
+
+    const field = wrapper.find('[data-testid="field"]')
+    const probe = wrapper.vm.$refs.probe as { report: (value: unknown) => void }
+
+    // `Boolean(0)` is `false`, but a selected `0` is a real value.
+    probe.report(0)
+    await nextTick()
+    expect(field.attributes('data-filled')).toBe('')
+
+    // `Boolean([])` is `true`, but an empty multi-selection is not filled.
+    probe.report([])
+    await nextTick()
+    expect(field.attributes('data-filled')).toBeUndefined()
+
+    probe.report(['apple'])
+    await nextTick()
+    expect(field.attributes('data-filled')).toBe('')
+
+    probe.report('')
+    await nextTick()
+    expect(field.attributes('data-filled')).toBeUndefined()
+  })
+})
+
+describe('given a native control whose value changes without an input event', () => {
+  it('validates against the live DOM value rather than a stale reported one', async () => {
+    const validate = vi.fn(() => null)
+
+    const wrapper = mount({
+      components: { ...components, FormRoot },
+      props: ['validate'],
+      template: `
+        <FormRoot>
+          <FieldRoot name="email" :validate="validate">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { props: { validate }, attachTo: document.body })
+
+    const control = wrapper.find('input')
+    await control.setValue('typed@example.com')
+
+    // Programmatic writes (v-model, a direct `.value` assignment, autofill)
+    // don't fire `input`, so the value last reported through the side channel
+    // is now stale and must not win at submit time.
+    ;(control.element as HTMLInputElement).value = 'autofilled@example.com'
+
+    await wrapper.find('form').trigger('submit')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await nextTick()
+
+    expect(validate).toHaveBeenLastCalledWith('autofilled@example.com')
   })
 })

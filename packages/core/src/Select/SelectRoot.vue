@@ -177,8 +177,13 @@ function handleValueChange(value: T) {
   // `modelValue` change, handled by the `watch` above) — this is what
   // should mark the field dirty, and what lets a Field's custom `validate`
   // run against the Select's actual value.
+  //
+  // Report the resulting model, not the toggled `value`: in `multiple` mode
+  // `value` is the single item just added *or removed*, so a `validate` would
+  // otherwise see a deselected item as the field's value. This also matches
+  // what `SelectTrigger` reports on blur.
   fieldContext?.reportControlState({ dirty: true })
-  fieldContext?.handleControlInput({ value })
+  fieldContext?.handleControlInput({ value: modelValue.value })
 }
 
 function getOption(value: SelectOption['value']) {
