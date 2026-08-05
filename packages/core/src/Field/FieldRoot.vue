@@ -211,10 +211,30 @@ function reportControlState(state: { focused?: boolean, filled?: boolean, dirty?
     touched.value = state.touched
 }
 
-function getElementValue(element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) {
+// Only `input`/`textarea`/`select` carry a user-editable `value`. A plain
+// `'value' in element` check is too loose — a `<button>` (what a `Select`
+// trigger renders) also exposes `.value`, and reading its empty string would
+// shadow the real value reported through the `FieldControlDetail` side channel.
+function isNativeValueElement(element?: HTMLElement): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
   if (!element)
-    return undefined
-  return 'value' in element ? element.value : undefined
+    return false
+  const tag = element.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+}
+
+function getElementValue(element?: HTMLElement) {
+  return isNativeValueElement(element) ? element.value : undefined
+}
+
+// `filled` has to survive non-string values: non-native controls report
+// arrays (multi-`Select`) and numbers, and `Boolean(value)` gets both ends
+// wrong — `Boolean([])` is `true` for an empty multi-select, and `Boolean(0)`
+// is `false` for a legitimately selected `0`. Only `''`/`null`/`undefined`
+// (and an empty array) count as empty.
+function isFilledValue(value: unknown) {
+  if (Array.isArray(value))
+    return value.length > 0
+  return value !== undefined && value !== null && value !== ''
 }
 
 // A native control (barred from constraint validation — e.g. a plain
@@ -223,8 +243,10 @@ function getElementValue(element?: HTMLInputElement | HTMLTextAreaElement | HTML
 // `setNativeValidity` would stamp a false `data-valid` before any real
 // validation ran, so only trust `validity` when the element actually
 // participates in constraint validation.
-function canReadValidity(element?: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
-  return Boolean(element && 'validity' in element && element.willValidate)
+function canReadValidity(element?: HTMLElement): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
+  if (!element || !('validity' in element))
+    return false
+  return Boolean((element as HTMLInputElement).willValidate)
 }
 
 function resolveDetailValue(detail?: FieldControlDetail) {
@@ -258,7 +280,7 @@ function handleControlBlur(detail?: FieldControlDetail) {
   reportControlState({
     focused: false,
     touched: true,
-    ...(detail !== undefined ? { filled: Boolean(resolveDetailValue(detail)) } : {}),
+    ...(detail !== undefined ? { filled: isFilledValue(resolveDetailValue(detail)) } : {}),
   })
 
   if (validationModeRef.value === 'onBlur' || validationModeRef.value === 'onChange') {
@@ -274,7 +296,7 @@ function handleControlInput(detail?: FieldControlDetail) {
 
   reportControlState({
     dirty: true,
-    ...(detail !== undefined ? { filled: Boolean(resolveDetailValue(detail)) } : {}),
+    ...(detail !== undefined ? { filled: isFilledValue(resolveDetailValue(detail)) } : {}),
   })
 
   // Editing the field dismisses a previously shown server error for it.
@@ -292,11 +314,16 @@ function setControlElement(element: HTMLElement | undefined) {
 }
 
 async function validateNow(): Promise<boolean> {
-  const element = controlElement.value as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | undefined
+  const element = controlElement.value
   if (canReadValidity(element))
     setNativeValidity(element.validity)
 
-  const value = lastKnownValue.value !== undefined ? lastKnownValue.value : getElementValue(element)
+  // Prefer the live DOM value whenever a native control is registered:
+  // programmatic writes (v-model, a direct `.value` assignment, autofill)
+  // don't fire `input`, so a `lastKnownValue` captured from an earlier
+  // keystroke would go stale and permanently shadow the real value.
+  // `lastKnownValue` is the fallback for non-native controls only.
+  const value = isNativeValueElement(element) ? element.value : lastKnownValue.value
   await triggerValidation(value, true)
 
   return props.invalid === undefined ? !(validationInvalid.value || hasServerError.value) : !props.invalid

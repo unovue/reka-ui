@@ -204,7 +204,7 @@ describe('given a Form submission race/error guard', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 
-  it('a rejecting validate does not produce an unhandled rejection, and does not submit', async () => {
+  it('a rejecting validate does not produce an unhandled rejection, and leaves the field error-free', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const onSubmit = vi.fn()
     const validate = () => Promise.reject(new Error('boom'))
