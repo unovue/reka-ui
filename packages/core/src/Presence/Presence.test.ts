@@ -222,6 +222,7 @@ describe('given batched Presence updates', () => {
     try {
       await flushPresence()
       animationReadNodeCounts.length = 0
+      deferredAnimationReads.length = 0
 
       present.value = true
       await flushPresence()

@@ -163,10 +163,7 @@ export function usePresence(
           // Vue attaches sibling nodes one by one. Reading animationName here
           // synchronously would force a full style calculation after every
           // insertion, so wait until the batch has finished mounting.
-          const mountAnimationName = getAnimationName(styles)
-          mountAnimationNameRef.value = mountAnimationName
-          prevAnimationNameRef.value = mountAnimationName
-          mountAnimationNameRef.value = undefined
+          prevAnimationNameRef.value = getAnimationName(styles)
         })
 
         newNode.addEventListener('animationstart', handleAnimationStart)
