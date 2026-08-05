@@ -1,11 +1,11 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import { ListboxContent, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -536,5 +536,80 @@ describe('given Listbox in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
       expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: items[4].text() })
     })
+  })
+})
+
+describe('given Listbox with ListboxFilter handling IME composition', () => {
+  let wrapper: VueWrapper
+  let input: DOMWrapper<HTMLInputElement>
+  let updates: string[]
+
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36'
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    updates = []
+    const search = ref('')
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, {}, {
+          default: () => [
+            h(ListboxFilter, {
+              'modelValue': search.value,
+              'onUpdate:modelValue': (v: string) => {
+                updates.push(v)
+                search.value = v
+              },
+            }),
+            h(ListboxContent, {}, {
+              default: () => ['Apple', 'Banana'].map(i => h(ListboxItem, { value: i }, { default: () => i })),
+            }),
+          ],
+        })
+      },
+    }), { attachTo: document.body })
+    input = wrapper.find('input')
+  })
+
+  afterEach(() => {
+    delete (window.navigator as { userAgent?: string }).userAgent
+  })
+
+  it('should not update modelValue during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+    input.element.value = 'xiang'
+    await input.trigger('input')
+
+    expect(updates).toEqual([])
+  })
+
+  it('should update modelValue live during plain-text (autocorrect) composition on Android', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', { value: ANDROID_UA, configurable: true })
+
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'Br', bubbles: true }))
+    input.element.value = 'Br'
+    await input.trigger('input')
+
+    expect(updates).toEqual(['Br'])
+  })
+
+  it('should not update modelValue during CJK IME composition on Android until compositionend', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', { value: ANDROID_UA, configurable: true })
+
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+    input.element.value = 'かんじ'
+    await input.trigger('input')
+
+    expect(updates).toEqual([])
+
+    await input.trigger('compositionend')
+    await nextTick()
+
+    expect(updates).toEqual(['かんじ'])
   })
 })

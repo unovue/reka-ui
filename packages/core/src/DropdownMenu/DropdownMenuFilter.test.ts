@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import DropdownMenuWithFilter from './story/_DropdownMenuWithFilter.vue'
 
@@ -177,6 +177,68 @@ describe('given DropdownMenu with Filter', () => {
 
       const items = document.querySelectorAll('[role="menuitem"]')
       expect(items.length).toBe(0)
+    })
+
+    it('should not update search during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      const baseline = document.querySelectorAll('[role="menuitem"]').length
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+      filterInput.value = 'xiang'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      expect(wrapper.vm.filterText).toBe('')
+      expect(document.querySelectorAll('[role="menuitem"]').length).toBe(baseline)
+    })
+
+    describe('on Android soft keyboard', () => {
+      beforeEach(() => {
+        Object.defineProperty(window.navigator, 'userAgent', {
+          value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+          configurable: true,
+        })
+      })
+
+      afterEach(() => {
+        delete (window.navigator as { userAgent?: string }).userAgent
+      })
+
+      it('should update search live during plain-text (autocorrect) composition', async () => {
+        const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+
+        filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+        filterInput.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'New', bubbles: true }))
+        filterInput.value = 'New'
+        filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+        await nextTick()
+
+        expect(wrapper.vm.filterText).toBe('New')
+        const items = document.querySelectorAll('[role="menuitem"]')
+        expect(items.length).toBe(2)
+      })
+
+      it('should not update search during CJK IME composition until compositionend', async () => {
+        const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+        const baseline = document.querySelectorAll('[role="menuitem"]').length
+
+        filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+        filterInput.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+        filterInput.value = 'かんじ'
+        filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+        await nextTick()
+
+        expect(wrapper.vm.filterText).toBe('')
+        expect(document.querySelectorAll('[role="menuitem"]').length).toBe(baseline)
+
+        filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: 'かんじ', bubbles: true }))
+        await nextTick()
+        await nextTick()
+
+        expect(wrapper.vm.filterText).toBe('かんじ')
+        expect(document.querySelectorAll('[role="menuitem"]').length).toBe(0)
+      })
     })
 
     it('should not navigate items during IME composition (arrow keys are IME candidate navigation)', async () => {
