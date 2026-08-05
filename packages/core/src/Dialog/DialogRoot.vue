@@ -48,11 +48,6 @@ export interface DialogRootContext {
   descriptionId: string
 }
 
-export const DialogAttributes = {
-  state: 'data-state',
-  contained: 'data-contained',
-} as const
-
 export const [injectDialogRootContext, provideDialogRootContext]
   = createContext<DialogRootContext>('DialogRoot')
 </script>
