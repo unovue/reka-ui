@@ -1,0 +1,49 @@
+name: Update Docs Data
+
+on:
+  schedule:
+    # Every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-docs-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Update contributors
+        run: pnpm docs:contributors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update sponsors
+        run: pnpm docs:sponsors
+
+      - name: Commit and push
+        run: |
+          FILES="docs/.vitepress/contributor-names.json docs/content/public/sponsors.svg"
+
+          if [ -z "$(git status --porcelain -- $FILES)" ]; then
+            echo "Contributors and sponsors are already up to date."
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $FILES
+          git commit -m 'chore(docs): update contributors and sponsors'
+          git push

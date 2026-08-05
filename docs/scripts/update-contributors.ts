@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs'
+import process from 'node:process'
 
 interface Contributor {
   login: string
@@ -10,6 +11,9 @@ async function fetchContributors(page = 1) {
   const res = await fetch(`https://api.github.com/repos/unovue/reka-ui/contributors?per_page=100&page=${page}`, {
     headers: {
       Accept: 'application/vnd.github+json',
+      // Authenticated requests get a far higher rate limit, which matters on
+      // shared CI runners. Falls back to anonymous access when unset.
+      ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
     },
   })
 
@@ -28,6 +32,13 @@ async function fetchContributors(page = 1) {
 
 async function generate() {
   const collaborators = await fetchContributors()
+
+  // A failed request resolves to an empty list — never overwrite a good file with it.
+  if (!collaborators.length) {
+    console.error('No contributors fetched, skipping write.')
+    return
+  }
+
   await fs.writeFile('.vitepress/contributor-names.json', `${JSON.stringify(collaborators, null, 2)}\n`, 'utf8')
 }
 
