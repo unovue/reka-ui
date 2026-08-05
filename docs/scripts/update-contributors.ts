@@ -5,6 +5,13 @@ interface Contributor {
   login: string
 }
 
+/**
+ * Collects every contributor login for the repo, walking the API's pagination.
+ *
+ * @param page - Page to fetch; subsequent pages are followed recursively.
+ * @returns Contributor logins in API order, with bot accounts removed.
+ * @throws If any page fails, so a partial roster is never mistaken for a complete one.
+ */
 async function fetchContributors(page = 1) {
   const collaborators: string[] = []
 
@@ -31,6 +38,12 @@ async function fetchContributors(page = 1) {
   return collaborators.filter(name => !name.includes('[bot]'))
 }
 
+/**
+ * Refreshes the contributor list rendered by the docs site, writing
+ * `.vitepress/contributor-names.json` relative to `docs/`.
+ *
+ * @throws If the roster could not be fetched, leaving the committed file untouched.
+ */
 async function generate() {
   const collaborators = await fetchContributors()
 

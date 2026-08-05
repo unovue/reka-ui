@@ -3,6 +3,14 @@ import process from 'node:process'
 
 const SPONSORS_SVG = 'https://raw.githubusercontent.com/zernonia/sponsor/main/sponsorkit/sponsors.wide.svg'
 
+/**
+ * Vendors the sponsorkit-generated sponsors image into `content/public/sponsors.svg`,
+ * relative to `docs/`, so the site serves a committed asset rather than hotlinking
+ * `raw.githubusercontent.com`.
+ *
+ * @throws If the fetch fails or the response is not an SVG, leaving the committed
+ * asset untouched.
+ */
 async function generate() {
   const res = await fetch(SPONSORS_SVG)
 
