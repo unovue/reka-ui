@@ -8,12 +8,14 @@ export function usePresence(
   present: Ref<boolean>,
   node: Ref<HTMLElement | undefined>,
 ) {
-  const stylesRef = ref<CSSStyleDeclaration>({} as any)
+  const stylesRef = ref<CSSStyleDeclaration | null>(null)
   const prevAnimationNameRef = ref<string>('none')
-  const prevPresentRef = ref(present)
+  const mountAnimationNameRef = ref<string>()
+  const prevPresentRef = ref(present.value)
   const initialState = present.value ? 'mounted' : 'unmounted'
   let timeoutId: number | undefined
-  const ownerWindow = node.value?.ownerDocument.defaultView ?? defaultWindow
+  let attachedNode: HTMLElement | undefined
+  let ownerWindow = node.value?.ownerDocument.defaultView ?? defaultWindow
 
   const { state, dispatch } = useStateMachine(initialState, {
     mounted: {
@@ -42,12 +44,14 @@ export function usePresence(
     present,
     async (currentPresent, prevPresent) => {
       const hasPresentChanged = prevPresent !== currentPresent
+      prevPresentRef.value = currentPresent
       await nextTick()
       if (hasPresentChanged) {
         const prevAnimationName = prevAnimationNameRef.value
-        const currentAnimationName = getAnimationName(node.value)
+        const currentAnimationName = getAnimationName(stylesRef.value)
 
         if (currentPresent) {
+          mountAnimationNameRef.value = currentAnimationName
           dispatch('MOUNT')
           dispatchCustomEvent('enter')
           if (currentAnimationName === 'none')
@@ -91,10 +95,11 @@ export function usePresence(
    * make sure we only trigger ANIMATION_END for the currently active animation.
    */
   const handleAnimationEnd = (event: AnimationEvent) => {
-    if (event.target !== node.value)
+    const currentNode = node.value
+    if (event.target !== currentNode)
       return
 
-    const currentAnimationName = getAnimationName(node.value)
+    const currentAnimationName = getAnimationName(stylesRef.value)
     const isCurrentAnimation = currentAnimationName.includes(
       CSS.escape(event.animationName),
     )
@@ -104,15 +109,15 @@ export function usePresence(
       dispatch('ANIMATION_END')
 
       if (!prevPresentRef.value) {
-        const currentFillMode = node.value.style.animationFillMode
-        node.value.style.animationFillMode = 'forwards'
+        const currentFillMode = currentNode.style.animationFillMode
+        currentNode.style.animationFillMode = 'forwards'
         // Reset the style after the node had time to unmount (for cases
         // where the component chooses not to unmount). Doing this any
         // sooner than `setTimeout` (e.g. with `requestAnimationFrame`)
         // still causes a flash.
         timeoutId = ownerWindow?.setTimeout(() => {
-          if (node.value?.style.animationFillMode === 'forwards') {
-            node.value.style.animationFillMode = currentFillMode
+          if (currentNode.style.animationFillMode === 'forwards') {
+            currentNode.style.animationFillMode = currentFillMode
           }
         })
       }
@@ -124,50 +129,88 @@ export function usePresence(
   const handleAnimationStart = (event: AnimationEvent) => {
     if (event.target === node.value) {
       // if animation occurred, store its name as the previous animation.
-      prevAnimationNameRef.value = getAnimationName(node.value)
+      prevAnimationNameRef.value = getAnimationName(stylesRef.value)
     }
   }
 
   const watcher = watch(
     node,
-    (newNode, oldNode) => {
+    (newNode) => {
+      if (timeoutId !== undefined) {
+        ownerWindow?.clearTimeout(timeoutId)
+        timeoutId = undefined
+      }
+
+      attachedNode?.removeEventListener('animationstart', handleAnimationStart)
+      attachedNode?.removeEventListener('animationcancel', handleAnimationEnd)
+      attachedNode?.removeEventListener('animationend', handleAnimationEnd)
+      attachedNode = newNode
+
       if (newNode) {
-        stylesRef.value = getComputedStyle(newNode)
+        ownerWindow = newNode.ownerDocument.defaultView ?? defaultWindow
+        const styles = getComputedStyle(newNode)
+        stylesRef.value = styles
+        mountAnimationNameRef.value = undefined
+
+        queueMicrotask(() => {
+          if (
+            attachedNode !== newNode
+            || state.value !== 'mounted'
+          ) {
+            return
+          }
+
+          // Vue attaches sibling nodes one by one. Reading animationName here
+          // synchronously would force a full style calculation after every
+          // insertion, so wait until the batch has finished mounting.
+          const mountAnimationName = getAnimationName(styles)
+          mountAnimationNameRef.value = mountAnimationName
+          prevAnimationNameRef.value = mountAnimationName
+          mountAnimationNameRef.value = undefined
+        })
+
         newNode.addEventListener('animationstart', handleAnimationStart)
         newNode.addEventListener('animationcancel', handleAnimationEnd)
         newNode.addEventListener('animationend', handleAnimationEnd)
       }
       else {
+        stylesRef.value = null
+        mountAnimationNameRef.value = undefined
+        prevAnimationNameRef.value = 'none'
+
         // Transition to the unmounted state if the node is removed prematurely.
         // We avoid doing so during cleanup as the node may change but still exist.
         dispatch('ANIMATION_END')
-
-        if (timeoutId !== undefined)
-          ownerWindow?.clearTimeout(timeoutId)
-        oldNode?.removeEventListener('animationstart', handleAnimationStart)
-        oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
-        oldNode?.removeEventListener('animationend', handleAnimationEnd)
       }
     },
     { immediate: true },
   )
 
   const stateWatcher = watch(state, () => {
-    const currentAnimationName = getAnimationName(node.value)
-    prevAnimationNameRef.value
-      = state.value === 'mounted' ? currentAnimationName : 'none'
+    if (state.value === 'mounted') {
+      prevAnimationNameRef.value
+        = mountAnimationNameRef.value ?? getAnimationName(stylesRef.value)
+      mountAnimationNameRef.value = undefined
+    }
+    else {
+      prevAnimationNameRef.value = 'none'
+    }
   })
 
   onUnmounted(() => {
     watcher()
     stateWatcher()
-    if (node.value) {
-      node.value.removeEventListener('animationstart', handleAnimationStart)
-      node.value.removeEventListener('animationcancel', handleAnimationEnd)
-      node.value.removeEventListener('animationend', handleAnimationEnd)
+    if (attachedNode) {
+      attachedNode.removeEventListener('animationstart', handleAnimationStart)
+      attachedNode.removeEventListener('animationcancel', handleAnimationEnd)
+      attachedNode.removeEventListener('animationend', handleAnimationEnd)
+      attachedNode = undefined
     }
     if (timeoutId !== undefined)
       ownerWindow?.clearTimeout(timeoutId)
+    stylesRef.value = null
+    mountAnimationNameRef.value = undefined
+    prevAnimationNameRef.value = 'none'
   })
 
   const isPresent = computed(() =>
@@ -179,6 +222,6 @@ export function usePresence(
   }
 }
 
-function getAnimationName(node?: HTMLElement) {
-  return node ? getComputedStyle(node).animationName || 'none' : 'none'
+function getAnimationName(styles: CSSStyleDeclaration | null) {
+  return styles?.animationName || 'none'
 }
