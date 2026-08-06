@@ -121,6 +121,10 @@ function handleChange() {
     @wheel="handleWheelEvent"
     @beforeinput="(event: InputEvent) => {
       if (event.isComposing) return
+      // Deletions are exempt: partially deleted literals ('13 mi' while
+      // backspacing through '13 min') never pass partial validation, and
+      // blur/enter re-parse whatever remains.
+      if (event.inputType.startsWith('delete')) return
       const target = event.target as HTMLInputElement
       let nextValue
         = target.value.slice(0, target.selectionStart ?? undefined)
