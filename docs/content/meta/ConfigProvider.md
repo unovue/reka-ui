@@ -42,14 +42,6 @@
     'required': false
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'useId',
-    'description': '<p>The global <code>useId</code> injection as a workaround for preventing hydration issue.</p>\n',
-    'type': '() =&gt; string'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -64,11 +56,5 @@
 | `scrollBody` | The global scroll body behavior of your application. This will be inherited by the related primitives. | `boolean \| ScrollBodyOption` | No | `true` |
 | `teleportTo` | The global default teleport target for all portalled primitives (e.g. Dialog, Popover, Tooltip). Individual *Portal components can still override this via their own to prop. Useful when rendering inside a custom element / shadow DOM. | `string \| HTMLElement` | No | - |
 | `useId` | The global useId injection as a workaround for preventing hydration issue. | `(() => string)` | No | - |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `useId` | The global useId injection as a workaround for preventing hydration issue. | `() => string` |
 
 </llm-only>

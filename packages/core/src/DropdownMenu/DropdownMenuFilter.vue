@@ -71,7 +71,7 @@ onUnmounted(() => {
   contentContext.searchRef.value = ''
 })
 
-const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
   const el = event.target as HTMLInputElement
   if (el) {
     modelValue.value = el.value
@@ -82,7 +82,7 @@ const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposi
 function handleInput(event: InputEvent) {
   if (disabled.value)
     return
-  if (isComposing.value)
+  if (shouldDeferInput.value)
     return
   const target = event.target as HTMLInputElement
   modelValue.value = target.value
@@ -131,6 +131,7 @@ function handleKeyDown(event: KeyboardEvent) {
     @input="handleInput"
     @keydown="handleKeyDown"
     @compositionstart="handleCompositionStart"
+    @compositionupdate="handleCompositionUpdate"
     @compositionend="handleCompositionEnd"
   >
     <slot :model-value="modelValue" />

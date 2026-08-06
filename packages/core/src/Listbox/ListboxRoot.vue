@@ -188,6 +188,11 @@ function highlightItem(value: T) {
 
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
+    // Modifier combos (e.g. Ctrl+Enter) are not handled here —
+    // let them bubble so parent listeners can react (e.g. submit a form).
+    if (event.ctrlKey || event.metaKey || event.altKey)
+      return
+
     event.preventDefault()
     event.stopPropagation()
 

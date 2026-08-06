@@ -13,6 +13,32 @@ Discover the latest release of Reka UI.
 
 ---
 
+## v2.10
+
+### ✨ New Features
+
+#### Components
+
+- **Drawer**: New drawer primitive with swipe gestures, snap points, handle, and nested drawer support <Badge>Alpha</Badge>
+- **Rating**: New component for star-style rating inputs <Badge>Alpha</Badge>
+
+#### Functionality
+
+- **Select**: Added `nullableValue` prop to allow deselecting the current value
+- **Dialog**: Added `unmountOnHide` prop to control whether content is unmounted when closed
+- **HoverCard**: Added `enableTouch` prop to enable hover cards on touch devices
+- **ConfigProvider**: Added `teleportTo` for setting a global default teleport target
+- **Popper**: Added `dir` prop for `RTL`/`LTR` support
+- **Tree**: Added `disabled` support for `TreeItem`
+- **DateField**: Added `stepSnapping` support
+- **Tabs**: Exposed `--reka-tabs-indicator-thickness` CSS variable
+
+#### Developer Experience
+
+- **Types**: Improved type inference for `useEmitAsProps` and `useForwardPropsEmits`
+
+---
+
 ## v2.9
 
 ### ✨ New Features

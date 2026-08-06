@@ -300,6 +300,68 @@ describe('numberField', () => {
       await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 21 (max not snapped to step)
       expect(input.value).toBe('21')
     })
+
+    it('should snap an off-grid value to the next grid line when incrementing', async () => {
+      // Seed the off-grid value via defaultValue: typing it would snap on commit.
+      const { input, increment } = setup({ step: 1, stepSnapping: true, defaultValue: 18.98 })
+
+      await userEvent.click(increment) // snap up to the nearest grid line, not 18.98 + 1 -> 20
+      expect(input.value).toBe('19')
+    })
+
+    it('should snap an off-grid value to the previous grid line when decrementing', async () => {
+      const { input, decrement } = setup({ step: 1, stepSnapping: true, defaultValue: 18.11 })
+
+      await userEvent.click(decrement) // snap down to the nearest grid line, not 18.11 - 1 -> 17
+      expect(input.value).toBe('18')
+    })
+
+    it('should add a full step when the value is already on the grid', async () => {
+      const { input, increment, decrement } = setup({ step: 1, stepSnapping: true, defaultValue: 5 })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('6')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('5')
+    })
+  })
+
+  describe('given step alignment near min/max boundaries', () => {
+    it('should keep increment enabled when an off-grid value can still align below max', async () => {
+      const { input, increment } = setup({ max: 10, step: 3, stepSnapping: true, defaultValue: 8 })
+
+      expect(increment).not.toHaveAttribute('disabled')
+      await userEvent.click(increment) // aligns to 9, not 8 + 3
+      expect(input.value).toBe('9')
+    })
+
+    it('should keep decrement enabled when an off-grid value can still align above min', async () => {
+      const { input, decrement } = setup({ min: 2, step: 3, stepSnapping: true, defaultValue: 4 })
+
+      expect(decrement).not.toHaveAttribute('disabled')
+      await userEvent.click(decrement) // aligns to 2, not 4 - 3
+      expect(input.value).toBe('2')
+    })
+
+    it('should disable increment once the next aligned value cannot exceed max', async () => {
+      const { increment } = setup({ max: 10, step: 3, stepSnapping: true, defaultValue: 9 })
+
+      expect(increment).toHaveAttribute('disabled')
+    })
+
+    it('should disable decrement once the next aligned value cannot go below min', async () => {
+      const { decrement } = setup({ min: 2, step: 3, stepSnapping: true, defaultValue: 2 })
+
+      expect(decrement).toHaveAttribute('disabled')
+    })
+
+    it('should clamp the empty/NaN fallback to the range', async () => {
+      const { input, increment } = setup({ max: -5 })
+
+      // Empty input: the bare fallback would be 0, which is above max; it must be clamped.
+      await userEvent.click(increment)
+      expect(input.value).toBe('-5')
+    })
   })
 
   describe('given setting the input value manually', async () => {

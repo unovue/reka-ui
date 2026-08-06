@@ -167,11 +167,6 @@
 
 <MethodsTable :data="[
   {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  },
-  {
     'name': 'setFocusedElement',
     'description': '<p>Helper to set the focused element inside the DateField</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
@@ -226,7 +221,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` |
 | `setFocusedElement` | Helper to set the focused element inside the DateField | `(el: HTMLElement) => void` |
 
 </llm-only>

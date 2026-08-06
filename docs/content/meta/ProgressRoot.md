@@ -63,14 +63,6 @@
     'type': 'number | null | undefined'
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'getValueLabel',
-    'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
-    'type': '(value: number | null | undefined, max: number) =&gt; string | undefined'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -98,11 +90,5 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `modelValue` | Current input values | `number \| null \| undefined` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `(value: number \| null \| undefined, max: number) => string \| undefined` |
 
 </llm-only>

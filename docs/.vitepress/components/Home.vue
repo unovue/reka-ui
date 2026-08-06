@@ -13,6 +13,7 @@ import TimeRangeFieldDemo from '../../components/demo/TimeRangeField/tailwind/in
 import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
 import TreeDemo from '../../components/demo/Tree/tailwind/index.vue'
 import Chip from './Chip.vue'
+import Sponsors from './Sponsors.vue'
 </script>
 
 <template>
@@ -285,6 +286,18 @@ import Chip from './Chip.vue'
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="px-4 py-12 md:py-24 max-w-screen-xl mx-auto md:px-6">
+    <h2 class="text-pretty text-center text-3xl font-bold sm:text-5xl sm:font-extrabold md:text-6xl text-foreground">
+      Our Sponsors
+    </h2>
+
+    <p class="mt-4 md:mt-6 text-center text-muted-foreground text-pretty">
+      Reka UI is free and open source. It is made possible by the generous support of our sponsors.
+    </p>
+
+    <Sponsors class="mt-8 md:mt-12" />
   </section>
 
   <section class="px-4 py-12 md:py-32 max-w-screen-xl mx-auto md:px-6">

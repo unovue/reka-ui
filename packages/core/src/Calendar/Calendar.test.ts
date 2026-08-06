@@ -518,6 +518,42 @@ describe('calendar', async () => {
     expect(heading).toHaveTextContent('December 1979')
   })
 
+  it('stops propagation for plain Enter but lets Ctrl+Enter bubble to parent listeners', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const cell = getByTestId('date-1-20')
+    cell.focus()
+    expect(cell).toHaveFocus()
+
+    let plainEnterBubbled = false
+    let ctrlEnterBubbled = false
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        if (e.ctrlKey)
+          ctrlEnterBubbled = true
+        else
+          plainEnterBubbled = true
+      }
+    }
+    document.addEventListener('keydown', handler)
+    try {
+      await user.keyboard(kbd.ENTER)
+      await user.keyboard(`{Control>}${kbd.ENTER}{/Control}`)
+    }
+    finally {
+      document.removeEventListener('keydown', handler)
+    }
+
+    // plain Enter is handled by the cell (selection) → propagation stopped
+    expect(plainEnterBubbled).toBe(false)
+    // Ctrl+Enter is not handled by the cell → bubbles so parents can react
+    expect(ctrlEnterBubbled).toBe(true)
+  })
+
   it('handles unavailable dates appropriately', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {

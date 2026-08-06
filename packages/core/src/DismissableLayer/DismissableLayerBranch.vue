@@ -8,7 +8,7 @@ export interface DismissableLayerBranchProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { context } from './DismissableLayer.vue'
+import { context } from './context'
 
 const props = defineProps<DismissableLayerBranchProps>()
 

@@ -22,6 +22,14 @@
     'required': true
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'steps',
+    'description': '',
+    'type': 'number[]'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -33,5 +41,11 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"label"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `item` | The 1-based index of this item within the rating (e.g. the 3rd star). | `number` | Yes | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `steps` |  | `number[]` |
 
 </llm-only>

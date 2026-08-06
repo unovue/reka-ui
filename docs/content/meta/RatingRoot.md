@@ -30,7 +30,7 @@
   {
     'name': 'dir',
     'description': '<p>The reading direction of the combobox when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
-    'type': 'Direction',
+    'type': '\'ltr\' | \'rtl\'',
     'required': false
   },
   {
@@ -73,7 +73,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the component.</p>\n',
-    'type': 'DataOrientation',
+    'type': '\'vertical\' | \'horizontal\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -99,6 +99,19 @@
     'type': '[payload: number]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'modelValue',
+    'description': '',
+    'type': 'number | undefined'
+  },
+  {
+    'name': 'items',
+    'description': '',
+    'type': 'number[]'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -111,14 +124,14 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `clearable` | When true, clicking the currently selected rating resets the value to 0. | `boolean` | No | - |
 | `defaultValue` | The rating value when initially rendered. Use when you do not need to control the state of the rating. | `number` | No | - |
-| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `Direction` | No | - |
+| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with radio items. | `boolean` | No | - |
 | `hoverable` | When true, the rating previews the value under the pointer on hover. | `boolean` | No | - |
 | `length` | The number of rating items to render. | `number` | No | `5` |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled rating value. Can be bound with v-model. | `number` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the component. | `DataOrientation` | No | `"horizontal"` |
+| `orientation` | The orientation of the component. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The granularity each rating item is divided into. | `1 \| 0.5 \| 0.25 \| 0.1` | No | `1` |
 
@@ -127,5 +140,12 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:modelValue` | Event handler called when the radio group value changes | `[payload: number]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` |  | `number \| undefined` |
+| `items` |  | `number[]` |
 
 </llm-only>

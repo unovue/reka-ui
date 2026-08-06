@@ -64,6 +64,12 @@
     'required': false
   },
   {
+    'name': 'dir',
+    'description': '<p>The reading direction of the popper content when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
+    'type': '\'ltr\' | \'rtl\'',
+    'required': false
+  },
+  {
     'name': 'disableOutsidePointerEvents',
     'description': '<p>When <code>true</code>, hover/focus/click interactions will be disabled on elements outside\nthe <code>DismissableLayer</code>. Users will need to click twice on outside elements to\ninteract with them: once to close the <code>DismissableLayer</code>, and again to trigger the element.</p>\n',
     'type': 'boolean',
@@ -91,6 +97,12 @@
     'name': 'hideWhenDetached',
     'description': '<p>Whether to hide the content when the trigger becomes fully occluded.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'memoDependencies',
+    'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
+    'type': 'unknown[]',
     'required': false
   },
   {
@@ -184,11 +196,13 @@
 | `bodyLock` | The document.body will be lock, and scrolling will be disabled. | `boolean` | No | - |
 | `collisionBoundary` | The element used as the collision boundary. By default this is the viewport, though you can provide additional element(s) to be included in this check. | `Element \| (Element \| null)[] \| null` | No | - |
 | `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"top" \| "right" \| "bottom" \| "left", number>>` | No | - |
+| `dir` | The reading direction of the popper content when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disableOutsidePointerEvents` | When true, hover/focus/click interactions will be disabled on elements outside the DismissableLayer. Users will need to click twice on outside elements to interact with them: once to close the DismissableLayer, and again to trigger the element. | `boolean` | No | - |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
+| `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `position` | The positioning mode to use item-aligned (default) - behaves similarly to a native MacOS menu by positioning content relative to the active item. <br> popper - positions content in the same way as our other primitives, for example Popover or DropdownMenu. | `"popper" \| "item-aligned"` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |

@@ -81,6 +81,12 @@
     'required': false
   },
   {
+    'name': 'memoDependencies',
+    'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
+    'type': 'unknown[]',
+    'required': false
+  },
+  {
     'name': 'positionStrategy',
     'description': '<p>The type of CSS position property to use.</p>\n',
     'type': '\'fixed\' | \'absolute\'',
@@ -160,6 +166,7 @@
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | `false` |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |
 | `reference` | The custom element or virtual element that will be set as the reference to position the floating element. If provided, it will replace the default anchor element. | `ReferenceElement` | No | - |

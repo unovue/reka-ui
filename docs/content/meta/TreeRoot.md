@@ -30,7 +30,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the tree when initially rendered. Use when you do not need to control the state of the tree</p>\n',
-    'type': 'Record&lt;string, any&gt; | Record&lt;string, any&gt;[]',
+    'type': '(M extends true ? U[] : U)',
     'required': false
   },
   {
@@ -54,32 +54,32 @@
   {
     'name': 'getChildren',
     'description': '<p>This function is passed the index of each item and should return a list of children for that item</p>\n',
-    'type': '((val: Record&lt;string, any&gt;) =&gt; Record&lt;string, any&gt;[])',
+    'type': '((val: T) =&gt; T[])',
     'required': false,
     'default': 'val.children'
   },
   {
     'name': 'getKey',
     'description': '<p>This function is passed the index of each item and should return a unique key for that item</p>\n',
-    'type': '(val: Record&lt;string, any&gt;): string',
+    'type': '(val: T): string',
     'required': true
   },
   {
     'name': 'items',
     'description': '<p>List of items</p>\n',
-    'type': 'Record&lt;string, any&gt;[]',
+    'type': 'T[]',
     'required': false
   },
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the tree. Can be binded with <code>v-model</code>.</p>\n',
-    'type': 'Record&lt;string, any&gt; | Record&lt;string, any&gt;[]',
+    'type': '(M extends true ? U[] : U)',
     'required': false
   },
   {
     'name': 'multiple',
     'description': '<p>Whether multiple options can be selected or not.</p>\n',
-    'type': 'boolean',
+    'type': 'boolean | M',
     'required': false
   },
   {
@@ -106,7 +106,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
-    'type': '[val: Record&lt;string, any&gt; | Record&lt;string, any&gt;[]]'
+    'type': '[val: M extends true ? U[] : U]'
   }
 ]" />
 
@@ -114,12 +114,12 @@
   {
     'name': 'flattenItems',
     'description': '',
-    'type': 'FlattenedItem&lt;Record&lt;string, any&gt;&gt;[]'
+    'type': 'FlattenedItem&lt;T&gt;[]'
   },
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'Record&lt;string, any&gt; | Record&lt;string, any&gt;[]'
+    'type': 'M extends true ? U[] : U'
   },
   {
     'name': 'expanded',
@@ -139,15 +139,15 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `bubbleSelect` | When true, selecting children will update the parent state. Requires multiple to be true. | `boolean` | No | - |
 | `defaultExpanded` | The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree | `string[]` | No | - |
-| `defaultValue` | The value of the tree when initially rendered. Use when you do not need to control the state of the tree | `Record<string, any> \| Record<string, any>[]` | No | - |
+| `defaultValue` | The value of the tree when initially rendered. Use when you do not need to control the state of the tree | `(M extends true ? U[] : U)` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with tree | `boolean` | No | - |
 | `expanded` | The controlled value of the expanded item. Can be binded with v-model. | `string[]` | No | - |
-| `getChildren` | This function is passed the index of each item and should return a list of children for that item | `((val: Record<string, any>) => Record<string, any>[])` | No | `val.children` |
-| `getKey` | This function is passed the index of each item and should return a unique key for that item | `(val: Record<string, any>): string` | Yes | - |
-| `items` | List of items | `Record<string, any>[]` | No | - |
-| `modelValue` | The controlled value of the tree. Can be binded with v-model. | `Record<string, any> \| Record<string, any>[]` | No | - |
-| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
+| `getChildren` | This function is passed the index of each item and should return a list of children for that item | `((val: T) => T[])` | No | `val.children` |
+| `getKey` | This function is passed the index of each item and should return a unique key for that item | `(val: T): string` | Yes | - |
+| `items` | List of items | `T[]` | No | - |
+| `modelValue` | The controlled value of the tree. Can be binded with v-model. | `(M extends true ? U[] : U)` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean \| M` | No | - |
 | `propagateSelect` | When true, selecting parent will select the descendants. Requires multiple to be true. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
 
@@ -156,14 +156,14 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:expanded` |  | `[val: string[]]` |
-| `update:modelValue` | Event handler called when the value of the toggle changes. | `[val: Record<string, any> \| Record<string, any>[]]` |
+| `update:modelValue` | Event handler called when the value of the toggle changes. | `[val: M extends true ? U[] : U]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `flattenItems` |  | `FlattenedItem<Record<string, any>>[]` |
-| `modelValue` |  | `Record<string, any> \| Record<string, any>[]` |
+| `flattenItems` |  | `FlattenedItem<T>[]` |
+| `modelValue` |  | `M extends true ? U[] : U` |
 | `expanded` |  | `string[]` |
 
 </llm-only>

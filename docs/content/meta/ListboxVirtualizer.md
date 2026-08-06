@@ -11,7 +11,7 @@
   {
     'name': 'options',
     'description': '<p>List of items</p>\n',
-    'type': 'AcceptableValue[]',
+    'type': 'T',
     'required': true
   },
   {
@@ -23,7 +23,7 @@
   {
     'name': 'textContent',
     'description': '<p>Text content for each item to achieve type-ahead feature</p>\n',
-    'type': '((option: AcceptableValue) =&gt; string)',
+    'type': '((option: T) =&gt; string)',
     'required': false
   }
 ]" />
@@ -32,7 +32,7 @@
   {
     'name': 'option',
     'description': '',
-    'type': 'null | string | number | bigint | Record&lt;string, any&gt;'
+    'type': 'T'
   },
   {
     'name': 'virtualizer',
@@ -54,15 +54,15 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `estimateSize` | Estimated size (in px) of each item | `number \| ((index: number) => number)` | No | - |
-| `options` | List of items | `AcceptableValue[]` | Yes | - |
+| `options` | List of items | `T` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
-| `textContent` | Text content for each item to achieve type-ahead feature | `((option: AcceptableValue) => string)` | No | - |
+| `textContent` | Text content for each item to achieve type-ahead feature | `((option: T) => string)` | No | - |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `option` |  | `null \| string \| number \| bigint \| Record<string, any>` |
+| `option` |  | `T` |
 | `virtualizer` |  | `Virtualizer<HTMLElement, Element>` |
 | `virtualItem` |  | `VirtualItem` |
 

@@ -34,6 +34,7 @@ coverage
 test-results/
 playwright-report/
 .worktrees/
+.claude/worktrees/*
 vite.config.ts.timestamp*
 */.vitepress/cache
 .eslintcache

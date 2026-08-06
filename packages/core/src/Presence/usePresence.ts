@@ -91,12 +91,15 @@ export function usePresence(
    * make sure we only trigger ANIMATION_END for the currently active animation.
    */
   const handleAnimationEnd = (event: AnimationEvent) => {
+    if (event.target !== node.value)
+      return
+
     const currentAnimationName = getAnimationName(node.value)
     const isCurrentAnimation = currentAnimationName.includes(
       CSS.escape(event.animationName),
     )
     const directionName = state.value === 'mounted' ? 'enter' : 'leave'
-    if (event.target === node.value && isCurrentAnimation) {
+    if (isCurrentAnimation) {
       dispatchCustomEvent(`after-${directionName}`)
       dispatch('ANIMATION_END')
 
@@ -115,7 +118,7 @@ export function usePresence(
       }
     }
     // if no animation, immediately trigger 'ANIMATION_END'
-    if (event.target === node.value && currentAnimationName === 'none')
+    if (currentAnimationName === 'none')
       dispatch('ANIMATION_END')
   }
   const handleAnimationStart = (event: AnimationEvent) => {
@@ -158,6 +161,13 @@ export function usePresence(
   onUnmounted(() => {
     watcher()
     stateWatcher()
+    if (node.value) {
+      node.value.removeEventListener('animationstart', handleAnimationStart)
+      node.value.removeEventListener('animationcancel', handleAnimationEnd)
+      node.value.removeEventListener('animationend', handleAnimationEnd)
+    }
+    if (timeoutId !== undefined)
+      ownerWindow?.clearTimeout(timeoutId)
   })
 
   const isPresent = computed(() =>

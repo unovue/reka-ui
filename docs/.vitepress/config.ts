@@ -253,10 +253,7 @@ export default defineConfig({
               { text: 'Scroll Area', link: '/docs/components/scroll-area' },
               { text: 'Separator', link: '/docs/components/separator' },
               { text: 'Splitter', link: '/docs/components/splitter' },
-              {
-                text: `Stepper ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/stepper',
-              },
+              { text: 'Stepper', link: '/docs/components/stepper' },
               { text: 'Tabs', link: '/docs/components/tabs' },
               { text: 'Toast', link: '/docs/components/toast' },
               { text: 'Toolbar', link: '/docs/components/toolbar' },

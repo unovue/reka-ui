@@ -112,7 +112,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current active value</p>\n',
-    'type': 'AcceptableValue | AcceptableValue[] | undefined'
+    'type': 'T | T[] | undefined'
   }
 ]" />
 </llm-exclude>
@@ -150,6 +150,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current active value | `AcceptableValue \| AcceptableValue[] \| undefined` |
+| `modelValue` | Current active value | `T \| T[] \| undefined` |
 
 </llm-only>

@@ -1,9 +1,61 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { findByRole } from '@testing-library/vue'
+import { fireEvent, findAllByRole, findByRole, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent } from 'vue'
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '.'
 import DropdownMenu from './story/_DropdownMenu.vue'
+
+const DropdownMenuTabTest = defineComponent({
+  components: {
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuPortal,
+    DropdownMenuRoot,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+  },
+  props: {
+    modal: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  template: `
+    <div>
+      <button>Before</button>
+      <DropdownMenuRoot :open="true" :modal="modal">
+        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+        <DropdownMenuPortal disabled>
+          <DropdownMenuContent @close-auto-focus.prevent>
+            <DropdownMenuItem>Item</DropdownMenuItem>
+            <DropdownMenuSub :open="true">
+              <DropdownMenuSubTrigger>Sub Trigger</DropdownMenuSubTrigger>
+              <DropdownMenuPortal disabled>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem>Sub Item</DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
+      <button>After</button>
+    </div>
+  `,
+})
 
 describe('given default DropdownMenu', () => {
   let wrapper: VueWrapper<InstanceType<typeof DropdownMenu>>
@@ -53,5 +105,59 @@ describe('given default DropdownMenu', () => {
         expect(wrapper.emitted('select')?.length).toBe(1)
       })
     })
+  })
+})
+
+describe('given DropdownMenu tab navigation', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should allow Tab to move focus out of non-modal menu', async () => {
+    const { container } = render(DropdownMenuTabTest, {
+      props: { modal: false },
+    })
+
+    const menu = (await findAllByRole(container, 'menu'))[0]
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    })
+    fireEvent(menu, event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should prevent Tab in modal menu', async () => {
+    const { container } = render(DropdownMenuTabTest, {
+      props: { modal: true },
+    })
+
+    const menu = (await findAllByRole(container, 'menu'))[0]
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    })
+    fireEvent(menu, event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should prevent Tab in modal submenu', async () => {
+    const { container } = render(DropdownMenuTabTest, {
+      props: { modal: true },
+    })
+
+    const submenu = (await findAllByRole(container, 'menu'))[1]
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    })
+    fireEvent(submenu, event)
+
+    expect(event.defaultPrevented).toBe(true)
   })
 })

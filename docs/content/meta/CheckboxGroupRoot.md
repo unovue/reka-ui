@@ -18,7 +18,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the checkbox when it is initially rendered. Use when you do not need to control its value.</p>\n',
-    'type': 'AcceptableValue[]',
+    'type': 'T[]',
     'required': false
   },
   {
@@ -42,7 +42,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the checkbox. Can be binded with v-model.</p>\n',
-    'type': 'AcceptableValue[]',
+    'type': 'T[]',
     'required': false
   },
   {
@@ -76,7 +76,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: AcceptableValue[]]'
+    'type': '[value: T[]]'
   }
 ]" />
 </llm-exclude>
@@ -89,11 +89,11 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `AcceptableValue[]` | No | - |
+| `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `T[]` | No | - |
 | `dir` | The direction of navigation between items. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with the checkboxes | `boolean` | No | - |
 | `loop` | Whether keyboard navigation should loop around | `boolean` | No | - |
-| `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `AcceptableValue[]` | No | - |
+| `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `T[]` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
@@ -103,6 +103,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: AcceptableValue[]]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: T[]]` |
 
 </llm-only>
