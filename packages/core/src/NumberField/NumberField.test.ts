@@ -237,6 +237,43 @@ describe('numberField', () => {
       expect(input.value).toBe('5 inches')
     })
 
+    it('should allow backspacing through the unit suffix', async () => {
+      const { input, user } = setup({
+        defaultValue: 13,
+        formatOptions: {
+          style: 'unit',
+          unit: 'minute',
+          unitDisplay: 'short',
+        },
+      })
+      expect(input.value).toBe('13 min')
+
+      await user.click(input)
+      input.setSelectionRange(input.value.length, input.value.length)
+      const initialLength = input.value.length
+      for (let i = 0; i < initialLength; i++)
+        await user.keyboard('{Backspace}')
+
+      expect(input.value).toBe('')
+    })
+
+    it('should still reject invalid insertions while showing units', async () => {
+      const { input, user } = setup({
+        defaultValue: 13,
+        formatOptions: {
+          style: 'unit',
+          unit: 'minute',
+          unitDisplay: 'short',
+        },
+      })
+
+      await user.click(input)
+      input.setSelectionRange(2, 2)
+      await user.keyboard('x')
+
+      expect(input.value).toBe('13 min')
+    })
+
     it('should change format based on reactive options', async () => {
       const { input, rerender } = setup({
         defaultValue: 5,
