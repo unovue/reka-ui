@@ -24,12 +24,19 @@ input {
 }
 
 .DrawerContent {
+  /* Extra drawer area that hangs below the viewport edge, kept off-screen by an
+     equal negative margin. Pulling the drawer away from its edge slides the
+     bleed into view instead of exposing the overlay behind it, so the drawer
+     stretches rather than visually detaching while it rubber-bands. */
+  --bleed: 48px;
   background-color: white;
   border-radius: 16px 16px 0 0;
   position: fixed;
   inset-inline: 0;
   bottom: 0;
   margin-inline: auto;
+  margin-bottom: calc(-1 * var(--bleed));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bleed));
   max-width: 500px;
   display: flex;
   flex-direction: column;
@@ -159,13 +166,16 @@ input {
     opacity: 0;
   }
 }
+/* The bleed already sits below the viewport edge, so the drawer only has to
+   travel `height - bleed` to clear it. Translating a full 100% would overshoot
+   by the bleed and make the slide look faster than it is. */
 @keyframes drawerSlideBottomIn {
   from {
-    translate: 0 100%;
+    translate: 0 calc(100% - var(--bleed));
   }
 }
 @keyframes drawerSlideBottomOut {
   to {
-    translate: 0 100%;
+    translate: 0 calc(100% - var(--bleed));
   }
 }

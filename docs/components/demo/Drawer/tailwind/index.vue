@@ -21,8 +21,12 @@ import {
     </DrawerTrigger>
     <DrawerPortal>
       <DrawerOverlay class="DrawerOverlay fixed inset-0 z-30 bg-black/40" />
+      <!-- `--bleed` is extra drawer area hanging below the viewport edge, kept
+           off-screen by an equal negative margin. Pulling the drawer away from
+           its edge slides the bleed into view instead of exposing the overlay,
+           so the drawer stretches rather than detaching while it rubber-bands. -->
       <DrawerContent
-        class="DrawerContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-w-[500px] flex-col rounded-t-[16px] bg-white outline-none"
+        class="DrawerContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-w-[500px] flex-col rounded-t-[16px] bg-white outline-none [--bleed:48px] mb-[calc(-1*var(--bleed))] pb-[calc(env(safe-area-inset-bottom,0px)+var(--bleed))]"
       >
         <DrawerHandle class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-mauve6" />
         <div class="p-6">

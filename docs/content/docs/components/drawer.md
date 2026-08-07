@@ -107,6 +107,34 @@ custom properties so you can wire up the live transform:
 @keyframes slideOut { to { translate: 0 100%; } }
 ```
 
+### Bleeding past the edge
+
+Dragging a drawer *away* from the edge it is anchored to doesn't dismiss it —
+the gesture is damped and the drawer rubber-bands back on release. Without extra
+room the drawer lifts clean off the edge during that pull and the overlay shows
+through the gap.
+
+Give the drawer some **bleed**: extra area past its anchored edge, held
+off-screen by an equal negative margin. Pulling the drawer now slides the bleed
+into view instead of the overlay, so it reads as a stretch rather than a
+detachment.
+
+```css
+.DrawerContent {
+  --bleed: 48px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bleed));
+  margin-bottom: calc(-1 * var(--bleed));
+}
+
+/* The bleed already sits below the viewport edge, so the drawer only has to
+   travel `height - bleed` to clear it. */
+@keyframes slideIn { from { translate: 0 calc(100% - var(--bleed)); } }
+@keyframes slideOut { to { translate: 0 calc(100% - var(--bleed)); } }
+```
+
+For a left/right drawer, swap the axis: `padding-inline-end` and
+`margin-inline-end` with `translate: calc(100% - var(--bleed)) 0`.
+
 ## API Reference
 
 ### Root
