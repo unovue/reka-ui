@@ -205,3 +205,81 @@ describe('useSwipeDismiss — dismiss vs cancel CSS var clearing', () => {
     wrapper.unmount()
   })
 })
+
+/**
+ * The gesture must be tracked from the first pointer move regardless of its
+ * direction (BaseUI `startSwipeAtPosition` sets `swiping` on press). A drag
+ * away* from the dismiss direction is sqrt-damped by `applyDirectionalDamping`
+ * and written to the movement vars — that damped offset is the elastic "pull"
+ * feedback. Previously `processMove` returned early whenever the drag had no
+ * allowed direction, so a bottom drawer pulled upward stayed completely frozen.
+ */
+describe('useSwipeDismiss — non-dismissable direction (elastic pull)', () => {
+  it('damps and tracks a drag away from the dismiss direction', async () => {
+    const { wrapper, elementRef, onDismiss, onCancel } = mountHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+
+    // Pull UP on a `down`-dismiss drawer: 100px of travel.
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 380)
+    dispatchPointer(el, 'pointermove', 100, 300)
+
+    // sqrt-damped: -sqrt(100) = -10px, not the raw -100px.
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('-10px')
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('0px')
+
+    dispatchPointer(el, 'pointerup', 100, 300)
+    await nextTick()
+
+    // A pull that never moves in a dismissable direction cancels: the drawer
+    // springs back to rest and stays open.
+    expect(onDismiss).not.toHaveBeenCalled()
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('0px')
+    expect(el.hasAttribute('data-swipe-dismissed')).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('still adopts the dismiss direction when the drag reverses into it', async () => {
+    const { wrapper, elementRef, onDismiss, onCancel } = mountHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+
+    // Pull up first (no dismissable direction yet), then push back down past
+    // the 40px threshold. The gesture must dismiss rather than stay stuck
+    // without an intended direction.
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 350)
+    dispatchPointer(el, 'pointermove', 100, 420)
+    dispatchPointer(el, 'pointermove', 100, 470) // +70px from origin
+    dispatchPointer(el, 'pointerup', 100, 470)
+    await nextTick()
+
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+    expect(onCancel).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('leaves an allowed direction undamped when both axes directions are allowed', async () => {
+    // Snap-point drawers pass both the dismiss direction and its opposite, so
+    // neither vertical direction should be damped.
+    const { wrapper, elementRef } = mountHarness({ directions: ['down', 'up'] })
+    await nextTick()
+
+    const el = elementRef.value!
+
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 380)
+    dispatchPointer(el, 'pointermove', 100, 300)
+
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('-100px')
+
+    dispatchPointer(el, 'pointerup', 100, 300)
+    wrapper.unmount()
+  })
+})

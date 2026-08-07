@@ -269,22 +269,18 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     const dir: SwipeDirection | undefined = toValue(directions).find(d => getDisplacement(d, dx, dy) > 0)
 
     if (pendingSwipe && pendingSwipeStartPos) {
-      // Only promote to an active swipe when we've identified an allowed
-      // direction. If the user is dragging against the dismiss direction
-      // (dir === undefined), bail out so we don't steal scroll/drag from
-      // one-direction drawers.
-      if (!dir)
-        return
-      const pending = getDisplacement(
-        dir,
-        pos.x - pendingSwipeStartPos.x,
-        pos.y - pendingSwipeStartPos.y,
-      )
-      if (Math.abs(pending) < MIN_DRAG_THRESHOLD)
+      // BaseUI parity (`useSwipeDismiss.ts:startSwipeAtPosition`): the drag is
+      // tracked from the first movement whatever its direction — the gesture
+      // does NOT need to point at a dismissable direction to begin. Movement
+      // along a non-dismissable direction still reaches
+      // `applyDirectionalDamping` below, which sqrt-damps it; that damped
+      // offset is the elastic "pull" feedback you get when dragging a bottom
+      // drawer upward. Bailing out on `!dir` instead would leave the drawer
+      // completely frozen until the user drags the dismissable way.
+      const pending = Math.max(Math.abs(dx), Math.abs(dy))
+      if (pending < MIN_DRAG_THRESHOLD)
         return
       pendingSwipe = false
-      intendedDirection = dir
-      swipeDirection.value = dir
       setSwiping(true)
       onSwipeStart?.()
     }
@@ -292,11 +288,21 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     if (!isSwiping.value)
       return
 
-    const currentDir = intendedDirection ?? toValue(directions)[0]
-    const displacement = getDisplacement(currentDir, dx, dy)
+    // The intended (dismissable) direction is adopted the first time the drag
+    // moves in one, which may be many moves after the swipe started — e.g. pull
+    // up, then push back down on a `down` drawer. Until then the gesture has no
+    // dismiss candidate and only rubber-bands.
+    if (!intendedDirection && dir) {
+      intendedDirection = dir
+      swipeDirection.value = dir
+      maxDisplacement = getDisplacement(dir, dx, dy)
+    }
+
+    const currentDir = intendedDirection
 
     // Detect reversal (cancel swipe)
-    if (!cancelledSwipe) {
+    if (currentDir && !cancelledSwipe) {
+      const displacement = getDisplacement(currentDir, dx, dy)
       maxDisplacement = Math.max(maxDisplacement, displacement)
       if (
         maxDisplacement > DEFAULT_SWIPE_THRESHOLD / 2
@@ -315,14 +321,18 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     setCssVars(el, damped.x, damped.y)
     recordSample({ x: damped.x, y: damped.y }, time)
 
-    // Progress: 0 = closed/start, 1 = fully dismissed
+    // Progress: 0 = closed/start, 1 = fully dismissed. Before a dismissable
+    // direction is adopted, measure against the primary one — a pull away from
+    // it yields a negative displacement, which clamps to 0 (BaseUI parity:
+    // `progressDirection = primaryDirection ?? intendedSwipeDirection`).
     const currentEl = elementRef.value
-    if (currentEl) {
-      const dim = (currentDir === 'up' || currentDir === 'down')
+    const progressDir = currentDir ?? toValue(directions)[0]
+    if (currentEl && progressDir) {
+      const dim = (progressDir === 'up' || progressDir === 'down')
         ? elementSize.height || currentEl.offsetHeight
         : elementSize.width || currentEl.offsetWidth
-      const threshold = getThreshold(currentEl, currentDir)
-      const p = Math.min(1, Math.max(0, displacement / (dim + threshold)))
+      const threshold = getThreshold(currentEl, progressDir)
+      const p = Math.min(1, Math.max(0, getDisplacement(progressDir, dx, dy) / (dim + threshold)))
       if (p !== swipeProgress) {
         swipeProgress = p
         onProgress?.(p, { deltaX: damped.x, deltaY: damped.y, direction: currentDir })
