@@ -283,3 +283,106 @@ describe('useSwipeDismiss — non-dismissable direction (elastic pull)', () => {
     wrapper.unmount()
   })
 })
+
+/**
+ * The listeners live on the popup, which the pointer leaves as soon as the drag
+ * goes past the drawer's bounds (BaseUI instead hangs them off a full-screen
+ * `Drawer.Viewport`). `setPointerCapture` covers an ordinary in-window drag, but
+ * a release the popup never sees — outside the window, over another app, or
+ * after capture is dropped — used to leave the gesture wedged: the drawer stayed
+ * frozen mid-pull with `data-swiping` set (pinning the transition to 0ms) and
+ * ignored every subsequent drag.
+ */
+describe('useSwipeDismiss — releases the popup never sees', () => {
+  it('treats a move with no button held as the missing pointerup', async () => {
+    const { wrapper, elementRef, onCancel } = mountHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 390)
+    dispatchPointer(el, 'pointermove', 100, 340)
+    expect(el.hasAttribute('data-swiping')).toBe(false) // marker lives on the consumer
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).not.toBe('0px')
+
+    // The release happened somewhere we never saw; the pointer only comes back
+    // over the page with the button already up.
+    dispatchPointer(el, 'pointermove', 100, 300, 0, { buttons: 0 })
+    await nextTick()
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('0px')
+
+    wrapper.unmount()
+  })
+
+  it('finishes on a pointerup that only reaches the document', async () => {
+    const { wrapper, elementRef, onCancel } = mountHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 390)
+    dispatchPointer(el, 'pointermove', 100, 340)
+
+    // Released over some other element entirely — never retargeted to the popup.
+    dispatchPointer(document.body, 'pointerup', 100, 340)
+    await nextTick()
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('0px')
+
+    wrapper.unmount()
+  })
+
+  it('finishes when the window loses focus mid-drag', async () => {
+    const { wrapper, elementRef, onCancel } = mountHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 390)
+    dispatchPointer(el, 'pointermove', 100, 340)
+
+    // Dragged out of the window and released over another application.
+    window.dispatchEvent(new Event('blur'))
+    await nextTick()
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('0px')
+
+    wrapper.unmount()
+  })
+
+  it('does not leak state from an unfinished gesture into the next one', async () => {
+    const onDismiss = vi.fn()
+    const { wrapper, elementRef, onCancel } = mountHarness({ onDismiss })
+    await nextTick()
+
+    const el = elementRef.value!
+
+    // A change-of-mind drag that never ends: down past half the threshold, then
+    // reversed far enough to latch `cancelledSwipe`, and no pointerup at all.
+    dispatchPointer(el, 'pointerdown', 100, 400)
+    dispatchPointer(el, 'pointermove', 100, 420)
+    dispatchPointer(el, 'pointermove', 100, 460)
+    dispatchPointer(el, 'pointermove', 100, 415)
+
+    // A fresh press must start clean. If the latched cancel leaks into this
+    // gesture, the drawer silently refuses to close no matter how far it is
+    // dragged.
+    dispatchPointer(el, 'pointerdown', 100, 400, 0, { pointerId: 2 })
+    dispatchPointer(el, 'pointermove', 100, 410, 0, { pointerId: 2 })
+    dispatchPointer(el, 'pointermove', 100, 470, 0, { pointerId: 2 })
+    dispatchPointer(el, 'pointerup', 100, 470, 0, { pointerId: 2 })
+    await nextTick()
+
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+    expect(onCancel).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+})
