@@ -122,9 +122,10 @@ function handleChange() {
     @beforeinput="(event: InputEvent) => {
       if (event.isComposing) return
       // Deletions are exempt: partially deleted literals ('13 mi' while
-      // backspacing through '13 min') never pass partial validation, and
-      // blur/enter re-parse whatever remains.
-      if (event.inputType.startsWith('delete')) return
+      // backspacing through '13 min') never pass partial validation, so
+      // validating them would trap the caret mid-literal. Deletions only
+      // ever remove characters, so they cannot introduce invalid input.
+      if (event.inputType?.startsWith('delete')) return
       const target = event.target as HTMLInputElement
       let nextValue
         = target.value.slice(0, target.selectionStart ?? undefined)
