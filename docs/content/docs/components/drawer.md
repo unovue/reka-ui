@@ -132,8 +132,25 @@ detachment.
 @keyframes slideOut { to { translate: 0 calc(100% - var(--bleed)); } }
 ```
 
-For a left/right drawer, swap the axis: `padding-inline-end` and
-`margin-inline-end` with `translate: calc(100% - var(--bleed)) 0`.
+For a side drawer, swap the axis and point the bleed at the edge the drawer is
+anchored to — a right-anchored drawer bleeds right, a left-anchored one bleeds
+left:
+
+```css
+/* Anchored right */
+.DrawerContent {
+  padding-inline-end: calc(24px + var(--bleed));
+  margin-inline-end: calc(-1 * var(--bleed));
+}
+@keyframes slideIn { from { translate: calc(100% - var(--bleed)) 0; } }
+
+/* Anchored left */
+.DrawerContent {
+  padding-inline-start: calc(24px + var(--bleed));
+  margin-inline-start: calc(-1 * var(--bleed));
+}
+@keyframes slideIn { from { translate: calc(-100% + var(--bleed)) 0; } }
+```
 
 ## API Reference
 

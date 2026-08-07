@@ -99,6 +99,9 @@ import {
 
 @keyframes drawer-overlay-in { from { opacity: 0; } }
 @keyframes drawer-overlay-out { to { opacity: 0; } }
-@keyframes drawer-slide-bottom-in { from { translate: 0 100%; } }
-@keyframes drawer-slide-bottom-out { to { translate: 0 100%; } }
+/* The bleed already sits below the viewport edge, so the drawer only has to
+   travel `height - bleed` to clear it. A full 100% would overshoot by the
+   bleed and make the slide look faster than it is. */
+@keyframes drawer-slide-bottom-in { from { translate: 0 calc(100% - var(--bleed)); } }
+@keyframes drawer-slide-bottom-out { to { translate: 0 calc(100% - var(--bleed)); } }
 </style>

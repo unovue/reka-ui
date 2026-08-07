@@ -29,6 +29,7 @@ input {
      bleed into view instead of exposing the overlay behind it, so the drawer
      stretches rather than visually detaching while it rubber-bands. */
   --bleed: 48px;
+
   background-color: white;
   border-radius: 16px 16px 0 0;
   position: fixed;
