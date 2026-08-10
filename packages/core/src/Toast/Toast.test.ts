@@ -49,6 +49,21 @@ describe('given a default Toast', () => {
       expect(proxy.getAttribute('aria-hidden')).toBeNull()
   })
 
+  it('should proxy focus out of the viewport on shift+Tab', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // Shift+Tab on the viewport hands focus to the head proxy, which bounces it
+    // onto the first toast. The viewport only reaches the proxy through its
+    // template ref, so this covers the ref resolving to the proxy element
+    // itself rather than to some other node.
+    const viewport = document.querySelector<HTMLElement>('ol[tabindex="-1"]')
+    expect(viewport).toBeTruthy()
+    await fireEvent.keyDown(viewport!, { key: 'Tab', shiftKey: true })
+
+    expect(document.activeElement?.closest('li')).toBeTruthy()
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(document.body)).toHaveNoViolations()
 
