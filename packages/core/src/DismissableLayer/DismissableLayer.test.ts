@@ -441,8 +441,8 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
     expect(wrapper.emitted('dismiss')).toBeUndefined()
   })
 
-  // Regression (nuxt/ui#6797): on touch, `pointerDownOutside` is deferred to the `click`
-  // event. A layer listening while not present captures the `pointerdown` of the tap that
+  // Regression: on touch, `pointerDownOutside` is deferred to the `click` event.
+  // A layer listening while not present captures the `pointerdown` of the tap that
   // opens it, and dismisses itself when that tap's `click` arrives.
   it('should not dismiss on the tap that made it present', async () => {
     // jsdom has no `PointerEvent`, so `fireEvent.pointerDown` loses `pointerType`
