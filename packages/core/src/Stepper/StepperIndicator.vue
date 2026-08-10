@@ -9,7 +9,7 @@ import { Primitive } from '@/Primitive'
 
 export interface StepperIndicatorProps extends PrimitiveProps { }
 
-const props = withDefaults(defineProps<StepperDescriptionProps>(), { as: 'span' })
+const props = withDefaults(defineProps<StepperIndicatorProps>(), { as: 'span' })
 
 defineSlots<{
   default?: (props: {
