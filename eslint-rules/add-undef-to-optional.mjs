@@ -34,16 +34,19 @@ const NEEDS_PARENS = new Set([
  *
  * @param {import('@typescript-eslint/types').TSESTree.TSTypeAnnotation['typeAnnotation'] | undefined} typeNode
  * @param {Map<string, any>} typeDefinitions
+ * @param {Set<string>} resolving Aliases on the current resolution path, so a
+ * recursive alias (`type A = B; type B = A`) terminates instead of overflowing
+ * the stack.
  * @returns {boolean} Whether the type already accepts `undefined`.
  */
-function acceptsUndefined(typeNode, typeDefinitions) {
+function acceptsUndefined(typeNode, typeDefinitions, resolving = new Set()) {
   if (!typeNode) {
     return false
   }
 
   switch (typeNode.type) {
     case AST_NODE_TYPES.TSUnionType: {
-      return typeNode.types.some(t => acceptsUndefined(t, typeDefinitions))
+      return typeNode.types.some(t => acceptsUndefined(t, typeDefinitions, resolving))
     }
     case AST_NODE_TYPES.TSUndefinedKeyword:
     case AST_NODE_TYPES.TSAnyKeyword:
@@ -51,13 +54,18 @@ function acceptsUndefined(typeNode, typeDefinitions) {
       return true
     case AST_NODE_TYPES.TSTypeReference: {
       if (typeNode.typeName?.type === AST_NODE_TYPES.Identifier) {
+        const { name } = typeNode.typeName
         // Check if it's a reference to 'undefined' itself
-        if (typeNode.typeName.name === 'undefined') {
+        if (name === 'undefined') {
           return true
         }
-        // If we have a local definition, check it
-        if (typeDefinitions.has(typeNode.typeName.name)) {
-          return acceptsUndefined(typeDefinitions.get(typeNode.typeName.name), typeDefinitions)
+        // If we have a local definition, check it — unless we are already
+        // resolving it further up the path
+        if (typeDefinitions.has(name) && !resolving.has(name)) {
+          resolving.add(name)
+          const result = acceptsUndefined(typeDefinitions.get(name), typeDefinitions, resolving)
+          resolving.delete(name)
+          return result
         }
       }
       break
@@ -85,6 +93,8 @@ export default createRule({
   defaultOptions: [],
   create(context) {
     const typeDefinitions = new Map()
+    /** @type {import('@typescript-eslint/types').TSESTree.TSPropertySignature[]} */
+    const optionalProperties = []
 
     return {
       // Collect type alias definitions, ie, type Foo = ...
@@ -95,28 +105,36 @@ export default createRule({
       },
       // only checks optional properties in types/interfaces
       TSPropertySignature(node) {
-        if (!node.optional || !node.typeAnnotation) {
-          return
+        if (node.optional && node.typeAnnotation) {
+          optionalProperties.push(node)
         }
-        const typeNode = node.typeAnnotation.typeAnnotation
-        if (!typeNode || acceptsUndefined(typeNode, typeDefinitions)) {
-          return
-        }
+      },
+      // Deferred: nodes are visited in source order, so an alias declared below
+      // the property that references it is not in `typeDefinitions` yet while
+      // the property is being visited.
+      'Program:exit': function () {
         const source = context.sourceCode
-        context.report({
-          node: node.key ?? node,
-          messageId: 'addUndefined',
-          data: {
-            propName: source.getText(node.key),
-          },
-          fix(fixer) {
-            const text = source.getText(typeNode)
-            return fixer.replaceText(
-              typeNode,
-              NEEDS_PARENS.has(typeNode.type) ? `(${text}) | undefined` : `${text} | undefined`,
-            )
-          },
-        })
+
+        for (const node of optionalProperties) {
+          const typeNode = node.typeAnnotation.typeAnnotation
+          if (!typeNode || acceptsUndefined(typeNode, typeDefinitions)) {
+            continue
+          }
+          context.report({
+            node: node.key ?? node,
+            messageId: 'addUndefined',
+            data: {
+              propName: source.getText(node.key),
+            },
+            fix(fixer) {
+              const text = source.getText(typeNode)
+              return fixer.replaceText(
+                typeNode,
+                NEEDS_PARENS.has(typeNode.type) ? `(${text}) | undefined` : `${text} | undefined`,
+              )
+            },
+          })
+        }
       },
     }
   },
