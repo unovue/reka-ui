@@ -44,7 +44,9 @@ export const Primitive = defineComponent({
   inheritAttrs: false,
   props: {
     asChild: {
-      type: Boolean,
+      // `Boolean` alone widens to `asChild?: boolean`, which rejects an explicit
+      // `undefined` under `exactOptionalPropertyTypes`.
+      type: Boolean as PropType<boolean | undefined>,
       default: false,
     },
     as: {
