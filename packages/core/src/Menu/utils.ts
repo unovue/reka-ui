@@ -88,3 +88,16 @@ export function isPointerInGraceArea(event: PointerEvent, area?: Polygon) {
 export function isMouseEvent(event: PointerEvent) {
   return event.pointerType === 'mouse'
 }
+
+export function isMouseInRect(event: MouseEvent, rect?: DOMRect) {
+  if (!rect) {
+    return false
+  }
+
+  return (
+    event.clientX >= rect.left
+    && event.clientX <= rect.right
+    && event.clientY >= rect.top
+    && event.clientY <= rect.bottom
+  )
+}

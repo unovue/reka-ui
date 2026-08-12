@@ -27,12 +27,12 @@ describe('given default ContextMenu', () => {
       await wrapper.find('span').trigger('click.right')
     })
 
-    it('should pass axe accessibility tests', async () => {
-      expect(await axe(document.body)).toHaveNoViolations()
-    })
-
     it('should render the menu', async () => {
       expect(await findByRole(document.body, 'menu')).toBeTruthy()
+    })
+
+    it('should pass axe accessibility tests', async () => {
+      expect(await axe(document.body)).toHaveNoViolations()
     })
   })
 })

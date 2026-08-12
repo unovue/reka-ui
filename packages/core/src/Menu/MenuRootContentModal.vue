@@ -25,6 +25,8 @@ useHideOthers(currentElement)
     :disable-outside-pointer-events="menuContext.open.value"
     :disable-outside-scroll="true"
     @dismiss="menuContext.onOpenChange(false)"
+    @pointer-down-outside="emits('pointerDownOutside', $event)"
+    @context-menu-outside="emits('contextMenuOutside', $event)"
     @focus-outside.prevent="emits('focusOutside', $event)"
   >
     <slot />
