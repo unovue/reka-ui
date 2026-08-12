@@ -30,6 +30,7 @@ type ComboboxRootContext<T> = {
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
+  clearValue: Ref<T | undefined>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -77,6 +78,12 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
    */
   resetModelValueOnClear?: boolean
+  /**
+   * The value to set the `modelValue` to when the combobox is cleared
+   * and `resetModelValueOnClear` is `true`. When not provided, defaults to
+   * `null` for single select or `[]` for multiple select.
+   */
+  clearValue?: T
 }
 </script>
 
@@ -108,7 +115,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, clearValue, highlightOnHover } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -243,6 +250,7 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear,
+  clearValue,
 })
 </script>
 

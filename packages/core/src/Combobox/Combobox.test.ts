@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
+import { ComboboxAnchor, ComboboxCancel, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
@@ -891,5 +891,151 @@ describe('comboboxContent with popper positioning', () => {
 
     expect(wrapper.text()).toContain('Option 59')
     expect(wrapper.text()).not.toContain('Option 1')
+  })
+})
+
+describe('given Combobox with resetModelValueOnClear and clearValue', () => {
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should reset modelValue to clearValue when resetModelValueOnClear is true and clearValue is set', async () => {
+    const modelValue = ref('Banana')
+
+    const ClearValueCombobox = defineComponent({
+      setup() {
+        return () => h(ComboboxRoot, {
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (val: string) => modelValue.value = val,
+          'resetModelValueOnClear': true,
+          'clearValue': 'CLEARED',
+        }, {
+          default: () => [
+            h(ComboboxAnchor, null, {
+              default: () => [
+                h(ComboboxInput, { placeholder: 'Select...' }),
+                h(ComboboxCancel, null, { default: () => '×' }),
+              ],
+            }),
+            h(ComboboxContent, null, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => [
+                  h(ComboboxItem, { value: 'Apple' }, { default: () => 'Apple' }),
+                  h(ComboboxItem, { value: 'Banana' }, { default: () => 'Banana' }),
+                  h(ComboboxItem, { value: 'Orange' }, { default: () => 'Orange' }),
+                ],
+              }),
+            }),
+          ],
+        })
+      },
+    })
+
+    const wrapper = mount(ClearValueCombobox, { attachTo: document.body })
+
+    // Input should show initially selected value
+    const input = wrapper.find('input')
+    expect((input.element as HTMLInputElement).value).toBe('Banana')
+
+    // Click the cancel button
+    const cancelButton = wrapper.find('button')
+    await cancelButton.trigger('click')
+    await nextTick()
+
+    // modelValue should be 'CLEARED' instead of null
+    expect(modelValue.value).toBe('CLEARED')
+  })
+
+  it('should reset modelValue to null when resetModelValueOnClear is true and clearValue is not set', async () => {
+    const modelValue = ref('Banana')
+
+    const NoClearValueCombobox = defineComponent({
+      setup() {
+        return () => h(ComboboxRoot, {
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (val: string) => modelValue.value = val,
+          'resetModelValueOnClear': true,
+        }, {
+          default: () => [
+            h(ComboboxAnchor, null, {
+              default: () => [
+                h(ComboboxInput),
+                h(ComboboxCancel, null, { default: () => '×' }),
+              ],
+            }),
+            h(ComboboxContent, null, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => [
+                  h(ComboboxItem, { value: 'Apple' }, { default: () => 'Apple' }),
+                  h(ComboboxItem, { value: 'Banana' }, { default: () => 'Banana' }),
+                ],
+              }),
+            }),
+          ],
+        })
+      },
+    })
+
+    const wrapper = mount(NoClearValueCombobox, { attachTo: document.body })
+
+    // Click the cancel button
+    const cancelButton = wrapper.find('button')
+    await cancelButton.trigger('click')
+    await nextTick()
+
+    // modelValue should be null (default behavior preserved)
+    expect(modelValue.value).toBeNull()
+  })
+
+  it('should reset modelValue to [] when resetModelValueOnClear is true with multiple and clearValue is set', async () => {
+    const modelValue = ref(['Banana', 'Apple'])
+
+    const MultipleClearValueCombobox = defineComponent({
+      setup() {
+        return () => h(ComboboxRoot, {
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (val: string[]) => modelValue.value = val,
+          'multiple': true,
+          'resetModelValueOnClear': true,
+          'clearValue': 'SHOULD_IGNORE',
+        }, {
+          default: () => [
+            h(ComboboxAnchor, null, {
+              default: () => [
+                h(ComboboxInput),
+                h(ComboboxCancel, null, { default: () => '×' }),
+              ],
+            }),
+            h(ComboboxContent, null, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => [
+                  h(ComboboxItem, { value: 'Apple' }, { default: () => 'Apple' }),
+                  h(ComboboxItem, { value: 'Banana' }, { default: () => 'Banana' }),
+                ],
+              }),
+            }),
+          ],
+        })
+      },
+    })
+
+    const wrapper = mount(MultipleClearValueCombobox, { attachTo: document.body })
+
+    // Click the cancel button
+    const cancelButton = wrapper.find('button')
+    await cancelButton.trigger('click')
+    await nextTick()
+
+    // modelValue should be [] in multiple mode regardless of clearValue
+    expect(modelValue.value).toEqual([])
   })
 })
