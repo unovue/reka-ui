@@ -1,9 +1,10 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import Tooltip from './stories/_Tooltip.vue'
 import TooltipProvider from './TooltipProvider.vue'
+import { TOOLTIP_OPEN } from './utils'
 
 describe('given default Tooltip', () => {
   let wrapper: VueWrapper<InstanceType<typeof Tooltip>>
@@ -18,6 +19,11 @@ describe('given default Tooltip', () => {
     wrapper = mount(Tooltip, { attachTo: document.body })
   },
   )
+
+  afterEach(async () => {
+    wrapper.unmount()
+    await flushPromises()
+  })
 
   it('should pass axe accessibility tests', async () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
@@ -50,6 +56,16 @@ describe('given default Tooltip', () => {
       expect(document.body.innerHTML).not.toContain('Add to library')
     })
   })
+
+  it('should close when another tooltip broadcasts that it opened', async () => {
+    await wrapper.find('button').trigger('focus')
+    expect(document.body.innerHTML).toContain('Add to library')
+
+    document.dispatchEvent(new CustomEvent(TOOLTIP_OPEN))
+    await flushPromises()
+
+    expect(document.body.innerHTML).not.toContain('Add to library')
+  })
 })
 
 describe('given tooltip within TooltipProvider', () => {
@@ -68,6 +84,11 @@ describe('given tooltip within TooltipProvider', () => {
       },
       attachTo: document.body,
     })
+  })
+
+  afterEach(async () => {
+    wrapper.unmount()
+    await flushPromises()
   })
 
   it('should use the provider content values', async () => {
