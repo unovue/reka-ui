@@ -33,10 +33,13 @@ describe('given a DismissableLayerBranch', () => {
   it('should leave the branch registry empty after unmounting', async () => {
     const wrapper = mount(DismissableLayerBranch, { attachTo: document.body })
     await nextTick()
+    const branch = wrapper.element
+    expect(context.branches.has(branch)).toBe(true)
     expect(context.branches.size).toBe(1)
 
     wrapper.unmount()
     await nextTick()
+    expect(context.branches.has(branch)).toBe(false)
     expect(context.branches.size).toBe(0)
   })
 })
