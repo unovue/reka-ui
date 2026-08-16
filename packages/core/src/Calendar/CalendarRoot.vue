@@ -274,16 +274,19 @@ function onDateChange(value: TemporalDate) {
     }
     else { modelValue.value = value }
   }
-  else if (!modelValue.value) {
-    modelValue.value = [value]
-  }
-  else if (Array.isArray(modelValue.value)) {
-    const index = modelValue.value.findIndex(date => isSameDay(date, value))
+  else {
+    if (!modelValue.value) {
+      modelValue.value = [value]
+      return
+    }
+
+    const current = Array.isArray(modelValue.value) ? modelValue.value : [modelValue.value]
+    const index = current.findIndex(date => isSameDay(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValue.value, value]
+      modelValue.value = [...current, value]
     }
     else if (!preventDeselect.value) {
-      const next = modelValue.value.filter(date => !isSameDay(date, value))
+      const next = current.filter(date => !isSameDay(date, value))
       if (!next.length) {
         placeholder.value = value
         modelValue.value = undefined

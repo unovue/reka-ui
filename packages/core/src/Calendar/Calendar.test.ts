@@ -886,6 +886,32 @@ describe('calendar - `multiple`', () => {
     await user.click(selectedDays2[0])
     expect(getSelectedDays(calendar).length).toBe(1)
   })
+
+  it('normalizes a single TemporalDate modelValue into an array when multiple selection is enabled', async () => {
+    const d1 = Temporal.PlainDate.from('1980-01-02')
+    const d2 = Temporal.PlainDate.from('1980-01-05')
+
+    const { calendar, user, rerender, getByTestId } = setupMulti({
+      calendarProps: { modelValue: d1 } as CalendarRootProps & { multiple: true },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate[] | undefined) => rerender({ modelValue: data }) },
+    })
+
+    const selectedDays = getSelectedDays(calendar)
+    expect(selectedDays.length).toBe(1)
+    expect(selectedDays[0]).toHaveTextContent(String(d1.day))
+
+    const differentDay = getByTestId('date-1-5')
+    await user.click(differentDay)
+    let newSelectedDays = getSelectedDays(calendar)
+    expect(newSelectedDays.length).toBe(2)
+    expect(newSelectedDays[0]).toHaveTextContent(String(d1.day))
+    expect(newSelectedDays[1]).toHaveTextContent(String(d2.day))
+
+    await user.click(selectedDays[0])
+    newSelectedDays = getSelectedDays(calendar)
+    expect(newSelectedDays.length).toBe(1)
+    expect(newSelectedDays[0]).toHaveTextContent(String(d2.day))
+  })
 })
 
 describe('calendar - edge cases', () => {
