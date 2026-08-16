@@ -195,4 +195,15 @@ describe('update:open change event details', () => {
     await nextTick()
     expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'close-press' })
   })
+
+  it('closes on a second trigger click (toggle)', async () => {
+    const onOpenChange = vi.fn()
+    const { getByText } = render(DrawerWithReason, { props: { onOpenChange } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    onOpenChange.mockClear()
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+  })
 })
