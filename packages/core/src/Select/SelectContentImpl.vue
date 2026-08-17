@@ -126,6 +126,8 @@ function focusSelectedItem() {
     focusFirst([selectedItem.value, content.value])
 }
 
+watch(content, value => rootContext.contentElement.value = value, { immediate: true })
+
 watch(isPositioned, () => {
   focusSelectedItem()
 })
@@ -302,7 +304,10 @@ provideSelectContentContext({
           :id="rootContext.contentId"
           :ref="
             (vnode: Element | ComponentPublicInstance | null) => {
-              if (!vnode) return undefined
+              if (!vnode) {
+                content = undefined
+                return undefined
+              }
               const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
               // special case for PopperContent
               if (el?.hasAttribute('data-reka-popper-content-wrapper'))

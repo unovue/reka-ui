@@ -40,6 +40,26 @@ describe('given default Combobox', () => {
     expect(wrapper.html()).toContain('Placeholder...')
   })
 
+  it('should only render aria-controls while content is mounted', async () => {
+    const input = wrapper.find('[role="combobox"]')
+    const trigger = wrapper.find('button')
+    expect(input.attributes('aria-controls')).toBeUndefined()
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('click')
+    await nextTick()
+    const contentId = input.attributes('aria-controls')
+    expect(contentId).toBeDefined()
+    expect(trigger.attributes('aria-controls')).toBe(contentId)
+    expect(document.getElementById(contentId!)).not.toBeNull()
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await nextTick()
+    expect(input.attributes('aria-controls')).toBeUndefined()
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+    expect(document.getElementById(contentId!)).toBeNull()
+  })
+
   describe('opening the popup', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('click')

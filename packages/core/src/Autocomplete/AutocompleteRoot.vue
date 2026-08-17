@@ -144,6 +144,7 @@ const isUserInputted = ref(false)
 const isVirtual = ref(false)
 const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
+const contentElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
 
@@ -218,6 +219,7 @@ provideComboboxRootContext({
   disabled,
   open,
   onOpenChange,
+  contentElement,
   contentId: '',
   isUserInputted,
   isVirtual,

@@ -40,6 +40,7 @@ export interface SelectRootContext<T> {
   onTriggerChange: (node: HTMLElement | undefined) => void
   valueElement: Ref<HTMLElement | undefined>
   onValueElementChange: (node: HTMLElement) => void
+  contentElement: Ref<HTMLElement | undefined>
   contentId: string
   modelValue: Ref<T | Array<T> | undefined>
   onValueChange: (value: T) => void
@@ -106,6 +107,7 @@ const open = useVModel(props, 'open', emits, {
 
 const triggerElement = ref<HTMLElement>()
 const valueElement = ref<HTMLElement>()
+const contentElement = ref<HTMLElement>()
 const triggerPointerDownPosRef = ref({
   x: 0,
   y: 0,
@@ -161,6 +163,7 @@ provideSelectRootContext({
   onValueElementChange: (node) => {
     valueElement.value = node
   },
+  contentElement,
   contentId: '',
   modelValue,
   // @ts-expect-error Missing infer for AcceptableValue

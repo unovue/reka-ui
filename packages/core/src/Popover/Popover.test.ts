@@ -22,6 +22,22 @@ describe('given default Popover', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
+  it('should only render aria-controls while content is mounted', async () => {
+    const trigger = wrapper.find('button')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('click')
+    await nextTick()
+    const contentId = trigger.attributes('aria-controls')
+    expect(contentId).toBeDefined()
+    expect(document.getElementById(contentId!)).not.toBeNull()
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+    expect(document.getElementById(contentId!)).toBeNull()
+  })
+
   describe('after opening popover', async () => {
     beforeEach(async () => {
       wrapper.find('button').element.click()

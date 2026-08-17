@@ -13,6 +13,7 @@ type ComboboxRootContext<T> = {
   onOpenChange: (value: boolean) => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
+  contentElement: Ref<HTMLElement | undefined>
   contentId: string
   inputElement: Ref<HTMLInputElement | undefined>
   onInputElementChange: (el: HTMLInputElement) => void
@@ -148,6 +149,7 @@ const isUserInputted = ref(false)
 const isVirtual = ref(false)
 const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
+const contentElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
 
@@ -224,6 +226,7 @@ provideComboboxRootContext({
   disabled,
   open,
   onOpenChange,
+  contentElement,
   contentId: '',
   isUserInputted,
   isVirtual,

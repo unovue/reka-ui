@@ -28,6 +28,7 @@ export type PopoverRootEmits = {
 export interface PopoverRootContext {
   triggerElement: Ref<HTMLElement | undefined>
   triggerId: string
+  contentElement: Ref<HTMLElement | undefined>
   contentId: string
   open: Ref<boolean>
   modal: Ref<boolean>
@@ -69,9 +70,11 @@ const open = useVModel(props, 'open', emit, {
 }) as Ref<boolean>
 
 const triggerElement = ref<HTMLElement>()
+const contentElement = ref<HTMLElement>()
 const hasCustomAnchor = ref(false)
 
 providePopoverRootContext({
+  contentElement,
   contentId: '',
   triggerId: '',
   modal,

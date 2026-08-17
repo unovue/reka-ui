@@ -31,7 +31,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
@@ -53,6 +53,7 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 )
 
 const { forwardRef, currentElement } = useForwardExpose()
+watchEffect(() => rootContext.contentElement.value = currentElement.value)
 useBodyScrollLock(props.bodyLock)
 useFocusGuards()
 useHideOthers(rootContext.parentElement)
@@ -92,6 +93,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  rootContext.contentElement.value = undefined
   const activeElement = getActiveElement()
   if (isInputWithinContent.value && (!activeElement || activeElement === document.body)) {
     rootContext.triggerElement.value?.focus()

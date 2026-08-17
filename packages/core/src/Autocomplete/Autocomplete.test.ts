@@ -41,6 +41,22 @@ describe('given default Autocomplete', () => {
     expect(input.element.value).toBe('')
   })
 
+  it('should only render aria-controls while content is mounted', async () => {
+    const trigger = wrapper.find('button')
+    expect(input.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('click')
+    await nextTick()
+    const contentId = input.attributes('aria-controls')
+    expect(contentId).toBeDefined()
+    expect(document.getElementById(contentId!)).not.toBeNull()
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await nextTick()
+    expect(input.attributes('aria-controls')).toBeUndefined()
+    expect(document.getElementById(contentId!)).toBeNull()
+  })
+
   describe('opening the popup', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('click')
