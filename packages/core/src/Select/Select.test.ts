@@ -38,6 +38,16 @@ describe('given default Select', () => {
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
+  it('should only render aria-controls while open', async () => {
+    const trigger = wrapper.find('[role="combobox"]')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+
+    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
+  })
+
   describe('trigger mouse interop', () => {
     async function openSelectWithMouseClick() {
       const button = wrapper.find('button')
@@ -99,16 +109,6 @@ describe('given default Select', () => {
       expect(wrapper.html()).toContain('Apple')
       expect(document.activeElement).not.toBe(trigger)
     })
-  })
-
-  it('should only reference the content while open', async () => {
-    const trigger = wrapper.find('[role="combobox"]')
-    expect(trigger.attributes('aria-controls')).toBeUndefined()
-
-    await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
-    await nextTick()
-
-    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
   })
 
   describe('opening the modal', () => {

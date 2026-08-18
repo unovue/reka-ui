@@ -20,6 +20,7 @@ const rootContext = injectPopoverRootContext()
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
 rootContext.triggerId ||= useId(undefined, 'reka-popover-trigger')
+rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 onMounted(() => {
   rootContext.triggerElement.value = triggerElement.value
 })
