@@ -36,7 +36,7 @@ onMounted(() => {
       :type="as === 'button' ? 'button' : undefined"
       aria-haspopup="dialog"
       :aria-expanded="rootContext.open.value"
-      :aria-controls="rootContext.contentId"
+      :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       :as="as"
       :as-child="props.asChild"
