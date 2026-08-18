@@ -97,7 +97,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Pagination
 
-- [Required `itemsPerPage` prop](https://github.com/unovue/reka-ui/commit/37bba0c26a3cbe7e7e3e4ac36770be3ef5224f0c) - Instead of default `itemsPerPage` value, now it is required to provide a more explicit hint about the page size.
+- [Required `itemsPerPage` prop](https://github.com/unovue/reka-ui/commit/37bba0c26a3cbe7e7e3e4ac36770be3ef5224f0c) - The `itemsPerPage` prop is now required instead of relying on a default value.
 
   ```vue
   <template>
@@ -129,7 +129,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Select
 
-- [`SelectValue` no longer render teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - Previous implementation of `SelectValue` will render the selected `SelectItem` via teleporting fragment. This causes SSR flickering, and it is an unnecessary computation.
+- [`SelectValue` no longer renders a teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - The previous implementation of `SelectValue` rendered the selected `SelectItem` through a teleported fragment. This caused SSR flicker and unnecessary computation.
 
   ```vue
   <template>

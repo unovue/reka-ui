@@ -24,7 +24,7 @@ export default defineNuxtConfig({
 
 Reka UI also has resolver for the popular [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components).
 
-In `vite.config.ts`, import `reka-ui/resolver`, and configure as such and it will auto-import all the components from Reka UI.
+In `vite.config.ts`, import `reka-ui/resolver` and configure it as follows. The resolver will then auto-import all Reka UI components.
 
 ```ts{2,10  }
 import Components from 'unplugin-vue-components/vite'
