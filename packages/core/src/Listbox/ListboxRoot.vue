@@ -39,6 +39,14 @@ type ListboxRootContext<T> = {
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
+/** Controls highlight scrolling while a parent composite is being positioned. */
+type ListboxHighlightScrollContext = {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+}
+
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
@@ -104,6 +112,10 @@ const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({ suppressHighlightScroll: ref(false) })
 
 const isFormControl = useFormControl(currentElement)
 
@@ -165,7 +177,7 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
   highlightedElement.value = el
   if (focus ?? focusable.value)
     highlightedElement.value.focus()
-  if (scrollIntoView)
+  if (scrollIntoView && !highlightScrollContext?.suppressHighlightScroll.value)
     highlightedElement.value.scrollIntoView({ block: 'nearest' })
 
   const highlightedItem = getItems().find(i => i.ref === el)

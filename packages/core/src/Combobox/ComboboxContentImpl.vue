@@ -31,7 +31,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
@@ -46,6 +46,8 @@ const emits = defineEmits<ComboboxContentImplEmits>()
 
 const { position } = toRefs(props)
 const rootContext = injectComboboxRootContext()
+
+watch(position, value => rootContext.onContentPositionChange(value), { immediate: true })
 
 const isEmpty = computed(() => rootContext.ignoreFilter.value
   ? rootContext.allItems.value.size === 0
@@ -92,6 +94,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  rootContext.onContentUnmount()
   const activeElement = getActiveElement()
   if (isInputWithinContent.value && (!activeElement || activeElement === document.body)) {
     rootContext.triggerElement.value?.focus()
@@ -155,6 +158,7 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
             outline: 'none',
             ...(position === 'popper' ? popperStyle : {}),
           }"
+          @placed="rootContext.onContentPlaced"
         >
           <slot />
         </component>

@@ -11,6 +11,9 @@ type ComboboxRootContext<T> = {
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
+  onContentPositionChange: (position: 'inline' | 'popper') => void
+  onContentPlaced: () => void
+  onContentUnmount: () => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
   contentId: string
@@ -86,6 +89,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,
@@ -150,6 +154,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open, highlightedElement)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
@@ -224,6 +229,7 @@ provideComboboxRootContext({
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,
