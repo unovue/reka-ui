@@ -25,7 +25,7 @@ export function useWindowSplitterPanelGroupBehavior({
   groupId: string
   layout: Ref<number[]>
   panelDataArray: PanelData[]
-  panelGroupElement: Ref<ParentNode | null>
+  panelGroupElement: Ref<ParentNode | null | undefined>
   setLayout: (sizes: number[]) => void
   getPanelDataWithPercentConstraints: (groupSizeOverride?: number | null) => PanelData[] | null
 }): void {

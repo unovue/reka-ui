@@ -322,4 +322,181 @@ describe('useForwardRef', async () => {
     await flushPromises()
     expect(renderNode).toBe('span')
   })
+
+  it('should resolve undefined for a #text-root that renders no element', async () => {
+    const comp = defineComponent({
+      setup() {
+        const { forwardRef, currentElement } = useForwardExpose()
+        return { forwardRef, currentElement }
+      },
+      template: `just text, no element root`,
+    })
+    const el = ref()
+    let resolved
+    mount(
+      defineComponent(() => {
+        return () => h(comp, { ref: el })
+      }),
+    )
+    watchPostEffect(() => {
+      resolved = el.value?.currentElement
+    })
+    await flushPromises()
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should resolve undefined for a #comment-root that renders no element', async () => {
+    const comp = defineComponent({
+      setup() {
+        const { forwardRef, currentElement } = useForwardExpose()
+        return { forwardRef, currentElement }
+      },
+      template: `<div v-if="false" />`,
+    })
+    const el = ref()
+    let resolved
+    mount(
+      defineComponent(() => {
+        return () => h(comp, { ref: el })
+      }),
+    )
+    watchPostEffect(() => {
+      resolved = el.value?.currentElement
+    })
+    await flushPromises()
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should not resolve to an element outside a #comment-root component', async () => {
+    const Child = defineComponent({ template: `<div v-if="false" />` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef }), h('div', { id: 'outsider' })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeUndefined()
+  })
+
+  it('should not resolve to an element outside a #text-root component', async () => {
+    const Child = defineComponent({ template: `just text` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef }), h('div', { id: 'outsider' })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeUndefined()
+  })
+
+  it('should be undefined for a #comment-root component with no sibling', async () => {
+    const Child = defineComponent({ template: `<div v-if="false" />` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeUndefined()
+  })
+
+  it('should be undefined for a #text-root component with no sibling', async () => {
+    const Child = defineComponent({ template: `just text` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeUndefined()
+  })
+
+  it('should resolve the first element root of a multi-root fragment', async () => {
+    const Child = defineComponent({ template: `leading text <button id="own">ok</button>` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef }), h('div', { id: 'outsider' })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeInstanceOf(HTMLButtonElement)
+    expect(parentRef.value?.currentElement?.id).toBe('own')
+  })
+
+  it('should not resolve outside element when the fragment has no proper element', async () => {
+    const Child = defineComponent({ template: `<!-- a --><!-- b -->` })
+
+    const comp = defineComponent({
+      components: { Child },
+      setup(_, { expose }) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        expose({ currentElement })
+        return { forwardRef }
+      },
+      render() {
+        return [h(Child, { ref: this.forwardRef }), h('div', { id: 'outsider' })]
+      },
+    })
+
+    const parentRef = ref<any>()
+    mount(defineComponent(() => () => h(comp, { ref: parentRef })))
+    await flushPromises()
+
+    expect(parentRef.value?.currentElement).toBeUndefined()
+  })
 })

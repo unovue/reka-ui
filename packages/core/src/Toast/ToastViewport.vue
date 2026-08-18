@@ -53,11 +53,12 @@ const DIGIT_RE = /Digit/g
 const hotkeyMessage = computed(() => hotkey.value.join('+').replace(KEY_RE, '').replace(DIGIT_RE, ''))
 
 onKeyStroke(hotkey.value, () => {
-  currentElement.value.focus()
+  // TODO(currentElement): fires on a global hotkey at arbitrary times; should probably a no-op (currentElement.value?) rather than throw
+  currentElement.value!.focus()
 })
 
 onMounted(() => {
-  providerContext.onViewportChange(currentElement.value)
+  providerContext.onViewportChange(currentElement.value!)
 })
 
 watchEffect((cleanupFn) => {

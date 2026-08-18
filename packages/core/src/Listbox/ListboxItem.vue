@@ -44,7 +44,7 @@ const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
+const isHighlighted = computed(() => currentElement.value !== undefined && currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
@@ -56,7 +56,7 @@ async function handleSelect(ev: SelectEvent<T>) {
 
   if (!disabled.value && ev) {
     rootContext.onValueChange(props.value)
-    rootContext.changeHighlight(currentElement.value)
+    rootContext.changeHighlight(currentElement.value!)
   }
 }
 
@@ -93,7 +93,7 @@ provideListboxItemContext({
           return
 
         if (rootContext.highlightOnHover.value)
-          rootContext.changeHighlight(currentElement, false, false)
+          rootContext.changeHighlight(currentElement!, false, false)
       }"
     >
       <slot />

@@ -20,12 +20,33 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   })
 
   function resolveCurrentElement() {
-    // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
-    return currentRef.value
-      && '$el' in currentRef.value
-      && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
-      ? currentRef.value.$el.nextElementSibling as HTMLElement
-      : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
+    // $el could be #text/#comment for non-single root normal or text root, thus we
+    // try to retrieve the `nextElementSibling`
+    const el = currentRef.value
+    if (el
+      && '$el' in el
+      && ['#text', '#comment'].includes(el.$el.nodeName)) {
+      // no end anchor, means that it is a singular #text or #comment -> no proper element,
+      // so early-return.
+      const anchor = el.$?.subTree?.anchor as Node | null
+      if (!anchor)
+        return undefined
+
+      // accept the next sibling ONLY if it is a part of the component;
+      // sibling positioned AFTER the anchor belongs to something else,
+      // and should not be returned.
+      const nextSibling = el.$el.nextElementSibling as HTMLElement | null
+      if (
+        nextSibling
+        && (nextSibling.compareDocumentPosition(anchor) & Node.DOCUMENT_POSITION_FOLLOWING)
+      ) {
+        return nextSibling
+      }
+
+      return undefined
+    }
+
+    return unrefElement(currentRef as unknown as MaybeElement) as HTMLElement | undefined
   }
 
   // Do give us credit if you reference our code :D

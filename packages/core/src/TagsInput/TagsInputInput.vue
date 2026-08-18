@@ -129,9 +129,9 @@ function handlePaste(event: ClipboardEvent) {
 }
 
 onMounted(() => {
-  const inputEl = currentElement.value.nodeName === 'INPUT'
+  const inputEl = currentElement.value?.nodeName === 'INPUT'
     ? currentElement.value
-    : currentElement.value.querySelector('input')
+    : currentElement.value?.querySelector('input')
 
   if (!inputEl)
     return
