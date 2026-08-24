@@ -206,13 +206,6 @@ provideDrawerRootContext({
   descriptionId,
 })
 
-function handleClose() {
-  if (!open.value)
-    return
-  uncontrolledOpen.value = false
-  emit('update:open', false, { reason: 'close-press' })
-}
-
 function handleOpenChange(value: boolean, reason?: DrawerOpenChangeReason) {
   if (open.value === value)
     return
@@ -247,6 +240,6 @@ onUnmounted(() => {
 <template>
   <slot
     :open="open"
-    :close="handleClose"
+    :close="() => handleOpenChange(false, 'close-press')"
   />
 </template>
