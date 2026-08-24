@@ -31,7 +31,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
@@ -39,8 +39,9 @@ import { PopperContent } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
-const props = withDefaults(defineProps<ComboboxContentImplProps>(), {
+const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
   position: 'inline',
+  present: true,
 })
 const emits = defineEmits<ComboboxContentImplEmits>()
 
@@ -53,14 +54,20 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 )
 
 const { forwardRef, currentElement } = useForwardExpose()
-useBodyScrollLock(props.bodyLock)
+const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
+watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards()
-useHideOthers(rootContext.parentElement)
+const ariaHiddenTarget = computed(() => props.present ? rootContext.parentElement.value : undefined)
+useHideOthers(ariaHiddenTarget)
 
 const pickedProps = computed(() => {
-  if (props.position === 'popper')
-    return props
-  else return {}
+  if (props.position === 'popper') {
+    const { present: _, ...forwardedProps } = props
+    return forwardedProps
+  }
+  else {
+    return {}
+  }
 })
 
 const forwardedProps = useForwardProps(pickedProps.value)
@@ -85,10 +92,22 @@ const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
     isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
-    if (isInputWithinContent.value) {
+    if (props.present && isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }
   }
+})
+
+watch(() => props.present, async (isPresent, wasPresent) => {
+  if (isPresent || !wasPresent)
+    return
+
+  const activeElement = getActiveElement()
+  if (!activeElement || !currentElement.value.contains(activeElement))
+    return
+
+  await nextTick()
+  rootContext.triggerElement.value?.focus()
 })
 
 onUnmounted(() => {
@@ -116,11 +135,13 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
   <ListboxContent as-child>
     <FocusScope
       as-child
+      :present="props.present"
       @mount-auto-focus.prevent
       @unmount-auto-focus.prevent
     >
       <DismissableLayer
         as-child
+        :present="props.present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
         @dismiss="rootContext.onOpenChange(false)"
         @focus-outside="(ev) => {

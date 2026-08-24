@@ -4,10 +4,208 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
+
+const PersistentCombobox = defineComponent({
+  components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+  props: {
+    bodyLock: Boolean,
+    onEscapeKeyDown: Function,
+    onInteractOutside: Function,
+  },
+  template: `<ComboboxRoot :unmount-on-hide="false">
+  <ComboboxAnchor>
+    <ComboboxInput data-testid="persistent-input" />
+    <ComboboxTrigger data-testid="persistent-trigger">Open</ComboboxTrigger>
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent
+      data-testid="persistent-content"
+      :body-lock="bodyLock"
+      @escape-key-down="onEscapeKeyDown"
+      @interact-outside="onInteractOutside"
+    >
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+      </ComboboxViewport>
+      <input data-testid="option-state" aria-label="Option state">
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+})
+
+const PersistentComboboxWithInputInside = defineComponent({
+  components: { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+  template: `<ComboboxRoot :unmount-on-hide="false">
+  <ComboboxTrigger data-testid="inside-trigger">Open</ComboboxTrigger>
+  <ComboboxPortal>
+    <ComboboxContent data-testid="inside-content">
+      <ComboboxInput data-testid="inside-input" />
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+})
+
+describe('given a Combobox with unmountOnHide=false', () => {
+  let wrapper: VueWrapper<InstanceType<typeof PersistentCombobox>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(PersistentCombobox, { attachTo: document.body })
+  })
+
+  afterEach(async () => {
+    wrapper?.unmount()
+    await nextTick()
+  })
+
+  it('keeps the same hidden content node and subtree state across close and reopen', async () => {
+    const trigger = wrapper.find('[data-testid="persistent-trigger"]')
+    const content = document.querySelector('[data-testid="persistent-content"]') as HTMLElement
+    const statefulInput = document.querySelector('[data-testid="option-state"]') as HTMLInputElement
+
+    expect(content.style.display).toBe('none')
+    expect(content.dataset.state).toBe('closed')
+    expect(document.querySelector('[role="combobox"]')?.getAttribute('aria-expanded')).toBe('false')
+    statefulInput.value = 'preserved'
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(content.style.display).not.toBe('none')
+
+    statefulInput.focus()
+    statefulInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.waitFor(() => expect(content.style.display).toBe('none'))
+    expect(document.activeElement).toBe(trigger.element)
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.querySelector('[data-testid="persistent-content"]')).toBe(content)
+    expect((document.querySelector('[data-testid="option-state"]') as HTMLInputElement).value).toBe('preserved')
+  })
+
+  it('does not activate focus or dismissal behavior while closed', async () => {
+    const onEscapeKeyDown = vi.fn()
+    const onInteractOutside = vi.fn()
+    await wrapper.setProps({ onEscapeKeyDown, onInteractOutside })
+
+    expect(document.activeElement).toBe(document.body)
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await sleep(1)
+
+    expect(onEscapeKeyDown).not.toHaveBeenCalled()
+    expect(onInteractOutside).not.toHaveBeenCalled()
+  })
+
+  it('releases body scroll lock when hidden', async () => {
+    await wrapper.setProps({ bodyLock: true })
+    const trigger = wrapper.find('[data-testid="persistent-trigger"]')
+
+    expect(document.body.style.overflow).not.toBe('hidden')
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    await wrapper.setProps({ bodyLock: false })
+    await nextTick()
+    expect(document.body.style.overflow).not.toBe('hidden')
+
+    await wrapper.setProps({ bodyLock: true })
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.waitFor(() => expect(document.body.style.overflow).not.toBe('hidden'))
+  })
+
+  it('removes persistent portal content when the root unmounts', () => {
+    const content = document.querySelector('[data-testid="persistent-content"]') as HTMLElement
+    wrapper.unmount()
+    expect(document.body.contains(content)).toBe(false)
+  })
+})
+
+describe('given a persistent Combobox with its input inside content', () => {
+  let wrapper: VueWrapper<InstanceType<typeof PersistentComboboxWithInputInside>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(PersistentComboboxWithInputInside, { attachTo: document.body })
+  })
+
+  afterEach(() => wrapper?.unmount())
+
+  it('does not focus hidden content on mount and restores the trigger on close', async () => {
+    const trigger = wrapper.find('[data-testid="inside-trigger"]')
+    expect(document.activeElement).toBe(document.body)
+
+    await trigger.trigger('click')
+    await vi.waitFor(() => expect(document.activeElement?.getAttribute('data-testid')).toBe('inside-input'))
+
+    await document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
+  })
+})
+
+describe('given two persistent Comboboxes', () => {
+  const TwoPersistentComboboxes = defineComponent({
+    components: { PersistentCombobox },
+    props: { onSecondEscapeKeyDown: Function },
+    template: `<div>
+  <PersistentCombobox data-testid="first" />
+  <PersistentCombobox data-testid="second" :on-escape-key-down="onSecondEscapeKeyDown" />
+</div>`,
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof TwoPersistentComboboxes>>
+
+  afterEach(async () => {
+    wrapper?.unmount()
+    await nextTick()
+  })
+
+  it('lets the open Combobox handle Escape when a hidden one mounted after it', async () => {
+    document.body.innerHTML = ''
+    const onSecondEscapeKeyDown = vi.fn()
+    wrapper = mount(TwoPersistentComboboxes, { attachTo: document.body, props: { onSecondEscapeKeyDown } })
+    await nextTick()
+    const triggers = wrapper.findAll('[data-testid="persistent-trigger"]')
+    const contents = document.querySelectorAll<HTMLElement>('[data-testid="persistent-content"]')
+
+    await triggers[0].trigger('click')
+    await nextTick()
+    expect(contents[0].style.display).not.toBe('none')
+    expect(contents[1].style.display).toBe('none')
+
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.waitFor(() => expect(contents[0].style.display).toBe('none'))
+
+    expect(onSecondEscapeKeyDown).not.toHaveBeenCalled()
+  })
+})
+
+describe('given a default Combobox mount policy', () => {
+  it('continues to unmount content when closed', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(Combobox, { attachTo: document.body })
+    expect(document.querySelector('[role="listbox"]')).toBeNull()
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.waitFor(() => expect(document.querySelector('[role="listbox"]')).toBeNull())
+    wrapper.unmount()
+  })
+})
 
 describe('given default Combobox', () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
