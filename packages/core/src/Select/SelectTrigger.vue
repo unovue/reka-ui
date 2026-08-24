@@ -104,7 +104,7 @@ function onTriggerClick(event: MouseEvent) {
       :ref="forwardRef"
       role="combobox"
       :type="as === 'button' ? 'button' : undefined"
-      :aria-controls="rootContext.contentId"
+      :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
       aria-autocomplete="none"

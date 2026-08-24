@@ -109,6 +109,11 @@ const isPointerEventsEnabled = computed(() => {
   return index.value >= highestLayerWithOutsidePointerEventsDisabledIndex
 })
 
+// A layer that stays mounted while hidden (e.g. a Dialog with `unmountOnHide: false`)
+// must not listen while it is not present, hence the `present` guard passed as `enabled`.
+// On touch the dispatch is deferred to the `click` event, so a `pointerdown` captured
+// while hidden would be delivered right after the layer opened and dismiss it on the
+// very interaction that opened it.
 const pointerDownOutside = usePointerDownOutside(async (event) => {
   const isPointerDownOnBranch = [...context.branches].some(branch =>
     branch?.contains(event.target as HTMLElement),
@@ -121,7 +126,7 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
   await nextTick()
   if (!event.defaultPrevented)
     emits('dismiss')
-}, layerElement)
+}, layerElement, () => props.present)
 
 const focusOutside = useFocusOutside((event) => {
   const isFocusInBranch = [...context.branches].some(branch =>

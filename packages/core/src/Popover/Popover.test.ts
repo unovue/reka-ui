@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import Popover from './story/_Popover.vue'
@@ -18,8 +18,22 @@ describe('given default Popover', () => {
     wrapper = mount(Popover, { attachTo: document.body })
   })
 
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('should only render aria-controls while open', async () => {
+    const trigger = wrapper.find('button')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    trigger.element.click()
+    await nextTick()
+
+    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
   })
 
   describe('after opening popover', async () => {

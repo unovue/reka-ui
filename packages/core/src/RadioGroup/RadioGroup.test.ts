@@ -3,8 +3,9 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { RadioGroupItem } from '..'
+import { RadioGroupItem, RadioGroupRoot } from '..'
 import Radio from './story/_Radio.vue'
 import RadioGroup from './story/_RadioGroup.vue'
 
@@ -90,6 +91,19 @@ describe('given disabled RadioGroup', () => {
   it.each([[0], [1], [2]])('should have disabled attribute on item', async (input) => {
     expect(radios[input].attributes('disabled')).toBe('')
     expect(radios[input].attributes('data-disabled')).toBe('')
+  })
+})
+
+describe('given a RadioGroupItem whose label is not found', () => {
+  it('should not fall back to the value as the accessible name', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount({
+      components: { RadioGroupItem, RadioGroupRoot },
+      template: '<RadioGroupRoot><RadioGroupItem id="r1" value="event_type" /></RadioGroupRoot>',
+    }, { attachTo: document.body })
+    await nextTick()
+
+    expect(wrapper.find('[role=radio]').attributes('aria-label')).toBeUndefined()
   })
 })
 
