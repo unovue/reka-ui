@@ -11,9 +11,9 @@ type ComboboxRootContext<T> = {
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
-  onContentPositionChange: (position: 'inline' | 'popper') => void
-  onContentPlaced: () => void
-  onContentUnmount: () => void
+  onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
+  onContentPlaced: (content: symbol) => void
+  onContentUnmount: (content: symbol) => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
   contentId: string
@@ -154,7 +154,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
-const contentPositioning = useComboboxContentPositioning(open, highlightedElement)
+const contentPositioning = useComboboxContentPositioning(open)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())

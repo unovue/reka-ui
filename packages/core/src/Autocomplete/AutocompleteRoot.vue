@@ -147,7 +147,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
-const contentPositioning = useComboboxContentPositioning(open, highlightedElement)
+const contentPositioning = useComboboxContentPositioning(open)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())

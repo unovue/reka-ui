@@ -4,38 +4,48 @@ import { provideListboxHighlightScrollContext } from '@/Listbox/ListboxRoot.vue'
 
 export function useComboboxContentPositioning(
   open: Readonly<Ref<boolean>>,
-  highlightedElement: Readonly<Ref<HTMLElement | undefined>>,
 ) {
   const contentPosition = ref<'inline' | 'popper'>('inline')
   const contentPlaced = ref(false)
+  const currentContent = ref<symbol>()
   const suppressHighlightScroll = computed(() => contentPosition.value === 'popper' && !contentPlaced.value)
+  let pendingHighlightScroll: (() => void) | undefined
 
-  provideListboxHighlightScrollContext({ suppressHighlightScroll })
+  provideListboxHighlightScrollContext({
+    suppressHighlightScroll,
+    onHighlightScrollRequest(scroll) {
+      pendingHighlightScroll = scroll
+    },
+  })
 
-  function scrollHighlightedElement() {
-    const element = highlightedElement.value
-    if (element?.isConnected)
-      element.scrollIntoView({ block: 'nearest' })
-  }
-
-  function onContentPositionChange(position: 'inline' | 'popper') {
-    if (contentPosition.value !== position)
+  function onContentPositionChange(content: symbol, position: 'inline' | 'popper') {
+    if (currentContent.value !== content || contentPosition.value !== position) {
       contentPlaced.value = false
+      pendingHighlightScroll = undefined
+    }
+    currentContent.value = content
     contentPosition.value = position
   }
 
-  function onContentPlaced() {
-    if (contentPosition.value !== 'popper' || contentPlaced.value)
+  function onContentPlaced(content: symbol) {
+    if (currentContent.value !== content || contentPosition.value !== 'popper' || contentPlaced.value)
       return
 
     contentPlaced.value = true
+    const scroll = pendingHighlightScroll
+    pendingHighlightScroll = undefined
     if (open.value)
-      scrollHighlightedElement()
+      scroll?.()
   }
 
-  function onContentUnmount() {
+  function onContentUnmount(content: symbol) {
+    if (currentContent.value !== content)
+      return
+
+    currentContent.value = undefined
     contentPosition.value = 'inline'
     contentPlaced.value = false
+    pendingHighlightScroll = undefined
   }
 
   return {
