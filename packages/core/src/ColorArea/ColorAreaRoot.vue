@@ -7,21 +7,21 @@ import { createContext, useFormControl, useForwardExpose } from '@/shared'
 
 export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). Can be a hex string or Color object. */
-  modelValue?: string | Color
+  modelValue?: string | Color | undefined
   /** The default color value (uncontrolled). */
-  defaultValue?: string | Color
+  defaultValue?: string | Color | undefined
   /** The color space to operate in. */
-  colorSpace?: ColorSpace
+  colorSpace?: ColorSpace | undefined
   /** Color channel for the horizontal (x) axis. */
-  xChannel?: ColorChannel
+  xChannel?: ColorChannel | undefined
   /** Color channel for the vertical (y) axis. */
-  yChannel?: ColorChannel
+  yChannel?: ColorChannel | undefined
   /** When `true`, prevents the user from interacting with the area. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** The name of the x channel input element for form submission. */
-  xName?: string
+  xName?: string | undefined
   /** The name of the y channel input element for form submission. */
-  yName?: string
+  yName?: string | undefined
 }
 
 export type ColorAreaRootEmits = {
@@ -78,10 +78,10 @@ const props = withDefaults(defineProps<ColorAreaRootProps>(), {
 const emits = defineEmits<ColorAreaRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** CSS styles for the color area background gradient */
     style: CSSProperties
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { colorSpace, xChannel, yChannel, disabled } = toRefs(props)

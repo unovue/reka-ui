@@ -27,7 +27,7 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
    * Whether focus should be trapped within the `MenuContent`
    * @defaultValue false
    */
-  trapFocus?: FocusScopeProps['trapped']
+  trapFocus?: FocusScopeProps['trapped'] | undefined
 }
 </script>
 

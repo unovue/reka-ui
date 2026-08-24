@@ -8,7 +8,7 @@ export interface MenubarMenuProps {
    *
    * This prop is managed automatically when uncontrolled.
    */
-  value?: string
+  value?: string | undefined
 }
 
 type MenubarMenuContext = {

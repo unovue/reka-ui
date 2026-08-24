@@ -5,7 +5,7 @@ import type { MenuSubEmits, MenuSubProps } from '@/Menu'
 export type DropdownMenuSubEmits = MenuSubEmits
 export interface DropdownMenuSubProps extends MenuSubProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
 }
 </script>
 
@@ -13,17 +13,18 @@ export interface DropdownMenuSubProps extends MenuSubProps {
 import { useVModel } from '@vueuse/core'
 import { MenuSub } from '@/Menu'
 import { useForwardExpose } from '@/shared'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<DropdownMenuSubProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
 })
 const emit = defineEmits<DropdownMenuSubEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const open = useVModel(props, 'open', emit, {

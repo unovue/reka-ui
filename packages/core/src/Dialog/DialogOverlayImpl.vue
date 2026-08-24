@@ -11,7 +11,7 @@ import { useForwardExpose } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
-const props = withDefaults(defineProps<DialogOverlayImplProps & { present?: boolean }>(), {
+const props = withDefaults(defineProps<DialogOverlayImplProps & { present?: boolean | undefined }>(), {
   present: true,
 })
 const rootContext = injectDialogRootContext()

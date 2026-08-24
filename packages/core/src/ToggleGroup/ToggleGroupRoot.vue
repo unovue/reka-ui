@@ -8,15 +8,15 @@ import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
   extends PrimitiveProps, FormFieldProps, SingleOrMultipleProps<T> {
   /** When `false`, navigating through the items using arrow keys will be disabled. */
-  rovingFocus?: boolean
+  rovingFocus?: boolean | undefined
   /** When `true`, prevents the user from interacting with the toggle group and all its items. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** The orientation of the component, which determines how focus moves: `horizontal` for left/right arrows and `vertical` for up/down arrows. */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** When `loop` and `rovingFocus` is `true`, keyboard navigation will loop from last item to first, and vice versa. */
-  loop?: boolean
+  loop?: boolean | undefined
 }
 export type ToggleGroupRootEmits = {
   /** Event handler called when the value changes. */
@@ -27,11 +27,11 @@ interface ToggleGroupRootContext {
   isSingle: ComputedRef<boolean>
   modelValue: Ref<AcceptableValue | AcceptableValue[] | undefined>
   changeModelValue: (value: AcceptableValue) => void
-  dir?: Ref<Direction>
-  orientation?: DataOrientation
+  dir?: Ref<Direction> | undefined
+  orientation?: DataOrientation | undefined
   loop: Ref<boolean>
   rovingFocus: Ref<boolean>
-  disabled?: Ref<boolean>
+  disabled?: Ref<boolean> | undefined
 }
 
 export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
@@ -52,10 +52,10 @@ const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
 const emits = defineEmits<ToggleGroupRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current toggle values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { loop, rovingFocus, disabled, dir: propDir } = toRefs(props)

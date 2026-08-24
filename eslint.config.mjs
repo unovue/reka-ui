@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config'
+import addUndefToOptional from './eslint-rules/add-undef-to-optional.mjs'
 
 export default antfu(
   {
@@ -19,6 +20,31 @@ export default antfu(
   },
   {
     ignores: ['*.js'],
+  },
+  {
+    // Shipped library source only. The rule exists so that consumers compiling
+    // with `exactOptionalPropertyTypes` can pass an explicit `undefined` into
+    // any optional property we export; tests and stories are not part of that
+    // contract.
+    files: ['packages/*/src/**/*.ts', 'packages/*/src/**/*.vue'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.test-d.ts',
+      '**/*.test-d.vue',
+      '**/*.story.vue',
+      '**/story/**',
+      '**/stories/**',
+    ],
+    plugins: {
+      reka: {
+        rules: {
+          'add-undef-to-optional': addUndefToOptional,
+        },
+      },
+    },
+    rules: {
+      'reka/add-undef-to-optional': 'error',
+    },
   },
   {
     rules: {

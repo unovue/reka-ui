@@ -1,4 +1,5 @@
 import type {
+  PropType,
   SlotsType,
   VNode,
 } from 'vue'
@@ -27,7 +28,7 @@ export interface PresenceProps {
    *
    * @defaultValue false
    */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
 }
 
 export default defineComponent({
@@ -38,7 +39,9 @@ export default defineComponent({
       required: true,
     },
     forceMount: {
-      type: Boolean,
+      // `Boolean` alone widens to `forceMount?: boolean`, which rejects an
+      // explicit `undefined` under `exactOptionalPropertyTypes`.
+      type: Boolean as PropType<boolean | undefined>,
     },
   },
   slots: {} as SlotsType<{

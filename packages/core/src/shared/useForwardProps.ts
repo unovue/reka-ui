@@ -3,7 +3,7 @@ import { camelize, computed, getCurrentInstance, toRef } from 'vue'
 
 interface PropOptions {
   type?: any
-  required?: boolean
+  required?: boolean | undefined
   default?: any
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T">
 import type { VisuallyHiddenInputBubbleProps } from './VisuallyHiddenInputBubble.vue'
 import { computed } from 'vue'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import VisuallyHiddenInputBubble from './VisuallyHiddenInputBubble.vue'
 
 defineOptions({
@@ -9,7 +10,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<VisuallyHiddenInputBubbleProps<T>>(), {
   feature: 'fully-hidden',
-  checked: undefined,
+  checked: UNDEFINED_DEFAULT,
 })
 
 const isFormArrayEmptyAndRequired = computed(() =>

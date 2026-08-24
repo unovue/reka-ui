@@ -22,9 +22,9 @@ export const [injectRatingItemContext, provideRatingItemContext]
 <script setup lang="ts">
 const props = withDefaults(defineProps<RatingItemProps>(), { as: 'label' })
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     steps: number[]
-  }) => any
+  }) => any) | undefined
 }>()
 
 const rootContext = injectRatingRootContext()

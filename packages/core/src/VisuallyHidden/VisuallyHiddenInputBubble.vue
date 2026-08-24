@@ -2,10 +2,10 @@
 export interface VisuallyHiddenInputBubbleProps<T> {
   name: string
   value: T
-  checked?: boolean
-  required?: boolean
-  disabled?: boolean
-  feature?: VisuallyHiddenProps['feature']
+  checked?: boolean | undefined
+  required?: boolean | undefined
+  disabled?: boolean | undefined
+  feature?: VisuallyHiddenProps['feature'] | undefined
 }
 </script>
 
@@ -13,6 +13,7 @@ export interface VisuallyHiddenInputBubbleProps<T> {
 import type { VisuallyHiddenProps } from './VisuallyHidden.vue'
 import { computed, watch } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import VisuallyHidden from './VisuallyHidden.vue'
 
 defineOptions({
@@ -21,7 +22,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<VisuallyHiddenInputBubbleProps<T>>(), {
   feature: 'fully-hidden',
-  checked: undefined,
+  checked: UNDEFINED_DEFAULT,
 })
 
 const { primitiveElement, currentElement } = usePrimitiveElement()

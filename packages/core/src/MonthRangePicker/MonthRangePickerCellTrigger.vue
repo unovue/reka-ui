@@ -12,7 +12,7 @@ export interface MonthRangePickerCellTriggerProps extends PrimitiveProps {
 }
 
 export interface MonthRangePickerCellTriggerSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current month value (short name) */
     monthValue: string
     /** Current disable state */
@@ -33,7 +33,7 @@ export interface MonthRangePickerCellTriggerSlot {
     selectionStart: boolean
     /** Current selection end state */
     selectionEnd: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

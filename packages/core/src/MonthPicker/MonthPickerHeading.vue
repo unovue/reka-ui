@@ -11,10 +11,10 @@ import { injectMonthPickerRootContext } from './MonthPickerRoot.vue'
 const props = withDefaults(defineProps<MonthPickerHeadingProps>(), { as: 'div' })
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current year heading */
     headingValue: string
-  }) => any
+  }) => any) | undefined
 }>()
 
 const rootContext = injectMonthPickerRootContext()

@@ -68,6 +68,7 @@
     "dist",
     "!src/**/*.story.vue",
     "!src/**/*.test.*",
+    "!src/**/*.test-d.*",
     "!src/**/_*.vue",
     "!src/**/__snapshots__",
     "!src/**/stories",

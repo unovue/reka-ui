@@ -4,12 +4,12 @@ import type { Direction, ScrollBodyOption } from '@/shared/types'
 import { createContext } from '@/shared'
 
 interface ConfigProviderContextValue {
-  dir?: Ref<Direction>
-  locale?: Ref<string>
-  scrollBody?: Ref<boolean | ScrollBodyOption>
-  nonce?: Ref<string | undefined>
-  teleportTo?: Ref<string | HTMLElement | undefined>
-  useId?: () => string
+  dir?: Ref<Direction> | undefined
+  locale?: Ref<string> | undefined
+  scrollBody?: Ref<boolean | ScrollBodyOption> | undefined
+  nonce?: Ref<string | undefined> | undefined
+  teleportTo?: Ref<string | HTMLElement | undefined> | undefined
+  useId?: (() => string) | undefined
 }
 
 export const [injectConfigProviderContext, provideConfigProviderContext]
@@ -20,33 +20,33 @@ export interface ConfigProviderProps {
    * The global reading direction of your application. This will be inherited by all primitives.
    * @defaultValue 'ltr'
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /**
    * The global locale of your application. This will be inherited by all primitives.
    * @defaultValue 'en'
    */
-  locale?: string
+  locale?: string | undefined
   /**
    * The global scroll body behavior of your application. This will be inherited by the related primitives.
    * @type boolean | ScrollBodyOption
    */
-  scrollBody?: boolean | ScrollBodyOption
+  scrollBody?: boolean | ScrollBodyOption | undefined
   /**
    * The global `nonce` value of your application. This will be inherited by the related primitives.
    * @type string
    */
-  nonce?: string
+  nonce?: string | undefined
   /**
    * The global default teleport target for all portalled primitives (e.g. `Dialog`, `Popover`, `Tooltip`).
    * Individual `*Portal` components can still override this via their own `to` prop.
    * Useful when rendering inside a custom element / shadow DOM.
    * @type string | HTMLElement
    */
-  teleportTo?: string | HTMLElement
+  teleportTo?: string | HTMLElement | undefined
   /**
    * The global `useId` injection as a workaround for preventing hydration issue.
    */
-  useId?: () => string
+  useId?: (() => string) | undefined
 }
 </script>
 
@@ -61,9 +61,6 @@ const props = withDefaults(defineProps<ConfigProviderProps>(), {
   dir: 'ltr',
   locale: 'en',
   scrollBody: true,
-  nonce: undefined,
-  teleportTo: undefined,
-  useId: undefined,
 })
 
 const { dir, locale, scrollBody, nonce, teleportTo } = toRefs(props)

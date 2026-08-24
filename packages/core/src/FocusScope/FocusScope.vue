@@ -22,14 +22,14 @@ export interface FocusScopeProps extends PrimitiveProps {
    * and shift+tab from first item will focus last tababble.
    * @defaultValue false
    */
-  loop?: boolean
+  loop?: boolean | undefined
 
   /**
    * When `true`, focus cannot escape the focus scope via keyboard,
    * pointer, or a programmatic focus.
    * @defaultValue false
    */
-  trapped?: boolean
+  trapped?: boolean | undefined
 
   /**
    * Whether the scope is currently visible. Lets a consumer keep the scope
@@ -39,7 +39,7 @@ export interface FocusScopeProps extends PrimitiveProps {
    * only while visible are unaffected.
    * @defaultValue true
    */
-  present?: boolean
+  present?: boolean | undefined
 }
 </script>
 

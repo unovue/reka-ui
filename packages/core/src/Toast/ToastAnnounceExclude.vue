@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface ToastAnnounceExcludeProps extends PrimitiveProps {
-  altText?: string
+  altText?: string | undefined
 }
 </script>
 

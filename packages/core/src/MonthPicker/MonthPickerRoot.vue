@@ -29,7 +29,7 @@ type MonthPickerRootContext = {
   isInvalid: Ref<boolean>
   isMonthDisabled: Matcher
   isMonthSelected: Matcher
-  isMonthUnavailable?: Matcher
+  isMonthUnavailable?: Matcher | undefined
   prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
   nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
   isNextButtonDisabled: (nextPageFunc?: (date: DateValue) => DateValue) => boolean
@@ -42,41 +42,41 @@ type MonthPickerRootContext = {
 
 export interface MonthPickerRootProps extends PrimitiveProps {
   /** The default value for the month picker */
-  defaultValue?: DateValue
+  defaultValue?: DateValue | undefined
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The placeholder date, which is used to determine what year to display when no date is selected */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
-  preventDeselect?: boolean
+  preventDeselect?: boolean | undefined
   /** The accessible label for the month picker */
-  calendarLabel?: string
+  calendarLabel?: string | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** Whether the month picker is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether the month picker is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** If true, the month picker will focus the selected month, today, or the first month of the year on mount */
-  initialFocus?: boolean
+  initialFocus?: boolean | undefined
   /** A function that returns whether or not a month is disabled */
-  isMonthDisabled?: Matcher
+  isMonthDisabled?: Matcher | undefined
   /** A function that returns whether or not a month is unavailable */
-  isMonthUnavailable?: Matcher
+  isMonthUnavailable?: Matcher | undefined
   /** The reading direction of the calendar when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** A function that returns the next page of the month picker. Receives the current placeholder as an argument. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** A function that returns the previous page of the month picker. Receives the current placeholder as an argument. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** The controlled selected month value of the month picker. Can be bound as `v-model`. */
-  modelValue?: DateValue | DateValue[] | null
+  modelValue?: DateValue | DateValue[] | null | undefined
   /** Whether multiple months can be selected */
-  multiple?: boolean
+  multiple?: boolean | undefined
 }
 
 export type MonthPickerRootEmits = {
@@ -96,20 +96,16 @@ import { onMounted, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 const props = withDefaults(defineProps<MonthPickerRootProps>(), {
-  defaultValue: undefined,
   as: 'div',
   preventDeselect: false,
   multiple: false,
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isMonthDisabled: undefined,
-  isMonthUnavailable: undefined,
 })
 const emits = defineEmits<MonthPickerRootEmits>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of months */
@@ -118,7 +114,7 @@ defineSlots<{
     locale: string
     /** The current selected value */
     modelValue: DateValue | DateValue[] | undefined
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

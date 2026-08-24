@@ -12,25 +12,25 @@ export type ProgressRootEmits = {
 
 export interface ProgressRootProps extends PrimitiveProps {
   /** The progress value. Can be bind as `v-model`. */
-  modelValue?: number | null
+  modelValue?: number | null | undefined
   /** The maximum progress value. */
-  max?: number
+  max?: number | undefined
   /**
    * A function to get the accessible label text in a human-readable format.
    *
    *  If not provided, the value label will be read as the numeric value as a percentage of the max value.
    */
-  getValueLabel?: (value: number | null | undefined, max: number) => string | undefined
+  getValueLabel?: ((value: number | null | undefined, max: number) => string | undefined) | undefined
   /**
    * A function to get the accessible value text representing the current value in a human-readable format.
    */
-  getValueText?: (value: number | null | undefined, max: number) => string | undefined
+  getValueText?: ((value: number | null | undefined, max: number) => string | undefined) | undefined
 }
 
 const DEFAULT_MAX = 100
 
 interface ProgressRootContext {
-  modelValue?: Readonly<Ref<ProgressRootProps['modelValue']>>
+  modelValue?: Readonly<Ref<ProgressRootProps['modelValue']>> | undefined
   max: Readonly<Ref<number>>
   progressState: ComputedRef<ProgressState>
 }
@@ -86,10 +86,10 @@ const props = withDefaults(defineProps<ProgressRootProps>(), {
 const emit = defineEmits<ProgressRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 useForwardExpose()

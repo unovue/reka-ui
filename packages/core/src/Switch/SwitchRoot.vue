@@ -6,22 +6,22 @@ import { createContext, useFormControl, useForwardExpose, useForwardScopeId } fr
 
 export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
-  defaultValue?: T
+  defaultValue?: T | undefined
   /** The controlled state of the switch. Can be bind as `v-model`. */
-  modelValue?: T | null
+  modelValue?: T | null | undefined
   /** When `true`, prevents the user from interacting with the switch. */
-  disabled?: boolean
-  id?: string
+  disabled?: boolean | undefined
+  id?: string | undefined
   /** The value given as data when submitted with a `name`. */
-  value?: string
+  value?: string | undefined
   /**
    * The value used when the switch is on. Defaults to `true`.
    */
-  trueValue?: T
+  trueValue?: T | undefined
   /**
    * The value used when the switch is off. Defaults to `false`.
    */
-  falseValue?: T
+  falseValue?: T | undefined
 }
 
 export type SwitchRootEmits<T = boolean> = {
@@ -51,20 +51,19 @@ defineOptions({
 
 const props = withDefaults(defineProps<SwitchRootProps<T>>(), {
   as: 'button',
-  modelValue: undefined,
   value: 'on',
-  trueValue: (() => true) as unknown as undefined,
-  falseValue: (() => false) as unknown as undefined,
+  trueValue: (() => true) as unknown as never,
+  falseValue: (() => false) as unknown as never,
 })
 const emit = defineEmits<SwitchRootEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current value */
     modelValue: typeof modelValue.value
     /** Whether the switch is checked */
     checked: typeof checked.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { disabled } = toRefs(props)

@@ -22,8 +22,8 @@ export type UseCalendarProps = {
   disabled: Ref<boolean>
   weekdayFormat: Ref<WeekDayFormat>
   pagedNavigation: Ref<boolean>
-  isDateDisabled?: Matcher
-  isDateUnavailable?: Matcher
+  isDateDisabled?: Matcher | undefined
+  isDateUnavailable?: Matcher | undefined
   calendarLabel: Ref<string | undefined>
   nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
   prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>

@@ -9,32 +9,32 @@ type ThumbAlignment = 'contain' | 'overflow'
 
 export interface SliderRootProps extends PrimitiveProps, FormFieldProps {
   /** The value of the slider when initially rendered. Use when you do not need to control the state of the slider. */
-  defaultValue?: number[]
+  defaultValue?: number[] | undefined
   /** The controlled value of the slider. Can be bind as `v-model`. */
-  modelValue?: number[] | null
+  modelValue?: number[] | null | undefined
   /** When `true`, prevents the user from interacting with the slider. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** The orientation of the slider. */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** Whether the slider is visually inverted. */
-  inverted?: boolean
+  inverted?: boolean | undefined
   /** The minimum value for the range. */
-  min?: number
+  min?: number | undefined
   /** The maximum value for the range. */
-  max?: number
+  max?: number | undefined
   /** The stepping interval. */
-  step?: number
+  step?: number | undefined
   /** The minimum permitted steps between multiple thumbs. */
-  minStepsBetweenThumbs?: number
+  minStepsBetweenThumbs?: number | undefined
   /**
    * The alignment of the slider thumb.
    * - `contain`: thumbs will be contained within the bounds of the track.
    * - `overflow`: thumbs will not be bound by the track. No extra offset will be added.
    * @defaultValue 'contain'
    */
-  thumbAlignment?: ThumbAlignment
+  thumbAlignment?: ThumbAlignment | undefined
 }
 
 export type SliderRootEmits = {
@@ -55,7 +55,7 @@ export interface SliderRootContext {
   disabled: Ref<boolean>
   min: Ref<number>
   max: Ref<number>
-  modelValue?: Readonly<Ref<number[] | null | undefined>>
+  modelValue?: Readonly<Ref<number[] | null | undefined>> | undefined
   currentModelValue: ComputedRef<number[]>
   valueIndexToChangeRef: Ref<number>
   thumbElements: Ref<HTMLElement[]>
@@ -93,10 +93,10 @@ const props = withDefaults(defineProps<SliderRootProps>(), {
 const emits = defineEmits<SliderRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current slider values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { min, max, step, minStepsBetweenThumbs, orientation, disabled, thumbAlignment, dir: propDir } = toRefs(props)

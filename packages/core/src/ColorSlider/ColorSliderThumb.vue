@@ -15,12 +15,12 @@ const props = withDefaults(defineProps<ColorSliderThumbProps>(), {
 })
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The display name of the current channel */
     channelName: string
     /** The current numeric value of the channel */
     channelValue: number
-  }) => any
+  }) => any) | undefined
 }>()
 
 const rootContext = injectColorSliderRootContext()

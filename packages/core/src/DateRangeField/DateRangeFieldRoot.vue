@@ -33,7 +33,7 @@ type DateRangeFieldRootContext = {
   startValue: Ref<DateValue | undefined>
   endValue: Ref<DateValue | undefined>
   placeholder: Ref<DateValue>
-  isDateUnavailable?: Matcher
+  isDateUnavailable?: Matcher | undefined
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
@@ -49,37 +49,37 @@ type DateRangeFieldRootContext = {
 
 export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value for the calendar */
-  defaultValue?: DateRange
+  defaultValue?: DateRange | undefined
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** The controlled value of the field. Can be bound as `v-model`. */
-  modelValue?: DateRange | null
+  modelValue?: DateRange | null | undefined
   /** The hour cycle used for formatting times. Defaults to the local preference */
-  hourCycle?: HourCycle
+  hourCycle?: HourCycle | undefined
   /** The stepping interval for the time fields. Defaults to `1`. */
-  step?: DateStep
+  step?: DateStep | undefined
   /** The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
-  granularity?: Granularity
+  granularity?: Granularity | undefined
   /** Whether or not to hide the time zone segment of the field */
-  hideTimeZone?: boolean
+  hideTimeZone?: boolean | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** Whether or not the date field is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether or not the date field is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** A function that returns whether or not a date is unavailable */
-  isDateUnavailable?: Matcher
+  isDateUnavailable?: Matcher | undefined
   /** Id of the element */
-  id?: string
+  id?: string | undefined
   /** The reading direction of the date field when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
 }
 
 export type DateRangeFieldRootEmits = {
@@ -104,22 +104,19 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
-  defaultValue: undefined,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateUnavailable: undefined,
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date range of the field */
     modelValue: DateRange | null
     /** The date field segment contents */
     segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
     /** Value if the input is invalid */
     isInvalid: boolean
-  }) => any
+  }) => any) | undefined
 }>()
 const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)

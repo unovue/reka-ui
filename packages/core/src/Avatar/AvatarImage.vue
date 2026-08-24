@@ -12,8 +12,8 @@ export type AvatarImageEmits = {
 }
 export interface AvatarImageProps extends PrimitiveProps {
   src: string
-  referrerPolicy?: ImgHTMLAttributes['referrerpolicy']
-  crossOrigin?: ImgHTMLAttributes['crossorigin']
+  referrerPolicy?: ImgHTMLAttributes['referrerpolicy'] | undefined
+  crossOrigin?: ImgHTMLAttributes['crossorigin'] | undefined
 }
 </script>
 

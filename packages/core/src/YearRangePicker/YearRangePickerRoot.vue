@@ -30,7 +30,7 @@ type YearRangePickerRootContext = {
   headingId: string
   isInvalid: Ref<boolean>
   isYearDisabled: Matcher
-  isYearUnavailable?: Matcher
+  isYearUnavailable?: Matcher | undefined
   allowNonContiguousRanges: Ref<boolean>
   highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
   focusedValue: Ref<DateValue | undefined>
@@ -55,47 +55,47 @@ type YearRangePickerRootContext = {
 
 export interface YearRangePickerRootProps extends PrimitiveProps {
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: DateValue | undefined
   /** The default value for the calendar */
-  defaultValue?: DateRange
+  defaultValue?: DateRange | undefined
   /** The controlled selected year range of the year range picker. Can be bound as `v-model`. */
-  modelValue?: DateRange | null
+  modelValue?: DateRange | null | undefined
   /** The placeholder date, which is used to determine what year range to display when no date is selected. */
-  placeholder?: DateValue
+  placeholder?: DateValue | undefined
   /** When combined with `isYearUnavailable`, determines whether non-contiguous ranges may be selected. */
-  allowNonContiguousRanges?: boolean
+  allowNonContiguousRanges?: boolean | undefined
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
-  preventDeselect?: boolean
+  preventDeselect?: boolean | undefined
   /** The maximum number of years that can be selected in a range */
-  maximumYears?: number
+  maximumYears?: number | undefined
   /** The accessible label for the calendar */
-  calendarLabel?: string
+  calendarLabel?: string | undefined
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: DateValue | undefined
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: DateValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** Whether or not the calendar is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether or not the calendar is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** If true, the calendar will focus the selected year on mount */
-  initialFocus?: boolean
+  initialFocus?: boolean | undefined
   /** A function that returns whether or not a year is disabled */
-  isYearDisabled?: Matcher
+  isYearDisabled?: Matcher | undefined
   /** A function that returns whether or not a year is unavailable */
-  isYearUnavailable?: Matcher
+  isYearUnavailable?: Matcher | undefined
   /** The reading direction of the calendar when applicable. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** A function that returns the next page of the calendar. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** A function that returns the previous page of the calendar. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
   /** Which part of the range should be fixed */
-  fixedDate?: 'start' | 'end'
+  fixedDate?: 'start' | 'end' | undefined
   /** Number of years to display per page */
-  yearsPerPage?: number
+  yearsPerPage?: number | undefined
 }
 
 export type YearRangePickerRootEmits = {
@@ -123,17 +123,13 @@ const props = withDefaults(defineProps<YearRangePickerRootProps>(), {
   disabled: false,
   readonly: false,
   initialFocus: false,
-  placeholder: undefined,
-  isYearDisabled: undefined,
-  isYearUnavailable: undefined,
   allowNonContiguousRanges: false,
-  maximumYears: undefined,
   yearsPerPage: 12,
 })
 const emits = defineEmits<YearRangePickerRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current date of the placeholder */
     date: DateValue
     /** The grid of years */
@@ -142,7 +138,7 @@ defineSlots<{
     locale: string
     /** The current date range */
     modelValue: DateRange
-  }) => any
+  }) => any) | undefined
 }>()
 
 const {

@@ -1,7 +1,7 @@
 import type { AcceptableValue } from '@/shared/types'
 import { handleAndDispatchCustomEvent } from '@/shared'
 
-export type SelectEvent = CustomEvent<{ originalEvent: MouseEvent, value?: AcceptableValue }>
+export type SelectEvent = CustomEvent<{ originalEvent: MouseEvent, value?: AcceptableValue | undefined }>
 export const RADIO_SELECT = 'radio.select'
 
 export function handleSelect(event: MouseEvent, value: AcceptableValue | undefined, callback: (event: SelectEvent) => void) {

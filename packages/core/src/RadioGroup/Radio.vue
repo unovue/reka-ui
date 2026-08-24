@@ -9,12 +9,12 @@ export type RadioEmits = {
 }
 
 export interface RadioProps extends PrimitiveProps, FormFieldProps {
-  id?: string
+  id?: string | undefined
   /** The value given as data when submitted with a `name`. */
-  value?: AcceptableValue
+  value?: AcceptableValue | undefined
   /** When `true`, prevents the user from interacting with the radio item. */
-  disabled?: boolean
-  checked?: boolean
+  disabled?: boolean | undefined
+  checked?: boolean | undefined
 }
 </script>
 
@@ -23,6 +23,7 @@ import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { handleSelect } from './utils'
 
@@ -32,16 +33,16 @@ defineOptions({
 
 const props = withDefaults(defineProps<RadioProps>(), {
   disabled: false,
-  checked: undefined,
+  checked: UNDEFINED_DEFAULT,
   as: 'button',
 })
 const emits = defineEmits<RadioEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current checked state */
     checked: typeof checked.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const checked = useVModel(props, 'checked', emits, {

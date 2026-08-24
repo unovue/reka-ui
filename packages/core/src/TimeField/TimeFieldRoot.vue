@@ -39,37 +39,37 @@ type TimeFieldRootContext = {
 
 export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value for the calendar */
-  defaultValue?: TimeValue
+  defaultValue?: TimeValue | undefined
   /** The default placeholder date */
-  defaultPlaceholder?: TimeValue
+  defaultPlaceholder?: TimeValue | undefined
   /** The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field */
-  placeholder?: TimeValue
+  placeholder?: TimeValue | undefined
   /** The controlled checked state of the field. Can be bound as `v-model`. */
-  modelValue?: TimeValue | null
+  modelValue?: TimeValue | null | undefined
   /** The hour cycle used for formatting times. Defaults to the local preference */
-  hourCycle?: HourCycle
+  hourCycle?: HourCycle | undefined
   /** The stepping interval for the time fields. Defaults to `1`. */
-  step?: DateStep
+  step?: DateStep | undefined
   /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
-  stepSnapping?: boolean
+  stepSnapping?: boolean | undefined
   /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
-  granularity?: 'hour' | 'minute' | 'second'
+  granularity?: 'hour' | 'minute' | 'second' | undefined
   /** Whether or not to hide the time zone segment of the field */
-  hideTimeZone?: boolean
+  hideTimeZone?: boolean | undefined
   /** The maximum date that can be selected */
-  maxValue?: TimeValue
+  maxValue?: TimeValue | undefined
   /** The minimum date that can be selected */
-  minValue?: TimeValue
+  minValue?: TimeValue | undefined
   /** The locale to use for formatting dates */
-  locale?: string
+  locale?: string | undefined
   /** Whether or not the time field is disabled */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Whether or not the time field is readonly */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** Id of the element */
-  id?: string
+  id?: string | undefined
   /** The reading direction of the time field when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
 }
 
 export type TimeFieldRootEmits = {
@@ -102,23 +102,20 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<TimeFieldRootProps>(), {
-  defaultValue: undefined,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateUnavailable: undefined,
   stepSnapping: false,
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current time of the field */
     modelValue: TimeValue | undefined
     /** The time field segment contents */
     segments: { part: SegmentPart, value: string }[]
     /** Value if the input is invalid */
     isInvalid: boolean
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { disabled, readonly, granularity, defaultValue, minValue, maxValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)

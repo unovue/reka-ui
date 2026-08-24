@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 
 export interface ToolbarButtonProps extends PrimitiveProps {
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

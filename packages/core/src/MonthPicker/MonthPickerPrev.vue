@@ -4,14 +4,14 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface MonthPickerPrevProps extends PrimitiveProps {
   /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `MonthPickerRoot`. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
 }
 
 export interface MonthPickerPrevSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current disable state */
     disabled: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

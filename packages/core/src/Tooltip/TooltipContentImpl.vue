@@ -37,7 +37,7 @@ export interface TooltipContentImplProps
    *
    * @defaultValue String
    */
-  ariaLabel?: string
+  ariaLabel?: string | undefined
 }
 </script>
 
@@ -46,14 +46,15 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipContentImplProps>(), {
-  avoidCollisions: undefined,
-  asChild: undefined,
-  hideWhenDetached: undefined,
+  avoidCollisions: UNDEFINED_DEFAULT,
+  asChild: UNDEFINED_DEFAULT,
+  hideWhenDetached: UNDEFINED_DEFAULT,
 })
 const emits = defineEmits<TooltipContentImplEmits>()
 

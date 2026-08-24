@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { OptionHTMLAttributes, Ref } from 'vue'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
@@ -7,25 +7,25 @@ import { compare, valueComparator } from './utils'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /** The controlled open state of the Select. Can be bind as `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
   /** The open state of the select when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /** The value of the select when initially rendered. Use when you do not need to control the state of the Select */
-  defaultValue?: T | Array<T>
+  defaultValue?: T | Array<T> | undefined
   /** The controlled value of the Select. Can be bind as `v-model`. */
-  modelValue?: T | Array<T>
+  modelValue?: T | Array<T> | undefined
   /** The value of the hidden native select option when the model value is nullish. */
-  nullableValue?: string
+  nullableValue?: string | undefined
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
-  by?: string | ((a: T, b: T) => boolean)
+  by?: string | ((a: T, b: T) => boolean) | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** Whether multiple options can be selected or not. */
-  multiple?: boolean
+  multiple?: boolean | undefined
   /** Native html input `autocomplete` attribute. */
-  autocomplete?: string
+  autocomplete?: string | undefined
   /** When `true`, prevents the user from interacting with Select */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 
 export type SelectRootEmits<T = AcceptableValue> = {
@@ -45,13 +45,13 @@ export interface SelectRootContext<T> {
   onValueChange: (value: T) => void
   open: Ref<boolean>
   multiple: Ref<boolean>
-  required?: Ref<boolean>
-  by?: string | ((a: T, b: T) => boolean)
+  required?: Ref<boolean> | undefined
+  by?: string | ((a: T, b: T) => boolean) | undefined
   onOpenChange: (open: boolean) => void
   dir: Ref<Direction>
   triggerPointerDownPosRef: Ref<{ x: number, y: number } | null>
   isEmptyModelValue: Ref<boolean>
-  disabled?: Ref<boolean>
+  disabled?: Ref<boolean> | undefined
 
   optionsSet: Ref<Set<SelectOption>>
   onOptionAdd: (option: SelectOption) => void
@@ -61,13 +61,14 @@ export interface SelectRootContext<T> {
 export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
-interface SelectOption { value: any, disabled?: boolean, textContent: string }
+interface SelectOption { value: any, disabled?: boolean | undefined, textContent: string }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import BubbleSelect from './BubbleSelect.vue'
 
 defineOptions({
@@ -75,19 +76,18 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<SelectRootProps<T>>(), {
-  modelValue: undefined,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   nullableValue: '',
 })
 const emits = defineEmits<SelectRootEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { required, disabled, multiple, dir: propDir } = toRefs(props)
@@ -222,7 +222,7 @@ provideSelectRootContext({
       <option
         v-for="option in Array.from(optionsSet)"
         :key="option.value ?? ''"
-        v-bind="option"
+        v-bind="option as OptionHTMLAttributes"
       />
     </BubbleSelect>
   </PopperRoot>

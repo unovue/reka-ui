@@ -1,3 +1,4 @@
+import type { NumberFormatOptions } from '@internationalized/number'
 import type { MaybeComputedElementRef } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { NumberFormatter, NumberParser } from '@internationalized/number'
@@ -5,7 +6,7 @@ import { unrefElement, useEventListener } from '@vueuse/core'
 import { createEventHook, isClient, reactiveComputed } from '@vueuse/shared'
 import { computed, ref } from 'vue'
 
-export function usePressedHold(options: { target?: MaybeComputedElementRef, disabled: Ref<boolean> }) {
+export function usePressedHold(options: { target?: MaybeComputedElementRef | undefined, disabled: Ref<boolean> }) {
   const { disabled } = options
   const timeout = ref<number>()
   const triggerHook = createEventHook()
@@ -63,7 +64,10 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
 }
 
 export function useNumberFormatter(locale: Ref<string>, options: Ref<Intl.NumberFormatOptions | undefined> = ref({})) {
-  return reactiveComputed(() => new NumberFormatter(locale.value, options.value))
+  // `@internationalized/number` declares `numberingSystem?: string` while the TS
+  // lib declares it as `string | undefined`, so the two shapes are only
+  // assignable without `exactOptionalPropertyTypes`. They are otherwise identical.
+  return reactiveComputed(() => new NumberFormatter(locale.value, options.value as NumberFormatOptions | undefined))
 }
 
 export function useNumberParser(locale: Ref<string>, options: Ref<Intl.NumberFormatOptions | undefined> = ref({})) {

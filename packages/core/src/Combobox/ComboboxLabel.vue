@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface ComboboxLabelProps extends PrimitiveProps {
-  for?: string
+  for?: string | undefined
 }
 </script>
 

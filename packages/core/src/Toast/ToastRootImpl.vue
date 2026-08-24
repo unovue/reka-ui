@@ -29,16 +29,16 @@ export interface ToastRootImplProps extends PrimitiveProps {
    *
    * For toasts that are the result of a user action, choose `foreground`. Toasts generated from background tasks should use `background`.
    */
-  type?: 'foreground' | 'background'
+  type?: 'foreground' | 'background' | undefined
   /**
    * The controlled open state of the dialog. Can be bind as `v-model:open`.
    */
-  open?: boolean
+  open?: boolean | undefined
   /**
    * Time in milliseconds that toast should remain visible for. Overrides value
    * given to `ToastProvider`.
    */
-  duration?: number
+  duration?: number | undefined
 }
 
 export const [injectToastRootContext, provideToastRootContext]

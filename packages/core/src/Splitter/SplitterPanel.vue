@@ -5,21 +5,21 @@ import { PRECISION } from './utils/constants'
 
 export interface SplitterPanelProps extends PrimitiveProps {
   /** The size of panel when it is collapsed; interpreted using `sizeUnit`. */
-  collapsedSize?: number
+  collapsedSize?: number | undefined
   /** Should panel collapse when resized beyond its `minSize`. When `true`, it will be collapsed to `collapsedSize`. */
-  collapsible?: boolean
+  collapsible?: boolean | undefined
   /** Initial size of panel, interpreted using `sizeUnit` (percent by default). */
-  defaultSize?: number
+  defaultSize?: number | undefined
   /** Panel id (unique within group); falls back to `useId` when not provided */
-  id?: string
+  id?: string | undefined
   /** The maximum allowable size of panel, interpreted using `sizeUnit`; defaults to `100` (percent). */
-  maxSize?: number
+  maxSize?: number | undefined
   /** The minimum allowable size of panel, interpreted using `sizeUnit`; defaults to `10` (percent). */
-  minSize?: number
+  minSize?: number | undefined
   /** The order of panel within group; required for groups with conditionally rendered panels */
-  order?: number
+  order?: number | undefined
   /** Unit used for sizing values; `%` by default, or `px` for fixed sizing. */
-  sizeUnit?: '%' | 'px'
+  sizeUnit?: '%' | 'px' | undefined
 }
 
 export type SplitterPanelEmits = {
@@ -39,9 +39,9 @@ export type PanelOnResize = (
 ) => void
 
 export type PanelCallbacks = {
-  onCollapse?: PanelOnCollapse
-  onExpand?: PanelOnExpand
-  onResize?: PanelOnResize
+  onCollapse?: PanelOnCollapse | undefined
+  onExpand?: PanelOnExpand | undefined
+  onResize?: PanelOnResize | undefined
 }
 
 export type PanelConstraints = {
@@ -72,7 +72,7 @@ const props = defineProps<SplitterPanelProps>()
 const emits = defineEmits<SplitterPanelEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Is the panel collapsed */
     isCollapsed: typeof isCollapsed.value
     /** Is the panel expanded */
@@ -83,7 +83,7 @@ defineSlots<{
     expand: typeof expand
     /** Resize panel to the specified percentage (1 - 100). */
     resize: typeof resize
-  }) => any
+  }) => any) | undefined
 }>()
 
 const panelGroupContext = injectPanelGroupContext()

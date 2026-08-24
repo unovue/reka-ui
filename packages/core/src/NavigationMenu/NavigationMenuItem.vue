@@ -10,7 +10,7 @@ export interface NavigationMenuItemProps extends PrimitiveProps {
    *
    *  This prop is managed automatically when uncontrolled.
    */
-  value?: string
+  value?: string | undefined
 }
 
 export type NavigationMenuItemContext = {

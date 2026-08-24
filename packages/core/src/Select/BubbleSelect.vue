@@ -1,17 +1,18 @@
 <script setup lang="ts">
+import type { SelectHTMLAttributes } from 'vue'
 import { ref, watch } from 'vue'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectSelectRootContext } from './SelectRoot.vue'
 
 interface BubbleSelectProps {
-  autocomplete?: string
-  autofocus?: boolean
-  disabled?: boolean
-  form?: string
-  multiple?: boolean
-  name?: string
-  required?: boolean
-  size?: number
+  autocomplete?: string | undefined
+  autofocus?: boolean | undefined
+  disabled?: boolean | undefined
+  form?: string | undefined
+  multiple?: boolean | undefined
+  name?: string | undefined
+  required?: boolean | undefined
+  size?: number | undefined
   value?: any
 }
 
@@ -58,7 +59,7 @@ function handleInput(event: Event) {
   <VisuallyHidden as-child>
     <select
       ref="selectElement"
-      v-bind="props"
+      v-bind="props as SelectHTMLAttributes"
       @input="handleInput"
     >
       <slot />

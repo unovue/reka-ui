@@ -4,9 +4,9 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface DrawerSwipeAreaProps extends PrimitiveProps {
   /** Override the open swipe direction (defaults to opposite of Root's swipeDirection). */
-  swipeDirection?: SwipeDirection
+  swipeDirection?: SwipeDirection | undefined
   /** Disable swipe-to-open. */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

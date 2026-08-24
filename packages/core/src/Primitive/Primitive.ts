@@ -28,12 +28,12 @@ export interface PrimitiveProps {
    *
    * Read our [Composition](https://www.reka-ui.com/docs/guides/composition) guide for more details.
    */
-  asChild?: boolean
+  asChild?: boolean | undefined
   /**
    * The element or component this component should render as. Can be overwritten by `asChild`.
    * @defaultValue "div"
    */
-  as?: AsTag | Component
+  as?: AsTag | Component | undefined
 }
 
 // For self closing tags, don't provide default slots because of hydration issue
@@ -44,11 +44,13 @@ export const Primitive = defineComponent({
   inheritAttrs: false,
   props: {
     asChild: {
-      type: Boolean,
+      // `Boolean` alone widens to `asChild?: boolean`, which rejects an explicit
+      // `undefined` under `exactOptionalPropertyTypes`.
+      type: Boolean as PropType<boolean | undefined>,
       default: false,
     },
     as: {
-      type: [String, Object] as PropType<AsTag | Component>,
+      type: [String, Object] as PropType<AsTag | Component | undefined>,
       default: 'div',
     },
   },

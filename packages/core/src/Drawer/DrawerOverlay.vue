@@ -3,9 +3,9 @@ import type { DrawerOverlayImplProps } from './DrawerOverlayImpl.vue'
 
 export interface DrawerOverlayProps extends DrawerOverlayImplProps {
   /** Keep mounted for animation control. */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
   /** Render even when inside a nested drawer. @default false */
-  forceRender?: boolean
+  forceRender?: boolean | undefined
 }
 </script>
 

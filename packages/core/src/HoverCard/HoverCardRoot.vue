@@ -4,15 +4,15 @@ import { createContext, useForwardExpose } from '@/shared'
 
 export interface HoverCardRootProps {
   /** The open state of the hover card when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /** The controlled open state of the hover card. Can be binded as `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
   /** The duration from when the mouse enters the trigger until the hover card opens. */
-  openDelay?: number
+  openDelay?: number | undefined
   /** The duration from when the mouse leaves the trigger or content until the hover card closes. */
-  closeDelay?: number
+  closeDelay?: number | undefined
   /** When `true`, tapping the trigger on touch devices toggles the hover card open/closed. By default touch interactions are ignored to match pointer hover semantics. */
-  enableTouch?: boolean
+  enableTouch?: boolean | undefined
 }
 export type HoverCardRootEmits = {
   /** Event handler called when the open state of the hover card changes. */
@@ -40,10 +40,11 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   openDelay: 700,
   closeDelay: 300,
   enableTouch: false,
@@ -51,10 +52,10 @@ const props = withDefaults(defineProps<HoverCardRootProps>(), {
 const emit = defineEmits<HoverCardRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { openDelay, closeDelay, enableTouch } = toRefs(props)

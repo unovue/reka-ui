@@ -20,19 +20,19 @@ export interface MenuRootContext {
 
 export interface MenuProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
   /**
    * The reading direction of the combobox when applicable.
    *
    * If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /**
    * The modality of the dropdown menu.
    *
    * When set to `true`, interaction with outside elements will be disabled and only menu content will be visible to screen readers.
    */
-  modal?: boolean
+  modal?: boolean | undefined
 }
 
 export type MenuEmits = {

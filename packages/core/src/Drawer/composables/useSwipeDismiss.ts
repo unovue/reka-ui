@@ -15,21 +15,21 @@ export interface UseSwipeDismissOptions {
   elementRef: Ref<HTMLElement | null | undefined>
   directions: MaybeRef<SwipeDirection[]>
   movementCssVars: { x: string, y: string }
-  swipeThreshold?: number | ((opts: { element: HTMLElement, direction: SwipeDirection }) => number)
-  ignoreScrollableAncestors?: boolean
-  canStart?: () => boolean
-  onDismiss?: () => void
-  onProgress?: (progress: number, details?: SwipeProgressDetails) => void
-  onCancel?: () => void
-  onSwipeStart?: () => void
+  swipeThreshold?: number | ((opts: { element: HTMLElement, direction: SwipeDirection }) => number) | undefined
+  ignoreScrollableAncestors?: boolean | undefined
+  canStart?: (() => boolean) | undefined
+  onDismiss?: (() => void) | undefined
+  onProgress?: ((progress: number, details?: SwipeProgressDetails) => void) | undefined
+  onCancel?: (() => void) | undefined
+  onSwipeStart?: (() => void) | undefined
   /**
    * Fired on release with the measured velocity vector. Return `true` to signal
    * that the callback fully owns the open/close + transform outcome (e.g. the
    * snap-point release math), so `finishSwipe` skips its own dismiss-vs-cancel
    * decision (no `data-swipe-dismissed`, no `onDismiss`/`onCancel`).
    */
-  onRelease?: (velocity: { x: number, y: number }) => boolean | void
-  onSwipingChange?: (swiping: boolean) => void
+  onRelease?: ((velocity: { x: number, y: number }) => boolean | void) | undefined
+  onSwipingChange?: ((swiping: boolean) => void) | undefined
 }
 
 const DEFAULT_SWIPE_THRESHOLD = 40

@@ -7,25 +7,25 @@ import { createContext, useFormControl, useForwardExpose, useLocale } from '@/sh
 
 export interface ColorFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). Can be a hex string or Color object. */
-  modelValue?: string | Color
+  modelValue?: string | Color | undefined
   /** The default color value (uncontrolled). */
-  defaultValue?: string | Color
+  defaultValue?: string | Color | undefined
   /** The color space to operate in when displaying a channel. */
-  colorSpace?: ColorSpace
+  colorSpace?: ColorSpace | undefined
   /** The color channel to display. If not provided, displays hex value. */
-  channel?: ColorChannel
+  channel?: ColorChannel | undefined
   /** Placeholder text when the field is empty. */
-  placeholder?: string
+  placeholder?: string | undefined
   /** When `true`, prevents the user from interacting with the field. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** When `true`, the field is read-only. */
-  readonly?: boolean
+  readonly?: boolean | undefined
   /** When `true`, prevents the value from changing on wheel scroll. */
-  disableWheelChange?: boolean
+  disableWheelChange?: boolean | undefined
   /** The locale to use for number formatting. */
-  locale?: string
+  locale?: string | undefined
   /** Custom step value for increment/decrement. Defaults to channel step or 1 for hex. */
-  step?: number
+  step?: number | undefined
 }
 
 export type ColorFieldRootEmits = {

@@ -12,28 +12,28 @@ export interface RovingFocusGroupProps extends PrimitiveProps {
    * The orientation of the group.
    * Mainly so arrow navigation is done accordingly (left & right vs. up & down)
    */
-  orientation?: Orientation
+  orientation?: Orientation | undefined
   /**
    * The direction of navigation between items.
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /**
    * Whether keyboard navigation should loop around
    * @defaultValue false
    */
-  loop?: boolean
+  loop?: boolean | undefined
   /** The controlled value of the current stop item. Can be binded as `v-model`. */
-  currentTabStopId?: string | null
+  currentTabStopId?: string | null | undefined
   /**
    * The value of the current stop item.
    *
    * Use when you do not need to control the state of the stop item.
    */
-  defaultCurrentTabStopId?: string
+  defaultCurrentTabStopId?: string | undefined
   /**
    * When `true`, will prevent scrolling to the focus item when focused.
    */
-  preventScrollOnEntryFocus?: boolean
+  preventScrollOnEntryFocus?: boolean | undefined
 }
 
 export type RovingFocusGroupEmits = {
@@ -65,7 +65,6 @@ import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst } from './utils'
 
 const props = withDefaults(defineProps<RovingFocusGroupProps>(), {
   loop: false,
-  orientation: undefined,
   preventScrollOnEntryFocus: false,
 })
 const emits = defineEmits<RovingFocusGroupEmits>()

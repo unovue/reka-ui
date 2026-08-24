@@ -23,30 +23,30 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
   /**
    * The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs
    */
-  defaultValue?: T
+  defaultValue?: T | undefined
   /**
    * The orientation the tabs are laid out.
    * Mainly so arrow navigation is done accordingly (left & right vs. up & down)
    * @defaultValue horizontal
    */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /**
    * The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /**
    * Whether a tab is activated automatically (on focus) or manually (on click).
    * @defaultValue automatic
    */
-  activationMode?: 'automatic' | 'manual'
+  activationMode?: 'automatic' | 'manual' | undefined
   /** The controlled value of the tab to activate. Can be bind as `v-model`. */
-  modelValue?: T
+  modelValue?: T | undefined
   /**
    * When `true`, the element will be unmounted on closed state.
    *
    * @defaultValue `true`
    */
-  unmountOnHide?: boolean
+  unmountOnHide?: boolean | undefined
 }
 export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
   /** Event handler called when the value changes */
@@ -69,10 +69,10 @@ const props = withDefaults(defineProps<TabsRootProps<T>>(), {
 const emits = defineEmits<TabsRootEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { orientation, unmountOnHide, dir: propDir } = toRefs(props)

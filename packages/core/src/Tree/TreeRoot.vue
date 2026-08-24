@@ -5,31 +5,31 @@ import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
   /** The controlled value of the tree. Can be binded with `v-model`. */
-  modelValue?: M extends true ? U[] : U
+  modelValue?: (M extends true ? U[] : U) | undefined
   /** The value of the tree when initially rendered. Use when you do not need to control the state of the tree */
-  defaultValue?: M extends true ? U[] : U
+  defaultValue?: (M extends true ? U[] : U) | undefined
   /** List of items */
-  items?: T[]
+  items?: T[] | undefined
   /** The controlled value of the expanded item. Can be binded with `v-model`. */
-  expanded?: string[]
+  expanded?: string[] | undefined
   /** The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree */
-  defaultExpanded?: string[]
+  defaultExpanded?: string[] | undefined
   /** This function is passed the index of each item and should return a unique key for that item */
   getKey: (val: T) => string
   /** This function is passed the index of each item and should return a list of children for that item */
-  getChildren?: (val: T) => T[] | undefined
+  getChildren?: ((val: T) => T[] | undefined) | undefined
   /** How multiple selection should behave in the collection. */
-  selectionBehavior?: 'toggle' | 'replace'
+  selectionBehavior?: 'toggle' | 'replace' | undefined
   /** Whether multiple options can be selected or not.  */
-  multiple?: M | boolean
+  multiple?: M | boolean | undefined
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** When `true`, prevents the user from interacting with tree  */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** When `true`, selecting parent will select the descendants. Requires `multiple` to be `true`. */
-  propagateSelect?: boolean
+  propagateSelect?: boolean | undefined
   /** When `true`, selecting children will update the parent state. Requires `multiple` to be `true`. */
-  bubbleSelect?: boolean
+  bubbleSelect?: boolean | undefined
 }
 
 export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = {
@@ -64,7 +64,7 @@ export type FlattenedItem<T> = {
   value: T
   level: number
   hasChildren: boolean
-  parentItem?: T
+  parentItem?: T | undefined
   bind: {
     value: T
     level: number
@@ -93,11 +93,11 @@ const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
 const emits = defineEmits<TreeRootEmits<U, M>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     flattenItems: FlattenedItem<T>[]
     modelValue: M extends true ? U[] : U
     expanded: typeof expanded.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props)

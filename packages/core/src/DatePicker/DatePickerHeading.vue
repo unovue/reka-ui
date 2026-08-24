@@ -8,10 +8,10 @@ export interface DatePickerHeadingProps extends CalendarHeadingProps {}
 <script setup lang="ts">
 const props = defineProps<DatePickerHeadingProps>()
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current month and year */
     headingValue: string
-  }) => any
+  }) => any) | undefined
 }>()
 </script>
 

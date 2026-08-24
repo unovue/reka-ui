@@ -9,26 +9,26 @@ import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
-  defaultValue?: T | 'indeterminate'
+  defaultValue?: T | 'indeterminate' | undefined
   /** The controlled value of the checkbox. Can be binded with v-model. */
-  modelValue?: T | 'indeterminate' | null
+  modelValue?: T | 'indeterminate' | null | undefined
   /** When `true`, prevents the user from interacting with the checkbox */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * The value given as data when submitted with a `name`.
    *  @defaultValue "on"
    */
-  value?: AcceptableValue
+  value?: AcceptableValue | undefined
   /** Id of the element */
-  id?: string
+  id?: string | undefined
   /**
    * The value used when the checkbox is checked. Defaults to `true`.
    */
-  trueValue?: T
+  trueValue?: T | undefined
   /**
    * The value used when the checkbox is unchecked. Defaults to `false`.
    */
-  falseValue?: T
+  falseValue?: T | undefined
 }
 
 export type CheckboxRootEmits<T = boolean> = {
@@ -58,21 +58,20 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<CheckboxRootProps<T>>(), {
-  modelValue: undefined,
   value: 'on',
   as: 'button',
-  trueValue: (() => true) as unknown as undefined,
-  falseValue: (() => false) as unknown as undefined,
+  trueValue: (() => true) as unknown as never,
+  falseValue: (() => false) as unknown as never,
 })
 const emits = defineEmits<CheckboxRootEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current value */
     modelValue: typeof modelValue.value
     /** Current state */
     state: typeof checkboxState.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()

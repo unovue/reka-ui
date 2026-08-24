@@ -25,27 +25,27 @@ export interface ToastProviderProps {
    * associate the interruption with a toast.
    * @defaultValue 'Notification'
    */
-  label?: string
+  label?: string | undefined
   /**
    * Time in milliseconds that each toast should remain visible for.
    * @defaultValue 5000
    */
-  duration?: number
+  duration?: number | undefined
   /**
    * Whether to disable the ability to swipe to close the toast.
    * @defaultValue false
    */
-  disableSwipe?: boolean
+  disableSwipe?: boolean | undefined
   /**
    * Direction of pointer swipe that should close the toast.
    * @defaultValue 'right'
    */
-  swipeDirection?: SwipeDirection
+  swipeDirection?: SwipeDirection | undefined
   /**
    * Distance in pixels that the swipe must pass before a close is triggered.
    * @defaultValue 50
    */
-  swipeThreshold?: number
+  swipeThreshold?: number | undefined
 }
 
 export const [injectToastProviderContext, provideToastProviderContext]

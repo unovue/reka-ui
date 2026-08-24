@@ -4,14 +4,14 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface YearPickerPrevProps extends PrimitiveProps {
   /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `YearPickerRoot`. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: ((placeholder: DateValue) => DateValue) | undefined
 }
 
 export interface YearPickerPrevSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current disable state */
     disabled: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

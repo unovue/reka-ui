@@ -33,9 +33,9 @@ type DateRangePickerRootContext = {
   numberOfMonths: Ref<number>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
-  isDateDisabled?: Matcher
-  isDateUnavailable?: Matcher
-  isDateHighlightable?: Matcher
+  isDateDisabled?: Matcher | undefined
+  isDateUnavailable?: Matcher | undefined
+  isDateHighlightable?: Matcher | undefined
   defaultOpen: Ref<boolean>
   open: Ref<boolean>
   modal: Ref<boolean>
@@ -45,14 +45,14 @@ type DateRangePickerRootContext = {
   dir: Ref<Direction>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
-  maximumDays?: Ref<number | undefined>
+  maximumDays?: Ref<number | undefined> | undefined
   step: Ref<DateStep | undefined>
-  closeOnSelect?: Ref<boolean>
+  closeOnSelect?: Ref<boolean> | undefined
 }
 
 export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
   /** Whether or not to close the popover on range select */
-  closeOnSelect?: boolean
+  closeOnSelect?: boolean | undefined
 }
 
 export type DateRangePickerRootEmits = PopoverRootEmits & {
@@ -71,6 +71,7 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs, watch } from 'vue'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 defineOptions({
   inheritAttrs: false,
@@ -78,7 +79,7 @@ defineOptions({
 const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   defaultValue: () => ({ start: undefined, end: undefined }),
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   modal: false,
   pagedNavigation: false,
   preventDeselect: false,
@@ -87,12 +88,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateDisabled: undefined,
-  isDateUnavailable: undefined,
-  isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
-  maximumDays: undefined,
   closeOnSelect: false,
 })
 const emits = defineEmits<DateRangePickerRootEmits>()

@@ -4,7 +4,7 @@ import { useForwardExpose } from '@/shared'
 
 export interface TabsListProps extends PrimitiveProps {
   /** When `true`, keyboard navigation will loop from last tab to first, and vice versa. */
-  loop?: boolean
+  loop?: boolean | undefined
 }
 </script>
 

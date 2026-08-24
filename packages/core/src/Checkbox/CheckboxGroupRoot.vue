@@ -9,13 +9,13 @@ import { createContext, useDirection, useFormControl } from '@/shared'
 
 export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
-  defaultValue?: T[]
+  defaultValue?: T[] | undefined
   /** The controlled value of the checkbox. Can be binded with v-model. */
-  modelValue?: T[]
+  modelValue?: T[] | undefined
   /** When `false`, navigating through the items using arrow keys will be disabled. */
-  rovingFocus?: boolean
+  rovingFocus?: boolean | undefined
   /** When `true`, prevents the user from interacting with the checkboxes */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {

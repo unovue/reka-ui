@@ -102,7 +102,7 @@ export function computePanelFlexBoxStyle({
   dragState: DragState | null
   panelData: PanelData[]
   panelIndex: number
-  precision?: number
+  precision?: number | undefined
 }): CSSProperties {
   const size = layout[panelIndex]
 

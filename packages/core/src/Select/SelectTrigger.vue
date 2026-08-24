@@ -2,7 +2,7 @@
 import { useCollection } from '@/Collection'
 
 export interface SelectTriggerProps extends PopperAnchorProps {
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

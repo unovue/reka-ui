@@ -6,13 +6,13 @@ import { createContext, useForwardExpose } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /** The controlled open state of the collapsible. Can be binded with `v-model`. */
-  open?: boolean
+  open?: boolean | undefined
   /** When `true`, prevents the user from interacting with the collapsible. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** When `true`, the element will be unmounted on closed state. */
-  unmountOnHide?: boolean
+  unmountOnHide?: boolean | undefined
 }
 
 export type CollapsibleRootEmits = {
@@ -22,7 +22,7 @@ export type CollapsibleRootEmits = {
 
 interface CollapsibleRootContext {
   contentId: string
-  disabled?: Ref<boolean>
+  disabled?: Ref<boolean> | undefined
   open: Ref<boolean>
   unmountOnHide: Ref<boolean>
   onOpenToggle: () => void
@@ -35,9 +35,10 @@ export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   defaultOpen: false,
   unmountOnHide: true,
 })
@@ -45,10 +46,10 @@ const props = withDefaults(defineProps<CollapsibleRootProps>(), {
 const emit = defineEmits<CollapsibleRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const open = useVModel(props, 'open', emit, {

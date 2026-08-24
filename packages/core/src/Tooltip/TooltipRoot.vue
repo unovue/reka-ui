@@ -7,34 +7,34 @@ export interface TooltipRootProps {
    * The open state of the tooltip when it is initially rendered.
    * Use when you do not need to control its open state.
    */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /**
    * The controlled open state of the tooltip.
    */
-  open?: boolean
+  open?: boolean | undefined
   /**
    * Override the duration given to the `Provider` to customise
    * the open delay for a specific tooltip.
    *
    * @defaultValue 700
    */
-  delayDuration?: number
+  delayDuration?: number | undefined
   /**
    * Prevents Tooltip.Content from remaining open when hovering.
    * Disabling this has accessibility consequences. Inherits
    * from Tooltip.Provider.
    */
-  disableHoverableContent?: boolean
+  disableHoverableContent?: boolean | undefined
   /**
    * When `true`, clicking on trigger will not close the content.
    * @defaultValue false
    */
-  disableClosingTrigger?: boolean
+  disableClosingTrigger?: boolean | undefined
   /**
    * When `true`, disable tooltip
    * @defaultValue false
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * Prevent the tooltip from opening if the focus did not come from
    * the keyboard by matching against the `:focus-visible` selector.
@@ -42,7 +42,7 @@ export interface TooltipRootProps {
    * browser tabs or closing a dialog.
    * @defaultValue false
    */
-  ignoreNonKeyboardFocus?: boolean
+  ignoreNonKeyboardFocus?: boolean | undefined
 }
 
 export type TooltipRootEmits = {
@@ -74,26 +74,26 @@ export const [injectTooltipRootContext, provideTooltipRootContext]
 import { useTimeoutFn, useVModel } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipRootProps>(), {
   defaultOpen: false,
-  open: undefined,
-  delayDuration: undefined,
-  disableHoverableContent: undefined,
-  disableClosingTrigger: undefined,
-  disabled: undefined,
-  ignoreNonKeyboardFocus: undefined,
+  open: UNDEFINED_DEFAULT,
+  disableHoverableContent: UNDEFINED_DEFAULT,
+  disableClosingTrigger: UNDEFINED_DEFAULT,
+  disabled: UNDEFINED_DEFAULT,
+  ignoreNonKeyboardFocus: UNDEFINED_DEFAULT,
 })
 
 const emit = defineEmits<TooltipRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 useForwardExpose()

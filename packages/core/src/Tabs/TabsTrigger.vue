@@ -7,7 +7,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
   /** A unique value that associates the trigger with a content. */
   value: StringOrNumber
   /** When `true`, prevents the user from interacting with the tab. */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 </script>
 

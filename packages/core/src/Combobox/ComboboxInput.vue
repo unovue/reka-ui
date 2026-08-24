@@ -8,7 +8,7 @@ import { useComposing } from '@/shared'
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
   /** The display value of input for selected item. Does not work with `multiple`. */
-  displayValue?: (val: any) => string
+  displayValue?: ((val: any) => string) | undefined
 }
 </script>
 

@@ -24,27 +24,27 @@ export interface TooltipProviderProps {
    * The duration from when the pointer enters the trigger until the tooltip gets opened.
    * @defaultValue 700
    */
-  delayDuration?: number
+  delayDuration?: number | undefined
   /**
    * How much time a user has to enter another trigger without incurring a delay again.
    * @defaultValue 300
    */
-  skipDelayDuration?: number
+  skipDelayDuration?: number | undefined
   /**
    * When `true`, trying to hover the content will result in the tooltip closing as the pointer leaves the trigger.
    * @defaultValue false
    */
-  disableHoverableContent?: boolean
+  disableHoverableContent?: boolean | undefined
   /**
    * When `true`, clicking on trigger will not close the content.
    * @defaultValue false
    */
-  disableClosingTrigger?: boolean
+  disableClosingTrigger?: boolean | undefined
   /**
    * When `true`, disable tooltip
    * @defaultValue false
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * Prevent the tooltip from opening if the focus did not come from
    * the keyboard by matching against the `:focus-visible` selector.
@@ -52,11 +52,11 @@ export interface TooltipProviderProps {
    * browser tabs or closing a dialog.
    * @defaultValue false
    */
-  ignoreNonKeyboardFocus?: boolean
+  ignoreNonKeyboardFocus?: boolean | undefined
   /**
    * Default settings that will be used by all tooltip components.
    */
-  content?: TooltipContentProps
+  content?: TooltipContentProps | undefined
 }
 </script>
 

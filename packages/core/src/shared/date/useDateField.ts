@@ -52,11 +52,12 @@ function daySegmentAttrs(props: SegmentAttrProps) {
   const isEmpty = segmentValues.day === null
 
   // Include month from segmentValues to ensure correct max days calculation
-  const dateFields: { day?: number, month?: number } = {}
-  if (segmentValues.day)
-    dateFields.day = segmentValues.day
-  if (segmentValues.month)
-    dateFields.month = segmentValues.month
+  // Built by spreading rather than assigning so that unset fields stay absent
+  // instead of present-and-undefined, which `set()` does not accept.
+  const dateFields = {
+    ...(segmentValues.day ? { day: segmentValues.day } : {}),
+    ...(segmentValues.month ? { month: segmentValues.month } : {}),
+  }
 
   const date = Object.keys(dateFields).length > 0 ? placeholder.set(dateFields) : placeholder
 
@@ -286,7 +287,7 @@ export type UseDateFieldProps = {
   placeholder: Ref<DateValue>
   hourCycle: HourCycle
   step: Ref<DateStep>
-  stepSnapping?: Ref<boolean>
+  stepSnapping?: Ref<boolean> | undefined
   formatter: Formatter
   segmentValues: Ref<SegmentValueObj>
   disabled: Ref<boolean>

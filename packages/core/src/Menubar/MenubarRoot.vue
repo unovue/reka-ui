@@ -6,17 +6,17 @@ import { createContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface MenubarRootProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
-  modelValue?: string
+  modelValue?: string | undefined
   /** The value of the menu that should be open when initially rendered. Use when you do not need to control the value state. */
-  defaultValue?: string
+  defaultValue?: string | undefined
   /**
    * The reading direction of the combobox when applicable.
    *
    *  If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
-  loop?: boolean
+  loop?: boolean | undefined
 }
 export type MenubarRootEmits = {
   /** Event handler called when the value changes. */
@@ -48,10 +48,10 @@ const props = withDefaults(defineProps<MenubarRootProps>(), {
 const emit = defineEmits<MenubarRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { forwardRef } = useForwardExpose()

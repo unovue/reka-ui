@@ -9,54 +9,54 @@ import { EVENT_ROOT_CONTENT_DISMISS } from './utils'
 
 export interface NavigationMenuRootProps extends PrimitiveProps {
   /** The controlled value of the menu item to activate. Can be used as `v-model`. */
-  modelValue?: string
+  modelValue?: string | undefined
   /**
    * The value of the menu item that should be active when initially rendered.
    *
    * Use when you do not need to control the value state.
    */
-  defaultValue?: string
+  defaultValue?: string | undefined
   /**
    * The reading direction of the combobox when applicable.
    *
    *  If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
-  dir?: Direction
+  dir?: Direction | undefined
   /** The orientation of the menu. */
-  orientation?: Orientation
+  orientation?: Orientation | undefined
   /**
    * The duration from when the pointer enters the trigger until the tooltip gets opened.
    * @defaultValue 200
    */
-  delayDuration?: number
+  delayDuration?: number | undefined
   /**
    * How much time a user has to enter another trigger without incurring a delay again.
    * @defaultValue 300
    */
-  skipDelayDuration?: number
+  skipDelayDuration?: number | undefined
 
   /**
    * If `true`, menu cannot be open by click on trigger
    * @defaultValue false
    */
-  disableClickTrigger?: boolean
+  disableClickTrigger?: boolean | undefined
   /**
    * If `true`, menu cannot be open by hover on trigger
    * @defaultValue false
    */
-  disableHoverTrigger?: boolean
+  disableHoverTrigger?: boolean | undefined
   /**
    * If `true`, menu will not close during pointer leave event
    * @defaultValue false
    */
-  disablePointerLeaveClose?: boolean
+  disablePointerLeaveClose?: boolean | undefined
 
   /**
    * When `true`, the element will be unmounted on closed state.
    *
    * @defaultValue `true`
    */
-  unmountOnHide?: boolean
+  unmountOnHide?: boolean | undefined
 }
 export type NavigationMenuRootEmits = {
   /** Event handler called when the value changes. */
@@ -104,7 +104,6 @@ import {
 } from '@/Primitive'
 
 const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
-  modelValue: undefined,
   delayDuration: 200,
   skipDelayDuration: 300,
   orientation: 'horizontal',
@@ -116,10 +115,10 @@ const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
 const emits = defineEmits<NavigationMenuRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {

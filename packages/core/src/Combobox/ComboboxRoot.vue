@@ -46,37 +46,37 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
 
 export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
   /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
-  open?: boolean
+  open?: boolean | undefined
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /**
    * Whether to reset the searchTerm when the Combobox input blurred
    * @defaultValue `true`
    */
-  resetSearchTermOnBlur?: boolean
+  resetSearchTermOnBlur?: boolean | undefined
   /**
    * Whether to reset the searchTerm when the Combobox value is selected
    * @defaultValue `true`
    */
-  resetSearchTermOnSelect?: boolean
+  resetSearchTermOnSelect?: boolean | undefined
   /**
    * Whether to open the combobox when the input is focused
    * @defaultValue `false`
    */
-  openOnFocus?: boolean
+  openOnFocus?: boolean | undefined
   /**
    * Whether to open the combobox when the input is clicked
    * @defaultValue `false`
    */
-  openOnClick?: boolean
+  openOnClick?: boolean | undefined
   /**
    * When `true`, disable the default filters
    */
-  ignoreFilter?: boolean
+  ignoreFilter?: boolean | undefined
   /**
    * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
    */
-  resetModelValueOnClear?: boolean
+  resetModelValueOnClear?: boolean | undefined
 }
 </script>
 
@@ -86,9 +86,10 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
   openOnFocus: false,
@@ -99,12 +100,12 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
     /** Current active value */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()

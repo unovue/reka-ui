@@ -8,12 +8,12 @@ export interface BaseSeparatorProps extends PrimitiveProps {
    *
    * Either `vertical` or `horizontal`. Defaults to `horizontal`.
    */
-  orientation?: DataOrientation
+  orientation?: DataOrientation | undefined
   /**
    * Whether or not the component is purely decorative. <br>When `true`, accessibility-related attributes
    * are updated so that that the rendered element is removed from the accessibility tree.
    */
-  decorative?: boolean
+  decorative?: boolean | undefined
 }
 </script>
 

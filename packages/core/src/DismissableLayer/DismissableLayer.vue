@@ -20,7 +20,7 @@ export interface DismissableLayerProps extends PrimitiveProps {
    * the `DismissableLayer`. Users will need to click twice on outside elements to
    * interact with them: once to close the `DismissableLayer`, and again to trigger the element.
    */
-  disableOutsidePointerEvents?: boolean
+  disableOutsidePointerEvents?: boolean | undefined
 }
 
 export type DismissableLayerEmits = {
@@ -76,7 +76,7 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
    * Kept out of the public `DismissableLayerProps` on purpose — it is
    * internal plumbing between primitives.
    */
-  present?: boolean
+  present?: boolean | undefined
 }>(), {
   disableOutsidePointerEvents: false,
   present: true,

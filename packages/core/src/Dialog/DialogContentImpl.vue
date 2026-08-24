@@ -23,13 +23,13 @@ export interface DialogContentImplProps extends DismissableLayerProps {
    * Used to force mounting when more control is needed. Useful when
    * controlling transition with Vue native transition or other animation libraries.
    */
-  forceMount?: boolean
+  forceMount?: boolean | undefined
   /**
    * When `true`, focus cannot escape the `Content` via keyboard,
    * pointer, or a programmatic focus.
    * @defaultValue false
    */
-  trapFocus?: boolean
+  trapFocus?: boolean | undefined
 }
 </script>
 
@@ -45,7 +45,7 @@ const props = defineProps<DialogContentImplProps & {
   /** Whether the content is currently visible. Forwarded to `FocusScope` and
    * `DismissableLayer` so a force-mounted dialog (`unmountOnHide: false`)
    * auto-focuses on show and leaves the layer/scope stacks while hidden. */
-  present?: boolean
+  present?: boolean | undefined
 }>()
 const emits = defineEmits<DialogContentImplEmits>()
 

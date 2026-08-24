@@ -9,7 +9,7 @@ interface CollectionContext<ItemData = {}> {
 
 const ITEM_DATA_ATTR = 'data-reka-collection-item'
 
-export function useCollection<ItemData = {}>(options: { key?: string, isProvider?: boolean } = {}) {
+export function useCollection<ItemData = {}>(options: { key?: string | undefined, isProvider?: boolean | undefined } = {}) {
   const { key = '', isProvider = false } = options
   const injectionKey = `${key}CollectionProvider`
   let context: CollectionContext<ItemData>

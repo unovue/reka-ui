@@ -19,7 +19,7 @@ export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {
    *
    * @defaultValue 700
    */
-  pressOpenDelay?: number
+  pressOpenDelay?: number | undefined
 }
 export type ContextMenuRootEmits = MenuEmits
 

@@ -38,11 +38,11 @@ export interface ScrollAreaRootProps extends PrimitiveProps {
    * `hover` - when the user is scrolling along its corresponding orientation and when the user is hovering over the scroll area.<br>
    * `glimpse` - a hybrid approach that briefly shows scrollbars when the user enters the scroll area, then hides them until further interaction.
    */
-  type?: ScrollType
+  type?: ScrollType | undefined
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
-  dir?: Direction
+  dir?: Direction | undefined
   /** If type is set to either `scroll` or `hover`, this prop determines the length of time, in milliseconds, <br> before the scrollbars are hidden after the user stops interacting with scrollbars. */
-  scrollHideDelay?: number
+  scrollHideDelay?: number | undefined
 }
 </script>
 

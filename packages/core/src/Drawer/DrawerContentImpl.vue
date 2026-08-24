@@ -10,21 +10,21 @@ export type DrawerContentImplEmits = DismissableLayerEmits & {
 }
 
 export interface DrawerContentImplProps extends DismissableLayerProps {
-  trapFocus?: boolean
+  trapFocus?: boolean | undefined
   /**
    * Initial focus target when the drawer opens.
    * - `true` / default: focus the first focusable element inside
    * - `false`: do not focus anything
    * - element ref: focus that specific element
    */
-  initialFocus?: boolean | HTMLElement | null
+  initialFocus?: boolean | HTMLElement | null | undefined
   /**
    * Final focus target when the drawer closes.
    * - `true` / default: focus the trigger
    * - `false`: do not restore focus
    * - element ref: focus that specific element
    */
-  finalFocus?: boolean | HTMLElement | null
+  finalFocus?: boolean | HTMLElement | null | undefined
 }
 </script>
 

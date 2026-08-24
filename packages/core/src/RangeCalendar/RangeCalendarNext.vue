@@ -4,14 +4,14 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface RangeCalendarNextProps extends PrimitiveProps {
   /** The function to be used for the next page. Overwrites the `nextPage` function set on the `RangeCalendarRoot`. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: ((placeholder: DateValue) => DateValue) | undefined
 }
 
 export interface RangeCalendarNextSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current disable state */
     disabled: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

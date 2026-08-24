@@ -38,14 +38,14 @@ const props = withDefaults(defineProps<RadioGroupItemProps>(), {
 const emits = defineEmits<RadioGroupItemEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current checked state */
     checked: typeof checked.value
     /** Required state */
     required: typeof required.value
     /** Disabled state */
     disabled: typeof disabled.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()

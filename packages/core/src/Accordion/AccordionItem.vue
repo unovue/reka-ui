@@ -17,7 +17,7 @@ export interface AccordionItemProps
    *
    * @defaultValue false
    */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * A string value for the accordion item. All items within an accordion should use a unique value.
    */
@@ -42,19 +42,20 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
   {
-    unmountOnHide: undefined,
+    unmountOnHide: UNDEFINED_DEFAULT,
   },
 )
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const rootContext = injectAccordionRootContext()

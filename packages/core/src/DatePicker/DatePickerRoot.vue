@@ -33,8 +33,8 @@ type DatePickerRootContext = {
   numberOfMonths: Ref<number>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
-  isDateDisabled?: Matcher
-  isDateUnavailable?: Matcher
+  isDateDisabled?: Matcher | undefined
+  isDateUnavailable?: Matcher | undefined
   defaultOpen: Ref<boolean>
   open: Ref<boolean>
   modal: Ref<boolean>
@@ -47,7 +47,7 @@ type DatePickerRootContext = {
 
 export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
   /** Whether or not to close the popover on date select */
-  closeOnSelect?: boolean
+  closeOnSelect?: boolean | undefined
 }
 
 export type DatePickerRootEmits = PopoverRootEmits & {
@@ -63,14 +63,14 @@ export const [injectDatePickerRootContext, provideDatePickerRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 defineOptions({
   inheritAttrs: false,
 })
 const props = withDefaults(defineProps<DatePickerRootProps>(), {
-  defaultValue: undefined,
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   modal: false,
   pagedNavigation: false,
   preventDeselect: false,
@@ -79,9 +79,6 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
-  placeholder: undefined,
-  isDateDisabled: undefined,
-  isDateUnavailable: undefined,
   closeOnSelect: false,
 })
 const emits = defineEmits<DatePickerRootEmits>()

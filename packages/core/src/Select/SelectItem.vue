@@ -16,7 +16,7 @@ interface SelectItemContext<T = AcceptableValue> {
 export const [injectSelectItemContext, provideSelectItemContext]
   = createContext<SelectItemContext>('SelectItem')
 
-export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
+export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T | undefined }>
 
 export type SelectItemEmits<T = AcceptableValue> = {
   /** Event handler called when the selecting item. <br> It can be prevented by calling `event.preventDefault`. */
@@ -27,7 +27,7 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
   value: T
   /** When `true`, prevents the user from interacting with the item. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /**
    * Optional text used for typeahead purposes.
    *
@@ -35,7 +35,7 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
    *
    * Use this when the content is complex, or you have non-textual content inside.
    */
-  textValue?: string
+  textValue?: string | undefined
 }
 </script>
 

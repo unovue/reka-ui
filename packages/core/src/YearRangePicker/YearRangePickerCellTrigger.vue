@@ -12,7 +12,7 @@ export interface YearRangePickerCellTriggerProps extends PrimitiveProps {
 }
 
 export interface YearRangePickerCellTriggerSlot {
-  default?: (props: {
+  default?: ((props: {
     /** Current year value */
     yearValue: string
     /** Current disable state */
@@ -33,7 +33,7 @@ export interface YearRangePickerCellTriggerSlot {
     selectionStart: boolean
     /** Current selection end state */
     selectionEnd: boolean
-  }) => any
+  }) => any) | undefined
 }
 </script>
 

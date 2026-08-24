@@ -11,7 +11,7 @@ interface MenuRadioGroupContext {
 
 export interface MenuRadioGroupProps extends MenuGroupProps {
   /** The value of the selected item in the group. */
-  modelValue?: AcceptableValue
+  modelValue?: AcceptableValue | undefined
 }
 
 export type MenuRadioGroupEmits = {
@@ -33,10 +33,10 @@ const props = withDefaults(defineProps<MenuRadioGroupProps>(), {
 const emits = defineEmits<MenuRadioGroupEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current input values */
     modelValue: typeof modelValue.value
-  }) => any
+  }) => any) | undefined
 }>()
 
 const delegatedProps = reactiveOmit(props, ['modelValue'])

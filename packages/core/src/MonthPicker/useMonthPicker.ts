@@ -13,8 +13,8 @@ export type UseMonthPickerProps = {
   minValue: Ref<DateValue | undefined>
   maxValue: Ref<DateValue | undefined>
   disabled: Ref<boolean>
-  isMonthDisabled?: Matcher | Ref<Matcher | undefined>
-  isMonthUnavailable?: Matcher | Ref<Matcher | undefined>
+  isMonthDisabled?: Matcher | Ref<Matcher | undefined> | undefined
+  isMonthUnavailable?: Matcher | Ref<Matcher | undefined> | undefined
   calendarLabel: Ref<string | undefined>
   nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
   prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>

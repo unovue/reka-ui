@@ -24,9 +24,9 @@ export interface StepperItemProps extends PrimitiveProps {
   /** A unique value that associates the stepper item with an index */
   step: number
   /** When `true`, prevents the user from interacting with the step. */
-  disabled?: boolean
+  disabled?: boolean | undefined
   /** Shows whether the step is completed. */
-  completed?: boolean
+  completed?: boolean | undefined
 }
 </script>
 
@@ -37,10 +37,10 @@ const props = withDefaults(defineProps<StepperItemProps>(), {
 })
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** The current state of the stepper item */
     state: StepperState
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { disabled, step, completed } = toRefs(props)

@@ -19,33 +19,33 @@ export type DrawerOpenChangeReason
     | 'close-press'
 
 export interface DrawerOpenChangeDetails {
-  reason?: DrawerOpenChangeReason
+  reason?: DrawerOpenChangeReason | undefined
 }
 
 export interface DrawerRootProps {
   /** v-model:open */
-  open?: boolean
-  defaultOpen?: boolean
+  open?: boolean | undefined
+  defaultOpen?: boolean | undefined
   /**
    * Modality of the drawer.
    * - `true` (default): modal with focus trap, scroll lock, and outside-press dismiss
    * - `'trap-focus'`: traps focus but allows outside pointer events (non-modal side panels)
    * - `false`: non-modal
    */
-  modal?: DrawerModal
+  modal?: DrawerModal | undefined
   /** Direction to swipe to dismiss. @default 'down' */
-  swipeDirection?: SwipeDirection
+  swipeDirection?: SwipeDirection | undefined
   /** Preset snap positions (fractions 0-1, pixels >1, or '148px'/'30rem' strings) */
-  snapPoints?: DrawerSnapPoint[]
+  snapPoints?: DrawerSnapPoint[] | undefined
   /** v-model:snapPoint */
-  snapPoint?: DrawerSnapPoint | null
-  defaultSnapPoint?: DrawerSnapPoint | null
+  snapPoint?: DrawerSnapPoint | null | undefined
+  defaultSnapPoint?: DrawerSnapPoint | null | undefined
   /**
    * When true, snaps to the next sequential snap point (one step at a time).
    * When false, snaps to the nearest snap point by distance.
    * @default false
    */
-  snapToSequentialPoints?: boolean
+  snapToSequentialPoints?: boolean | undefined
 }
 
 export type DrawerRootEmits = {
@@ -77,10 +77,10 @@ export interface DrawerRootContext {
   onNestedSwipingChange: (swiping: boolean) => void
   onNestedSwipeProgressChange: (progress: number) => void
   onSwipingChange: (swiping: boolean) => void
-  notifyParentFrontmostHeight?: (height: number) => void
-  notifyParentSwipingChange?: (swiping: boolean) => void
-  notifyParentSwipeProgressChange?: (progress: number) => void
-  notifyParentHasNestedDrawer?: (present: boolean) => void
+  notifyParentFrontmostHeight?: ((height: number) => void) | undefined
+  notifyParentSwipingChange?: ((swiping: boolean) => void) | undefined
+  notifyParentSwipeProgressChange?: ((progress: number) => void) | undefined
+  notifyParentHasNestedDrawer?: ((present: boolean) => void) | undefined
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
   contentId: string
@@ -95,23 +95,21 @@ export const [injectDrawerRootContext, provideDrawerRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, onUnmounted, ref, toRefs, watch } from 'vue'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 import { injectDrawerProviderContext } from './DrawerProvider.vue'
 import { createNestedSwipeProgressStore } from './utils'
 
 const props = withDefaults(defineProps<DrawerRootProps>(), {
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   defaultOpen: false,
   modal: true,
   swipeDirection: 'down',
-  snapPoints: undefined,
-  snapPoint: undefined,
-  defaultSnapPoint: undefined,
   snapToSequentialPoints: false,
 })
 const emit = defineEmits<DrawerRootEmits>()
 
 defineSlots<{
-  default?: (props: { open: boolean, close: () => void }) => any
+  default?: ((props: { open: boolean, close: () => void }) => any) | undefined
 }>()
 
 // Manual open state management — we need to pass optional details on emit

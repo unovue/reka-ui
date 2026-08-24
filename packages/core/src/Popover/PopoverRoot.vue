@@ -6,17 +6,17 @@ export interface PopoverRootProps {
   /**
    * The open state of the popover when it is initially rendered. Use when you do not need to control its open state.
    */
-  defaultOpen?: boolean
+  defaultOpen?: boolean | undefined
   /**
    * The controlled open state of the popover.
    */
-  open?: boolean
+  open?: boolean | undefined
   /**
    * The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers.
    *
    * @defaultValue false
    */
-  modal?: boolean
+  modal?: boolean | undefined
 }
 export type PopoverRootEmits = {
   /**
@@ -44,21 +44,22 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
-  open: undefined,
+  open: UNDEFINED_DEFAULT,
   modal: false,
 })
 const emit = defineEmits<PopoverRootEmits>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     /** Current open state */
     open: typeof open.value
     /** Close the popover */
     close: () => void
-  }) => any
+  }) => any) | undefined
 }>()
 
 const { modal } = toRefs(props)

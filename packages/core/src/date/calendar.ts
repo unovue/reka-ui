@@ -103,16 +103,16 @@ export function createMonth(props: CreateMonthProps): Grid<DateValue> {
 
 type SetMonthProps = CreateMonthProps & {
   numberOfMonths: number | undefined
-  currentMonths?: Grid<DateValue>[]
+  currentMonths?: Grid<DateValue>[] | undefined
 }
 
 type SetYearProps = CreateSelectProps & {
-  numberOfMonths?: number
-  pagedNavigation?: boolean
+  numberOfMonths?: number | undefined
+  pagedNavigation?: boolean | undefined
 }
 
 type SetDecadeProps = CreateSelectProps & {
-  startIndex?: number
+  startIndex?: number | undefined
   endIndex: number
 }
 
@@ -201,7 +201,7 @@ export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
  * Creates a 3x4 grid of years (decade-aligned).
  * The grid starts from the decade that contains the given date.
  */
-export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean }): Grid<DateValue> {
+export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number | undefined, decadeAligned?: boolean | undefined }): Grid<DateValue> {
   const { dateObj, yearsPerPage = 12, decadeAligned = true } = props
 
   let startYear: number

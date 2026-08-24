@@ -72,7 +72,7 @@ export function findVisible(elements: HTMLElement[], container: HTMLElement) {
   }
 }
 
-export function isHidden(node: HTMLElement, { upTo }: { upTo?: HTMLElement }) {
+export function isHidden(node: HTMLElement, { upTo }: { upTo?: HTMLElement | undefined }) {
   if (getComputedStyle(node).visibility === 'hidden')
     return true
   while (node) {

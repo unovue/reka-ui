@@ -5,11 +5,11 @@ export interface TreeItemProps<T> extends PrimitiveProps {
   /** Level of depth */
   level: number
   /** When `true`, prevents the user from interacting with the item. */
-  disabled?: boolean
+  disabled?: boolean | undefined
 }
 
-export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T, isExpanded: boolean, isSelected: boolean }>
-export type ToggleEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T, isExpanded: boolean, isSelected: boolean }>
+export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T | undefined, isExpanded: boolean, isSelected: boolean }>
+export type ToggleEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T | undefined, isExpanded: boolean, isSelected: boolean }>
 
 export type TreeItemEmits<T> = {
   /** Event handler called when the selecting item. <br> It can be prevented by calling `event.preventDefault`. */
@@ -43,14 +43,14 @@ const props = withDefaults(defineProps<TreeItemProps<T>>(), {
 const emits = defineEmits<TreeItemEmits<T>>()
 
 defineSlots<{
-  default?: (props: {
+  default?: ((props: {
     isExpanded: boolean
     isSelected: boolean
     isIndeterminate: boolean | undefined
     isDisabled: boolean
     handleToggle: () => void
     handleSelect: () => void
-  }) => any
+  }) => any) | undefined
 }>()
 const rootContext = injectTreeRootContext()
 const { getItems } = useCollection()

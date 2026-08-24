@@ -19,12 +19,13 @@ export interface AlertDialogContentProps extends DialogContentProps {}
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import { DialogContent } from '@/Dialog'
+import { UNDEFINED_DEFAULT } from '@/shared/propDefaults'
 
 const props = withDefaults(defineProps<AlertDialogContentProps>(), {
   // Keep `undefined` (instead of Vue's boolean coercion to `false`) so
   // DialogContent can preserve the modal default while still honoring an
   // explicit `:disable-outside-pointer-events="false"`.
-  disableOutsidePointerEvents: undefined,
+  disableOutsidePointerEvents: UNDEFINED_DEFAULT,
 })
 const emits = defineEmits<AlertDialogContentEmits>()
 
