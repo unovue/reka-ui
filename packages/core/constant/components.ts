@@ -220,6 +220,7 @@ export const components = {
     'DrawerHandle',
     'DrawerSwipeArea',
     'DrawerViewport',
+    'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
   ] as const,

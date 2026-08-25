@@ -14,6 +14,8 @@ import {
   DrawerSwipeArea,
   DrawerTitle,
   DrawerTrigger,
+  DrawerViewport,
+  DrawerVirtualKeyboardProvider,
 } from '..'
 import DrawerDemo from './_Drawer.vue'
 
@@ -34,6 +36,8 @@ const indentOpen = ref(false)
 
 const mobileNavOpen = ref(false)
 
+const keyboardOpen = ref(false)
+
 const swipeToOpen = ref(false)
 
 const uncontainedOpen = ref(false)
@@ -43,6 +47,14 @@ const uncontainedActions = [
   'Add to Favourites',
   'Add to Close Friends',
   'Restrict',
+]
+
+const keyboardFields = [
+  'Name',
+  'Email',
+  'Company',
+  'Phone',
+  'Subject',
 ]
 
 const navLinks = [
@@ -497,6 +509,57 @@ const navLinks = [
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
+    <Variant title="Soft Keyboard">
+      <DrawerRoot v-model:open="keyboardOpen">
+        <DrawerVirtualKeyboardProvider>
+          <DrawerTrigger class="drawer-button">
+            Open Form
+          </DrawerTrigger>
+          <DrawerPortal>
+            <DrawerOverlay class="drawer-overlay" />
+            <DrawerContent class="drawer-content-bottom drawer-content-keyboard">
+              <DrawerHandle class="drawer-handle" />
+              <div class="border-b border-gray-200 px-6 py-4">
+                <DrawerTitle class="text-lg font-semibold text-gray-900">
+                  Contact us
+                </DrawerTitle>
+                <DrawerDescription class="text-sm text-gray-600">
+                  Open on a phone: the focused field is kept above the software
+                  keyboard, and the footer lifts with it.
+                </DrawerDescription>
+              </div>
+              <DrawerViewport class="keyboard-viewport">
+                <label
+                  v-for="field in keyboardFields"
+                  :key="field"
+                  class="block text-sm font-medium text-gray-700"
+                >
+                  {{ field }}
+                  <input
+                    type="text"
+                    :placeholder="field"
+                    class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  >
+                </label>
+                <label class="block text-sm font-medium text-gray-700">
+                  Message
+                  <textarea
+                    rows="4"
+                    placeholder="How can we help?"
+                    class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </label>
+              </DrawerViewport>
+              <div class="keyboard-footer">
+                <DrawerClose class="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white">
+                  Send
+                </DrawerClose>
+              </div>
+            </DrawerContent>
+          </DrawerPortal>
+        </DrawerVirtualKeyboardProvider>
+      </DrawerRoot>
+    </Variant>
   </Story>
 </template>
 
@@ -836,6 +899,31 @@ const navLinks = [
    * release, bouncing the drawer to its off-screen start position. */
   transition-duration: 0ms;
   user-select: none;
+}
+
+/* === Soft Keyboard ===
+ * The popup frame stays put; only the scrollable viewport gives up height, and
+ * the footer pads itself out of the keyboard's way using the inset published on
+ * the viewport. `--drawer-keyboard-inset` always needs the 0px fallback.
+ */
+.drawer-content-keyboard {
+  height: 90dvh;
+  max-height: 90dvh;
+}
+.keyboard-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.keyboard-footer {
+  flex-shrink: 0;
+  border-top: 1px solid rgb(229 231 235);
+  padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px) + var(--drawer-keyboard-inset, 0px));
 }
 
 /* === Variants === */

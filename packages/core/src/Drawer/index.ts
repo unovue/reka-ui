@@ -72,3 +72,6 @@ export {
   default as DrawerViewport,
   type DrawerViewportProps,
 } from './DrawerViewport.vue'
+export {
+  default as DrawerVirtualKeyboardProvider,
+} from './DrawerVirtualKeyboardProvider.vue'

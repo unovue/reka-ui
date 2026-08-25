@@ -13,6 +13,8 @@ import {
   DrawerRoot,
   DrawerTitle,
   DrawerTrigger,
+  DrawerViewport,
+  DrawerVirtualKeyboardProvider,
 } from '.'
 
 const OPEN_TEXT = 'Open Drawer'
@@ -220,5 +222,75 @@ describe('update:open change event details', () => {
     await nextTick()
     expect(onOpenChange).toHaveBeenCalledTimes(1)
     expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+  })
+})
+
+describe('drawer with DrawerVirtualKeyboardProvider', () => {
+  const LAYOUT_HEIGHT = 800
+  let listeners: Set<() => void>
+
+  const KeyboardDrawer = defineComponent({
+    components: {
+      DrawerRoot,
+      DrawerVirtualKeyboardProvider,
+      DrawerTrigger,
+      DrawerPortal,
+      DrawerContent,
+      DrawerViewport,
+      DrawerTitle,
+    },
+    template: `
+      <DrawerRoot>
+        <DrawerVirtualKeyboardProvider>
+          <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+          <DrawerPortal>
+            <DrawerContent>
+              <DrawerViewport data-testid="viewport">
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                <input data-testid="field" type="text">
+              </DrawerViewport>
+            </DrawerContent>
+          </DrawerPortal>
+        </DrawerVirtualKeyboardProvider>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    listeners = new Set()
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      writable: true,
+      value: {
+        height: LAYOUT_HEIGHT,
+        offsetTop: 0,
+        scale: 1,
+        addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      },
+    })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: LAYOUT_HEIGHT })
+  })
+
+  afterEach(() => {
+    // @ts-expect-error - restoring the jsdom default
+    delete window.visualViewport
+  })
+
+  it('publishes the keyboard inset on the viewport', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { getByText, getByTestId } = render(KeyboardDrawer)
+
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+
+    getByTestId('field').focus()
+    await nextTick()
+    ;(window.visualViewport as any).height = LAYOUT_HEIGHT - 300
+    listeners.forEach(listener => listener())
+    vi.advanceTimersByTime(100)
+
+    expect(getByTestId('viewport').style.getPropertyValue('--drawer-keyboard-inset')).toBe('300px')
+    vi.useRealTimers()
   })
 })
