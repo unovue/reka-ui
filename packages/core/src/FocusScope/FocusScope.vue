@@ -148,6 +148,17 @@ watchEffect((cleanupFn) => {
       return
     }
 
+    // Confirm focus was actually orphaned before pulling it back. `lastFocusedElement`
+    // is only tracked while the scope is not paused, so an open popper (which pauses
+    // this trap and only resumes it in a `setTimeout`) leaves it pointing at a stale
+    // element. Without this check, an element focused inside the container during that
+    // window — e.g. a view swapped in by the popper's `select` handler focusing its own
+    // input on mount — would be robbed of focus.
+    // -- related: https://github.com/unovue/reka-ui/issues/2886
+    const activeElement = getActiveElement()
+    if (activeElement && container.contains(activeElement))
+      return
+
     const isLastFocusedElementExist = container.contains(lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
