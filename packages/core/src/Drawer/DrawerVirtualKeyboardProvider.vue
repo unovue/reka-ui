@@ -3,6 +3,10 @@ import { computed } from 'vue'
 import { useDrawerVirtualKeyboard } from './composables/useDrawerVirtualKeyboard'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
+/**
+ * Makes the drawer react to the software keyboard. Renderless — mirrors Base
+ * UI's `Drawer.VirtualKeyboardProvider`.
+ */
 defineSlots<{
   default?: () => any
 }>()
