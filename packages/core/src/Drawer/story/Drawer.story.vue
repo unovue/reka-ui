@@ -517,45 +517,47 @@ const navLinks = [
           </DrawerTrigger>
           <DrawerPortal>
             <DrawerOverlay class="drawer-overlay" />
-            <DrawerContent class="drawer-content-bottom drawer-content-keyboard">
-              <DrawerHandle class="drawer-handle" />
-              <div class="border-b border-gray-200 px-6 py-4">
-                <DrawerTitle class="text-lg font-semibold text-gray-900">
-                  Contact us
-                </DrawerTitle>
-                <DrawerDescription class="text-sm text-gray-600">
-                  Open on a phone: the focused field is kept above the software
-                  keyboard, and the footer lifts with it.
-                </DrawerDescription>
-              </div>
-              <DrawerViewport class="keyboard-viewport">
-                <label
-                  v-for="field in keyboardFields"
-                  :key="field"
-                  class="block text-sm font-medium text-gray-700"
-                >
-                  {{ field }}
-                  <input
-                    type="text"
-                    :placeholder="field"
-                    class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            <DrawerViewport class="keyboard-viewport">
+              <DrawerContent class="drawer-content-keyboard">
+                <DrawerHandle class="drawer-handle" />
+                <div class="border-b border-gray-200 px-6 py-4">
+                  <DrawerTitle class="text-lg font-semibold text-gray-900">
+                    Contact us
+                  </DrawerTitle>
+                  <DrawerDescription class="text-sm text-gray-600">
+                    Open on a phone: the focused field is kept above the software
+                    keyboard, and the footer lifts with it.
+                  </DrawerDescription>
+                </div>
+                <div class="keyboard-scroll">
+                  <label
+                    v-for="field in keyboardFields"
+                    :key="field"
+                    class="block text-sm font-medium text-gray-700"
                   >
-                </label>
-                <label class="block text-sm font-medium text-gray-700">
-                  Message
-                  <textarea
-                    rows="4"
-                    placeholder="How can we help?"
-                    class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  />
-                </label>
-              </DrawerViewport>
-              <div class="keyboard-footer">
-                <DrawerClose class="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white">
-                  Send
-                </DrawerClose>
-              </div>
-            </DrawerContent>
+                    {{ field }}
+                    <input
+                      type="text"
+                      :placeholder="field"
+                      class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    >
+                  </label>
+                  <label class="block text-sm font-medium text-gray-700">
+                    Message
+                    <textarea
+                      rows="4"
+                      placeholder="How can we help?"
+                      class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+                <div class="keyboard-footer">
+                  <DrawerClose class="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white">
+                    Send
+                  </DrawerClose>
+                </div>
+              </DrawerContent>
+            </DrawerViewport>
           </DrawerPortal>
         </DrawerVirtualKeyboardProvider>
       </DrawerRoot>
@@ -902,23 +904,48 @@ const navLinks = [
 }
 
 /* === Soft Keyboard ===
- * The popup frame stays put; only the scrollable viewport gives up height, and
- * the footer pads itself out of the keyboard's way using the inset published on
- * the viewport. `--drawer-keyboard-inset` always needs the 0px fallback.
+ * The viewport positions the sheet and hosts `--drawer-keyboard-inset`, which
+ * inherits into the popup: the sheet gives up the keyboard's height so its top
+ * stays on screen, and the footer pads itself clear of the keyboard. The 0px
+ * fallback is required — the variable only exists while the keyboard is aligned.
  */
-.drawer-content-keyboard {
-  height: 90dvh;
-  max-height: 90dvh;
-}
 .keyboard-viewport {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.drawer-content-keyboard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(90dvh - var(--drawer-keyboard-inset, 0px));
+  max-height: calc(90dvh - var(--drawer-keyboard-inset, 0px));
+  background: white;
+  border-radius: 1rem 1rem 0 0;
+  outline: none;
+  transform: translateY(var(--drawer-swipe-movement-y, 0px));
+  transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-keyboard[data-state="open"] {
+  animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-keyboard[data-state="closed"] {
+  animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content-keyboard[data-swiping] {
+  transition-duration: 0ms;
+}
+.keyboard-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 1rem 1.5rem;
 }
 .keyboard-footer {
   flex-shrink: 0;
