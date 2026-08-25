@@ -2,7 +2,7 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
@@ -291,6 +291,64 @@ describe('focusScope', () => {
       // The Select content traps focus; its FocusScope must pause the Dialog's
       // trap so focus lands inside the Select rather than being yanked back.
       expect(content.contains(document.activeElement)).toBe(true)
+    })
+  })
+
+  describe('given a Dialog view swapped by a Combobox item select (#2886)', () => {
+    // The swapped-in view focuses its own input on mount. The Combobox content's
+    // FocusScope is still pausing the Dialog's trap at that moment (it only
+    // resumes in a `setTimeout`), so the Dialog's `lastFocusedElementRef` keeps
+    // pointing at the now-removed Combobox trigger. The mutation handler must not
+    // conclude from that stale reference that focus was orphaned.
+    const FormView = defineComponent({
+      setup() {
+        const nameInput = useTemplateRef<HTMLInputElement>('name-input')
+        onMounted(() => nameInput.value?.focus())
+      },
+      template: `<input ref="name-input" data-testid="form-input">`,
+    })
+
+    const DialogWithComboboxSwap = defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, ComboboxRoot, ComboboxAnchor, ComboboxTrigger, ComboboxPortal, ComboboxContent, ComboboxViewport, ComboboxInput, ComboboxItem, FormView },
+      setup() {
+        const view = ref<'combobox' | 'form'>('combobox')
+        return { view }
+      },
+      template: `
+        <DialogRoot>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Test Dialog</DialogTitle>
+            <ComboboxRoot v-if="view === 'combobox'">
+              <ComboboxAnchor as-child>
+                <ComboboxTrigger>Open combobox</ComboboxTrigger>
+              </ComboboxAnchor>
+              <ComboboxPortal>
+                <ComboboxContent position="popper">
+                  <ComboboxViewport>
+                    <ComboboxInput data-testid="combobox-input" />
+                    <ComboboxItem value="custom" @select="view = 'form'">Add custom product</ComboboxItem>
+                  </ComboboxViewport>
+                </ComboboxContent>
+              </ComboboxPortal>
+            </ComboboxRoot>
+            <FormView v-else />
+          </DialogContent>
+        </DialogRoot>
+      `,
+    })
+
+    it('should keep focus on the input the swapped-in view focused on mount', async () => {
+      const rendered = render(DialogWithComboboxSwap)
+
+      await userEvent.click(rendered.getByRole('button', { name: 'Open' }))
+      await userEvent.click(rendered.getByText('Open combobox'))
+      await nextTick()
+
+      await userEvent.click(rendered.getByText('Add custom product'))
+      await nextTick()
+
+      expect(rendered.getByTestId('form-input')).toHaveFocus()
     })
   })
 })
