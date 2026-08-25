@@ -244,12 +244,14 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
         <DrawerVirtualKeyboardProvider>
           <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
           <DrawerPortal>
-            <DrawerContent>
-              <DrawerViewport data-testid="viewport">
+            <DrawerViewport data-testid="viewport">
+              <DrawerContent>
                 <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
-                <input data-testid="field" type="text">
-              </DrawerViewport>
-            </DrawerContent>
+                <div data-testid="scroll" style="overflow-y: auto">
+                  <input data-testid="field" type="text">
+                </div>
+              </DrawerContent>
+            </DrawerViewport>
           </DrawerPortal>
         </DrawerVirtualKeyboardProvider>
       </DrawerRoot>
@@ -292,5 +294,32 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
 
     expect(getByTestId('viewport').style.getPropertyValue('--drawer-keyboard-inset')).toBe('300px')
     vi.useRealTimers()
+  })
+
+  it('warns when the drawer has no DrawerViewport to measure against', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const NoViewport = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle },
+      template: `
+        <DrawerRoot>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+            <DrawerPortal>
+              <DrawerContent>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+              </DrawerContent>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { getByText } = render(NoViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
   })
 })
