@@ -11,7 +11,8 @@ import { useForwardExpose } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 /**
- * Optional scrollable viewport wrapper. The gesture logic lives on
+ * Optional scrollable viewport wrapper. Mirrors Base UI's `Drawer.Viewport`,
+ * minus the gestures — the gesture logic lives on
  * `DrawerContent` / `DrawerContentImpl`, so this is a passthrough that carries
  * the `data-drawer-viewport` attribute for downstream selectors and registers
  * itself as the containment root for `DrawerVirtualKeyboardProvider`.

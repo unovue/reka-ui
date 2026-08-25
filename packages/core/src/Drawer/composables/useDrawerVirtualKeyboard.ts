@@ -3,6 +3,8 @@ import { toValue, watchEffect } from 'vue'
 import { getActiveElement } from '@/shared'
 import { DRAWER_CSS_VARS } from '../utils'
 
+// Thresholds and timings ported from Base UI `DrawerVirtualKeyboardProvider.tsx`.
+
 /** Viewport shrinkage below this is browser chrome moving, not the keyboard. */
 const KEYBOARD_RESIZE_THRESHOLD = 60
 /** Gap kept between the focused field and the edges of the visible band. */
@@ -157,13 +159,22 @@ function resolveKeyboardTouchTargetFromPoint(
 function dispatchKeyboardClick(target: HTMLElement, touch: { clientX: number, clientY: number }) {
   const win = target.ownerDocument.defaultView ?? window
   const ClickEvent = win.PointerEvent ?? win.MouseEvent
-  target.dispatchEvent(new ClickEvent('click', {
+  const init: MouseEventInit = {
     bubbles: true,
     cancelable: true,
     clientX: touch.clientX,
     clientY: touch.clientY,
     detail: 1,
-  }))
+  }
+  let event: MouseEvent
+  try {
+    event = new ClickEvent('click', { ...init, view: win })
+  }
+  catch {
+    // jsdom rejects a proxied window as `view`.
+    event = new ClickEvent('click', init)
+  }
+  target.dispatchEvent(event)
 }
 
 /**
@@ -259,6 +270,7 @@ export interface UseDrawerVirtualKeyboardOptions {
 
 /**
  * Keyboard-aware focus and scroll handling for drawers with form fields.
+ * Ported from Base UI `DrawerVirtualKeyboardProvider`.
  *
  * Publishes `--drawer-keyboard-inset` — the height the keyboard covers — while
  * a field inside the drawer is focused, and keeps that field scrolled into the
@@ -353,9 +365,8 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
     const baseScrollY = win.scrollY
 
     // A native focus change (the keyboard's prev/next arrows) commits WebKit's
-    // reveal before `focusin` reaches us, and cancelling it afterwards jitters the
-    // sheet. `focusout` fires first, so the incoming field's geometry is overridden
-    // there and restored once focus lands.
+    // reveal before `focusin` reaches us, so the incoming field's geometry is
+    // overridden on `focusout` and restored once focus lands.
     let restorePreemptedFocus: (() => void) | null = null
 
     function setKeyboardInset(inset: number) {
@@ -370,8 +381,7 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
     function preemptFocusReveal(target: HTMLElement, keyboardViewport: KeyboardViewport) {
       consumePreemptedFocus()
       // Native focus carries no `preventScroll`, so an off-screen rect would make
-      // WebKit chase it. Presenting the field as already centered in the visible
-      // band makes both the in-page reveal and the viewport pan no-ops.
+      // WebKit chase it; a rect centered in the visible band makes it a no-op.
       const rect = target.getBoundingClientRect()
       restorePreemptedFocus = overrideGeometryDuringFocus(
         target,
@@ -473,11 +483,8 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
       const settled = scrollElement === scrollTarget && Math.abs(scrollDestination - destination) <= 1
 
       if (!settled) {
-        // Commit only once the destination holds across two checks: layout may
-        // still be reacting to the focus change (a footer sized by `:focus-within`
-        // transitioning), and scrolling to a mid-transition destination overshoots
-        // and visibly pulls back. The destination is scroll-position-invariant, so
-        // an in-flight scroll never defers the commit.
+        // Commit only once the destination holds across two checks — layout may
+        // still be transitioning, and a mid-transition destination overshoots.
         const checks = scrollElement === scrollTarget ? scrollChecks + 1 : 1
         scrollElement = scrollTarget
         scrollDestination = destination
@@ -489,9 +496,8 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
         }
       }
       else if (scrollObserved >= 0) {
-        // A scroll toward this destination is already out. Re-issuing restarts the
-        // easing curve, so leave it alone unless it stalled short — WebKit cancels
-        // in-flight smooth scrolls when its own reveal resolves.
+        // A scroll is already out; re-issuing restarts its easing. Leave it be
+        // unless it stalled short — WebKit cancels in-flight smooth scrolls.
         const current = scrollTarget.scrollTop
         if (Math.abs(current - destination) <= 1)
           return
@@ -658,8 +664,7 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
       }
 
       // iOS only opens the keyboard when focus happens synchronously inside the
-      // touch gesture. The flag suppresses the `focusout` the intermediate blur
-      // would otherwise trigger; `focusin` clears it once focus lands.
+      // touch gesture. The flag suppresses the intermediate blur's `focusout`.
       event.preventDefault()
       programmaticFocus = true
       try {
