@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useMediaQuery } from '@vueuse/core'
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, DrawerContent, DrawerDescription, DrawerHandle, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport, VisuallyHidden } from 'reka-ui'
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, DrawerClose, DrawerContent, DrawerDescription, DrawerHandle, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport, VisuallyHidden } from 'reka-ui'
 import { ref } from 'vue'
 import { sections } from './nav'
 
@@ -116,13 +116,17 @@ const current = ref('')
                       v-for="link in section.links"
                       :key="link.title"
                     >
-                      <a
-                        href="#"
-                        class="block rounded-lg px-2 py-2 no-underline hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      >
-                        <span class="block text-sm text-foreground">{{ link.title }}</span>
-                        <span class="block text-xs leading-snug text-muted-foreground">{{ link.description }}</span>
-                      </a>
+                      <!-- Navigating has to dismiss the sheet; the desktop
+                           flyout closes itself, a controlled drawer does not. -->
+                      <DrawerClose as-child>
+                        <a
+                          href="#"
+                          class="block rounded-lg px-2 py-2 no-underline hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        >
+                          <span class="block text-sm text-foreground">{{ link.title }}</span>
+                          <span class="block text-xs leading-snug text-muted-foreground">{{ link.description }}</span>
+                        </a>
+                      </DrawerClose>
                     </li>
                   </ul>
                 </AccordionContent>

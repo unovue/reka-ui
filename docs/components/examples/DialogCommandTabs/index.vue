@@ -10,7 +10,16 @@ const open = ref(false)
 const scope = ref(scopes[0].value)
 const chosen = ref('')
 
-const { meta_k } = useMagicKeys()
+// `useMagicKeys` registers passive listeners by default, which cannot cancel
+// anything. ⌘K is Firefox's search-bar shortcut, so the palette has to opt out
+// of passive and prevent the browser's own action.
+const { meta_k } = useMagicKeys({
+  passive: false,
+  onEventFired(event) {
+    if (event.type === 'keydown' && event.metaKey && event.key === 'k')
+      event.preventDefault()
+  },
+})
 whenever(meta_k, (pressed) => {
   if (pressed)
     open.value = true
