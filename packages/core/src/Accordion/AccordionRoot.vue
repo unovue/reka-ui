@@ -70,6 +70,7 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
+import { useAccordion } from './useAccordion'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
   disabled: false,
@@ -90,21 +91,24 @@ defineSlots<{
 const { dir, disabled, unmountOnHide } = toRefs(props)
 const direction = useDirection(dir)
 
-const { modelValue, changeModelValue, isSingle } = useSingleOrMultipleValue(props, emits)
+// Keep the established controlled/uncontrolled emit bridge in the shell. The
+// resulting ref is handed to the headless composable, matching Switch/Tabs.
+const { modelValue } = useSingleOrMultipleValue(props, emits)
 
 const { forwardRef, currentElement: parentElement } = useForwardExpose()
 
-provideAccordionRootContext({
+const { context } = useAccordion({
+  modelValue: modelValue as Ref<string | string[] | undefined>,
+  type: () => props.type,
+  collapsible: () => props.collapsible,
+  dir: direction,
   disabled,
-  direction,
-  orientation: props.orientation,
+  orientation: () => props.orientation,
   parentElement,
-  isSingle,
-  collapsible: props.collapsible,
-  modelValue,
-  changeModelValue,
   unmountOnHide,
 })
+
+provideAccordionRootContext(context)
 </script>
 
 <template>

@@ -21,3 +21,16 @@ export {
   default as AccordionTrigger,
   type AccordionTriggerProps,
 } from './AccordionTrigger.vue'
+export {
+  type AccordionItemSurfaceContext,
+  type AccordionItemSurfaceOptions,
+  type AccordionItemSurfaceReturn,
+  type AccordionPartState,
+  getAccordionContentSurface,
+  getAccordionHeaderSurface,
+  getAccordionItemSurface,
+  getAccordionTriggerSurface,
+  useAccordion,
+  type UseAccordionProps,
+  type UseAccordionReturn,
+} from './useAccordion'
