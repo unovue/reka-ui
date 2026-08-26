@@ -339,6 +339,7 @@ export default defineConfig({
           {
             text: 'Combobox',
             items: [
+              { text: 'Combobox Async', link: '/examples/combobox-async' },
               {
                 text: 'Combobox Tags Input',
                 link: '/examples/combobox-tags-input',
@@ -346,6 +347,10 @@ export default defineConfig({
               {
                 text: 'Combobox Textarea',
                 link: '/examples/combobox-textarea',
+              },
+              {
+                text: 'Combobox Virtualized',
+                link: '/examples/combobox-virtualized',
               },
             ],
           },
@@ -360,6 +365,10 @@ export default defineConfig({
                 text: 'Date Picker View Switching',
                 link: '/examples/date-picker-view-switching',
               },
+              {
+                text: 'Date Range Presets',
+                link: '/examples/date-range-presets',
+              },
             ],
           },
           {
@@ -367,12 +376,22 @@ export default defineConfig({
             items: [
               { text: 'Dialog Command Menu', link: '/examples/dialog-command-menu' },
               { text: 'Dialog Gesture Driven', link: '/examples/dialog-gesture-driven' },
+              {
+                text: 'Responsive Dialog Drawer',
+                link: '/examples/dialog-responsive-drawer',
+              },
             ],
           },
           {
             text: 'Listbox',
             items: [
               { text: 'Listbox Transfer', link: '/examples/listbox-transfer' },
+            ],
+          },
+          {
+            text: 'Pin Input',
+            items: [
+              { text: 'Pin Input OTP', link: '/examples/pin-input-otp' },
             ],
           },
           {
@@ -383,6 +402,42 @@ export default defineConfig({
                 link: '/examples/slider-number-field',
               },
               { text: 'Slider Tooltip', link: '/examples/slider-tooltip' },
+            ],
+          },
+          {
+            text: 'Splitter',
+            items: [
+              {
+                text: 'Splitter IDE Layout',
+                link: '/examples/splitter-ide-layout',
+              },
+            ],
+          },
+          {
+            text: 'Stepper',
+            items: [
+              {
+                text: 'Stepper Form Wizard',
+                link: '/examples/stepper-form-wizard',
+              },
+            ],
+          },
+          {
+            text: 'Table',
+            items: [
+              { text: 'Data Table', link: '/examples/data-table' },
+            ],
+          },
+          {
+            text: 'Toast',
+            items: [
+              { text: 'Toast Undo', link: '/examples/toast-undo' },
+            ],
+          },
+          {
+            text: 'Toolbar',
+            items: [
+              { text: 'Toolbar Rich Text', link: '/examples/toolbar-rich-text' },
             ],
           },
           {
