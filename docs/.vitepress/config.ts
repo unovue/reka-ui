@@ -405,7 +405,7 @@ export default defineConfig({
           {
             text: 'Menu',
             items: [
-              { text: 'Menu with Combobox', link: '/examples/menu-combobox' },
+              { text: 'Searchable Menu', link: '/examples/menu-filter' },
             ],
           },
           {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Entry } from './data'
 import { Icon } from '@iconify/vue'
-import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from 'reka-ui'
+import { DropdownMenuContent, DropdownMenuFilter, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { filterEntries, labels, projects } from './data'
 
@@ -13,27 +13,6 @@ const label = ref('Feature')
 const filteredProjects = computed(() => filterEntries(projects, projectQuery.value))
 const filteredLabels = computed(() => filterEntries(labels, labelQuery.value))
 
-const projectInput = ref<HTMLInputElement>()
-const labelInput = ref<HTMLInputElement>()
-
-/**
- * MenuContent focuses its first item on open. Hand that to the search field
- * instead, so typing filters rather than triggering the menu's typeahead.
- */
-function focusInput(event: Event, input?: HTMLInputElement) {
-  event.preventDefault()
-  requestAnimationFrame(() => input?.focus())
-}
-
-/**
- * MenuContent only handles Home/End/Arrow keys when they land on the content
- * itself, so from inside the input the first item has to be focused by hand.
- */
-function focusFirstItem(event: KeyboardEvent) {
-  const content = (event.currentTarget as HTMLElement).closest('[role="menu"]')
-  content?.querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')?.focus()
-}
-
 function choose(entry: Entry, target: 'project' | 'label') {
   if (target === 'project')
     project.value = entry.name
@@ -41,7 +20,7 @@ function choose(entry: Entry, target: 'project' | 'label') {
     label.value = entry.name
 }
 
-const inputClass = 'w-full bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground'
+const filterClass = 'w-full bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground'
 const itemClass = 'flex cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground outline-none data-[highlighted]:bg-muted'
 </script>
 
@@ -61,20 +40,22 @@ const itemClass = 'flex cursor-default select-none items-center gap-2 rounded-md
           class="z-[100] w-[16rem] overflow-hidden rounded-lg border border-muted bg-card p-1 shadow-lg data-[side=bottom]:animate-slideUpAndFade data-[side=top]:animate-slideDownAndFade"
           :side-offset="6"
           align="start"
-          @open-auto-focus="focusInput($event, projectInput)"
         >
           <div class="mb-1 flex items-center gap-1 border-b border-muted px-1">
             <Icon
               icon="lucide:search"
               class="size-3.5 shrink-0 text-muted-foreground"
             />
-            <input
-              ref="projectInput"
+            <!-- `DropdownMenuFilter` registers itself with the menu content, which
+                 is what keeps focus on the field: arrow keys move the *highlight*
+                 through the items, Enter activates the highlighted one, and
+                 hovering the list refocuses the field instead of stealing it. -->
+            <DropdownMenuFilter
               v-model="projectQuery"
-              :class="inputClass"
+              :class="filterClass"
               placeholder="Move to project…"
-              @keydown.down.prevent="focusFirstItem"
-            >
+              auto-focus
+            />
           </div>
 
           <div class="max-h-[13rem] overflow-y-auto">
@@ -105,11 +86,12 @@ const itemClass = 'flex cursor-default select-none items-center gap-2 rounded-md
 
           <DropdownMenuSeparator class="my-1 h-px bg-muted" />
 
-          <!-- The submenu repeats the pattern: its own field, its own list. -->
+          <!-- The submenu repeats the pattern with its own filter. Closing it
+               returns focus to the parent filter rather than to the trigger. -->
           <DropdownMenuSub>
             <DropdownMenuSubTrigger
               class="data-[state=open]:bg-muted"
-              :class="[itemClass]"
+              :class="itemClass"
             >
               <Icon
                 icon="lucide:tag"
@@ -126,20 +108,18 @@ const itemClass = 'flex cursor-default select-none items-center gap-2 rounded-md
                 class="z-[100] w-[14rem] overflow-hidden rounded-lg border border-muted bg-card p-1 shadow-lg"
                 :side-offset="4"
                 :align-offset="-4"
-                @open-auto-focus="focusInput($event, labelInput)"
               >
                 <div class="mb-1 flex items-center gap-1 border-b border-muted px-1">
                   <Icon
                     icon="lucide:search"
                     class="size-3.5 shrink-0 text-muted-foreground"
                   />
-                  <input
-                    ref="labelInput"
+                  <DropdownMenuFilter
                     v-model="labelQuery"
-                    :class="inputClass"
+                    :class="filterClass"
                     placeholder="Filter labels…"
-                    @keydown.down.prevent="focusFirstItem"
-                  >
+                    auto-focus
+                  />
                 </div>
 
                 <DropdownMenuItem
