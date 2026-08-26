@@ -488,10 +488,6 @@ export default defineConfig({
           {
             text: 'Tree',
             items: [
-              {
-                text: 'Tree File Explorer',
-                link: '/examples/tree-file-explorer',
-              },
               { text: 'Tree Multi Select', link: '/examples/tree-multi-select' },
             ],
           },
