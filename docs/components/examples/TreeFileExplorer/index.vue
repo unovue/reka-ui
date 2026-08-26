@@ -96,7 +96,15 @@ const menuItemClass = 'flex cursor-default select-none items-center gap-2 rounde
           />
 
           <!-- Editable swaps the label for an input in place. `start-with-edit-mode`
-               means a freshly created file lands ready to be named. -->
+               means a freshly created file lands ready to be named.
+
+               `@keydown.stop` is what makes editing inside a row work at all:
+               TreeItem prevents Left/Right to walk the tree and TreeRoot runs
+               typeahead on every key, neither of which checks whether the key
+               came from a text field. Without this, arrow keys move the caret
+               nowhere and collapse the folder instead, and typing jumps focus
+               to another row. Editable's own Enter/Escape handlers sit on the
+               input, so they still fire before this stops the bubble. -->
           <EditableRoot
             v-if="renaming === item.value.name"
             :default-value="item.value.name"
@@ -106,6 +114,7 @@ const menuItemClass = 'flex cursor-default select-none items-center gap-2 rounde
             select-on-focus
             start-with-edit-mode
             auto-resize
+            @keydown.stop
             @submit="commitRename(item.value, $event)"
             @update:state="$event === 'cancel' && (renaming = undefined)"
           >
