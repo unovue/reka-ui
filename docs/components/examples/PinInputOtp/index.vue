@@ -125,7 +125,7 @@ async function verify(value: number[]) {
     <button
       type="button"
       class="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:no-underline disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary/40 rounded"
-      :disabled="secondsLeft > 0"
+      :disabled="secondsLeft > 0 || status === 'verifying'"
       @click="resend"
     >
       {{ secondsLeft > 0 ? `Resend code in ${secondsLeft}s` : 'Resend code' }}

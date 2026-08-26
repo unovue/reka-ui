@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DrawerClose, DrawerContent, DrawerDescription, DrawerHandle, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from 'reka-ui'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import ProfileForm from './ProfileForm.vue'
 
-// Resize the window across 640px to swap the presentation. `open` lives outside
-// both roots, so the sheet stays open through the switch.
+// Resize the window across 640px to swap the presentation. `open` and the form
+// values live outside both roots, so neither the sheet nor what was typed into
+// it is lost when one root is unmounted and the other takes over.
 const isDesktop = useMediaQuery('(min-width: 640px)')
 const open = ref(false)
+const profile = reactive({ name: 'Pedro Duarte', username: '@peduarte' })
 
 const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border-muted bg-card text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40'
 </script>
@@ -31,7 +33,10 @@ const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border
             Make changes to your profile here. Click save when you're done.
           </DialogDescription>
 
-          <ProfileForm />
+          <ProfileForm
+            v-model:name="profile.name"
+            v-model:username="profile.username"
+          />
 
           <div class="mt-5 flex justify-end">
             <DialogClose :class="triggerClass">
@@ -61,7 +66,11 @@ const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border
               Make changes to your profile here. Swipe down or tap save when you're done.
             </DrawerDescription>
 
-            <ProfileForm touch />
+            <ProfileForm
+              v-model:name="profile.name"
+              v-model:username="profile.username"
+              touch
+            />
 
             <div class="mt-5 flex justify-end">
               <DrawerClose :class="triggerClass">
@@ -74,7 +83,8 @@ const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border
     </DrawerRoot>
 
     <p class="text-xs text-muted-foreground">
-      Currently rendering as a {{ isDesktop ? 'dialog' : 'drawer' }} — resize the window to swap.
+      {{ profile.name }} ({{ profile.username }}) — currently a
+      {{ isDesktop ? 'dialog' : 'drawer' }}, resize the window to swap.
     </p>
   </div>
 </template>

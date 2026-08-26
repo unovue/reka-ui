@@ -2,8 +2,10 @@
 title: Data Table
 tags:
   - Checkbox
+  - ContextMenu
   - DropdownMenu
   - Pagination
+  - ScrollArea
 ---
 
 # Data Table

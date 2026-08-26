@@ -26,6 +26,16 @@ const activeMarks = ref<string[]>(['bold'])
 const alignment = ref('left')
 const block = ref('p')
 
+/**
+ * A single-mode ToggleGroup clears its value when the active item is clicked
+ * again. Text is always aligned somehow, so the empty state is dropped rather
+ * than left to fall through to `previewClass`.
+ */
+function setAlignment(value: string | undefined) {
+  if (value)
+    alignment.value = value
+}
+
 // The preview is what turns a toolbar of toggles into something you can read
 // the state off — every control here changes the paragraph below it.
 const previewClass = computed(() => [
@@ -123,10 +133,11 @@ const itemClass = 'inline-flex size-8 shrink-0 items-center justify-center round
         <ToolbarSeparator class="mx-1 h-6 w-px bg-muted" />
 
         <ToolbarToggleGroup
-          v-model="alignment"
+          :model-value="alignment"
           type="single"
           aria-label="Text alignment"
           class="flex items-center gap-1"
+          @update:model-value="setAlignment($event as string | undefined)"
         >
           <TooltipRoot
             v-for="align in alignments"

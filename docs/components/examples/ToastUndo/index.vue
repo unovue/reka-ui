@@ -38,6 +38,10 @@ function notify(kind: Notification['kind'], mail: Mail) {
 }
 
 function restore(mail: Mail) {
+  // "Refill inbox" can put a message back while its undo toast is still up, so
+  // a later rollback must not append a second row with the same id.
+  if (inbox.value.some(item => item.id === mail.id))
+    return
   inbox.value = [...inbox.value, mail].sort((a, b) => a.id - b.id)
 }
 
