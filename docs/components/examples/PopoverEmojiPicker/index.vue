@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import type { Emoji } from './emoji'
 import { Icon } from '@iconify/vue'
-import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, RovingFocusGroup, RovingFocusItem } from 'reka-ui'
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, RovingFocusGroup, RovingFocusItem, useFilter } from 'reka-ui'
 import { computed, ref } from 'vue'
-import { COLUMNS, emojis } from './emoji'
+import { COLUMNS, searchEmojis } from './emoji'
 
 const open = ref(false)
 const query = ref('')
 const recent = ref<Emoji[]>([])
 const hovered = ref<Emoji>()
 
-const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  return q ? emojis.filter(emoji => emoji.name.includes(q)) : emojis
-})
+// `useFilter` follows the app locale, so matching ignores case and accents
+// rather than relying on `toLowerCase` and hoping.
+const { contains } = useFilter({ sensitivity: 'base' })
+const filtered = computed(() => searchEmojis(query.value, contains))
 
 /**
  * RovingFocusGroup only maps the axis it is given, so a horizontal group walks
