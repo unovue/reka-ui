@@ -325,6 +325,12 @@ export default defineConfig({
         link: '/examples/checkbox-group',
         items: [
           {
+            text: 'Avatar',
+            items: [
+              { text: 'Avatar Stack', link: '/examples/avatar-stack' },
+            ],
+          },
+          {
             text: 'Checkbox',
             items: [
               { text: 'Checkbox Group', link: '/examples/checkbox-group' },
@@ -377,8 +383,16 @@ export default defineConfig({
               { text: 'Dialog Command Menu', link: '/examples/dialog-command-menu' },
               { text: 'Dialog Gesture Driven', link: '/examples/dialog-gesture-driven' },
               {
+                text: 'Command Menu with Tabs',
+                link: '/examples/dialog-command-tabs',
+              },
+              {
                 text: 'Responsive Dialog Drawer',
                 link: '/examples/dialog-responsive-drawer',
+              },
+              {
+                text: 'Dialog with Unsaved Changes',
+                link: '/examples/dialog-unsaved-changes',
               },
             ],
           },
@@ -389,9 +403,34 @@ export default defineConfig({
             ],
           },
           {
+            text: 'Menu',
+            items: [
+              { text: 'Searchable Menu', link: '/examples/menu-filter' },
+            ],
+          },
+          {
+            text: 'Navigation Menu',
+            items: [
+              {
+                text: 'Navigation Mega Menu',
+                link: '/examples/navigation-mega-menu',
+              },
+              {
+                text: 'Navigation Mobile Nav',
+                link: '/examples/navigation-mobile-nav',
+              },
+            ],
+          },
+          {
             text: 'Pin Input',
             items: [
               { text: 'Pin Input OTP', link: '/examples/pin-input-otp' },
+            ],
+          },
+          {
+            text: 'Popover',
+            items: [
+              { text: 'Selection Popover', link: '/examples/popover-selection' },
             ],
           },
           {
@@ -444,6 +483,12 @@ export default defineConfig({
             text: 'Tooltip',
             items: [
               { text: 'Tooltip Cursor', link: '/examples/tooltip-cursor' },
+            ],
+          },
+          {
+            text: 'Tree',
+            items: [
+              { text: 'Tree Multi Select', link: '/examples/tree-multi-select' },
             ],
           },
           {
