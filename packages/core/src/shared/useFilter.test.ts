@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useFilter } from './useFilter'
 
 describe('useFilter', () => {
@@ -85,6 +85,24 @@ describe('useFilter', () => {
       expect(reactiveContains('Café', 'cafe')).toBe(false)
       options.value = { sensitivity: 'base' }
       expect(reactiveContains('Café', 'cafe')).toBe(true)
+    })
+
+    it('keeps tracking the collator when every item hits the exact-match fast path', () => {
+      const options = ref<Intl.CollatorOptions>({ sensitivity: 'variant' })
+      const { contains: reactiveContains } = useFilter(options)
+
+      let runs = 0
+      const filtered = computed(() => {
+        runs++
+        return ['cat', 'cart', 'cabin'].filter(item => reactiveContains(item, 'ca'))
+      })
+
+      expect(filtered.value).toHaveLength(3)
+      expect(runs).toBe(1)
+
+      options.value = { sensitivity: 'base' }
+      expect(filtered.value).toHaveLength(3)
+      expect(runs).toBe(2)
     })
   })
 })

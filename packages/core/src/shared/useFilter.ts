@@ -47,11 +47,14 @@ export function useFilter(options?: MaybeRef<Intl.CollatorOptions>) {
 
     if (substring.length > string.length)
       return false
+
+    // Read before the fast path below, so callers inside an effect keep tracking the collator.
+    const compare = collator.value.compare
+
     // Identical strings always collate equal, so an exact match short-circuits the scan.
     if (string.includes(substring))
       return true
 
-    const compare = collator.value.compare
     const sliceLen = substring.length
     for (let scan = 0; scan + sliceLen <= string.length; scan++) {
       if (compare(substring, string.slice(scan, scan + sliceLen)) === 0)
