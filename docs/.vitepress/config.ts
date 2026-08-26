@@ -430,7 +430,6 @@ export default defineConfig({
           {
             text: 'Popover',
             items: [
-              { text: 'Emoji Picker', link: '/examples/popover-emoji-picker' },
               { text: 'Selection Popover', link: '/examples/popover-selection' },
             ],
           },
