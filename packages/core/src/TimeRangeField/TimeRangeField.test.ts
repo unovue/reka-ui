@@ -190,6 +190,17 @@ describe('timeField', () => {
     expect(end.minute).toHaveTextContent(String(nextTime.end.minute))
   })
 
+  it('clears segments when the value is reset externally', async () => {
+    const { start, end, rerender } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await rerender({ timeRangeFieldProps: { modelValue: null, locale: 'en-GB' } })
+
+    expect(start.hour).toHaveTextContent('––')
+    expect(end.minute).toHaveTextContent('––')
+  })
+
   it('modifying end value does not affect start value', async () => {
     const { start, end, user } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
