@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, GenericComponentInstance } from '@/shared/types'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
+import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
 import { usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFilter } from '@/shared'
 
@@ -146,6 +147,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
@@ -218,6 +220,7 @@ provideComboboxRootContext({
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,

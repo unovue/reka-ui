@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
-import { DismissableLayer as DismissableLayerPrimitive } from '.'
+import { DismissableLayerBranch, DismissableLayer as DismissableLayerPrimitive } from '.'
 import { context } from './context'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
@@ -21,6 +21,26 @@ describe('isLayerExist', () => {
 
     expect(isLayerExist(layer, document as any)).toBe(false)
     expect(isLayerExist(layer, document.createTextNode('x') as any)).toBe(false)
+  })
+})
+
+describe('given a DismissableLayerBranch', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    context.branches.clear()
+  })
+
+  it('should leave the branch registry empty after unmounting', async () => {
+    const wrapper = mount(DismissableLayerBranch, { attachTo: document.body })
+    await nextTick()
+    const branch = wrapper.element
+    expect(context.branches.has(branch)).toBe(true)
+    expect(context.branches.size).toBe(1)
+
+    wrapper.unmount()
+    await nextTick()
+    expect(context.branches.has(branch)).toBe(false)
+    expect(context.branches.size).toBe(0)
   })
 })
 
@@ -367,6 +387,86 @@ describe('given a default DismissableLayer', () => {
   })
 })
 
+describe('given a DismissableLayer after a cancelled touch tap outside', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // jsdom has no `PointerEvent`, so `fireEvent.pointerDown` loses `pointerType`
+  // and would take the mouse path instead of the deferred touch one.
+  function touchPointerDown(target: EventTarget) {
+    const event = new MouseEvent('pointerdown', { bubbles: true })
+    Object.defineProperty(event, 'pointerType', { value: 'touch' })
+    target.dispatchEvent(event)
+  }
+
+  // Regression: on touch, `pointerDownOutside` is deferred to the next `click`.
+  // When the outside tap turns into a scroll or drag no `click` follows, so the
+  // deferred listener stays armed. The next tap INSIDE the layer (or a nested
+  // layer above it) must drop that stale listener instead of letting its own
+  // `click` dismiss the layer. Mirrors radix-ui/primitives#2171.
+  it('should not dismiss on the next tap inside a nested layer', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          h(DismissableLayerPrimitive, { 'data-testid': 'outer' }, () => 'Outer'),
+          h(DismissableLayerPrimitive, { 'data-testid': 'inner' }, () => [
+            h('button', { 'data-testid': 'inner-button' }, 'Inner'),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const outer = wrapper.findComponent('[data-testid="outer"]') as VueWrapper
+    const innerButton = wrapper.find('[data-testid="inner-button"]').element
+
+    // Outside touch that is cancelled: no `click` follows the `pointerdown`.
+    touchPointerDown(document.body)
+    await sleep(1)
+
+    // Next tap lands inside the nested layer.
+    touchPointerDown(innerButton)
+    await fireEvent.click(innerButton)
+    await sleep(1)
+
+    expect(outer.emitted('pointerDownOutside')).toBeUndefined()
+    expect(outer.emitted('dismiss')).toBeUndefined()
+
+    // A completed tap outside still dismisses the outer layer.
+    touchPointerDown(document.body)
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(outer.emitted('pointerDownOutside')?.length).toBe(1)
+    expect(outer.emitted('dismiss')?.length).toBe(1)
+
+    wrapper.unmount()
+  })
+
+  it('should not dismiss on the next tap inside the layer itself', async () => {
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: document.body,
+      slots: { default: () => h('button', { 'data-testid': 'inside' }, 'Inside') },
+    })
+    await sleep(1)
+
+    const inside = wrapper.find('[data-testid="inside"]').element
+
+    touchPointerDown(document.body)
+    await sleep(1)
+
+    touchPointerDown(inside)
+    await fireEvent.click(inside)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+})
+
 describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -439,6 +539,42 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
 
     expect(wrapper.emitted('escapeKeyDown')).toBeUndefined()
     expect(wrapper.emitted('dismiss')).toBeUndefined()
+  })
+
+  // Regression: on touch, `pointerDownOutside` is deferred to the `click` event.
+  // A layer listening while not present captures the `pointerdown` of the tap that
+  // opens it, and dismisses itself when that tap's `click` arrives.
+  it('should not dismiss on the tap that made it present', async () => {
+    // jsdom has no `PointerEvent`, so `fireEvent.pointerDown` loses `pointerType`
+    // and would take the mouse path instead of the deferred touch one.
+    function touchPointerDown() {
+      const event = new MouseEvent('pointerdown', { bubbles: true })
+      Object.defineProperty(event, 'pointerType', { value: 'touch' })
+      document.body.dispatchEvent(event)
+    }
+
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: document.body,
+      props: { present: false },
+    })
+    await sleep(1)
+
+    touchPointerDown()
+    await wrapper.setProps({ present: true })
+    await sleep(1)
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+
+    // a later tap outside still dismisses it
+    touchPointerDown()
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
   })
 
   it('should emit escapeKeyDown and dismiss on Escape once present', async () => {

@@ -39,6 +39,15 @@ type ListboxRootContext<T> = {
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
+/** Controls highlight scrolling while a parent composite is being positioned. */
+type ListboxHighlightScrollContext = {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+  onHighlightScrollRequest: (scroll: (() => void) | undefined) => void
+}
+
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
@@ -104,6 +113,13 @@ const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({
+  suppressHighlightScroll: ref(false),
+  onHighlightScrollRequest: () => {},
+})
 
 const isFormControl = useFormControl(currentElement)
 
@@ -163,10 +179,26 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
     return
 
   highlightedElement.value = el
-  if (focus ?? focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
+  const suppressHighlightScroll = highlightScrollContext?.suppressHighlightScroll.value ?? false
+  if (focus ?? focusable.value) {
+    if (suppressHighlightScroll)
+      highlightedElement.value.focus({ preventScroll: true })
+    else
+      highlightedElement.value.focus()
+  }
+
+  if (suppressHighlightScroll) {
+    highlightScrollContext?.onHighlightScrollRequest(scrollIntoView
+      ? () => {
+          const element = highlightedElement.value
+          if (element?.isConnected)
+            element.scrollIntoView({ block: 'nearest' })
+        }
+      : undefined)
+  }
+  else if (scrollIntoView) {
     highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  }
 
   const highlightedItem = getItems().find(i => i.ref === el)
   emits('highlight', highlightedItem)

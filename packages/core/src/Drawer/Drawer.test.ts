@@ -1,4 +1,5 @@
 import type { Mock, MockInstance } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -159,9 +160,10 @@ describe('update:open change event details', () => {
     components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
     props: {
       onOpenChange: { type: Function, required: true },
+      modal: { type: [Boolean, String], default: true },
     },
     template: `
-      <DrawerRoot @update:open="onOpenChange">
+      <DrawerRoot @update:open="onOpenChange" :modal="modal">
         <DrawerTrigger>Open</DrawerTrigger>
         <DrawerPortal>
           <DrawerContent>
@@ -194,5 +196,29 @@ describe('update:open change event details', () => {
     await fireEvent.click(getByText('Close'))
     await nextTick()
     expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'close-press' })
+  })
+
+  it('closes on a second trigger click (toggle)', async () => {
+    const onOpenChange = vi.fn()
+    const { getByText } = render(DrawerWithReason, { props: { onOpenChange } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    onOpenChange.mockClear()
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+  })
+
+  it('closes on a second trigger click in non-modal mode', async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    const { getByText } = render(DrawerWithReason, { props: { onOpenChange, modal: false } })
+    await user.click(getByText('Open'))
+    await nextTick()
+    onOpenChange.mockClear()
+    await user.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenChange).toHaveBeenCalledTimes(1)
+    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
   })
 })
