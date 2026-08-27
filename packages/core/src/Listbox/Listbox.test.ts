@@ -523,6 +523,31 @@ describe('given ListboxItem with reactive fallthrough attrs', () => {
     expect(items[0].attributes('data-testid')).toBe('option-b')
   })
 
+  it('should update DOM attributes when an attr key changes while its value stays the same', async () => {
+    const attrName = ref('data-variant-a')
+    const ReactiveAttrKeyListbox = defineComponent({
+      setup() {
+        return () =>
+          h(ListboxRoot, null, {
+            default: () => [
+              h(ListboxItem, { value: { id: 1 }, [attrName.value]: 'same' }, () => 'first'),
+              h(ListboxItem, { value: { id: 2 } }, () => 'other'),
+            ],
+          })
+      },
+    })
+
+    const wrapper = mount(ReactiveAttrKeyListbox, { attachTo: document.body })
+    const items = wrapper.findAll('[role=option]')
+    expect(items[0].attributes('data-variant-a')).toBe('same')
+
+    attrName.value = 'data-variant-b'
+    await nextTick()
+
+    expect(items[0].attributes('data-variant-a')).toBeUndefined()
+    expect(items[0].attributes('data-variant-b')).toBe('same')
+  })
+
   it('should re-render a surviving virtualizer row when filtering shrinks the options', async () => {
     const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
     window.HTMLElement.prototype.getBoundingClientRect = function () {
