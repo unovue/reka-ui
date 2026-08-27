@@ -428,9 +428,13 @@ describe('given a Tree with a text field inside an item', () => {
             h(
               TreeItem,
               { key: item._id, ...item.bind },
-              () => item.value.title === 'app.vue'
-                ? h('input', { 'data-testid': 'rename' })
-                : h('span', item.value.title),
+              () => {
+                if (item.value.title === 'app.vue')
+                  return h('input', { 'data-testid': 'rename' })
+                if (item.value.title === 'Card.vue')
+                  return h('select', { 'data-testid': 'picker' }, [h('option', 'components'), h('option', 'other')])
+                return h('span', item.value.title)
+              },
             ),
           ),
         },
@@ -478,6 +482,18 @@ describe('given a Tree with a text field inside an item', () => {
     await nextTick()
 
     expect(document.activeElement).toBe(input.element)
+  })
+
+  it('does not run typeahead while a select inside an item is focused', async () => {
+    // A native select owns character keys for its own option typeahead.
+    const picker = wrapper.find('[data-testid=picker]').element as HTMLSelectElement
+    picker.focus()
+    await nextTick()
+
+    pressIn(picker, 'c')
+    await nextTick()
+
+    expect(document.activeElement).toBe(picker)
   })
 
   it('still walks the tree when the key lands on the item itself', async () => {

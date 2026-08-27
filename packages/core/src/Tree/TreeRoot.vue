@@ -168,19 +168,25 @@ const expandedItems = computed(() => {
 })
 
 /**
- * An input rendered inside a tree item — an inline rename, a filter — owns its
- * own keys. Without this, typing into it drives typeahead and selection, moving
- * focus to another row mid-edit. Mirrors the guard in `MenuContentImpl`.
+ * A form control rendered inside a tree item — an inline rename, a per-row
+ * filter or picker — owns its own keys. Without this, typing into it drives
+ * tree typeahead and selection, moving focus to another row mid-edit. `select`
+ * counts too: it consumes character keys for its own option typeahead and
+ * Shift+Arrow to extend a multiple selection.
+ *
+ * Same idea as the guard in `MenuContentImpl`, widened past `input`/`textarea`.
  */
-function isKeyDownInTextField(event: KeyboardEvent) {
+const KEY_OWNING_TAGS = ['input', 'textarea', 'select']
+
+function isKeyDownInFormField(event: KeyboardEvent) {
   const target = event.target as HTMLElement | null
   if (!target)
     return false
-  return ['input', 'textarea'].includes(target.tagName.toLowerCase()) || target.isContentEditable
+  return KEY_OWNING_TAGS.includes(target.tagName.toLowerCase()) || target.isContentEditable
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (isKeyDownInTextField(event))
+  if (isKeyDownInFormField(event))
     return
 
   if (isVirtual.value) {
@@ -193,7 +199,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function handleKeydownNavigation(event: KeyboardEvent) {
-  if (isVirtual.value || isKeyDownInTextField(event))
+  if (isVirtual.value || isKeyDownInFormField(event))
     return
 
   const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
