@@ -492,6 +492,80 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
   })
 })
 
+// Regression test for https://github.com/unovue/reka-ui/issues/2904
+// The VNode memoized by ListboxItem's `v-memo` spreads `$attrs`, so the memo
+// must also invalidate when a fallthrough attribute changes. Otherwise a
+// surviving virtualizer row whose `option` changes after filtering keeps the
+// previous option's attributes (`data-testid`, `aria-setsize`, ...) while its
+// slot content updates.
+describe('given ListboxItem with reactive fallthrough attrs', () => {
+  it('should update DOM attributes when an attr changes without highlight/selection change', async () => {
+    const testId = ref('option-a')
+    const ReactiveAttrListbox = defineComponent({
+      setup() {
+        return () =>
+          h(ListboxRoot, null, {
+            default: () => [
+              h(ListboxItem, { 'value': { id: 1 }, 'data-testid': testId.value }, () => 'first'),
+              h(ListboxItem, { value: { id: 2 } }, () => 'other'),
+            ],
+          })
+      },
+    })
+
+    const wrapper = mount(ReactiveAttrListbox, { attachTo: document.body })
+    const items = wrapper.findAll('[role=option]')
+    expect(items[0].attributes('data-testid')).toBe('option-a')
+
+    testId.value = 'option-b'
+    await nextTick()
+
+    expect(items[0].attributes('data-testid')).toBe('option-b')
+  })
+
+  it('should re-render a surviving virtualizer row when filtering shrinks the options', async () => {
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} } as DOMRect
+    }
+
+    try {
+      const options = ref([
+        { label: 'cdi', value: 'cdi' },
+        { label: 'alpha', value: 'alpha' },
+        { label: 'default', value: 'default' },
+      ])
+      const VirtualFilterListbox = defineComponent({
+        setup() {
+          return () =>
+            h(ListboxRoot, null, () =>
+              h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
+                h(ListboxVirtualizer, { options: options.value, textContent: (o: any) => o.label }, {
+                  default: ({ option }: any) =>
+                    h(ListboxItem, { 'value': option, 'data-testid': `option-${option.label}` }, () => option.label),
+                })))
+        },
+      })
+
+      const wrapper = mount(VirtualFilterListbox, { attachTo: document.body })
+      await nextTick()
+      expect(wrapper.find('[data-index="0"]').attributes('data-testid')).toBe('option-cdi')
+
+      // a filter that keeps only the last option: index 0 survives but maps to a different option
+      options.value = [{ label: 'default', value: 'default' }]
+      await nextTick()
+
+      const survivor = wrapper.find('[data-index="0"]')
+      expect(survivor.text()).toBe('default')
+      expect(survivor.attributes('data-testid')).toBe('option-default')
+      expect(survivor.attributes('aria-setsize')).toBe('1')
+    }
+    finally {
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+    }
+  })
+})
+
 describe('given Listbox in a form', async () => {
   let items: DOMWrapper<Element>[]
 
