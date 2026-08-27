@@ -167,7 +167,22 @@ const expandedItems = computed(() => {
   return flattenItems(items ?? [])
 })
 
+/**
+ * An input rendered inside a tree item — an inline rename, a filter — owns its
+ * own keys. Without this, typing into it drives typeahead and selection, moving
+ * focus to another row mid-edit. Mirrors the guard in `MenuContentImpl`.
+ */
+function isKeyDownInTextField(event: KeyboardEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target)
+    return false
+  return ['input', 'textarea'].includes(target.tagName.toLowerCase()) || target.isContentEditable
+}
+
 function handleKeydown(event: KeyboardEvent) {
+  if (isKeyDownInTextField(event))
+    return
+
   if (isVirtual.value) {
     virtualKeydownHook.trigger(event)
   }
@@ -178,7 +193,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function handleKeydownNavigation(event: KeyboardEvent) {
-  if (isVirtual.value)
+  if (isVirtual.value || isKeyDownInTextField(event))
     return
 
   const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
