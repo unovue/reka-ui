@@ -3,10 +3,19 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import Select from './story/_SelectTest.vue'
+import {
+  SelectContent,
+  SelectItem,
+  SelectPortal,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectViewport,
+} from '.'
 
 beforeAll(() => {
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()
@@ -16,6 +25,55 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   }
+})
+
+const TwoSelects = defineComponent({
+  components: {
+    SelectContent,
+    SelectItem,
+    SelectPortal,
+    SelectRoot,
+    SelectTrigger,
+    SelectValue,
+    SelectViewport,
+  },
+  setup() {
+    const first = ref()
+    const second = ref()
+
+    return { first, second }
+  },
+  template: `
+    <SelectRoot v-model="first">
+      <SelectTrigger aria-label="First" style="pointer-events: auto">
+        <SelectValue placeholder="First" />
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectContent>
+          <SelectViewport>
+            <SelectItem value="first-option">
+              First option
+            </SelectItem>
+          </SelectViewport>
+        </SelectContent>
+      </SelectPortal>
+    </SelectRoot>
+
+    <SelectRoot v-model="second">
+      <SelectTrigger aria-label="Second" style="pointer-events: auto">
+        <SelectValue placeholder="Second" />
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectContent>
+          <SelectViewport>
+            <SelectItem value="second-option">
+              Second option
+            </SelectItem>
+          </SelectViewport>
+        </SelectContent>
+      </SelectPortal>
+    </SelectRoot>
+  `,
 })
 
 describe('given default Select', () => {
@@ -420,5 +478,35 @@ describe('given Select in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
       expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: 'Pineapple' })
     })
+  })
+})
+
+describe('given two Selects', () => {
+  it('should close the previously opened select when another opens', async () => {
+    const wrapper = mount(TwoSelects, {
+      attachTo: document.body,
+    })
+    const triggers = wrapper.findAll('button')
+
+    await triggers[0].trigger('pointerdown', {
+      button: 0,
+      ctrlKey: false,
+    })
+    await nextTick()
+
+    expect(document.querySelectorAll('[role=listbox]')).toHaveLength(1)
+
+    await triggers[1].trigger('pointerdown', {
+      button: 0,
+      ctrlKey: false,
+    })
+    await nextTick()
+
+    expect(document.querySelectorAll('[role=listbox]')).toHaveLength(1)
+    expect(triggers[0].attributes('aria-expanded')).toBe('false')
+    expect(triggers[1].attributes('aria-expanded')).toBe('true')
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+
+    wrapper.unmount()
   })
 })
