@@ -122,11 +122,13 @@ describe('given CheckboxGroup', () => {
   describe('when clicking the checkbox', async () => {
     let wrapper: VueWrapper<InstanceType<typeof CheckboxGroup>>
     let checkboxes: DOMWrapper<HTMLButtonElement>[]
+    let parentCheckbox: DOMWrapper<HTMLButtonElement>
 
     beforeEach(async () => {
       wrapper = mount(CheckboxGroup)
       checkboxes = wrapper.findAll('button')
       checkboxes[0].trigger('click')
+      parentCheckbox = wrapper.find('#parent')
     })
 
     it('should render a visible indicator', async () => {
@@ -151,6 +153,26 @@ describe('given CheckboxGroup', () => {
       it('should render 2 checkboxes', async () => {
         expect(checkboxes[0].attributes('data-state')).toBe('checked')
         expect(checkboxes[1].attributes('data-state')).toBe('checked')
+        expect(checkboxes[2].attributes('data-state')).toBe('unchecked')
+      })
+    })
+
+    describe('when clicking parent checkbox', async () => {
+      it('should has indeterminate state', async () => {
+        expect(parentCheckbox.attributes('data-state')).toBe('indeterminate')
+      })
+
+      it('should toggle all checkbox', async () => {
+        // toggle on
+        await parentCheckbox.trigger('click')
+        expect(checkboxes[0].attributes('data-state')).toBe('checked')
+        expect(checkboxes[1].attributes('data-state')).toBe('checked')
+        expect(checkboxes[2].attributes('data-state')).toBe('checked')
+
+        // toggle off
+        await parentCheckbox.trigger('click')
+        expect(checkboxes[0].attributes('data-state')).toBe('unchecked')
+        expect(checkboxes[1].attributes('data-state')).toBe('unchecked')
         expect(checkboxes[2].attributes('data-state')).toBe('unchecked')
       })
     })
