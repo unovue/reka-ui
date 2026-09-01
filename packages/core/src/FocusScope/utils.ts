@@ -55,9 +55,15 @@ export function getTabbableCandidates(container: HTMLElement) {
     },
   })
   while (walker.nextNode()) nodes.push(walker.currentNode as HTMLElement)
-  // we do not take into account the order of nodes with positive `tabIndex` as it
-  // hinders accessibility to have tab order different from visual order.
-  return nodes
+  return nodes.sort((a, b) => {
+    if (a.tabIndex === b.tabIndex)
+      return 0
+    if (a.tabIndex === 0)
+      return 1
+    if (b.tabIndex === 0)
+      return -1
+    return a.tabIndex - b.tabIndex
+  })
 }
 
 /**
