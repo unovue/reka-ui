@@ -430,6 +430,13 @@ export const components = {
     'Separator',
   ] as const,
 
+  sliderArea: [
+    'SliderAreaRoot',
+    'SliderAreaArea',
+    'SliderAreaRegion',
+    'SliderAreaThumb',
+  ] as const,
+
   slider: [
     'SliderRoot',
     'SliderThumb',
