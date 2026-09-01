@@ -139,6 +139,37 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
   </template>
   ```
 
+### Scroll Area
+
+Large scrollable collections can migrate from rendering every item inside `ScrollAreaViewport` to the native `ScrollAreaVirtualizer`. The item template moves into the virtualizer's default slot.
+
+```vue
+<script setup lang="ts">
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
+
+const items = Array.from({ length: 10_000 }, (_, index) => `Item ${index + 1}`)
+</script>
+
+<template>
+  <ScrollAreaRoot>
+    <ScrollAreaViewport>
+      <ScrollAreaVirtualizer
+        v-slot="{ option }"
+        :options="items"
+        :estimate-size="32"
+      >
+        <div>
+          {{ option }}
+        </div>
+      </ScrollAreaVirtualizer>
+    </ScrollAreaViewport>
+    <ScrollAreaScrollbar orientation="vertical">
+      <ScrollAreaThumb />
+    </ScrollAreaScrollbar>
+  </ScrollAreaRoot>
+</template>
+```
+
 ### Presence
 
 To have better support for SSR content, we also modified the logic around the usage of `forceMount` for components that utilize Presence:
