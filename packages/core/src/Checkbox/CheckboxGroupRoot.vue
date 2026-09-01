@@ -16,6 +16,8 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
   rovingFocus?: boolean
   /** When `true`, prevents the user from interacting with the checkboxes */
   disabled?: boolean
+  /** The maximum number of values that can be selected */
+  max?: number
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -27,6 +29,7 @@ interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
+  max: Ref<number | undefined>
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
@@ -42,7 +45,7 @@ const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
 })
 const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 
-const { disabled, rovingFocus, dir: propDir } = toRefs(props)
+const { disabled, max, rovingFocus, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -61,6 +64,7 @@ provideCheckboxGroupRootContext({
   modelValue,
   rovingFocus,
   disabled,
+  max,
 })
 </script>
 
