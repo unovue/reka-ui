@@ -243,6 +243,126 @@ describe('given a Dialog with unmountOnHide=false, openAutoFocus', () => {
 
     wrapper.unmount()
   })
+
+  it('should emit openAutoFocus again on reopen', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    const wrapper = mount(OpenAutoFocusDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(2))
+
+    wrapper.unmount()
+  })
+})
+
+// `forceMount` also keeps the content in the DOM across open/close, so
+// `FocusScope` never physically remounts and mount-keyed behaviour has to be
+// re-keyed on the presence state. Folding `forceMount` into `Presence`'s
+// `present` pinned that state to `true`, so `openAutoFocus` fired only on the
+// very first open and the overlay never released the body scroll lock (#2450).
+describe('given a Dialog with forceMount', () => {
+  const ForceMountDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+    props: ['onOpenAutoFocus'],
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay force-mount />
+  <DialogContent force-mount @open-auto-focus="onOpenAutoFocus">
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  let wrapper: VueWrapper
+
+  // The body scroll lock is a shared composable: leaving a dialog mounted after
+  // a failed assertion keeps the lock held and cascades into unrelated tests.
+  afterEach(() => {
+    wrapper?.unmount()
+    document.body.style.overflow = ''
+    document.body.style.pointerEvents = ''
+  })
+
+  it('should emit openAutoFocus on every open, not only the first', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    wrapper = mount(ForceMountDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    // Force-mounted but closed: the dialog must not grab focus or lock the body
+    // on mount. `FocusScope` dispatches its mount auto-focus a few ticks in, so
+    // a bare `nextTick()` here would pass even when it does fire.
+    await sleep(100)
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
+    expect(document.activeElement).toBe(document.body)
+    expect(document.body.style.overflow).not.toBe('hidden')
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(2))
+  })
+
+  it('should release the body scroll lock on close', async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(ForceMountDialog, { attachTo: document.body, props: { onOpenAutoFocus: vi.fn() } })
+    const trigger = wrapper.find('button')
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(document.body.style.overflow).toBe('hidden'))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    await vi.waitFor(() => expect(document.body.style.overflow).not.toBe('hidden'))
+  })
+})
+
+// Regression guard for the default (unmounting) path: the content unmounts on
+// close, so the auto-focus is driven by the physical remount rather than by
+// `present`.
+describe('given a default Dialog, openAutoFocus', () => {
+  const DefaultAutoFocusDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    props: ['onOpenAutoFocus'],
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent @open-auto-focus="onOpenAutoFocus">
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  it('should emit once per open across repeated opens', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    const wrapper = mount(DefaultAutoFocusDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    await nextTick()
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    // The content unmounts asynchronously; reopening before it is gone would
+    // reuse the still-mounted scope and tell us nothing about the remount path.
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(2))
+
+    wrapper.unmount()
+  })
 })
 
 // Two dialogs with `unmountOnHide: false` coexist on the page (e.g. a menu
