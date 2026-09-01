@@ -3,6 +3,8 @@ import type {
   DialogContentImplEmits,
   DialogContentImplProps,
 } from './DialogContentImpl.vue'
+import { computed } from 'vue'
+import DialogContentContained from './DialogContentContained.vue'
 
 export type DialogContentEmits = DialogContentImplEmits
 
@@ -35,6 +37,14 @@ const rootContext = injectDialogRootContext()
 
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef } = useForwardExpose()
+const contained = computed(() => rootContext.container.value !== undefined)
+const contentComponent = computed(() => {
+  if (contained.value)
+    return DialogContentContained
+  if (!rootContext.modal.value)
+    return DialogContentNonModal
+  return DialogContentModal
+})
 </script>
 
 <template>
@@ -43,23 +53,15 @@ const { forwardRef } = useForwardExpose()
     :present="forceMount || rootContext.open.value"
     :force-mount="forceMount || !rootContext.unmountOnHide.value"
   >
-    <DialogContentModal
-      v-if="rootContext.modal.value"
+    <component
+      :is="contentComponent"
       v-show="rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="rootContext.unmountOnHide.value || present"
+      :data-contained="contained ? '' : undefined"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />
-    </DialogContentModal>
-    <DialogContentNonModal
-      v-else
-      v-show="rootContext.unmountOnHide.value || present"
-      :ref="forwardRef"
-      :present="rootContext.unmountOnHide.value || present"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
-    >
-      <slot />
-    </DialogContentNonModal>
+    </component>
   </Presence>
 </template>
