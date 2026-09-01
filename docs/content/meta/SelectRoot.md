@@ -74,6 +74,12 @@
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'id',
+    'description': '<p>Id of the element</p>\n',
+    'type': 'string',
+    'required': false
   }
 ]" />
 
@@ -122,6 +128,7 @@
 | `nullableValue` | The value of the hidden native select option when the model value is nullish. | `string` | No | `""` |
 | `open` | The controlled open state of the Select. Can be bind as v-model:open. | `boolean` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `id` | Id of the element | `string` | No | - |
 
 **Events**
 

@@ -26,6 +26,8 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   autocomplete?: string
   /** When `true`, prevents the user from interacting with Select */
   disabled?: boolean
+  /** Id of the element */
+  id?: string
 }
 
 export type SelectRootEmits<T = AcceptableValue> = {
@@ -90,7 +92,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { required, disabled, multiple, dir: propDir } = toRefs(props)
+const { id, required, disabled, multiple, dir: propDir } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error Missing infer for AcceptableValue
@@ -205,6 +207,7 @@ provideSelectRootContext({
 
     <BubbleSelect
       v-if="isFormControl && name"
+      :id="id"
       :key="nativeSelectKey"
       aria-hidden="true"
       tabindex="-1"
