@@ -8,7 +8,7 @@ export interface MenubarContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { MenuContent } from '@/Menu'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -30,6 +30,15 @@ menuContext.contentId ||= useId(undefined, 'reka-menubar-content')
 const { getItems } = useCollection({ key: 'Menubar' })
 
 const hasInteractedOutsideRef = ref(false)
+
+const open = computed(() => Boolean(rootContext.modelValue.value) && rootContext.modelValue.value === menuContext.value)
+const previousOpen = ref(open.value)
+watch(open, () => {
+  // make sure all DOM was flush then update the last state.
+  setTimeout(() => {
+    previousOpen.value = open.value
+  })
+})
 
 function handleArrowNavigation(event: KeyboardEvent) {
   const target = event.target as HTMLElement
@@ -78,8 +87,7 @@ function handleArrowNavigation(event: KeyboardEvent) {
       '--reka-menubar-trigger-height': 'var(--reka-popper-anchor-height)',
     }"
     @close-auto-focus="(event) => {
-      const menubarOpen = Boolean(rootContext.modelValue.value);
-      if (!menubarOpen && !hasInteractedOutsideRef) {
+      if (!open && !hasInteractedOutsideRef) {
         menuContext.triggerElement.value?.focus();
       }
 
@@ -94,6 +102,10 @@ function handleArrowNavigation(event: KeyboardEvent) {
     }"
     @interact-outside="
       (event) => {
+        if (!open || !previousOpen) {
+          event.preventDefault();
+        }
+
         hasInteractedOutsideRef = true;
       }
     "
