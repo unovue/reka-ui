@@ -42,17 +42,20 @@ export default defineConfig({
   },
   fromVite: true,
   platform: 'neutral',
-  format: ['esm', 'cjs'],
+  format: ['esm'],
   tsconfig: './tsconfig.app.json',
   dts: { vue: true, sourcemap: true },
   sourcemap: true,
   hash: false,
 
   /**
-   * Quick fix for tsdown not convert "import.meta" for non-esm output.
-   * When tsdown resolves the issue, this can be removed.
-   *
-   * @see https://github.com/rolldown/tsdown/issues/370
+   * The dist output makes no bundler assumption: `import.meta.env` is only
+   * populated by Vite-style bundlers and is `undefined` in plain Node ESM,
+   * Vitest-externalised deps and browser `<script type="module">` usage, where
+   * `import.meta.env.DEV` would throw a TypeError. Replace the few dev-only
+   * `import.meta.env.*` reads in `src` with `undefined` so they are inert.
+   * Dev-only warnings that must survive in dist use `process.env.NODE_ENV`
+   * instead (same convention as Vue's own esm-bundler build).
    */
   define: {
     'import.meta.env.DEV': 'undefined',

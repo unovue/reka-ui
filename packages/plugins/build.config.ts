@@ -10,9 +10,6 @@ export default defineBuildConfig([
     externals: [
       '@nuxt/schema',
     ],
-    rollup: {
-      emitCJS: true,
-    },
   },
   {
     name: 'Unplugin-vue-component Resolver',
@@ -23,9 +20,6 @@ export default defineBuildConfig([
     externals: [
       'unplugin-vue-components',
     ],
-    rollup: {
-      emitCJS: true,
-    },
   },
   {
     name: 'Namespaced',
@@ -36,8 +30,5 @@ export default defineBuildConfig([
     externals: [
       'reka-ui',
     ],
-    rollup: {
-      emitCJS: true,
-    },
   },
 ])

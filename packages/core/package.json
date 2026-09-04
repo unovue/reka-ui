@@ -31,36 +31,29 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./internal": {
-      "import": "./dist/internal.js",
-      "require": "./dist/internal.cjs"
+      "import": "./dist/internal.js"
     },
     "./constant": {
-      "import": "./dist/constant.js",
-      "require": "./dist/constant.cjs"
+      "import": "./dist/constant.js"
     },
     "./date": {
-      "import": "./dist/date.js",
-      "require": "./dist/date.cjs"
+      "import": "./dist/date.js"
     },
     "./namespaced": {
-      "import": "./dist/namespaced/index.mjs",
-      "require": "./dist/namespaced/index.cjs"
+      "import": "./dist/namespaced/index.mjs"
     },
     "./nuxt": {
-      "import": "./dist/nuxt/index.mjs",
-      "require": "./dist/nuxt/index.cjs"
+      "import": "./dist/nuxt/index.mjs"
     },
     "./resolver": {
-      "import": "./dist/resolver/index.mjs",
-      "require": "./dist/resolver/index.cjs"
+      "import": "./dist/resolver/index.mjs"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
