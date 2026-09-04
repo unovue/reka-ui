@@ -1,8 +1,10 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
+import type { SwitchChangeReason } from './useSwitch'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, stateToDataAttrs, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -25,8 +27,10 @@ export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldP
 }
 
 export type SwitchRootEmits<T = boolean> = {
+  /** Event handler called before the value of the switch changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [payload: T, details: ChangeEventDetails<SwitchChangeReason>]
   /** Event handler called when the value of the switch changes. */
-  'update:modelValue': [payload: T]
+  'update:modelValue': [payload: T, details: ChangeEventDetails<SwitchChangeReason>]
 }
 
 export interface SwitchRootContext {
@@ -40,7 +44,6 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 </script>
 
 <script setup lang="ts" generic="T = boolean">
-import { useVModel } from '@vueuse/core'
 import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -68,13 +71,6 @@ defineSlots<{
   }) => any
 }>()
 
-// `useVModel` + `passive` (controlled/uncontrolled) stays in the shell; the
-// resulting ref is handed to the composable so emit semantics are untouched.
-const modelValue = useVModel(props as any, 'modelValue', emit as any, {
-  defaultValue: props.defaultValue ?? props.falseValue,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<T>
-
 const { forwardRef, currentElement } = useForwardExpose()
 const scopeIdAttrs = useForwardScopeId()
 const isFormControl = useFormControl(currentElement)
@@ -83,8 +79,12 @@ const isFormControl = useFormControl(currentElement)
 // SSR-guarded) — not in the composable.
 const ariaLabel = computed(() => props.id && currentElement.value ? (getRootNode(currentElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
 
-const { checked, root, context } = useSwitch<T>({
-  modelValue,
+// Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
+// composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
+const { modelValue, checked, root, context } = useSwitch<T>({
+  modelValue: () => props.modelValue as T | undefined,
+  defaultValue: props.defaultValue,
+  emit,
   disabled: () => props.disabled,
   required: () => props.required,
   value: () => props.value,
@@ -100,7 +100,7 @@ provideSwitchRootContext(context)
 // the pre-toggle model). `mergeProps` chains same-named listeners in argument
 // order, so the composable's handlers are bound separately below, after `$attrs`.
 const rootAttrs = computed(() => {
-  const { onClick: _onClick, onKeydown: _onKeydown, ...attrs } = root.props.value
+  const { onClick: _onClick, onKeydown: _onKeydown, ...attrs } = root.attrs.value
   return attrs
 })
 </script>
@@ -113,7 +113,7 @@ const rootAttrs = computed(() => {
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :as-child="asChild"
     :as="as"
-    v-bind="mergeProps(rootAttrs, stateToDataAttrs(root.state.value), scopeIdAttrs, $attrs)"
+    v-bind="mergeProps(rootAttrs, scopeIdAttrs, $attrs)"
     @click="root.props.value.onClick"
     @keydown="root.props.value.onKeydown"
   >
