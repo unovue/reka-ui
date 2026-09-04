@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { StringOrNumber } from '@/shared/types'
-import { stateToDataAttrs, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
 
 export interface TabsContentProps extends PrimitiveProps {
   /** A unique value that associates the content with a trigger. */
@@ -15,7 +15,7 @@ export interface TabsContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -27,12 +27,12 @@ const { forwardRef } = useForwardExpose()
 const rootContext = injectTabsRootContext()
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
-// surface builder; the Presence wrapper, the registration lifecycle, `hidden`,
-// and the mount-animation `style` stay in the SFC.
+// surface builder (selection is read from its `state`, not re-derived); the
+// Presence wrapper, the registration lifecycle, `hidden`, and the
+// mount-animation `style` stay in the SFC.
 const surface = getTabsContentSurface(rootContext, () => props.value)
-const isSelected = computed(() => props.value === rootContext.modelValue.value)
 
-const isMountAnimationPreventedRef = ref(isSelected.value)
+const isMountAnimationPreventedRef = ref(surface.state.value.state === 'active')
 
 onMounted(() => {
   rootContext.registerContent(props.value)
@@ -49,7 +49,7 @@ onBeforeUnmount(() => {
 <template>
   <Presence
     v-slot="{ present }"
-    :present="forceMount || isSelected"
+    :present="forceMount || surface.state.value.state === 'active'"
     force-mount
   >
     <Primitive
@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
       :as="as"
       :as-child="asChild"
       :hidden="!present"
-      v-bind="mergeProps(surface.props.value, stateToDataAttrs(surface.state.value))"
+      v-bind="surface.attrs.value"
       :style="{
         animationDuration: isMountAnimationPreventedRef ? '0s' : undefined,
       }"

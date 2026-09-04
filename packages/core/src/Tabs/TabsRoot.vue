@@ -1,13 +1,14 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
+import type { TabsChangeReason } from './useTabs'
 import type { PrimitiveProps } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
-import { createContext, stateToDataAttrs, useDirection, useForwardExpose, useId } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface TabsRootContext {
-  modelValue: Ref<StringOrNumber | undefined>
-  changeModelValue: (value: StringOrNumber) => void
+  modelValue: ComputedRef<StringOrNumber | undefined>
+  changeModelValue: (value: StringOrNumber, reason?: TabsChangeReason | BaseChangeReason, event?: Event) => void
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   unmountOnHide: Ref<boolean>
@@ -49,8 +50,10 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
   unmountOnHide?: boolean
 }
 export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
+  /** Event handler called before the value changes; call `details.cancel()` to keep the current value */
+  'beforeUpdate:modelValue': [payload: T, details: ChangeEventDetails<TabsChangeReason>]
   /** Event handler called when the value changes */
-  'update:modelValue': [payload: T]
+  'update:modelValue': [payload: T, details: ChangeEventDetails<TabsChangeReason>]
 }
 
 export const [injectTabsRootContext, provideTabsRootContext]
@@ -58,7 +61,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { mergeProps, toRefs } from 'vue'
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useTabs } from './useTabs'
 
@@ -72,23 +75,20 @@ const emits = defineEmits<TabsRootEmits<T>>()
 defineSlots<{
   default?: (props: {
     /** Current input values */
-    modelValue: typeof modelValue.value
+    modelValue: T | undefined
   }) => any
 }>()
 
-// `dir` resolution (ConfigProvider-aware) + `useVModel`'s controlled/uncontrolled
-// gate stay in the shell; the composable receives the resolved values.
+// `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
+// owns the controlled/uncontrolled model (`useControllableState`) and emits.
 const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 useForwardExpose()
 
-const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'>(props, 'modelValue', emits, {
+const { root, context, modelValue } = useTabs({
+  modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
-  passive: (props.modelValue === undefined) as false,
-})
-
-const { root, context } = useTabs({
-  modelValue: modelValue as Ref<StringOrNumber | undefined>,
+  emit: emits,
   orientation: () => props.orientation,
   dir,
   unmountOnHide: () => props.unmountOnHide,
@@ -104,8 +104,8 @@ provideTabsRootContext(context)
   <Primitive
     :as="as"
     :as-child="asChild"
-    v-bind="mergeProps(root.props.value, stateToDataAttrs(root.state.value))"
+    v-bind="root.attrs.value"
   >
-    <slot :model-value="modelValue" />
+    <slot :model-value="modelValue as T | undefined" />
   </Primitive>
 </template>

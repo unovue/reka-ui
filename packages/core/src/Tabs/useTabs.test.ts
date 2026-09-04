@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import * as Reka from '../index'
 import { useTabs } from './useTabs'
@@ -12,19 +12,59 @@ describe('useTabs — state & selection', () => {
   it('defaults modelValue to the provided defaultValue', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
     expect(t.modelValue.value).toBe('a')
+    expect(t.isControlled.value).toBe(false)
+    expect(t.lastChangeDetails.value.reason).toBe('none')
   })
 
-  it('selectTab updates the model', () => {
+  it('selectTab updates the model and records imperative-action details', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
+    expect(t.selectTab('b')).toBe(true)
+    expect(t.modelValue.value).toBe('b')
+    expect(t.lastChangeDetails.value.reason).toBe('imperative-action')
+    // Unchanged → false, no new details.
+    expect(t.selectTab('b')).toBe(false)
+  })
+
+  it('ref-owned mode: writes through an externally-owned model ref', () => {
+    const model = ref<string | undefined>('a')
+    const t = useTabs({ modelValue: model, baseId: 'x' })
+    expect(t.isControlled.value).toBe(true)
     t.selectTab('b')
+    expect(model.value).toBe('b')
     expect(t.modelValue.value).toBe('b')
   })
 
-  it('writes through an externally-owned model ref', () => {
-    const model = ref<string | undefined>('a')
-    const t = useTabs({ modelValue: model, baseId: 'x' })
+  it('controlled getter + emit: emits beforeUpdate/update with details and does not write locally', () => {
+    const emit = vi.fn()
+    const t = useTabs({ modelValue: () => 'a', emit, baseId: 'x' })
+    expect(t.isControlled.value).toBe(true)
     t.selectTab('b')
-    expect(model.value).toBe('b')
+    expect(t.modelValue.value).toBe('a')
+    expect(emit).toHaveBeenNthCalledWith(1, 'beforeUpdate:modelValue', 'b', expect.objectContaining({ reason: 'imperative-action' }))
+    expect(emit).toHaveBeenNthCalledWith(2, 'update:modelValue', 'b', expect.objectContaining({ reason: 'imperative-action' }))
+  })
+
+  it('cancel in onBeforeUpdate leaves the selection unchanged', () => {
+    const onUpdate = vi.fn()
+    const t = useTabs({
+      defaultValue: 'a',
+      baseId: 'x',
+      onBeforeUpdate: (_value, details) => details.cancel(),
+      onUpdate,
+    })
+    expect(t.selectTab('b')).toBe(false)
+    expect(t.modelValue.value).toBe('a')
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(t.lastChangeDetails.value.isCanceled).toBe(true)
+  })
+
+  it('two standalone calls without a baseId get different ids', () => {
+    const a = useTabs()
+    const b = useTabs()
+    expect(a.context.baseId).toMatch(/^reka-tabs-\d+$/)
+    expect(b.context.baseId).toMatch(/^reka-tabs-\d+$/)
+    expect(a.context.baseId).not.toBe(b.context.baseId)
+    expect(a.getTriggerSurface('t').props.value.id).not.toBe(b.getTriggerSurface('t').props.value.id)
   })
 })
 
@@ -36,6 +76,20 @@ describe('useTabs — trigger surface', () => {
     expect(trig.props.value.role).toBe('tab')
     expect(trig.props.value['aria-selected']).toBe('true')
     expect(noDataAttrs(trig.props.value)).toBe(true)
+  })
+
+  it('attrs merges props with the data-* derived from state', () => {
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', orientation: 'vertical' })
+    const trig = t.getTriggerSurface('a', () => true)
+    expect(trig.attrs.value).toMatchObject({
+      'id': makeTriggerId('x', 'a'),
+      'role': 'tab',
+      'aria-selected': 'true',
+      'data-state': 'active',
+      'data-disabled': '',
+      'data-orientation': 'vertical',
+    })
+    expect(typeof trig.attrs.value.onMousedown).toBe('function')
   })
 
   it('omits aria-controls until the matching content registers', () => {
@@ -54,6 +108,19 @@ describe('useTabs — trigger surface', () => {
     expect(trig.state.value.state).toBe('active')
   })
 
+  it('a reactive value passed as a getter keeps id and state live', () => {
+    const t = useTabs({ defaultValue: 'a', baseId: 'x' })
+    const value = ref('a')
+    const trig = t.getTriggerSurface(() => value.value)
+    expect(trig.props.value.id).toBe(makeTriggerId('x', 'a'))
+    expect(trig.state.value.state).toBe('active')
+    value.value = 'b'
+    expect(trig.props.value.id).toBe(makeTriggerId('x', 'b'))
+    expect(trig.props.value['aria-selected']).toBe('false')
+    expect(trig.state.value.state).toBe('inactive')
+    expect(trig.attrs.value['data-state']).toBe('inactive')
+  })
+
   it('onMousedown (left) selects the tab; right button and ctrl+click do not', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
     const trig = t.getTriggerSurface('b')
@@ -65,6 +132,16 @@ describe('useTabs — trigger surface', () => {
     expect(t.modelValue.value).toBe('b')
   })
 
+  it('onMousedown reports reason trigger-press with the original event to onUpdate', () => {
+    const onUpdate = vi.fn()
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', onUpdate })
+    const event = new MouseEvent('mousedown', { button: 0 })
+    t.getTriggerSurface('b').props.value.onMousedown(event)
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdate).toHaveBeenCalledWith('b', expect.objectContaining({ reason: 'trigger-press', event, isCanceled: false }))
+    expect(t.lastChangeDetails.value.reason).toBe('trigger-press')
+  })
+
   it('onMousedown does not select a disabled trigger', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
     const trig = t.getTriggerSurface('b', true)
@@ -72,20 +149,22 @@ describe('useTabs — trigger surface', () => {
     expect(t.modelValue.value).toBe('a')
   })
 
-  it('onKeydown selects on Enter and Space', () => {
+  it('onKeydown selects on Enter and Space with reason trigger-keydown', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
     const trig = t.getTriggerSurface('b')
     trig.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(t.modelValue.value).toBe('b')
+    expect(t.lastChangeDetails.value.reason).toBe('trigger-keydown')
     t.selectTab('a')
     trig.props.value.onKeydown(new KeyboardEvent('keydown', { key: ' ' }))
     expect(t.modelValue.value).toBe('b')
   })
 
-  it('onFocus activates in automatic mode but not in manual mode', () => {
+  it('onFocus activates in automatic mode (reason trigger-focus) but not in manual mode', () => {
     const auto = useTabs({ defaultValue: 'a', baseId: 'x' })
     auto.getTriggerSurface('b').props.value.onFocus()
     expect(auto.modelValue.value).toBe('b')
+    expect(auto.lastChangeDetails.value.reason).toBe('trigger-focus')
 
     const manual = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'manual' })
     manual.getTriggerSurface('b').props.value.onFocus()
@@ -105,17 +184,21 @@ describe('useTabs — content, root & list surfaces', () => {
     })
     expect(noDataAttrs(content.props.value)).toBe(true)
     expect(content.state.value.state).toBe('active')
+    expect(content.attrs.value['data-state']).toBe('active')
+    expect(content.attrs.value['data-orientation']).toBe('horizontal')
   })
 
   it('root surface carries dir + orientation state', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x', dir: 'rtl', orientation: 'vertical' })
     expect(t.root.props.value.dir).toBe('rtl')
     expect(t.root.state.value).toEqual({ orientation: 'vertical' })
+    expect(t.root.attrs.value).toEqual({ 'dir': 'rtl', 'data-orientation': 'vertical' })
   })
 
   it('list surface is a tablist with aria-orientation', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x', orientation: 'vertical' })
     expect(t.list.props.value).toEqual({ 'role': 'tablist', 'aria-orientation': 'vertical' })
+    expect(t.list.attrs.value).toEqual({ 'role': 'tablist', 'aria-orientation': 'vertical' })
   })
 })
 
@@ -136,9 +219,9 @@ describe('useTabs — context', () => {
 })
 
 describe('useTabs — public export', () => {
-  it('is exported from the package barrel with its surface builders', () => {
+  it('is exported from the package barrel; the surface builders are internal', () => {
     expect(typeof Reka.useTabs).toBe('function')
-    expect(typeof Reka.getTabsTriggerSurface).toBe('function')
-    expect(typeof Reka.getTabsContentSurface).toBe('function')
+    expect('getTabsTriggerSurface' in Reka).toBe(false)
+    expect('getTabsContentSurface' in Reka).toBe(false)
   })
 })
