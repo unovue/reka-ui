@@ -9,7 +9,7 @@ packages:
 overrides:
   minimatch@>=5.0.0 <5.1.8: '>=10.2.3'
   picomatch@<2.3.2: '>=4.0.7'
-  rollup@>=3.0.0 <3.30.0: '>=3.30.0'
+  rollup@>=3.0.0 <3.30.0: '>=4.63.1'
   rollup@>=4.0.0 <4.59.0: '>=4.59.0'
   svgo@>=3.0.0 <3.3.3: '>=4.0.2'
 patchedDependencies:
