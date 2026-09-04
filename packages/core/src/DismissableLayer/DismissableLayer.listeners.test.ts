@@ -36,14 +36,16 @@ describe('dismissableLayer listener consolidation', () => {
     wrapper.unmount()
   })
 
-  it('runs querySelectorAll once per outside pointerdown regardless of layer count', async () => {
+  it('runs no document-wide querySelectorAll on outside pointerdown regardless of layer count', async () => {
+    // Layer order comes from the manager's registry (shadow-root safe), not a
+    // `querySelectorAll('[data-dismissable-layer]')` snapshot per event.
     const wrapper = mountLayers(5)
     await new Promise(r => setTimeout(r, 0)) // let the subscribers arm
     const outside = document.createElement('div')
     document.body.appendChild(outside)
     const qsa = vi.spyOn(document, 'querySelectorAll')
     await fireEvent.pointerDown(outside)
-    expect(count(qsa as any, '[data-dismissable-layer]')).toBe(1)
+    expect(count(qsa as any, '[data-dismissable-layer]')).toBe(0)
     qsa.mockRestore()
     wrapper.unmount()
   })

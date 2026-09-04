@@ -13,7 +13,7 @@ import { shallowReactive } from 'vue'
  *   `isEditing` lifetime for Editable). Never affect Escape/index accounting.
  *
  * The manager owns exactly one shared listener of each kind (installed lazily,
- * torn down when its driving registry empties), the per-event query snapshot,
+ * torn down when its driving registry empties), the per-event layer snapshot,
  * arming, and the touch-click deferral. It does NOT re-implement dismissal
  * logic — each composable ports its `handlePointerDown`/`handleFocus` body into
  * a subscriber closure invoked here with a `DispatchContext`.
@@ -29,9 +29,9 @@ export interface StackLayer {
 export interface DispatchContext {
   /** Composed (shadow-safe) event target, captured synchronously before any await. */
   target: EventTarget | null
-  /** One hoisted `querySelectorAll('[data-dismissable-layer]')` per event. */
+  /** One hoisted `layerElements()` snapshot per event ([0] = bottom, last = top). */
   nodeList: Element[]
-  /** O(1) document-order index of a layer element within `nodeList` (-1 if absent). */
+  /** O(1) stack index of a layer element within `nodeList` (-1 if absent). */
   layerIndex: (el: Element) => number
   branches: HTMLElement[]
   /** Touch: defer this subscriber's dispatch to the next `click` (replaces = re-arm). */
@@ -136,9 +136,7 @@ function cancelTouch(sub: OutsideSubscriber) {
 // --- dispatch ---
 function buildContext(event: Event): DispatchContext {
   const target = (event.composedPath?.()[0] ?? event.target) as EventTarget | null
-  const nodeList = isClient
-    ? Array.from(document.querySelectorAll('[data-dismissable-layer]'))
-    : []
+  const nodeList = layerElements()
   const indexMap = new Map<Element, number>()
   nodeList.forEach((el, i) => indexMap.set(el, i))
   return {
@@ -251,10 +249,34 @@ export function releaseBodyPointerEventsLock(doc: Document): void {
   if (bodyLockCount === 0 && bodyPointerEvents.original !== undefined)
     doc.body.style.pointerEvents = bodyPointerEvents.original
 }
+/**
+ * Whether the manager currently owns body `pointer-events` (at least one present
+ * `disableOutsidePointerEvents` layer holds the lock). Consulted by
+ * `useBodyScrollLock` before it clears the style both share (#2784).
+ */
+export function hasBodyPointerEventsLock(): boolean {
+  return bodyLockCount > 0
+}
 
 // --- queries ---
 export function indexOfLayer(layer: StackLayer): number {
   return layers.indexOf(layer)
+}
+/**
+ * Elements of the present layers in stack order ([0] = bottom, last = top).
+ * Read from the registry rather than a document-wide
+ * `querySelectorAll('[data-dismissable-layer]')`, which cannot see layers
+ * rendered inside shadow roots (they would all index `-1`). Registration order
+ * is stack order — the same order Escape routing and pointer-events use.
+ */
+export function layerElements(): HTMLElement[] {
+  const elements: HTMLElement[] = []
+  for (const layer of layers) {
+    const element = layer.element()
+    if (element)
+      elements.push(element)
+  }
+  return elements
 }
 export function isTopLayer(layer: StackLayer): boolean {
   return layers.length > 0 && layers.at(-1) === layer

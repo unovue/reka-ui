@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { acquireBodyPointerEventsLock, releaseBodyPointerEventsLock } from '@/DismissableLayer/layerStack'
 import { useBodyScrollLock } from './useBodyScrollLock'
 
 function createWrapper(initialState: boolean) {
@@ -104,6 +105,24 @@ describe('useBodyScrollLock', () => {
 
     await nextTick()
     expect(document.body.style.overflow).toBe('')
+    expect(document.body.style.pointerEvents).toBe('')
+  })
+
+  // #2784: body `pointer-events` is shared with `DismissableLayer`. The last
+  // scroll lock releasing must not clear it while a layer still holds the lock.
+  it('should keep body pointer-events none while a DismissableLayer still owns the lock', async () => {
+    acquireBodyPointerEventsLock(document)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    const locked = useBodyScrollLock(true)
+    await nextTick()
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    locked.value = false
+    await nextTick()
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    releaseBodyPointerEventsLock(document)
     expect(document.body.style.pointerEvents).toBe('')
   })
 

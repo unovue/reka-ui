@@ -93,6 +93,16 @@ const { checked, root, context } = useSwitch<T>({
 })
 
 provideSwitchRootContext(context)
+
+// Listener order is part of the v2 contract: `v-bind="$attrs"` sat AFTER the
+// component's `role` / `aria-*` / `data-*` bindings (a consumer attribute wins)
+// but BEFORE `@click` / `@keydown` (a consumer listener runs first and observes
+// the pre-toggle model). `mergeProps` chains same-named listeners in argument
+// order, so the composable's handlers are bound separately below, after `$attrs`.
+const rootAttrs = computed(() => {
+  const { onClick: _onClick, onKeydown: _onKeydown, ...attrs } = root.props.value
+  return attrs
+})
 </script>
 
 <template>
@@ -103,7 +113,9 @@ provideSwitchRootContext(context)
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :as-child="asChild"
     :as="as"
-    v-bind="mergeProps(root.props.value, stateToDataAttrs(root.state.value), scopeIdAttrs, $attrs)"
+    v-bind="mergeProps(rootAttrs, stateToDataAttrs(root.state.value), scopeIdAttrs, $attrs)"
+    @click="root.props.value.onClick"
+    @keydown="root.props.value.onKeydown"
   >
     <slot
       :model-value="modelValue"
