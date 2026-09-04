@@ -7,10 +7,16 @@ const emits = defineEmits<{
 }>()
 
 const providerContext = injectToastProviderContext()
+
+// `VisuallyHidden` defaults to `aria-hidden="true"` (feature="focusable"), but this
+// proxy is a deliberately tabbable (`tabindex="0"`) focus sentinel, and a focusable
+// element must not be `aria-hidden` (axe `aria-hidden-focus`). Override it back to
+// `undefined` so the attribute is not rendered.
 </script>
 
 <template>
   <VisuallyHidden
+    :aria-hidden="undefined"
     tabindex="0"
     style="position: fixed"
     @focus="(event: FocusEvent) => {
