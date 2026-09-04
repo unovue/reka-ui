@@ -7,7 +7,7 @@ settings:
 overrides:
   minimatch@>=5.0.0 <5.1.8: '>=10.2.3'
   picomatch@<2.3.2: '>=4.0.7'
-  rollup@>=3.0.0 <3.30.0: '>=3.30.0'
+  rollup@>=3.0.0 <3.30.0: '>=4.63.1'
   rollup@>=4.0.0 <4.59.0: '>=4.59.0'
   svgo@>=3.0.0 <3.3.3: '>=4.0.2'
 
@@ -1818,7 +1818,7 @@ packages:
     resolution: {integrity: sha512-PR9zDb+rOzkRb2VD+EuKB7UC41vU5DIwZ5qqCpk0KJudcWAyi8rvYOhS7+L5aZCspw1stTViLgN5v6FF1p5cgQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1836,7 +1836,7 @@ packages:
     resolution: {integrity: sha512-PIR4/OHZ79romx0BVVll/PkwWpJ7e5lsqFa3gFfcrFPWwLXLV39JVUzQV9RKjWerE7B845Hqjj9VYlQeieZ2dA==}
     engines: {node: '>=16.0.0 || 14 >= 14.17'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1845,7 +1845,7 @@ packages:
     resolution: {integrity: sha512-EGI2te5ENk1coGeADSIwZ7G2Q8CJS2sF120T7jLw4xFw9n7wIOXHo+kIYRAoVpJAN+kmqZSoO3Fp4JtoNF4ReA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1854,7 +1854,7 @@ packages:
     resolution: {integrity: sha512-lUYM3UBGuM93CnMPG1YocWu7X802BrNF3jW2zny5gQyLQgRFJhV1Sq0Zi74+dh/6NBx1DxFC4b4GXg9wUCG5Qg==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1863,7 +1863,7 @@ packages:
     resolution: {integrity: sha512-J4RZarRvQAm5IF0/LwUUg+obsm+xZhYnbMXmXROyoSE1ATJe3oXSb9L5MMppdxP2ylNSjv6zFBwKYjcKMucVfA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1872,7 +1872,7 @@ packages:
     resolution: {integrity: sha512-MfPp06CjRLfXQ3wY0R8vJDYBy/MvVcc9OulEfR0B8Iv9ko+GCNaRZ+EpJYFl27LhKsZK0o420sYCRHCjfCgeUg==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -6037,7 +6037,7 @@ packages:
     resolution: {integrity: sha512-l//F3Zf7ID5GoOfLfD8kroBjQKEKpy1qfhtAdnpibFZMffPaylrg1CoDC2vGkPeTeyxUe4bVFCln2EFuL7IGGg==}
     engines: {node: '>=20'}
     peerDependencies:
-      rollup: '>=3.30.0'
+      rollup: '>=4.63.1'
       typescript: ^4.5 || ^5.0 || ^6.0
 
   rollup@4.61.1:
