@@ -62,3 +62,25 @@ interface FormFieldProps {
 }
 
 export type { AcceptableValue, ArrayOrWrapped, DataOrientation, Direction, FormFieldProps, GenericComponentInstance, ScrollBodyOption, SingleOrMultipleProps, SingleOrMultipleType, StringOrNumber }
+
+/**
+ * Reasons every model change can carry, regardless of family. Families extend
+ * this with their own union (e.g. `DialogOpenChangeReason`) via the `Reason`
+ * type parameter of `ChangeEventDetails`.
+ */
+type BaseChangeReason = 'imperative-action' | 'none'
+
+/**
+ * Second argument of every `beforeUpdate:<name>` / `update:<name>` emit (#2828).
+ * `cancel()` is only honoured synchronously during `beforeUpdate`.
+ */
+interface ChangeEventDetails<Reason extends string = string, E extends Event = Event> {
+  readonly reason: Reason | BaseChangeReason
+  /** Native event that caused the change, if any. */
+  readonly event?: E
+  /** Prevent the change. Synchronous; honoured only during `beforeUpdate` / `onBeforeUpdate`. */
+  cancel: () => void
+  readonly isCanceled: boolean
+}
+
+export type { BaseChangeReason, ChangeEventDetails }
