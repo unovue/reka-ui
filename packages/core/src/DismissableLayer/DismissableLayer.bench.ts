@@ -7,7 +7,7 @@ import { resetLayerStack } from './layerStack'
 // NOTE: jsdom benchmarks measure JS-only cost (no layout/paint) and are
 // DIRECTIONAL. The definitive proof of the listener consolidation is the
 // structural assertion in `DismissableLayer.listeners.test.ts` (one shared
-// document listener + one `querySelectorAll` per event, independent of layer
+// document listener + one registry snapshot per event, independent of layer
 // count). Render count is unchanged (parity), not reduced — under Vue >= 3.4
 // an open layer does not re-render on sibling membership churn either way.
 //

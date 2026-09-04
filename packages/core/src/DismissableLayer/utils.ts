@@ -2,8 +2,8 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { OutsideSubscriber } from './layerStack'
 import { isClient } from '@vueuse/shared'
 import { nextTick, toValue, watchEffect } from 'vue'
-import { handleAndDispatchCustomEvent } from '@/shared'
-import { registerOutsideSubscriber } from './layerStack'
+import { containsComposed, handleAndDispatchCustomEvent } from '@/shared'
+import { layerElements, registerOutsideSubscriber } from './layerStack'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -14,38 +14,63 @@ export const DISMISSABLE_LAYER_NAME = 'DismissableLayer'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
+/**
+ * Whether `targetElement` counts as "inside" `layerElement`: within its own
+ * subtree, or within a layer stacked ABOVE it. Stack order comes from the
+ * manager's `layers` registry (see `layerElements`) rather than a document-wide
+ * `querySelectorAll`, so layers rendered inside shadow roots order like
+ * light-DOM ones; containment is composed for the same reason.
+ */
 export function isLayerExist(
   layerElement: HTMLElement,
   targetElement: HTMLElement,
-  // Optional pre-computed `[data-dismissable-layer]` snapshot. The manager hoists
-  // ONE snapshot per pointerdown event and passes it here so N subscribers share
-  // a single `querySelectorAll` (the synchronous pointer path — see layerStack).
-  // Omitted (focus path / direct callers) → a fresh query, matching prior behavior.
+  // Optional pre-computed `layerElements()` snapshot. The manager builds ONE per
+  // pointerdown event and passes it here so N subscribers share it (the
+  // synchronous pointer path — see layerStack). Omitted (focus path / direct
+  // callers) → the live registry is read.
   snapshot?: Element[],
 ) {
   if (!(targetElement instanceof Element))
     return false
 
-  const targetLayer = targetElement.closest(
-    '[data-dismissable-layer]',
-  )
-
-  const mainLayer = layerElement.dataset.dismissableLayer === ''
+  const mainLayer = (layerElement.dataset.dismissableLayer === ''
     ? layerElement
-    : layerElement.querySelector(
-      '[data-dismissable-layer]',
-    ) as HTMLElement
+    : layerElement.querySelector('[data-dismissable-layer]')) ?? layerElement
 
-  const nodeList = snapshot ?? Array.from(
-    layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
-  )
-
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))) {
+  // Inside the layer's own subtree (a target in a nested shadow tree counts).
+  if (containsComposed(mainLayer, targetElement))
     return true
+
+  // Otherwise the target must sit inside a layer stacked above this one.
+  const nodeList = snapshot ?? layerElements()
+  const mainIndex = nodeList.indexOf(mainLayer)
+
+  // An unregistered `mainLayer` (e.g. an Editable, which only subscribes and
+  // never registers a `StackLayer`) has no stack index, so fall back to the
+  // document-order rule the `querySelectorAll` snapshot used to encode: a layer
+  // that FOLLOWS it in the document counts as above it. This keeps an Editable
+  // inside a Dialog ending its edit on a click elsewhere in that Dialog.
+  if (mainIndex === -1) {
+    const domTargetLayer = targetElement.closest('[data-dismissable-layer]')
+    return !!domTargetLayer
+      && !!(mainLayer.compareDocumentPosition(domTargetLayer) & Node.DOCUMENT_POSITION_FOLLOWING)
   }
-  else {
-    return false
+
+  const targetLayer = closestStackLayer(targetElement, nodeList)
+  return !!targetLayer && mainIndex < nodeList.indexOf(targetLayer)
+}
+
+/** Nearest composed ancestor of `node` (inclusive) that is one of `nodeList`. */
+function closestStackLayer(node: Node, nodeList: Element[]): Element | null {
+  const members = new Set<Node>(nodeList)
+  let current: Node | null = node
+  while (current) {
+    if (members.has(current))
+      return current as Element
+    // Cross a shadow boundary: a shadow root has no parent, but a host.
+    current = current.parentNode ?? (current as ShadowRoot).host ?? null
   }
+  return null
 }
 
 /**
@@ -75,6 +100,12 @@ export function usePointerDownOutside(
         return
 
       if (isLayerExist(element.value, target, ctx.nodeList)) {
+        // A touch `pointerdown` outside defers the dispatch to the next `click`,
+        // which never comes when the tap becomes a scroll/drag. Drop the stale
+        // deferral here so the next tap inside this layer (or a layer above it)
+        // cannot trigger it (mirrors Radix's inside-tree branch,
+        // radix-ui/primitives#2171).
+        ctx.cancelTouch(subscriber)
         subscriber.isPointerInside = false
         return
       }
@@ -111,7 +142,6 @@ export function usePointerDownOutside(
       else {
         // Cancel a pending deferred dispatch when the outside click was canceled.
         // See: https://github.com/radix-ui/primitives/issues/2171
-        // NB: only here, NOT on the isLayerExist early-return above (parity).
         ctx.cancelTouch(subscriber)
       }
       subscriber.isPointerInside = false
@@ -151,8 +181,8 @@ export function useFocusOutside(
     // Ported from the previous `handleFocus` body. Keeps the double `nextTick`
     // so focus-driven DOM updates settle before the gate reads. Uses the
     // composed `ctx.target` (captured synchronously by the manager) but a FRESH
-    // `isLayerExist` query AFTER the awaits — the DOM may have changed, and a
-    // stale snapshot would diverge from today's behavior.
+    // `isLayerExist` registry read AFTER the awaits — the stack may have
+    // changed, and a stale snapshot would diverge from today's behavior.
     handleFocus: async (event, ctx) => {
       if (!element?.value)
         return

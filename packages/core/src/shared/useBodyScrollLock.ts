@@ -7,6 +7,9 @@ import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
 import { computed, nextTick, ref, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+// Imported from the plain module (not the `@/DismissableLayer` barrel) so the
+// component's own `@/shared` import cannot form a cycle.
+import { hasBodyPointerEventsLock } from '@/DismissableLayer/layerStack'
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
@@ -29,7 +32,11 @@ const useBodyLockStackCount = createSharedComposable(() => {
   const resetBodyStyle = () => {
     document.body.style.paddingRight = ''
     document.body.style.marginRight = ''
-    document.body.style.pointerEvents = ''
+    // Body `pointer-events` is shared with `DismissableLayer`: a modal layer
+    // without its own scroll lock (e.g. a Dialog rendered without an Overlay)
+    // may still own it when the last scroll lock releases (#2784).
+    if (!hasBodyPointerEventsLock())
+      document.body.style.pointerEvents = ''
     document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
     isIOS && stopTouchMoveListener?.()

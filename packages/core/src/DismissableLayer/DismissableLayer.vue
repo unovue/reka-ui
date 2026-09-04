@@ -57,6 +57,7 @@ import type { StackLayer } from './layerStack'
 import {
   useRender,
 } from '@/Primitive'
+import { containsComposed } from '@/shared'
 import {
   acquireBodyPointerEventsLock,
   branches,
@@ -120,9 +121,15 @@ const isBodyPointerEventsDisabled = computed(() => highestDisabledIndex() >= 0)
 
 const isPointerEventsEnabled = computed(() => index.value >= highestDisabledIndex())
 
+// A layer that stays mounted while hidden (e.g. a Dialog with `unmountOnHide: false`)
+// must not listen while it is not present, hence the `present` guard passed as
+// `enabled` (it unsubscribes from the shared manager, which also cancels any
+// pending touch deferral). On touch the dispatch is deferred to the `click`
+// event, so a `pointerdown` captured while hidden would be delivered right after
+// the layer opened and dismiss it on the very interaction that opened it.
 const pointerDownOutside = usePointerDownOutside(async (event) => {
   const isPointerDownOnBranch = [...branches].some(branch =>
-    branch?.contains(event.target as HTMLElement),
+    containsComposed(branch, event.target as Node),
   )
 
   if (!props.present || !isPointerEventsEnabled.value || isPointerDownOnBranch)
@@ -132,11 +139,11 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
   await nextTick()
   if (!event.defaultPrevented)
     emits('dismiss')
-}, layerElement)
+}, layerElement, () => props.present)
 
 const focusOutside = useFocusOutside((event) => {
   const isFocusInBranch = [...branches].some(branch =>
-    branch?.contains(event.target as HTMLElement),
+    containsComposed(branch, event.target as Node),
   )
 
   if (!props.present || isFocusInBranch)
@@ -145,7 +152,7 @@ const focusOutside = useFocusOutside((event) => {
   emits('interactOutside', event)
   if (!event.defaultPrevented)
     emits('dismiss')
-}, layerElement)
+}, layerElement, () => props.present)
 
 // Body pointer-events lock (#2674). `watch` with explicit sources (not
 // `watchEffect`) so it re-runs only when this layer's `element` /
