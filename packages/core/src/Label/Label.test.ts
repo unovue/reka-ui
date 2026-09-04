@@ -95,7 +95,9 @@ describe('label attrs forwarding', () => {
     expect(label.attributes('id')).toBe('lbl')
     expect(label.attributes('aria-label')).toBe('Name')
 
-    await label.trigger('mousedown', { detail: 2 })
+    // VTU's `trigger` cannot set `detail` (getter-only on UIEvent in jsdom).
+    label.element.dispatchEvent(new MouseEvent('mousedown', { detail: 2, bubbles: true, cancelable: true }))
+    await nextTick()
     expect(onMousedown).toHaveBeenCalledTimes(1)
     // Label's own handler ran first (double-click text-selection prevention).
     expect(onMousedown.mock.calls[0][0].defaultPrevented).toBe(true)

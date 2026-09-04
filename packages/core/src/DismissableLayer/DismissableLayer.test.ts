@@ -608,7 +608,11 @@ describe('nested layers inside a shadow root', () => {
     }), { attachTo: mountTarget })
     await sleep(1)
     childOpen.value = true
-    await sleep(1) // child registers above the parent, then arms
+    // Flush the render first: the child's outside subscriber arms on a macrotask
+    // scheduled during setup, which would otherwise be queued *after* a `sleep`
+    // started on this line and leave the first pointerdown below unarmed.
+    await nextTick()
+    await sleep(1) // child registered above the parent; its subscriber is armed
 
     // Neither layer is reachable through the document.
     expect(document.querySelectorAll('[data-dismissable-layer]')).toHaveLength(0)
