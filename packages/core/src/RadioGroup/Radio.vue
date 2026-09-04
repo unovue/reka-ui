@@ -55,7 +55,7 @@ const isFormControl = useFormControl(triggerElement)
 // `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
 const scopeIdAttrs = useForwardScopeId()
 
-const ariaLabel = computed(() => props.id && triggerElement.value ? (getRootNode(triggerElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText ?? props.value : undefined)
+const ariaLabel = computed(() => props.id && triggerElement.value ? (getRootNode(triggerElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
 
 function handleClick(event: MouseEvent) {
   if (props.disabled)
