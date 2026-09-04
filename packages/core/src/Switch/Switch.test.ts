@@ -84,12 +84,37 @@ describe('switchRoot characterization (pre-refactor contract)', () => {
     wrapper.unmount()
   })
 
-  it('chains a consumer @click with the internal toggle (both fire)', async () => {
-    const onClick = vi.fn()
-    const wrapper = mount(SwitchRoot as any, { attrs: { onClick } })
+  // Controlled model: the toggle emits synchronously, so the consumer listener
+  // running first means it sees the pre-toggle state (v2 `v-bind` / `@click` order).
+  it('runs a consumer @click before the internal toggle (both fire, consumer first)', async () => {
+    const order: string[] = []
+    const onClick = vi.fn(() => order.push('consumer'))
+    const wrapper = mount(SwitchRoot as any, {
+      props: { 'modelValue': false, 'onUpdate:modelValue': () => order.push('update') },
+      attrs: { onClick },
+    })
     await wrapper.find('button').trigger('click')
     expect(onClick).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+    expect(order).toEqual(['consumer', 'update'])
+  })
+
+  it('runs a consumer @keydown before the internal Enter toggle', async () => {
+    const order: string[] = []
+    const onKeydown = vi.fn(() => order.push('consumer'))
+    const wrapper = mount(SwitchRoot as any, {
+      props: { 'modelValue': false, 'onUpdate:modelValue': () => order.push('update') },
+      attrs: { onKeydown },
+    })
+    await wrapper.find('button').trigger('keydown', { key: 'Enter' })
+    expect(onKeydown).toHaveBeenCalledTimes(1)
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+    expect(order).toEqual(['consumer', 'update'])
+  })
+
+  it('lets a consumer attribute override the component\'s own (v2 precedence)', () => {
+    const wrapper = mount(SwitchRoot as any, { attrs: { role: 'menuitemcheckbox' } })
+    expect(wrapper.find('button').attributes('role')).toBe('menuitemcheckbox')
   })
 
   it('does not toggle when disabled', async () => {
