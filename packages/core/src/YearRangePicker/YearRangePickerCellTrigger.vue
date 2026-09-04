@@ -1,14 +1,15 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { endOfYear, getLocalTimeZone, startOfYear, toCalendar, today } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
 import { isSameYear, isYearBetweenInclusive, toDate } from '@/date'
 import { useKbd } from '@/shared'
+import { endOfYear, startOfYear, toPlainDate } from '@/temporal/comparators'
 
 export interface YearRangePickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
-  year: DateValue
+  year: TemporalDate
 }
 
 export interface YearRangePickerCellTriggerSlot {
@@ -63,7 +64,7 @@ const labelText = computed(() => {
 const isUnavailable = computed(() => rootContext.isYearUnavailable?.(props.year) ?? false)
 
 const isCurrentYear = computed(() => {
-  const todayDate = toCalendar(today(getLocalTimeZone()), props.year.calendar)
+  const todayDate = Temporal.Now.plainDateISO()
   return isSameYear(props.year, todayDate)
 })
 
@@ -83,7 +84,7 @@ const isHighlighted = computed(() => rootContext.highlightedRange.value
   : false)
 const allowNonContiguousRanges = computed(() => rootContext.allowNonContiguousRanges.value)
 
-function changeYear(e: MouseEvent | KeyboardEvent, date: DateValue) {
+function changeYear(e: MouseEvent | KeyboardEvent, date: TemporalDate) {
   if (rootContext.readonly.value)
     return
   if (rootContext.isYearDisabled(date) || rootContext.isYearUnavailable?.(date))
@@ -93,19 +94,19 @@ function changeYear(e: MouseEvent | KeyboardEvent, date: DateValue) {
     if (isSameYear(date, rootContext.startValue.value) && !rootContext.preventDeselect.value && !rootContext.endValue.value) {
       rootContext.startValue.value = undefined
       rootContext.onPlaceholderChange(date)
-      rootContext.lastPressedDateValue.value = date.copy()
+      rootContext.lastPressedDateValue.value = date
       return
     }
     else if (!rootContext.endValue.value) {
       e.preventDefault()
       if (rootContext.lastPressedDateValue.value && isSameYear(rootContext.lastPressedDateValue.value, date))
-        rootContext.startValue.value = date.copy()
-      rootContext.lastPressedDateValue.value = date.copy()
+        rootContext.startValue.value = date
+      rootContext.lastPressedDateValue.value = date
       return
     }
   }
 
-  rootContext.lastPressedDateValue.value = date.copy()
+  rootContext.lastPressedDateValue.value = date
 
   if (
     rootContext.startValue.value
@@ -121,30 +122,30 @@ function changeYear(e: MouseEvent | KeyboardEvent, date: DateValue) {
   }
 
   if (!rootContext.startValue.value) {
-    rootContext.startValue.value = date.copy()
+    rootContext.startValue.value = date
   }
   else if (!rootContext.endValue.value) {
-    rootContext.endValue.value = date.copy()
+    rootContext.endValue.value = date
   }
   else if (rootContext.endValue.value && rootContext.startValue.value) {
     if (!rootContext.fixedDate.value) {
       rootContext.endValue.value = undefined
-      rootContext.startValue.value = date.copy()
+      rootContext.startValue.value = date
     }
     else if (rootContext.fixedDate.value === 'start') {
-      if (date.compare(rootContext.startValue.value) < 0) {
-        rootContext.startValue.value = date.copy()
+      if (Temporal.PlainDate.compare(toPlainDate(date), toPlainDate(rootContext.startValue.value)) < 0) {
+        rootContext.startValue.value = date
       }
       else {
-        rootContext.endValue.value = date.copy()
+        rootContext.endValue.value = date
       }
     }
     else if (rootContext.fixedDate.value === 'end') {
-      if (date.compare(rootContext.endValue.value) > 0) {
-        rootContext.endValue.value = date.copy()
+      if (Temporal.PlainDate.compare(toPlainDate(date), toPlainDate(rootContext.endValue.value)) > 0) {
+        rootContext.endValue.value = date
       }
       else {
-        rootContext.startValue.value = date.copy()
+        rootContext.startValue.value = date
       }
     }
   }
@@ -159,7 +160,7 @@ function handleClick(e: MouseEvent) {
 function handleFocus() {
   if (isDisabled.value || rootContext.isYearUnavailable?.(props.year))
     return
-  rootContext.focusedValue.value = props.year.copy()
+  rootContext.focusedValue.value = props.year
 }
 
 function handleArrowKey(e: KeyboardEvent) {
@@ -198,13 +199,13 @@ function handleArrowKey(e: KeyboardEvent) {
       changeYear(e, props.year)
   }
 
-  function shiftFocus(currentYear: DateValue, add: number, depth = 0) {
+  function shiftFocus(currentYear: TemporalDate, add: number, depth = 0) {
     if (depth > 48)
       return
     const candidateYearValue = currentYear.add({ years: add })
 
-    if ((rootContext.minValue.value && endOfYear(candidateYearValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && startOfYear(candidateYearValue).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && Temporal.PlainDate.compare(endOfYear(candidateYearValue), toPlainDate(rootContext.minValue.value)) < 0)
+      || (rootContext.maxValue.value && Temporal.PlainDate.compare(startOfYear(candidateYearValue), toPlainDate(rootContext.maxValue.value)) > 0)) {
       return
     }
 
@@ -238,8 +239,8 @@ function handleArrowKey(e: KeyboardEvent) {
     const yearsPerPage = rootContext.yearsPerPage.value
     const candidateYearValue = props.year.add({ years: direction * yearsPerPage })
 
-    if ((rootContext.minValue.value && endOfYear(candidateYearValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && startOfYear(candidateYearValue).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && Temporal.PlainDate.compare(endOfYear(candidateYearValue), toPlainDate(rootContext.minValue.value)) < 0)
+      || (rootContext.maxValue.value && Temporal.PlainDate.compare(startOfYear(candidateYearValue), toPlainDate(rootContext.maxValue.value)) > 0)) {
       return
     }
 

@@ -31,7 +31,7 @@
   {
     'name': 'defaultPlaceholder',
     'description': '<p>The default placeholder date</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -114,13 +114,13 @@
   {
     'name': 'maxValue',
     'description': '<p>The maximum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
     'name': 'minValue',
     'description': '<p>The minimum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -132,7 +132,7 @@
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: TemporalDate) =&gt; TemporalDate)',
     'required': false
   },
   {
@@ -152,7 +152,7 @@
   {
     'name': 'placeholder',
     'description': '<p>The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -165,7 +165,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: TemporalDate) =&gt; TemporalDate)',
     'required': false
   },
   {
@@ -199,12 +199,12 @@
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   },
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   },
   {
     'name': 'update:validModelValue',
@@ -217,12 +217,12 @@
   {
     'name': 'date',
     'description': '<p>The current date of the placeholder</p>\n',
-    'type': 'DateValue'
+    'type': 'TemporalDate'
   },
   {
     'name': 'grid',
     'description': '<p>The grid of dates</p>\n',
-    'type': 'Grid&lt;DateValue&gt;[]'
+    'type': 'Grid&lt;TemporalDate&gt;[]'
   },
   {
     'name': 'weekDays',
@@ -262,7 +262,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `calendarLabel` | The accessible label for the calendar | `string` | No | - |
-| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `TemporalDate` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
 | `dir` | The reading direction of the calendar when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the calendar is disabled | `boolean` | No | `false` |
@@ -275,15 +275,15 @@
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maximumDays` | The maximum number of days that can be selected in a range | `number` | No | - |
-| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `maxValue` | The maximum date that can be selected | `TemporalDate` | No | - |
+| `minValue` | The minimum date that can be selected | `TemporalDate` | No | - |
 | `modelValue` | The controlled selected date range of the calendar. Can be bound as v-model. | `DateRange \| null` | No | - |
-| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
 | `numberOfMonths` | The number of months to display at once | `number` | No | `1` |
 | `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
-| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `TemporalDate` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
-| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
 | `readonly` | Whether or not the calendar is readonly | `boolean` | No | `false` |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
@@ -293,16 +293,16 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TemporalDate]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: TemporalDate]` |
 | `update:validModelValue` | Event handler called whenever there is a new validModel | `[date: DateRange]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `date` | The current date of the placeholder | `DateValue` |
-| `grid` | The grid of dates | `Grid<DateValue>[]` |
+| `date` | The current date of the placeholder | `TemporalDate` |
+| `grid` | The grid of dates | `Grid<TemporalDate>[]` |
 | `weekDays` | The days of the week | `string[]` |
 | `weekStartsOn` | The start of the week | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
 | `locale` | The calendar locale | `string` |

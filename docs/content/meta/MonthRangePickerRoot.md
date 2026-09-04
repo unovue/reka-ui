@@ -31,7 +31,7 @@
   {
     'name': 'defaultPlaceholder',
     'description': '<p>The default placeholder date</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -94,13 +94,13 @@
   {
     'name': 'maxValue',
     'description': '<p>The maximum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
     'name': 'minValue',
     'description': '<p>The minimum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -112,13 +112,13 @@
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the calendar.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: TemporalDate) =&gt; TemporalDate)',
     'required': false
   },
   {
     'name': 'placeholder',
     'description': '<p>The placeholder date, which is used to determine what year to display when no date is selected.</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -131,7 +131,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the calendar.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: TemporalDate) =&gt; TemporalDate)',
     'required': false
   },
   {
@@ -152,12 +152,12 @@
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   },
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   }
 ]" />
 
@@ -165,12 +165,12 @@
   {
     'name': 'date',
     'description': '<p>The current date of the placeholder</p>\n',
-    'type': 'DateValue'
+    'type': 'TemporalDate'
   },
   {
     'name': 'grid',
     'description': '<p>The grid of months</p>\n',
-    'type': 'Grid&lt;DateValue&gt;'
+    'type': 'Grid&lt;TemporalDate&gt;'
   },
   {
     'name': 'locale',
@@ -195,7 +195,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `calendarLabel` | The accessible label for the calendar | `string` | No | - |
-| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `TemporalDate` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
 | `dir` | The reading direction of the calendar when applicable. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the calendar is disabled | `boolean` | No | `false` |
@@ -205,13 +205,13 @@
 | `isMonthUnavailable` | A function that returns whether or not a month is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maximumMonths` | The maximum number of months that can be selected in a range | `number` | No | - |
-| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `maxValue` | The maximum date that can be selected | `TemporalDate` | No | - |
+| `minValue` | The minimum date that can be selected | `TemporalDate` | No | - |
 | `modelValue` | The controlled selected month range of the month range picker. Can be bound as v-model. | `DateRange \| null` | No | - |
-| `nextPage` | A function that returns the next page of the calendar. | `((placeholder: DateValue) => DateValue)` | No | - |
-| `placeholder` | The placeholder date, which is used to determine what year to display when no date is selected. | `DateValue` | No | - |
+| `nextPage` | A function that returns the next page of the calendar. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what year to display when no date is selected. | `TemporalDate` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
-| `prevPage` | A function that returns the previous page of the calendar. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `prevPage` | A function that returns the previous page of the calendar. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
 | `readonly` | Whether or not the calendar is readonly | `boolean` | No | `false` |
 
 **Events**
@@ -219,15 +219,15 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TemporalDate]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: TemporalDate]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `date` | The current date of the placeholder | `DateValue` |
-| `grid` | The grid of months | `Grid<DateValue>` |
+| `date` | The current date of the placeholder | `TemporalDate` |
+| `grid` | The grid of months | `Grid<TemporalDate>` |
 | `locale` | The calendar locale | `string` |
 | `modelValue` | The current date range | `DateRange` |
 

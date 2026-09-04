@@ -1,32 +1,31 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import { useCalendar } from '@/Calendar/useCalendar'
-import { getWeekStartsOn, isBefore } from '@/date'
+import { getWeekStartsOn } from '@/date'
 import {
   createContext,
   useDirection,
   useKbd,
   useLocale,
 } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { useRangeCalendarState } from './useRangeCalendar'
+import { dayAdapter, getDefaultDate, handleCalendarInitialFocus, useRangeSelectionState } from '@/shared/date'
+import { isBefore, isSameDay } from '@/temporal/comparators'
 
 type RangeCalendarRootContext = {
   modelValue: Ref<DateRange>
-  startValue: Ref<DateValue | undefined>
-  endValue: Ref<DateValue | undefined>
+  startValue: Ref<TemporalDate | undefined>
+  endValue: Ref<TemporalDate | undefined>
   locale: Ref<string>
-  placeholder: Ref<DateValue>
+  placeholder: Ref<TemporalDate>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  grid: Ref<Grid<DateValue>[]>
+  grid: Ref<Grid<TemporalDate>[]>
   weekDays: Ref<string[]>
   weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
@@ -35,7 +34,7 @@ type RangeCalendarRootContext = {
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   initialFocus: Ref<boolean>
-  onPlaceholderChange: (date: DateValue) => void
+  onPlaceholderChange: (date: TemporalDate) => void
   fullCalendarLabel: Ref<string>
   parentElement: Ref<HTMLElement | undefined>
   headingValue: Ref<string>
@@ -43,47 +42,47 @@ type RangeCalendarRootContext = {
   isDateDisabled: Matcher
   isDateUnavailable?: Matcher
   isDateHighlightable?: Matcher
-  isOutsideVisibleView: (date: DateValue) => boolean
+  isOutsideVisibleView: (date: TemporalDate) => boolean
   allowNonContiguousRanges: Ref<boolean>
-  highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
-  focusedValue: Ref<DateValue | undefined>
-  lastPressedDateValue: Ref<DateValue | undefined>
-  isSelected: (date: DateValue) => boolean
-  isSelectionEnd: (date: DateValue) => boolean
-  isSelectionStart: (date: DateValue) => boolean
-  isHighlightedStart: (date: DateValue) => boolean
-  isHighlightedEnd: (date: DateValue) => boolean
-  prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
-  nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
+  highlightedRange: Ref<{ start: TemporalDate, end: TemporalDate } | null>
+  focusedValue: Ref<TemporalDate | undefined>
+  lastPressedDateValue: Ref<TemporalDate | undefined>
+  isSelected: (date: TemporalDate) => boolean
+  isSelectionEnd: (date: TemporalDate) => boolean
+  isSelectionStart: (date: TemporalDate) => boolean
+  isHighlightedStart: (date: TemporalDate) => boolean
+  isHighlightedEnd: (date: TemporalDate) => boolean
+  prevPage: (prevPageFunc?: (date: TemporalDate) => TemporalDate) => void
+  nextPage: (nextPageFunc?: (date: TemporalDate) => TemporalDate) => void
   isNextButtonDisabled: (
-    nextPageFunc?: (date: DateValue) => DateValue,
+    nextPageFunc?: (date: TemporalDate) => TemporalDate,
   ) => boolean
   isPrevButtonDisabled: (
-    prevPageFunc?: (date: DateValue) => DateValue,
+    prevPageFunc?: (date: TemporalDate) => TemporalDate,
   ) => boolean
   formatter: Formatter
   dir: Ref<Direction>
   disableDaysOutsideCurrentView: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays: Ref<number | undefined>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
+  minValue: Ref<TemporalDate | undefined>
+  maxValue: Ref<TemporalDate | undefined>
   isPlaceholderFocusable: Ref<boolean>
-  firstFocusableDate: Ref<DateValue | undefined>
+  firstFocusableDate: Ref<TemporalDate | undefined>
   hasSelectedDate: Ref<boolean>
   isSelectedDisabled: Ref<boolean>
-  selectedFocusableDate: Ref<DateValue | undefined>
+  selectedFocusableDate: Ref<TemporalDate | undefined>
 }
 
 export interface RangeCalendarRootProps extends PrimitiveProps {
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: TemporalDate
   /** The default value for the calendar */
   defaultValue?: DateRange
   /** The controlled selected date range of the calendar. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
-  placeholder?: DateValue
+  placeholder?: TemporalDate
   /** When combined with `isDateUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. */
   allowNonContiguousRanges?: boolean
   /** This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month */
@@ -101,9 +100,9 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   /** Whether or not to always display 6 weeks in the calendar */
   fixedWeeks?: boolean
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: TemporalDate
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: TemporalDate
   /** The locale to use for formatting dates */
   locale?: string
   /** The number of months to display at once */
@@ -123,9 +122,9 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
   /** A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: (placeholder: TemporalDate) => TemporalDate
   /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: (placeholder: TemporalDate) => TemporalDate
   /** Whether or not to disable days outside the current view. */
   disableDaysOutsideCurrentView?: boolean
   /** Which part of the range should be fixed */
@@ -139,9 +138,9 @@ export type RangeCalendarRootEmits = {
   /** Event handler called whenever there is a new validModel */
   'update:validModelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: TemporalDate]
   /** Event handler called whenever the start value changes */
-  'update:startValue': [date: DateValue | undefined]
+  'update:startValue': [date: TemporalDate | undefined]
 }
 
 export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
@@ -178,9 +177,9 @@ const emits = defineEmits<RangeCalendarRootEmits>()
 defineSlots<{
   default?: (props: {
     /** The current date of the placeholder */
-    date: DateValue
+    date: TemporalDate
     /** The grid of dates */
-    grid: Grid<DateValue>[]
+    grid: Grid<TemporalDate>[]
     /** The days of the week */
     weekDays: string[]
     /** The start of the week */
@@ -225,8 +224,8 @@ const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
 const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
-const lastPressedDateValue = ref() as Ref<DateValue | undefined>
-const focusedValue = ref() as Ref<DateValue | undefined>
+const lastPressedDateValue = ref() as Ref<TemporalDate | undefined>
+const focusedValue = ref() as Ref<TemporalDate | undefined>
 const isEditing = ref(false)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -249,18 +248,18 @@ const defaultDate = getDefaultDate({
   locale: props.locale,
 })
 
-const startValue = ref(normalizeRange(modelValue.value).start) as Ref<
-  DateValue | undefined
+const startValue = ref(normalizedModelValue.value.start) as Ref<
+  TemporalDate | undefined
 >
-const endValue = ref(normalizeRange(modelValue.value).end) as Ref<DateValue | undefined>
+const endValue = ref(normalizedModelValue.value.end) as Ref<TemporalDate | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
-function onPlaceholderChange(value: DateValue) {
-  placeholder.value = value.copy()
+function onPlaceholderChange(value: TemporalDate) {
+  placeholder.value = value
 }
 
 const {
@@ -299,48 +298,59 @@ const {
 const {
   isInvalid,
   isSelected,
-  isDateHighlightable,
   highlightedRange,
   isSelectionStart,
   isSelectionEnd,
   isHighlightedStart,
   isHighlightedEnd,
-  isDateDisabled: rangeIsDateDisabled,
-  hasSelectedDate,
-  isSelectedDisabled,
-  selectedFocusableDate,
-} = useRangeCalendarState({
+  isUnitDisabled,
+  selectedFocusableUnit,
+} = useRangeSelectionState({
+  adapter: dayAdapter,
   start: startValue,
   end: endValue,
-  isDateDisabled,
-  isDateUnavailable,
-  isDateHighlightable: propsIsDateHighlightable.value,
+  isEndpointDisabled: isDateDisabled,
+  isInteriorBlocked: (date: TemporalDate) => {
+    if (propsIsDateHighlightable.value?.(date))
+      return false
+    return isDateUnavailable(date)
+  },
   focusedValue,
   allowNonContiguousRanges,
-  fixedDate,
-  maximumDays,
+  fixedEndpoint: fixedDate,
+  maximumSpan: maximumDays,
 })
 
-watch(modelValue, (_modelValue) => {
-  const next = normalizeRange(_modelValue)
+const rangeIsDateDisabled = isUnitDisabled
+function isDateHighlightable(date: TemporalDate) {
+  return propsIsDateHighlightable.value?.(date) ?? false
+}
+const hasSelectedDate = computed(() => selectedFocusableUnit.value.hasSelectedUnit)
+const isSelectedDisabled = computed(() => !selectedFocusableUnit.value.areEndpointsSelectable)
+const selectedFocusableDate = computed(() => selectedFocusableUnit.value.preferredFocusUnit)
 
-  const isStartSynced = (!next.start && !startValue.value)
-    || (!!next.start && !!startValue.value && isEqualDay(next.start, startValue.value))
-
-  if (!isStartSynced) {
-    startValue.value = next.start?.copy?.()
+watch(modelValue, (_modelValue, _prevValue) => {
+  if (
+    (!_prevValue?.start && _modelValue?.start)
+    || !_modelValue
+    || !_modelValue.start
+    || (startValue.value && !isSameDay(_modelValue.start, startValue.value))
+  ) {
+    startValue.value = _modelValue?.start
   }
 
-  const isEndSynced = (!next.end && !endValue.value)
-    || (!!next.end && !!endValue.value && isEqualDay(next.end, endValue.value))
-
-  if (!isEndSynced) {
-    endValue.value = next.end?.copy?.()
+  if (
+    (!_prevValue?.end && _modelValue?.end)
+    || !_modelValue
+    || !_modelValue.end
+    || (endValue.value && !isSameDay(_modelValue.end, endValue.value))
+  ) {
+    endValue.value = _modelValue?.end
   }
 })
 
 watch(startValue, (_startValue) => {
-  if (_startValue && !isEqualDay(_startValue, placeholder.value))
+  if (_startValue && !isSameDay(_startValue, placeholder.value))
     onPlaceholderChange(_startValue)
 
   emits('update:startValue', _startValue)
@@ -355,8 +365,8 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
     && value.end
     && _startValue
     && _endValue
-    && isEqualDay(value.start, _startValue)
-    && isEqualDay(value.end, _endValue)
+    && isSameDay(value.start, _startValue)
+    && isSameDay(value.end, _endValue)
   ) {
     return
   }
@@ -364,17 +374,17 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   isEditing.value = true
   if (_endValue && _startValue) {
     const nextValue = isBefore(_endValue, _startValue)
-      ? { start: _endValue.copy(), end: _startValue.copy() }
-      : { start: _startValue.copy(), end: _endValue.copy() }
+      ? { start: _endValue, end: _startValue }
+      : { start: _startValue, end: _endValue }
 
     modelValue.value = { start: nextValue.start, end: nextValue.end }
     isEditing.value = false
-    validModelValue.value = { start: nextValue.start.copy(), end: nextValue.end.copy() }
+    validModelValue.value = { start: nextValue.start, end: nextValue.end }
   }
   else {
     modelValue.value = _startValue
-      ? { start: _startValue.copy(), end: undefined }
-      : { start: _endValue?.copy(), end: undefined }
+      ? { start: _startValue, end: undefined }
+      : { start: _endValue, end: undefined }
   }
 })
 
@@ -382,8 +392,8 @@ const kbd = useKbd()
 useEventListener(parentElement, 'keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
     // Abort start and end selection
-    startValue.value = validModelValue.value.start?.copy()
-    endValue.value = validModelValue.value.end?.copy()
+    startValue.value = validModelValue.value.start
+    endValue.value = validModelValue.value.end
   }
 })
 

@@ -1,8 +1,8 @@
-import type { DateValue } from '@internationalized/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { Temporal } from 'temporal-polyfill'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
@@ -10,10 +10,10 @@ import { handleCalendarInitialFocus } from '@/shared/date'
 import Calendar from './story/_Calendar.vue'
 import CalendarMultiple from './story/_CalendarMultiple.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const edgeCaseCalendarDate = new CalendarDate(2025, 1, 1)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = Temporal.PlainDate.from('1980-01-20')
+const edgeCaseCalendarDate = Temporal.PlainDate.from('2025-01-01')
+const calendarDateTime = Temporal.PlainDateTime.from('1980-01-20T12:30:00')
+const zonedDateTime = Temporal.ZonedDateTime.from('1980-01-20T12:30:00-05:00[America/New_York]')
 
 const narrowWeekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const shortWeekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
@@ -23,17 +23,17 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const kbd = useTestKbd()
 
-function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate | undefined) => void } } = {}) {
   const user = userEvent.setup()
-  const returned = render(Calendar, { props })
+  const returned = render(Calendar, { props } as any)
   const calendar = returned.getByTestId('calendar')
   expect(calendar).toBeVisible()
   return { ...returned, user, calendar }
 }
 
-function setupMulti(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue[]) => void } } = { }) {
+function setupMulti(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate[] | undefined) => void } } = { }) {
   const user = userEvent.setup()
-  const returned = render(CalendarMultiple, { props: { ...props, multiple: true } })
+  const returned = render(CalendarMultiple, { props: { ...props, multiple: true } } as any)
   const calendar = returned.getByTestId('calendar')
   expect(calendar).toBeVisible()
   return { ...returned, user, calendar }
@@ -87,7 +87,7 @@ describe('calendar', async () => {
   })
 
   it('navigates 10 years into the past when setting the `prevPage` function to subtract 10 years', async () => {
-    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, prevPage: (date: DateValue) => date.subtract({ years: 10 }) } })
+    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, prevPage: (date: TemporalDate) => date.subtract({ years: 10 }) } })
 
     const heading = getByTestId('heading')
     const prevBtn = getByTestId('prev-button')
@@ -98,7 +98,7 @@ describe('calendar', async () => {
   })
 
   it('overwrites the `nextPage` function from `CalendarRoot`', async () => {
-    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, nextPage: (date: DateValue) => date.add({ years: 10 }) } })
+    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, nextPage: (date: TemporalDate) => date.add({ years: 10 }) } })
 
     const heading = getByTestId('heading')
     const nextBtn = getByTestId('next-year-button')
@@ -109,7 +109,7 @@ describe('calendar', async () => {
   })
 
   it('overwrites the `prevPage` function from `CalendarRoot`', async () => {
-    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, prevPage: (date: DateValue) => date.subtract({ years: 10 }) } })
+    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, prevPage: (date: TemporalDate) => date.subtract({ years: 10 }) } })
 
     const heading = getByTestId('heading')
     const prevBtn = getByTestId('prev-year-button')
@@ -120,7 +120,7 @@ describe('calendar', async () => {
   })
 
   it('navigates 10 years into the future when setting the `nextPage` function to add 10 years', async () => {
-    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, nextPage: (date: DateValue) => date.add({ years: 10 }) } })
+    const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, nextPage: (date: TemporalDate) => date.add({ years: 10 }) } })
 
     const heading = getByTestId('heading')
     const nextBtn = getByTestId('next-button')
@@ -149,7 +149,7 @@ describe('calendar', async () => {
   })
 
   it('allows dates to be deselected by clicking the selected date', async () => {
-    const { user, calendar, rerender } = setup({ calendarProps: { modelValue: calendarDate }, emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ modelValue: data }) } })
+    const { user, calendar, rerender } = setup({ calendarProps: { modelValue: calendarDate }, emits: { 'onUpdate:modelValue': (data: TemporalDate | undefined) => rerender({ modelValue: data }) } })
 
     const selectedDay = getSelectedDay(calendar)
 
@@ -165,7 +165,7 @@ describe('calendar', async () => {
   it.each([kbd.ENTER, kbd.SPACE])('allows deselection with %s key', async (key) => {
     const { user, calendar, rerender } = setup({
       calendarProps: { modelValue: calendarDate },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ modelValue: data }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate | undefined) => rerender({ modelValue: data }) },
     })
 
     const selectedDay = getSelectedDay(calendar)
@@ -189,7 +189,7 @@ describe('calendar', async () => {
     expect(secondDayInMonth).toHaveTextContent('2')
     await user.click(secondDayInMonth)
 
-    const newDate = zonedDateTime.set({ day: 2 })
+    const newDate = zonedDateTime.with({ day: 2 })
     const selectedDay = getSelectedDay(calendar)
     expect(selectedDay).toHaveTextContent(String(newDate.day))
   })
@@ -204,7 +204,7 @@ describe('calendar', async () => {
     secondDayInMonth.focus()
     await user.keyboard(key)
 
-    const newDate = zonedDateTime.set({ day: 2 })
+    const newDate = zonedDateTime.with({ day: 2 })
     const selectedDay = getSelectedDay(calendar)
     expect(selectedDay).toHaveTextContent(String(newDate.day))
   })
@@ -218,13 +218,13 @@ describe('calendar', async () => {
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('January - February 1980')
 
-    const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
+    const firstMonthDayDateStr = calendarDateTime.with({ day: 12 }).toString()
     const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
     const secondMonthDay = getByTestId('date-1-2-15')
-    const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
+    const secondMonthDayDateStr = calendarDateTime.with({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
 
@@ -258,13 +258,13 @@ describe('calendar', async () => {
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('January - February 1980')
 
-    const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
+    const firstMonthDayDateStr = calendarDateTime.with({ day: 12 }).toString()
     const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
     const secondMonthDay = getByTestId('date-1-2-15')
-    const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
+    const secondMonthDayDateStr = calendarDateTime.with({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
 
@@ -299,13 +299,13 @@ describe('calendar', async () => {
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('January - February 1980')
 
-    const firstMonthDayDateStr = calendarDateTime.set({ day: 12 }).toString()
+    const firstMonthDayDateStr = calendarDateTime.with({ day: 12 }).toString()
     const firstMonthDay = getByTestId('date-0-1-12')
     expect(firstMonthDay).toHaveTextContent('12')
     expect(firstMonthDay).toHaveAttribute('data-value', firstMonthDayDateStr)
 
     const secondMonthDay = getByTestId('date-1-2-15')
-    const secondMonthDayDateStr = calendarDateTime.set({ day: 15, month: 2 }).toString()
+    const secondMonthDayDateStr = calendarDateTime.with({ day: 15, month: 2 }).toString()
     expect(secondMonthDay).toHaveTextContent('15')
     expect(secondMonthDay).toHaveAttribute('data-value', secondMonthDayDateStr)
 
@@ -326,7 +326,7 @@ describe('calendar', async () => {
   })
 
   it('always renders six weeks when `fixedWeeks` is `true`', async () => {
-    const calendarDate = new CalendarDate(2024, 8, 1)
+    const calendarDate = Temporal.PlainDate.from('2024-08-01')
 
     const { getByTestId, calendar, user } = setup({
       calendarProps: {
@@ -353,7 +353,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        minValue: new CalendarDate(1979, 11, 25),
+        minValue: Temporal.PlainDate.from('1979-11-25'),
       },
     })
 
@@ -415,7 +415,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        maxValue: new CalendarDate(1980, 3, 25),
+        maxValue: Temporal.PlainDate.from('1980-03-25'),
       },
     })
 
@@ -439,7 +439,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        maxValue: new CalendarDate(1980, 3, 31),
+        maxValue: Temporal.PlainDate.from('1980-03-31'),
       },
     })
 
@@ -490,7 +490,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        minValue: new CalendarDate(1979, 12, 1),
+        minValue: Temporal.PlainDate.from('1979-12-01'),
       },
     })
 
@@ -558,7 +558,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: calendarDate,
-        isDateUnavailable: (date: DateValue) => {
+        isDateUnavailable: (date: TemporalDate) => {
           return date.day === 3
         },
       },
@@ -576,7 +576,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: calendarDate,
-        isDateDisabled: (date: DateValue) => {
+        isDateDisabled: (date: TemporalDate) => {
           return date.day === 3
         },
       },
@@ -712,7 +712,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         defaultPlaceholder: calendarDate,
-        maxValue: new CalendarDate(1980, 2, 15),
+        maxValue: Temporal.PlainDate.from('1980-02-15'),
       },
     })
 
@@ -733,7 +733,7 @@ describe('calendar', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         defaultPlaceholder: calendarDate,
-        minValue: new CalendarDate(1979, 12, 15),
+        minValue: Temporal.PlainDate.from('1979-12-15'),
       },
     })
 
@@ -757,7 +757,7 @@ describe('numberOfMonths > 1', () => {
       calendarProps: {
         defaultPlaceholder: calendarDate,
         numberOfMonths: 2,
-        maxValue: new CalendarDate(1980, 3, 15),
+        maxValue: Temporal.PlainDate.from('1980-03-15'),
       },
     })
 
@@ -779,7 +779,7 @@ describe('numberOfMonths > 1', () => {
       calendarProps: {
         defaultPlaceholder: calendarDate,
         numberOfMonths: 2,
-        minValue: new CalendarDate(1979, 12, 15),
+        minValue: Temporal.PlainDate.from('1979-12-15'),
       },
     })
 
@@ -799,8 +799,8 @@ describe('numberOfMonths > 1', () => {
 
 describe('calendar - `multiple`', () => {
   it('handles default value when `value` prop is provided - `CalendarDate[]`', async () => {
-    const d1 = new CalendarDate(1980, 1, 2)
-    const d2 = new CalendarDate(1980, 1, 5)
+    const d1 = Temporal.PlainDate.from('1980-01-02')
+    const d2 = Temporal.PlainDate.from('1980-01-05')
 
     const { calendar } = setupMulti({
       calendarProps: { modelValue: [d1, d2] },
@@ -813,8 +813,8 @@ describe('calendar - `multiple`', () => {
   })
 
   it('handles default value when `value` prop is provided - `CalendarDateTime[]`', async () => {
-    const d1 = new CalendarDateTime(1980, 1, 2)
-    const d2 = new CalendarDateTime(1980, 1, 5)
+    const d1 = Temporal.PlainDateTime.from('1980-01-02T00:00:00')
+    const d2 = Temporal.PlainDateTime.from('1980-01-05T00:00:00')
 
     const { calendar } = setupMulti({
       calendarProps: { modelValue: [d1, d2] },
@@ -827,8 +827,8 @@ describe('calendar - `multiple`', () => {
   })
 
   it('handles default value when `value` prop is provided - `ZonedDateTime[]`', async () => {
-    const d1 = toZoned(new CalendarDateTime(1980, 1, 2), 'America/New_York')
-    const d2 = toZoned(new CalendarDateTime(1980, 1, 5), 'America/New_York')
+    const d1 = Temporal.ZonedDateTime.from('1980-01-02T00:00:00-05:00[America/New_York]')
+    const d2 = Temporal.ZonedDateTime.from('1980-01-05T00:00:00-05:00[America/New_York]')
 
     const { calendar } = setupMulti({
       calendarProps: { modelValue: [d1, d2] },
@@ -840,27 +840,27 @@ describe('calendar - `multiple`', () => {
     expect(selectedDays[1]).toHaveTextContent(String(d2.day))
   })
 
-  it('sets placeholder to last value in `value` prop', async () => {
-    const d1 = new CalendarDate(1980, 1, 2)
-    const d2 = new CalendarDate(1980, 5, 5)
+  it('sets placeholder to first value in `value` prop', async () => {
+    const d1 = Temporal.PlainDate.from('1980-01-02')
+    const d2 = Temporal.PlainDate.from('1980-05-05')
 
     const { calendar, rerender, getByTestId } = setupMulti({
       calendarProps: { modelValue: [d1, d2] } as CalendarRootProps & { multiple: true },
-      emits: { 'onUpdate:modelValue': (data: DateValue[]) => rerender({ modelValue: data }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate[] | undefined) => rerender({ modelValue: data }) },
     })
 
     const heading = getByTestId('heading')
     const selectedDays = getSelectedDays(calendar)
     expect(selectedDays.length).toBe(1)
-    expect(heading).toHaveTextContent('May 1980')
+    expect(heading).toHaveTextContent('January 1980')
   })
 
   it('allows deselection', async () => {
-    const d1 = new CalendarDate(1980, 1, 2)
-    const d2 = new CalendarDate(1980, 1, 5)
+    const d1 = Temporal.PlainDate.from('1980-01-02')
+    const d2 = Temporal.PlainDate.from('1980-01-05')
     const { calendar, user, rerender } = setupMulti({
       calendarProps: { modelValue: [d1, d2] } as CalendarRootProps & { multiple: true },
-      emits: { 'onUpdate:modelValue': (data: DateValue[]) => rerender({ modelValue: data }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate[] | undefined) => rerender({ modelValue: data }) },
     })
 
     const selectedDays = getSelectedDays(calendar)
@@ -871,7 +871,7 @@ describe('calendar - `multiple`', () => {
   })
 
   it('prevents deselection when only one date is selected and `preventDeselect` is `true`', async () => {
-    const d1 = new CalendarDate(1980, 1, 2)
+    const d1 = Temporal.PlainDate.from('1980-01-02')
 
     const { calendar, user } = setupMulti({
       calendarProps: {
@@ -885,6 +885,32 @@ describe('calendar - `multiple`', () => {
     expect(selectedDays2.length).toBe(1)
     await user.click(selectedDays2[0])
     expect(getSelectedDays(calendar).length).toBe(1)
+  })
+
+  it('normalizes a single TemporalDate modelValue into an array when multiple selection is enabled', async () => {
+    const d1 = Temporal.PlainDate.from('1980-01-02')
+    const d2 = Temporal.PlainDate.from('1980-01-05')
+
+    const { calendar, user, rerender, getByTestId } = setupMulti({
+      calendarProps: { modelValue: d1 } as CalendarRootProps & { multiple: true },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate[] | undefined) => rerender({ modelValue: data }) },
+    })
+
+    const selectedDays = getSelectedDays(calendar)
+    expect(selectedDays.length).toBe(1)
+    expect(selectedDays[0]).toHaveTextContent(String(d1.day))
+
+    const differentDay = getByTestId('date-1-5')
+    await user.click(differentDay)
+    let newSelectedDays = getSelectedDays(calendar)
+    expect(newSelectedDays.length).toBe(2)
+    expect(newSelectedDays[0]).toHaveTextContent(String(d1.day))
+    expect(newSelectedDays[1]).toHaveTextContent(String(d2.day))
+
+    await user.click(selectedDays[0])
+    newSelectedDays = getSelectedDays(calendar)
+    expect(newSelectedDays.length).toBe(1)
+    expect(newSelectedDays[0]).toHaveTextContent(String(d2.day))
   })
 })
 
@@ -989,7 +1015,7 @@ describe('calendar - tabindex states', () => {
     const { getByTestId } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        isDateDisabled: (date: DateValue) => date.day === 15,
+        isDateDisabled: (date: TemporalDate) => date.day === 15,
       },
     })
 
@@ -1015,8 +1041,8 @@ describe('calendar - tabindex states', () => {
     const { getByTestId } = setup({
       calendarProps: {
         modelValue: calendarDate,
-        minValue: new CalendarDate(1980, 1, 15),
-        maxValue: new CalendarDate(1980, 1, 19),
+        minValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 15 }),
+        maxValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 19 }),
       },
     })
 
@@ -1028,7 +1054,7 @@ describe('calendar - tabindex states', () => {
     const { getByTestId } = setup({
       calendarProps: {
         placeholder: calendarDate,
-        maxValue: new CalendarDate(1980, 1, 19),
+        maxValue: Temporal.PlainDate.from({ year: 1980, month: 1, day: 19 }),
       },
     })
 

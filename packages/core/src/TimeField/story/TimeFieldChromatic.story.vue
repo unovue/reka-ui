@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Time } from '@internationalized/date'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 import { TimeFieldInput, TimeFieldRoot } from '..'
 
-const modelValue = ref<Time>()
-const defaultValue = new Time(10, 0, 0)
-const minValue = new Time(9)
-const maxValue = new Time(18)
+const modelValue = ref<Temporal.PlainTime>()
+const defaultValue = Temporal.PlainTime.from({ hour: 10, minute: 0, second: 0 })
+const minValue = Temporal.PlainTime.from({ hour: 9 })
+const maxValue = Temporal.PlainTime.from({ hour: 18 })
 </script>
 
 <template>

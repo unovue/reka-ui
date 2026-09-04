@@ -1,19 +1,21 @@
-import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Formatter } from '@/shared'
 import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
-import { isZonedDateTime, toDate } from '@/date'
+import type { TemporalDate, TemporalDateTime } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle, TIME_SEGMENT_PARTS } from '@/shared/date'
+import { isPlainTime, isZonedDateTime } from '@/temporal/comparators'
+import { toNativeDate } from '@/temporal/conversion-policy'
 
 const calendarDateTimeGranularities = ['hour', 'minute', 'second']
 
 type SyncDateSegmentValuesProps = {
-  value: DateValue
+  value: TemporalDate
   formatter: Formatter
 }
 
 type SyncTimeSegmentValuesProps = {
-  value: DateValue
+  value: TemporalDateTime
   formatter: Formatter
 }
 
@@ -21,7 +23,7 @@ export function syncTimeSegmentValues(props: SyncTimeSegmentValuesProps) {
   return Object.fromEntries(TIME_SEGMENT_PARTS.map((part) => {
     if (part === 'dayPeriod')
       return [part, props.formatter.dayPeriod(toDate(props.value))]
-    return [part, props.value[part as keyof DateValue]]
+    return [part, getTimeFieldValue(props.value, part)]
   })) as SegmentValueObj
 }
 
@@ -81,7 +83,7 @@ export function initializeSegmentValues(granularity: Granularity): SegmentValueO
 
 type SharedContentProps = {
   granularity: Granularity
-  dateRef: DateValue
+  dateRef: TemporalDate
   formatter: Formatter
   hideTimeZone: boolean
   hourCycle: HourCycle
@@ -104,8 +106,8 @@ function createContentObj(props: CreateContentObjProps) {
       const value = segmentValues[part]
       if (value !== null) {
         if (part === 'day') {
-          return formatter.part(props.dateRef.set({
-            [part as keyof DateFields]: value,
+          return formatter.part(props.dateRef.with({
+            [part as keyof TemporalDate]: value,
             /**
              * Edge case for the day field:
              *
@@ -118,7 +120,7 @@ function createContentObj(props: CreateContentObjProps) {
             month: segmentValues.month ?? 1,
           }), part, { hourCycle: normalizeHourCycle(props.hourCycle) })
         }
-        return formatter.part(props.dateRef.set({ [part]: value }), part, {
+        return formatter.part(props.dateRef.with({ [part]: value }), part, {
           hourCycle: normalizeHourCycle(props.hourCycle),
         })
       }
@@ -131,14 +133,14 @@ function createContentObj(props: CreateContentObjProps) {
         const value = segmentValues[part]
         if (value !== null) {
           if (part === 'day') {
-            return formatter.part(props.dateRef.set({
+            return formatter.part(props.dateRef.with({
               [part]: value,
               // Same logic as above for the day field
               month: segmentValues.month ?? 1,
             }), part)
           }
 
-          return formatter.part(props.dateRef.set({ [part]: value }), part)
+          return formatter.part(props.dateRef.with({ [part]: value }), part)
         }
 
         else {
@@ -169,6 +171,28 @@ function createContentObj(props: CreateContentObjProps) {
   }, {} as SegmentContentObj)
 
   return content
+}
+
+function toDate(dateValue: TemporalDateTime): Date {
+  // Route through the canonical conversion policy.
+  // For PlainTime, anchor to today's date — the anchor only serves dayPeriod
+  // formatting and doesn't affect the public time value.
+  if (isPlainTime(dateValue)) {
+    const today = Temporal.Now.plainDateISO()
+    return toNativeDate(dateValue, { plainTimeAnchor: today })
+  }
+  return toNativeDate(dateValue)
+}
+
+function getTimeFieldValue(dateValue: TemporalDateTime, part: TimeSegmentPart): number | null {
+  if (part === 'hour' && 'hour' in dateValue)
+    return dateValue.hour
+  if (part === 'minute' && 'minute' in dateValue)
+    return dateValue.minute
+  if (part === 'second' && 'second' in dateValue)
+    return dateValue.second
+
+  return null
 }
 
 function createContentArr(props: CreateContentArrProps) {

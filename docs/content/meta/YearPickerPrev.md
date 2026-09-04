@@ -18,7 +18,7 @@
   {
     'name': 'prevPage',
     'description': '<p>The function to be used for the prev page. Overwrites the <code>prevPage</code> function set on the <code>YearPickerRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: TemporalDate) =&gt; TemporalDate)',
     'required': false
   }
 ]" />
@@ -40,7 +40,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the YearPickerRoot. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the YearPickerRoot. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
 
 **Slots**
 

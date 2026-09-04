@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { YearRangePickerCell, YearRangePickerCellTrigger, YearRangePickerGrid, YearRangePickerGridBody, YearRangePickerGridRow, YearRangePickerHeader, YearRangePickerHeading, YearRangePickerNext, YearRangePickerPrev, YearRangePickerRoot } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 import './styles.css'
 
 const defaultValue = {
-  start: new CalendarDate(2020, 1, 1),
-  end: new CalendarDate(2024, 1, 1),
+  start: Temporal.PlainDate.from({ year: 2020, month: 1, day: 1 }),
+  end: Temporal.PlainDate.from({ year: 2024, month: 1, day: 1 }),
 }
 </script>
 

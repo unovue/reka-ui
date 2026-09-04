@@ -1,12 +1,10 @@
 export {
-  getDefaultDate,
-  getDefaultTime,
   type Granularity,
   type TimeGranularity,
   type TimeValue,
 } from './comparators'
-export * from './parser'
 
+export * from './parser'
 export {
   ALL_EXCEPT_LITERAL_PARTS,
   ALL_SEGMENT_PARTS,
@@ -18,8 +16,24 @@ export {
   NON_EDITABLE_SEGMENT_PARTS,
   TIME_SEGMENT_PARTS,
 } from './parts'
+
 export { getPlaceholder, type SupportedLocale } from './placeholders'
+export {
+  dayAdapter,
+  monthAdapter,
+  yearAdapter,
+} from './range-selection-adapters'
+export {
+  type EndpointSelectability,
+  type GranularityAdapter,
+  type InteriorBlocking,
+  type RangeSelectionState,
+  type RangeSelectionStateInput,
+  type SelectedFocusableUnit,
+  useRangeSelectionState,
+} from './range-selection-state'
 export * from './segment'
+export { toPublicTimeValue, toShellDateTime } from './timeValue'
 
 export type {
   AnyExceptLiteral,
@@ -28,16 +42,40 @@ export type {
   DateSegmentObj,
   DateSegmentPart,
   DateStep,
-  DateValue,
   DayOfWeek,
   DayPeriod,
   HourCycle,
   SegmentContentObj,
   SegmentPart,
   SegmentValueObj,
+  TemporalDate,
   TimeRange,
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
 export { useDateField } from './useDateField'
+export {
+  type DisplaySegment,
+  useDisplaySegmentContents,
+  type UseDisplaySegmentContentsProps,
+} from './useDisplaySegmentContents'
+export {
+  type RangeFieldFocusReturn,
+  useRangeFieldFocus,
+  type UseRangeFieldFocusProps,
+} from './useRangeFieldFocus'
+export {
+  useRangeFieldInvalidity,
+  type UseRangeFieldInvalidityProps,
+} from './useRangeFieldInvalidity'
+export {
+  useRangeFieldModel,
+  type UseRangeFieldModelProps,
+} from './useRangeFieldModel'
+export {
+  type SegmentFieldShellReturn,
+  useSegmentFieldShell,
+  type UseSegmentFieldShellProps,
+} from './useSegmentFieldShell'
 export * from './utils'
+export { getDefaultDate, getDefaultTime } from '@/temporal/conversion-policy'

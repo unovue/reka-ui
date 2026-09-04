@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { usePointerSwipe } from '@vueuse/core'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 import { onMounted, ref, useTemplateRef } from 'vue'
 
 const calendarRef = useTemplateRef('calendarRef')
-const date = ref(new CalendarDate(2023, 1, 1))
+const date = ref(Temporal.PlainDate.from({ year: 2023, month: 1, day: 1 }))
 
 function nextPage() {
-  date.value = date.value.add({ months: 1 }).copy()
+  date.value = date.value.add({ months: 1 })
 }
 
 function prevPage() {
-  date.value = date.value.subtract({ months: 1 }).copy()
+  date.value = date.value.subtract({ months: 1 })
 }
 
 onMounted(() => {

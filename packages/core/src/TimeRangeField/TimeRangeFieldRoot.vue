@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Matcher } from '@/date'
 import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
@@ -8,35 +7,23 @@ import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { TimeRange } from '@/shared/date/types'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, Time, toCalendarDateTime, today } from '@internationalized/date'
-import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
-import {
-  createContent,
-  getDefaultTime,
-  getTimeFieldSegmentElements,
-  initializeTimeSegmentValues,
-  isSegmentNavigationKey,
-  normalizeDateStep,
-  normalizeHourCycle,
-
-  syncSegmentValues,
-
-  syncTimeSegmentValues,
-
-} from '@/shared/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
+import { createContext, useDirection, useLocale } from '@/shared'
+import { getDefaultDate, getDefaultTime, toPublicTimeValue, toShellDateTime, useDisplaySegmentContents, useRangeFieldFocus, useRangeFieldInvalidity, useRangeFieldModel, useSegmentFieldShell } from '@/shared/date'
 
 type TimeRangeFieldRootContext = {
   locale: Ref<string>
-  startValue: Ref<DateValue | undefined>
-  endValue: Ref<DateValue | undefined>
-  placeholder: Ref<DateValue>
+  startValue: Ref<Temporal.PlainDateTime | undefined>
+  endValue: Ref<Temporal.PlainDateTime | undefined>
+  placeholder: Ref<Temporal.PlainDateTime>
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   formatter: Formatter
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
   segmentContents: Ref<{ start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }>
   elements: Ref<Set<HTMLElement>>
@@ -57,6 +44,8 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
+  /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to minute. The field will render segments for each part of the time up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
@@ -88,19 +77,11 @@ export type TimeRangeFieldRootEmits = {
 
 export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
   = createContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
-
-function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
-  if (value && 'day' in value) {
-    return value
-  }
-
-  return toCalendarDateTime(date, value)
-}
 </script>
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 
@@ -114,6 +95,7 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isTimeUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
 defineSlots<{
@@ -127,295 +109,159 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale, isTimeUnavailable: propsIsTimeUnavailable } = toRefs(props)
+const { disabled, readonly, granularity, defaultValue, minValue, maxValue, stepSnapping, isTimeUnavailable: propsIsTimeUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value, {
-  hourCycle: normalizeHourCycle(props.hourCycle),
-})
-const { primitiveElement, currentElement: parentElement }
-  = usePrimitiveElement()
-const segmentElements = ref<Set<HTMLElement>>(new Set())
-
-const step = computed(() => normalizeDateStep(props))
-
-const convertedMinValue = computed(() => minValue.value ? convertValue(minValue.value) : undefined)
-const convertedMaxValue = computed(() => maxValue.value ? convertValue(maxValue.value) : undefined)
-
-onMounted(() => {
-  getTimeFieldSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
-})
+const { primitiveElement, currentElement: parentElement } = usePrimitiveElement()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value ?? { start: undefined, end: undefined },
   passive: (props.modelValue === undefined) as false,
 }) as Ref<TimeRange>
 
-const isStartInvalid = computed(() => {
-  if (!modelValue.value?.start)
-    return false
-
-  const convertedStartValue = convertValue(modelValue.value.start)
-
-  if (propsIsTimeUnavailable.value?.(convertedStartValue))
-    return true
-
-  if (convertedMinValue.value && isBefore(convertedStartValue, convertedMinValue.value))
-    return true
-
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedStartValue))
-    return true
-
-  return false
-})
-
-const isEndInvalid = computed(() => {
-  if (!modelValue.value?.end)
-    return false
-
-  const convertedEndValue = convertValue(modelValue.value.end)
-
-  if (propsIsTimeUnavailable.value?.(convertedEndValue))
-    return true
-
-  if (convertedMinValue.value && isBefore(convertedEndValue, convertedMinValue.value))
-    return true
-
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedEndValue))
-    return true
-
-  return false
-})
-
-const isInvalid = computed(() => {
-  if (isStartInvalid.value || isEndInvalid.value)
-    return true
-
-  if (!modelValue.value?.start || !modelValue.value?.end)
-    return false
-
-  const convertedModelValue = {
-    start: convertValue(modelValue.value.start),
-    end: convertValue(modelValue.value.end),
-  }
-
-  if (!isBeforeOrSame(convertedModelValue.start, convertedModelValue.end))
-    return true
-
-  if (propsIsTimeUnavailable.value !== undefined) {
-    const allValid = areAllDaysBetweenValid(
-      convertedModelValue.start,
-      convertedModelValue.end,
-      propsIsTimeUnavailable.value,
-      undefined,
-    )
-    if (!allValid)
-      return true
-  }
-  return false
-})
-
-const startValue = ref(modelValue.value?.start?.copy()) as Ref<TimeValue | undefined>
-const endValue = ref(modelValue.value?.end?.copy()) as Ref<TimeValue | undefined>
-
-watch([startValue, endValue], ([_startValue, _endValue]) => {
-  modelValue.value = { start: _startValue?.copy(), end: _endValue?.copy() }
-})
-
-const convertedStartValue = computed({
-  get() {
-    if (isNullish(startValue.value))
-      return startValue.value
-    return convertValue(startValue.value)
-  },
-  set(newValue) {
-    if (newValue) {
-      startValue.value = startValue.value && 'day' in startValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, startValue.value?.millisecond)
-    }
-    else {
-      startValue.value = newValue
-    }
-    return newValue
-  },
-})
-
-const convertedEndValue = computed({
-  get() {
-    if (isNullish(endValue.value))
-      return endValue.value
-    return convertValue(endValue.value)
-  },
-  set(newValue) {
-    if (newValue) {
-      endValue.value = endValue.value && 'day' in endValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, endValue.value?.millisecond)
-    }
-    else {
-      endValue.value = newValue
-    }
-    return newValue
-  },
-})
-
-const convertedModelValue = computed(() => ({ start: convertedStartValue.value, end: convertedEndValue.value }))
-
-const defaultDate = getDefaultTime({
-  defaultPlaceholder: props.placeholder,
-  defaultValue: modelValue.value?.start,
-})
-
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? getDefaultTime({
+    defaultPlaceholder: props.placeholder,
+    defaultValue: modelValue.value?.start,
+  }),
   passive: (props.placeholder === undefined) as false,
 }) as Ref<TimeValue>
 
-const convertedPlaceholder = computed({
+const startValue = ref(modelValue.value?.start) as Ref<TimeValue | undefined>
+const endValue = ref(modelValue.value?.end) as Ref<TimeValue | undefined>
+
+// Time ranges compare at time-of-day via PlainDateTime.
+useRangeFieldModel({
+  modelValue,
+  startValue,
+  endValue,
+  areEqual: (a, b) =>
+    Temporal.PlainDateTime.compare(toShellDateTime(a)!, toShellDateTime(b)!) === 0,
+})
+
+const convertedStartValue = computed<Temporal.PlainDateTime | undefined>({
   get() {
-    return convertValue(placeholder.value)
+    return toShellDateTime(startValue.value)
   },
   set(newValue) {
-    if (newValue)
-      placeholder.value = 'day' in placeholder.value ? newValue.copy() : new Time(newValue.hour, newValue.minute, newValue.second, placeholder.value?.millisecond)
-    return newValue
+    startValue.value = newValue ? toPublicTimeValue(newValue, startValue.value ?? placeholder.value) : undefined
   },
 })
 
-const inferredGranularity = computed(() => {
-  if (granularity.value)
-    return granularity.value
-
-  return 'minute'
+const convertedEndValue = computed<Temporal.PlainDateTime | undefined>({
+  get() {
+    return toShellDateTime(endValue.value)
+  },
+  set(newValue) {
+    endValue.value = newValue ? toPublicTimeValue(newValue, endValue.value ?? placeholder.value) : undefined
+  },
 })
 
-const initialSegments = initializeTimeSegmentValues(inferredGranularity.value)
+const convertedPlaceholder = computed<Temporal.PlainDateTime>({
+  get() {
+    return toShellDateTime(placeholder.value) ?? getDefaultDate({ granularity: 'hour' }) as Temporal.PlainDateTime
+  },
+  set(newValue) {
+    placeholder.value = toPublicTimeValue(newValue, placeholder.value)
+  },
+})
 
-const startSegmentValues = ref<SegmentValueObj>(convertedStartValue.value ? { ...syncTimeSegmentValues({ value: convertedStartValue.value, formatter }) } : { ...initialSegments })
-const endSegmentValues = ref<SegmentValueObj>(convertedEndValue.value ? { ...syncTimeSegmentValues({ value: convertedEndValue.value, formatter }) } : { ...initialSegments })
+const convertedMinValue = computed(() =>
+  minValue.value ? toShellDateTime(minValue.value) : undefined)
+const convertedMaxValue = computed(() =>
+  maxValue.value ? toShellDateTime(maxValue.value) : undefined)
 
-const startSegmentContent = computed(() => createContent({
-  granularity: inferredGranularity.value,
-  dateRef: convertedPlaceholder.value,
-  formatter,
-  hideTimeZone: props.hideTimeZone,
-  hourCycle: props.hourCycle,
-  segmentValues: startSegmentValues.value,
+// ZonedDateTime needs a ZonedDateTime dateRef so the formatter renders the right zone.
+const shellDateRef = computed<TemporalDate>(() => {
+  const original = modelValue.value?.start ?? placeholder.value
+  if (original && 'timeZoneId' in original)
+    return convertedPlaceholder.value.toZonedDateTime(original.timeZoneId)
+  return convertedPlaceholder.value
+})
+
+// End shell skips placeholder-update: public placeholder tracks the start.
+const startShell = useSegmentFieldShell({
+  segmentAttribute: 'data-reka-time-field-segment',
+  parentElement,
   locale,
-  isTimeValue: true,
-}))
-
-const endSegmentContent = computed(() => createContent({
-  granularity: inferredGranularity.value,
-  dateRef: convertedPlaceholder.value,
-  formatter,
-  hideTimeZone: props.hideTimeZone,
+  dir,
+  modelValue: convertedStartValue,
+  placeholder: convertedPlaceholder,
+  granularity,
   hourCycle: props.hourCycle,
-  segmentValues: endSegmentValues.value,
-  locale,
+  hideTimeZone: props.hideTimeZone,
+  step: props.step,
+  stepSnapping,
   isTimeValue: true,
+  dateRef: shellDateRef,
+  minValue: convertedMinValue.value,
+  maxValue: convertedMaxValue.value,
+  isDateUnavailable: propsIsTimeUnavailable.value,
+  disabled,
+  readonly,
+})
+
+const endShell = useSegmentFieldShell({
+  segmentAttribute: 'data-reka-time-field-segment',
+  parentElement,
+  locale,
+  dir,
+  modelValue: convertedEndValue,
+  placeholder: convertedPlaceholder,
+  granularity,
+  hourCycle: props.hourCycle,
+  hideTimeZone: props.hideTimeZone,
+  step: props.step,
+  stepSnapping,
+  isTimeValue: true,
+  dateRef: shellDateRef,
+  minValue: convertedMinValue.value,
+  maxValue: convertedMaxValue.value,
+  isDateUnavailable: propsIsTimeUnavailable.value,
+  disabled,
+  readonly,
+  disablePlaceholderUpdate: true,
+})
+
+const segmentElements = startShell.segmentElements
+
+const renderedStartContents = useDisplaySegmentContents({
+  segmentContents: startShell.segmentContents,
+  segmentValues: startShell.segmentValues,
+  hourCycle: props.hourCycle,
+})
+const renderedEndContents = useDisplaySegmentContents({
+  segmentContents: endShell.segmentContents,
+  segmentValues: endShell.segmentValues,
+  hourCycle: props.hourCycle,
+})
+
+const isInvalid = useRangeFieldInvalidity({
+  startInvalidity: startShell.isInvalid,
+  endInvalidity: endShell.isInvalid,
+  modelValue,
+  isOrderValid: (a, b) => Temporal.PlainDateTime.compare(toShellDateTime(a)!, toShellDateTime(b)!) <= 0,
+  normalize: v => toShellDateTime(v)!,
+  isUnavailable: propsIsTimeUnavailable.value,
+})
+
+const { setFocusedElement, focusNext, handleKeydown } = useRangeFieldFocus({
+  segmentElements,
+  segmentAttribute: 'data-reka-time-field-segment',
+  rangeSegmentTypeAttribute: 'data-reka-time-range-field-segment-type',
+  dir,
+})
+
+const editableSegmentContents = computed(() => ({
+  start: renderedStartContents.value.filter(({ part }) => part !== 'literal'),
+  end: renderedEndContents.value.filter(({ part }) => part !== 'literal'),
 }))
 
-const segmentContents = computed(() => ({
-  start: startSegmentContent.value.arr,
-  end: endSegmentContent.value.arr,
+const slotSegments = computed(() => ({
+  start: renderedStartContents.value,
+  end: renderedEndContents.value,
 }))
-
-const editableSegmentContents = computed(() => ({ start: segmentContents.value.start.filter(({ part }) => part !== 'literal'), end: segmentContents.value.end.filter(({ part }) => part !== 'literal') }))
-
-watch(convertedModelValue, (_modelValue) => {
-  const isStartChanged = _modelValue?.start && convertedStartValue.value
-    ? _modelValue.start.compare(convertedStartValue.value) !== 0
-    : _modelValue?.start !== convertedStartValue.value
-  if (isStartChanged) {
-    convertedStartValue.value = _modelValue?.start?.copy()
-  }
-
-  const isEndChanged = _modelValue?.end && convertedEndValue.value
-    ? _modelValue.end.compare(convertedEndValue.value) !== 0
-    : _modelValue?.end !== convertedEndValue.value
-  if (isEndChanged) {
-    convertedEndValue.value = _modelValue?.end?.copy()
-  }
-})
-
-watch([convertedStartValue, locale], ([_startValue]) => {
-  if (_startValue !== undefined) {
-    startSegmentValues.value = { ...syncSegmentValues({ value: _startValue, formatter }) }
-  }
-  // If segment has null value, means that user modified it, thus do not reset the segmentValues
-  else if (Object.values(startSegmentValues.value).every(value => value !== null) && _startValue === undefined) {
-    startSegmentValues.value = { ...initialSegments }
-  }
-})
-
-watch(locale, (value) => {
-  if (formatter.getLocale() !== value) {
-    formatter.setLocale(value)
-    // Locale changed, so we need to clear the segment elements and re-get them (different order)
-    // Get the focusable elements again on the next tick
-    nextTick(() => {
-      segmentElements.value.clear()
-      getTimeFieldSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
-    })
-  }
-})
-
-watch(convertedModelValue, (_modelValue) => {
-  if (_modelValue && _modelValue.start !== undefined && placeholder.value.compare(_modelValue.start) !== 0)
-    placeholder.value = _modelValue.start.copy()
-})
-
-watch([convertedEndValue, locale], ([_endValue]) => {
-  if (_endValue !== undefined) {
-    endSegmentValues.value = { ...syncSegmentValues({ value: _endValue, formatter }) }
-  }
-  // If segment has null value, means that user modified it, thus do not reset the segmentValues
-  else if (Object.values(endSegmentValues.value).every(value => value !== null) && _endValue === undefined) {
-    endSegmentValues.value = { ...initialSegments }
-  }
-})
-
-const currentFocusedElement = ref<HTMLElement | null>(null)
-
-const currentSegmentIndex = computed(() => Array.from(segmentElements.value).findIndex(el =>
-  el.getAttribute('data-reka-time-field-segment') === currentFocusedElement.value?.getAttribute('data-reka-time-field-segment')
-  && el.getAttribute('data-reka-time-range-field-segment-type') === currentFocusedElement.value?.getAttribute('data-reka-time-range-field-segment-type')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
-})
-
-const kbd = useKbd()
-
-function handleKeydown(e: KeyboardEvent) {
-  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
-  if (e.isComposing)
-    return
-  if (!isSegmentNavigationKey(e.key))
-    return
-  if (e.key === kbd.ARROW_LEFT)
-    prevFocusableSegment.value?.focus()
-  if (e.key === kbd.ARROW_RIGHT)
-    nextFocusableSegment.value?.focus()
-}
-
-function setFocusedElement(el: HTMLElement) {
-  currentFocusedElement.value = el
-}
 
 provideTimeRangeFieldRootContext({
   locale,
@@ -423,21 +269,17 @@ provideTimeRangeFieldRootContext({
   endValue: convertedEndValue,
   placeholder: convertedPlaceholder,
   disabled,
-  formatter,
-  hourCycle: props.hourCycle,
-  step,
+  formatter: startShell.formatter,
+  hourCycle: startShell.hourCycle,
+  step: startShell.step,
+  stepSnapping: startShell.stepSnapping,
   readonly,
+  segmentValues: { start: startShell.segmentValues, end: endShell.segmentValues },
   isInvalid,
-  segmentValues: { start: startSegmentValues, end: endSegmentValues },
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    // Auto-advance follows the segments' DOM order (the locale's format
-    // order) regardless of writing direction; only arrow-key navigation is
-    // direction-aware via nextFocusableSegment/prevFocusableSegment.
-    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
@@ -460,7 +302,7 @@ defineExpose({
   >
     <slot
       :model-value="modelValue"
-      :segments="segmentContents"
+      :segments="slotSegments"
       :is-invalid="isInvalid"
     />
 

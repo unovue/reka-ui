@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { TemporalDate } from 'reka-ui'
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import {
   CalendarCell,
   CalendarCellTrigger,
@@ -36,13 +35,14 @@ import {
   YearPickerPrev,
   YearPickerRoot,
 } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick, ref, watch } from 'vue'
 
 type View = 'day' | 'month' | 'year'
 
 const view = ref<View>('day')
-const selectedDate = ref<DateValue>(new CalendarDate(2024, 10, 3))
-const placeholder = ref<DateValue>(new CalendarDate(2024, 10, 1))
+const selectedDate = ref<TemporalDate>(Temporal.PlainDate.from({ year: 2024, month: 10, day: 3 }))
+const placeholder = ref<TemporalDate>(Temporal.PlainDate.from({ year: 2024, month: 10, day: 1 }))
 const containerRef = ref<HTMLElement | null>(null)
 
 function openMonthView() {
@@ -53,12 +53,12 @@ function openYearView() {
   view.value = 'year'
 }
 
-function onMonthSelect(month: DateValue) {
+function onMonthSelect(month: TemporalDate) {
   placeholder.value = month
   view.value = 'day'
 }
 
-function onYearSelect(year: DateValue) {
+function onYearSelect(year: TemporalDate) {
   placeholder.value = year
   view.value = 'month'
 }

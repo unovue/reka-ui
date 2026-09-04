@@ -1,5 +1,6 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { toPlainDate } from '@/temporal/comparators'
 import { DateFieldRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 </script>
@@ -30,12 +31,12 @@ const rootContext = injectDatePickerRootContext()
       dir: rootContext.dir.value,
       step: rootContext.step.value,
     }"
-    @update:model-value="(date: DateValue | undefined) => {
-      if (date && rootContext.modelValue.value && date.compare(rootContext.modelValue.value) === 0) return
+    @update:model-value="(date: TemporalDate | undefined) => {
+      if (date && rootContext.modelValue.value && toPlainDate(date).equals(toPlainDate(rootContext.modelValue.value))) return
       rootContext.onDateChange(date)
     }"
-    @update:placeholder="(date: DateValue) => {
-      if (date.compare(rootContext.placeholder.value) === 0) return
+    @update:placeholder="(date: TemporalDate) => {
+      if (toPlainDate(date).equals(toPlainDate(rootContext.placeholder.value))) return
       rootContext.onPlaceholderChange(date)
     }"
   >

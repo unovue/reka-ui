@@ -26,7 +26,7 @@
   {
     'name': 'defaultPlaceholder',
     'description': '<p>The default placeholder date</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -119,13 +119,13 @@
   {
     'name': 'maxValue',
     'description': '<p>The maximum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
     'name': 'minValue',
     'description': '<p>The minimum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -170,7 +170,7 @@
   {
     'name': 'placeholder',
     'description': '<p>The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -228,12 +228,12 @@
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   },
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   }
 ]" />
 
@@ -260,7 +260,7 @@
 | `allowNonContiguousRanges` | When combined with isDateUnavailable, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. | `boolean` | No | `false` |
 | `closeOnSelect` | Whether or not to close the popover on range select | `boolean` | No | `false` |
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
-| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `TemporalDate` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
 | `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
@@ -275,15 +275,15 @@
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maximumDays` | The maximum number of days that can be selected in a range | `number` | No | - |
-| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `maxValue` | The maximum date that can be selected | `TemporalDate` | No | - |
+| `minValue` | The minimum date that can be selected | `TemporalDate` | No | - |
 | `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `numberOfMonths` | The number of months to display at once | `number` | No | `1` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
 | `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
-| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `TemporalDate` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
@@ -297,8 +297,8 @@
 | --- | --- | --- |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
 | `update:open` | Event handler called when the open state of the submenu changes. | `[value: boolean]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TemporalDate]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: TemporalDate]` |
 
 **Slots**
 

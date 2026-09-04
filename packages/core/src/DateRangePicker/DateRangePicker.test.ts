@@ -1,32 +1,32 @@
-import type { DateValue } from '@internationalized/date'
-
 import type { DateRangePickerRootProps } from './DateRangePickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+
+import type { DateRange } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import DateRangePicker from './story/_DateRangePicker.vue'
 
 const calendarDate = {
-  start: new CalendarDate(2022, 1, 1),
-  end: new CalendarDate(2022, 3, 1),
+  start: Temporal.PlainDate.from({ year: 2022, month: 1, day: 1 }),
+  end: Temporal.PlainDate.from({ year: 2022, month: 3, day: 1 }),
 }
 
 const calendarDateTime = {
-  start: new CalendarDateTime(2022, 1, 1, 12, 30),
-  end: new CalendarDateTime(2022, 3, 1, 12, 30),
+  start: Temporal.PlainDateTime.from({ year: 2022, month: 1, day: 1, hour: 12, minute: 30 }),
+  end: Temporal.PlainDateTime.from({ year: 2022, month: 3, day: 1, hour: 12, minute: 30 }),
 }
 const zonedDateTime = {
-  start: toZoned(calendarDateTime.start, 'America/New_York'),
-  end: toZoned(calendarDateTime.end, 'America/New_York'),
+  start: calendarDateTime.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTime.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
 
-function setup(props: { dateFieldProps?: DateRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { dateFieldProps?: DateRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(DateRangePicker, { props })
   const start = {
@@ -256,14 +256,14 @@ describe('dateRangePicker', async () => {
           <ConfigProvider locale="de">
             <DateRangePicker :dateFieldProps="{
               modelValue: {
-                start: new CalendarDate(2024, 1, 15),
-                end: new CalendarDate(2024, 1, 20)
+                start: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }),
+                end: Temporal.PlainDate.from({ year: 2024, month: 1, day: 20 })
               }
             }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 
@@ -283,15 +283,15 @@ describe('dateRangePicker', async () => {
           <ConfigProvider locale="de">
             <DateRangePicker :dateFieldProps="{
               modelValue: {
-                start: new CalendarDate(2024, 1, 15),
-                end: new CalendarDate(2024, 1, 20)
+                start: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }),
+                end: Temporal.PlainDate.from({ year: 2024, month: 1, day: 20 })
               },
               locale: 'en-US'
             }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 

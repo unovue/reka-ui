@@ -1,29 +1,28 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Grid, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
+import type { TemporalDate } from '@/temporal/types'
 import { isSameYear } from '@/date'
 import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
+import { getDefaultDate, handleCalendarInitialFocus, useRangeSelectionState, yearAdapter } from '@/shared/date'
 import { useYearPicker } from '@/YearPicker/useYearPicker'
-import { useRangeYearPickerState } from './useRangeYearPicker'
 
 type YearRangePickerRootContext = {
   modelValue: Ref<DateRange>
-  startValue: Ref<DateValue | undefined>
-  endValue: Ref<DateValue | undefined>
+  startValue: Ref<TemporalDate | undefined>
+  endValue: Ref<TemporalDate | undefined>
   locale: Ref<string>
-  placeholder: Ref<DateValue>
+  placeholder: Ref<TemporalDate>
   preventDeselect: Ref<boolean>
-  grid: Ref<Grid<DateValue>>
+  grid: Ref<Grid<TemporalDate>>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   initialFocus: Ref<boolean>
-  onPlaceholderChange: (date: DateValue) => void
+  onPlaceholderChange: (date: TemporalDate) => void
   fullCalendarLabel: Ref<string>
   parentElement: Ref<HTMLElement | undefined>
   headingValue: Ref<string>
@@ -32,36 +31,36 @@ type YearRangePickerRootContext = {
   isYearDisabled: Matcher
   isYearUnavailable?: Matcher
   allowNonContiguousRanges: Ref<boolean>
-  highlightedRange: Ref<{ start: DateValue, end: DateValue } | null>
-  focusedValue: Ref<DateValue | undefined>
-  lastPressedDateValue: Ref<DateValue | undefined>
-  isSelected: (date: DateValue) => boolean
-  isSelectionEnd: (date: DateValue) => boolean
-  isSelectionStart: (date: DateValue) => boolean
-  isHighlightedStart: (date: DateValue) => boolean
-  isHighlightedEnd: (date: DateValue) => boolean
-  prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
-  nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
-  isNextButtonDisabled: (nextPageFunc?: (date: DateValue) => DateValue) => boolean
-  isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
+  highlightedRange: Ref<{ start: TemporalDate, end: TemporalDate } | null>
+  focusedValue: Ref<TemporalDate | undefined>
+  lastPressedDateValue: Ref<TemporalDate | undefined>
+  isSelected: (date: TemporalDate) => boolean
+  isSelectionEnd: (date: TemporalDate) => boolean
+  isSelectionStart: (date: TemporalDate) => boolean
+  isHighlightedStart: (date: TemporalDate) => boolean
+  isHighlightedEnd: (date: TemporalDate) => boolean
+  prevPage: (prevPageFunc?: (date: TemporalDate) => TemporalDate) => void
+  nextPage: (nextPageFunc?: (date: TemporalDate) => TemporalDate) => void
+  isNextButtonDisabled: (nextPageFunc?: (date: TemporalDate) => TemporalDate) => boolean
+  isPrevButtonDisabled: (prevPageFunc?: (date: TemporalDate) => TemporalDate) => boolean
   formatter: Formatter
   dir: Ref<Direction>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumYears: Ref<number | undefined>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
+  minValue: Ref<TemporalDate | undefined>
+  maxValue: Ref<TemporalDate | undefined>
   yearsPerPage: Ref<number>
 }
 
 export interface YearRangePickerRootProps extends PrimitiveProps {
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: TemporalDate
   /** The default value for the calendar */
   defaultValue?: DateRange
   /** The controlled selected year range of the year range picker. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The placeholder date, which is used to determine what year range to display when no date is selected. */
-  placeholder?: DateValue
+  placeholder?: TemporalDate
   /** When combined with `isYearUnavailable`, determines whether non-contiguous ranges may be selected. */
   allowNonContiguousRanges?: boolean
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
@@ -71,9 +70,9 @@ export interface YearRangePickerRootProps extends PrimitiveProps {
   /** The accessible label for the calendar */
   calendarLabel?: string
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: TemporalDate
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: TemporalDate
   /** The locale to use for formatting dates */
   locale?: string
   /** Whether or not the calendar is disabled */
@@ -89,9 +88,9 @@ export interface YearRangePickerRootProps extends PrimitiveProps {
   /** The reading direction of the calendar when applicable. */
   dir?: Direction
   /** A function that returns the next page of the calendar. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: (placeholder: TemporalDate) => TemporalDate
   /** A function that returns the previous page of the calendar. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: (placeholder: TemporalDate) => TemporalDate
   /** Which part of the range should be fixed */
   fixedDate?: 'start' | 'end'
   /** Number of years to display per page */
@@ -102,9 +101,9 @@ export type YearRangePickerRootEmits = {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: TemporalDate]
   /** Event handler called whenever the start value changes */
-  'update:startValue': [date: DateValue | undefined]
+  'update:startValue': [date: TemporalDate | undefined]
 }
 
 export const [injectYearRangePickerRootContext, provideYearRangePickerRootContext]
@@ -135,9 +134,9 @@ const emits = defineEmits<YearRangePickerRootEmits>()
 defineSlots<{
   default?: (props: {
     /** The current date of the placeholder */
-    date: DateValue
+    date: TemporalDate
     /** The grid of years */
-    grid: Grid<DateValue>
+    grid: Grid<TemporalDate>
     /** The calendar locale */
     locale: string
     /** The current date range */
@@ -170,8 +169,8 @@ const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
 const headingId = useId(undefined, 'reka-year-range-picker-heading')
 
-const lastPressedDateValue = ref() as Ref<DateValue | undefined>
-const focusedValue = ref() as Ref<DateValue | undefined>
+const lastPressedDateValue = ref() as Ref<TemporalDate | undefined>
+const focusedValue = ref() as Ref<TemporalDate | undefined>
 const isEditing = ref(false)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -190,16 +189,16 @@ const defaultDate = getDefaultDate({
   locale: props.locale,
 })
 
-const startValue = ref(normalizeRange(modelValue.value).start) as Ref<DateValue | undefined>
-const endValue = ref(normalizeRange(modelValue.value).end) as Ref<DateValue | undefined>
+const startValue = ref(normalizeRange(modelValue.value).start) as Ref<TemporalDate | undefined>
+const endValue = ref(normalizeRange(modelValue.value).end) as Ref<TemporalDate | undefined>
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
-function onPlaceholderChange(value: DateValue) {
-  placeholder.value = value.copy()
+function onPlaceholderChange(value: TemporalDate) {
+  placeholder.value = value
 }
 
 const {
@@ -235,17 +234,20 @@ const {
   isSelectionEnd,
   isHighlightedStart,
   isHighlightedEnd,
-  isYearDisabled: rangeIsYearDisabled,
-} = useRangeYearPickerState({
+  isUnitDisabled,
+} = useRangeSelectionState({
+  adapter: yearAdapter,
   start: startValue,
   end: endValue,
-  isYearDisabled,
-  isYearUnavailable,
+  isEndpointDisabled: isYearDisabled,
+  isInteriorBlocked: (date: TemporalDate) => isYearUnavailable(date),
   focusedValue,
   allowNonContiguousRanges,
-  fixedDate,
-  maximumYears,
+  fixedEndpoint: fixedDate,
+  maximumSpan: maximumYears,
 })
+
+const rangeIsYearDisabled = isUnitDisabled
 
 watch(modelValue, (_modelValue) => {
   const next = normalizeRange(_modelValue)
@@ -254,14 +256,14 @@ watch(modelValue, (_modelValue) => {
     || (!!next.start && !!startValue.value && isSameYear(next.start, startValue.value))
 
   if (!isStartSynced) {
-    startValue.value = next.start?.copy?.()
+    startValue.value = next.start
   }
 
   const isEndSynced = (!next.end && !endValue.value)
     || (!!next.end && !!endValue.value && isSameYear(next.end, endValue.value))
 
   if (!isEndSynced) {
-    endValue.value = next.end?.copy?.()
+    endValue.value = next.end
   }
 })
 
@@ -290,25 +292,25 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
   isEditing.value = true
   if (_endValue && _startValue) {
     const nextValue = _endValue.year < _startValue.year
-      ? { start: _endValue.copy(), end: _startValue.copy() }
-      : { start: _startValue.copy(), end: _endValue.copy() }
+      ? { start: _endValue, end: _startValue }
+      : { start: _startValue, end: _endValue }
 
     modelValue.value = { start: nextValue.start, end: nextValue.end }
     isEditing.value = false
-    validModelValue.value = { start: nextValue.start.copy(), end: nextValue.end.copy() }
+    validModelValue.value = { start: nextValue.start, end: nextValue.end }
   }
   else {
     modelValue.value = _startValue
-      ? { start: _startValue.copy(), end: undefined }
-      : { start: _endValue?.copy(), end: undefined }
+      ? { start: _startValue, end: undefined }
+      : { start: _endValue, end: undefined }
   }
 })
 
 const kbd = useKbd()
 useEventListener(parentElement, 'keydown', (ev) => {
   if (ev.key === kbd.ESCAPE && isEditing.value) {
-    startValue.value = validModelValue.value.start?.copy()
-    endValue.value = validModelValue.value.end?.copy()
+    startValue.value = validModelValue.value.start
+    endValue.value = validModelValue.value.end
   }
 })
 

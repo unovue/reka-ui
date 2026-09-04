@@ -1,5 +1,5 @@
 import type { Granularity } from './comparators'
-import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
+import type { DateInputType, DateStep, HourCycle, TemporalDate } from './types'
 import { defu } from 'defu'
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
@@ -87,7 +87,7 @@ export function getInputType(granularity: Granularity): DateInputType {
   return granularity === 'day' ? 'date' : 'datetime-local'
 }
 
-export function normalizeInputValue(date: DateValue | undefined, granularity: Granularity): string {
+export function normalizeInputValue(date: TemporalDate | undefined, granularity: Granularity): string {
   if (!date)
     return ''
 
