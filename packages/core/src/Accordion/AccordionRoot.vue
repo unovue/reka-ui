@@ -91,14 +91,17 @@ defineSlots<{
 const { dir, disabled, unmountOnHide } = toRefs(props)
 const direction = useDirection(dir)
 
-// Keep the established controlled/uncontrolled emit bridge in the shell. The
-// resulting ref is handed to the headless composable, matching Switch/Tabs.
-const { modelValue } = useSingleOrMultipleValue(props, emits)
+// Keep the established controlled/uncontrolled selection bridge in the shell.
+// Passing all three values prevents the composable from re-inferring a mode from
+// the helper's normalized default model.
+const { modelValue, isSingle, changeModelValue } = useSingleOrMultipleValue(props, emits)
 
 const { forwardRef, currentElement: parentElement } = useForwardExpose()
 
 const { context } = useAccordion({
   modelValue: modelValue as Ref<string | string[] | undefined>,
+  isSingle,
+  changeModelValue,
   type: () => props.type,
   collapsible: () => props.collapsible,
   dir: direction,

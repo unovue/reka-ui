@@ -8,6 +8,10 @@ import { useArrowNavigation } from '@/shared'
 export interface UseAccordionProps {
   /** Externally-owned selected value(s). */
   modelValue?: Ref<string | string[] | undefined>
+  /** Selection mode supplied by an existing component shell. */
+  isSingle?: MaybeRefOrGetter<boolean | undefined>
+  /** Selection updater supplied by an existing component shell. */
+  changeModelValue?: (value: string) => void
   /** Initial selected value(s) for standalone uncontrolled use. */
   defaultValue?: string | string[]
   /** @defaultValue `'single'` (or inferred from an array value). */
@@ -24,6 +28,8 @@ export interface UseAccordionProps {
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
   /** Root element used by the item keyboard-navigation surface. */
   parentElement?: Ref<HTMLElement | undefined>
+  /** @defaultValue `'reka-accordion'` */
+  baseId?: string
 }
 
 export interface UseAccordionReturn {
@@ -43,15 +49,17 @@ export type AccordionPartState = {
 export interface AccordionItemSurfaceOptions {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** SSR-stable trigger id supplied by the rendering shell. */
-  triggerId?: string
+  triggerId?: MaybeRefOrGetter<string | undefined>
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
+  /** Base id used when a standalone caller does not supply a trigger id. */
+  baseId?: string
 }
 
 export interface AccordionItemSurfaceContext {
   open: ComputedRef<boolean>
   disabled: ComputedRef<boolean>
   state?: ComputedRef<AccordionPartState>
-  triggerId: string
+  triggerId: MaybeRefOrGetter<string>
   value: ComputedRef<string>
 }
 
@@ -87,7 +95,7 @@ export function getAccordionContentSurface(
   return {
     props: computed(() => ({
       'role': 'region',
-      'aria-labelledby': itemContext.triggerId,
+      'aria-labelledby': toValue(itemContext.triggerId),
       'style': `
         --reka-accordion-content-width: var(--reka-collapsible-content-width);
         --reka-accordion-content-height: var(--reka-collapsible-content-height);
@@ -123,7 +131,7 @@ export function getAccordionTriggerSurface(
 
   return {
     props: computed(() => ({
-      'id': itemContext.triggerId,
+      'id': toValue(itemContext.triggerId),
       'aria-disabled': itemContext.disabled.value || undefined,
       'aria-expanded': itemContext.open.value || false,
       'data-reka-collection-item': '',
@@ -184,7 +192,7 @@ export function getAccordionItemSurface(
     open,
     disabled,
     state,
-    triggerId: options.triggerId ?? '',
+    triggerId: computed(() => toValue(options.triggerId) ?? `${options.baseId ?? 'reka-accordion'}-trigger-${toValue(value)}`),
     value: computed(() => toValue(value)),
   }
   const header = getAccordionHeaderSurface(rootContext, itemContext)
@@ -200,19 +208,20 @@ export function getAccordionItemSurface(
  * the root context begin here, and rendered surfaces begin at each item.
  *
  * Standalone consumers get single/multiple selection, collapse guards, disabled
- * state, semantic part surfaces, and keyboard navigation. They provide a root
- * element ref for arrow navigation and an SSR-stable `triggerId` per item when
- * trigger/content aria labelling is required. The `.vue` shells keep `useVModel`,
+ * state, semantic part surfaces, keyboard navigation, and ids derived from
+ * `(baseId, value)`. They provide a root element ref for arrow navigation and may
+ * override an item's `triggerId` when needed. The `.vue` shells keep `useVModel`,
  * `useId`, forwarding, and Collapsible component wrappers.
  */
 export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn {
-  const isSingle = computed(() => {
+  const inferredIsSingle = computed(() => {
     const inferredValue = props.modelValue?.value ?? props.defaultValue
     return (toValue(props.type) ?? (Array.isArray(inferredValue) ? 'multiple' : 'single')) === 'single'
   })
+  const isSingle = computed(() => toValue(props.isSingle) ?? inferredIsSingle.value)
   const modelValue = props.modelValue ?? ref<string | string[] | undefined>(props.defaultValue ?? (isSingle.value ? undefined : []))
 
-  function changeModelValue(value: string) {
+  function changeStandaloneModelValue(value: string) {
     if (isSingle.value) {
       modelValue.value = modelValue.value === value ? undefined : value
       return
@@ -228,6 +237,7 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
       values.splice(index, 1)
     modelValue.value = values
   }
+  const changeModelValue = props.changeModelValue ?? changeStandaloneModelValue
 
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const direction = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
@@ -254,7 +264,10 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
     modelValue,
     isSingle,
     changeModelValue,
-    getItemSurface: (value, options) => getAccordionItemSurface(context, value, options),
+    getItemSurface: (value, options) => getAccordionItemSurface(context, value, {
+      baseId: props.baseId ?? 'reka-accordion',
+      ...options,
+    }),
     context,
   }
 }

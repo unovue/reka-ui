@@ -198,8 +198,9 @@ one stateful factory boundary:
 - **Per-trigger SSR ids stay in the Trigger shell.** Existing Accordion ids are
   allocation-order-based rather than `(baseId, value)`-derived. `AccordionTrigger`
   therefore keeps `useId` and writes the id into the existing item context before
-  building trigger/content surfaces. A standalone `getItemSurface` caller supplies
-  `triggerId` when aria labelling is needed.
+  building trigger/content surfaces. Standalone `getItemSurface` calls derive a
+  reactive trigger id from `(baseId, value)`, with a literal `reka-accordion`
+  default; callers can still override `triggerId` explicitly.
 
 ## Overlay families (validated on Menu)
 

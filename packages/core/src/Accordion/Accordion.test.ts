@@ -341,6 +341,63 @@ describe('accordion characterization contract', () => {
     wrapper.unmount()
   })
 
+  it('defaults an untyped root with no model to single mode', async () => {
+    const modelUpdate = vi.fn()
+    const wrapper = mount({
+      components: {
+        AccordionContent,
+        AccordionHeader,
+        AccordionItem,
+        AccordionRoot,
+        AccordionTrigger,
+      },
+      setup() {
+        return { modelUpdate }
+      },
+      template: `
+        <AccordionRoot @update:model-value="modelUpdate">
+          <AccordionItem value="one">
+            <AccordionHeader><AccordionTrigger>One</AccordionTrigger></AccordionHeader>
+            <AccordionContent>Content one</AccordionContent>
+          </AccordionItem>
+        </AccordionRoot>
+      `,
+    }, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+
+    expect(modelUpdate).toHaveBeenCalledWith('one')
+    wrapper.unmount()
+  })
+
+  it('preserves item exposes when forwarding the rendered element', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = mount({
+      components: {
+        AccordionItem,
+        AccordionRoot,
+      },
+      template: `
+        <AccordionRoot type="single" default-value="one" disabled>
+          <AccordionItem ref="item" value="one" />
+        </AccordionRoot>
+      `,
+    })
+    const item = wrapper.vm.$refs.item as {
+      open: boolean
+      dataDisabled: '' | undefined
+      value: string
+      $el: HTMLElement
+    }
+
+    expect(item.open).toBe(true)
+    expect(item.dataDisabled).toBe('')
+    expect(item.value).toBe('one')
+    expect(item.$el).toBeInstanceOf(HTMLElement)
+    expect(warn.mock.calls.flat().join('\n')).not.toContain('expose() should be called only once')
+    wrapper.unmount()
+  })
+
   it('reflects open state and orientation across item, header, trigger, and content', async () => {
     const wrapper = mount(twoItemFixture, { attachTo: document.body })
     await nextTick()

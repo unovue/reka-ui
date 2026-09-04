@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { useAccordion } from './useAccordion'
 
@@ -47,6 +47,22 @@ describe('useAccordion — state', () => {
     expect(accordion.isSingle.value).toBe(true)
     modelValue.value = ['one']
     expect(accordion.isSingle.value).toBe(false)
+  })
+
+  it('uses an injected selection bridge when composed by a component shell', () => {
+    const modelValue = ref<string | string[] | undefined>([])
+    const changeModelValue = vi.fn()
+    const accordion = useAccordion({
+      modelValue,
+      isSingle: true,
+      changeModelValue,
+    })
+
+    accordion.getItemSurface('one').trigger.props.value.onClick()
+
+    expect(accordion.isSingle.value).toBe(true)
+    expect(changeModelValue).toHaveBeenCalledWith('one')
+    expect(modelValue.value).toEqual([])
   })
 })
 
@@ -154,6 +170,19 @@ describe('useAccordion — item surface', () => {
       disabled: false,
       orientation: 'vertical',
     })
+  })
+
+  it('builds non-empty reactive trigger/content ids for standalone use', () => {
+    const value = ref('one')
+    const accordion = useAccordion()
+    const item = accordion.getItemSurface(value)
+
+    expect(item.trigger.props.value.id).toBe('reka-accordion-trigger-one')
+    expect(item.content.props.value['aria-labelledby']).toBe('reka-accordion-trigger-one')
+
+    value.value = 'two'
+    expect(item.trigger.props.value.id).toBe('reka-accordion-trigger-two')
+    expect(item.content.props.value['aria-labelledby']).toBe('reka-accordion-trigger-two')
   })
 
   it('keeps an active single item open unless the root is collapsible', () => {

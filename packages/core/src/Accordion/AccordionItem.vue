@@ -8,7 +8,7 @@ const AccordionItemState = {
   Open: 'open',
   Closed: 'closed',
 } as const
-type AccordionItemState = typeof AccordionItemState[keyof typeof AccordionItemState]
+type AccordionItemStateValue = typeof AccordionItemState[keyof typeof AccordionItemState]
 
 export interface AccordionItemProps
   extends Omit<CollapsibleRootProps, 'open' | 'defaultOpen' | 'onOpenChange'> {
@@ -27,7 +27,7 @@ export interface AccordionItemProps
 
 interface AccordionItemContext {
   open: ComputedRef<boolean>
-  dataState: ComputedRef<AccordionItemState>
+  dataState: ComputedRef<AccordionItemStateValue>
   disabled: ComputedRef<boolean>
   dataDisabled: ComputedRef<'' | undefined>
   triggerId: string
@@ -60,7 +60,6 @@ defineSlots<{
 }>()
 
 const rootContext = injectAccordionRootContext()
-const { currentRef, currentElement } = useForwardExpose()
 
 const surface = getAccordionItemSurface(rootContext, () => props.value, {
   disabled: () => props.disabled,
@@ -69,9 +68,10 @@ const surface = getAccordionItemSurface(rootContext, () => props.value, {
 const { open, disabled } = surface
 
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
-const dataState = computed<AccordionItemState>(() => surface.item.state.value.state)
+const dataState = computed<AccordionItemStateValue>(() => surface.item.state.value.state)
 
 defineExpose({ open, dataDisabled })
+const { currentRef, currentElement } = useForwardExpose()
 
 provideAccordionItemContext({
   open,
