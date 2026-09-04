@@ -9,7 +9,7 @@ overrides:
   picomatch@<2.3.2: '>=2.3.2'
   rollup@>=3.0.0 <3.30.0: '>=3.30.0'
   rollup@>=4.0.0 <4.59.0: '>=4.59.0'
-  svgo@>=3.0.0 <3.3.3: '>=3.3.3'
+  svgo@>=3.0.0 <3.3.3: '>=4.0.2'
 
 patchedDependencies:
   vitepress:
