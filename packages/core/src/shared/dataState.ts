@@ -12,6 +12,8 @@ export function disclosureState(open: boolean): DisclosureState {
 }
 
 /** `true` → `'checked'`, `false` → `'unchecked'`, `'indeterminate'` passes through. */
+export function selectionState(checked: boolean): SelectionState
+export function selectionState(checked: boolean | 'indeterminate'): TriSelectionState
 export function selectionState(checked: boolean | 'indeterminate'): TriSelectionState {
   if (checked === 'indeterminate')
     return 'indeterminate'
