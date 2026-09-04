@@ -18,7 +18,7 @@ import { mergeProps } from 'vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuRootContext } from './MenuRoot.vue'
-import { getMenuItemSelectSurface } from './useMenu'
+import { createMenuItemSelectSurface } from './useMenu'
 
 const props = defineProps<MenuItemProps>()
 const emits = defineEmits<MenuItemEmits>()
@@ -30,7 +30,7 @@ const contentContext = injectMenuContentContext()
 // The select layer (click/pointer/keydown + the close-on-select protocol). Merged
 // onto MenuItemImpl so its handlers chain with the base surface's. `onSelect` is a
 // callback channel — the cancelable CustomEvent token, not a merged DOM listener.
-const select = getMenuItemSelectSurface(rootContext, {
+const select = createMenuItemSelectSurface(rootContext, {
   disabled: () => props.disabled,
   currentElement,
   onSelect: event => emits('select', event),

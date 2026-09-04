@@ -9,6 +9,9 @@ const emits = defineEmits<MenuRootContentModalEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
 const menuContext = injectMenuContext()
+// TODO(#2828): use dismiss details — `DismissableLayer` fires `dismiss` for
+// Escape, pointer-down-outside and focus-outside alike; `'outside-press'` is the
+// best available reason until the layer carries `ChangeEventDetails`.
 
 interface MenuRootContentModalProps extends MenuRootContentTypeProps {}
 type MenuRootContentModalEmits = MenuContentImplEmits
@@ -24,7 +27,7 @@ useHideOthers(currentElement)
     :trap-focus="menuContext.open.value"
     :disable-outside-pointer-events="menuContext.open.value"
     :disable-outside-scroll="true"
-    @dismiss="menuContext.onOpenChange(false)"
+    @dismiss="menuContext.onOpenChange(false, 'outside-press')"
     @focus-outside.prevent="emits('focusOutside', $event)"
   >
     <slot />

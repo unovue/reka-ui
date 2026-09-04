@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { MenuContext } from './MenuRoot.vue'
 import type {
   GraceIntent,
 } from './utils'
@@ -13,7 +14,6 @@ import type { RovingFocusGroupEmits } from '@/RovingFocus'
 
 import {
   createContext,
-  stateToDataAttrs,
   useFocusGuards,
   useForwardExpose,
 } from '@/shared'
@@ -29,7 +29,7 @@ export interface MenuContentContext {
   onKeydownEnter: (event: KeyboardEvent) => void
   filterElement: Ref<HTMLElement | undefined>
   onFilterElementChange: (el: HTMLElement | undefined) => void
-  activeSubmenuContext: Ref<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> } | undefined>
+  activeSubmenuContext: Ref<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> } | undefined>
   pointerGraceTimerRef: Ref<number>
   onPointerGraceIntentChange: (intent: GraceIntent | null) => void
 }
@@ -89,7 +89,6 @@ export interface MenuRootContentTypeProps
 
 <script setup lang="ts">
 import {
-  mergeProps,
   ref,
   toRefs,
 } from 'vue'
@@ -183,7 +182,7 @@ provideMenuContentContext(contentContext)
           :sticky="sticky"
           :hide-when-detached="hideWhenDetached"
           :reference="reference"
-          v-bind="mergeProps(content.props.value, stateToDataAttrs(content.state.value))"
+          v-bind="content.attrs.value"
         >
           <slot />
         </PopperContent>
