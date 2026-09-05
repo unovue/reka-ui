@@ -189,20 +189,38 @@ export function createMonths(props: SetMonthProps) {
 }
 
 /**
- * Creates a 3x4 grid of months for a given year.
+ * Normalises a layout count (`columns`, `yearsPerPage`, `numberOfMonths`) to a
+ * positive integer: `NaN`, `Infinity`, non-numbers and values below 1 fall back
+ * to `fallback`, fractions are floored. `chunk` never terminates at 0 and an
+ * empty year page has no `value`, so every layout count passes through here.
  */
-export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
-  const { dateObj } = props
-  const months = createYear({ dateObj })
-  return { value: dateObj, cells: months, rows: chunk(months, 4) }
+export function clampLayoutCount(value: number | undefined, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    return fallback
+  const count = Math.floor(value)
+  return count >= 1 ? count : fallback
 }
 
 /**
- * Creates a 3x4 grid of years (decade-aligned).
- * The grid starts from the decade that contains the given date.
+ * Creates a grid of the 12 months of the given year, `columns` per row
+ * (default 4, i.e. 3 rows of 4).
  */
-export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean }): Grid<DateValue> {
-  const { dateObj, yearsPerPage = 12, decadeAligned = true } = props
+export function createMonthGrid(props: CreateSelectProps & { columns?: number }): Grid<DateValue> {
+  const { dateObj } = props
+  const columns = clampLayoutCount(props.columns, 4)
+  const months = createYear({ dateObj })
+  return { value: dateObj, cells: months, rows: chunk(months, columns) }
+}
+
+/**
+ * Creates a grid of `yearsPerPage` years (default 12), `columns` per row
+ * (default 4). When `decadeAligned` (the default) the grid starts from the
+ * decade that contains the given date; otherwise it starts at the given year.
+ */
+export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean, columns?: number }): Grid<DateValue> {
+  const { dateObj, decadeAligned = true } = props
+  const yearsPerPage = clampLayoutCount(props.yearsPerPage, 12)
+  const columns = clampLayoutCount(props.columns, 4)
 
   let startYear: number
   if (decadeAligned) {
@@ -214,7 +232,7 @@ export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: numbe
 
   const years = Array.from({ length: yearsPerPage }, (_, i) => startOfYear(dateObj.set({ year: startYear + i })))
   const firstYear = years[0]
-  return { value: firstYear, cells: years, rows: chunk(years, 4) }
+  return { value: firstYear, cells: years, rows: chunk(years, columns) }
 }
 
 export function createYearRange({ start, end }: DateRange): DateValue[] {

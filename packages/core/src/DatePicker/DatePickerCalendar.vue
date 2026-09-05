@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
+import type { CalendarModelValue } from '..'
 import { isEqualDay } from '@internationalized/date'
 import { CalendarRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
@@ -11,7 +12,7 @@ const rootContext = injectDatePickerRootContext()
 
 <template>
   <CalendarRoot
-    v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks }"
+    v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"
     v-bind="{
       isDateDisabled: rootContext.isDateDisabled,
       isDateUnavailable: rootContext.isDateUnavailable,
@@ -27,11 +28,17 @@ const rootContext = injectDatePickerRootContext()
       readonly: rootContext.readonly.value,
       preventDeselect: rootContext.preventDeselect.value,
       dir: rootContext.dir.value,
+      maxView: rootContext.maxView.value,
+      yearsPerPage: rootContext.yearsPerPage.value,
+      columns: rootContext.columns.value,
     }"
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
+    :view="rootContext.view.value"
     :multiple="false"
-    @update:model-value="(date: DateValue | undefined) => {
+    @update:model-value="(value: CalendarModelValue) => {
+      // `multiple` is pinned to false above, so the model is never an array.
+      const date = Array.isArray(value) ? value.at(-1) : value
       if (date && rootContext.modelValue.value && isEqualDay(date, rootContext.modelValue.value)) return
       rootContext.onDateChange(date)
     }"
@@ -39,6 +46,7 @@ const rootContext = injectDatePickerRootContext()
       if (isEqualDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
+    @update:view="(next) => rootContext.onViewChange(next)"
   >
     <slot
       :date="date"
@@ -47,6 +55,7 @@ const rootContext = injectDatePickerRootContext()
       :week-starts-on="weekStartsOn"
       :locale="locale"
       :fixed-weeks="fixedWeeks"
+      :view="view"
     />
   </CalendarRoot>
 </template>

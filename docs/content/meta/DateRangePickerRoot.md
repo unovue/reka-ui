@@ -17,6 +17,13 @@
     'default': 'false'
   },
   {
+    'name': 'columns',
+    'description': '<p>The number of cells per row in the month and year views</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '4'
+  },
+  {
     'name': 'defaultOpen',
     'description': '<p>The open state of the popover when it is initially rendered. Use when you do not need to control its open state.</p>\n',
     'type': 'boolean',
@@ -35,6 +42,12 @@
     'type': 'DateRange',
     'required': false,
     'default': '{ start: undefined, end: undefined }'
+  },
+  {
+    'name': 'defaultView',
+    'description': '<p>The calendar view shown when the picker opens. Defaults to <code>day</code>.</p>\n',
+    'type': '\'day\' | \'month\' | \'year\'',
+    'required': false
   },
   {
     'name': 'dir',
@@ -88,13 +101,13 @@
   },
   {
     'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
+    'description': '<p>A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument.</p>\n',
     'type': 'Matcher',
     'required': false
   },
   {
     'name': 'isDateHighlightable',
-    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'description': '<p>A function that returns whether or not a date is highlightable</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -112,7 +125,13 @@
   },
   {
     'name': 'maximumDays',
-    'description': '<p>The maximum number of days that can be selected in a range</p>\n',
+    'description': '<p>The maximum number of days in the range (inclusive). Alias of <code>maximumLength</code> for day ranges.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
+    'name': 'maximumLength',
+    'description': '<p>The maximum length of the range in days (inclusive).</p>\n',
     'type': 'number',
     'required': false
   },
@@ -121,6 +140,13 @@
     'description': '<p>The maximum date that can be selected</p>\n',
     'type': 'DateValue',
     'required': false
+  },
+  {
+    'name': 'maxView',
+    'description': '<p>The coarsest view <code>DateRangePickerViewTrigger</code> can switch to.</p>\n',
+    'type': '\'day\' | \'month\' | \'year\'',
+    'required': false,
+    'default': '\'year\''
   },
   {
     'name': 'minValue',
@@ -149,7 +175,7 @@
   },
   {
     'name': 'numberOfMonths',
-    'description': '<p>The number of months to display at once</p>\n',
+    'description': '<p>The number of months to display at once in the day view</p>\n',
     'type': 'number',
     'required': false,
     'default': '1'
@@ -200,6 +226,12 @@
     'required': false
   },
   {
+    'name': 'view',
+    'description': '<p>The controlled view: the unit the calendar currently shows. Can be bound as <code>v-model:view</code>.</p>\n',
+    'type': '\'day\' | \'month\' | \'year\'',
+    'required': false
+  },
+  {
     'name': 'weekdayFormat',
     'description': '<p>The format to use for the weekday strings provided via the weekdays slot prop</p>\n',
     'type': '\'narrow\' | \'short\' | \'long\'',
@@ -211,6 +243,13 @@
     'description': '<p>The day of the week to start the calendar on</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6',
     'required': false
+  },
+  {
+    'name': 'yearsPerPage',
+    'description': '<p>The number of years to display per page in the year view</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '12'
   }
 ]" />
 
@@ -239,6 +278,11 @@
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
     'type': '[date: DateValue]'
+  },
+  {
+    'name': 'update:view',
+    'description': '<p>Event handler called whenever the calendar view changes</p>\n',
+    'type': '[view: CalendarUnit]'
   }
 ]" />
 
@@ -264,9 +308,11 @@
 | --- | --- | --- | --- | --- |
 | `allowNonContiguousRanges` | When combined with isDateUnavailable, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. | `boolean` | No | `false` |
 | `closeOnSelect` | Whether or not to close the popover on range select | `boolean` | No | `false` |
+| `columns` | The number of cells per row in the month and year views | `number` | No | `4` |
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
+| `defaultView` | The calendar view shown when the picker opens. Defaults to day. | `"day" \| "month" \| "year"` | No | - |
 | `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
 | `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
@@ -275,17 +321,19 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isDateDisabled` | A function that returns whether or not a date is disabled | `Matcher` | No | - |
-| `isDateHighlightable` | A function that returns whether or not a date is hightable | `Matcher` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument. | `Matcher` | No | - |
+| `isDateHighlightable` | A function that returns whether or not a date is highlightable | `Matcher` | No | - |
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
-| `maximumDays` | The maximum number of days that can be selected in a range | `number` | No | - |
+| `maximumDays` | The maximum number of days in the range (inclusive). Alias of maximumLength for day ranges. | `number` | No | - |
+| `maximumLength` | The maximum length of the range in days (inclusive). | `number` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
+| `maxView` | The coarsest view DateRangePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
 | `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `numberOfMonths` | The number of months to display at once | `number` | No | `1` |
+| `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
 | `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
 | `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
@@ -293,8 +341,10 @@
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `view` | The controlled view: the unit the calendar currently shows. Can be bound as v-model:view. | `"day" \| "month" \| "year"` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
+| `yearsPerPage` | The number of years to display per page in the year view | `number` | No | `12` |
 
 **Events**
 
@@ -305,6 +355,7 @@
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
 | `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit]` |
 
 **Slots**
 

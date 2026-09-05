@@ -111,3 +111,44 @@ What to check in your code:
   }"
 />
 ```
+
+## Calendar views
+
+`MonthPicker`, `MonthRangePicker`, `YearPicker` and `YearRangePicker` are gone. `Calendar` and `RangeCalendar` now carry a `view` (`day` | `month` | `year`, bindable as `v-model:view`) and a `granularity` that fixes what a selection means. A month picker is `<CalendarRoot granularity="month">`, a year range picker is `<RangeCalendarRoot granularity="year">`, and a day calendar can drill up to its month and year grids through the new `CalendarView` / `CalendarViewTrigger` parts (and their `RangeCalendar*`, `DatePicker*`, `DateRangePicker*` equivalents). Selecting a cell in a view coarser than the granularity moves the placeholder and drills down; selecting at the granularity commits.
+
+| v2 | v3 |
+| --- | --- |
+| `MonthPickerRoot` | `CalendarRoot granularity="month"` |
+| `YearPickerRoot` | `CalendarRoot granularity="year"` |
+| `MonthRangePickerRoot`, `YearRangePickerRoot` | `RangeCalendarRoot granularity="month"` / `"year"` |
+| `MonthPicker<Part>`, `YearPicker<Part>` | `Calendar<Part>` |
+| `MonthRangePicker<Part>`, `YearRangePicker<Part>` | `RangeCalendar<Part>` |
+| `isMonthDisabled`, `isYearDisabled` | `isDateDisabled` (receives the cell's unit as its second argument) |
+| `isMonthUnavailable`, `isYearUnavailable` | `isDateUnavailable` |
+| `maximumMonths`, `maximumYears` | `maximumLength` (counted in units of `granularity`; `maximumDays` remains as a deprecated alias) |
+| `CalendarCell :date`, `RangeCalendarCell :date` | `:value` |
+| `CalendarCellTrigger :day :month`, `RangeCalendarCellTrigger :day :month` | `CalendarCellTrigger :value` + `CalendarGrid :value="page.value"` |
+| `MonthPickerCellTrigger :month`, `YearPickerCellTrigger :year` | `CalendarCellTrigger :value` |
+| cell trigger slot `dayValue` / `monthValue` / `yearValue` | `cellValue` |
+| `grid` slot prop as a single object (month and year pickers) | `grid` is always an array of pages; iterate it |
+| `nextPage` / `prevPage` `(placeholder) => DateValue` | unchanged signature; the active view arrives as an additive second argument |
+| `data-selected="true"`, `data-selection-start="true"` … | emitted as empty strings; presence selectors (`[data-selected]`, `data-[selected]:`) are unaffected |
+
+The `DatePicker` and `DateRangePicker` roots forward `view`, `defaultView`, `maxView`, `yearsPerPage` and `columns` and emit `update:view`; they do not expose the calendar `granularity` (that name already belongs to the field's time granularity, and a field edits full dates), so month or year pickers use `Calendar` / `RangeCalendar` directly.
+
+Change events on these roots now follow the [details contract](#change-events-carry-details): `update:modelValue`, `update:placeholder` and `update:view` receive a `ChangeEventDetails<CalendarChangeReason>` second argument (reasons: `cell-press`, `cell-keydown`, `view-drill`, `view-trigger`, `page-navigation`, `focus-navigation`; `escape-key` on ranges) and are preceded by a cancellable `beforeUpdate:*` emit.
+
+```vue
+<MonthPickerRoot v-slot="{ grid }"> <!-- [!code --] -->
+  <MonthPickerGrid> <!-- [!code --] -->
+    <MonthPickerGridBody> <!-- [!code --] -->
+      <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i"> <!-- [!code --] -->
+        <MonthPickerCell v-for="month in row" :key="month.toString()" :date="month"> <!-- [!code --] -->
+          <MonthPickerCellTrigger :month="month" /> <!-- [!code --] -->
+<CalendarRoot v-slot="{ grid }" granularity="month"> <!-- [!code ++] -->
+  <CalendarGrid v-for="page in grid" :key="page.value.toString()" :value="page.value"> <!-- [!code ++] -->
+    <CalendarGridBody> <!-- [!code ++] -->
+      <CalendarGridRow v-for="(row, i) in page.rows" :key="i"> <!-- [!code ++] -->
+        <CalendarCell v-for="month in row" :key="month.toString()" :value="month"> <!-- [!code ++] -->
+          <CalendarCellTrigger :value="month" /> <!-- [!code ++] -->
+```
