@@ -70,6 +70,10 @@ function parseExtensions(value = '') {
 }
 
 function* walk(path, extensions) {
+  // A supplied root that is, or sits inside, an always-skipped directory is
+  // skipped too, so the documented contract holds for explicit paths as well.
+  if (path.split(/[\\/]/).some(segment => SKIPPED_DIRECTORIES.has(segment)))
+    return
   const stats = statSync(path)
   if (stats.isFile()) {
     if (extensions.has(extname(path).slice(1)))
@@ -82,7 +86,7 @@ function* walk(path, extensions) {
   for (const entry of entries) {
     if (entry.isDirectory()) {
       if (!SKIPPED_DIRECTORIES.has(entry.name))
-        yield * walk(join(path, entry.name), extensions)
+        yield* walk(join(path, entry.name), extensions)
     }
     else if (entry.isFile() && extensions.has(extname(entry.name).slice(1))) {
       yield join(path, entry.name)

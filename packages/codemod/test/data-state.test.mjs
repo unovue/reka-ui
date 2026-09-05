@@ -6,6 +6,8 @@ function code(source) {
   return transformDataState(source).code
 }
 
+const PRESENCE_MESSAGE = '"[data-state]" is now always present, so a presence-only selector matches every part; target the explicit value instead'
+
 describe('unconditional renames', () => {
   it('rewrites tailwind variants', () => {
     const source = '<Toggle class="data-[state=on]:bg-green-5 data-[state=off]:bg-gray-3" />'
@@ -167,6 +169,21 @@ describe('active / inactive', () => {
 })
 
 describe('presence-only selectors', () => {
+  it('leaves a bare [data-state] alone and warns', () => {
+    const source = [
+      '.RatingItemIndicator[data-state] { opacity: 1; }',
+      '.SplitterPanel[ data-state ] { flex: 1; }',
+      '.Toggle[data-state=checked] { color: red; }',
+    ].join('\n')
+    const result = transformDataState(source)
+    assert.equal(result.code, source)
+    assert.equal(result.changed, false)
+    assert.deepEqual(result.warnings, [
+      { line: 1, message: PRESENCE_MESSAGE },
+      { line: 2, message: PRESENCE_MESSAGE },
+    ])
+  })
+
   it('leaves :not([data-state]) alone and warns', () => {
     const source = [
       '.RatingItemIndicator:not([data-state]) { opacity: 0.3; }',
@@ -176,8 +193,8 @@ describe('presence-only selectors', () => {
     assert.equal(result.code, source)
     assert.equal(result.changed, false)
     assert.deepEqual(result.warnings, [
-      { line: 1, message: '"[data-state]" is now always present; target the explicit value instead' },
-      { line: 2, message: '"[data-state]" is now always present; target the explicit value instead' },
+      { line: 1, message: PRESENCE_MESSAGE },
+      { line: 2, message: PRESENCE_MESSAGE },
     ])
   })
 })

@@ -34,7 +34,7 @@ Parts that were already on `open` / `closed` or `checked` / `unchecked` / `indet
 The rewrites are mechanical. In Tailwind variants:
 
 - `data-[state=on]:` → `data-[state=checked]:`, `data-[state=off]:` → `data-[state=unchecked]:`
-- `data-[state=active]:` → `data-[state=checked]:`, `data-[state=inactive]:` → `data-[state=unchecked]:` — for **Tabs and TagsInput only**. Stepper keeps `active` / `inactive` / `completed`, so leave selectors on `StepperItem` alone.
+- `data-[state=active]:` → `data-[state=checked]:`, `data-[state=inactive]:` → `data-[state=unchecked]:` — for **Tabs, TagsInput and Rating only**. Stepper keeps `active` / `inactive` / `completed`, so leave selectors on `StepperItem` alone.
 - `data-[state=visible]:` → `data-[state=open]:`, `data-[state=hidden]:` → `data-[state=closed]:`
 - `data-[state=expanded]:` → `data-[state=open]:`, `data-[state=collapsed]:` → `data-[state=closed]:`
 - `data-[state=delayed-open]:` → `data-[state=open]:data-[delayed]:`
@@ -43,7 +43,7 @@ The rewrites are mechanical. In Tailwind variants:
 In plain CSS the same rewrites apply to attribute selectors:
 
 - `[data-state='on']` → `[data-state='checked']`, `[data-state='off']` → `[data-state='unchecked']`
-- `[data-state='active']` → `[data-state='checked']`, `[data-state='inactive']` → `[data-state='unchecked']` — Tabs and TagsInput only, not Stepper.
+- `[data-state='active']` → `[data-state='checked']`, `[data-state='inactive']` → `[data-state='unchecked']` — Tabs, TagsInput and Rating only, not Stepper.
 - `[data-state='visible']` → `[data-state='open']`, `[data-state='hidden']` → `[data-state='closed']`
 - `[data-state='expanded']` → `[data-state='open']`, `[data-state='collapsed']` → `[data-state='closed']`
 - `[data-state='delayed-open']` → `[data-state='open'][data-delayed]`

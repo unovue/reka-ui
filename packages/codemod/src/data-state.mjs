@@ -60,9 +60,10 @@ const CSS_AMBIGUOUS = cssPattern(AMBIGUOUS_VALUES)
 const TAILWIND_DELAYED = /((?:group|peer)-)?data-\[state=(['"]?)delayed-open\2\](\/[\w-]+)?/g
 const CSS_DELAYED = /(\[data-state\s*=\s*)(['"]?)delayed-open\2\s*\]/g
 
-const PRESENCE_ONLY = /:not\(\s*\[data-state\]\s*\)/
+/** A bare `[data-state]` (with or without `:not(...)`): presence-only, so it now matches every part. */
+const PRESENCE_ONLY = /\[\s*data-state\s*\]/
 
-const PRESENCE_WARNING = '"[data-state]" is now always present; target the explicit value instead'
+const PRESENCE_WARNING = '"[data-state]" is now always present, so a presence-only selector matches every part; target the explicit value instead'
 
 function mentionsAny(source, names) {
   return names.some(name => source.includes(name))

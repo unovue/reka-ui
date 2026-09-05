@@ -51,7 +51,11 @@ export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & P
   closeOnSelect?: boolean
 }
 
-/** Why the picker's `open` state changed (#2828): the popover's reasons plus a date selection closing it. */
+/**
+ * Why the picker's `open` state changed (#2828): the popover's reasons, plus
+ * `date-select` when `closeOnSelect` closes it because the model value changed
+ * (a calendar pick, or the parent writing the model while the picker is open).
+ */
 export type DatePickerOpenChangeReason = PopoverOpenChangeReason | 'date-select'
 
 export type DatePickerRootEmits = {
