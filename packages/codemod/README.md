@@ -13,6 +13,8 @@ npx @reka-ui/codemod data-state ./src --dry-run
 npx @reka-ui/codemod data-state ./src ./docs --ext vue,css
 ```
 
+The package is versioned and published in lockstep with `reka-ui`, so pin the major you are migrating to (`npx @reka-ui/codemod@3 …`) to get the codemods written for that release. A pull request's build can be tried before it is published with `npx https://pkg.pr.new/@reka-ui/codemod@<pr-number> data-state ./src`.
+
 ## `data-state`
 
 Rewrites the v2 `data-state` values to the [v3 vocabulary](https://reka-ui.com/docs/guides/migration-v3) in Tailwind variants (`data-[state=…]:`, `group-data-[state=…]:`, `peer-data-[state=…]:`) and CSS attribute selectors (`[data-state=…]`, `[data-state='…']`, `[data-state="…"]`):
