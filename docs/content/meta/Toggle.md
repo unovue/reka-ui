@@ -65,7 +65,7 @@
   {
     'name': 'state',
     'description': '<p>Current state</p>\n',
-    'type': '\'on\' | \'off\''
+    'type': '\'checked\' | \'unchecked\''
   },
   {
     'name': 'pressed',
@@ -105,7 +105,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `modelValue` | Current value | `boolean` |
-| `state` | Current state | `"on" \| "off"` |
+| `state` | Current state | `"checked" \| "unchecked"` |
 | `pressed` | Current pressed state | `boolean` |
 | `disabled` | Current disabled state | `boolean` |
 

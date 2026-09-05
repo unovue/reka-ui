@@ -216,14 +216,19 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Called before the open state changes; <code>details.cancel()</code> keeps the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;DateRangePickerOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
     'type': '[date: DateRange]'
   },
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state of the submenu changes.</p>\n',
-    'type': '[value: boolean]'
+    'description': '<p>Event handler called when the open state of the popover changes.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;DateRangePickerOpenChangeReason, Event&gt;]'
   },
   {
     'name': 'update:placeholder',
@@ -295,8 +300,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
-| `update:open` | Event handler called when the open state of the submenu changes. | `[value: boolean]` |
+| `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
 | `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
 

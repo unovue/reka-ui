@@ -49,9 +49,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Event handler called before the open state of the tooltip changes; <code>details.cancel()</code> keeps the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;TooltipOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the tooltip changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;TooltipOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -82,7 +87,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the tooltip changes. | `[value: boolean]` |
+| `beforeUpdate:open` | Event handler called before the open state of the tooltip changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the tooltip changes. | `[value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason, Event>]` |
 
 **Slots**
 
