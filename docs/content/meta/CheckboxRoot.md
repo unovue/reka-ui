@@ -91,7 +91,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current value</p>\n',
-    'type': 'T | \'indeterminate\' | null | undefined'
+    'type': 'null | T | \'indeterminate\''
   },
   {
     'name': 'state',
@@ -130,7 +130,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current value | `T \| "indeterminate" \| null \| undefined` |
+| `modelValue` | Current value | `null \| T \| "indeterminate"` |
 | `state` | Current state | `false \| true \| "indeterminate"` |
 
 </llm-only>
