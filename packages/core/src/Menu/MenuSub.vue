@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { ChangeEventDetails } from '@/shared'
-import { createContext } from '@/shared'
+import { createContext, useControllableState } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -35,7 +35,6 @@ import {
   watch,
 } from 'vue'
 import { PopperRoot } from '@/Popper'
-import { useControllableState } from '@/shared'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {
@@ -65,9 +64,7 @@ watch(() => parentMenuContext?.open.value, (parentOpen, _, onCleanup) => {
 
 provideMenuContext({
   open,
-  onOpenChange: (value, reason, event) => {
-    setState(value, reason, event)
-  },
+  onOpenChange: (value, reason, event) => setState(value, reason, event),
   content,
   onContentChange: (element) => {
     content.value = element

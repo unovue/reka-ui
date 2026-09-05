@@ -1,5 +1,7 @@
 export {
   default as DismissableLayer,
+  type DismissableLayerDismissDetails,
+  type DismissableLayerDismissReason,
   type DismissableLayerEmits,
   type DismissableLayerProps,
 } from './DismissableLayer.vue'

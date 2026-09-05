@@ -48,7 +48,7 @@ const dir = useDirection(propDir)
 // the controlled `MenuRoot` below reports closes with their reason, and both
 // paths go through one `setState` so `beforeUpdate:open` can cancel either.
 const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
-  defaultValue: false,
+  defaultValue: props.defaultOpen ?? false,
   name: 'open',
   emit: emits,
 })

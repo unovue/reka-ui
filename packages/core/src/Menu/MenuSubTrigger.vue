@@ -116,14 +116,18 @@ async function handleKeyDown(event: KeyboardEvent) {
     return
   if (SUB_OPEN_KEYS[rootContext.dir.value].includes(event.key)) {
     // Enter/Space activate the trigger; ArrowRight/ArrowLeft are list navigation.
-    menuContext.onOpenChange(true, SELECTION_KEYS.includes(event.key) ? 'trigger-press' : 'list-navigation', event)
+    const opened = menuContext.onOpenChange(true, SELECTION_KEYS.includes(event.key) ? 'trigger-press' : 'list-navigation', event)
+    // prevent window from scrolling
+    event.preventDefault()
+    // `false` is either "already open" (re-focus the content below) or a
+    // cancelled open (`beforeUpdate:open`) — never move focus into a closed submenu.
+    if (!opened && !menuContext.open.value)
+      return
 
     await nextTick()
     // The trigger may hold focus if opened via pointer interaction
     // so we ensure content is given focus again when switching to keyboard.
     menuContext.content.value?.focus()
-    // prevent window from scrolling
-    event.preventDefault()
   }
 }
 </script>

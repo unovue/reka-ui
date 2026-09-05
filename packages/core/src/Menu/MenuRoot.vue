@@ -7,13 +7,15 @@ import { createContext, useDirection } from '@/shared'
 
 export interface MenuContext {
   open: ComputedRef<boolean>
-  onOpenChange: (open: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (open: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   content: Ref<HTMLElement | undefined>
   onContentChange: (content: HTMLElement | undefined) => void
 }
 
 export interface MenuRootContext {
-  onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   dir: Ref<Direction>
   isUsingKeyboardRef: Ref<boolean>
   modal: Ref<boolean>

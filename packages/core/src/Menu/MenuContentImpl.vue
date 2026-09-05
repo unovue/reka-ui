@@ -5,6 +5,7 @@ import type {
   GraceIntent,
 } from './utils'
 import type {
+  DismissableLayerDismissDetails,
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
@@ -68,9 +69,10 @@ export type MenuContentImplEmits = DismissableLayerEmits & Omit<RovingFocusGroup
 
 type MenuContentImplPrivateEmits = MenuContentImplEmits & {
   /**
-   * Handler called when the `DismissableLayer` should be dismissed
+   * Handler called when the `DismissableLayer` should be dismissed;
+   * carries the layer's `{ reason, event }`.
    */
-  dismiss: []
+  dismiss: [details: DismissableLayerDismissDetails]
 }
 
 export interface MenuContentImplProps
@@ -149,7 +151,7 @@ provideMenuContentContext(contentContext)
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @focus-outside="emits('focusOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
-      @dismiss="emits('dismiss')"
+      @dismiss="emits('dismiss', $event)"
     >
       <RovingFocusGroup
         ref="rovingFocusGroupRef"

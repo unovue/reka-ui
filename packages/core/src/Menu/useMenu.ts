@@ -70,8 +70,10 @@ export interface UseMenuRootProps {
 
 export interface UseMenuRootReturn {
   open: ComputedRef<boolean>
-  onOpenChange: (value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
-  onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<MenuOpenChangeReason>>>
   isControlled: ComputedRef<boolean>
   /** The `MenuContext` value — the SFC provides this verbatim. */
@@ -105,11 +107,11 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
   const content = ref<HTMLElement>()
   const isUsingKeyboardRef = useIsUsingKeyboard()
 
-  function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) {
-    setState(value, reason, event)
+  function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
+    return setState(value, reason, event)
   }
-  function onClose(reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) {
-    setState(false, reason, event)
+  function onClose(reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
+    return setState(false, reason, event)
   }
 
   const menuContext: MenuContext = {
@@ -511,9 +513,10 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
         return
       // The highlight moved to a sibling item — the only path by which one
       // submenu opening (or another item taking the highlight) closes the
-      // previously open submenu.
-      activeSubmenuContext.value.onOpenChange(false, 'sibling-open')
-      activeSubmenuContext.value = undefined
+      // previously open submenu. A close vetoed via `beforeUpdate:open` keeps
+      // the submenu open, so it must stay the active one.
+      if (activeSubmenuContext.value.onOpenChange(false, 'sibling-open'))
+        activeSubmenuContext.value = undefined
     }
   })
 
