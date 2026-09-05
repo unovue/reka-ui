@@ -32,7 +32,7 @@ const rootContext = injectTabsRootContext()
 // mount-animation `style` stay in the SFC.
 const surface = getTabsContentSurface(rootContext, () => props.value)
 
-const isMountAnimationPreventedRef = ref(surface.state.value.state === 'active')
+const isMountAnimationPreventedRef = ref(surface.state.value.state === 'checked')
 
 onMounted(() => {
   rootContext.registerContent(props.value)
@@ -49,7 +49,7 @@ onBeforeUnmount(() => {
 <template>
   <Presence
     v-slot="{ present }"
-    :present="forceMount || surface.state.value.state === 'active'"
+    :present="forceMount || surface.state.value.state === 'checked'"
     force-mount
   >
     <Primitive

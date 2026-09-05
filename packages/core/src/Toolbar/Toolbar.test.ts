@@ -22,7 +22,7 @@ describe('given default Toolbar', () => {
   })
 
   it('should have default selected value', () => {
-    const selected = triggers.filter(i => i.attributes('data-state') === 'on').map(i => i.element)
+    const selected = triggers.filter(i => i.attributes('data-state') === 'checked').map(i => i.element)
     expect(selected.includes(triggers[4].element)).toBeTruthy()
   })
 

@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { getElementByIdFrom, useForwardExpose } from '@/shared'
+import { disclosureState, getElementByIdFrom, useForwardExpose } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { makeContentId, makeTriggerId } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -146,7 +146,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :ref="forwardRef"
       :disabled="disabled"
       :data-disabled="disabled ? '' : undefined"
-      :data-state="getOpenState(open)"
+      :data-state="disclosureState(open)"
       data-navigation-menu-trigger
       :aria-expanded="open"
       :aria-controls="contentId"

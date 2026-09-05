@@ -16,7 +16,7 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
 import { computed, nextTick, onMounted, ref, toRefs } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { isTouchOrPen } from './utils'
 
@@ -104,7 +104,7 @@ onMounted(() => {
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :data-state="disclosureState(rootContext.open.value)"
     :data-disabled="disabled ? '' : undefined"
     :style="{
       WebkitTouchCallout: 'none',

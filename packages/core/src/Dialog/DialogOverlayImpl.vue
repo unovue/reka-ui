@@ -7,7 +7,7 @@ export interface DialogOverlayImplProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
@@ -26,7 +26,7 @@ useForwardExpose()
   <Primitive
     :as="as"
     :as-child="asChild"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :data-state="disclosureState(rootContext.open.value)"
     style="pointer-events: auto"
     @pointerdown.left.self.prevent
   >

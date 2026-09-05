@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 
 export interface NavigationMenuViewportProps extends PrimitiveProps {
   /**
@@ -24,7 +24,7 @@ import {
   Primitive,
 } from '@/Primitive'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, whenMouse } from './utils'
+import { whenMouse } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -169,7 +169,7 @@ useResizeObserver([globalThis.document?.body, rootNavigationMenu], () => {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :data-state="getOpenState(open)"
+      :data-state="disclosureState(open)"
       :data-orientation="menuContext.orientation"
       :style="{
         // Prevent interaction when animating out

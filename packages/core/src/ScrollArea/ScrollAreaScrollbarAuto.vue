@@ -8,7 +8,7 @@ export interface ScrollAreaScrollbarAutoProps {
 import { useDebounceFn, useResizeObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
 import ScrollAreaScrollbarVisible from './ScrollAreaScrollbarVisible.vue'
@@ -48,7 +48,7 @@ useResizeObserver(rootContext.content, handleResize)
     <ScrollAreaScrollbarVisible
       v-bind="$attrs"
       :ref="forwardRef"
-      :data-state="visible ? 'visible' : 'hidden'"
+      :data-state="disclosureState(visible)"
     >
       <slot />
     </ScrollAreaScrollbarVisible>

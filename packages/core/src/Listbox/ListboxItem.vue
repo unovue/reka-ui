@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createContext, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createContext, handleAndDispatchCustomEvent, selectionState, useForwardExpose, useId } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
@@ -85,7 +85,7 @@ provideListboxItemContext({
       :disabled="disabled ? '' : undefined"
       :data-disabled="disabled ? '' : undefined"
       :data-highlighted="isHighlighted ? '' : undefined"
-      :data-state="isSelected ? 'checked' : 'unchecked'"
+      :data-state="selectionState(isSelected)"
       @click="handleSelectCustomEvent"
       @keydown.space.prevent="handleSelectCustomEvent"
       @pointermove="() => {

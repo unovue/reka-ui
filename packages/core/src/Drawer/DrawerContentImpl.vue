@@ -34,7 +34,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
-import { getElementByIdFrom, useForwardExpose } from '@/shared'
+import { disclosureState, getElementByIdFrom, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
@@ -294,7 +294,7 @@ watch(() => rootContext.open.value, (isOpen) => {
 // Data attributes
 const dataAttributes = computed(() => {
   const attrs: Record<string, string | undefined> = {
-    'data-state': rootContext.open.value ? 'open' : 'closed',
+    'data-state': disclosureState(rootContext.open.value),
     'data-swipe-direction': rootContext.swipeDirection.value,
   }
   if (isSwiping.value)

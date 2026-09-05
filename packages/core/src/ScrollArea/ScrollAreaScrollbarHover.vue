@@ -7,7 +7,7 @@ export interface ScrollAreaScrollbarHoverProps extends ScrollAreaScrollbarAutoPr
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { Presence } from '@/Presence'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
 
@@ -58,7 +58,7 @@ onUnmounted(() => {
     <ScrollAreaScrollbarAuto
       v-bind="$attrs"
       :ref="forwardRef"
-      :data-state="visible ? 'visible' : 'hidden'"
+      :data-state="disclosureState(visible)"
     >
       <slot />
     </ScrollAreaScrollbarAuto>

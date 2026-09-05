@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { selectionState, useForwardExpose } from '@/shared'
 
 export interface RadioGroupIndicatorProps extends PrimitiveProps {
   /**
@@ -30,7 +30,7 @@ const itemContext = injectRadioGroupItemContext()
   >
     <Primitive
       :ref="forwardRef"
-      :data-state="itemContext.checked.value ? 'checked' : 'unchecked'"
+      :data-state="selectionState(itemContext.checked.value)"
       :data-disabled="itemContext.disabled.value ? '' : undefined"
       :as-child="asChild"
       :as="as"

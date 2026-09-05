@@ -6,7 +6,7 @@ export interface HoverCardTriggerProps extends PopperAnchorProps {}
 import type { PopperAnchorProps } from '@/Popper'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { excludeTouch } from './utils'
 
@@ -46,7 +46,7 @@ function handleTouch(event: PointerEvent) {
       :ref="forwardRef"
       :as-child="asChild"
       :as="as"
-      :data-state="rootContext.open.value ? 'open' : 'closed'"
+      :data-state="disclosureState(rootContext.open.value)"
       data-grace-area-trigger
       @pointerenter="excludeTouch(rootContext.onOpen)($event)"
       @pointerleave="excludeTouch(handleLeave)($event)"

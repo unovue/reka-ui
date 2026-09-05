@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, selectionState, useForwardExpose } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
@@ -58,7 +58,7 @@ const itemContext = provideTagsInputItemContext({
       :aria-labelledby="itemContext.textId"
       :aria-current="isSelected"
       :data-disabled="disabled ? '' : undefined"
-      :data-state="isSelected ? 'active' : 'inactive'"
+      :data-state="selectionState(isSelected)"
     >
       <slot />
     </Primitive>

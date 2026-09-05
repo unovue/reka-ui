@@ -173,13 +173,13 @@ describe('tabs characterization (pre-refactor contract)', () => {
     wrapper.unmount()
   })
 
-  it('marks the selected trigger active and others inactive (data-state + aria-selected)', async () => {
+  it('marks the selected trigger checked and others unchecked (data-state + aria-selected)', async () => {
     const wrapper = mount(twoTabFixture, { attachTo: document.body })
     await flushPromises()
     const [t1, t2] = wrapper.findAll('[role="tab"]')
-    expect(t1.attributes('data-state')).toBe('active')
+    expect(t1.attributes('data-state')).toBe('checked')
     expect(t1.attributes('aria-selected')).toBe('true')
-    expect(t2.attributes('data-state')).toBe('inactive')
+    expect(t2.attributes('data-state')).toBe('unchecked')
     expect(t2.attributes('aria-selected')).toBe('false')
     wrapper.unmount()
   })
@@ -191,7 +191,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
     const idBefore = t2.attributes('id')
     await t2.trigger('mousedown')
     await flushPromises()
-    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('checked')
     expect(t2.attributes('id')).toBe(idBefore)
     wrapper.unmount()
   })
@@ -202,7 +202,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
     const t2 = wrapper.findAll('[role="tab"]')[1]
     await t2.trigger('focus')
     await flushPromises()
-    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('checked')
     wrapper.unmount()
   })
 
@@ -212,11 +212,11 @@ describe('tabs characterization (pre-refactor contract)', () => {
     const [t1, t2] = wrapper.findAll('[role="tab"]')
     await t2.trigger('focus')
     await flushPromises()
-    expect(t1.attributes('data-state')).toBe('active')
-    expect(t2.attributes('data-state')).toBe('inactive')
+    expect(t1.attributes('data-state')).toBe('checked')
+    expect(t2.attributes('data-state')).toBe('unchecked')
     await t2.trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('checked')
     wrapper.unmount()
   })
 
@@ -257,7 +257,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
     await t2.trigger('mousedown')
     await flushPromises()
     expect(spy).toHaveBeenCalledTimes(1)
-    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('checked')
     wrapper.unmount()
   })
 
@@ -308,11 +308,11 @@ describe('v-model (foundation contract)', () => {
     expect(updated?.[0]?.[1]).toMatchObject({ reason: 'trigger-press', isCanceled: false })
     expect((updated?.[0]?.[1] as { event?: Event }).event).toBeInstanceOf(MouseEvent)
     // Controlled: nothing changes until the parent writes the new value back.
-    expect(t1.attributes('data-state')).toBe('active')
-    expect(t2.attributes('data-state')).toBe('inactive')
+    expect(t1.attributes('data-state')).toBe('checked')
+    expect(t2.attributes('data-state')).toBe('unchecked')
 
     await wrapper.setProps({ modelValue: 'tab2' })
-    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('checked')
     wrapper.unmount()
   })
 
@@ -342,8 +342,8 @@ describe('v-model (foundation contract)', () => {
     // No second (`trigger-focus`) attempt, and nothing was applied.
     expect(wrapper.emitted('beforeUpdate:modelValue')).toHaveLength(1)
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-    expect(t1.attributes('data-state')).toBe('active')
-    expect(t2.attributes('data-state')).toBe('inactive')
+    expect(t1.attributes('data-state')).toBe('checked')
+    expect(t2.attributes('data-state')).toBe('unchecked')
     wrapper.unmount()
   })
 
@@ -375,14 +375,14 @@ describe('v-model (foundation contract)', () => {
     await t2.trigger('mousedown')
     await flushPromises()
     expect(value.value).toBe('tab1')
-    expect(t1.attributes('data-state')).toBe('active')
-    expect(t2.attributes('data-state')).toBe('inactive')
+    expect(t1.attributes('data-state')).toBe('checked')
+    expect(t2.attributes('data-state')).toBe('unchecked')
 
     cancelNext.value = false
     await t2.trigger('mousedown')
     await flushPromises()
     expect(value.value).toBe('tab2')
-    expect(t2.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('checked')
     wrapper.unmount()
   })
 })

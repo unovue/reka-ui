@@ -28,7 +28,7 @@ function onChange() {
         <Toggle
           v-model="toggleState"
           aria-label="Toggle bold"
-          class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+          class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
         >
           <Icon
             icon="radix-icons:font-bold"
@@ -40,7 +40,7 @@ function onChange() {
           v-model="toggleStateOn"
           :default-value="true"
           aria-label="Toggle bold"
-          class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+          class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
         >
           <Icon
             icon="radix-icons:font-bold"
@@ -56,7 +56,7 @@ function onChange() {
           v-model="toggleStateDefaultOff"
           aria-label="Toggle bold"
           :default-value="false"
-          class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+          class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
         >
           <Icon
             icon="radix-icons:font-bold"
@@ -69,7 +69,7 @@ function onChange() {
           v-model="toggleStateDefaultOn"
           aria-label="Toggle bold"
           :default-value="true"
-          class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+          class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
         >
           <Icon
             icon="radix-icons:font-bold"
@@ -84,7 +84,7 @@ function onChange() {
         <Toggle
           v-model="toggleState"
           aria-label="Toggle bold"
-          class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+          class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
           @update:model-value="onChange"
         >
           <Icon
@@ -98,7 +98,7 @@ function onChange() {
       <Toggle
         v-model="toggleState"
         aria-label="Toggle bold"
-        class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+        class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
       >
         <Icon
           icon="radix-icons:font-bold"
@@ -111,7 +111,7 @@ function onChange() {
         v-model="toggleStateDefaultOn"
         aria-label="Toggle bold"
         :default-value="true"
-        class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+        class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
       >
         <Icon
           icon="radix-icons:font-bold"
@@ -123,7 +123,7 @@ function onChange() {
       <Toggle
         v-model="toggleState"
         aria-label="Toggle bold"
-        class="hover:bg-violet3 color-mauve11 data-[state=on]:bg-violet6 data-[state=on]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
+        class="hover:bg-violet3 color-mauve11 data-[state=checked]:bg-violet6 data-[state=checked]:text-violet12 shadow-blackA7 flex h-[35px] w-[35px] items-center justify-center rounded bg-white text-base leading-4 shadow-[0_2px_10px] focus-within:shadow-[0_0_0_2px] focus-within:shadow-black"
         @update:model-value="onChange"
       >
         <Icon

@@ -21,7 +21,7 @@ import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { disclosureState, useForwardExpose, useId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 
 defineOptions({
@@ -77,8 +77,6 @@ watch(
   },
 )
 
-const skipAnimation = computed(() => isMountAnimationPrevented.value && rootContext.open.value)
-
 onMounted(() => {
   requestAnimationFrame(() => {
     isMountAnimationPrevented.value = false
@@ -107,7 +105,7 @@ useEventListener(currentElement, 'beforematch', (ev) => {
       :as-child="props.asChild"
       :as="as"
       :hidden="!present ? rootContext.unmountOnHide.value ? '' : 'until-found' : undefined"
-      :data-state="skipAnimation ? undefined : rootContext.open.value ? 'open' : 'closed'"
+      :data-state="disclosureState(rootContext.open.value)"
       :data-disabled="rootContext.disabled?.value ? '' : undefined"
       :style="{
         [`--reka-collapsible-content-height`]: `${height}px`,

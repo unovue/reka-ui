@@ -8,13 +8,13 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {}
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { nextTick, onUnmounted, ref, watch } from 'vue'
-import { useId } from '@/shared'
+import { disclosureState, useId } from '@/shared'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
-import { getOpenState, isMouseEvent, SELECTION_KEYS, SUB_OPEN_KEYS } from './utils'
+import { isMouseEvent, SELECTION_KEYS, SUB_OPEN_KEYS } from './utils'
 
 const props = defineProps<MenuSubTriggerProps>()
 
@@ -148,7 +148,7 @@ async function handleKeyDown(event: KeyboardEvent) {
       aria-haspopup="menu"
       :aria-expanded="menuContext.open.value"
       :aria-controls="subContext.contentId"
-      :data-state="getOpenState(menuContext.open.value)"
+      :data-state="disclosureState(menuContext.open.value)"
       @click="
         async (event: MouseEvent) => {
           if (props.disabled || event.defaultPrevented) return;

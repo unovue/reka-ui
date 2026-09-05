@@ -5,7 +5,7 @@ import type {
 } from './MenuItem.vue'
 import type { AcceptableValue } from '@/shared/types'
 import { reactiveOmit } from '@vueuse/shared'
-import { useForwardProps } from '@/shared'
+import { selectionState, useForwardProps } from '@/shared'
 
 export type MenuRadioItemEmits = MenuItemEmits
 
@@ -20,7 +20,6 @@ import { computed, toRefs } from 'vue'
 import MenuItem from './MenuItem.vue'
 import { provideMenuItemIndicatorContext } from './MenuItemIndicator.vue'
 import { injectMenuRadioGroupContext } from './MenuRadioGroup.vue'
-import { getCheckedState } from './utils'
 
 const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()
@@ -42,7 +41,7 @@ provideMenuItemIndicatorContext({ modelValue })
     role="menuitemradio"
     v-bind="forwarded"
     :aria-checked="modelValue"
-    :data-state="getCheckedState(modelValue)"
+    :data-state="selectionState(modelValue)"
     @select="
       async (event) => {
         emits('select', event);

@@ -13,7 +13,7 @@ export interface DrawerSwipeAreaProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { DRAWER_CSS_VARS } from './utils'
@@ -65,7 +65,7 @@ useSwipeDismiss({
   <Primitive
     v-bind="props"
     :ref="forwardRef"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :data-state="disclosureState(rootContext.open.value)"
     :data-swipe-direction="openDirection"
   >
     <slot />

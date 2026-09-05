@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { toRefs } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, disclosureState, useForwardExpose } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -79,7 +79,7 @@ useForwardExpose()
   <Primitive
     :as="as"
     :as-child="props.asChild"
-    :data-state="open ? 'open' : 'closed'"
+    :data-state="disclosureState(open)"
     :data-disabled="disabled ? '' : undefined"
   >
     <slot :open="open" />

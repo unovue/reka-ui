@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { isEqual } from 'ohash'
 import { computed } from 'vue'
-import { useForwardExpose } from '@/shared'
+import { selectionState, useForwardExpose } from '@/shared'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
@@ -36,7 +36,7 @@ function handleDelete() {
     v-bind="props"
     :aria-labelledby="itemContext.textId"
     :aria-current="itemContext.isSelected.value"
-    :data-state="itemContext.isSelected.value ? 'active' : 'inactive'"
+    :data-state="selectionState(itemContext.isSelected.value)"
     :data-disabled="disabled ? '' : undefined"
     :type="as === 'button' ? 'button' : undefined"
     @click="handleDelete"

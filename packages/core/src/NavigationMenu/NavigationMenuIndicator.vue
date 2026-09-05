@@ -15,7 +15,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, ref, watchEffect } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 defineOptions({
@@ -67,7 +67,7 @@ useResizeObserver(menuContext.indicatorTrack, handlePositionChange)
       <Primitive
         :ref="forwardRef"
         aria-hidden="true"
-        :data-state="isVisible ? 'visible' : 'hidden'"
+        :data-state="disclosureState(isVisible)"
         :data-orientation="menuContext.orientation"
         :as-child="props.asChild"
         :as="as"

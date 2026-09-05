@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, handleAndDispatchCustomEvent, selectionState, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -160,7 +160,7 @@ provideSelectItemContext({
       :aria-labelledby="textId"
       :data-highlighted="isFocused ? '' : undefined"
       :aria-selected="isSelected"
-      :data-state="isSelected ? 'checked' : 'unchecked'"
+      :data-state="selectionState(isSelected)"
       :aria-disabled="disabled || undefined"
       :data-disabled="disabled ? '' : undefined"
       :tabindex="disabled ? undefined : -1"

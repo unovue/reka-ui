@@ -3,10 +3,6 @@ import { getActiveElement } from '@/shared'
 export type Orientation = 'vertical' | 'horizontal'
 export type Direction = 'ltr' | 'rtl'
 
-export function getOpenState(open: boolean) {
-  return open ? 'open' : 'closed'
-}
-
 export function makeTriggerId(baseId: string, value: string) {
   return `${baseId}-trigger-${value}`
 }

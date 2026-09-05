@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import type { DisclosureState } from '@/shared'
+import { createContext, disclosureState, useForwardExpose } from '@/shared'
 
 export interface TooltipRootProps {
   /**
@@ -53,7 +54,10 @@ export type TooltipRootEmits = {
 export interface TooltipContext {
   contentId: string
   open: Ref<boolean>
-  stateAttribute: Ref<'closed' | 'delayed-open' | 'instant-open'>
+  /** `'open' | 'closed'` — the disclosure axis of `data-state` (#2823). */
+  stateAttribute: Ref<DisclosureState>
+  /** `true` only while open AND that open came from the delay timer; bound as `data-delayed`. */
+  isDelayed: Ref<boolean>
   trigger: Ref<HTMLElement | undefined>
   onTriggerChange: (trigger: HTMLElement | undefined) => void
   onTriggerEnter: () => void
@@ -128,11 +132,8 @@ watch(open, (isOpen) => {
 const wasOpenDelayedRef = ref(false)
 const trigger = ref<HTMLElement>()
 
-const stateAttribute = computed(() => {
-  if (!open.value)
-    return 'closed'
-  return wasOpenDelayedRef.value ? 'delayed-open' : 'instant-open'
-})
+const stateAttribute = computed<DisclosureState>(() => disclosureState(open.value))
+const isDelayed = computed(() => open.value && wasOpenDelayedRef.value)
 
 const { start: startTimer, stop: clearTimer } = useTimeoutFn(() => {
   wasOpenDelayedRef.value = true
@@ -156,6 +157,7 @@ provideTooltipRootContext({
   contentId: '',
   open,
   stateAttribute,
+  isDelayed,
   trigger,
   onTriggerChange(el) {
     trigger.value = el

@@ -1,10 +1,8 @@
 <script lang="ts">
+import type { DisclosureState } from '@/shared'
 import { useForwardExpose, useId } from '@/shared'
 
-export type TooltipTriggerDataState
-  = | 'closed'
-    | 'delayed-open'
-    | 'instant-open'
+export type TooltipTriggerDataState = DisclosureState
 
 export interface TooltipTriggerProps extends PopperAnchorProps {}
 </script>
@@ -111,6 +109,7 @@ function handleClick() {
         rootContext.open.value ? rootContext.contentId : undefined
       "
       :data-state="rootContext.stateAttribute.value"
+      :data-delayed="rootContext.isDelayed.value ? '' : undefined"
       :as="as"
       :as-child="props.asChild"
       data-grace-area-trigger

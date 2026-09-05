@@ -17,13 +17,12 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
-import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
+import { disclosureState, getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
   EVENT_ROOT_CONTENT_DISMISS,
   focusFirst,
-  getOpenState,
   getTabbableCandidates,
   makeContentId,
   makeTriggerId,
@@ -197,7 +196,7 @@ function handleDismiss() {
     :ref="forwardRef"
     :aria-labelledby="triggerId"
     :data-motion="motionAttribute"
-    :data-state="getOpenState(menuContext.modelValue.value === itemContext.value)"
+    :data-state="disclosureState(menuContext.modelValue.value === itemContext.value)"
     :data-orientation="menuContext.orientation"
     v-bind="props"
     @keydown="handleKeydown"

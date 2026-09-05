@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -56,7 +56,7 @@ onMounted(() => {
           :aria-expanded="open"
           :aria-controls="open ? menuContext.contentId : undefined"
           :data-highlighted="isFocused ? '' : undefined"
-          :data-state="open ? 'open' : 'closed'"
+          :data-state="disclosureState(open)"
           :data-disabled="disabled ? '' : undefined"
           :disabled="disabled"
           :data-value="menuContext.value"

@@ -16,11 +16,11 @@ export interface NavigationMenuContentProps extends NavigationMenuContentImplPro
 import { isClient, reactiveOmit } from '@vueuse/shared'
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import { disclosureState, useForwardExpose, useForwardPropsEmits } from '@/shared'
 import NavigationMenuContentImpl from './NavigationMenuContentImpl.vue'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, whenMouse } from './utils'
+import { whenMouse } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -60,7 +60,7 @@ const isLastActiveValue = computed(() => {
     >
       <NavigationMenuContentImpl
         :ref="forwardRef"
-        :data-state="getOpenState(open)"
+        :data-state="disclosureState(open)"
         :style="{
           pointerEvents: !open && menuContext.isRootMenu ? 'none' : undefined,
         }"

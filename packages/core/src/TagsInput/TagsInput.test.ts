@@ -68,23 +68,23 @@ describe('given default TagsInput', () => {
       })
 
       it('should select the last tags', () => {
-        expect(tags.at(-1).attributes('data-state')).toBe('active')
+        expect(tags.at(-1).attributes('data-state')).toBe('checked')
       })
 
       it('should select the previous tag when press ArrowLeft', async () => {
         await input.trigger('keydown', {
           key: 'ArrowLeft',
         })
-        expect(tags.at(-1).attributes('data-state')).toBe('inactive')
-        expect(tags[tags.length - 2].attributes('data-state')).toBe('active')
+        expect(tags.at(-1).attributes('data-state')).toBe('unchecked')
+        expect(tags[tags.length - 2].attributes('data-state')).toBe('checked')
       })
 
       it('should select the first item when press Home', async () => {
         await input.trigger('keydown', {
           key: 'Home',
         })
-        expect(tags[0].attributes('data-state')).toBe('active')
-        expect(tags.at(-1).attributes('data-state')).toBe('inactive')
+        expect(tags[0].attributes('data-state')).toBe('checked')
+        expect(tags.at(-1).attributes('data-state')).toBe('unchecked')
       })
 
       it('should select the last item when press End', async () => {
@@ -94,21 +94,21 @@ describe('given default TagsInput', () => {
         await input.trigger('keydown', {
           key: 'End',
         })
-        expect(tags[0].attributes('data-state')).toBe('inactive')
-        expect(tags.at(-1).attributes('data-state')).toBe('active')
+        expect(tags[0].attributes('data-state')).toBe('unchecked')
+        expect(tags.at(-1).attributes('data-state')).toBe('checked')
       })
 
       it('should remove active state when press ArrowRight', async () => {
         await input.trigger('keydown', {
           key: 'ArrowRight',
         })
-        expect(tags.at(-1).attributes('data-state')).toBe('inactive')
+        expect(tags.at(-1).attributes('data-state')).toBe('unchecked')
       })
 
       describe('after pressing on Backspace', () => {
         let prevTag: DOMWrapper<HTMLElement>
         beforeEach(async () => {
-          prevTag = wrapper.find('[data-state="active"]')
+          prevTag = wrapper.find('[data-state="checked"]')
           await input.trigger('keydown', {
             key: 'Backspace',
           })
@@ -125,7 +125,7 @@ describe('given default TagsInput', () => {
         })
 
         it('should select the new last tag', () => {
-          expect(tags.at(-1).attributes('data-state')).toBe('active')
+          expect(tags.at(-1).attributes('data-state')).toBe('checked')
         })
       })
     })
