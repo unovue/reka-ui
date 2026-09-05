@@ -55,3 +55,10 @@ jobs:
       # Must publish from repo root for provenance to work with OIDC
       - name: Publish to npm
         run: npm publish ./packages/core --access public --provenance
+
+      # `@reka-ui/codemod` is dependency-free (no build) and versioned in
+      # lockstep with `reka-ui` by `pnpm bumpp`, so `npx @reka-ui/codemod@3`
+      # always resolves to the codemods for that major. It needs its own
+      # trusted-publisher entry on npm pointing at this workflow.
+      - name: Publish codemod to npm
+        run: npm publish ./packages/codemod --access public --provenance

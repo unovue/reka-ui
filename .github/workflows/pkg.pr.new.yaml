@@ -18,6 +18,6 @@ jobs:
       - name: Build Reka UI and plugins
         run: pnpm run build
 
-      - run: pnpm dlx pkg-pr-new publish --compact ./packages/core
+      - run: pnpm dlx pkg-pr-new publish --compact ./packages/core ./packages/codemod
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
