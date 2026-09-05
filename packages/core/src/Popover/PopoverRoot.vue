@@ -1,6 +1,15 @@
 <script lang="ts">
-import type { Ref } from 'vue'
-import { createContext } from '@/shared'
+import type { ComputedRef, Ref } from 'vue'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import { createContext, useId } from '@/shared'
+
+/** Why the popover's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
+export type PopoverOpenChangeReason
+  = | 'trigger-press'
+    | 'close-press'
+    | 'escape-key'
+    | 'outside-press'
+    | 'focus-outside'
 
 export interface PopoverRootProps {
   /**
@@ -20,19 +29,25 @@ export interface PopoverRootProps {
 }
 export type PopoverRootEmits = {
   /**
+   * Event handler called before the open state of the popover changes; `details.cancel()` keeps the current state.
+   */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>]
+  /**
    * Event handler called when the open state of the popover changes.
    */
-  'update:open': [value: boolean]
+  'update:open': [value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>]
 }
 
 export interface PopoverRootContext {
   triggerElement: Ref<HTMLElement | undefined>
   triggerId: string
   contentId: string
-  open: Ref<boolean>
+  open: ComputedRef<boolean>
   modal: Ref<boolean>
-  onOpenChange: (value: boolean) => void
-  onOpenToggle: () => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (value: boolean, reason?: PopoverOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenToggle: (reason?: PopoverOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   hasCustomAnchor: Ref<boolean>
 }
 
@@ -41,9 +56,8 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { usePopover } from './usePopover'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
@@ -61,37 +75,26 @@ defineSlots<{
   }) => any
 }>()
 
-const { modal } = toRefs(props)
-
-const open = useVModel(props, 'open', emit, {
-  defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
-
-const triggerElement = ref<HTMLElement>()
-const hasCustomAnchor = ref(false)
-
-providePopoverRootContext({
-  contentId: '',
-  triggerId: '',
-  modal,
-  open,
-  onOpenChange: (value) => {
-    open.value = value
-  },
-  onOpenToggle: () => {
-    open.value = !open.value
-  },
-  triggerElement,
-  hasCustomAnchor,
+// Controlled/uncontrolled `open` + the `beforeUpdate:` / `update:` emits live in
+// the composable's `useControllableState` (`open === undefined` → uncontrolled).
+// `useId` (ConfigProvider/SSR-aware) stays in the shell: the trigger/content ids
+// derive from this base inside the composable.
+const { open, onOpenChange, context } = usePopover({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  modal: () => props.modal,
+  baseId: useId(undefined, 'reka-popover'),
+  emit,
 })
+
+providePopoverRootContext(context)
 </script>
 
 <template>
   <PopperRoot>
     <slot
       :open="open"
-      :close="() => open = false"
+      :close="() => onOpenChange(false)"
     />
   </PopperRoot>
 </template>

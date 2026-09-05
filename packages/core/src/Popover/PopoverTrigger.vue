@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useForwardExpose, useId } from '@/shared'
+import { useForwardExpose } from '@/shared'
 
 export interface PopoverTriggerProps extends PrimitiveProps {}
 </script>
@@ -10,6 +10,7 @@ import { onMounted } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
+import { getPopoverTriggerSurface } from './usePopover'
 
 const props = withDefaults(defineProps<PopoverTriggerProps>(), {
   as: 'button',
@@ -19,7 +20,15 @@ const rootContext = injectPopoverRootContext()
 
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
-rootContext.triggerId ||= useId(undefined, 'reka-popover-trigger')
+// id/aria/data-state + the toggling `onClick` all come from the shared surface
+// builder (single source with `usePopover()`); the PopperAnchor wrapper (skipped
+// when a `PopoverAnchor` is present), the element registration and the
+// tag-dependent `type` stay in the SFC. Listener order is unchanged: `$attrs`
+// fall through the as-child wrapper and `Slot` merges them BEFORE the inner
+// element's own props, so a consumer `@click` still runs before the surface's
+// `onClick`.
+const trigger = getPopoverTriggerSurface(rootContext)
+
 onMounted(() => {
   rootContext.triggerElement.value = triggerElement.value
 })
@@ -31,16 +40,11 @@ onMounted(() => {
     as-child
   >
     <Primitive
-      :id="rootContext.triggerId"
       :ref="forwardRef"
-      :type="as === 'button' ? 'button' : undefined"
-      aria-haspopup="dialog"
-      :aria-expanded="rootContext.open.value"
-      :aria-controls="rootContext.contentId"
-      :data-state="disclosureState(rootContext.open.value)"
       :as="as"
       :as-child="props.asChild"
-      @click="rootContext.onOpenToggle"
+      v-bind="trigger.attrs.value"
+      :type="as === 'button' ? 'button' : undefined"
     >
       <slot />
     </Primitive>

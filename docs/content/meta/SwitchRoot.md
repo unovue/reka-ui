@@ -76,9 +76,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value of the switch changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[payload: T, details: ChangeEventDetails&lt;SwitchChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the switch changes.</p>\n',
-    'type': '[payload: T]'
+    'type': '[payload: T, details: ChangeEventDetails&lt;SwitchChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -118,7 +123,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: T]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the switch changes; details.cancel() vetoes the change. | `[payload: T, details: ChangeEventDetails<SwitchChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: T, details: ChangeEventDetails<SwitchChangeReason, Event>]` |
 
 **Slots**
 

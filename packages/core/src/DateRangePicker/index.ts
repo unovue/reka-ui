@@ -25,7 +25,7 @@ export { default as DateRangePickerHeading, type DateRangePickerHeadingProps } f
 export { default as DateRangePickerInput, type DateRangePickerInputProps } from './DateRangePickerInput.vue'
 export { default as DateRangePickerNext, type DateRangePickerNextProps } from './DateRangePickerNext.vue'
 export { default as DateRangePickerPrev, type DateRangePickerPrevProps } from './DateRangePickerPrev.vue'
-export { default as DateRangePickerRoot, type DateRangePickerRootEmits, type DateRangePickerRootProps, injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
+export { type DateRangePickerOpenChangeReason, default as DateRangePickerRoot, type DateRangePickerRootEmits, type DateRangePickerRootProps, injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 export { default as DateRangePickerTrigger, type DateRangePickerTriggerProps } from './DateRangePickerTrigger.vue'
 export { default as DateRangePickerView, type DateRangePickerViewProps } from './DateRangePickerView.vue'
 export { default as DateRangePickerViewTrigger, type DateRangePickerViewTriggerProps } from './DateRangePickerViewTrigger.vue'

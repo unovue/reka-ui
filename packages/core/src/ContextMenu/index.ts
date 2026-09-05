@@ -1,3 +1,6 @@
+// The `update:open` reason union of the root and sub parts belongs to the
+// underlying Menu family, which is not a root export of the package.
+export { type MenuOpenChangeReason } from '../Menu'
 export {
   default as ContextMenuArrow,
   type ContextMenuArrowProps,

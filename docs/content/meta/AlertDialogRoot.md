@@ -24,9 +24,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Called before the open state changes; <code>details.cancel()</code> keeps the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;DialogOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the dialog changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;DialogOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -58,7 +63,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean]` |
+| `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DialogOpenChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: ChangeEventDetails<DialogOpenChangeReason, Event>]` |
 
 **Slots**
 

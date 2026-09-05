@@ -84,7 +84,7 @@ The step item component.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active', 'inactive', 'completed'],
+      values: ['completed', 'current', 'upcoming'],
     },
     {
       attribute: '[data-disabled]',
@@ -107,7 +107,7 @@ The trigger that toggles the step.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active', 'inactive', 'completed'],
+      values: ['completed', 'current', 'upcoming'],
     },
     {
       attribute: '[data-disabled]',

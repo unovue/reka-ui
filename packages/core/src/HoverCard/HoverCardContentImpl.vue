@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { DismissableLayerEmits } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { disclosureState, useForwardExpose, useGraceArea } from '@/shared'
+import { useForwardExpose, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
@@ -10,11 +10,12 @@ export interface HoverCardContentImplProps extends PopperContentProps {}
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { mergeProps, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { useForwardProps } from '..'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
+import { getHoverCardContentSurface } from './useHoverCard'
 import { getTabbableNodes } from './utils'
 
 const props = defineProps<HoverCardContentImplProps>()
@@ -25,11 +26,49 @@ const { forwardRef, currentElement: contentElement } = useForwardExpose()
 const rootContext = injectHoverCardRootContext()
 const { isPointerInTransit, onPointerExit } = useGraceArea(rootContext.triggerElement, contentElement)
 
+// `data-state` comes from the shared surface builder (single source with
+// `useHoverCard()`); the grace area, selection containment, tabbable
+// neutralisation, scroll dismissal, DismissableLayer (which hands the dismiss
+// reason + event to `onDismiss`), PopperContent and the `--reka-hover-card-*`
+// CSS variables stay in the SFC.
+const content = getHoverCardContentSurface(rootContext)
+
 syncRef(rootContext.isPointerInTransitRef, isPointerInTransit, { direction: 'rtl' })
 
-onPointerExit(() => {
-  rootContext.onClose()
+// Leaving the grace area is the one pointer path that closes an open card (the
+// trigger's own `pointerleave` only cancels a pending open), so the reason is
+// decided here by whichever element the pointer left last.
+let lastPointerLeave: { reason: 'trigger-leave' | 'content-leave', event: PointerEvent } | undefined
+watchEffect((cleanupFn) => {
+  const trigger = rootContext.triggerElement.value
+  const content = contentElement.value
+  if (!trigger || !content)
+    return
+  const handleTriggerLeave = (event: PointerEvent) => {
+    lastPointerLeave = { reason: 'trigger-leave', event }
+  }
+  const handleContentLeave = (event: PointerEvent) => {
+    lastPointerLeave = { reason: 'content-leave', event }
+  }
+  trigger.addEventListener('pointerleave', handleTriggerLeave)
+  content.addEventListener('pointerleave', handleContentLeave)
+  cleanupFn(() => {
+    trigger.removeEventListener('pointerleave', handleTriggerLeave)
+    content.removeEventListener('pointerleave', handleContentLeave)
+  })
 })
+
+onPointerExit(() => {
+  rootContext.onClose(lastPointerLeave?.reason ?? 'content-leave', lastPointerLeave?.event)
+})
+
+function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
+  // `focusOutside` is prevented below, so the layer never dismisses for it;
+  // the guard keeps `HoverCardOpenChangeReason` honest without a cast.
+  if (reason === 'focus-outside')
+    return
+  rootContext.onDismiss(reason, event)
+}
 
 const containSelection = ref(false)
 
@@ -91,12 +130,11 @@ onUnmounted(() => {
     @escape-key-down="emits('escapeKeyDown', $event)"
     @pointer-down-outside="emits('pointerDownOutside', $event)"
     @focus-outside.prevent="emits('focusOutside', $event)"
-    @dismiss="rootContext.onDismiss"
+    @dismiss="handleDismiss"
   >
     <PopperContent
-      v-bind="{ ...forwarded, ...$attrs }"
+      v-bind="mergeProps(forwarded, $attrs, content.attrs.value)"
       :ref="forwardRef"
-      :data-state="disclosureState(rootContext.open.value)"
       :style="{
         'userSelect': containSelection ? 'text' : undefined,
         // Safari requires prefix

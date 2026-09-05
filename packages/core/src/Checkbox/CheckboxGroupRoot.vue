@@ -1,8 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFormControl } from '@/shared'
@@ -19,14 +20,22 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
+  /** Event handler called before the value of the checkbox group changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [value: T[], details: ChangeEventDetails<CheckboxGroupChangeReason>]
   /** Event handler called when the value of the checkbox changes. */
-  'update:modelValue': [value: T[]]
+  'update:modelValue': [value: T[], details: ChangeEventDetails<CheckboxGroupChangeReason>]
 }
 
-interface CheckboxGroupRootContext {
+export interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
+  /**
+   * Route every write through the group's model (`beforeUpdate` + `update`);
+   * returns `false` when unchanged or cancelled. Descendants never assign
+   * `modelValue.value` directly.
+   */
+  changeModelValue: (value: AcceptableValue[], reason?: CheckboxGroupChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
@@ -36,6 +45,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useCheckboxGroup } from './useCheckboxGroup'
 
 const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
   rovingFocus: true,
@@ -48,20 +58,21 @@ const dir = useDirection(propDir)
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const isFormControl = useFormControl(currentElement)
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue ?? [],
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<T[]>
+// Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
+// composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
+const { modelValue, context } = useCheckboxGroup<T>({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  emit: emits,
+  disabled,
+  rovingFocus,
+})
 
 const rovingFocusProps = computed(() => {
   return rovingFocus.value ? { loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
 
-provideCheckboxGroupRootContext({
-  modelValue,
-  rovingFocus,
-  disabled,
-})
+provideCheckboxGroupRootContext(context)
 </script>
 
 <template>

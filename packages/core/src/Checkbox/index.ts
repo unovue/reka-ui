@@ -14,6 +14,19 @@ export {
   type CheckboxRootProps,
   injectCheckboxRootContext,
 } from './CheckboxRoot.vue'
+export {
+  type CheckboxChangeReason,
+  type CheckboxState,
+  useCheckbox,
+  type UseCheckboxProps,
+  type UseCheckboxReturn,
+} from './useCheckbox'
+export {
+  type CheckboxGroupChangeReason,
+  useCheckboxGroup,
+  type UseCheckboxGroupProps,
+  type UseCheckboxGroupReturn,
+} from './useCheckboxGroup'
 export type {
   CheckedState as CheckboxCheckedState,
 } from './utils'

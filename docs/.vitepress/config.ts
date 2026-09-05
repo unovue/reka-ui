@@ -138,6 +138,10 @@ export default defineConfig({
             text: `Migration to v3 ${BadgeHTML('New')}`,
             link: '/docs/guides/migration-v3',
           },
+          {
+            text: `Migrate with an AI agent ${BadgeHTML('New')}`,
+            link: '/docs/guides/migration-v3-agent',
+          },
 
           { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
         ],

@@ -3,7 +3,7 @@ import type {
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
-import { disclosureState, getActiveElement, useForwardExpose, useId } from '@/shared'
+import { getActiveElement, useForwardExpose } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -34,10 +34,11 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { mergeProps, onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getDialogContentSurface } from './useDialog'
 import { useWarning } from './utils'
 
 const props = defineProps<DialogContentImplProps & {
@@ -51,8 +52,12 @@ const emits = defineEmits<DialogContentImplEmits>()
 const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
-rootContext.titleId ||= useId(undefined, 'reka-dialog-title')
-rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
+// id/role/aria-labelledby/aria-describedby/data-state come from the shared
+// surface builder (single source with `useDialog()`); the FocusScope +
+// DismissableLayer wrappers, `@dismiss` forwarding and the a11y warnings stay
+// here. `$attrs` merges AFTER the surface so a consumer's
+// `:aria-describedby="undefined"` still wins.
+const content = getDialogContentSurface(rootContext)
 
 onMounted(() => {
   rootContext.contentElement = contentElement
@@ -84,18 +89,13 @@ if (process.env.NODE_ENV !== 'production') {
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer
-      :id="rootContext.contentId"
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
       :present="props.present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
-      role="dialog"
-      :aria-describedby="rootContext.descriptionId"
-      :aria-labelledby="rootContext.titleId"
-      :data-state="disclosureState(rootContext.open.value)"
-      v-bind="$attrs"
-      @dismiss="rootContext.onOpenChange(false)"
+      v-bind="mergeProps(content.attrs.value, $attrs)"
+      @dismiss="(details) => rootContext.onOpenChange(false, details.reason, details.event)"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @focus-outside="emits('focusOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"

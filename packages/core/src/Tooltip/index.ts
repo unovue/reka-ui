@@ -18,6 +18,7 @@ export {
 } from './TooltipProvider.vue'
 export {
   injectTooltipRootContext,
+  type TooltipOpenChangeReason,
   default as TooltipRoot,
   type TooltipRootEmits,
   type TooltipRootProps,
@@ -26,3 +27,10 @@ export {
   default as TooltipTrigger,
   type TooltipTriggerProps,
 } from './TooltipTrigger.vue'
+export {
+  type TooltipContentState,
+  type TooltipTriggerState,
+  useTooltip,
+  type UseTooltipProps,
+  type UseTooltipReturn,
+} from './useTooltip'

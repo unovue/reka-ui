@@ -54,6 +54,22 @@ describe('stepper', async () => {
     expect(getByTestId('stepper-item-2')).toHaveAttribute('aria-current', 'true')
   })
 
+  it('reports completed, current and upcoming on data-state', async () => {
+    const { getByTestId, user } = setup({ stepperProps: { defaultValue: 2, steps } })
+
+    for (const part of ['item', 'item-trigger', 'item-separator']) {
+      expect(getByTestId(`stepper-${part}-1`)).toHaveAttribute('data-state', 'completed')
+      expect(getByTestId(`stepper-${part}-2`)).toHaveAttribute('data-state', 'current')
+      expect(getByTestId(`stepper-${part}-3`)).toHaveAttribute('data-state', 'upcoming')
+    }
+    expect(getByTestId('stepper-item-1')).not.toHaveAttribute('aria-current')
+
+    await user.click(getByTestId('stepper-item-trigger-3'))
+    expect(getByTestId('stepper-item-2')).toHaveAttribute('data-state', 'completed')
+    expect(getByTestId('stepper-item-3')).toHaveAttribute('data-state', 'current')
+    expect(getByTestId('stepper-item-4')).toHaveAttribute('data-state', 'upcoming')
+  })
+
   it('navigates horizontally using the keyboard', async () => {
     const { getByTestId, user } = setup({ stepperProps: { steps } })
 

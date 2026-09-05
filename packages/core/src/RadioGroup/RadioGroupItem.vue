@@ -9,7 +9,7 @@ export type RadioGroupItemEmits = {
   select: [event: SelectEvent]
 }
 
-interface RadioGroupItemContext {
+export interface RadioGroupItemContext {
   disabled: ComputedRef<boolean>
   checked: ComputedRef<boolean>
 }
@@ -20,11 +20,11 @@ export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { isEqual } from 'ohash'
 import { computed, ref } from 'vue'
 import { RovingFocusItem } from '@/RovingFocus'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
+import { getRadioGroupItemSurface } from './useRadioGroup'
 
 defineOptions({
   inheritAttrs: false,
@@ -52,9 +52,15 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectRadioGroupRootContext()
 
-const disabled = computed(() => rootContext.disabled.value || props.disabled)
-const required = computed(() => rootContext.required.value || props.required)
-const checked = computed(() => isEqual(rootContext.modelValue?.value, props.value))
+// checked (`isEqual(modelValue, value)`) and the group-inherited disabled/required
+// come from the shared surface builder (single source with `useRadioGroup()`);
+// the leaf `Radio` binds the attrs from the same builder, so only the derived
+// state is read here and handed down as props.
+const surface = getRadioGroupItemSurface(rootContext, () => props.value, () => props.disabled, () => props.required, { name: () => props.name })
+
+const disabled = computed(() => surface.state.value.disabled)
+const required = computed<boolean>(() => surface.props.value.required)
+const checked = computed(() => surface.state.value.state === 'checked')
 
 provideRadiogroupItemContext({ disabled, checked })
 
@@ -100,9 +106,9 @@ const scopeIdAttrs = useForwardScopeId()
       :checked="checked"
       :required="required"
       :disabled="disabled"
-      @update:checked="rootContext.changeModelValue(value)"
+      @update:checked="(_checked, details) => rootContext.changeModelValue(value, 'item-press', details?.event)"
       @select="emits('select', $event)"
-      @keydown.enter.prevent
+      @keydown="surface.props.value.onKeydown"
       @focus="handleFocus"
     >
       <slot

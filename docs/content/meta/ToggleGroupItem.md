@@ -33,17 +33,17 @@
   {
     'name': 'modelValue',
     'description': '<p>Current value</p>\n',
-    'type': 'boolean'
+    'type': 'boolean | null | undefined'
   },
   {
     'name': 'state',
     'description': '<p>Current state</p>\n',
-    'type': '\'on\' | \'off\''
+    'type': '\'checked\' | \'unchecked\''
   },
   {
     'name': 'pressed',
     'description': '<p>Current pressed state</p>\n',
-    'type': 'boolean'
+    'type': 'boolean | null | undefined'
   },
   {
     'name': 'disabled',
@@ -68,9 +68,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current value | `boolean` |
-| `state` | Current state | `"on" \| "off"` |
-| `pressed` | Current pressed state | `boolean` |
+| `modelValue` | Current value | `boolean \| null \| undefined` |
+| `state` | Current state | `"checked" \| "unchecked"` |
+| `pressed` | Current pressed state | `boolean \| null \| undefined` |
 | `disabled` | Current disabled state | `boolean` |
 
 </llm-only>

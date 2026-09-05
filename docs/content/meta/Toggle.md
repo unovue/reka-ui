@@ -50,9 +50,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value of the toggle changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
   }
 ]" />
 
@@ -60,17 +65,17 @@
   {
     'name': 'modelValue',
     'description': '<p>Current value</p>\n',
-    'type': 'boolean'
+    'type': 'boolean | null | undefined'
   },
   {
     'name': 'state',
     'description': '<p>Current state</p>\n',
-    'type': '\'on\' | \'off\''
+    'type': '\'checked\' | \'unchecked\''
   },
   {
     'name': 'pressed',
     'description': '<p>Current pressed state</p>\n',
-    'type': 'boolean'
+    'type': 'boolean | null | undefined'
   },
   {
     'name': 'disabled',
@@ -98,15 +103,16 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the toggle changes. | `[value: boolean]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the toggle changes; details.cancel() vetoes the change. | `[value: boolean, details: ChangeEventDetails<"trigger-press", Event>]` |
+| `update:modelValue` | Event handler called when the value of the toggle changes. | `[value: boolean, details: ChangeEventDetails<"trigger-press", Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current value | `boolean` |
-| `state` | Current state | `"on" \| "off"` |
-| `pressed` | Current pressed state | `boolean` |
+| `modelValue` | Current value | `boolean \| null \| undefined` |
+| `state` | Current state | `"checked" \| "unchecked"` |
+| `pressed` | Current pressed state | `boolean \| null \| undefined` |
 | `disabled` | Current disabled state | `boolean` |
 
 </llm-only>

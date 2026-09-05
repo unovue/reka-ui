@@ -4,7 +4,7 @@ import { createEvent, findByText, fireEvent, render } from '@testing-library/vue
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
 import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
@@ -539,5 +539,162 @@ describe('given a Dialog with content nested inside the overlay', () => {
 
       expect(document.body.innerHTML).toContain(CLOSE_TEXT)
     })
+  })
+})
+
+// #2828 — `beforeUpdate:open` / `update:open` carry `(value, details)`; every
+// open/close path reports its reason and the native event, and a synchronous
+// `details.cancel()` in `beforeUpdate:open` keeps the current state.
+describe('dialogRoot change events (v3 foundation contract)', () => {
+  const ChangeEventsDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    props: ['defaultOpen', 'onBeforeUpdateOpen'],
+    template: `<DialogRoot :default-open="defaultOpen" @before-update:open="onBeforeUpdateOpen">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  // `any`: the v-model / controlled cases below mount ad-hoc wrapper components.
+  let wrapper: VueWrapper<any>
+  let consoleWarnMock: MockInstance
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    consoleWarnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
+    consoleWarnMock.mockRestore()
+  })
+
+  it('emits beforeUpdate:open then update:open with (value, details) on trigger click', async () => {
+    wrapper = mount(ChangeEventsDialog, { attachTo: document.body })
+    await fireEvent.click(wrapper.find('button').element)
+
+    const root = wrapper.findComponent(DialogRoot)
+    const keys = Object.keys(root.emitted()).filter(k => k.endsWith(':open'))
+    expect(keys).toEqual(['beforeUpdate:open', 'update:open'])
+    const [beforeValue, beforeDetails] = root.emitted('beforeUpdate:open')![0]
+    const [value, details] = root.emitted('update:open')![0]
+    expect(beforeValue).toBe(true)
+    expect(value).toBe(true)
+    expect(beforeDetails).toBe(details)
+    expect(details).toMatchObject({ reason: 'trigger-press', isCanceled: false })
+    expect(details.event).toBeInstanceOf(MouseEvent)
+    expect(typeof details.cancel).toBe('function')
+  })
+
+  it('reports reason "escape-key" with the KeyboardEvent when Escape closes the dialog', async () => {
+    wrapper = mount(ChangeEventsDialog, { attachTo: document.body, props: { defaultOpen: true } })
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    const [value, details] = wrapper.findComponent(DialogRoot).emitted('update:open')![0]
+    expect(value).toBe(false)
+    expect(details).toMatchObject({ reason: 'escape-key' })
+    expect(details.event).toBeInstanceOf(KeyboardEvent)
+    expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
+  })
+
+  it('reports reason "close-press" with the MouseEvent when DialogClose is clicked', async () => {
+    wrapper = mount(ChangeEventsDialog, { attachTo: document.body, props: { defaultOpen: true } })
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+
+    await fireEvent.click(closeButton)
+    await nextTick()
+
+    const [value, details] = wrapper.findComponent(DialogRoot).emitted('update:open')![0]
+    expect(value).toBe(false)
+    expect(details).toMatchObject({ reason: 'close-press' })
+    expect(details.event).toBeInstanceOf(MouseEvent)
+    expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
+  })
+
+  it('details.cancel() in beforeUpdate:open keeps the dialog open and skips update:open', async () => {
+    const onBeforeUpdateOpen = vi.fn((_value: boolean, details: { cancel: () => void }) => details.cancel())
+    wrapper = mount(ChangeEventsDialog, { attachTo: document.body, props: { defaultOpen: true, onBeforeUpdateOpen } })
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+
+    await fireEvent.click(closeButton)
+    await nextTick()
+
+    expect(onBeforeUpdateOpen).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdateOpen.mock.calls[0][0]).toBe(false)
+    const root = wrapper.findComponent(DialogRoot)
+    expect(root.emitted('beforeUpdate:open')).toHaveLength(1)
+    expect(root.emitted('update:open')).toBeUndefined()
+    expect(document.body.innerHTML).toContain(CLOSE_TEXT)
+    expect(wrapper.find('button').attributes('data-state')).toBe('open')
+  })
+
+  it('details.cancel() in beforeUpdate:open keeps a closed dialog closed', async () => {
+    const onBeforeUpdateOpen = vi.fn((_value: boolean, details: { cancel: () => void }) => details.cancel())
+    wrapper = mount(ChangeEventsDialog, { attachTo: document.body, props: { onBeforeUpdateOpen } })
+
+    await fireEvent.click(wrapper.find('button').element)
+    await nextTick()
+
+    const root = wrapper.findComponent(DialogRoot)
+    expect(root.emitted('update:open')).toBeUndefined()
+    expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
+    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+  })
+
+  it('v-model:open round-trips through update:open', async () => {
+    wrapper = mount(defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+      setup() {
+        return { open: ref(false) }
+      },
+      template: `<DialogRoot v-model:open="open">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+    }), { attachTo: document.body })
+
+    await fireEvent.click(wrapper.find('button').element)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    expect(wrapper.vm.open).toBe(true)
+    expect(wrapper.find('button').attributes('data-state')).toBe('open')
+
+    await fireEvent.click(closeButton)
+    await nextTick()
+    expect(wrapper.vm.open).toBe(false)
+    expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
+    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+  })
+
+  it('does not mutate a controlled open prop; the parent owns the write', async () => {
+    wrapper = mount(defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+      template: `<DialogRoot :open="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+    }), { attachTo: document.body })
+
+    await fireEvent.click(wrapper.find('button').element)
+    await nextTick()
+
+    const root = wrapper.findComponent(DialogRoot)
+    expect(root.emitted('update:open')?.[0]?.[0]).toBe(true)
+    expect(root.emitted('update:open')?.[0]?.[1]).toMatchObject({ reason: 'trigger-press' })
+    // controlled: the rendered state stays until the parent updates the prop
+    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+    expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
   })
 })

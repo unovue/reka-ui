@@ -40,8 +40,8 @@
 <SlotsTable :data="[
   {
     'name': 'state',
-    'description': '<p>The current state of the stepper item</p>\n',
-    'type': '\'active\' | \'completed\' | \'inactive\''
+    'description': '<p>The state of the stepper item: <code>completed</code>, <code>current</code> or <code>upcoming</code></p>\n',
+    'type': '\'completed\' | \'current\' | \'upcoming\''
   }
 ]" />
 </llm-exclude>
@@ -62,6 +62,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `state` | The current state of the stepper item | `"active" \| "completed" \| "inactive"` |
+| `state` | The state of the stepper item: completed, current or upcoming | `"completed" \| "current" \| "upcoming"` |
 
 </llm-only>

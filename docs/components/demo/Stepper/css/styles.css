@@ -40,7 +40,7 @@
   color: #9ca3af;
 }
 
-.StepperItem[data-state="active"] .StepperIndicator {
+.StepperItem[data-state="current"] .StepperIndicator {
   background-color: #000;
   color: #fff;
   box-shadow: 0 0 0 2px #000;
@@ -75,7 +75,7 @@
   background-color: var(--green5);
 }
 
-.StepperItem[data-state="active"] .StepperSeparator {
+.StepperItem[data-state="current"] .StepperSeparator {
   background-color: #000;
 }
 

@@ -40,9 +40,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Event handler called before the open state of the hover card changes; <code>details.cancel()</code> keeps the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;HoverCardOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the hover card changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;HoverCardOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -71,7 +76,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the hover card changes. | `[value: boolean]` |
+| `beforeUpdate:open` | Event handler called before the open state of the hover card changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the hover card changes. | `[value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason, Event>]` |
 
 **Slots**
 
