@@ -216,6 +216,16 @@ core Menu parts settled the overlay contract:
   shape stays a plain `string` but is populated up-front, so a standalone consumer —
   and a trigger-less dialog — get real ids, and every part reads the same value
   from the context. The one `useId` call still lives in the root SFC.
+- **Provider-coupled families keep the coupling in the shell** (validated on
+  Tooltip). `useTooltip()` takes every provider-influenced input as a getter
+  (`delayDuration`, `isOpenDelayed`, `isPointerInTransit`, …); `TooltipRoot.vue`
+  resolves `props.x ?? providerContext.x.value` into those getters and keeps the
+  `watch(open)` that notifies the provider / dispatches `TOOLTIP_OPEN`. Read a
+  provider ref through its property on every access (`() => provider.ref.value`),
+  never snapshot it — `TooltipContentHoverable` REASSIGNS the transit ref. A part
+  with per-instance state (the tooltip trigger's `isPointerDown` /
+  `hasPointerMoveOpened`) is a `create<...>Surface` factory even when the family
+  is otherwise pure.
 
 ## Dependency- and structure-ordered migration (not size)
 
