@@ -3,7 +3,7 @@ import type { CalendarLayout } from './units'
 import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { useDateFormatter } from '@/shared/useDateFormatter'
-import { createMonthGrid, createYearGrid } from './calendar'
+import { clampLayoutCount, createMonthGrid, createYearGrid } from './calendar'
 import { CALENDAR_UNITS, clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isCoarserUnit } from './units'
 
 const layout: CalendarLayout = {
@@ -195,6 +195,16 @@ describe('createMonthGrid / createYearGrid columns', () => {
     const single = createYearGrid({ dateObj: sep5, yearsPerPage: 0, columns: -2 })
     expect(single.cells).toHaveLength(1)
     expect(single.value.toString()).toBe('2020-01-01')
+  })
+
+  it('normalise NaN, Infinity and fractional layout counts', () => {
+    expect(clampLayoutCount(Number.NaN, 4)).toBe(4)
+    expect(clampLayoutCount(Number.POSITIVE_INFINITY, 12)).toBe(12)
+    expect(clampLayoutCount(2.9, 4)).toBe(2)
+    expect(clampLayoutCount(0.4, 4)).toBe(4)
+    expect(clampLayoutCount(undefined, 12)).toBe(12)
+    expect(createYearGrid({ dateObj: sep5, yearsPerPage: Number.NaN }).cells).toHaveLength(12)
+    expect(createYearGrid({ dateObj: sep5, yearsPerPage: 5.7, columns: Number.POSITIVE_INFINITY }).rows.map(r => r.length)).toEqual([4, 1])
   })
 })
 

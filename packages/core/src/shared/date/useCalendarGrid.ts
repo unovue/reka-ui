@@ -3,7 +3,7 @@ import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { getUnitAdapter, isAfter, isBefore, toDate } from '@/date'
+import { clampLayoutCount, getUnitAdapter, isAfter, isBefore, toDate } from '@/date'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 
 export interface UseCalendarGridProps {
@@ -96,11 +96,10 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     locale: locale.value,
     weekStartsOn: toValue(props.weekStartsOn),
     fixedWeeks: toValue(props.fixedWeeks) ?? false,
-    numberOfMonths: Math.max(1, toValue(props.numberOfMonths) ?? 1),
+    numberOfMonths: clampLayoutCount(toValue(props.numberOfMonths), 1),
     pagedNavigation: toValue(props.pagedNavigation) ?? false,
-    // The adapters index into the page and chunk rows: never below 1.
-    yearsPerPage: Math.max(1, toValue(props.yearsPerPage) ?? 12),
-    columns: Math.max(1, toValue(props.columns) ?? 4),
+    yearsPerPage: clampLayoutCount(toValue(props.yearsPerPage), 12),
+    columns: clampLayoutCount(toValue(props.columns), 4),
   }))
 
   const formatter = useDateFormatter(locale.value)

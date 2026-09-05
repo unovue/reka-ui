@@ -131,7 +131,7 @@
   },
   {
     'name': 'maximumLength',
-    'description': '<p>The maximum length of the range (inclusive), counted in units of <code>granularity</code>: days, months or years.</p>\n',
+    'description': '<p>The maximum length of the range in days (inclusive).</p>\n',
     'type': 'number',
     'required': false
   },
@@ -326,7 +326,7 @@
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maximumDays` | The maximum number of days in the range (inclusive). Alias of maximumLength for day ranges. | `number` | No | - |
-| `maximumLength` | The maximum length of the range (inclusive), counted in units of granularity: days, months or years. | `number` | No | - |
+| `maximumLength` | The maximum length of the range in days (inclusive). | `number` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `maxView` | The coarsest view DateRangePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |

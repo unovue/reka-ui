@@ -63,7 +63,9 @@ type DateRangePickerRootContext = {
  * full dates), so the calendar's `granularity` is not exposed here; the
  * drill-down views are.
  */
-export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays' | 'maximumLength' | 'yearsPerPage' | 'columns'> & {
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays' | 'yearsPerPage' | 'columns'> & {
+  /** The maximum length of the range in days (inclusive). */
+  maximumLength?: number
   /** The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. */
   view?: CalendarUnit
   /** The calendar view shown when the picker opens. Defaults to `day`. */

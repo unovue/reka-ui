@@ -209,16 +209,16 @@ export function areAllDaysBetweenValid(
     return true
 
   let dCurrent = start.add({ days: 1 })
-  if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
-    && !isHighlightable?.(dCurrent)) {
+  if ((isDisabled?.(dCurrent, 'day') || isUnavailable?.(dCurrent, 'day'))
+    && !isHighlightable?.(dCurrent, 'day')) {
     return false
   }
 
   const dEnd = end
   while (dCurrent.compare(dEnd) < 0) {
     dCurrent = dCurrent.add({ days: 1 })
-    if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
-      && !isHighlightable?.(dCurrent)) {
+    if ((isDisabled?.(dCurrent, 'day') || isUnavailable?.(dCurrent, 'day'))
+      && !isHighlightable?.(dCurrent, 'day')) {
       return false
     }
   }
@@ -279,7 +279,7 @@ export function areAllMonthsBetweenValid(
   const endMonth = end.set({ day: 1 })
 
   while (compareYearMonth(current, endMonth) <= 0) {
-    if ((isDisabled?.(current) || isUnavailable?.(current)) && !isHighlightable?.(current))
+    if ((isDisabled?.(current, 'month') || isUnavailable?.(current, 'month')) && !isHighlightable?.(current, 'month'))
       return false
     current = current.add({ months: 1 })
   }
@@ -303,7 +303,7 @@ export function areAllYearsBetweenValid(
   const endYear = end.set({ day: 1, month: 1 })
 
   while (current.year <= endYear.year) {
-    if ((isDisabled?.(current) || isUnavailable?.(current)) && !isHighlightable?.(current))
+    if ((isDisabled?.(current, 'year') || isUnavailable?.(current, 'year')) && !isHighlightable?.(current, 'year'))
       return false
     current = current.add({ years: 1 })
   }

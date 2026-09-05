@@ -189,13 +189,25 @@ export function createMonths(props: SetMonthProps) {
 }
 
 /**
+ * Normalises a layout count (`columns`, `yearsPerPage`, `numberOfMonths`) to a
+ * positive integer: `NaN`, `Infinity`, non-numbers and values below 1 fall back
+ * to `fallback`, fractions are floored. `chunk` never terminates at 0 and an
+ * empty year page has no `value`, so every layout count passes through here.
+ */
+export function clampLayoutCount(value: number | undefined, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    return fallback
+  const count = Math.floor(value)
+  return count >= 1 ? count : fallback
+}
+
+/**
  * Creates a grid of the 12 months of the given year, `columns` per row
  * (default 4, i.e. 3 rows of 4).
  */
 export function createMonthGrid(props: CreateSelectProps & { columns?: number }): Grid<DateValue> {
   const { dateObj } = props
-  // `chunk` never terminates with a size of 0, so the layout is clamped.
-  const columns = Math.max(1, props.columns ?? 4)
+  const columns = clampLayoutCount(props.columns, 4)
   const months = createYear({ dateObj })
   return { value: dateObj, cells: months, rows: chunk(months, columns) }
 }
@@ -207,9 +219,8 @@ export function createMonthGrid(props: CreateSelectProps & { columns?: number })
  */
 export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean, columns?: number }): Grid<DateValue> {
   const { dateObj, decadeAligned = true } = props
-  // An empty page would leave the year adapter without a `value`; clamp both.
-  const yearsPerPage = Math.max(1, props.yearsPerPage ?? 12)
-  const columns = Math.max(1, props.columns ?? 4)
+  const yearsPerPage = clampLayoutCount(props.yearsPerPage, 12)
+  const columns = clampLayoutCount(props.columns, 4)
 
   let startYear: number
   if (decadeAligned) {

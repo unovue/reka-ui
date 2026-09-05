@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { CalendarGridData, CalendarUnit } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext } from '@/shared'
+import { createContext, useForwardExpose } from '@/shared'
 
 export interface CalendarViewProps extends PrimitiveProps {
   /** The view this part renders. Its content is shown only while the root's `view` matches. */
@@ -21,7 +21,6 @@ export const [injectCalendarViewContext, provideCalendarViewContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarViewProps>(), { as: 'div' })
