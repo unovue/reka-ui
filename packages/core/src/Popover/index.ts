@@ -22,6 +22,7 @@ export {
 export {
   injectPopoverRootContext,
   default as PopoverRoot,
+  type PopoverOpenChangeReason,
   type PopoverRootEmits,
   type PopoverRootProps,
 } from './PopoverRoot.vue'

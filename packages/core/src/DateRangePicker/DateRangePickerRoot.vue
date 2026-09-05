@@ -1,14 +1,15 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 
-import type { Ref } from 'vue'
-import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverRootEmits, PopoverRootProps, RangeCalendarRootProps } from '..'
+import type { ComputedRef, Ref } from 'vue'
+import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverOpenChangeReason, PopoverRootProps, RangeCalendarRootProps } from '..'
 import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
-import { createContext, useDirection, useLocale } from '@/shared'
+import { createContext, useControllableState, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -37,7 +38,7 @@ type DateRangePickerRootContext = {
   isDateUnavailable?: Matcher
   isDateHighlightable?: Matcher
   defaultOpen: Ref<boolean>
-  open: Ref<boolean>
+  open: ComputedRef<boolean>
   modal: Ref<boolean>
   onDateChange: (date: DateRange) => void
   onPlaceholderChange: (date: DateValue) => void
@@ -55,7 +56,14 @@ export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asC
   closeOnSelect?: boolean
 }
 
-export type DateRangePickerRootEmits = PopoverRootEmits & {
+/** Why the picker's `open` state changed (#2828): the popover's reasons plus a date selection closing it. */
+export type DateRangePickerOpenChangeReason = PopoverOpenChangeReason | 'date-select'
+
+export type DateRangePickerRootEmits = {
+  /** Called before the open state changes; `details.cancel()` keeps the current state. */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>]
+  /** Event handler called when the open state of the popover changes. */
+  'update:open': [value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>]
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
@@ -147,10 +155,14 @@ const placeholder = useVModel(props, 'placeholder', emits, {
   passive: (props.placeholder === undefined) as false,
 }) as Ref<DateValue>
 
-const open = useVModel(props, 'open', emits, {
+// The inner `PopoverRoot` is controlled by this model, so a `beforeUpdate:open`
+// cancel here keeps both in sync; the popover's reason and event are forwarded.
+const { state: open, setState: setOpen } = useControllableState<boolean, DateRangePickerOpenChangeReason>({
+  prop: () => props.open,
   defaultValue: defaultOpen.value,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
+  name: 'open',
+  emit: emits,
+})
 
 const dateFieldRef = ref<InstanceType<typeof DateRangeFieldRoot> | undefined>()
 
@@ -161,7 +173,7 @@ watch(modelValue, (value) => {
 
   if (value.start && value.end) {
     if (closeOnSelect.value) {
-      open.value = false
+      setOpen(false, 'date-select')
     }
   }
 })
@@ -213,9 +225,9 @@ provideDateRangePickerRootContext({
 
 <template>
   <PopoverRoot
-    v-model:open="open"
-    :default-open="defaultOpen"
+    :open="open"
     :modal="modal"
+    @update:open="(value, details) => setOpen(value, details.reason, details.event)"
   >
     <slot
       :model-value="modelValue"

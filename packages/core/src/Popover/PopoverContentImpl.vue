@@ -63,7 +63,7 @@ useFocusGuards(currentElement)
       @interact-outside="emits('interactOutside', $event)"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @focus-outside="emits('focusOutside', $event)"
-      @dismiss="rootContext.onOpenChange(false)"
+      @dismiss="(details) => rootContext.onOpenChange(false, details.reason, details.event)"
     >
       <PopperContent
         v-bind="forwarded"

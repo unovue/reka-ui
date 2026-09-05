@@ -25,5 +25,5 @@ export { default as DatePickerHeading, type DatePickerHeadingProps } from './Dat
 export { default as DatePickerInput, type DatePickerInputProps } from './DatePickerInput.vue'
 export { default as DatePickerNext, type DatePickerNextProps } from './DatePickerNext.vue'
 export { default as DatePickerPrev, type DatePickerPrevProps } from './DatePickerPrev.vue'
-export { default as DatePickerRoot, type DatePickerRootEmits, type DatePickerRootProps, injectDatePickerRootContext } from './DatePickerRoot.vue'
+export { type DatePickerOpenChangeReason, default as DatePickerRoot, type DatePickerRootEmits, type DatePickerRootProps, injectDatePickerRootContext } from './DatePickerRoot.vue'
 export { default as DatePickerTrigger, type DatePickerTriggerProps } from './DatePickerTrigger.vue'
