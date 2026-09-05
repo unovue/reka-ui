@@ -157,8 +157,8 @@ describe('useCalendarGrid — day view parity with useCalendar', () => {
       })
     })
 
-    it(`matches after paging forward twice and back once: ${name}`, () => {
-      withScope(() => {
+    it(`matches after paging forward twice and back once: ${name}`, async () => {
+      await withScope(async () => {
         const { api: oldApi, placeholder: oldPh } = buildOldDay(s)
         const { api: newApi, placeholder: newPh } = buildNew('day', s)
 
@@ -171,6 +171,9 @@ describe('useCalendarGrid — day view parity with useCalendar', () => {
             oldApi.prevPage()
             newApi.prevPage()
           }
+          // v2 follows a placeholder that left the page on the next tick; the
+          // new composable does so synchronously. Compare once both settled.
+          await nextTick()
           expect(newPh.value.toString()).toBe(oldPh.value.toString())
           expect(cellStrings(newApi.grid.value)).toEqual(cellStrings(oldApi.grid.value))
           expect(newApi.headingValue.value).toBe(oldApi.headingValue.value)
