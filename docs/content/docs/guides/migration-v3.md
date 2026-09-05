@@ -11,6 +11,8 @@ This guide collects the breaking changes between Reka UI v2 and v3, with search-
 
 Reka UI v3 is still in progress. This page collects the breaking changes as they land on the `v3` branch, so it will keep growing until the release is finalized. Each section describes what changed and the mechanical rewrite needed to move an existing v2 codebase over.
 
+Prefer to hand the mechanical work to an AI agent? [Migrating with an AI agent](./migration-v3-agent) is this guide rewritten as instructions for one: point your agent at it, let it apply the rewrites, and review the diff.
+
 ## `data-state` vocabulary
 
 In v3, `data-state` answers exactly one of two questions: disclosure ("is this surface revealed?") is reported as `open` or `closed`, and selection ("is this control in its affirmative state?") is reported as `checked` or `unchecked`, with `indeterminate` reserved for tri-state controls that also emit `aria-checked="mixed"`. Both values are always emitted—`data-state` is never absent—and qualifiers such as *how* a surface came to be open live in their own `data-*` attribute rather than in `data-state`.
@@ -76,15 +78,11 @@ Because both values are now always emitted, any styles that relied on the attrib
 }
 ```
 
-### Codemod
-
-The `@reka-ui/codemod` package automates the mechanical part: `npx @reka-ui/codemod data-state ./src` applies the mapping above to Tailwind variants and CSS attribute selectors in every `.vue`, `.css`, `.scss`, `.ts`, `.tsx`, `.js`, `.jsx`, `.html` and `.md` file under the given paths. It is deliberately conservative. Because `active` / `inactive` now mean three different things, the codemod decides once per file from the component names the file mentions: a file that mentions only Tabs, TagsInput or Rating is rewritten to `checked` / `unchecked`, a file that mentions only Stepper is rewritten to `current` / `upcoming`, a file that mentions only the Splitter resize handle is kept, and a file that mentions more than one of those, or none of them, is left as it is and reported as a `file:line` warning for you to resolve by hand. Presence-only selectors such as `:not([data-state])` are never touched and are reported the same way. Run it with `--dry-run` first to review the changes it would make before letting it write to disk.
-
 ## Change events carry details
 
 `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. The details tell you *why* the state changed (`details.reason`) and which native event caused it (`details.event`), and `details.cancel()` inside `beforeUpdate:*` keeps the current state.
 
-Converted so far: `SwitchRoot`, `TabsRoot` (`modelValue`), `MenuRoot`, `ContextMenuRoot`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`). The remaining families follow as they move to their headless composables.
+Converted so far: `SwitchRoot`, `TabsRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`). The remaining families follow as they move to their headless composables.
 
 Each family exports its reason union, for example `DialogOpenChangeReason` (`'trigger-press' | 'close-press' | 'escape-key' | 'outside-press' | 'focus-outside'`) or `TooltipOpenChangeReason` (`'trigger-hover' | 'trigger-leave' | 'trigger-focus' | 'trigger-blur' | 'trigger-press' | 'content-leave' | 'escape-key' | 'outside-press'`). Those unions only list the interaction reasons: `details.reason` is typed as the family union plus the shared `BaseChangeReason`, so every family also reports `'imperative-action'` for programmatic changes such as the slot's `close()`, and a `switch` written against the family union alone misses it. A delayed hover open on Tooltip and HoverCard reports `trigger-hover` with the pointer event that armed the timer.
 

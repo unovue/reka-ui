@@ -15,7 +15,7 @@ export const [injectStepperItemContext, provideStepperItemContext] = createConte
  * two normalised axes (`open` / `closed`, `checked` / `unchecked`) can express.
  * The v2 words `active` / `inactive` were dropped because they read as
  * synonyms of the axis words and collided with Tabs' old `active` / `inactive`
- * (which the codemod rewrites to `checked` / `unchecked`).
+ * (now `checked` / `unchecked`).
  */
 export type StepperState = 'completed' | 'current' | 'upcoming'
 
