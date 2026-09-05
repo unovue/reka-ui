@@ -128,6 +128,18 @@ describe('useControllableState', () => {
     expect(state.value).toBe(false)
   })
 
+  it('ref-owned mode writes the default value into an undefined ref instead of treating it as a no-op', () => {
+    const model = ref<boolean | undefined>(undefined)
+    const { state, setState } = useControllableState<boolean>({ prop: model, defaultValue: false })
+    // `state` already reads `false` via the fallback, but the ref is still undefined,
+    // so this is a real write, not an unchanged value.
+    expect(setState(false)).toBe(true)
+    expect(model.value).toBe(false)
+    expect(state.value).toBe(false)
+    // Now the ref holds `false`: the same value IS a no-op.
+    expect(setState(false)).toBe(false)
+  })
+
   it('onUpdate mode does not write the ref', () => {
     const model = ref<boolean | undefined>(false)
     const onUpdate = vi.fn()

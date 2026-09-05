@@ -141,8 +141,12 @@ export function useControllableState<T, R extends string = string>(
   closeDetails(lastChangeDetails.value)
 
   function setState(value: T, reason?: R | BaseChangeReason, event?: Event): boolean {
+    // Ref-owned with an `undefined` ref: `state` reads `defaultValue` through the
+    // fallback, but the ref itself holds nothing, so `setState(defaultValue)` is a
+    // real write (it makes the ref defined) — never a no-op.
+    const ownedUndefined = refOwned && (prop as Ref<T | undefined>).value === undefined
     // `toRaw`: the internal ref is deep (useVModel parity), so compare against the raw value.
-    if (isEqual(value, toRaw(state.value)))
+    if (!ownedUndefined && isEqual(value, toRaw(state.value)))
       return false
 
     const details = createChangeEventDetails<R>(reason ?? 'imperative-action', event)
