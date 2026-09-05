@@ -316,6 +316,37 @@ describe('v-model (foundation contract)', () => {
     wrapper.unmount()
   })
 
+  it('a cancelled trigger-press prevents default so automatic activation cannot re-select on focus', async () => {
+    const wrapper = mount(TabsRoot, {
+      props: {
+        'modelValue': 'tab1',
+        'onBeforeUpdate:modelValue': (_value: string, details: { cancel: () => void }) => details.cancel(),
+      },
+      slots: { default: twoTabs },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+
+    const press = new MouseEvent('mousedown', { button: 0, bubbles: true, cancelable: true })
+    t2.element.dispatchEvent(press)
+    await flushPromises()
+    expect(press.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('beforeUpdate:modelValue')).toHaveLength(1)
+
+    // jsdom never moves focus on mousedown; mimic the browser, which focuses
+    // the target only when the mousedown default was NOT prevented.
+    if (!press.defaultPrevented)
+      (t2.element as HTMLElement).focus()
+    await flushPromises()
+    // No second (`trigger-focus`) attempt, and nothing was applied.
+    expect(wrapper.emitted('beforeUpdate:modelValue')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(t1.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('inactive')
+    wrapper.unmount()
+  })
+
   it('v-model + onBeforeUpdate:modelValue cancel keeps the current tab', async () => {
     const value = ref('tab1')
     const cancelNext = ref(true)

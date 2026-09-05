@@ -50,9 +50,16 @@ export function getTabsTriggerSurface(
       'onMousedown': (event: MouseEvent) => {
         if (event.button !== 0)
           return
-        if (!isDisabled.value && event.ctrlKey === false)
-          context.changeModelValue(toValue(value), 'trigger-press', event)
-        else
+        if (isDisabled.value || event.ctrlKey !== false) {
+          event.preventDefault()
+          return
+        }
+        // A `beforeUpdate` cancel of the press must also block the browser's
+        // follow-up focus, or automatic activation would re-attempt the change
+        // as `trigger-focus`. An already-selected trigger attempts nothing
+        // (`setState` returns `false` for an unchanged value), so it keeps focus.
+        const changed = context.changeModelValue(toValue(value), 'trigger-press', event)
+        if (!isSelected.value && !changed)
           event.preventDefault()
       },
       // `@keydown.enter.space` — no preventDefault today; keep it that way.

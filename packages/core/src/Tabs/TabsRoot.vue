@@ -8,7 +8,8 @@ import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: ComputedRef<StringOrNumber | undefined>
-  changeModelValue: (value: StringOrNumber, reason?: TabsChangeReason | BaseChangeReason, event?: Event) => void
+  /** Returns `false` when the value is unchanged or the change was cancelled. */
+  changeModelValue: (value: StringOrNumber, reason?: TabsChangeReason | BaseChangeReason, event?: Event) => boolean
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   unmountOnHide: Ref<boolean>
@@ -98,6 +99,10 @@ const { root, context, modelValue } = useTabs({
 })
 
 provideTabsRootContext(context)
+
+// The composable is untyped over `T`; narrow once here for the slot payload
+// (a `T | undefined` cast in the template reads as a deprecated filter to eslint).
+const slotModelValue = modelValue as ComputedRef<T | undefined>
 </script>
 
 <template>
@@ -106,6 +111,6 @@ provideTabsRootContext(context)
     :as-child="asChild"
     v-bind="root.attrs.value"
   >
-    <slot :model-value="modelValue as T | undefined" />
+    <slot :model-value="slotModelValue" />
   </Primitive>
 </template>

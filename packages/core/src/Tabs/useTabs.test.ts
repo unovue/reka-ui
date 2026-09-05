@@ -142,6 +142,34 @@ describe('useTabs — trigger surface', () => {
     expect(t.lastChangeDetails.value.reason).toBe('trigger-press')
   })
 
+  it('onMousedown: a cancelled trigger-press prevents default so the browser does not move focus', () => {
+    // Without preventDefault the browser focuses the trigger and, in automatic
+    // activation, `onFocus` would re-attempt the change as `trigger-focus`.
+    const onUpdate = vi.fn()
+    const t = useTabs({
+      defaultValue: 'a',
+      baseId: 'x',
+      onBeforeUpdate: (_value, details) => details.cancel(),
+      onUpdate,
+    })
+    const event = new MouseEvent('mousedown', { button: 0, cancelable: true })
+    t.getTriggerSurface('b').props.value.onMousedown(event)
+    expect(event.defaultPrevented).toBe(true)
+    expect(t.modelValue.value).toBe('a')
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(t.lastChangeDetails.value).toMatchObject({ reason: 'trigger-press', isCanceled: true })
+  })
+
+  it('onMousedown on the already-selected trigger attempts no change and keeps the default (focus)', () => {
+    const onBeforeUpdate = vi.fn()
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', onBeforeUpdate })
+    const event = new MouseEvent('mousedown', { button: 0, cancelable: true })
+    t.getTriggerSurface('a').props.value.onMousedown(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(onBeforeUpdate).not.toHaveBeenCalled()
+    expect(t.modelValue.value).toBe('a')
+  })
+
   it('onMousedown does not select a disabled trigger', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
     const trig = t.getTriggerSurface('b', true)
@@ -213,8 +241,10 @@ describe('useTabs — context', () => {
     expect(t.context.contentIds.value.has('a')).toBe(true)
     t.context.unregisterContent('a')
     expect(t.context.contentIds.value.has('a')).toBe(false)
-    t.context.changeModelValue('b')
+    expect(t.context.changeModelValue('b')).toBe(true)
     expect(t.modelValue.value).toBe('b')
+    // Unchanged → false, so a trigger can tell "nothing to do" from "cancelled".
+    expect(t.context.changeModelValue('b')).toBe(false)
   })
 })
 
