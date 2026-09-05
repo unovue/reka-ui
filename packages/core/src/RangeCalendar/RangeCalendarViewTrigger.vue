@@ -17,8 +17,8 @@ export interface RangeCalendarViewTriggerSlot {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
+import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 

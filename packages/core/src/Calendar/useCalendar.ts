@@ -123,7 +123,7 @@ export interface UseCalendarReturn {
   viewTrigger: PartSurface<CalendarViewTriggerState>
   prev: PartSurface<CalendarNavState>
   next: PartSurface<CalendarNavState>
-  getGridSurface: (page?: MaybeRefOrGetter<DateValue | undefined>) => PartSurface<CalendarGridState>
+  getGridSurface: () => PartSurface<CalendarGridState>
   getCellSurface: (value: MaybeRefOrGetter<DateValue>, page?: MaybeRefOrGetter<DateValue | undefined>) => PartSurface<CalendarCellState>
   getCellTriggerSurface: (value: MaybeRefOrGetter<DateValue>, page?: MaybeRefOrGetter<DateValue | undefined>, unit?: MaybeRefOrGetter<CalendarUnit | undefined>) => CalendarCellTriggerSurface
   context: CalendarRootContext

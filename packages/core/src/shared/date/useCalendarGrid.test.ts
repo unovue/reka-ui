@@ -340,7 +340,7 @@ describe('useCalendarGrid — switching unit', () => {
       const api = useCalendarGrid({
         unit,
         placeholder,
-        setPlaceholder: d => { placeholder.value = d },
+        setPlaceholder: (d) => { placeholder.value = d },
         locale: 'en-US',
         weekStartsOn: 0,
       })

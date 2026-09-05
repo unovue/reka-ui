@@ -58,7 +58,6 @@ import {
   CalendarGridRow,
   CalendarHeadCell,
   CalendarHeader,
-  CalendarHeading,
   CalendarNext,
   CalendarPrev,
   CalendarRoot,
@@ -71,11 +70,10 @@ import {
   <CalendarRoot>
     <CalendarHeader>
       <CalendarPrev />
-      <CalendarHeading />
       <CalendarViewTrigger />
       <CalendarNext />
     </CalendarHeader>
-    <CalendarView>
+    <CalendarView view="day">
       <CalendarGrid>
         <CalendarGridHead>
           <CalendarGridRow>
@@ -95,7 +93,7 @@ import {
 </template>
 ```
 
-`CalendarView` and `CalendarViewTrigger` are optional. A calendar that only ever shows one unit (the default day grid, or a month or year picker via `granularity`) can put `CalendarGrid` straight under the root and use `CalendarHeading` for a static heading.
+`CalendarView` and `CalendarViewTrigger` are optional. A calendar that only ever shows one unit (the default day grid, or a month or year picker via `granularity`) can put `CalendarGrid` straight under the root and use `CalendarHeading` in place of the trigger for a static heading; the two render the same text, so use one or the other.
 
 ## API Reference
 

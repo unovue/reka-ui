@@ -1,6 +1,6 @@
 import type { DateValue } from '@internationalized/date'
-import type { CalendarUnit } from '@/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
+import type { CalendarUnit } from '@/date'
 import { CalendarDate } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
@@ -72,6 +72,12 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(selected(calendar)).toHaveLength(1)
     await user.click(getByTestId('cell-2026-09-01'))
     expect(selected(calendar)).toHaveLength(0)
+
+    const onUpdate = vi.fn()
+    const kept = setupUnit({ granularity: 'month', modelValue: sep5, preventDeselect: true }, { 'onUpdate:modelValue': onUpdate })
+    await kept.user.click(kept.getByTestId('cell-2026-09-01'))
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(selected(kept.calendar)).toHaveLength(1)
   })
 
   it('pages by a year and disables Next past maxValue', async () => {
@@ -100,7 +106,7 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(getByTestId('cell-2026-09-01')).toHaveFocus()
   })
 
-  it('PageDown moves to the same month next year', async () => {
+  it('moves to the same month next year on PageDown', async () => {
     const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
     getByTestId('cell-2026-09-01').focus()
     await user.keyboard(kbd.PAGE_DOWN)

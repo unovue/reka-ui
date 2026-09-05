@@ -37,7 +37,7 @@
   },
   {
     'name': 'defaultView',
-    'description': '<p>The view shown initially. Defaults to <code>granularity</code>.</p>\n',
+    'description': '<p>The calendar view shown when the picker opens. Defaults to <code>day</code>.</p>\n',
     'type': '\'day\' | \'month\' | \'year\'',
     'required': false
   },
@@ -111,7 +111,7 @@
   },
   {
     'name': 'maxView',
-    'description': '<p>The coarsest view <code>CalendarViewTrigger</code> can switch to.</p>\n',
+    'description': '<p>The coarsest view <code>DatePickerViewTrigger</code> can switch to.</p>\n',
     'type': '\'day\' | \'month\' | \'year\'',
     'required': false,
     'default': '\'year\''
@@ -267,7 +267,7 @@
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
 | `defaultValue` | The default value for the calendar | `DateValue` | No | - |
-| `defaultView` | The view shown initially. Defaults to granularity. | `"day" \| "month" \| "year"` | No | - |
+| `defaultView` | The calendar view shown when the picker opens. Defaults to day. | `"day" \| "month" \| "year"` | No | - |
 | `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
 | `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
@@ -279,7 +279,7 @@
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `maxView` | The coarsest view CalendarViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
+| `maxView` | The coarsest view DatePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
 | `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateValue \| null` | No | - |

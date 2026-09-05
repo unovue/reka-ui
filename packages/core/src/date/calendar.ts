@@ -193,7 +193,9 @@ export function createMonths(props: SetMonthProps) {
  * (default 4, i.e. 3 rows of 4).
  */
 export function createMonthGrid(props: CreateSelectProps & { columns?: number }): Grid<DateValue> {
-  const { dateObj, columns = 4 } = props
+  const { dateObj } = props
+  // `chunk` never terminates with a size of 0, so the layout is clamped.
+  const columns = Math.max(1, props.columns ?? 4)
   const months = createYear({ dateObj })
   return { value: dateObj, cells: months, rows: chunk(months, columns) }
 }
@@ -204,7 +206,10 @@ export function createMonthGrid(props: CreateSelectProps & { columns?: number })
  * decade that contains the given date; otherwise it starts at the given year.
  */
 export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean, columns?: number }): Grid<DateValue> {
-  const { dateObj, yearsPerPage = 12, decadeAligned = true, columns = 4 } = props
+  const { dateObj, decadeAligned = true } = props
+  // An empty page would leave the year adapter without a `value`; clamp both.
+  const yearsPerPage = Math.max(1, props.yearsPerPage ?? 12)
+  const columns = Math.max(1, props.columns ?? 4)
 
   let startYear: number
   if (decadeAligned) {

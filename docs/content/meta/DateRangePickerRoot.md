@@ -45,7 +45,7 @@
   },
   {
     'name': 'defaultView',
-    'description': '<p>The view shown initially. Defaults to <code>granularity</code>.</p>\n',
+    'description': '<p>The calendar view shown when the picker opens. Defaults to <code>day</code>.</p>\n',
     'type': '\'day\' | \'month\' | \'year\'',
     'required': false
   },
@@ -113,7 +113,7 @@
   },
   {
     'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable\nA function that returns whether or not a date is unavailable. Receives the unit of the cell being tested as its second argument.</p>\n',
+    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -143,7 +143,7 @@
   },
   {
     'name': 'maxView',
-    'description': '<p>The coarsest view <code>RangeCalendarViewTrigger</code> can switch to.</p>\n',
+    'description': '<p>The coarsest view <code>DateRangePickerViewTrigger</code> can switch to.</p>\n',
     'type': '\'day\' | \'month\' | \'year\'',
     'required': false,
     'default': '\'year\''
@@ -312,7 +312,7 @@
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
-| `defaultView` | The view shown initially. Defaults to granularity. | `"day" \| "month" \| "year"` | No | - |
+| `defaultView` | The calendar view shown when the picker opens. Defaults to day. | `"day" \| "month" \| "year"` | No | - |
 | `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
 | `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
@@ -323,12 +323,12 @@
 | `id` | Id of the element | `string` | No | - |
 | `isDateDisabled` | A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument. | `Matcher` | No | - |
 | `isDateHighlightable` | A function that returns whether or not a date is highlightable | `Matcher` | No | - |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable A function that returns whether or not a date is unavailable. Receives the unit of the cell being tested as its second argument. | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maximumDays` | The maximum number of days in the range (inclusive). Alias of maximumLength for day ranges. | `number` | No | - |
 | `maximumLength` | The maximum length of the range (inclusive), counted in units of granularity: days, months or years. | `number` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `maxView` | The coarsest view RangeCalendarViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
+| `maxView` | The coarsest view DateRangePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
 | `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |

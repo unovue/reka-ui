@@ -57,7 +57,13 @@ type DatePickerRootContext = {
  * dates), so the calendar's `granularity` is not exposed here; the drill-down
  * views are.
  */
-export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'view' | 'defaultView' | 'maxView' | 'yearsPerPage' | 'columns'> & {
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
+  /** The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. */
+  view?: CalendarUnit
+  /** The calendar view shown when the picker opens. Defaults to `day`. */
+  defaultView?: CalendarUnit
+  /** The coarsest view `DatePickerViewTrigger` can switch to. */
+  maxView?: CalendarUnit
   /** Whether or not to close the popover on date select */
   closeOnSelect?: boolean
 }

@@ -3,6 +3,7 @@ import { CalendarDate } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
 import DatePickerViews from './story/_DatePickerViews.vue'
 
 const jan20 = new CalendarDate(1980, 1, 20)
@@ -51,6 +52,7 @@ describe('datePicker — calendar views', () => {
     })
     // The portalled content mounts on the next tick.
     expect(await findByTestId('view-month')).toBeInTheDocument()
+    expect(await axe(getByTestId('popover-content'))).toHaveNoViolations()
     expect(getByTestId('view-trigger')).toHaveAttribute('disabled')
     await user.click(getByTestId('view-trigger'))
     expect(queryByTestId('view-year')).toBeNull()

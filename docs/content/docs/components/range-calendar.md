@@ -58,7 +58,6 @@ import {
   RangeCalendarGridRow,
   RangeCalendarHeadCell,
   RangeCalendarHeader,
-  RangeCalendarHeading,
   RangeCalendarNext,
   RangeCalendarPrev,
   RangeCalendarRoot,
@@ -71,11 +70,10 @@ import {
   <RangeCalendarRoot>
     <RangeCalendarHeader>
       <RangeCalendarPrev />
-      <RangeCalendarHeading />
       <RangeCalendarViewTrigger />
       <RangeCalendarNext />
     </RangeCalendarHeader>
-    <RangeCalendarView>
+    <RangeCalendarView view="day">
       <RangeCalendarGrid>
         <RangeCalendarGridHead>
           <RangeCalendarGridRow>
@@ -95,7 +93,7 @@ import {
 </template>
 ```
 
-`RangeCalendarView` and `RangeCalendarViewTrigger` are optional. A calendar that only ever shows one unit (the default day grid, or a month or year range picker via `granularity`) can put `RangeCalendarGrid` straight under the root and use `RangeCalendarHeading` for a static heading.
+`RangeCalendarView` and `RangeCalendarViewTrigger` are optional. A calendar that only ever shows one unit (the default day grid, or a month or year range picker via `granularity`) can put `RangeCalendarGrid` straight under the root and use `RangeCalendarHeading` in place of the trigger for a static heading; the two render the same text, so use one or the other.
 
 ## API Reference
 

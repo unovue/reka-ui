@@ -96,10 +96,11 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     locale: locale.value,
     weekStartsOn: toValue(props.weekStartsOn),
     fixedWeeks: toValue(props.fixedWeeks) ?? false,
-    numberOfMonths: toValue(props.numberOfMonths) ?? 1,
+    numberOfMonths: Math.max(1, toValue(props.numberOfMonths) ?? 1),
     pagedNavigation: toValue(props.pagedNavigation) ?? false,
-    yearsPerPage: toValue(props.yearsPerPage) ?? 12,
-    columns: toValue(props.columns) ?? 4,
+    // The adapters index into the page and chunk rows: never below 1.
+    yearsPerPage: Math.max(1, toValue(props.yearsPerPage) ?? 12),
+    columns: Math.max(1, toValue(props.columns) ?? 4),
   }))
 
   const formatter = useDateFormatter(locale.value)

@@ -6,10 +6,10 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
+import { getCalendarGridSurface, getCalendarHeadingSurface, getCalendarNavSurface, getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
 import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
 import { createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
-import { getCalendarGridSurface, getCalendarHeadingSurface, getCalendarNavSurface, getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
 export type RangeCalendarChangeReason

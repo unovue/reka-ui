@@ -1,7 +1,7 @@
 # Calendar Views Consolidation — Implementation Plan
 
 > **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. One phase per PR against `v3`, each with its own characterization gate.
-
+>
 > **Design:** `docs/superpowers/specs/2026-09-05-calendar-views-design.md` (read it first — every decision number below refers to it). Tracks the v3 epic **#2721** and closes #741, #1199, #1730, #2191, #2389, #1933, #2781.
 
 **Goal:** Replace the six copied grid-picker families (`Calendar`, `RangeCalendar`, `MonthPicker`, `MonthRangePicker`, `YearPicker`, `YearRangePicker`) with `Calendar` + `RangeCalendar` driven by `view` and `granularity`, built as `useCalendar()` / `useRangeCalendar()` headless composables per the #2723 recipe.

@@ -21,6 +21,7 @@ export const [injectRangeCalendarViewContext, provideRangeCalendarViewContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarViewProps>(), { as: 'div' })
@@ -36,6 +37,7 @@ defineSlots<{
   }) => any
 }>()
 
+const { forwardRef } = useForwardExpose()
 const rootContext = injectRangeCalendarRootContext()
 
 provideRangeCalendarViewContext({ unit: computed(() => props.view) })
@@ -46,6 +48,7 @@ const isActive = computed(() => rootContext.view.value === props.view)
 <template>
   <Primitive
     v-if="isActive"
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     :data-view="view"

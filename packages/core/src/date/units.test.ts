@@ -1,3 +1,4 @@
+import type { Matcher } from './types'
 import type { CalendarLayout } from './units'
 import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
@@ -187,5 +188,28 @@ describe('createMonthGrid / createYearGrid columns', () => {
     expect(createMonthGrid({ dateObj: sep5 }).rows.map(r => r.length)).toEqual([4, 4, 4])
     expect(createYearGrid({ dateObj: sep5 }).rows.map(r => r.length)).toEqual([4, 4, 4])
     expect(createYearGrid({ dateObj: sep5, yearsPerPage: 9, columns: 3 }).rows.map(r => r.length)).toEqual([3, 3, 3])
+  })
+
+  it('clamp columns and yearsPerPage to at least one', () => {
+    expect(createMonthGrid({ dateObj: sep5, columns: 0 }).rows).toHaveLength(12)
+    const single = createYearGrid({ dateObj: sep5, yearsPerPage: 0, columns: -2 })
+    expect(single.cells).toHaveLength(1)
+    expect(single.value.toString()).toBe('2020-01-01')
+  })
+})
+
+describe('range validation across units', () => {
+  it('lets a highlightable unit override disabled / unavailable, like the day validator', () => {
+    const month = getUnitAdapter('month')
+    const year = getUnitAdapter('year')
+    const start = new CalendarDate(2026, 2, 1)
+    const end = new CalendarDate(2026, 6, 1)
+    const april: Matcher = d => d.month === 4
+    expect(month.areAllBetweenValid(start, end, undefined, april)).toBe(false)
+    expect(month.areAllBetweenValid(start, end, undefined, april, april)).toBe(true)
+
+    const y2028: Matcher = d => d.year === 2028
+    expect(year.areAllBetweenValid(new CalendarDate(2026, 1, 1), new CalendarDate(2030, 1, 1), y2028, undefined)).toBe(false)
+    expect(year.areAllBetweenValid(new CalendarDate(2026, 1, 1), new CalendarDate(2030, 1, 1), y2028, undefined, y2028)).toBe(true)
   })
 })

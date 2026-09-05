@@ -213,7 +213,7 @@ const monthAdapter: CalendarUnitAdapter = {
   resolve: (value, reference) => reference ? value.copy().set({ day: reference.day }) : value.copy(),
   isCurrent: d => isSameYearMonth(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
   distance: getMonthsBetween,
-  areAllBetweenValid: (start, end, isUnavailable, isDisabled) => areAllMonthsBetweenValid(start, end, isUnavailable, isDisabled),
+  areAllBetweenValid: areAllMonthsBetweenValid,
   createGrid: (placeholder, layout) => [createMonthGrid({ dateObj: placeholder, columns: layout.columns })],
   isInVisibleView: (date, grid) => grid.some(page => page.value.year === date.year),
   isInPage: (cell, page) => cell.year === page.year,
@@ -254,7 +254,7 @@ const yearAdapter: CalendarUnitAdapter = {
   resolve: (value, reference) => reference ? value.copy().set({ month: reference.month, day: reference.day }) : value.copy(),
   isCurrent: d => isSameYear(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
   distance: getYearsBetween,
-  areAllBetweenValid: (start, end, isUnavailable, isDisabled) => areAllYearsBetweenValid(start, end, isUnavailable, isDisabled),
+  areAllBetweenValid: areAllYearsBetweenValid,
   createGrid: (placeholder, layout, options) => [createYearGrid({
     dateObj: placeholder,
     yearsPerPage: layout.yearsPerPage,
@@ -279,7 +279,8 @@ const yearAdapter: CalendarUnitAdapter = {
   placeholderAfterPaging: (newGrid, _previousFirst, placeholder) =>
     newGrid[0].value.set({ month: placeholder.month, day: placeholder.day }),
   nextPageStart: (grid, _layout, fn) => {
-    const lastYearInView = grid.at(-1)!.cells.at(-1)!
+    const lastPage = grid.at(-1)!
+    const lastYearInView = lastPage.cells.at(-1) ?? lastPage.value
     return startOfYear(fn ? fn(lastYearInView, 'year') : lastYearInView.add({ years: 1 }))
   },
   prevPageEnd: (grid, _layout, fn) => {

@@ -21,6 +21,7 @@ export const [injectCalendarViewContext, provideCalendarViewContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarViewProps>(), { as: 'div' })
@@ -36,6 +37,7 @@ defineSlots<{
   }) => any
 }>()
 
+const { forwardRef } = useForwardExpose()
 const rootContext = injectCalendarRootContext()
 
 provideCalendarViewContext({ unit: computed(() => props.view) })
@@ -46,6 +48,7 @@ const isActive = computed(() => rootContext.view.value === props.view)
 <template>
   <Primitive
     v-if="isActive"
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     :data-view="view"

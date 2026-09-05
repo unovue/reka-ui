@@ -169,7 +169,7 @@ interface CalendarGridData<T = DateValue> {
 | month | 1 year | `2026` |
 | year | `yearsPerPage` years | `2020 - 2031` |
 
-The `nextPage` / `prevPage` function props keep their signature `(placeholder: DateValue) => DateValue` and are only consulted in the day view (their v2 semantics). *Open:* extend them with a second `view` argument so custom paging can apply to every view. Proposal: yes, additive.
+The `nextPage` / `prevPage` function props become `(placeholder: DateValue, view: CalendarView) => DateValue`: the v2 signature stays valid (the second argument is additive) and the function is consulted in every view, receiving the view being paged (resolved in the decisions below).
 
 ### D8. Keyboard is one implementation
 
