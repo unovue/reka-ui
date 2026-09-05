@@ -40,7 +40,7 @@ onMounted(() => {
       :data-state="disclosureState(rootContext.open.value)"
       :as="as"
       :as-child="props.asChild"
-      @click="rootContext.onOpenToggle"
+      @click="rootContext.onOpenToggle('trigger-press', $event)"
     >
       <slot />
     </Primitive>

@@ -1,6 +1,15 @@
 <script lang="ts">
-import type { Ref } from 'vue'
-import { createContext } from '@/shared'
+import type { ComputedRef, Ref } from 'vue'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import { createContext, useControllableState } from '@/shared'
+
+/** Why the dialog's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
+export type DialogOpenChangeReason
+  = | 'trigger-press'
+    | 'close-press'
+    | 'escape-key'
+    | 'outside-press'
+    | 'focus-outside'
 
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
@@ -21,17 +30,22 @@ export interface DialogRootProps {
 }
 
 export type DialogRootEmits = {
+  /** Called before the open state changes; `details.cancel()` keeps the current state. */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>]
   /** Event handler called when the open state of the dialog changes. */
-  'update:open': [value: boolean]
+  'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>]
 }
 
 export interface DialogRootContext {
-  open: Readonly<Ref<boolean>>
+  open: ComputedRef<boolean>
   modal: Ref<boolean>
   unmountOnHide: Ref<boolean>
-  openModal: () => void
-  onOpenChange: (value: boolean) => void
-  onOpenToggle: () => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  openModal: (reason?: DialogOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (value: boolean, reason?: DialogOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenToggle: (reason?: DialogOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
   contentId: string
@@ -44,7 +58,6 @@ export const [injectDialogRootContext, provideDialogRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 
 defineOptions({
@@ -62,16 +75,20 @@ const emit = defineEmits<DialogRootEmits>()
 defineSlots<{
   default?: (props: {
     /** Current open state */
-    open: typeof open.value
+    open: boolean
     /** Close the dialog */
     close: () => void
   }) => any
 }>()
 
-const open = useVModel(props, 'open', emit, {
+// Every open/close path (trigger, close button, dismiss) goes through one
+// `setState` so `beforeUpdate:open` can cancel it and the details reach the consumer.
+const { state: open, setState } = useControllableState<boolean, DialogOpenChangeReason>({
+  prop: () => props.open,
   defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
+  name: 'open',
+  emit,
+})
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
@@ -81,15 +98,9 @@ provideDialogRootContext({
   open,
   modal,
   unmountOnHide,
-  openModal: () => {
-    open.value = true
-  },
-  onOpenChange: (value) => {
-    open.value = value
-  },
-  onOpenToggle: () => {
-    open.value = !open.value
-  },
+  openModal: (reason, event) => setState(true, reason, event),
+  onOpenChange: (value, reason, event) => setState(value, reason, event),
+  onOpenToggle: (reason, event) => setState(!open.value, reason, event),
   contentId: '',
   titleId: '',
   descriptionId: '',
@@ -101,6 +112,6 @@ provideDialogRootContext({
 <template>
   <slot
     :open="open"
-    :close="() => open = false"
+    :close="() => setState(false)"
   />
 </template>

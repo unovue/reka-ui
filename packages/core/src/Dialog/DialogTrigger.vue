@@ -31,7 +31,7 @@ onMounted(() => {
     :aria-expanded="rootContext.open.value || false"
     :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
     :data-state="disclosureState(rootContext.open.value)"
-    @click="rootContext.onOpenToggle"
+    @click="(event: MouseEvent) => rootContext.onOpenToggle('trigger-press', event)"
   >
     <slot />
   </Primitive>
