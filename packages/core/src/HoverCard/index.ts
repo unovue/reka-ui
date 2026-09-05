@@ -11,6 +11,7 @@ export {
   type HoverCardPortalProps,
 } from './HoverCardPortal.vue'
 export {
+  type HoverCardOpenChangeReason,
   default as HoverCardRoot,
   type HoverCardRootEmits,
   type HoverCardRootProps,

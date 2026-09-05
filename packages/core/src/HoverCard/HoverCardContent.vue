@@ -25,6 +25,12 @@ const forwarded = useForwardPropsEmits(props, emits)
 const { forwardRef } = useForwardExpose()
 
 const rootContext = injectHoverCardRootContext()
+
+// Re-entering the content cancels a pending close; with `forceMount` it also
+// opens a closed card after `openDelay`.
+function handlePointerEnter(event: PointerEvent) {
+  rootContext.onOpen('content-hover', event)
+}
 </script>
 
 <template>
@@ -34,7 +40,7 @@ const rootContext = injectHoverCardRootContext()
     <HoverCardContentImpl
       v-bind="forwarded"
       :ref="forwardRef"
-      @pointerenter="excludeTouch(rootContext.onOpen)($event)"
+      @pointerenter="excludeTouch(handlePointerEnter)($event)"
     >
       <slot />
     </HoverCardContentImpl>

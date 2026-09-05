@@ -18,10 +18,16 @@ const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectHoverCardRootContext()
 rootContext.triggerElement = currentElement
 
-function handleLeave() {
+function handlePointerEnter(event: PointerEvent) {
+  rootContext.onOpen('trigger-hover', event)
+}
+
+// While open, leaving the trigger is handled by the grace area (see
+// HoverCardContentImpl): this only cancels a pending delayed open.
+function handleLeave(event: PointerEvent) {
   setTimeout(() => {
     if (!rootContext.isPointerInTransitRef.value && !rootContext.open.value) {
-      rootContext.onClose()
+      rootContext.onClose('trigger-leave', event)
     }
   }, 0)
 }
@@ -31,9 +37,9 @@ function handleTouch(event: PointerEvent) {
     return
 
   if (rootContext.open.value)
-    rootContext.onDismiss()
+    rootContext.onDismiss('trigger-press', event)
   else
-    rootContext.onOpenChange(true)
+    rootContext.onOpenChange(true, 'trigger-press', event)
 }
 </script>
 
@@ -48,11 +54,11 @@ function handleTouch(event: PointerEvent) {
       :as="as"
       :data-state="disclosureState(rootContext.open.value)"
       data-grace-area-trigger
-      @pointerenter="excludeTouch(rootContext.onOpen)($event)"
+      @pointerenter="excludeTouch(handlePointerEnter)($event)"
       @pointerleave="excludeTouch(handleLeave)($event)"
       @pointerup="handleTouch"
-      @focus="rootContext.onOpen()"
-      @blur="rootContext.onClose()"
+      @focus="rootContext.onOpen('trigger-focus', $event)"
+      @blur="rootContext.onClose('trigger-blur', $event)"
     >
       <slot />
     </Primitive>
