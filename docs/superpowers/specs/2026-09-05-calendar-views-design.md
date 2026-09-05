@@ -218,7 +218,9 @@ Ark, Mantine, PrimeVue and react-day-picker fold range into a mode prop; React A
 
 ### D13. `DatePicker` / `DateRangePicker`
 
-Keep both families. `DatePickerRoot` passes `view` / `defaultView` / `granularity` / `maxView` / `yearsPerPage` / `columns` through to `CalendarRoot` and re-emits `update:view`. `DatePickerCalendar` exposes `view` in its slot. `closeOnSelect` fires only on a **commit** (`reason: 'cell-press' | 'cell-keydown'` at the granularity), never on a drill.
+Keep both families. `DatePickerRoot` passes `view` / `defaultView` / `maxView` / `yearsPerPage` / `columns` through to `CalendarRoot` and re-emits `update:view`. `DatePickerCalendar` exposes `view` in its slot. `closeOnSelect` fires only on a **commit** (`reason: 'cell-press' | 'cell-keydown'` at the granularity), never on a drill.
+
+*Amended during Phase 4:* the calendar `granularity` is **not** exposed on the pickers. `DatePickerRoot` already has a `granularity` prop (the field's `day | hour | minute | second`), and a field edits full dates, so a picker's calendar always commits days and offers only the drill-down views. Month and year pickers use `Calendar` / `RangeCalendar` directly.
 
 The fourteen pass-through parts per picker (`DatePickerCell`, `DatePickerCellTrigger`, …) stay as they are in this spec; they are twenty-line re-exports with renamed prop interfaces, not duplicated logic. Trimming them is a separate call best made with #2726 (per-component imports).
 

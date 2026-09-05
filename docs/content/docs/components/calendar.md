@@ -62,6 +62,8 @@ import {
   CalendarNext,
   CalendarPrev,
   CalendarRoot,
+  CalendarView,
+  CalendarViewTrigger,
 } from 'reka-ui'
 </script>
 
@@ -70,25 +72,30 @@ import {
     <CalendarHeader>
       <CalendarPrev />
       <CalendarHeading />
+      <CalendarViewTrigger />
       <CalendarNext />
     </CalendarHeader>
-    <CalendarGrid>
-      <CalendarGridHead>
-        <CalendarGridRow>
-          <CalendarHeadCell />
-        </CalendarGridRow>
-      </CalendarGridHead>
-      <CalendarGridBody>
-        <CalendarGridRow>
-          <CalendarCell>
-            <CalendarCellTrigger />
-          </CalendarCell>
-        </CalendarGridRow>
-      </CalendarGridBody>
-    </CalendarGrid>
+    <CalendarView>
+      <CalendarGrid>
+        <CalendarGridHead>
+          <CalendarGridRow>
+            <CalendarHeadCell />
+          </CalendarGridRow>
+        </CalendarGridHead>
+        <CalendarGridBody>
+          <CalendarGridRow>
+            <CalendarCell>
+              <CalendarCellTrigger />
+            </CalendarCell>
+          </CalendarGridRow>
+        </CalendarGridBody>
+      </CalendarGrid>
+    </CalendarView>
   </CalendarRoot>
 </template>
 ```
+
+`CalendarView` and `CalendarViewTrigger` are optional. A calendar that only ever shows one unit (the default day grid, or a month or year picker via `granularity`) can put `CalendarGrid` straight under the root and use `CalendarHeading` for a static heading.
 
 ## API Reference
 
@@ -267,7 +274,48 @@ Interactable container for displaying the cell dates. Clicking it selects the da
   ]"
 />
 
+### View
+
+Renders its content only while the root's `view` matches, and tells the cells inside which unit they render. Optional: a single-view calendar can place `CalendarGrid` directly under the root.
+
+<!-- @include: @/meta/CalendarView.md -->
+
+### View Trigger
+
+The heading as a button. Each press switches to the next coarser view (day → month → year) up to `maxView`; selecting a cell in a coarser view drills back down.
+
+<!-- @include: @/meta/CalendarViewTrigger.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-view]',
+      values: ['day', 'month', 'year'],
+    },
+    {
+      attribute: '[data-disabled]',
+      values: 'Present when disabled or at maxView',
+    },
+  ]"
+/>
+
 ## Examples
+
+### Month picker
+
+Set `granularity="month"` to commit months instead of days. The grid then holds the twelve months of the placeholder's year, `columns` per row, and Prev / Next move a year at a time. The selected value keeps the placeholder's day.
+
+<ComponentPreview name="CalendarMonth" />
+
+### Year picker
+
+Set `granularity="year"`. The grid holds `yearsPerPage` years starting at the placeholder's decade, and Prev / Next move a page at a time.
+
+<ComponentPreview name="CalendarYear" />
+
+### Day, month and year views
+
+Wrap each grid in a `CalendarView` and put a `CalendarViewTrigger` in the header to let users drill from the day grid up to the month and year grids and back. See the [view switching example](/examples/date-picker-view-switching).
 
 ### Calendar with Year Incrementation
 
@@ -323,7 +371,14 @@ This example showcases usage of the CalendarWeek component used to display the n
       keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'],
       description:
       `
-        When the focus is on <Code>CalendarCellTrigger</Code>, it navigates the dates, changing the month/year/decade if necessary.
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves by one cell or one row (a week of days, or a row of months / years), changing the page if necessary.
+      `
+    },
+    {
+      keys: ['PageUp', 'PageDown'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves to the same cell on the previous / next page.
       `
     }
   ]"

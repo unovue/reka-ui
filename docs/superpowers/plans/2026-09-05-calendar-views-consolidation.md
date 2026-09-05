@@ -121,13 +121,13 @@ Verify: `vitest run src/date src/shared/date src/Calendar src/RangeCalendar src/
 
 ## Phase 5 — Remove `MonthPicker*` / `YearPicker*`, docs, migration (breaking)
 
-- [ ] **5.1** Delete the four families and their tests/stories; remove from `packages/core/src/index.ts`, `packages/core/constant/components.ts`, `packages/plugins/src/namespaced/index.ts`; run the namespaced generator if one exists (`chore: generate namespace` commits show the pattern).
-- [ ] **5.2** Docs: fold `month-picker.md`, `month-range-picker.md`, `year-picker.md`, `year-range-picker.md` into recipe sections on `calendar.md` / `range-calendar.md` (keep the demos, moved under `Calendar*` / `RangeCalendar*`); remove the four sidebar entries in `docs/.vitepress/config.ts`; add redirects if the site supports them.
-- [ ] **5.3** Regenerate `docs/content/meta` for Calendar, RangeCalendar, DatePicker, DateRangePicker; delete the 40 Month/Year meta files.
-- [ ] **5.4** `migration-v3.md`: add a "Calendar views" section with the rename table from the spec; `releases.md`: v3 entry.
-- [ ] **5.5** Full verification: `pnpm lint`, `pnpm --filter reka-ui type-check`, `pnpm --filter reka-ui exec vitest run`, `pnpm --filter reka-ui build`, docs build.
-- [ ] **5.6** Commit: `feat(Calendar)!: remove MonthPicker and YearPicker families in favour of granularity`.
-- [ ] **5.7** Update #2721 (breaking surface list + "Landed on v3") and close #741, #1199, #1730, #2191, #2389, #1933, #2781 with a link to the guide.
+- [x] **5.1** Deleted the four families (source, tests, stories); removed from `packages/core/src/index.ts`, `packages/core/constant/components.ts` and `packages/plugins/src/namespaced/index.ts` (edited by hand; no generator exists). The v2 `useMonthPicker` / `useYearPicker` composables are frozen under `shared/date/__fixtures__/` as the remaining parity oracles.
+- [x] **5.2** Docs: the four pages are deleted and their demos moved to `docs/components/demo/CalendarMonth`, `CalendarYear`, `RangeCalendarMonth`, `RangeCalendarYear` and rewritten on `granularity`; `calendar.md` / `range-calendar.md` gain View / View Trigger API sections, an Examples section for the month and year recipes, and PageUp / PageDown in the keyboard table; `date-picker.md` / `date-range-picker.md` gain View / View Trigger sections; the four sidebar entries are removed; the "Date Picker View Switching" example is rewritten on one `CalendarRoot` with views. No redirects (the site has no redirect mechanism).
+- [ ] **5.3** Regenerate `docs/content/meta` for Calendar, RangeCalendar, DatePicker, DateRangePicker — **pending: `pnpm docs:gen` needs the `babel/traverse` fix (#2820) and a machine with registry access**. The 40 Month/Year meta files are deleted; the six new `@include`s (`CalendarView`, `CalendarViewTrigger`, `RangeCalendar*`, `DatePicker*`, `DateRangePicker*`) resolve once the generator runs (VitePress reports a missing include without failing the build).
+- [x] **5.4** `migration-v3.md`: "Calendar views" section with the rename table and a before/after snippet. `releases.md` is left for the v3 release notes.
+- [ ] **5.5** Full verification — **pending a machine with registry access or a pull request**: `pnpm lint`, `pnpm --filter reka-ui type-check`, `pnpm --filter reka-ui exec vitest run`, `pnpm --filter reka-ui build`, docs build. CI on push covers type-check and build only.
+- [x] **5.6** Commit: `feat(Calendar)!: remove MonthPicker and YearPicker families in favour of granularity`.
+- [ ] **5.7** Update #2721 (breaking surface list + "Landed on v3") and close #741, #1199, #1730, #2191, #2389, #1933, #2781 with a link to the guide — after the PR merges.
 
 ---
 

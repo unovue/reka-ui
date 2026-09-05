@@ -62,6 +62,8 @@ import {
   RangeCalendarNext,
   RangeCalendarPrev,
   RangeCalendarRoot,
+  RangeCalendarView,
+  RangeCalendarViewTrigger,
 } from 'reka-ui'
 </script>
 
@@ -70,25 +72,30 @@ import {
     <RangeCalendarHeader>
       <RangeCalendarPrev />
       <RangeCalendarHeading />
+      <RangeCalendarViewTrigger />
       <RangeCalendarNext />
     </RangeCalendarHeader>
-    <RangeCalendarGrid>
-      <RangeCalendarGridHead>
-        <RangeCalendarGridRow>
-          <RangeCalendarHeadCell />
-        </RangeCalendarGridRow>
-      </RangeCalendarGridHead>
-      <RangeCalendarGridBody>
-        <RangeCalendarGridRow>
-          <RangeCalendarCell>
-            <RangeCalendarCellTrigger />
-          </RangeCalendarCell>
-        </RangeCalendarGridRow>
-      </RangeCalendarGridBody>
-    </RangeCalendarGrid>
+    <RangeCalendarView>
+      <RangeCalendarGrid>
+        <RangeCalendarGridHead>
+          <RangeCalendarGridRow>
+            <RangeCalendarHeadCell />
+          </RangeCalendarGridRow>
+        </RangeCalendarGridHead>
+        <RangeCalendarGridBody>
+          <RangeCalendarGridRow>
+            <RangeCalendarCell>
+              <RangeCalendarCellTrigger />
+            </RangeCalendarCell>
+          </RangeCalendarGridRow>
+        </RangeCalendarGridBody>
+      </RangeCalendarGrid>
+    </RangeCalendarView>
   </RangeCalendarRoot>
 </template>
 ```
+
+`RangeCalendarView` and `RangeCalendarViewTrigger` are optional. A calendar that only ever shows one unit (the default day grid, or a month or year range picker via `granularity`) can put `RangeCalendarGrid` straight under the root and use `RangeCalendarHeading` for a static heading.
 
 ## API Reference
 
@@ -287,6 +294,45 @@ Interactable container for displaying the cell dates. Clicking it selects the da
   ]"
 />
 
+### View
+
+Renders its content only while the root's `view` matches, and tells the cells inside which unit they render. Optional: a single-view calendar can place `RangeCalendarGrid` directly under the root.
+
+<!-- @include: @/meta/RangeCalendarView.md -->
+
+### View Trigger
+
+The heading as a button. Each press switches to the next coarser view (day → month → year) up to `maxView`; selecting a cell in a coarser view drills back down without touching the range.
+
+<!-- @include: @/meta/RangeCalendarViewTrigger.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-view]',
+      values: ['day', 'month', 'year'],
+    },
+    {
+      attribute: '[data-disabled]',
+      values: 'Present when disabled or at maxView',
+    },
+  ]"
+/>
+
+## Examples
+
+### Month range picker
+
+Set `granularity="month"` to select a range of months. `maximumLength` caps the range in months.
+
+<ComponentPreview name="RangeCalendarMonth" />
+
+### Year range picker
+
+Set `granularity="year"` to select a range of years.
+
+<ComponentPreview name="RangeCalendarYear" />
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -317,7 +363,14 @@ Interactable container for displaying the cell dates. Clicking it selects the da
       keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'],
       description:
       `
-        When the focus is on <Code>CalendarCellTrigger</Code>, it navigates the dates, changing the month/year/decade if necessary.
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves by one cell or one row (a week of days, or a row of months / years), changing the page if necessary.
+      `
+    },
+    {
+      keys: ['PageUp', 'PageDown'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves to the same cell on the previous / next page.
       `
     }
   ]"

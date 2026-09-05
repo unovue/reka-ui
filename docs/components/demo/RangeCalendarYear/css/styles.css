@@ -1,0 +1,138 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/grass.css';
+
+.Icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.RangeCalendarYear {
+  margin-top: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e5e5;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+}
+
+.RangeCalendarYearHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.RangeCalendarYearNavButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: #000000;
+  background-color: transparent;
+  cursor: pointer;
+  border-radius: 0.375rem;
+}
+
+.RangeCalendarYearNavButton:hover {
+  background-color: #fafaf9;
+}
+
+.RangeCalendarYearNavButton:focus {
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.RangeCalendarYearHeading {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #000000;
+}
+
+.RangeCalendarYearWrapper {
+  padding-top: 1rem;
+}
+
+.RangeCalendarYearGrid {
+  width: 100%;
+  user-select: none;
+}
+
+.RangeCalendarYearGridWrapper {
+  display: grid;
+  gap: 0.25rem 0;
+}
+
+.RangeCalendarYearGridRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.RangeCalendarYearCell {
+  position: relative;
+  text-align: center;
+}
+
+.RangeCalendarYearCellTrigger {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #000000;
+  background-color: transparent;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+
+.RangeCalendarYearCellTrigger:hover {
+  background-color: var(--grass-5);
+}
+
+.RangeCalendarYearCellTrigger:focus {
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.RangeCalendarYearCellTrigger[data-disabled] {
+  color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.RangeCalendarYearCellTrigger[data-selected] {
+  background-color: var(--grass-10);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.RangeCalendarYearCellTrigger[data-highlighted] {
+  background-color: var(--grass-5);
+}
+
+.RangeCalendarYearCellTrigger[data-unavailable] {
+  color: rgba(0, 0, 0, 0.3);
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+.RangeCalendarYearCellTrigger::before {
+  content: '';
+  position: absolute;
+  top: 0.25rem;
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  display: none;
+}
+
+.RangeCalendarYearCellTrigger[data-today]::before {
+  display: block;
+  background-color: var(--grass-9);
+}
+
+.RangeCalendarYearCellTrigger[data-selected]::before {
+  background-color: #ffffff;
+}
