@@ -76,9 +76,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value of the checkbox changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: T | \'indeterminate\', details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: T | \'indeterminate\']'
+    'type': '[value: T | \'indeterminate\', details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
   }
 ]" />
 
@@ -118,7 +123,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: T \| "indeterminate"]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the checkbox changes; details.cancel() vetoes the change. | `[value: T \| "indeterminate", details: ChangeEventDetails<"trigger-press", Event>]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: T \| "indeterminate", details: ChangeEventDetails<"trigger-press", Event>]` |
 
 **Slots**
 

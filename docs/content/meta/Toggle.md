@@ -50,9 +50,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value of the toggle changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
   }
 ]" />
 
@@ -98,7 +103,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the toggle changes. | `[value: boolean]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the toggle changes; details.cancel() vetoes the change. | `[value: boolean, details: ChangeEventDetails<"trigger-press", Event>]` |
+| `update:modelValue` | Event handler called when the value of the toggle changes. | `[value: boolean, details: ChangeEventDetails<"trigger-press", Event>]` |
 
 **Slots**
 

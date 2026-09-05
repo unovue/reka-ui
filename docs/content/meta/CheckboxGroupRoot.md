@@ -74,9 +74,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value of the checkbox changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: T[], details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: T[]]'
+    'type': '[value: T[], details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -103,6 +108,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: T[]]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the checkbox changes; details.cancel() vetoes the change. | `[value: T[], details: ChangeEventDetails<"item-press", Event>]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: T[], details: ChangeEventDetails<"item-press", Event>]` |
 
 </llm-only>

@@ -73,7 +73,8 @@ export interface UseToggleGroupProps {
 }
 
 export interface UseToggleGroupReturn {
-  modelValue: ComputedRef<ToggleGroupValue | undefined>
+  // Spelled out (not the local alias) so the generated component docs keep the public union.
+  modelValue: ComputedRef<AcceptableValue | AcceptableValue[] | undefined>
   isSingle: ComputedRef<boolean>
   /**
    * Press an item by value: single mode selects it (or clears the selection
