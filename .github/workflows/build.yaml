@@ -49,6 +49,9 @@ jobs:
       - name: Test (with coverage)
         run: pnpm --filter reka-ui test:coverage
 
+      - name: Test codemod
+        run: pnpm --filter @reka-ui/codemod test
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7

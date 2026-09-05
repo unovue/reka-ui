@@ -200,6 +200,8 @@ importers:
         specifier: ^3.2.6
         version: 3.2.6(typescript@5.8.3)
 
+  packages/codemod: {}
+
   packages/core:
     dependencies:
       '@floating-ui/dom':
