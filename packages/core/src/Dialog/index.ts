@@ -34,3 +34,11 @@ export {
   default as DialogTrigger,
   type DialogTriggerProps,
 } from './DialogTrigger.vue'
+export {
+  type DialogContentState,
+  type DialogOverlayState,
+  type DialogTriggerState,
+  useDialog,
+  type UseDialogProps,
+  type UseDialogReturn,
+} from './useDialog'

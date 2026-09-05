@@ -7,16 +7,22 @@ export interface DialogTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose, useId } from '@/shared'
+import { useForwardExpose } from '@/shared'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getDialogTriggerSurface } from './useDialog'
 
-const props = withDefaults(defineProps<DialogTriggerProps>(), {
+withDefaults(defineProps<DialogTriggerProps>(), {
   as: 'button',
 })
 const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 
-rootContext.contentId ||= useId(undefined, 'reka-dialog-content')
+// aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
+// from the shared surface builder (single source with `useDialog()`); the
+// tag-dependent `type` stays in the SFC. Consumer listeners fall through as
+// `$attrs` AFTER the surface's handler, so they chain instead of clobbering it.
+const trigger = getDialogTriggerSurface(rootContext)
+
 onMounted(() => {
   rootContext.triggerElement.value = currentElement.value
 })
@@ -24,14 +30,11 @@ onMounted(() => {
 
 <template>
   <Primitive
-    v-bind="props"
     :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
-    aria-haspopup="dialog"
-    :aria-expanded="rootContext.open.value || false"
-    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
-    :data-state="disclosureState(rootContext.open.value)"
-    @click="(event: MouseEvent) => rootContext.onOpenToggle('trigger-press', event)"
+    v-bind="trigger.attrs.value"
   >
     <slot />
   </Primitive>

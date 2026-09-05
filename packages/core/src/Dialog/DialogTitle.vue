@@ -8,16 +8,20 @@ export interface DialogTitleProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getDialogTitleSurface } from './useDialog'
 
-const props = withDefaults(defineProps<DialogTitleProps>(), { as: 'h2' })
+withDefaults(defineProps<DialogTitleProps>(), { as: 'h2' })
 const rootContext = injectDialogRootContext()
 useForwardExpose()
+// The `id` the content's `aria-labelledby` points at, from the shared surface builder.
+const title = getDialogTitleSurface(rootContext)
 </script>
 
 <template>
   <Primitive
-    v-bind="props"
-    :id="rootContext.titleId"
+    :as="as"
+    :as-child="asChild"
+    v-bind="title.attrs.value"
   >
     <slot />
   </Primitive>
