@@ -1,17 +1,24 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { AccordionRootContext, AccordionRootProps } from './AccordionRoot.vue'
-import type { PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { DataOrientation, Direction, SingleOrMultipleType } from '@/shared/types'
 import { computed, ref, toValue } from 'vue'
-import { useArrowNavigation } from '@/shared'
+import { createPartSurface, disclosureState, useArrowNavigation, useControllableState } from '@/shared'
+
+/** Why the expanded value changed; carried as `details.reason` on every change. */
+export type AccordionChangeReason = 'trigger-press' | 'content-found'
+
+let accordionCount = 0
 
 export interface UseAccordionProps {
-  /** Externally-owned selected value(s). */
-  modelValue?: Ref<string | string[] | undefined>
-  /** Selection mode supplied by an existing component shell. */
-  isSingle?: MaybeRefOrGetter<boolean | undefined>
-  /** Selection updater supplied by an existing component shell. */
-  changeModelValue?: (value: string) => void
+  /** Controlled value, or a writable ref for standalone ref-owned state. */
+  modelValue?: MaybeRefOrGetter<string | string[] | undefined>
+  /** Component emit; fires beforeUpdate:modelValue then update:modelValue. */
+  emit?: (event: any, ...args: any[]) => void
+  /** Runs before a change; call details.cancel() to keep the current value. */
+  onBeforeUpdate?: (value: string | string[] | undefined, details: ChangeEventDetails<AccordionChangeReason>) => void
+  /** Runs after an accepted change. */
+  onUpdate?: (value: string | string[] | undefined, details: ChangeEventDetails<AccordionChangeReason>) => void
   /** Initial selected value(s) for standalone uncontrolled use. */
   defaultValue?: string | string[]
   /** @defaultValue `'single'` (or inferred from an array value). */
@@ -28,20 +35,23 @@ export interface UseAccordionProps {
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
   /** Root element used by the item keyboard-navigation surface. */
   parentElement?: Ref<HTMLElement | undefined>
-  /** @defaultValue `'reka-accordion'` */
+  /** Unique per-call default. SSR consumers must supply a stable baseId. */
   baseId?: string
 }
 
 export interface UseAccordionReturn {
-  modelValue: Ref<string | string[] | undefined>
+  modelValue: ComputedRef<string | string[] | undefined>
   isSingle: ComputedRef<boolean>
-  changeModelValue: (value: string) => void
+  /** Toggle a value; returns false when the change is cancelled. */
+  changeModelValue: (value: string, reason?: AccordionChangeReason | BaseChangeReason, event?: Event) => boolean
+  lastChangeDetails: Readonly<Ref<ChangeEventDetails<AccordionChangeReason>>>
+  isControlled: ComputedRef<boolean>
   getItemSurface: (value: MaybeRefOrGetter<string>, options?: AccordionItemSurfaceOptions) => AccordionItemSurfaceReturn
   context: AccordionRootContext<AccordionRootProps>
 }
 
 export type AccordionPartState = {
-  state: 'open' | 'closed'
+  state: DisclosureState
   disabled: boolean
   orientation: DataOrientation
 }
@@ -78,10 +88,10 @@ export function getAccordionHeaderSurface(
   rootContext: AccordionRootContext<AccordionRootProps>,
   itemContext: AccordionItemSurfaceContext,
 ): PartSurface<AccordionPartState> {
-  return {
-    props: computed(() => ({})),
-    state: getAccordionPartState(rootContext, itemContext),
-  }
+  return createPartSurface(
+    () => ({}),
+    getAccordionPartState(rootContext, itemContext),
+  )
 }
 
 /**
@@ -92,18 +102,18 @@ export function getAccordionContentSurface(
   rootContext: AccordionRootContext<AccordionRootProps>,
   itemContext: AccordionItemSurfaceContext,
 ): PartSurface<AccordionPartState> {
-  return {
-    props: computed(() => ({
+  return createPartSurface(
+    () => ({
       'role': 'region',
       'aria-labelledby': toValue(itemContext.triggerId),
       'style': `
         --reka-accordion-content-width: var(--reka-collapsible-content-width);
         --reka-accordion-content-height: var(--reka-collapsible-content-height);
       `,
-      'onContentFound': () => rootContext.changeModelValue(itemContext.value.value),
-    })),
-    state: getAccordionPartState(rootContext, itemContext),
-  }
+      'onContentFound': (event?: Event) => rootContext.changeModelValue(itemContext.value.value, 'content-found', event),
+    }),
+    getAccordionPartState(rootContext, itemContext),
+  )
 }
 
 function getAccordionPartState(
@@ -111,7 +121,7 @@ function getAccordionPartState(
   itemContext: AccordionItemSurfaceContext,
 ): ComputedRef<AccordionPartState> {
   return itemContext.state ?? computed(() => ({
-    state: itemContext.open.value ? 'open' : 'closed',
+    state: disclosureState(itemContext.open.value),
     disabled: itemContext.disabled.value,
     orientation: rootContext.orientation ?? 'vertical',
   }))
@@ -121,25 +131,25 @@ export function getAccordionTriggerSurface(
   rootContext: AccordionRootContext<AccordionRootProps>,
   itemContext: AccordionItemSurfaceContext,
 ): PartSurface<AccordionPartState> {
-  function changeItem() {
+  function changeItem(event?: MouseEvent) {
     const triggerDisabled = rootContext.isSingle.value && itemContext.open.value && !rootContext.collapsible
     if (itemContext.disabled.value || triggerDisabled)
       return
 
-    rootContext.changeModelValue(itemContext.value.value)
+    rootContext.changeModelValue(itemContext.value.value, 'trigger-press', event)
   }
 
-  return {
-    props: computed(() => ({
+  return createPartSurface(
+    () => ({
       'id': toValue(itemContext.triggerId),
       'aria-disabled': itemContext.disabled.value || undefined,
       'aria-expanded': itemContext.open.value || false,
       'data-reka-collection-item': '',
       'disabled': itemContext.disabled.value,
       'onClick': changeItem,
-    })),
-    state: getAccordionPartState(rootContext, itemContext),
-  }
+    }),
+    getAccordionPartState(rootContext, itemContext),
+  )
 }
 
 /**
@@ -161,7 +171,7 @@ export function getAccordionItemSurface(
     : Array.isArray(rootContext.modelValue.value) && rootContext.modelValue.value.includes(toValue(value)))
   const disabled = computed(() => rootContext.disabled.value || (toValue(options.disabled) ?? false))
   const state = computed<AccordionPartState>(() => ({
-    state: open.value ? 'open' : 'closed',
+    state: disclosureState(open.value),
     disabled: disabled.value,
     orientation: rootContext.orientation ?? 'vertical',
   }))
@@ -179,15 +189,15 @@ export function getAccordionItemSurface(
     })
   }
 
-  const item: PartSurface<AccordionPartState> = {
-    props: computed(() => ({
+  const item = createPartSurface(
+    () => ({
       disabled: disabled.value,
       open: open.value,
       unmountOnHide: toValue(options.unmountOnHide) ?? rootContext.unmountOnHide.value,
       onKeydown: handleKeydown,
-    })),
+    }),
     state,
-  }
+  )
   const itemContext: AccordionItemSurfaceContext = {
     open,
     disabled,
@@ -210,22 +220,32 @@ export function getAccordionItemSurface(
  * Standalone consumers get single/multiple selection, collapse guards, disabled
  * state, semantic part surfaces, keyboard navigation, and ids derived from
  * `(baseId, value)`. They provide a root element ref for arrow navigation and may
- * override an item's `triggerId` when needed. The `.vue` shells keep `useVModel`,
- * `useId`, forwarding, and Collapsible component wrappers.
+ * override an item's `triggerId` when needed. SSR consumers must supply a stable
+ * `baseId`; the default counter is unique per call but not stable across hydration.
+ * The `.vue` shells keep `useId`, forwarding, and Collapsible wrappers for presence,
+ * measurement, animation, and browser find-in-page handling.
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle pure
  */
 export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn {
-  const inferredIsSingle = computed(() => {
-    const inferredValue = props.modelValue?.value ?? props.defaultValue
+  const baseId = props.baseId ?? `reka-accordion-${++accordionCount}`
+  const isSingle = computed(() => {
+    const inferredValue = toValue(props.modelValue) ?? props.defaultValue
     return (toValue(props.type) ?? (Array.isArray(inferredValue) ? 'multiple' : 'single')) === 'single'
   })
-  const isSingle = computed(() => toValue(props.isSingle) ?? inferredIsSingle.value)
-  const modelValue = props.modelValue ?? ref<string | string[] | undefined>(props.defaultValue ?? (isSingle.value ? undefined : []))
+  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | string[] | undefined, AccordionChangeReason>({
+    prop: props.modelValue,
+    defaultValue: () => props.defaultValue ?? (isSingle.value ? undefined : []),
+    name: 'modelValue',
+    emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdate,
+    onUpdate: props.onUpdate,
+  })
 
-  function changeStandaloneModelValue(value: string) {
-    if (isSingle.value) {
-      modelValue.value = modelValue.value === value ? undefined : value
-      return
-    }
+  function changeModelValue(value: string, reason: AccordionChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    if (isSingle.value)
+      return setState(modelValue.value === value ? undefined : value, reason, event)
 
     const values = Array.isArray(modelValue.value)
       ? [...modelValue.value]
@@ -235,9 +255,8 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
       values.push(value)
     else
       values.splice(index, 1)
-    modelValue.value = values
+    return setState(values, reason, event)
   }
-  const changeModelValue = props.changeModelValue ?? changeStandaloneModelValue
 
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const direction = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
@@ -253,7 +272,7 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
     parentElement,
     changeModelValue,
     isSingle,
-    modelValue: modelValue as AccordionRootContext<AccordionRootProps>['modelValue'],
+    modelValue,
     get collapsible() {
       return toValue(props.collapsible) ?? false
     },
@@ -264,8 +283,10 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
     modelValue,
     isSingle,
     changeModelValue,
+    lastChangeDetails,
+    isControlled,
     getItemSurface: (value, options) => getAccordionItemSurface(context, value, {
-      baseId: props.baseId ?? 'reka-accordion',
+      baseId,
       ...options,
     }),
     context,

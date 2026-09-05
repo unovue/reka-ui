@@ -49,20 +49,53 @@ describe('useAccordion — state', () => {
     expect(accordion.isSingle.value).toBe(false)
   })
 
-  it('uses an injected selection bridge when composed by a component shell', () => {
-    const modelValue = ref<string | string[] | undefined>([])
-    const changeModelValue = vi.fn()
-    const accordion = useAccordion({
-      modelValue,
-      isSingle: true,
-      changeModelValue,
-    })
+  it('writes back to a standalone model ref, including one initially undefined', () => {
+    const modelValue = ref<string | string[]>()
+    const accordion = useAccordion({ modelValue })
 
-    accordion.getItemSurface('one').trigger.props.value.onClick()
+    expect(accordion.changeModelValue('one')).toBe(true)
+    expect(modelValue.value).toBe('one')
+    expect(accordion.lastChangeDetails.value.reason).toBe('imperative-action')
+  })
 
-    expect(accordion.isSingle.value).toBe(true)
-    expect(changeModelValue).toHaveBeenCalledWith('one')
-    expect(modelValue.value).toEqual([])
+  it('waits for the parent to accept controlled changes and stays controlled when cleared', () => {
+    const modelValue = ref<string | string[] | undefined>('one')
+    const onUpdate = vi.fn()
+    const accordion = useAccordion({ modelValue: () => modelValue.value, defaultValue: 'fallback', onUpdate })
+
+    accordion.changeModelValue('two')
+    expect(modelValue.value).toBe('one')
+    expect(accordion.modelValue.value).toBe('one')
+    expect(onUpdate).toHaveBeenCalledWith('two', expect.objectContaining({ reason: 'imperative-action' }))
+    modelValue.value = 'two'
+    expect(accordion.modelValue.value).toBe('two')
+    modelValue.value = undefined
+    expect(accordion.modelValue.value).toBeUndefined()
+    expect(accordion.isControlled.value).toBe(true)
+  })
+
+  it.each(['single', 'multiple'] as const)('cancels %s changes before mutating or notifying', (type) => {
+    const onUpdate = vi.fn()
+    const accordion = useAccordion({ type, onBeforeUpdate: (_, details) => details.cancel(), onUpdate })
+    const initial = accordion.modelValue.value
+
+    expect(accordion.changeModelValue('one')).toBe(false)
+    expect(accordion.modelValue.value).toBe(initial)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(accordion.lastChangeDetails.value.isCanceled).toBe(true)
+  })
+
+  it('emits before and after a trigger change with the same native event details', () => {
+    const emit = vi.fn()
+    const accordion = useAccordion({ emit })
+    const event = new MouseEvent('click')
+
+    accordion.getItemSurface('one').trigger.attrs.value.onClick(event)
+
+    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue'])
+    expect(emit.mock.calls[0][1]).toBe('one')
+    expect(emit.mock.calls[0][2]).toBe(emit.mock.calls[1][2])
+    expect(accordion.lastChangeDetails.value).toMatchObject({ reason: 'trigger-press', event, isCanceled: false })
   })
 })
 
@@ -174,7 +207,7 @@ describe('useAccordion — item surface', () => {
 
   it('builds non-empty reactive trigger/content ids for standalone use', () => {
     const value = ref('one')
-    const accordion = useAccordion()
+    const accordion = useAccordion({ baseId: 'reka-accordion' })
     const item = accordion.getItemSurface(value)
 
     expect(item.trigger.props.value.id).toBe('reka-accordion-trigger-one')
@@ -213,8 +246,45 @@ describe('useAccordion — item surface', () => {
     const accordion = useAccordion()
     const item = accordion.getItemSurface('one')
 
-    item.content.props.value.onContentFound()
+    const event = new Event('beforematch')
+    item.content.attrs.value.onContentFound(event)
 
     expect(accordion.modelValue.value).toBe('one')
+    expect(accordion.lastChangeDetails.value).toMatchObject({ reason: 'content-found', event })
+  })
+})
+
+describe('useAccordion — attrs', () => {
+  it('keeps all four bound parts reactive to disclosure, disabled, and orientation', () => {
+    const disabled = ref(false)
+    const orientation = ref<'horizontal' | 'vertical'>('vertical')
+    const accordion = useAccordion({ disabled, orientation })
+    const { item, header, trigger, content } = accordion.getItemSurface('one')
+
+    for (const part of [item, header, trigger, content]) {
+      expect(part.attrs.value).toMatchObject({ 'data-state': 'closed', 'data-orientation': 'vertical' })
+      expect(part.attrs.value['data-disabled']).toBeUndefined()
+    }
+    trigger.attrs.value.onClick()
+    disabled.value = true
+    orientation.value = 'horizontal'
+    for (const part of [item, header, trigger, content])
+      expect(part.attrs.value).toMatchObject({ 'data-state': 'open', 'data-disabled': '', 'data-orientation': 'horizontal' })
+    expect(trigger.attrs.value['aria-expanded']).toBe(true)
+    expect(trigger.attrs.value.onClick).toBe(trigger.props.value.onClick)
+  })
+
+  it('allocates distinct ids for standalone roots and tracks explicit trigger overrides', () => {
+    const first = useAccordion().getItemSurface('one')
+    const second = useAccordion().getItemSurface('one')
+    expect(first.trigger.attrs.value.id).not.toBe(second.trigger.attrs.value.id)
+    expect(first.content.attrs.value['aria-labelledby']).toBe(first.trigger.attrs.value.id)
+
+    const triggerId = ref('custom-one')
+    const item = useAccordion().getItemSurface('one', { triggerId })
+    expect(item.content.attrs.value['aria-labelledby']).toBe('custom-one')
+    triggerId.value = 'custom-two'
+    expect(item.trigger.attrs.value.id).toBe('custom-two')
+    expect(item.content.attrs.value['aria-labelledby']).toBe('custom-two')
   })
 })

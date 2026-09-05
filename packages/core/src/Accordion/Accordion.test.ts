@@ -366,7 +366,7 @@ describe('accordion characterization contract', () => {
 
     await wrapper.find('button').trigger('click')
 
-    expect(modelUpdate).toHaveBeenCalledWith('one')
+    expect(modelUpdate).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'trigger-press' }))
     wrapper.unmount()
   })
 
@@ -492,7 +492,7 @@ describe('accordion characterization contract', () => {
     await nextTick()
 
     expect(consumerClick).toHaveBeenCalledTimes(1)
-    expect(modelUpdate).toHaveBeenCalledWith('one')
+    expect(modelUpdate).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'trigger-press' }))
     expect(trigger.attributes('aria-expanded')).toBe('true')
     wrapper.unmount()
   })
@@ -539,10 +539,63 @@ describe('useAccordion public API', () => {
     expect(typeof Reka.useAccordion).toBe('function')
   })
 
-  it('exports the shared Accordion surface builders', () => {
-    expect(typeof Reka.getAccordionItemSurface).toBe('function')
-    expect(typeof Reka.getAccordionHeaderSurface).toBe('function')
-    expect(typeof Reka.getAccordionTriggerSurface).toBe('function')
-    expect(typeof Reka.getAccordionContentSurface).toBe('function')
+  it('keeps Accordion surface builders internal', () => {
+    expect('getAccordionItemSurface' in Reka).toBe(false)
+    expect('getAccordionHeaderSurface' in Reka).toBe(false)
+    expect('getAccordionTriggerSurface' in Reka).toBe(false)
+    expect('getAccordionContentSurface' in Reka).toBe(false)
+  })
+})
+
+describe('accordion change details through the shell', () => {
+  const fixture = {
+    components: { AccordionRoot, AccordionItem, AccordionHeader, AccordionTrigger, AccordionContent },
+    template: `
+      <AccordionRoot type="single" :unmount-on-hide="false" @before-update:model-value="before">
+        <AccordionItem value="one">
+          <AccordionHeader><AccordionTrigger @click="click">One</AccordionTrigger></AccordionHeader>
+          <AccordionContent>Content one</AccordionContent>
+        </AccordionItem>
+      </AccordionRoot>
+    `,
+  }
+
+  it.each([false, true])('honors beforeUpdate cancellation (%s) and chains consumer clicks', async (cancel) => {
+    const click = vi.fn()
+    const before = vi.fn((_, details) => {
+      if (cancel)
+        details.cancel()
+    })
+    const wrapper = mount({ ...fixture, setup: () => ({ before, click }) })
+    const root = wrapper.findComponent(AccordionRoot)
+    await wrapper.find('button').trigger('click')
+
+    expect(before).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'trigger-press', event: expect.any(MouseEvent) }))
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('button').attributes('aria-expanded')).toBe(String(!cancel))
+    expect(wrapper.find('[role="region"]').attributes('data-state')).toBe(cancel ? 'closed' : 'open')
+    if (cancel)
+      expect(root.emitted('update:modelValue')).toBeUndefined()
+    else
+      expect(root.emitted('update:modelValue')?.[0]).toEqual(['one', before.mock.calls[0][1]])
+    wrapper.unmount()
+  })
+
+  it.each([false, true])('forwards the native beforematch event and honors cancellation (%s)', async (cancel) => {
+    const before = vi.fn((_, details) => {
+      if (cancel)
+        details.cancel()
+    })
+    const wrapper = mount({ ...fixture, setup: () => ({ before, click: vi.fn() }) }, { attachTo: document.body })
+    const root = wrapper.findComponent(AccordionRoot)
+    const event = new Event('beforematch')
+    wrapper.find('[role="region"]').element.dispatchEvent(event)
+    await vi.waitFor(() => expect(before).toHaveBeenCalledTimes(1))
+    await nextTick()
+
+    expect(before).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'content-found', event }))
+    expect(wrapper.find('button').attributes('aria-expanded')).toBe(String(!cancel))
+    expect(Boolean(root.emitted('update:modelValue'))).toBe(!cancel)
+    wrapper.unmount()
   })
 })

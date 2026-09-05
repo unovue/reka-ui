@@ -1,7 +1,8 @@
 # Headless Composable Migration Recipe (`useX()`)
 
 > Status: **validated on Switch (form-control archetype) + Tabs (collection /
-> per-item / roving-focus archetype) + Menu (overlay archetype).** The pilots have
+> per-item / roving-focus archetype) + Accordion (disclosure archetype) + Menu
+> (overlay archetype).** The pilots have
 > shipped; the recipe is ready to batch-apply to the tiers below, still one family
 > per PR with its own characterization gate. Updated for the accepted foundation
 > decisions of #2823 (`data-state` axes), #2828 (`beforeUpdate` + details) and the
@@ -183,7 +184,7 @@ one stateful factory boundary:
 - **The item surface is a once-per-item factory.** `getAccordionItemSurface()` owns
   the item's `open`/`disabled` computeds plus the root-element-backed arrow-key
   handler. It returns the item/header/trigger/content surfaces for standalone use.
-  The descendant SFCs inject the existing item context and call the same exported
+  The descendant SFCs inject the existing item context and call the same internal
   header/trigger/content builders, so aria/handlers/state do not fork into an SFC-
   only implementation.
 - **Component wrappers stay wrappers, but can consume surfaces.** `AccordionItem`,
@@ -199,8 +200,15 @@ one stateful factory boundary:
   allocation-order-based rather than `(baseId, value)`-derived. `AccordionTrigger`
   therefore keeps `useId` and writes the id into the existing item context before
   building trigger/content surfaces. Standalone `getItemSurface` calls derive a
-  reactive trigger id from `(baseId, value)`, with a literal `reka-accordion`
-  default; callers can still override `triggerId` explicitly.
+  reactive trigger id from `(baseId, value)`, with a unique per-call counter
+  default. SSR consumers must supply a stable `baseId`; callers can still override
+  `triggerId` explicitly.
+- **Model changes share the foundation.** `useAccordion()` owns single/multiple
+  state through `useControllableState`; trigger presses and content-found events
+  carry `AccordionChangeReason` and the native event through cancellable
+  `beforeUpdate:modelValue` and `update:modelValue`. Each part uses
+  `createPartSurface` and `DisclosureState` / `disclosureState(open)`, and shells
+  bind `attrs.value`. Surface builders stay internal.
 
 ## Overlay families (validated on Menu)
 

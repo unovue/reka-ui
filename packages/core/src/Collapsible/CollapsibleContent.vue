@@ -10,7 +10,7 @@ export interface CollapsibleContentProps extends PrimitiveProps {
 }
 
 export type CollapsibleContentEmits = {
-  contentFound: [void]
+  contentFound: [event: Event]
 }
 </script>
 
@@ -86,7 +86,7 @@ onMounted(() => {
 useEventListener(currentElement, 'beforematch', (ev) => {
   requestAnimationFrame(() => {
     rootContext.onOpenToggle()
-    emits('contentFound')
+    emits('contentFound', ev)
   })
 })
 </script>

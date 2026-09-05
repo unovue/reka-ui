@@ -1,12 +1,11 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { stateToDataAttrs, useId } from '@/shared'
+import { useId } from '@/shared'
 
 export interface AccordionTriggerProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
 import { CollapsibleTrigger } from '@/Collapsible'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 
@@ -27,7 +26,7 @@ const surface = getAccordionTriggerSurface(rootContext, itemContext)
     :ref="itemContext.currentRef"
     :as="props.as"
     :as-child="props.asChild"
-    v-bind="mergeProps(surface.props.value, stateToDataAttrs(surface.state.value))"
+    v-bind="surface.attrs.value"
   >
     <slot />
   </CollapsibleTrigger>

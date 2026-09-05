@@ -1,14 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import { createContext, stateToDataAttrs, useForwardExpose } from '@/shared'
+import type { DisclosureState } from '@/shared'
+import { createContext, useForwardExpose } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
-
-const AccordionItemState = {
-  Open: 'open',
-  Closed: 'closed',
-} as const
-type AccordionItemStateValue = typeof AccordionItemState[keyof typeof AccordionItemState]
 
 export interface AccordionItemProps
   extends Omit<CollapsibleRootProps, 'open' | 'defaultOpen' | 'onOpenChange'> {
@@ -27,7 +22,7 @@ export interface AccordionItemProps
 
 interface AccordionItemContext {
   open: ComputedRef<boolean>
-  dataState: ComputedRef<AccordionItemStateValue>
+  dataState: ComputedRef<DisclosureState>
   disabled: ComputedRef<boolean>
   dataDisabled: ComputedRef<'' | undefined>
   triggerId: string
@@ -41,7 +36,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps } from 'vue'
+import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
 import { getAccordionItemSurface } from './useAccordion'
 
@@ -68,7 +63,7 @@ const surface = getAccordionItemSurface(rootContext, () => props.value, {
 const { open, disabled } = surface
 
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
-const dataState = computed<AccordionItemStateValue>(() => surface.item.state.value.state)
+const dataState = computed<DisclosureState>(() => surface.item.state.value.state)
 
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
@@ -89,7 +84,7 @@ provideAccordionItemContext({
   <CollapsibleRoot
     :as="props.as"
     :as-child="props.asChild"
-    v-bind="mergeProps(surface.item.props.value, stateToDataAttrs(surface.item.state.value))"
+    v-bind="surface.item.attrs.value"
   >
     <slot :open="open" />
   </CollapsibleRoot>

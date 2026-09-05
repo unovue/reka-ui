@@ -22,14 +22,8 @@ export {
   type AccordionTriggerProps,
 } from './AccordionTrigger.vue'
 export {
-  type AccordionItemSurfaceContext,
-  type AccordionItemSurfaceOptions,
-  type AccordionItemSurfaceReturn,
+  type AccordionChangeReason,
   type AccordionPartState,
-  getAccordionContentSurface,
-  getAccordionHeaderSurface,
-  getAccordionItemSurface,
-  getAccordionTriggerSurface,
   useAccordion,
   type UseAccordionProps,
   type UseAccordionReturn,
