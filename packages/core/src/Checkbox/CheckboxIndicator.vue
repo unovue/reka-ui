@@ -12,6 +12,7 @@ export interface CheckboxIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectCheckboxRootContext } from './CheckboxRoot.vue'
@@ -34,11 +35,10 @@ const indicator = getCheckboxIndicatorSurface(rootContext)
   >
     <Primitive
       :ref="forwardRef"
-      v-bind="indicator.attrs.value"
       :style="{ pointerEvents: 'none' }"
       :as-child="asChild"
       :as="as"
-      v-bind="$attrs"
+      v-bind="mergeProps(indicator.attrs.value, $attrs)"
     >
       <slot />
     </Primitive>

@@ -1,5 +1,5 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
-import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState, UseControllableStateOptions } from '@/shared'
 import { computed, toValue } from 'vue'
 import { createPartSurface, selectionState, useControllableState } from '@/shared'
 
@@ -32,12 +32,11 @@ export interface UseTogglePressedProps {
 
 export interface UseTogglePressedReturn {
   /**
-   * The raw model — typed `boolean` like the SFC's model, but a controlled
-   * `null` / an `undefined` default pass through at runtime (that is what
-   * `aria-pressed` binds, so those omit the attribute). Use `pressed` for the
-   * normalised boolean.
+   * The raw model: a controlled `null` and an `undefined` default pass through
+   * (that is what `aria-pressed` binds, so those omit the attribute). Use
+   * `pressed` for the normalised boolean.
    */
-  modelValue: ComputedRef<boolean>
+  modelValue: ComputedRef<boolean | null | undefined>
   pressed: ComputedRef<boolean>
   disabled: ComputedRef<boolean>
   toggle: (reason?: ToggleChangeReason | BaseChangeReason, event?: Event) => void
@@ -46,6 +45,8 @@ export interface UseTogglePressedReturn {
   isControlled: ComputedRef<boolean>
   root: PartSurface<ToggleState>
 }
+
+type ToggleModelOptions = UseControllableStateOptions<boolean | null | undefined, ToggleChangeReason>
 
 /**
  * Headless Toggle logic. The `Toggle.vue` shell composes this; standalone
@@ -60,14 +61,15 @@ export interface UseTogglePressedReturn {
  * @lifecycle pure
  */
 export function useTogglePressed(props: UseTogglePressedProps = {}): UseTogglePressedReturn {
-  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<boolean, ToggleChangeReason>({
+  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<boolean | null | undefined, ToggleChangeReason>({
     // `null` is a defined (controlled) value here and reads through unchanged.
-    prop: props.modelValue as MaybeRefOrGetter<boolean | undefined>,
+    prop: props.modelValue,
     defaultValue: props.defaultValue,
     name: 'modelValue',
     emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    // Every internal write is a boolean, so the boolean-typed callbacks are safe.
+    onBeforeUpdate: props.onBeforeUpdate as ToggleModelOptions['onBeforeUpdate'],
+    onUpdate: props.onUpdate as ToggleModelOptions['onUpdate'],
   })
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const pressed = computed(() => !!modelValue.value)

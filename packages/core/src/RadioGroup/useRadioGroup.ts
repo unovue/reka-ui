@@ -209,6 +209,7 @@ export interface UseRadioGroupReturn {
     value: MaybeRefOrGetter<AcceptableValue | undefined>,
     disabled?: MaybeRefOrGetter<boolean | undefined>,
     required?: MaybeRefOrGetter<boolean | undefined>,
+    options?: RadioGroupItemSurfaceOptions,
   ) => PartSurface<RadioGroupItemState>
   context: RadioGroupRootContext
 }
@@ -277,7 +278,7 @@ export function useRadioGroup(props: UseRadioGroupProps = {}): UseRadioGroupRetu
     lastChangeDetails,
     isControlled,
     root,
-    getItemSurface: (value, itemDisabled, itemRequired) => getRadioGroupItemSurface(context, value, itemDisabled, itemRequired),
+    getItemSurface: (value, itemDisabled, itemRequired, options) => getRadioGroupItemSurface(context, value, itemDisabled, itemRequired, options),
     context,
   }
 }

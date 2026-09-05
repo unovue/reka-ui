@@ -12,6 +12,7 @@ export interface RadioGroupIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectRadioGroupItemContext } from './RadioGroupItem.vue'
@@ -33,10 +34,9 @@ const indicator = getRadioGroupIndicatorSurface(itemContext)
   >
     <Primitive
       :ref="forwardRef"
-      v-bind="indicator.attrs.value"
       :as-child="asChild"
       :as="as"
-      v-bind="$attrs"
+      v-bind="mergeProps(indicator.attrs.value, $attrs)"
     >
       <slot />
     </Primitive>

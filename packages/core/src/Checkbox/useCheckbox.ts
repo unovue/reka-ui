@@ -3,7 +3,7 @@ import type { CheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 import type { CheckboxRootContext } from './CheckboxRoot.vue'
 import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { CheckedState } from './utils'
-import type { BaseChangeReason, ChangeEventDetails, PartSurface, TriSelectionState } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface, TriSelectionState, UseControllableStateOptions } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
 import { isEqual } from 'ohash'
 import { computed, toValue } from 'vue'
@@ -48,7 +48,8 @@ export interface UseCheckboxProps<T = boolean> {
 }
 
 export interface UseCheckboxReturn<T = boolean> {
-  modelValue: ComputedRef<T | 'indeterminate'>
+  /** The raw model: a controlled `null` / `undefined` passes through; `checked` / `checkedState` normalise it. */
+  modelValue: ComputedRef<T | 'indeterminate' | null | undefined>
   /** `true` when `modelValue` equals `trueValue` (ohash `isEqual`). */
   checked: ComputedRef<boolean>
   /** Group membership when grouped, else `'indeterminate'` or `checked`. */
@@ -85,6 +86,8 @@ function toGroupReason(reason: CheckboxChangeReason | BaseChangeReason): Checkbo
   return reason === 'trigger-press' ? 'item-press' : reason
 }
 
+type CheckboxModelOptions<T> = UseControllableStateOptions<T | 'indeterminate' | null | undefined, CheckboxChangeReason>
+
 /**
  * Headless Checkbox logic. The `.vue` shell composes this; standalone consumers
  * can drive a checkbox entirely from JS, optionally inside a
@@ -104,14 +107,15 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
     return resolved === undefined ? 'on' : resolved
   }
 
-  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<T | 'indeterminate', CheckboxChangeReason>({
+  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<T | 'indeterminate' | null | undefined, CheckboxChangeReason>({
     // Passed as-is (not wrapped in a getter) so a writable `Ref` keeps ref-owned mode.
-    prop: props.modelValue as MaybeRefOrGetter<T | 'indeterminate' | undefined>,
+    prop: props.modelValue,
     defaultValue: () => props.defaultValue ?? falseValue(),
     name: 'modelValue',
     emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    // Every internal write is `T | 'indeterminate'`, so the narrower callbacks are safe.
+    onBeforeUpdate: props.onBeforeUpdate as CheckboxModelOptions<T>['onBeforeUpdate'],
+    onUpdate: props.onUpdate as CheckboxModelOptions<T>['onUpdate'],
   })
   const disabled = computed(() => (group?.disabled.value || toValue(props.disabled)) ?? false)
   const checked = computed(() => isEqual(modelValue.value, trueValue()))

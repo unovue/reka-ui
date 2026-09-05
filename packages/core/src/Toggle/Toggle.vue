@@ -31,6 +31,7 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
+import type { ComputedRef } from 'vue'
 import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useTogglePressed } from './useTogglePressed'
@@ -69,12 +70,15 @@ const toggleGroupContext = injectToggleGroupRootContext(null)
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled;
 // `null` is controlled and reads through, exactly as `useVModel` did).
-const { modelValue, root } = useTogglePressed({
+const toggle = useTogglePressed({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: () => props.disabled,
   emit: emits,
 })
+const { root } = toggle
+// Slot type parity with v2 (`useVModel(...) as Ref<boolean>`).
+const modelValue = toggle.modelValue as ComputedRef<boolean>
 
 const isFormControl = useFormControl(currentElement)
 
