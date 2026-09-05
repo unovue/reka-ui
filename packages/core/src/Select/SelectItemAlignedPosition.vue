@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useResizeObserver } from '@vueuse/core'
 import { useCollection } from '@/Collection'
-import { clamp, createContext, useForwardExpose } from '@/shared'
+import { clamp, createContext, useCspSafePositioning, useForwardExpose } from '@/shared'
 
 interface SelectItemAlignedPositionContext {
   contentWrapper?: Ref<HTMLElement | undefined>
@@ -18,7 +18,7 @@ export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPo
 </script>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, mergeProps, nextTick, onMounted, ref, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -45,6 +45,12 @@ const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
 const { viewport, selectedItem, selectedItemText, focusSelectedItem }
   = contentContext!
+
+// Withhold the wrapper/content positioning styles during SSR when CSP-safe positioning is on,
+// so the server emits no inline `style` attribute the browser would block. The imperative
+// `position()` writes below are client-only (CSSOM) and are unaffected. See issue #2732.
+const { shouldApplyPositioningStyle } = useCspSafePositioning()
+const attrs = useAttrs()
 
 function position() {
   if (
@@ -197,6 +203,36 @@ function position() {
 // copy z-index from content to wrapper
 const contentZIndex = ref('')
 
+const wrapperStyle = computed<CSSProperties | undefined>(() => {
+  if (!shouldApplyPositioningStyle.value)
+    return undefined
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'fixed',
+    zIndex: contentZIndex.value,
+  }
+})
+// Bind `style` only when there is something to apply — an empty `style=""` attribute
+// still triggers a `style-src-attr` CSP violation, so it must be omitted from SSR markup.
+const wrapperProps = computed(() => (wrapperStyle.value ? { style: wrapperStyle.value } : {}))
+
+const primitiveStyle = computed<CSSProperties | undefined>(() => {
+  if (!shouldApplyPositioningStyle.value)
+    return undefined
+  return {
+    // When we get the height of the content, it includes borders. If we were to set
+    // the height without having `boxSizing: 'border-box'` it would be too big.
+    boxSizing: 'border-box',
+    // We need to ensure the content doesn't get taller than the wrapper
+    maxHeight: '100%',
+  }
+})
+// merge our (optional) style with fallthrough attrs + own props, carried by a single `v-bind`
+const mergedPrimitiveProps = computed(() =>
+  mergeProps({ ...attrs, ...props }, primitiveStyle.value ? { style: primitiveStyle.value } : {}),
+)
+
 onMounted(async () => {
   await nextTick()
   position()
@@ -231,23 +267,11 @@ provideSelectItemAlignedPositionContext({
 <template>
   <div
     ref="contentWrapperElement"
-    :style="{
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'fixed',
-      zIndex: contentZIndex,
-    }"
+    v-bind="wrapperProps"
   >
     <Primitive
       :ref="forwardRef"
-      :style="{
-        // When we get the height of the content, it includes borders. If we were to set
-        // the height without having `boxSizing: 'border-box'` it would be too big.
-        boxSizing: 'border-box',
-        // We need to ensure the content doesn't get taller than the wrapper
-        maxHeight: '100%',
-      }"
-      v-bind="{ ...$attrs, ...props }"
+      v-bind="mergedPrimitiveProps"
     >
       <slot />
     </Primitive>
