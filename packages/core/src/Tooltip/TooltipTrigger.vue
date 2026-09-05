@@ -54,9 +54,9 @@ function handlePointerUp() {
   }, 1)
 }
 
-function handlePointerDown() {
-  if (rootContext.open && !rootContext.disableClosingTrigger.value) {
-    rootContext.onClose()
+function handlePointerDown(event: PointerEvent) {
+  if (rootContext.open.value && !rootContext.disableClosingTrigger.value) {
+    rootContext.onClose('trigger-press', event)
   }
   isPointerDown.value = true
   document.addEventListener('pointerup', handlePointerUp, { once: true })
@@ -68,13 +68,13 @@ function handlePointerMove(event: PointerEvent) {
   if (
     !hasPointerMoveOpened.value && !providerContext.isPointerInTransitRef.value
   ) {
-    rootContext.onTriggerEnter()
+    rootContext.onTriggerEnter(event)
     hasPointerMoveOpened.value = true
   }
 }
 
-function handlePointerLeave() {
-  rootContext.onTriggerLeave()
+function handlePointerLeave(event: PointerEvent) {
+  rootContext.onTriggerLeave(event)
   hasPointerMoveOpened.value = false
 }
 
@@ -85,16 +85,16 @@ function handleFocus(event: FocusEvent) {
   if (rootContext.ignoreNonKeyboardFocus.value && !(event.target as HTMLElement).matches?.(':focus-visible'))
     return
 
-  rootContext.onOpen()
+  rootContext.onOpen('trigger-focus', event)
 }
 
-function handleBlur() {
-  rootContext.onClose()
+function handleBlur(event: FocusEvent) {
+  rootContext.onClose('trigger-blur', event)
 }
 
-function handleClick() {
+function handleClick(event: MouseEvent) {
   if (!rootContext.disableClosingTrigger.value)
-    rootContext.onClose()
+    rootContext.onClose('trigger-press', event)
 }
 </script>
 

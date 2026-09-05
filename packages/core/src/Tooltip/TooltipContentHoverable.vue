@@ -16,7 +16,7 @@ const { isPointerInTransit, onPointerExit } = useGraceArea(trigger, currentEleme
 
 providerContext.isPointerInTransitRef = isPointerInTransit
 onPointerExit(() => {
-  onClose()
+  onClose('content-leave')
 })
 </script>
 
