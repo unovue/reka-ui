@@ -7,7 +7,7 @@ import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
-import { useCalendar } from '@/Calendar/useCalendar'
+import { useCalendarGrid } from '@/shared/date'
 import { getWeekStartsOn, isBefore } from '@/date'
 import {
   createContext,
@@ -278,9 +278,13 @@ const {
   formatter,
   isPlaceholderFocusable,
   firstFocusableDate,
-} = useCalendar({
-  locale,
+} = useCalendarGrid({
+  // Day view only until Phase 3 of the calendar views consolidation gives
+  // RangeCalendar its own `view` / `granularity`.
+  unit: 'day',
   placeholder,
+  setPlaceholder: onPlaceholderChange,
+  locale,
   weekStartsOn,
   fixedWeeks,
   numberOfMonths,
@@ -289,8 +293,8 @@ const {
   disabled,
   weekdayFormat,
   pagedNavigation,
-  isDateDisabled: propsIsDateDisabled.value,
-  isDateUnavailable: propsIsDateUnavailable.value,
+  isDateDisabled: propsIsDateDisabled,
+  isDateUnavailable: propsIsDateUnavailable,
   calendarLabel,
   nextPage: propsNextPage,
   prevPage: propsPrevPage,
