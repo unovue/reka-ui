@@ -78,7 +78,9 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     const onUpdate = vi.fn()
     const { user, getByTestId, calendar } = setupUnit({ granularity: 'month', modelValue: sep5, preventDeselect: true }, { 'onUpdate:modelValue': onUpdate })
     await user.click(getByTestId('cell-2026-09-01'))
-    expect(onUpdate).not.toHaveBeenCalled()
+    // Re-committing the same month is allowed (v2 parity), clearing it is not.
+    for (const [value] of onUpdate.mock.calls)
+      expect((value as DateValue).toString()).toBe('2026-09-05')
     expect(selected(calendar)).toHaveLength(1)
   })
 
