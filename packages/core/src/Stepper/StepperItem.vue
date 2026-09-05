@@ -9,7 +9,15 @@ import { injectStepperRootContext } from './StepperRoot.vue'
 
 export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
 
-export type StepperState = 'completed' | 'active' | 'inactive'
+/**
+ * Stepper is one of the multi-value `data-state` machines grandfathered by
+ * #2823: a step is `completed`, `current` or `upcoming`, which neither of the
+ * two normalised axes (`open` / `closed`, `checked` / `unchecked`) can express.
+ * The v2 words `active` / `inactive` were dropped because they read as
+ * synonyms of the axis words and collided with Tabs' old `active` / `inactive`
+ * (which the codemod rewrites to `checked` / `unchecked`).
+ */
+export type StepperState = 'completed' | 'current' | 'upcoming'
 
 export interface StepperItemContext {
   titleId: string
@@ -38,7 +46,7 @@ const props = withDefaults(defineProps<StepperItemProps>(), {
 
 defineSlots<{
   default?: (props: {
-    /** The current state of the stepper item */
+    /** The state of the stepper item: `completed`, `current` or `upcoming` */
     state: StepperState
   }) => any
 }>()
@@ -56,10 +64,10 @@ const itemState = computed(() => {
   if (completed.value)
     return 'completed'
   if (rootContext.modelValue.value === step.value)
-    return 'active'
+    return 'current'
   if (rootContext.modelValue.value! > step.value)
     return 'completed'
-  return 'inactive'
+  return 'upcoming'
 })
 
 const isFocusable = computed(() => {
@@ -86,7 +94,7 @@ provideStepperItemContext({
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :aria-current="itemState === 'active' ? 'true' : undefined"
+    :aria-current="itemState === 'current' ? 'true' : undefined"
     :data-state="itemState"
     :disabled="disabled || !isFocusable ? '' : undefined"
     :data-disabled="disabled || !isFocusable ? '' : undefined"

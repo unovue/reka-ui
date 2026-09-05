@@ -31,7 +31,7 @@ const steps = [{
       class="w-full flex justify-center gap-2 cursor-pointer group relative px-4"
       :step="item.step"
     >
-      <StepperTrigger class="inline-flex border-2 shadow-sm items-center text-white bg-green9 border-green9 group-data-[state=inactive]:border-gray-200 group-data-[state=inactive]:bg-white group-data-[state=inactive]:text-stone-700 group-data-[disabled]:opacity-50 group-data-[disabled]:cursor-not-allowed justify-center rounded-full w-10 h-10 shrink-0 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none">
+      <StepperTrigger class="inline-flex border-2 shadow-sm items-center text-white bg-green9 border-green9 group-data-[state=upcoming]:border-gray-200 group-data-[state=upcoming]:bg-white group-data-[state=upcoming]:text-stone-700 group-data-[disabled]:opacity-50 group-data-[disabled]:cursor-not-allowed justify-center rounded-full w-10 h-10 shrink-0 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none">
         <StepperIndicator>
           <Icon
             :icon="item.icon"
