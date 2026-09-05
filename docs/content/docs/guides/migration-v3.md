@@ -67,3 +67,39 @@ Because both values are now always emitted, any styles that relied on the attrib
   animation-name: slideDownAndFade;
 }
 ```
+
+### Codemod
+
+The `@reka-ui/codemod` package automates the mechanical part: `npx @reka-ui/codemod data-state ./src` applies the mapping above to Tailwind variants and CSS attribute selectors in every `.vue`, `.css`, `.scss`, `.ts`, `.tsx`, `.js`, `.jsx`, `.html` and `.md` file under the given paths. It is deliberately conservative—`active` / `inactive` selectors are only rewritten in files that clearly belong to Tabs, TagsInput or Rating rather than Stepper or Splitter, and presence-only selectors such as `:not([data-state])` are never touched; both cases are left as they are and reported as a `file:line` warning for you to resolve by hand. Run it with `--dry-run` first to review the changes it would make before letting it write to disk.
+
+## Change events carry details
+
+`update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. The details tell you *why* the state changed (`details.reason`) and which native event caused it (`details.event`), and `details.cancel()` inside `beforeUpdate:*` keeps the current state.
+
+Converted so far: `SwitchRoot`, `TabsRoot` (`modelValue`), `MenuRoot`, `ContextMenuRoot`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`). The remaining families follow as they move to their headless composables.
+
+Each family exports its reason union, for example `DialogOpenChangeReason` (`'trigger-press' | 'close-press' | 'escape-key' | 'outside-press' | 'focus-outside'`); every family also reports `'imperative-action'` for programmatic changes such as the slot's `close()`.
+
+What to check in your code:
+
+- Explicit `@update:open` / `@update:model-value` listeners receive an extra argument. Handlers that only read the first argument keep working; handlers typed with a single-parameter signature still type-check.
+- Wrappers that re-declare the emit types need the new tuple shape:
+
+  ```ts
+  'update:open': [value: boolean] // [!code --]
+  'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>] // [!code ++]
+  ```
+
+- Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick. Code that relied on the old timing may observe the difference.
+- A component that mounts uncontrolled and later receives a defined model value becomes controlled at that point and stays controlled, even if the model is later cleared to `undefined`.
+
+```vue
+<DialogRoot
+  v-model:open="open"
+  @before-update:open="(value, details) => {
+    // keep the dialog open while the form is dirty, but let the close button through
+    if (!value && isDirty && details.reason !== 'close-press')
+      details.cancel()
+  }"
+/>
+```
