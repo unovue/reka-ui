@@ -74,7 +74,7 @@ An item in the group.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['on', 'off'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-disabled]',

@@ -24,7 +24,7 @@ const rating = ref(3)
         :key="step"
         :step="step"
         :aria-label="`Rate ${step}`"
-        class="absolute overflow-hidden text-stone-200 transition-colors duration-150 data-[state=active]:text-[hsl(142.1_70.6%_45.3%)] data-[state=active]:drop-shadow-[0_1px_4px_hsl(142.1_70.6%_45.3%/0.5)] w-[var(--reka-rating-item-step-width)] opacity-[var(--reka-rating-item-step-opacity)] z-[var(--reka-rating-item-step-z-index)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(142.1_70.6%_45.3%)] rounded"
+        class="absolute overflow-hidden text-stone-200 transition-colors duration-150 data-[state=checked]:text-[hsl(142.1_70.6%_45.3%)] data-[state=checked]:drop-shadow-[0_1px_4px_hsl(142.1_70.6%_45.3%/0.5)] w-[var(--reka-rating-item-step-width)] opacity-[var(--reka-rating-item-step-opacity)] z-[var(--reka-rating-item-step-z-index)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(142.1_70.6%_45.3%)] rounded"
       >
         <Icon
           icon="material-symbols:star-rounded"

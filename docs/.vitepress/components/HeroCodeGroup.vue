@@ -69,7 +69,7 @@ watch(open, () => {
             :key="index"
             :value="tab.label"
             tabindex="-1"
-            class="text-white/70 py-2.5 px-4 border-box data-[state=active]:shadow-[0_1px_0_#10b981] data-[state=active]:font-medium data-[state=active]:text-white"
+            class="text-white/70 py-2.5 px-4 border-box data-[state=checked]:shadow-[0_1px_0_#10b981] data-[state=checked]:font-medium data-[state=checked]:text-white"
           >
             {{ tab.label }}
           </TabsTrigger>

@@ -134,6 +134,10 @@ export default defineConfig({
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
+          {
+            text: `Migration to v3 ${BadgeHTML('New')}`,
+            link: '/docs/guides/migration-v3',
+          },
 
           { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
         ],

@@ -66,7 +66,7 @@ Contains all the parts of a Splitter.
     },
     {
       attribute: '[data-state]',
-      values: ['collapsed', 'expanded', 'Present when collapsbile'],
+      values: ['open', 'closed'],
     },
   ]"
 />

@@ -23,7 +23,7 @@ button {
 .Toggle:hover {
   background-color: var(--grass-3);
 }
-.Toggle[data-state='on'] {
+.Toggle[data-state='checked'] {
   background-color: var(--grass-6);
   color: var(--grass-12);
 }

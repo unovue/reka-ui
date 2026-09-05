@@ -28,6 +28,24 @@ Some elements, such as modals or popovers, are teleported to the `body`. When us
 
 When components are stateful, their state will be exposed in a `data-state` attribute. For example, when an [Accordion Item](../components/accordion) is opened, it includes a `data-state="open"` attribute.
 
+#### The `data-state` vocabulary
+
+`data-state` answers exactly one of two questions. For disclosure ("is this surface revealed?") the value is `open` or `closed`—an [Accordion Item](../components/accordion) that is expanded has `data-state="open"`. For selection ("is this control in its affirmative state?") the value is `checked` or `unchecked`—a pressed [Toggle](../components/toggle) has `data-state="checked"`. The only third value is `indeterminate`, emitted by tri-state controls such as [Checkbox](../components/checkbox) alongside `aria-checked="mixed"`. Qualifiers that describe *how* a state was reached live in their own attribute rather than in `data-state`: a [Tooltip](../components/tooltip) that opened after its delay is `data-state="open"` with an additional `data-delayed` attribute.
+
+```css
+.AccordionItem[data-state="open"] {
+  /* revealed */
+}
+
+.Toggle[data-state="checked"] {
+  /* affirmative */
+}
+
+.TooltipContent[data-state="open"][data-delayed] {
+  /* opened after the delay */
+}
+```
+
 ## Styling with CSS
 
 ### Styling a part

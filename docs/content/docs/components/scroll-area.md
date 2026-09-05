@@ -79,7 +79,7 @@ The vertical scrollbar. Add a second `Scrollbar` with an `orientation` prop to e
   :data="[
     {
       attribute: '[data-state]',
-      values: ['visible', 'hidden'],
+      values: ['open', 'closed'],
     },
     {
       attribute: '[data-orientation]',
@@ -98,7 +98,7 @@ The thumb to be used in `ScrollAreaScrollbar`.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['visible', 'hidden'],
+      values: ['open', 'closed'],
     },
   ]"
 />

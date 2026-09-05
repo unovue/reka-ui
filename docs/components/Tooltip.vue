@@ -16,7 +16,7 @@ defineProps<{
     </TooltipTrigger>
     <TooltipPortal>
       <TooltipContent
-        class="border border-muted data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade text-foreground select-none rounded-md bg-background px-[15px] py-[10px] text-xs leading-none will-change-[transform,opacity]"
+        class="border border-muted data-[state=open]:data-[delayed]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[delayed]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[delayed]:data-[side=left]:animate-slideRightAndFade data-[state=open]:data-[delayed]:data-[side=bottom]:animate-slideUpAndFade text-foreground select-none rounded-md bg-background px-[15px] py-[10px] text-xs leading-none will-change-[transform,opacity]"
         :side-offset="6"
       >
         <span
