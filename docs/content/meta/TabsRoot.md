@@ -58,9 +58,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value</p>\n',
+    'type': '[payload: T, details: ChangeEventDetails&lt;TabsChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes</p>\n',
-    'type': '[payload: T]'
+    'type': '[payload: T, details: ChangeEventDetails&lt;TabsChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -92,7 +97,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes | `[payload: T]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value | `[payload: T, details: ChangeEventDetails<TabsChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes | `[payload: T, details: ChangeEventDetails<TabsChangeReason, Event>]` |
 
 **Slots**
 

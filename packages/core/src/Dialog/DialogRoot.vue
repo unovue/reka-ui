@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useControllableState } from '@/shared'
+import { createContext, useId } from '@/shared'
 
 /** Why the dialog's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type DialogOpenChangeReason
@@ -58,7 +58,7 @@ export const [injectDialogRootContext, provideDialogRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
+import { useDialog } from './useDialog'
 
 defineOptions({
   inheritAttrs: false,
@@ -81,37 +81,25 @@ defineSlots<{
   }) => any
 }>()
 
-// Every open/close path (trigger, close button, dismiss) goes through one
-// `setState` so `beforeUpdate:open` can cancel it and the details reach the consumer.
-const { state: open, setState } = useControllableState<boolean, DialogOpenChangeReason>({
-  prop: () => props.open,
-  defaultValue: props.defaultOpen,
-  name: 'open',
+// The composable owns the controlled/uncontrolled `open` model (every open/close
+// path goes through its `setState` so `beforeUpdate:open` can cancel it) and
+// builds the context; `useId` (SSR-stable) stays in the shell and seeds the
+// content/title/description ids.
+const { open, onOpenChange, context } = useDialog({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  modal: () => props.modal,
+  unmountOnHide: () => props.unmountOnHide,
+  baseId: useId(undefined, 'reka-dialog'),
   emit,
 })
 
-const triggerElement = ref<HTMLElement>()
-const contentElement = ref<HTMLElement>()
-const { modal, unmountOnHide } = toRefs(props)
-
-provideDialogRootContext({
-  open,
-  modal,
-  unmountOnHide,
-  openModal: (reason, event) => setState(true, reason, event),
-  onOpenChange: (value, reason, event) => setState(value, reason, event),
-  onOpenToggle: (reason, event) => setState(!open.value, reason, event),
-  contentId: '',
-  titleId: '',
-  descriptionId: '',
-  triggerElement,
-  contentElement,
-})
+provideDialogRootContext(context)
 </script>
 
 <template>
   <slot
     :open="open"
-    :close="() => setState(false)"
+    :close="() => onOpenChange(false)"
   />
 </template>

@@ -26,9 +26,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Event handler called before the open state of the popover changes; <code>details.cancel()</code> keeps the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;PopoverOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the popover changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;PopoverOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -60,7 +65,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean]` |
+| `beforeUpdate:open` | Event handler called before the open state of the popover changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason, Event>]` |
 
 **Slots**
 

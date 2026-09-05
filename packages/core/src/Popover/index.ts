@@ -30,3 +30,10 @@ export {
   default as PopoverTrigger,
   type PopoverTriggerProps,
 } from './PopoverTrigger.vue'
+export {
+  type PopoverContentState,
+  type PopoverTriggerState,
+  usePopover,
+  type UsePopoverProps,
+  type UsePopoverReturn,
+} from './usePopover'

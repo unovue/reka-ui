@@ -42,6 +42,7 @@ export interface TooltipContentImplProps
 </script>
 
 <script setup lang="ts">
+import type { DismissableLayerDismissDetails } from '@/DismissableLayer'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
@@ -87,8 +88,16 @@ onMounted(() => {
       rootContext.onClose()
   }, { capture: true })
   // Close this tooltip if another one opens
-  useEventListener(window, TOOLTIP_OPEN, rootContext.onClose)
+  useEventListener(window, TOOLTIP_OPEN, () => rootContext.onClose())
 })
+
+// `focusOutside` is prevented in the template, so the layer only dismisses for
+// `escape-key` / `outside-press`; the guard keeps `TooltipOpenChangeReason` honest.
+function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
+  if (reason === 'focus-outside')
+    return
+  rootContext.onClose(reason, event)
+}
 </script>
 
 <template>
@@ -103,7 +112,7 @@ onMounted(() => {
       emits('pointerDownOutside', event)
     }"
     @focus-outside.prevent
-    @dismiss="rootContext.onClose()"
+    @dismiss="handleDismiss"
   >
     <PopperContent
       :ref="forwardRef"

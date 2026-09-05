@@ -32,7 +32,7 @@
   {
     'name': 'state',
     'description': '',
-    'type': 'PrimitiveState'
+    'type': 'PartState'
   },
   {
     'name': 'forwardRef',
@@ -57,7 +57,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `props` |  | `Record<string, any>` |
-| `state` |  | `PrimitiveState` |
+| `state` |  | `PartState` |
 | `forwardRef` |  | `(el: Element \| ComponentPublicInstance \| null): void` |
 
 </llm-only>

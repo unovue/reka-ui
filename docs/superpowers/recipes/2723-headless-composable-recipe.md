@@ -210,6 +210,12 @@ core Menu parts settled the overlay contract:
   instance ref) — inject it as a `getItems` option.
 - **Overlay composables are mount-lifecycle-bound** (`useIsUsingKeyboard`, the content
   watchers/`onUnmounted`) — NOT callable outside `setup()`; test in a mount harness.
+- **Overlay part ids derive from the root's `baseId` in the composable** (Dialog:
+  `contentId`/`titleId`/`descriptionId` = `` `${baseId}-content` `` …), NOT back-filled
+  onto the context by descendant SFCs via `rootContext.x ||= useId(...)`. The context
+  shape stays a plain `string` but is populated up-front, so a standalone consumer —
+  and a trigger-less dialog — get real ids, and every part reads the same value
+  from the context. The one `useId` call still lives in the root SFC.
 
 ## Dependency- and structure-ordered migration (not size)
 

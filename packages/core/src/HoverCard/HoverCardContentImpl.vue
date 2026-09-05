@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { DismissableLayerEmits } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
 import { disclosureState, useForwardExpose, useGraceArea } from '@/shared'
@@ -27,9 +27,40 @@ const { isPointerInTransit, onPointerExit } = useGraceArea(rootContext.triggerEl
 
 syncRef(rootContext.isPointerInTransitRef, isPointerInTransit, { direction: 'rtl' })
 
-onPointerExit(() => {
-  rootContext.onClose()
+// Leaving the grace area is the one pointer path that closes an open card (the
+// trigger's own `pointerleave` only cancels a pending open), so the reason is
+// decided here by whichever element the pointer left last.
+let lastPointerLeave: { reason: 'trigger-leave' | 'content-leave', event: PointerEvent } | undefined
+watchEffect((cleanupFn) => {
+  const trigger = rootContext.triggerElement.value
+  const content = contentElement.value
+  if (!trigger || !content)
+    return
+  const handleTriggerLeave = (event: PointerEvent) => {
+    lastPointerLeave = { reason: 'trigger-leave', event }
+  }
+  const handleContentLeave = (event: PointerEvent) => {
+    lastPointerLeave = { reason: 'content-leave', event }
+  }
+  trigger.addEventListener('pointerleave', handleTriggerLeave)
+  content.addEventListener('pointerleave', handleContentLeave)
+  cleanupFn(() => {
+    trigger.removeEventListener('pointerleave', handleTriggerLeave)
+    content.removeEventListener('pointerleave', handleContentLeave)
+  })
 })
+
+onPointerExit(() => {
+  rootContext.onClose(lastPointerLeave?.reason ?? 'content-leave', lastPointerLeave?.event)
+})
+
+function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
+  // `focusOutside` is prevented below, so the layer never dismisses for it;
+  // the guard keeps `HoverCardOpenChangeReason` honest without a cast.
+  if (reason === 'focus-outside')
+    return
+  rootContext.onDismiss(reason, event)
+}
 
 const containSelection = ref(false)
 
@@ -91,7 +122,7 @@ onUnmounted(() => {
     @escape-key-down="emits('escapeKeyDown', $event)"
     @pointer-down-outside="emits('pointerDownOutside', $event)"
     @focus-outside.prevent="emits('focusOutside', $event)"
-    @dismiss="rootContext.onDismiss"
+    @dismiss="handleDismiss"
   >
     <PopperContent
       v-bind="{ ...forwarded, ...$attrs }"

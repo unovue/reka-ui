@@ -17,7 +17,7 @@ export interface PopoverContentProps extends PopoverContentImplProps {
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 import PopoverContentModal from './PopoverContentModal.vue'
 import PopoverContentNonModal from './PopoverContentNonModal.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -29,8 +29,6 @@ const rootContext = injectPopoverRootContext()
 
 const forwarded = useForwardPropsEmits(props, emits)
 const { forwardRef } = useForwardExpose()
-
-rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 </script>
 
 <template>
