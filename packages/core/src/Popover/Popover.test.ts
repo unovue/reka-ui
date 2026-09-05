@@ -1,5 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -124,7 +124,8 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     await nextTick()
 
     close().element.click()
-    await nextTick()
+    // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
+    await flushPromises()
 
     const [value, details] = root.emitted('update:open')![1]
     expect(value).toBe(false)
@@ -147,7 +148,8 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     onBeforeUpdateOpen.mockClear()
 
     close().element.click()
-    await nextTick()
+    // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
+    await flushPromises()
 
     expect(onBeforeUpdateOpen).toHaveBeenCalledTimes(1)
     expect(onBeforeUpdateOpen.mock.calls[0][1]).toMatchObject({ reason: 'close-press', isCanceled: true })
@@ -170,7 +172,8 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
 
     close().element.click()
-    await nextTick()
+    // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
+    await flushPromises()
     expect(vm.open).toBe(false)
     expect(trigger().attributes('data-state')).toBe('closed')
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
