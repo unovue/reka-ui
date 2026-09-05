@@ -60,6 +60,37 @@ jobs:
           path: packages/core/coverage
           retention-days: 7
 
+  docs-meta:
+    # Informational: `pnpm docs:gen` still regresses a few generic components
+    # (see the note in docs/scripts/autogen.ts), so drift never blocks a PR.
+    # The full diff is printed so it can be applied to the branch by hand.
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
+      - name: Regenerate component meta
+        run: pnpm docs:gen
+
+      - name: Report drift in docs/content/meta
+        run: |
+          git add -N docs/content/meta
+          git --no-pager diff --stat -- docs/content/meta
+          git --no-pager diff -- docs/content/meta
+          git diff --quiet -- docs/content/meta
+
   size:
     needs: build
     runs-on: ubuntu-latest

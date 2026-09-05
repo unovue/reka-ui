@@ -12,8 +12,13 @@ import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
 import { transformJSDocLinks } from './utils'
 
-// @ts-expect-error ignore
-const traverse = _traverse.default as typeof _traverse
+// `@babel/traverse` is CJS. Depending on the ESM interop in play (tsx, Node's
+// CJS namespace wrapping) the default import is either the function itself or
+// `{ default: fn }`; accept both so `pnpm docs:gen` runs on a clean checkout.
+const traverse: typeof _traverse = typeof _traverse === 'function'
+  ? _traverse
+  // @ts-expect-error CJS interop: the namespace object carries the function on `default`
+  : _traverse.default
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const md = new MarkdownIt()
