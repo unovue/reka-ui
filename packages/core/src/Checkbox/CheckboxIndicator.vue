@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { selectionState, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
 
 export interface CheckboxIndicatorProps extends PrimitiveProps {
   /**
@@ -15,6 +15,7 @@ export interface CheckboxIndicatorProps extends PrimitiveProps {
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectCheckboxRootContext } from './CheckboxRoot.vue'
+import { getCheckboxIndicatorSurface } from './useCheckbox'
 import { isIndeterminate } from './utils'
 
 withDefaults(defineProps<CheckboxIndicatorProps>(), {
@@ -23,6 +24,8 @@ withDefaults(defineProps<CheckboxIndicatorProps>(), {
 const { forwardRef } = useForwardExpose()
 
 const rootContext = injectCheckboxRootContext()
+// Same derivation as `useCheckbox().indicator` — one source for `data-state` / `data-disabled`.
+const indicator = getCheckboxIndicatorSurface(rootContext)
 </script>
 
 <template>
@@ -31,8 +34,7 @@ const rootContext = injectCheckboxRootContext()
   >
     <Primitive
       :ref="forwardRef"
-      :data-state="selectionState(rootContext.state.value)"
-      :data-disabled="rootContext.disabled.value ? '' : undefined"
+      v-bind="indicator.attrs.value"
       :style="{ pointerEvents: 'none' }"
       :as-child="asChild"
       :as="as"
