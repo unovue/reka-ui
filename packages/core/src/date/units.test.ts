@@ -190,11 +190,12 @@ describe('createMonthGrid / createYearGrid columns', () => {
     expect(createYearGrid({ dateObj: sep5, yearsPerPage: 9, columns: 3 }).rows.map(r => r.length)).toEqual([3, 3, 3])
   })
 
-  it('clamp columns and yearsPerPage to at least one', () => {
-    expect(createMonthGrid({ dateObj: sep5, columns: 0 }).rows).toHaveLength(12)
-    const single = createYearGrid({ dateObj: sep5, yearsPerPage: 0, columns: -2 })
-    expect(single.cells).toHaveLength(1)
-    expect(single.value.toString()).toBe('2020-01-01')
+  it('fall back to the defaults for non-positive counts', () => {
+    expect(createMonthGrid({ dateObj: sep5, columns: 0 }).rows.map(r => r.length)).toEqual([4, 4, 4])
+    const fallback = createYearGrid({ dateObj: sep5, yearsPerPage: 0, columns: -2 })
+    expect(fallback.cells).toHaveLength(12)
+    expect(fallback.rows.map(r => r.length)).toEqual([4, 4, 4])
+    expect(fallback.value.toString()).toBe('2020-01-01')
   })
 
   it('normalise NaN, Infinity and fractional layout counts', () => {
