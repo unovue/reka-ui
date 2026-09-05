@@ -32,11 +32,13 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { mergeProps } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
-import { disclosureState, useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
+import { useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
+import { getPopoverContentSurface } from './usePopover'
 
 const props = defineProps<PopoverContentImplPrivateProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
@@ -46,6 +48,12 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
 useFocusGuards(currentElement)
+
+// id/role/aria-labelledby/data-state come from the shared surface builder
+// (single source with `usePopover()`); FocusScope, DismissableLayer (which
+// hands the dismiss reason + event to `onOpenChange`), PopperContent and the
+// `--reka-popover-*` CSS variables stay in the SFC.
+const content = getPopoverContentSurface(rootContext)
 </script>
 
 <template>
@@ -66,11 +74,8 @@ useFocusGuards(currentElement)
       @dismiss="(details) => rootContext.onOpenChange(false, details.reason, details.event)"
     >
       <PopperContent
-        v-bind="forwarded"
-        :id="rootContext.contentId"
         :ref="forwardRef"
-        :data-state="disclosureState(rootContext.open.value)"
-        :aria-labelledby="rootContext.triggerId"
+        v-bind="mergeProps(forwarded, content.attrs.value)"
         :style="{
           '--reka-popover-content-transform-origin':
             'var(--reka-popper-transform-origin)',
@@ -81,7 +86,6 @@ useFocusGuards(currentElement)
           '--reka-popover-trigger-width': 'var(--reka-popper-anchor-width)',
           '--reka-popover-trigger-height': 'var(--reka-popper-anchor-height)',
         }"
-        role="dialog"
       >
         <slot />
       </PopperContent>

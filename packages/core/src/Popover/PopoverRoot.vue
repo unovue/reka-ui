@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useControllableState } from '@/shared'
+import { createContext, useId } from '@/shared'
 
 /** Why the popover's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type PopoverOpenChangeReason
@@ -56,8 +56,8 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { usePopover } from './usePopover'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
@@ -75,38 +75,26 @@ defineSlots<{
   }) => any
 }>()
 
-const { modal } = toRefs(props)
-
-// Every write to `open` — trigger, close button, dismiss, slot `close` — goes
-// through one `setState`, so `beforeUpdate:open` can cancel any of them and
-// `update:open` always carries the reason (#2828).
-const { state: open, setState } = useControllableState<boolean, PopoverOpenChangeReason>({
-  prop: () => props.open,
-  defaultValue: props.defaultOpen,
-  name: 'open',
+// Controlled/uncontrolled `open` + the `beforeUpdate:` / `update:` emits live in
+// the composable's `useControllableState` (`open === undefined` → uncontrolled).
+// `useId` (ConfigProvider/SSR-aware) stays in the shell: the trigger/content ids
+// derive from this base inside the composable.
+const { open, onOpenChange, context } = usePopover({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  modal: () => props.modal,
+  baseId: useId(undefined, 'reka-popover'),
   emit,
 })
 
-const triggerElement = ref<HTMLElement>()
-const hasCustomAnchor = ref(false)
-
-providePopoverRootContext({
-  contentId: '',
-  triggerId: '',
-  modal,
-  open,
-  onOpenChange: (value, reason, event) => setState(value, reason, event),
-  onOpenToggle: (reason, event) => setState(!open.value, reason, event),
-  triggerElement,
-  hasCustomAnchor,
-})
+providePopoverRootContext(context)
 </script>
 
 <template>
   <PopperRoot>
     <slot
       :open="open"
-      :close="() => setState(false)"
+      :close="() => onOpenChange(false)"
     />
   </PopperRoot>
 </template>
