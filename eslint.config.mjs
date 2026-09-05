@@ -51,13 +51,6 @@ export default antfu(
     },
   },
   {
-    // The codemod package is dependency-free and runs its tests with `node --test`.
-    files: ['packages/codemod/test/**/*.mjs'],
-    rules: {
-      'test/no-import-node-test': 'off',
-    },
-  },
-  {
     files: ['**/package.json'],
     rules: {
       // Wrecks the order of `files` otherwise, and breaks the exclusion patterns
