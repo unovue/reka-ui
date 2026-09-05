@@ -35,7 +35,7 @@ const surface = getTabsTriggerSurface(rootContext, () => props.value, () => prop
   <RovingFocusItem
     as-child
     :focusable="!disabled"
-    :active="surface.state.value.state === 'active'"
+    :active="surface.state.value.state === 'checked'"
   >
     <Primitive
       :ref="forwardRef"

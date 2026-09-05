@@ -10,7 +10,7 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
@@ -37,7 +37,7 @@ onMounted(() => {
     aria-haspopup="listbox"
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.contentId"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :data-state="disclosureState(rootContext.open.value)"
     :disabled="disabled"
     :data-disabled="disabled ? '' : undefined"
     :aria-disabled="disabled ?? undefined"

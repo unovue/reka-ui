@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { disclosureState, useForwardExpose, useId } from '@/shared'
 
 export interface DropdownMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -44,7 +44,7 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
       :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
       :data-disabled="disabled ? '' : undefined"
       :disabled="disabled"
-      :data-state="rootContext.open.value ? 'open' : 'closed'"
+      :data-state="disclosureState(rootContext.open.value)"
       @click="
         async (event: MouseEvent) => {
           // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)

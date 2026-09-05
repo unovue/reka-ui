@@ -2,7 +2,7 @@
 import type { DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { useForwardExpose, useGraceArea } from '@/shared'
+import { disclosureState, useForwardExpose, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
@@ -96,7 +96,7 @@ onUnmounted(() => {
     <PopperContent
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
-      :data-state="rootContext.open.value ? 'open' : 'closed'"
+      :data-state="disclosureState(rootContext.open.value)"
       :style="{
         'userSelect': containSelection ? 'text' : undefined,
         // Safari requires prefix

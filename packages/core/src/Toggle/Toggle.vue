@@ -1,7 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import type { SelectionState } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { selectionState, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -9,8 +10,6 @@ export type ToggleEmits = {
   /** Event handler called when the value of the toggle changes. */
   'update:modelValue': [value: boolean]
 }
-
-export type DataState = 'on' | 'off'
 
 export interface ToggleProps extends PrimitiveProps, FormFieldProps {
   /**
@@ -74,9 +73,7 @@ function togglePressed() {
   modelValue.value = !modelValue.value
 }
 
-const dataState = computed<DataState>(() => {
-  return modelValue.value ? 'on' : 'off'
-})
+const dataState = computed<SelectionState>(() => selectionState(modelValue.value))
 
 const isFormControl = useFormControl(currentElement)
 </script>

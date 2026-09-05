@@ -24,9 +24,9 @@ describe('given default Toggle Group', () => {
   })
 
   it('should have active toggle=center', () => {
-    expect(triggers[0].attributes('data-state')).toBe('off')
-    expect(triggers[1].attributes('data-state')).toBe('on')
-    expect(triggers[2].attributes('data-state')).toBe('off')
+    expect(triggers[0].attributes('data-state')).toBe('unchecked')
+    expect(triggers[1].attributes('data-state')).toBe('checked')
+    expect(triggers[2].attributes('data-state')).toBe('unchecked')
   })
 
   describe('after toggling current active', () => {
@@ -37,9 +37,9 @@ describe('given default Toggle Group', () => {
     })
 
     it('should deselect pre-existing value', () => {
-      expect(triggers[0].attributes('data-state')).toBe('off')
-      expect(triggers[1].attributes('data-state')).toBe('off')
-      expect(triggers[2].attributes('data-state')).toBe('off')
+      expect(triggers[0].attributes('data-state')).toBe('unchecked')
+      expect(triggers[1].attributes('data-state')).toBe('unchecked')
+      expect(triggers[2].attributes('data-state')).toBe('unchecked')
     })
   })
 
@@ -59,9 +59,9 @@ describe('given default Toggle Group', () => {
       })
 
       it('should have next active value', () => {
-        expect(triggers[0].attributes('data-state')).toBe('off')
-        expect(triggers[1].attributes('data-state')).toBe('off')
-        expect(triggers[2].attributes('data-state')).toBe('on')
+        expect(triggers[0].attributes('data-state')).toBe('unchecked')
+        expect(triggers[1].attributes('data-state')).toBe('unchecked')
+        expect(triggers[2].attributes('data-state')).toBe('checked')
       })
 
       describe('after triggering ArrowRight again', () => {
@@ -92,9 +92,9 @@ describe('given default Toggle Group', () => {
       })
 
       it('should have next active value', () => {
-        expect(triggers[0].attributes('data-state')).toBe('on')
-        expect(triggers[1].attributes('data-state')).toBe('off')
-        expect(triggers[2].attributes('data-state')).toBe('off')
+        expect(triggers[0].attributes('data-state')).toBe('checked')
+        expect(triggers[1].attributes('data-state')).toBe('unchecked')
+        expect(triggers[2].attributes('data-state')).toBe('unchecked')
       })
     })
   })
@@ -123,9 +123,9 @@ describe('given multiple value Toggle Group', () => {
   })
 
   it('should have active toggle=center', () => {
-    expect(triggers[0].attributes('data-state')).toBe('off')
-    expect(triggers[1].attributes('data-state')).toBe('on')
-    expect(triggers[2].attributes('data-state')).toBe('on')
+    expect(triggers[0].attributes('data-state')).toBe('unchecked')
+    expect(triggers[1].attributes('data-state')).toBe('checked')
+    expect(triggers[2].attributes('data-state')).toBe('checked')
   })
 
   describe('after triggering ArrowRight', () => {
@@ -144,9 +144,9 @@ describe('given multiple value Toggle Group', () => {
       })
 
       it('should have next active value', () => {
-        expect(triggers[0].attributes('data-state')).toBe('off')
-        expect(triggers[1].attributes('data-state')).toBe('on')
-        expect(triggers[2].attributes('data-state')).toBe('off')
+        expect(triggers[0].attributes('data-state')).toBe('unchecked')
+        expect(triggers[1].attributes('data-state')).toBe('checked')
+        expect(triggers[2].attributes('data-state')).toBe('unchecked')
       })
 
       describe('after triggering ArrowRight again', () => {
@@ -177,9 +177,9 @@ describe('given multiple value Toggle Group', () => {
       })
 
       it('should have next active value', () => {
-        expect(triggers[0].attributes('data-state')).toBe('on')
-        expect(triggers[1].attributes('data-state')).toBe('on')
-        expect(triggers[2].attributes('data-state')).toBe('on')
+        expect(triggers[0].attributes('data-state')).toBe('checked')
+        expect(triggers[1].attributes('data-state')).toBe('checked')
+        expect(triggers[2].attributes('data-state')).toBe('checked')
       })
     })
   })

@@ -22,7 +22,7 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { getRootNode, selectionState, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { handleSelect } from './utils'
 
@@ -88,7 +88,7 @@ function handleClick(event: MouseEvent) {
     :aria-label="ariaLabel"
     :as-child="asChild"
     :disabled="disabled ? '' : undefined"
-    :data-state="checked ? 'checked' : 'unchecked'"
+    :data-state="selectionState(checked ?? false)"
     :data-disabled="disabled ? '' : undefined"
     :value="value"
     :required="required"

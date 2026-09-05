@@ -7,7 +7,7 @@ export interface DrawerTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const props = withDefaults(defineProps<DrawerTriggerProps>(), { as: 'button' })
@@ -36,7 +36,7 @@ onUnmounted(() => {
     aria-haspopup="dialog"
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :data-state="disclosureState(rootContext.open.value)"
     @click="rootContext.onOpenChange(true, 'trigger-press')"
   >
     <slot />

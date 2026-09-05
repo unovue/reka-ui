@@ -87,7 +87,7 @@ The component that contains the tag.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active', 'inactive'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-disabled]',
@@ -112,7 +112,7 @@ The button that delete the associate tag.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active', 'inactive'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-disabled]',

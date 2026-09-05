@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { disclosureState, useForwardExpose, useId } from '@/shared'
 
 export interface PopoverTriggerProps extends PrimitiveProps {}
 </script>
@@ -37,7 +37,7 @@ onMounted(() => {
       aria-haspopup="dialog"
       :aria-expanded="rootContext.open.value"
       :aria-controls="rootContext.contentId"
-      :data-state="rootContext.open.value ? 'open' : 'closed'"
+      :data-state="disclosureState(rootContext.open.value)"
       :as="as"
       :as-child="props.asChild"
       @click="rootContext.onOpenToggle"

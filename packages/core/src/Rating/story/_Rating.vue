@@ -23,7 +23,7 @@ const props = defineProps<RatingRootProps>()
         v-for="step in steps"
         :key="step"
         :step="step"
-        class="data-[state=active]:text-yellow-500 text-gray-400 absolute overflow-hidden w-[var(--reka-rating-item-step-width)] opacity-[var(--reka-rating-item-step-opacity)] z-[var(--reka-rating-item-step-z-index)]"
+        class="data-[state=checked]:text-yellow-500 text-gray-400 absolute overflow-hidden w-[var(--reka-rating-item-step-width)] opacity-[var(--reka-rating-item-step-opacity)] z-[var(--reka-rating-item-step-z-index)]"
         :aria-label="`Rating ${step} of ${items.length}`"
       >
         <Icon

@@ -3,7 +3,7 @@ import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, useForwardExpose } from '@/shared'
+import { createContext, disclosureState, getActiveElement, useForwardExpose } from '@/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -210,7 +210,7 @@ provideToastRootContext({ onClose: handleClose })
         v-bind="$attrs"
         :as="as"
         :as-child="asChild"
-        :data-state="open ? 'open' : 'closed'"
+        :data-state="disclosureState(open)"
         :data-swipe-direction="providerContext.swipeDirection.value"
         :style="providerContext.disableSwipe.value
           ? undefined

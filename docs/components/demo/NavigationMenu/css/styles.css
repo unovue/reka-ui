@@ -99,10 +99,10 @@ p {
   z-index: 1;
   transition: width, transform 250ms ease;
 }
-.NavigationMenuIndicator[data-state='visible'] {
+.NavigationMenuIndicator[data-state='open'] {
   animation: fadeIn 200ms ease;
 }
-.NavigationMenuIndicator[data-state='hidden'] {
+.NavigationMenuIndicator[data-state='closed'] {
   animation: fadeOut 200ms ease;
 }
 

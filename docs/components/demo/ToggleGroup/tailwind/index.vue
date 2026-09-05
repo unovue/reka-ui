@@ -7,7 +7,7 @@ const toggleStateSingle = ref('left')
 const toggleStateMultiple = ref(['italic'])
 
 const toggleGroupItemClasses
-  = 'hover:bg-stone-50 text-mauve11 data-[state=on]:bg-stone-100 flex h-[35px] w-[35px] items-center justify-center bg-white text-base leading-4 first:rounded-l-[7px] last:rounded-r-[7px] focus:z-10 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none'
+  = 'hover:bg-stone-50 text-mauve11 data-[state=checked]:bg-stone-100 flex h-[35px] w-[35px] items-center justify-center bg-white text-base leading-4 first:rounded-l-[7px] last:rounded-r-[7px] focus:z-10 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none'
 </script>
 
 <template>

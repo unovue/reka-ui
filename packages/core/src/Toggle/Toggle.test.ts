@@ -18,7 +18,7 @@ describe('given default Toggle', () => {
   })
 
   it('should not be toggled yet', () => {
-    expect(wrapper.get('button').attributes('data-state')).toBe('off')
+    expect(wrapper.get('button').attributes('data-state')).toBe('unchecked')
   })
 
   describe('after toggling', () => {
@@ -27,7 +27,7 @@ describe('given default Toggle', () => {
     })
 
     it('should be toggled on', () => {
-      expect(wrapper.get('button').attributes('data-state')).toBe('on')
+      expect(wrapper.get('button').attributes('data-state')).toBe('checked')
     })
 
     describe('after toggling again', () => {
@@ -36,7 +36,7 @@ describe('given default Toggle', () => {
       })
 
       it('should be toggled off', () => {
-        expect(wrapper.get('button').attributes('data-state')).toBe('off')
+        expect(wrapper.get('button').attributes('data-state')).toBe('unchecked')
       })
     })
   })
@@ -57,7 +57,7 @@ describe('given disabled Toggle', () => {
   })
 
   it('should not be toggled yet', () => {
-    expect(wrapper.get('button').attributes('data-state')).toBe('off')
+    expect(wrapper.get('button').attributes('data-state')).toBe('unchecked')
   })
 
   describe('try toggling', () => {
@@ -66,7 +66,7 @@ describe('given disabled Toggle', () => {
     })
 
     it('should be toggled off', () => {
-      expect(wrapper.get('button').attributes('data-state')).toBe('off')
+      expect(wrapper.get('button').attributes('data-state')).toBe('unchecked')
     })
 
     it('should render disable attributes', () => {

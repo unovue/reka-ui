@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useId } from '@/shared'
+import { disclosureState, useId } from '@/shared'
 import { PRECISION } from './utils/constants'
 
 export interface SplitterPanelProps extends PrimitiveProps {
@@ -186,7 +186,7 @@ defineExpose({
     :data-panel-group-id="groupId"
     :data-panel-id="panelId"
     :data-panel-size=" Number.parseFloat(`${style.flexGrow}`).toFixed(1)"
-    :data-state="collapsible ? isCollapsed ? 'collapsed' : 'expanded' : undefined"
+    :data-state="disclosureState(!isCollapsed)"
   >
     <slot
       :is-collapsed="isCollapsed"

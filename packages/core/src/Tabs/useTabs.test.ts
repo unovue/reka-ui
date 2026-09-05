@@ -85,7 +85,7 @@ describe('useTabs — trigger surface', () => {
       'id': makeTriggerId('x', 'a'),
       'role': 'tab',
       'aria-selected': 'true',
-      'data-state': 'active',
+      'data-state': 'checked',
       'data-disabled': '',
       'data-orientation': 'vertical',
     })
@@ -103,9 +103,9 @@ describe('useTabs — trigger surface', () => {
   it('carries semantic state (active/inactive, disabled, orientation)', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x', orientation: 'vertical' })
     const trig = t.getTriggerSurface('b', () => true)
-    expect(trig.state.value).toEqual({ state: 'inactive', disabled: true, orientation: 'vertical' })
+    expect(trig.state.value).toEqual({ state: 'unchecked', disabled: true, orientation: 'vertical' })
     t.selectTab('b')
-    expect(trig.state.value.state).toBe('active')
+    expect(trig.state.value.state).toBe('checked')
   })
 
   it('a reactive value passed as a getter keeps id and state live', () => {
@@ -113,12 +113,12 @@ describe('useTabs — trigger surface', () => {
     const value = ref('a')
     const trig = t.getTriggerSurface(() => value.value)
     expect(trig.props.value.id).toBe(makeTriggerId('x', 'a'))
-    expect(trig.state.value.state).toBe('active')
+    expect(trig.state.value.state).toBe('checked')
     value.value = 'b'
     expect(trig.props.value.id).toBe(makeTriggerId('x', 'b'))
     expect(trig.props.value['aria-selected']).toBe('false')
-    expect(trig.state.value.state).toBe('inactive')
-    expect(trig.attrs.value['data-state']).toBe('inactive')
+    expect(trig.state.value.state).toBe('unchecked')
+    expect(trig.attrs.value['data-state']).toBe('unchecked')
   })
 
   it('onMousedown (left) selects the tab; right button and ctrl+click do not', () => {
@@ -211,8 +211,8 @@ describe('useTabs — content, root & list surfaces', () => {
       'tabindex': 0,
     })
     expect(noDataAttrs(content.props.value)).toBe(true)
-    expect(content.state.value.state).toBe('active')
-    expect(content.attrs.value['data-state']).toBe('active')
+    expect(content.state.value.state).toBe('checked')
+    expect(content.attrs.value['data-state']).toBe('checked')
     expect(content.attrs.value['data-orientation']).toBe('horizontal')
   })
 

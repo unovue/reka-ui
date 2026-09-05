@@ -38,7 +38,7 @@ button {
 .ToggleGroupItem:hover {
   background-color: var(--grass-3);
 }
-.ToggleGroupItem[data-state='on'] {
+.ToggleGroupItem[data-state='checked'] {
   background-color: var(--grass-5);
   color: var(--grass-11);
 }

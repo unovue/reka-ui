@@ -1,7 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import Tooltip from './stories/_Tooltip.vue'
 import TooltipProvider from './TooltipProvider.vue'
 
@@ -94,5 +95,75 @@ describe('given tooltip within TooltipProvider', () => {
     })
 
     expect(tooltipContentImpl.html()).toContain('data-side="left"')
+  })
+})
+
+// `data-state` is the disclosure axis only (`open` | `closed`, #2823); whether the
+// open was delayed is a separate boolean qualifier, `data-delayed`.
+describe('given tooltip data-state / data-delayed contract', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Tooltip>>
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    document.body.innerHTML = ''
+    wrapper = mount(Tooltip, {
+      global: { stubs: { teleport: { template: '<div><slot /></div>' } } },
+      attachTo: document.body,
+      props: { tooltipProvider: { delayDuration: 700 } },
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('is `closed` without `data-delayed` initially', () => {
+    const trigger = wrapper.find('button')
+    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-delayed')).toBeUndefined()
+  })
+
+  it('is `open` without `data-delayed` after an instant open (focus)', async () => {
+    const trigger = wrapper.find('button')
+    await trigger.trigger('focus')
+    await nextTick()
+
+    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-delayed')).toBeUndefined()
+    const content = wrapper.find('[data-state="open"]:not(button)')
+    expect(content.exists()).toBe(true)
+    expect(content.attributes('data-delayed')).toBeUndefined()
+  })
+
+  it('is `open` with `data-delayed=""` after a delayed open (pointer + timer)', async () => {
+    const trigger = wrapper.find('button')
+    await trigger.trigger('pointermove', { pointerType: 'mouse' })
+    await nextTick()
+    // Timer has not fired yet: still closed, no qualifier.
+    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-delayed')).toBeUndefined()
+
+    vi.advanceTimersByTime(700)
+    await nextTick()
+    await nextTick()
+
+    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-delayed')).toBe('')
+    const content = wrapper.find('[data-state="open"]:not(button)')
+    expect(content.exists()).toBe(true)
+    expect(content.attributes('data-delayed')).toBe('')
+  })
+
+  it('drops `data-delayed` again once closed', async () => {
+    const trigger = wrapper.find('button')
+    await trigger.trigger('pointermove', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(700)
+    await nextTick()
+    expect(trigger.attributes('data-delayed')).toBe('')
+
+    await trigger.trigger('blur')
+    await nextTick()
+    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-delayed')).toBeUndefined()
   })
 })

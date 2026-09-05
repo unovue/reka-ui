@@ -11,7 +11,7 @@ import type { PopperAnchorProps } from '@/Popper'
 import { computed, onMounted } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useId, useTypeahead } from '@/shared'
+import { disclosureState, useForwardExpose, useId, useTypeahead } from '@/shared'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
@@ -110,7 +110,7 @@ function onTriggerClick(event: MouseEvent) {
       aria-autocomplete="none"
       :disabled="isDisabled"
       :dir="rootContext?.dir.value"
-      :data-state="rootContext?.open.value ? 'open' : 'closed'"
+      :data-state="disclosureState(rootContext.open.value)"
       :data-disabled="isDisabled ? '' : undefined"
       :data-placeholder="shouldShowPlaceholder(rootContext.modelValue?.value) ? '' : undefined"
       :as-child="asChild"

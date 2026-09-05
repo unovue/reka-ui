@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, disclosureState, getActiveElement, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -144,7 +144,7 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
           :memo-dependencies="position === 'popper'
             ? [rootContext.filterSearch.value, rootContext.filterState.value]
             : undefined"
-          :data-state="rootContext.open.value ? 'open' : 'closed'"
+          :data-state="disclosureState(rootContext.open.value)"
           :data-empty="isEmpty ? '' : undefined"
           :style="{
             // flex layout so we can place the scroll buttons properly

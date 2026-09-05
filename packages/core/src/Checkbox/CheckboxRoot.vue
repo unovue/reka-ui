@@ -4,7 +4,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, getRootNode, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, isNullish, isValueEqualOrExist, selectionState, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
@@ -51,7 +51,7 @@ import { computed, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { getState, isIndeterminate } from './utils'
+import { isIndeterminate } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -156,7 +156,7 @@ provideCheckboxRootContext({
     :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState"
     :aria-required="required"
     :aria-label="$attrs['aria-label'] || ariaLabel"
-    :data-state="getState(checkboxState)"
+    :data-state="selectionState(checkboxState)"
     :data-disabled="disabled ? '' : undefined"
     :disabled="disabled"
     :focusable="checkboxGroupContext?.rovingFocus.value ? !disabled : undefined"

@@ -108,6 +108,7 @@ onMounted(() => {
     <PopperContent
       :ref="forwardRef"
       :data-state="rootContext.stateAttribute.value"
+      :data-delayed="rootContext.isDelayed.value ? '' : undefined"
       v-bind="{ ...$attrs, ...popperContentProps }"
       :style="{
         '--reka-tooltip-content-transform-origin': 'var(--reka-popper-transform-origin)',

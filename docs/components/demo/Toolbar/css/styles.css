@@ -52,7 +52,7 @@ button {
 .ToolbarToggleItem:first-child {
   margin-left: 0;
 }
-.ToolbarToggleItem[data-state='on'] {
+.ToolbarToggleItem[data-state='checked'] {
   background-color: var(--grass-5);
   color: var(--grass-11);
 }

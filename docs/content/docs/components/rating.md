@@ -98,7 +98,7 @@ The interactive indicator rendered for each step of an item. It reflects whether
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-disabled]',
@@ -179,7 +179,7 @@ Use the `clearable` prop to let users reset the rating to `0` by clicking the cu
 
 ### Hover preview
 
-Use the `hoverable` prop to preview the value under the pointer before committing to it. The `RatingItemIndicator` exposes `data-state="active"` for every step at or below the hovered value.
+Use the `hoverable` prop to preview the value under the pointer before committing to it. The `RatingItemIndicator` exposes `data-state="checked"` for every step at or below the hovered value.
 
 ```vue line=4
 <template>

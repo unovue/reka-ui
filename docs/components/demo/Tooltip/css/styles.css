@@ -19,16 +19,16 @@ button {
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
 }
-.TooltipContent[data-state='delayed-open'][data-side='top'] {
+.TooltipContent[data-state='open'][data-delayed][data-side='top'] {
   animation-name: slideDownAndFade;
 }
-.TooltipContent[data-state='delayed-open'][data-side='right'] {
+.TooltipContent[data-state='open'][data-delayed][data-side='right'] {
   animation-name: slideLeftAndFade;
 }
-.TooltipContent[data-state='delayed-open'][data-side='bottom'] {
+.TooltipContent[data-state='open'][data-delayed][data-side='bottom'] {
   animation-name: slideUpAndFade;
 }
-.TooltipContent[data-state='delayed-open'][data-side='left'] {
+.TooltipContent[data-state='open'][data-delayed][data-side='left'] {
   animation-name: slideRightAndFade;
 }
 

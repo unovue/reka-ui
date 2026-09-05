@@ -25,7 +25,7 @@ const toggleStateMultiple = ref([])
       aria-label="Text formatting"
     >
       <ToolbarToggleItem
-        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
         value="bold"
         aria-label="Bold"
       >
@@ -35,7 +35,7 @@ const toggleStateMultiple = ref([])
         />
       </ToolbarToggleItem>
       <ToolbarToggleItem
-        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
         value="italic"
         aria-label="Italic"
       >
@@ -45,7 +45,7 @@ const toggleStateMultiple = ref([])
         />
       </ToolbarToggleItem>
       <ToolbarToggleItem
-        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
         value="strikethrough"
         aria-label="Strike through"
       >
@@ -62,7 +62,7 @@ const toggleStateMultiple = ref([])
       aria-label="Text Alignment"
     >
       <ToolbarToggleItem
-        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
         value="left"
         aria-label="Left Aligned"
       >
@@ -72,7 +72,7 @@ const toggleStateMultiple = ref([])
         />
       </ToolbarToggleItem>
       <ToolbarToggleItem
-        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
         value="center"
         aria-label="Center Aligned"
       >
@@ -82,7 +82,7 @@ const toggleStateMultiple = ref([])
         />
       </ToolbarToggleItem>
       <ToolbarToggleItem
-        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+        class="flex-shrink-0 flex-grow-0 basis-auto text-mauve11 h-[25px] px-[5px] rounded inline-flex text-xs leading-none items-center justify-center bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
         value="right"
         aria-label="Right Aligned"
       >
@@ -94,7 +94,7 @@ const toggleStateMultiple = ref([])
     </ToolbarToggleGroup>
     <ToolbarSeparator class="w-[1px] bg-mauve6 mx-[10px]" />
     <ToolbarLink
-      class="bg-transparent !font-normal !text-mauve11 inline-flex justify-center items-center hover:bg-transparent hover:cursor-pointer flex-shrink-0 flex-grow-0 basis-auto h-[25px] px-[5px] rounded text-xs leading-none bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=on]:bg-green5 data-[state=on]:text-grass11"
+      class="bg-transparent !font-normal !text-mauve11 inline-flex justify-center items-center hover:bg-transparent hover:cursor-pointer flex-shrink-0 flex-grow-0 basis-auto h-[25px] px-[5px] rounded text-xs leading-none bg-white ml-0.5 outline-none hover:bg-green3 hover:text-grass11 focus:relative focus:shadow-[0_0_0_2px] focus:shadow-green7 first:ml-0 data-[state=checked]:bg-green5 data-[state=checked]:text-grass11"
       href="#"
       target="_blank"
       style="margin-right: 10"

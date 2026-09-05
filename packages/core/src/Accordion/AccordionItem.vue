@@ -1,13 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import { createContext, useArrowNavigation, useForwardExpose } from '@/shared'
+import type { DisclosureState } from '@/shared'
+import { createContext, disclosureState, useArrowNavigation, useForwardExpose } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
-
-enum AccordionItemState {
-  Open = 'open',
-  Closed = 'closed',
-}
 
 export interface AccordionItemProps
   extends Omit<CollapsibleRootProps, 'open' | 'defaultOpen' | 'onOpenChange'> {
@@ -26,7 +22,7 @@ export interface AccordionItemProps
 
 interface AccordionItemContext {
   open: ComputedRef<boolean>
-  dataState: ComputedRef<AccordionItemState>
+  dataState: ComputedRef<DisclosureState>
   disabled: ComputedRef<boolean>
   dataDisabled: ComputedRef<'' | undefined>
   triggerId: string
@@ -72,9 +68,7 @@ const disabled = computed(() => {
 
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
 
-const dataState = computed(() =>
-  open.value ? AccordionItemState.Open : AccordionItemState.Closed,
-)
+const dataState = computed(() => disclosureState(open.value))
 
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()

@@ -35,7 +35,7 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
-import { useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
+import { disclosureState, useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = defineProps<PopoverContentImplPrivateProps>()
@@ -69,7 +69,7 @@ useFocusGuards(currentElement)
         v-bind="forwarded"
         :id="rootContext.contentId"
         :ref="forwardRef"
-        :data-state="rootContext.open.value ? 'open' : 'closed'"
+        :data-state="disclosureState(rootContext.open.value)"
         :aria-labelledby="rootContext.triggerId"
         :style="{
           '--reka-popover-content-transform-origin':

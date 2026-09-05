@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext } from '@/shared'
+import { createContext, selectionState } from '@/shared'
 
 interface MenuItemIndicatorContext {
   modelValue: Ref<CheckedState>
@@ -27,7 +27,7 @@ export const [injectMenuItemIndicatorContext, provideMenuItemIndicatorContext]
 import { ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
-import { getCheckedState, isIndeterminate } from './utils'
+import { isIndeterminate } from './utils'
 
 withDefaults(defineProps<MenuItemIndicatorProps>(), {
   as: 'span',
@@ -49,7 +49,7 @@ const indicatorContext = injectMenuItemIndicatorContext({
     <Primitive
       :as="as"
       :as-child="asChild"
-      :data-state="getCheckedState(indicatorContext.modelValue.value)"
+      :data-state="selectionState(indicatorContext.modelValue.value)"
     >
       <slot />
     </Primitive>

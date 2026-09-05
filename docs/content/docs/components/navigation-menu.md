@@ -208,7 +208,7 @@ An optional indicator element that renders below the list, is used to highlight 
   :data="[
     {
       attribute: '[data-state]',
-      values: ['visible', 'hidden'],
+      values: ['open', 'closed'],
     },
     {
       attribute: '[data-orientation]',
@@ -242,7 +242,7 @@ An optional viewport element that is used to render active content outside of th
   :data="[
     {
       attribute: '[data-state]',
-      values: ['visible', 'hidden'],
+      values: ['open', 'closed'],
     },
     {
       attribute: '[data-orientation]',

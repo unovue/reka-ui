@@ -3,7 +3,7 @@ import type {
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardExpose, useId } from '@/shared'
+import { disclosureState, getActiveElement, useForwardExpose, useId } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -37,7 +37,6 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 import { onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
-import { getOpenState } from '@/Menu/utils'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { useWarning } from './utils'
 
@@ -94,7 +93,7 @@ if (process.env.NODE_ENV !== 'production') {
       role="dialog"
       :aria-describedby="rootContext.descriptionId"
       :aria-labelledby="rootContext.titleId"
-      :data-state="getOpenState(rootContext.open.value)"
+      :data-state="disclosureState(rootContext.open.value)"
       v-bind="$attrs"
       @dismiss="rootContext.onOpenChange(false)"
       @escape-key-down="emits('escapeKeyDown', $event)"

@@ -115,7 +115,7 @@ provideScrollAreaScrollbarContext({
     v-else-if="rootContext.type.value === 'always'"
     v-bind="$attrs"
     :ref="forwardRef"
-    data-state="visible"
+    data-state="open"
   >
     <slot />
   </ScrollAreaScrollbarVisible>

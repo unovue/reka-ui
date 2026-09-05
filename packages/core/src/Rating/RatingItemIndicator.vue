@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useActiveElement } from '@vueuse/core'
 import { computed } from 'vue'
 import { RadioGroupIndicator, RadioGroupItem } from '@/RadioGroup'
-import { useForwardExpose } from '@/shared'
+import { selectionState, useForwardExpose } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
@@ -46,7 +46,7 @@ function handleMouseEnter() {
 
     }"
     :value="step"
-    :data-state="isActive ? 'active' : undefined"
+    :data-state="selectionState(isActive)"
     :disabled="rootContext.disabled.value"
     @select="rootContext.changeModelValue(step)"
     @mouseenter="handleMouseEnter"

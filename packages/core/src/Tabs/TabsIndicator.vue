@@ -43,7 +43,7 @@ watchPostEffect(() => {
 useResizeObserver(computed(() => [context.tabsList.value, ...tabs.value]), updateIndicatorStyle)
 
 function updateIndicatorStyle() {
-  const activeTab = context.tabsList.value?.querySelector<HTMLButtonElement>('[role="tab"][data-state="active"]')
+  const activeTab = context.tabsList.value?.querySelector<HTMLButtonElement>('[role="tab"][data-state="checked"]')
 
   if (!activeTab)
     return

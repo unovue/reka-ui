@@ -93,7 +93,7 @@ The button that activates its associated content.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active', 'inactive'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-disabled]',
@@ -141,7 +141,7 @@ Contains the content associated with each trigger.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['active', 'inactive'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-orientation]',

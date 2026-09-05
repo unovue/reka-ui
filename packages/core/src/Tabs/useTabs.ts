@@ -1,9 +1,9 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TabsRootContext } from './TabsRoot.vue'
-import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
 import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
 import { computed, ref, shallowRef, toValue } from 'vue'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createPartSurface, selectionState, useControllableState } from '@/shared'
 import { makeContentId, makeTriggerId } from './utils'
 
 // `PartSurface` is the shared contract in `@/shared` and is already published via
@@ -13,11 +13,11 @@ import { makeContentId, makeTriggerId } from './utils'
 export type TabsChangeReason = 'trigger-press' | 'trigger-focus' | 'trigger-keydown'
 
 export type TabsTriggerState = {
-  state: 'active' | 'inactive'
+  state: SelectionState
   disabled: boolean
   orientation: DataOrientation
 }
-export type TabsContentState = { state: 'active' | 'inactive', orientation: DataOrientation }
+export type TabsContentState = { state: SelectionState, orientation: DataOrientation }
 
 /** Standalone `useTabs()` calls without a `baseId` draw `reka-tabs-<n>` from here. */
 let tabsCount = 0
@@ -75,7 +75,7 @@ export function getTabsTriggerSurface(
       },
     }),
     () => ({
-      state: isSelected.value ? 'active' : 'inactive',
+      state: selectionState(isSelected.value),
       disabled: isDisabled.value,
       orientation: context.orientation.value,
     }),
@@ -93,7 +93,7 @@ export function getTabsContentSurface(context: TabsRootContext, value: MaybeRefO
       'tabindex': 0,
     }),
     () => ({
-      state: isSelected.value ? 'active' : 'inactive',
+      state: selectionState(isSelected.value),
       orientation: context.orientation.value,
     }),
   )

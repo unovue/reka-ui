@@ -18,22 +18,10 @@ export const SUB_CLOSE_KEYS: Record<Direction, string[]> = {
   rtl: ['ArrowRight'],
 }
 
-export function getOpenState(open: boolean) {
-  return open ? 'open' : 'closed'
-}
-
 export function isIndeterminate(
   checked?: CheckedState,
 ): checked is 'indeterminate' {
   return checked === 'indeterminate'
-}
-
-export function getCheckedState(checked: CheckedState) {
-  return isIndeterminate(checked)
-    ? 'indeterminate'
-    : checked
-      ? 'checked'
-      : 'unchecked'
 }
 
 export function focusFirst(candidates: HTMLElement[]) {

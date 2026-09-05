@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaThumbProps extends PrimitiveProps {}
 </script>
@@ -71,7 +71,7 @@ onUnmounted(() => {
 <template>
   <Primitive
     :ref="forwardRef"
-    :data-state="scrollbarContextVisible.hasThumb ? 'visible' : 'hidden'"
+    :data-state="disclosureState(scrollbarContextVisible.hasThumb.value)"
     :style="{
       width: 'var(--reka-scroll-area-thumb-width)',
       height: 'var(--reka-scroll-area-thumb-height)',

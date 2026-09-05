@@ -26,7 +26,7 @@
   z-index: var(--reka-rating-item-step-z-index);
 }
 
-.RatingItemIndicator[data-state="active"] {
+.RatingItemIndicator[data-state="checked"] {
   color: hsl(142.1 70.6% 45.3%);
   filter: drop-shadow(0 1px 4px hsl(142.1 70.6% 45.3% / 0.5));
 }

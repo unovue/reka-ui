@@ -70,7 +70,11 @@ The button that toggles the tooltip. By default, the `TooltipContent` will posit
   :data="[
     {
       attribute: '[data-state]',
-      values: ['closed', 'delayed-open', 'instant-open'],
+      values: ['open', 'closed'],
+    },
+    {
+      attribute: '[data-delayed]',
+      values: 'Present when the tooltip opened after the delay',
     },
   ]"
 />
@@ -93,7 +97,11 @@ The component that pops out when the tooltip is open.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['closed', 'delayed-open', 'instant-open'],
+      values: ['open', 'closed'],
+    },
+    {
+      attribute: '[data-delayed]',
+      values: 'Present when the tooltip opened after the delay',
     },
     {
       attribute: '[data-side]',

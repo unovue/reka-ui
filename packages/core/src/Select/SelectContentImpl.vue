@@ -9,6 +9,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
   createContext,
+  disclosureState,
   getEventTarget,
   useFocusGuards,
   useForwardProps,
@@ -317,7 +318,7 @@ provideSelectContentContext({
             }
           "
           role="listbox"
-          :data-state="rootContext.open.value ? 'open' : 'closed'"
+          :data-state="disclosureState(rootContext.open.value)"
           :dir="rootContext.dir.value"
           :style="{
             // flex layout so we can place the scroll buttons properly

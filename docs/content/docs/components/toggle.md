@@ -52,7 +52,7 @@ The toggle.
   :data="[
     {
       attribute: '[data-state]',
-      values: ['on', 'off'],
+      values: ['checked', 'unchecked'],
     },
     {
       attribute: '[data-disabled]',

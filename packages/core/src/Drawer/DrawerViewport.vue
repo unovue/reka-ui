@@ -6,7 +6,7 @@ export interface DrawerViewportProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disclosureState, useForwardExpose } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 /**
@@ -27,7 +27,7 @@ const rootContext = injectDrawerRootContext()
     v-bind="props"
     :ref="forwardRef"
     data-drawer-viewport=""
-    :data-state="rootContext.open.value ? 'open' : 'closed'"
+    :data-state="disclosureState(rootContext.open.value)"
   >
     <slot />
   </Primitive>
