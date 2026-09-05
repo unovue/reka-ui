@@ -20,6 +20,7 @@ export {
   type DialogPortalProps,
 } from './DialogPortal.vue'
 export {
+  type DialogOpenChangeReason,
   default as DialogRoot,
   type DialogRootEmits,
   type DialogRootProps,

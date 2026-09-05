@@ -21,7 +21,7 @@ const rootContext = injectDialogRootContext()
   <Primitive
     v-bind="props"
     :type="as === 'button' ? 'button' : undefined"
-    @click="rootContext.onOpenChange(false)"
+    @click="(event: MouseEvent) => rootContext.onOpenChange(false, 'close-press', event)"
   >
     <slot />
   </Primitive>
