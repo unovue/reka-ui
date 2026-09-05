@@ -21,3 +21,10 @@ export {
   default as HoverCardTrigger,
   type HoverCardTriggerProps,
 } from './HoverCardTrigger.vue'
+export {
+  type HoverCardContentState,
+  type HoverCardTriggerState,
+  useHoverCard,
+  type UseHoverCardProps,
+  type UseHoverCardReturn,
+} from './useHoverCard'
