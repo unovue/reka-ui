@@ -72,9 +72,10 @@ describe('day adapter', () => {
     const grid = day.createGrid(new CalendarDate(2026, 9, 1), layout)
     expect(day.nextPageStart(grid, layout).toString()).toBe('2026-10-01')
     expect(day.prevPageEnd(grid, layout).toString()).toBe('2026-08-31')
-    // A custom page function that jumps a year is snapped to the 1st of the month.
-    expect(day.nextPageStart(grid, layout, d => d.add({ years: 1 })).toString()).toBe('2027-09-01')
-    expect(day.prevPageEnd(grid, layout, d => d.subtract({ years: 1 })).toString()).toBe('2025-09-30')
+    // A custom page function that jumps a year is snapped to the start / end of
+    // that year (the v2 `useCalendar` bounds rule, kept for parity).
+    expect(day.nextPageStart(grid, layout, d => d.add({ years: 1 })).toString()).toBe('2027-01-01')
+    expect(day.prevPageEnd(grid, layout, d => d.subtract({ years: 1 })).toString()).toBe('2025-12-31')
   })
 
   it('snaps the placeholder after paging', () => {

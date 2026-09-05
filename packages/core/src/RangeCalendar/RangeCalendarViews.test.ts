@@ -31,14 +31,14 @@ const range = (value: DateRange) => `${value.start?.toString()}..${value.end?.to
 
 describe('range calendar — granularity="month" (replaces MonthRangePicker)', () => {
   it('passes axe', async () => {
-    const { calendar } = setupUnit({ granularity: 'month', placeholder: sep5 })
+    const { calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
     expect(await axe(calendar)).toHaveNoViolations()
   })
 
   it('selects a month range in two clicks and reports it', async () => {
     const onUpdate = vi.fn()
     const onValid = vi.fn()
-    const { user, getByTestId, calendar } = setupUnit({ granularity: 'month', placeholder: sep5 }, { 'onUpdate:modelValue': onUpdate, 'onUpdate:validModelValue': onValid })
+    const { user, getByTestId, calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate, 'onUpdate:validModelValue': onValid })
 
     await user.click(getByTestId('cell-2026-03-01'))
     expect(getByTestId('cell-2026-03-01')).toHaveAttribute('data-selection-start')
@@ -54,20 +54,25 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
 
   it('orders a backwards selection', async () => {
     const onUpdate = vi.fn()
-    const { user, getByTestId } = setupUnit({ granularity: 'month', placeholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
+    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
     await user.click(getByTestId('cell-2026-08-01'))
     await user.click(getByTestId('cell-2026-02-01'))
     expect(range(onUpdate.mock.calls.at(-1)![0])).toBe('2026-02-01..2026-08-01')
   })
 
-  it('highlights the hovered range and caps it to maximumLength', async () => {
-    const { user, getByTestId } = setupUnit({ granularity: 'month', placeholder: sep5, maximumLength: 3 })
+  it('highlights the whole maximumLength window and disables months beyond it', async () => {
+    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5, maximumLength: 3 })
     await user.click(getByTestId('cell-2026-02-01'))
-    await user.hover(getByTestId('cell-2026-09-01'))
+    // Hovering inside the window highlights the full reachable window (v2 `maximumDays` rule).
+    await user.hover(getByTestId('cell-2026-03-01'))
     expect(getByTestId('cell-2026-02-01')).toHaveAttribute('data-highlighted-start')
+    expect(getByTestId('cell-2026-03-01')).toHaveAttribute('data-highlighted')
     expect(getByTestId('cell-2026-04-01')).toHaveAttribute('data-highlighted-end')
     expect(getByTestId('cell-2026-05-01')).not.toHaveAttribute('data-highlighted')
     expect(getByTestId('cell-2026-05-01')).toHaveAttribute('data-disabled')
+    // A disabled month is not a hover target, so the highlight does not follow it.
+    await user.hover(getByTestId('cell-2026-09-01'))
+    expect(getByTestId('cell-2026-04-01')).toHaveAttribute('data-highlighted-end')
   })
 
   it('accepts a controlled month range and renders it', () => {
@@ -76,7 +81,7 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
   })
 
   it('navigates with the keyboard across the year boundary', async () => {
-    const { user, getByTestId } = setupUnit({ granularity: 'month', placeholder: sep5 })
+    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
     getByTestId('cell-2026-12-01').focus()
     await user.keyboard(kbd.ARROW_RIGHT)
     expect(getByTestId('cell-2027-01-01')).toHaveFocus()
@@ -87,7 +92,7 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
 describe('range calendar — granularity="year" (replaces YearRangePicker)', () => {
   it('selects a year range', async () => {
     const onUpdate = vi.fn()
-    const { user, getByTestId, calendar } = setupUnit({ granularity: 'year', placeholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
+    const { user, getByTestId, calendar } = setupUnit({ granularity: 'year', defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
     expect(getByTestId('heading')).toHaveTextContent('2020 - 2031')
     await user.click(getByTestId('cell-2024-01-01'))
     await user.click(getByTestId('cell-2027-01-01'))
@@ -98,14 +103,14 @@ describe('range calendar — granularity="year" (replaces YearRangePicker)', () 
 
 describe('range calendar — views and drill-down', () => {
   it('passes axe', async () => {
-    const { calendar } = setupViews({ placeholder: sep5 })
+    const { calendar } = setupViews({ defaultPlaceholder: sep5 })
     expect(await axe(calendar)).toHaveNoViolations()
   })
 
   it('drills up and down without touching the range, then selects days', async () => {
     const onUpdate = vi.fn()
     const onView = vi.fn()
-    const { user, getByTestId, queryByTestId, calendar } = setupViews({ placeholder: sep5 }, { 'onUpdate:modelValue': onUpdate, 'onUpdate:view': onView })
+    const { user, getByTestId, queryByTestId, calendar } = setupViews({ defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate, 'onUpdate:view': onView })
 
     await user.click(getByTestId('view-trigger'))
     expect(getByTestId('view-month')).toBeInTheDocument()
@@ -128,7 +133,7 @@ describe('range calendar — views and drill-down', () => {
   })
 
   it('shows no range state in views coarser than the granularity', async () => {
-    const { user, getByTestId, calendar } = setupViews({ placeholder: sep5, modelValue: { start: new CalendarDate(2026, 9, 3), end: new CalendarDate(2026, 9, 8) } })
+    const { user, getByTestId, calendar } = setupViews({ defaultPlaceholder: sep5, modelValue: { start: new CalendarDate(2026, 9, 3), end: new CalendarDate(2026, 9, 8) } })
     expect(selected(calendar)).toHaveLength(6)
     await user.click(getByTestId('view-trigger'))
     expect(selected(calendar)).toHaveLength(0)
@@ -140,7 +145,7 @@ describe('range calendar — views and drill-down', () => {
     const cancel = vi.fn((_value: unknown, details: { cancel: () => void }) => details.cancel())
     const user = userEvent.setup()
     const { getByTestId, container } = render(RangeCalendarViews, {
-      props: { 'placeholder': sep5, 'onBeforeUpdate:modelValue': cancel, 'onUpdate:modelValue': onUpdate } as any,
+      props: { 'defaultPlaceholder': sep5, 'onBeforeUpdate:modelValue': cancel, 'onUpdate:modelValue': onUpdate } as any,
     })
     await user.click(getByTestId('day-2026-09-10'))
     expect(cancel).toHaveBeenCalledTimes(1)

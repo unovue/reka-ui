@@ -108,7 +108,10 @@ export interface RangeCalendarRootProps extends PrimitiveProps {
   preventDeselect?: boolean
   /** The maximum length of the range (inclusive), counted in units of `granularity`: days, months or years. */
   maximumLength?: number
-  /** @deprecated Use `maximumLength`. Kept as an alias for day ranges; removed in v4. */
+  /**
+   * The maximum number of days in the range (inclusive). Alias of `maximumLength` for day ranges.
+   * @deprecated Use `maximumLength`; removed in v4.
+   */
   maximumDays?: number
   /** The day of the week to start the calendar on */
   weekStartsOn?: WeekStartsOn
@@ -270,12 +273,12 @@ const { root, context, placeholder, grid, weekDays, modelValue, view, granularit
   columns: () => props.columns,
   minValue: () => props.minValue,
   maxValue: () => props.maxValue,
-  isDateDisabled: () => props.isDateDisabled,
-  isDateUnavailable: () => props.isDateUnavailable,
-  isDateHighlightable: () => props.isDateHighlightable,
+  isDateDisabled: computed(() => props.isDateDisabled),
+  isDateUnavailable: computed(() => props.isDateUnavailable),
+  isDateHighlightable: computed(() => props.isDateHighlightable),
   calendarLabel: () => props.calendarLabel,
-  nextPage: () => props.nextPage,
-  prevPage: () => props.prevPage,
+  nextPage: computed(() => props.nextPage),
+  prevPage: computed(() => props.prevPage),
   headingId,
   parentElement,
   emit,

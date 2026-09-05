@@ -1,8 +1,8 @@
 import type { DateValue } from '@internationalized/date'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { getUnitAdapter, isAfter, isBefore, toDate } from '@/date'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 
@@ -31,13 +31,17 @@ export interface UseCalendarGridProps {
   maxValue?: MaybeRefOrGetter<DateValue | undefined>
   /** @default false */
   disabled?: MaybeRefOrGetter<boolean | undefined>
-  isDateDisabled?: MaybeRefOrGetter<Matcher | undefined>
-  isDateUnavailable?: MaybeRefOrGetter<Matcher | undefined>
+  /**
+   * Function-valued inputs are a plain function or a ref to one, never a
+   * getter: `toValue()` would call the matcher itself as a getter.
+   */
+  isDateDisabled?: MaybeRef<Matcher | undefined>
+  isDateUnavailable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
   /** Root-level custom paging (the `nextPage` prop). */
-  nextPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
+  nextPage?: MaybeRef<CalendarPageFunction | undefined>
   /** Root-level custom paging (the `prevPage` prop). */
-  prevPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
+  prevPage?: MaybeRef<CalendarPageFunction | undefined>
 }
 
 export interface UseCalendarGridReturn {
@@ -122,7 +126,7 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
   }
 
   const isDateDisabled: Matcher = (date) => {
-    if (toValue(props.isDateDisabled)?.(date, unit.value) || disabled.value)
+    if (unref(props.isDateDisabled)?.(date, unit.value) || disabled.value)
       return true
     if (maxValue.value && isAfter(adapter.value.startOf(date), maxValue.value))
       return true
@@ -131,10 +135,10 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     return false
   }
 
-  const isDateUnavailable: Matcher = date => !!toValue(props.isDateUnavailable)?.(date, unit.value)
+  const isDateUnavailable: Matcher = date => !!unref(props.isDateUnavailable)?.(date, unit.value)
 
-  function resolvePageFn(explicit: CalendarPageFunction | undefined, prop: MaybeRefOrGetter<CalendarPageFunction | undefined> | undefined) {
-    const fn = explicit ?? toValue(prop)
+  function resolvePageFn(explicit: CalendarPageFunction | undefined, prop: MaybeRef<CalendarPageFunction | undefined> | undefined) {
+    const fn = explicit ?? unref(prop)
     const mode = explicit ? 'explicit-fn' : fn ? 'root-fn' : 'default'
     return { fn, mode } as const
   }
@@ -170,15 +174,16 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
   const prevPage = (fn?: CalendarPageFunction) => page(-1, fn)
 
   // The placeholder moved (keyboard, selection, external `v-model:placeholder`)
-  // outside the rendered page(s): follow it.
+  // outside the rendered page(s): follow it. Synchronous so a headless consumer
+  // reads a grid that matches the placeholder / unit it just set, without a tick.
   watch(props.placeholder, (value) => {
     if (adapter.value.isInVisibleView(value, grid.value))
       return
     rebuild()
-  })
+  }, { flush: 'sync' })
 
   watch(locale, value => formatter.setLocale(value))
-  watch([layout, unit], () => rebuild())
+  watch([layout, unit], () => rebuild(), { flush: 'sync' })
 
   const headingValue = computed(() => {
     if (locale.value !== formatter.getLocale())

@@ -46,10 +46,11 @@ describe('datePicker — calendar views', () => {
 
   it('accepts a controlled view and maxView', async () => {
     const user = userEvent.setup()
-    const { getByTestId, queryByTestId } = render(DatePickerViews, {
+    const { getByTestId, findByTestId, queryByTestId } = render(DatePickerViews, {
       props: { defaultValue: jan20, defaultOpen: true, view: 'month', maxView: 'month' } as any,
     })
-    expect(getByTestId('view-month')).toBeInTheDocument()
+    // The portalled content mounts on the next tick.
+    expect(await findByTestId('view-month')).toBeInTheDocument()
     expect(getByTestId('view-trigger')).toHaveAttribute('disabled')
     await user.click(getByTestId('view-trigger'))
     expect(queryByTestId('view-year')).toBeNull()

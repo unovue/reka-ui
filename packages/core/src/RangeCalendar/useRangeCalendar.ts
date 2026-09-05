@@ -1,11 +1,11 @@
 import type { DateValue } from '@internationalized/date'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { RangeCalendarRootContext } from './RangeCalendarRoot.vue'
 import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
 import { createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
@@ -76,12 +76,16 @@ export interface UseRangeCalendarProps {
   columns?: MaybeRefOrGetter<number | undefined>
   minValue?: MaybeRefOrGetter<DateValue | undefined>
   maxValue?: MaybeRefOrGetter<DateValue | undefined>
-  isDateDisabled?: MaybeRefOrGetter<Matcher | undefined>
-  isDateUnavailable?: MaybeRefOrGetter<Matcher | undefined>
-  isDateHighlightable?: MaybeRefOrGetter<Matcher | undefined>
+  /**
+   * Function-valued props are a plain function or a ref to one, never a
+   * getter: `toValue()` would call the matcher itself as a getter.
+   */
+  isDateDisabled?: MaybeRef<Matcher | undefined>
+  isDateUnavailable?: MaybeRef<Matcher | undefined>
+  isDateHighlightable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
-  nextPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
-  prevPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
+  nextPage?: MaybeRef<CalendarPageFunction | undefined>
+  prevPage?: MaybeRef<CalendarPageFunction | undefined>
   headingId?: string
   parentElement?: Ref<HTMLElement | undefined>
   /** Component `emit`; receives the `beforeUpdate:` / `update:` pairs plus `update:validModelValue` and `update:startValue`. */
@@ -308,9 +312,11 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     return isCoarserUnit(granularity.value, requested) ? granularity.value : requested
   })
   const granularityAdapter = computed(() => getUnitAdapter(granularity.value))
-  const disabledMatcher = computed(() => toValue(props.isDateDisabled))
-  const unavailableMatcher = computed(() => toValue(props.isDateUnavailable))
-  const highlightableMatcher = computed(() => toValue(props.isDateHighlightable))
+  const disabledMatcher = computed(() => unref(props.isDateDisabled))
+  const unavailableMatcher = computed(() => unref(props.isDateUnavailable))
+  const highlightableMatcher = computed(() => unref(props.isDateHighlightable))
+  const nextPageFn = computed(() => unref(props.nextPage))
+  const prevPageFn = computed(() => unref(props.prevPage))
   const headingId = props.headingId ?? `reka-range-calendar-heading-${++rangeCalendarCount}`
   const parentElement = props.parentElement ?? ref<HTMLElement>()
 
@@ -391,8 +397,8 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     isDateDisabled: disabledMatcher,
     isDateUnavailable: unavailableMatcher,
     calendarLabel: () => toValue(props.calendarLabel),
-    nextPage: () => toValue(props.nextPage),
-    prevPage: () => toValue(props.prevPage),
+    nextPage: nextPageFn,
+    prevPage: prevPageFn,
   })
 
   // ---- range state, evaluated at the granularity ----
@@ -471,16 +477,14 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     if (a.isSame(start, end))
       return { start, end }
 
+    // With a maximum length and only a start, the whole reachable window is
+    // highlighted in the direction of the focused cell (v2 `maximumDays`).
     const max = maximumLength.value
     if (max && !endValue.value) {
       const anchor = startValue.value
-      const focused = focusedValue.value
-      if (a.compare(focused, anchor) >= 0) {
-        const maxEnd = a.add(anchor, max - 1)
-        return { start: anchor, end: a.compare(focused, maxEnd) > 0 ? maxEnd : focused }
-      }
-      const minStart = a.add(anchor, -(max - 1))
-      return { start: a.compare(focused, minStart) < 0 ? minStart : focused, end: anchor }
+      if (a.compare(focusedValue.value, anchor) >= 0)
+        return { start: anchor, end: a.add(anchor, max - 1) }
+      return { start: a.add(anchor, -(max - 1)), end: anchor }
     }
 
     const valid = a.areAllBetweenValid(

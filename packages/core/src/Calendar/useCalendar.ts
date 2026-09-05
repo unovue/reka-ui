@@ -1,10 +1,10 @@
 import type { DateValue } from '@internationalized/date'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CalendarRootContext } from './CalendarRoot.vue'
 import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
 import { createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
@@ -74,11 +74,15 @@ export interface UseCalendarProps {
   columns?: MaybeRefOrGetter<number | undefined>
   minValue?: MaybeRefOrGetter<DateValue | undefined>
   maxValue?: MaybeRefOrGetter<DateValue | undefined>
-  isDateDisabled?: MaybeRefOrGetter<Matcher | undefined>
-  isDateUnavailable?: MaybeRefOrGetter<Matcher | undefined>
+  /**
+   * Function-valued props are a plain function or a ref to one, never a
+   * getter: `toValue()` would call the matcher itself as a getter.
+   */
+  isDateDisabled?: MaybeRef<Matcher | undefined>
+  isDateUnavailable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
-  nextPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
-  prevPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
+  nextPage?: MaybeRef<CalendarPageFunction | undefined>
+  prevPage?: MaybeRef<CalendarPageFunction | undefined>
   /** Id of the (visually hidden) heading that labels the grids. The SFC passes `useId()`. */
   headingId?: string
   /** The root element, used for keyboard focus queries. The SFC passes its `currentElement`. */
@@ -176,15 +180,15 @@ export function getCalendarViewTriggerSurface(context: CalendarChromeContext): P
   )
 }
 
-/** The `CalendarPrev` / `CalendarNext` surface. */
+/** The `CalendarPrev` / `CalendarNext` surface. `fn` is a paging function or a ref to one (not a getter). */
 export function getCalendarNavSurface(
   context: CalendarChromeContext,
   direction: 'prev' | 'next',
-  fn?: MaybeRefOrGetter<CalendarPageFunction | undefined>,
+  fn?: MaybeRef<CalendarPageFunction | undefined>,
 ): PartSurface<CalendarNavState> {
   const disabled = computed(() => context.disabled.value || (direction === 'next'
-    ? context.isNextButtonDisabled(toValue(fn))
-    : context.isPrevButtonDisabled(toValue(fn))))
+    ? context.isNextButtonDisabled(unref(fn))
+    : context.isPrevButtonDisabled(unref(fn))))
   return createPartSurface<CalendarNavState>(
     () => ({
       'aria-label': direction === 'next' ? 'Next page' : 'Previous page',
@@ -194,9 +198,9 @@ export function getCalendarNavSurface(
         if (disabled.value)
           return
         if (direction === 'next')
-          context.nextPage(toValue(fn))
+          context.nextPage(unref(fn))
         else
-          context.prevPage(toValue(fn))
+          context.prevPage(unref(fn))
       },
     }),
     () => ({ disabled: disabled.value }),
@@ -350,7 +354,10 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     return isCoarserUnit(granularity.value, requested) ? granularity.value : requested
   })
   const granularityAdapter = computed(() => getUnitAdapter(granularity.value))
-  const disabledMatcher = computed(() => toValue(props.isDateDisabled))
+  const disabledMatcher = computed(() => unref(props.isDateDisabled))
+  const unavailableMatcher = computed(() => unref(props.isDateUnavailable))
+  const nextPageFn = computed(() => unref(props.nextPage))
+  const prevPageFn = computed(() => unref(props.prevPage))
   const headingId = props.headingId ?? `reka-calendar-heading-${++calendarCount}`
   const parentElement = props.parentElement ?? ref<HTMLElement>()
 
@@ -416,10 +423,10 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     maxValue,
     disabled,
     isDateDisabled: disabledMatcher,
-    isDateUnavailable: () => toValue(props.isDateUnavailable),
+    isDateUnavailable: unavailableMatcher,
     calendarLabel: () => toValue(props.calendarLabel),
-    nextPage: () => toValue(props.nextPage),
-    prevPage: () => toValue(props.prevPage),
+    nextPage: nextPageFn,
+    prevPage: prevPageFn,
   })
 
   // ---- selection state, evaluated at the granularity ----
@@ -447,7 +454,7 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
 
   const isInvalid = computed(() => {
     const current = modelValue.value
-    const unavailable = toValue(props.isDateUnavailable)
+    const unavailable = unavailableMatcher.value
     const check = (d: DateValue) => isDisabledAtUnit(context, granularityAdapter.value, d) || !!unavailable?.(d, granularity.value)
     if (Array.isArray(current))
       return current.length > 0 && current.some(check)

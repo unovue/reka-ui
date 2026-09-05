@@ -16,6 +16,7 @@ export interface CalendarPrevSlot {
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { getCalendarNavSurface } from './useCalendar'
@@ -24,7 +25,7 @@ const props = withDefaults(defineProps<CalendarPrevProps>(), { as: 'button' })
 defineSlots<CalendarPrevSlot>()
 
 const rootContext = injectCalendarRootContext()
-const surface = getCalendarNavSurface(rootContext, 'prev', () => props.prevPage)
+const surface = getCalendarNavSurface(rootContext, 'prev', computed(() => props.prevPage))
 </script>
 
 <template>
