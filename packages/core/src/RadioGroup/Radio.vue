@@ -88,7 +88,7 @@ function handleClick(event: MouseEvent) {
     :aria-label="ariaLabel"
     :as-child="asChild"
     :disabled="disabled ? '' : undefined"
-    :data-state="selectionState(checked)"
+    :data-state="selectionState(checked ?? false)"
     :data-disabled="disabled ? '' : undefined"
     :value="value"
     :required="required"
