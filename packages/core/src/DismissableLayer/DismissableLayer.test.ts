@@ -334,6 +334,7 @@ describe('given a default DismissableLayer', () => {
         expect(document.body.innerHTML).not.toContain(CLOSE_LABEL)
         expect(layer.emitted('escapeKeyDown')?.length).toBe(1)
         expect(layer.emitted('dismiss')?.length).toBe(1)
+        expect(layer.emitted('dismiss')?.[0][0]).toMatchObject({ reason: 'escape-key' })
       })
 
       it('should not close layer when prevented', async () => {
@@ -347,10 +348,12 @@ describe('given a default DismissableLayer', () => {
 
     describe('focus Outside', () => {
       it('should close layer', async () => {
+        const layer = wrapper.findComponent('#layer') as VueWrapper
         const outsideEl = document.getElementById('outside') as HTMLElement
         outsideEl.focus()
         await sleep(1)
         expect(document.body.innerHTML).not.toContain(CLOSE_LABEL)
+        expect(layer.emitted('dismiss')?.[0][0]).toMatchObject({ reason: 'focus-outside' })
       })
 
       it('should not close layer when prevented', async () => {
@@ -553,6 +556,10 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
 
     expect(wrapper.emitted('pointerDownOutside')?.length).toBe(1)
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.[0][0]).toMatchObject({
+      reason: 'outside-press',
+      event: wrapper.emitted('pointerDownOutside')?.[0][0],
+    })
 
     wrapper.unmount()
   })
@@ -569,6 +576,10 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
 
     expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)
     expect(wrapper.emitted('dismiss')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.[0][0]).toMatchObject({
+      reason: 'escape-key',
+      event: wrapper.emitted('escapeKeyDown')?.[0][0],
+    })
   })
 })
 

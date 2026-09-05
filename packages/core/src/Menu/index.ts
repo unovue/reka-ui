@@ -57,3 +57,21 @@ export {
   default as MenuSubTrigger,
   type MenuSubTriggerProps,
 } from './MenuSubTrigger.vue'
+export {
+  createMenuItemSelectSurface,
+  createMenuItemSurface,
+  type MenuContentItem,
+  type MenuContentState,
+  type MenuItemBaseOptions,
+  type MenuItemBaseSurface,
+  type MenuItemSelectOptions,
+  type MenuItemSelectSurface,
+  type MenuItemState,
+  type MenuOpenChangeReason,
+  useMenuContent,
+  type UseMenuContentOptions,
+  type UseMenuContentReturn,
+  useMenuRoot,
+  type UseMenuRootProps,
+  type UseMenuRootReturn,
+} from './useMenu'

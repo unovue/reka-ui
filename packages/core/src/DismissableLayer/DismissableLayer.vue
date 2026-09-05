@@ -44,11 +44,21 @@ export type DismissableLayerEmits = {
   interactOutside: [ event: PointerDownOutsideEvent | FocusOutsideEvent]
 }
 
+/** Which interaction dismissed the layer (#2828). */
+export type DismissableLayerDismissReason = 'escape-key' | 'outside-press' | 'focus-outside'
+
+/** Payload of the private `dismiss` emit: the reason plus the interaction's event. */
+export interface DismissableLayerDismissDetails {
+  reason: DismissableLayerDismissReason
+  event: KeyboardEvent | PointerDownOutsideEvent | FocusOutsideEvent
+}
+
 export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
   /**
-   * Handler called when the `DismissableLayer` should be dismissed
+   * Handler called when the `DismissableLayer` should be dismissed.
+   * Carries `{ reason, event }` so consumers can report why they closed.
    */
-  dismiss: []
+  dismiss: [details: DismissableLayerDismissDetails]
 }
 </script>
 
@@ -109,7 +119,7 @@ const stackLayer: StackLayer = {
   onEscapeKeyDown: (event) => {
     emits('escapeKeyDown', event)
     if (!event.defaultPrevented)
-      emits('dismiss')
+      emits('dismiss', { reason: 'escape-key', event })
   },
 }
 
@@ -138,7 +148,7 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
   emits('interactOutside', event)
   await nextTick()
   if (!event.defaultPrevented)
-    emits('dismiss')
+    emits('dismiss', { reason: 'outside-press', event })
 }, layerElement, () => props.present)
 
 const focusOutside = useFocusOutside((event) => {
@@ -151,7 +161,7 @@ const focusOutside = useFocusOutside((event) => {
   emits('focusOutside', event)
   emits('interactOutside', event)
   if (!event.defaultPrevented)
-    emits('dismiss')
+    emits('dismiss', { reason: 'focus-outside', event })
 }, layerElement, () => props.present)
 
 // Body pointer-events lock (#2674). `watch` with explicit sources (not

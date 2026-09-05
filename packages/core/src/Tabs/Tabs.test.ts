@@ -3,7 +3,7 @@ import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, h, nextTick } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 import Tabs from './story/_Tabs.vue'
@@ -276,6 +276,113 @@ describe('tabs characterization (pre-refactor contract)', () => {
     const t2 = wrapper.findAll('[role="tab"]')[1]
     expect(t2.attributes('data-disabled')).toBe('')
     expect(t2.attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+  })
+})
+
+describe('v-model (foundation contract)', () => {
+  const twoTabs = () => [
+    h(TabsList, () => [
+      h(TabsTrigger, { value: 'tab1' }, () => 'Tab 1'),
+      h(TabsTrigger, { value: 'tab2' }, () => 'Tab 2'),
+    ]),
+    h(TabsContent, { value: 'tab1' }, () => 'Content 1'),
+    h(TabsContent, { value: 'tab2' }, () => 'Content 2'),
+  ]
+
+  it('controlled: emits update:modelValue as [value, details] and waits for the parent', async () => {
+    const wrapper = mount(TabsRoot, {
+      props: { modelValue: 'tab1' },
+      slots: { default: twoTabs },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    await t2.trigger('mousedown')
+    await flushPromises()
+
+    const before = wrapper.emitted('beforeUpdate:modelValue')
+    const updated = wrapper.emitted('update:modelValue')
+    expect(before?.[0]?.[0]).toBe('tab2')
+    expect(updated?.[0]?.[0]).toBe('tab2')
+    expect(updated?.[0]?.[1]).toMatchObject({ reason: 'trigger-press', isCanceled: false })
+    expect((updated?.[0]?.[1] as { event?: Event }).event).toBeInstanceOf(MouseEvent)
+    // Controlled: nothing changes until the parent writes the new value back.
+    expect(t1.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('inactive')
+
+    await wrapper.setProps({ modelValue: 'tab2' })
+    expect(t2.attributes('data-state')).toBe('active')
+    wrapper.unmount()
+  })
+
+  it('a cancelled trigger-press prevents default so automatic activation cannot re-select on focus', async () => {
+    const wrapper = mount(TabsRoot, {
+      props: {
+        'modelValue': 'tab1',
+        'onBeforeUpdate:modelValue': (_value: string, details: { cancel: () => void }) => details.cancel(),
+      },
+      slots: { default: twoTabs },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+
+    const press = new MouseEvent('mousedown', { button: 0, bubbles: true, cancelable: true })
+    t2.element.dispatchEvent(press)
+    await flushPromises()
+    expect(press.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('beforeUpdate:modelValue')).toHaveLength(1)
+
+    // jsdom never moves focus on mousedown; mimic the browser, which focuses
+    // the target only when the mousedown default was NOT prevented.
+    if (!press.defaultPrevented)
+      (t2.element as HTMLElement).focus()
+    await flushPromises()
+    // No second (`trigger-focus`) attempt, and nothing was applied.
+    expect(wrapper.emitted('beforeUpdate:modelValue')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(t1.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('inactive')
+    wrapper.unmount()
+  })
+
+  it('v-model + onBeforeUpdate:modelValue cancel keeps the current tab', async () => {
+    const value = ref('tab1')
+    const cancelNext = ref(true)
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      setup() {
+        const onBeforeUpdate = (_value: string, details: { cancel: () => void }) => {
+          if (cancelNext.value)
+            details.cancel()
+        }
+        return { value, onBeforeUpdate }
+      },
+      template: `
+        <TabsRoot v-model="value" @before-update:model-value="onBeforeUpdate">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+            <TabsTrigger value="tab2">Tab 2</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tab1">Content 1</TabsContent>
+          <TabsContent value="tab2">Content 2</TabsContent>
+        </TabsRoot>`,
+    }, { attachTo: document.body })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+
+    await t2.trigger('mousedown')
+    await flushPromises()
+    expect(value.value).toBe('tab1')
+    expect(t1.attributes('data-state')).toBe('active')
+    expect(t2.attributes('data-state')).toBe('inactive')
+
+    cancelNext.value = false
+    await t2.trigger('mousedown')
+    await flushPromises()
+    expect(value.value).toBe('tab2')
+    expect(t2.attributes('data-state')).toBe('active')
     wrapper.unmount()
   })
 })

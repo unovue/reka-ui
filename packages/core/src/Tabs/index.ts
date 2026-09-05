@@ -21,8 +21,7 @@ export {
   type TabsTriggerProps,
 } from './TabsTrigger.vue'
 export {
-  getTabsContentSurface,
-  getTabsTriggerSurface,
+  type TabsChangeReason,
   type TabsContentState,
   type TabsTriggerState,
   useTabs,

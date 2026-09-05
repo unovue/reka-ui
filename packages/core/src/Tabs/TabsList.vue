@@ -13,6 +13,7 @@ import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { injectTabsRootContext } from './TabsRoot.vue'
+import { getTabsListSurface } from './useTabs'
 
 const props = withDefaults(defineProps<TabsListProps>(), {
   loop: true,
@@ -23,6 +24,10 @@ const { forwardRef, currentElement } = useForwardExpose()
 const context = injectTabsRootContext()
 
 context.tabsList = currentElement
+
+// role/aria-orientation come from the shared list surface (single source with
+// `useTabs().list`); the RovingFocusGroup wrapper (arrow-key nav) stays in the SFC.
+const surface = getTabsListSurface(context)
 </script>
 
 <template>
@@ -34,10 +39,9 @@ context.tabsList = currentElement
   >
     <Primitive
       :ref="forwardRef"
-      role="tablist"
       :as-child="asChild"
       :as="as"
-      :aria-orientation="context.orientation.value"
+      v-bind="surface.attrs.value"
     >
       <slot />
     </Primitive>

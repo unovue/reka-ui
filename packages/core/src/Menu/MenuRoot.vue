@@ -1,17 +1,21 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import type { MenuOpenChangeReason } from './useMenu'
 import type { Direction } from './utils'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { createContext, useDirection } from '@/shared'
 
 export interface MenuContext {
-  open: Ref<boolean>
-  onOpenChange: (open: boolean) => void
+  open: ComputedRef<boolean>
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (open: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   content: Ref<HTMLElement | undefined>
   onContentChange: (content: HTMLElement | undefined) => void
 }
 
 export interface MenuRootContext {
-  onClose: () => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   dir: Ref<Direction>
   isUsingKeyboardRef: Ref<boolean>
   modal: Ref<boolean>
@@ -20,6 +24,8 @@ export interface MenuRootContext {
 export interface MenuProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
   open?: boolean
+  /** The open state of the menu when it is initially rendered. Use when you do not need to control its open state. */
+  defaultOpen?: boolean
   /**
    * The reading direction of the combobox when applicable.
    *
@@ -35,7 +41,10 @@ export interface MenuProps {
 }
 
 export type MenuEmits = {
-  'update:open': [payload: boolean]
+  /** Called before the open state changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
+  /** Event handler called when the open state of the menu changes. */
+  'update:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
 }
 
 export const [injectMenuContext, provideMenuContext]
@@ -46,23 +55,28 @@ export const [injectMenuRootContext, provideMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { useMenuRoot } from './useMenu'
 
 const props = withDefaults(defineProps<MenuProps>(), {
-  open: false,
+  open: undefined,
+  defaultOpen: false,
   modal: true,
 })
 const emits = defineEmits<MenuEmits>()
-// `useVModel` + `useDirection` (ConfigProvider-aware) stay in the shell; the
-// composable receives the resolved refs and builds the two context objects.
+// `useDirection` (ConfigProvider-aware) stays in the shell; the composable owns
+// the controlled/uncontrolled `open` model and builds the two context objects.
 const { modal, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-const open = useVModel(props, 'open', emits)
 
-const { menuContext, menuRootContext } = useMenuRoot({ open, dir, modal })
+const { menuContext, menuRootContext } = useMenuRoot({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  dir,
+  modal,
+  emit: emits,
+})
 
 provideMenuContext(menuContext)
 provideMenuRootContext(menuRootContext)

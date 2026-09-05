@@ -8,18 +8,20 @@ export interface SwitchThumbProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { injectSwitchRootContext } from './SwitchRoot.vue'
+import { getSwitchThumbSurface } from './useSwitch'
 
 withDefaults(defineProps<SwitchThumbProps>(), { as: 'span' })
 
 const rootContext = injectSwitchRootContext()
+// Same derivation as `useSwitch().thumb` — one source for `data-state` / `data-disabled`.
+const thumb = getSwitchThumbSurface(rootContext)
 
 useForwardExpose()
 </script>
 
 <template>
   <Primitive
-    :data-state="rootContext.checked.value ? 'checked' : 'unchecked'"
-    :data-disabled="rootContext.disabled.value ? '' : undefined"
+    v-bind="thumb.attrs.value"
     :as-child="asChild"
     :as="as"
   >

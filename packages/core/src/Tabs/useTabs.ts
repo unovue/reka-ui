@@ -1,12 +1,16 @@
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TabsRootContext } from './TabsRoot.vue'
-import type { PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
 import { computed, ref, shallowRef, toValue } from 'vue'
+import { createPartSurface, useControllableState } from '@/shared'
 import { makeContentId, makeTriggerId } from './utils'
 
 // `PartSurface` is the shared contract in `@/shared` and is already published via
 // `@/Switch`; NOT re-exported here to avoid an ambiguous duplicate in the barrel.
+
+/** Why the selected tab changed; carried as `details.reason` on every change (#2828). */
+export type TabsChangeReason = 'trigger-press' | 'trigger-focus' | 'trigger-keydown'
 
 export type TabsTriggerState = {
   state: 'active' | 'inactive'
@@ -15,10 +19,13 @@ export type TabsTriggerState = {
 }
 export type TabsContentState = { state: 'active' | 'inactive', orientation: DataOrientation }
 
+/** Standalone `useTabs()` calls without a `baseId` draw `reka-tabs-<n>` from here. */
+let tabsCount = 0
+
 /**
- * The per-item trigger surface, derived purely from `(context, value)`. Exported
- * so the `TabsTrigger` SFC (which injects the context) and a standalone
- * `useTabs()` consumer share ONE derivation — no drift between the two.
+ * The per-item trigger surface, derived purely from `(context, value)`. The
+ * `TabsTrigger` SFC (which injects the context) and a standalone `useTabs()`
+ * consumer share ONE derivation — no drift between the two.
  */
 export function getTabsTriggerSurface(
   context: TabsRootContext,
@@ -29,8 +36,8 @@ export function getTabsTriggerSurface(
   const isDisabled = computed(() => toValue(disabled) ?? false)
   const contentId = computed(() => context.contentIds.value.has(toValue(value)) ? makeContentId(context.baseId, toValue(value)) : undefined)
 
-  return {
-    props: computed(() => ({
+  return createPartSurface<TabsTriggerState>(
+    () => ({
       'id': makeTriggerId(context.baseId, toValue(value)),
       'role': 'tab',
       'aria-selected': isSelected.value ? 'true' : 'false',
@@ -43,53 +50,78 @@ export function getTabsTriggerSurface(
       'onMousedown': (event: MouseEvent) => {
         if (event.button !== 0)
           return
-        if (!isDisabled.value && event.ctrlKey === false)
-          context.changeModelValue(toValue(value))
-        else
+        if (isDisabled.value || event.ctrlKey !== false) {
+          event.preventDefault()
+          return
+        }
+        // A `beforeUpdate` cancel of the press must also block the browser's
+        // follow-up focus, or automatic activation would re-attempt the change
+        // as `trigger-focus`. An already-selected trigger attempts nothing
+        // (`setState` returns `false` for an unchanged value), so it keeps focus.
+        const changed = context.changeModelValue(toValue(value), 'trigger-press', event)
+        if (!isSelected.value && !changed)
           event.preventDefault()
       },
       // `@keydown.enter.space` — no preventDefault today; keep it that way.
       'onKeydown': (event: KeyboardEvent) => {
         if (event.key === 'Enter' || event.key === ' ')
-          context.changeModelValue(toValue(value))
+          context.changeModelValue(toValue(value), 'trigger-keydown', event)
       },
       // Automatic activation follows focus; manual mode needs a click/key.
-      'onFocus': () => {
+      'onFocus': (event?: FocusEvent) => {
         const isAutomaticActivation = context.activationMode !== 'manual'
         if (!isSelected.value && !isDisabled.value && isAutomaticActivation)
-          context.changeModelValue(toValue(value))
+          context.changeModelValue(toValue(value), 'trigger-focus', event)
       },
-    })),
-    state: computed(() => ({
+    }),
+    () => ({
       state: isSelected.value ? 'active' : 'inactive',
       disabled: isDisabled.value,
       orientation: context.orientation.value,
-    })),
-  }
+    }),
+  )
 }
 
 /** The per-item content surface, derived purely from `(context, value)`. */
 export function getTabsContentSurface(context: TabsRootContext, value: MaybeRefOrGetter<StringOrNumber>): PartSurface<TabsContentState> {
   const isSelected = computed(() => toValue(value) === context.modelValue.value)
-  return {
-    props: computed(() => ({
+  return createPartSurface<TabsContentState>(
+    () => ({
       'id': makeContentId(context.baseId, toValue(value)),
       'role': 'tabpanel',
       'aria-labelledby': makeTriggerId(context.baseId, toValue(value)),
       'tabindex': 0,
-    })),
-    state: computed(() => ({
+    }),
+    () => ({
       state: isSelected.value ? 'active' : 'inactive',
       orientation: context.orientation.value,
-    })),
-  }
+    }),
+  )
+}
+
+/** The list surface (`role="tablist"` + `aria-orientation`), derived purely from the context. */
+export function getTabsListSurface(context: TabsRootContext): PartSurface<Record<string, never>> {
+  return createPartSurface<Record<string, never>>(
+    () => ({ 'role': 'tablist', 'aria-orientation': context.orientation.value }),
+    () => ({}),
+  )
 }
 
 export interface UseTabsProps {
-  /** Externally-owned selected value (the SFC hands its `useVModel` ref). */
-  modelValue?: Ref<StringOrNumber | undefined>
+  /**
+   * Controlled selected value. A getter/ref resolving to `undefined` means
+   * uncontrolled; a writable `Ref` with neither `emit` nor `onUpdate` is written
+   * back on change ("ref-owned" mode).
+   */
+  modelValue?: MaybeRefOrGetter<StringOrNumber | undefined>
   /** Initial value when uncontrolled. */
   defaultValue?: StringOrNumber
+  /** Component `emit`; fires `beforeUpdate:modelValue` then `update:modelValue`. */
+  emit?: (event: any, ...args: any[]) => void
+  /** Runs before a change is applied; `details.cancel()` keeps the current tab. */
+  onBeforeUpdate?: (value: StringOrNumber | undefined, details: ChangeEventDetails<TabsChangeReason>) => void
+  /** Runs after a change is applied. */
+  onUpdate?: (value: StringOrNumber | undefined, details: ChangeEventDetails<TabsChangeReason>) => void
   /** @defaultValue `'horizontal'` */
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
   /** @defaultValue `'ltr'` */
@@ -99,17 +131,24 @@ export interface UseTabsProps {
   /** @defaultValue `'automatic'` */
   activationMode?: 'automatic' | 'manual'
   /**
-   * Base id the trigger/content ids derive from. The SFC hands its
-   * `useId(undefined, 'reka-tabs')` so SSR ids stay stable; defaults to
-   * `'reka-tabs'` for standalone use.
+   * Base id the trigger/content ids derive from. Defaults to `reka-tabs-<n>`
+   * from a per-call counter, which is NOT stable across server and client:
+   * SSR consumers must pass a stable `baseId` (the SFC hands its
+   * `useId(undefined, 'reka-tabs')`).
    */
   baseId?: string
 }
 
 export interface UseTabsReturn {
-  modelValue: Ref<StringOrNumber | undefined>
-  /** Activate a tab by value. The caller gates disabled/roving concerns. */
-  selectTab: (value: StringOrNumber) => void
+  modelValue: ComputedRef<StringOrNumber | undefined>
+  /**
+   * Activate a tab by value; returns `false` when unchanged or cancelled.
+   * The caller gates disabled/roving concerns.
+   */
+  selectTab: (value: StringOrNumber, reason?: TabsChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Details of the last change attempt; initially `{ reason: 'none' }`. */
+  lastChangeDetails: Readonly<Ref<ChangeEventDetails<TabsChangeReason>>>
+  isControlled: ComputedRef<boolean>
   registerContent: (value: StringOrNumber) => void
   unregisterContent: (value: StringOrNumber) => void
   root: PartSurface<{ orientation: DataOrientation }>
@@ -130,12 +169,22 @@ export interface UseTabsReturn {
  *
  * SSR-safe (no `document`/`window` at call scope) and callable outside `setup()`
  * (computed-only — registration + Presence stay in the SFCs).
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle pure
  */
 export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
-  const baseId = props.baseId ?? 'reka-tabs'
+  const baseId = props.baseId ?? `reka-tabs-${++tabsCount}`
   const activationMode = props.activationMode ?? 'automatic'
 
-  const modelValue = (props.modelValue ?? ref<StringOrNumber | undefined>(props.defaultValue)) as Ref<StringOrNumber | undefined>
+  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<StringOrNumber | undefined, TabsChangeReason>({
+    prop: props.modelValue,
+    defaultValue: props.defaultValue,
+    name: 'modelValue',
+    emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdate,
+    onUpdate: props.onUpdate,
+  })
   const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
@@ -143,8 +192,8 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
   const tabsList = ref<HTMLElement>()
   const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
 
-  function selectTab(value: StringOrNumber) {
-    modelValue.value = value
+  function selectTab(value: StringOrNumber, reason: TabsChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    return setState(value, reason, event)
   }
   function registerContent(value: StringOrNumber) {
     contentIds.value = new Set([...contentIds.value, value])
@@ -169,22 +218,20 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
     unregisterContent,
   }
 
-  const root: PartSurface<{ orientation: DataOrientation }> = {
-    props: computed(() => ({ dir: dir.value })),
-    state: computed(() => ({ orientation: orientation.value })),
-  }
-  const list: PartSurface<Record<string, never>> = {
-    props: computed(() => ({ 'role': 'tablist', 'aria-orientation': orientation.value })),
-    state: computed(() => ({})),
-  }
+  const root = createPartSurface<{ orientation: DataOrientation }>(
+    () => ({ dir: dir.value }),
+    () => ({ orientation: orientation.value }),
+  )
 
   return {
     modelValue,
     selectTab,
+    lastChangeDetails,
+    isControlled,
     registerContent,
     unregisterContent,
     root,
-    list,
+    list: getTabsListSurface(context),
     getTriggerSurface: (value, disabled) => getTabsTriggerSurface(context, value, disabled),
     getContentSurface: value => getTabsContentSurface(context, value),
     context,

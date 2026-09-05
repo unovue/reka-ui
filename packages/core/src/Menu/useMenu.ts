@@ -2,11 +2,11 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { MenuContentContext } from './MenuContentImpl.vue'
 import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
-import type { PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
-import { getActiveElement, useArrowNavigation, useTypeahead } from '@/shared'
+import { createPartSurface, disclosureState, getActiveElement, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { FIRST_LAST_KEYS, focusFirst, getOpenState, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
+import { FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // Headless composables for the Menu (overlay) family — issue #2723.
@@ -18,13 +18,13 @@ import { FIRST_LAST_KEYS, focusFirst, getOpenState, isMouseEvent, isPointerInGra
 //  1. useMenuRoot()            — state-only root (NO surface); returns the two
 //                                context objects the SFC provides. This is the
 //                                overlay-root contract: `{ state, context }`.
-//  2. getMenuItemBaseSurface() — the attr-bearing item render surface (role/
+//  2. createMenuItemSurface()  — the attr-bearing item render surface (role/
 //                                aria/data-* + hover-highlight handlers). A
 //                                context-SCOPED FACTORY: it creates per-instance
 //                                refs (isFocused) and needs the item's element,
 //                                so unlike Tabs' builders it is NOT pure and must
 //                                be called exactly once per item instance.
-//  3. getMenuItemSelectSurface() — the select protocol (click/pointer/keydown +
+//  3. createMenuItemSelectSurface() — the select protocol (click/pointer/keydown +
 //                                the CustomEvent-token close-on-select). Pure
 //                                handlers, no data-*. `onSelect` is a callback
 //                                channel (never a merged DOM listener).
@@ -37,19 +37,45 @@ import { FIRST_LAST_KEYS, focusFirst, getOpenState, isMouseEvent, isPointerInGra
 // 1. useMenuRoot — state-only overlay root
 // -----------------------------------------------------------------------------
 
+/** Why the menu's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
+export type MenuOpenChangeReason
+  = | 'trigger-press'
+    | 'trigger-hover'
+    | 'item-press'
+    | 'list-navigation'
+    | 'sibling-open'
+    | 'escape-key'
+    | 'outside-press'
+    | 'focus-outside'
+
 export interface UseMenuRootProps {
-  /** Externally-owned open state (the SFC hands its `useVModel` ref). */
-  open?: Ref<boolean>
+  /**
+   * Controlled open state. A getter/ref resolving to `undefined` is uncontrolled;
+   * a writable `Ref` (with no `emit`/`onUpdate`) is written back ("ref-owned").
+   */
+  open?: MaybeRefOrGetter<boolean | undefined>
+  /** Initial open state when uncontrolled. @defaultValue `false` */
+  defaultOpen?: boolean
   /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `true` */
   modal?: MaybeRefOrGetter<boolean | undefined>
+  /** Component `emit`; receives `beforeUpdate:open` then `update:open`. */
+  emit?: (event: any, ...args: any[]) => void
+  /** Called before a change commits; `details.cancel()` vetoes it. */
+  onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<MenuOpenChangeReason>) => void
+  /** Called after a change commits. */
+  onUpdate?: (value: boolean, details: ChangeEventDetails<MenuOpenChangeReason>) => void
 }
 
 export interface UseMenuRootReturn {
-  open: Ref<boolean>
-  onOpenChange: (value: boolean) => void
-  onClose: () => void
+  open: ComputedRef<boolean>
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
+  onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  lastChangeDetails: Readonly<Ref<ChangeEventDetails<MenuOpenChangeReason>>>
+  isControlled: ComputedRef<boolean>
   /** The `MenuContext` value — the SFC provides this verbatim. */
   menuContext: MenuContext
   /** The `MenuRootContext` value — the SFC provides this verbatim. */
@@ -63,19 +89,29 @@ export interface UseMenuRootReturn {
  *
  * NOT callable outside `setup()` — `useIsUsingKeyboard` binds a mount lifecycle.
  * (Overlay roots are inherently lifecycle-bound; test in a mount harness.)
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle setup
  */
 export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
-  const open = props.open ?? ref(false)
+  const { state: open, setState, lastChangeDetails, isControlled } = useControllableState<boolean, MenuOpenChangeReason>({
+    prop: props.open,
+    defaultValue: props.defaultOpen ?? false,
+    name: 'open',
+    emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdate,
+    onUpdate: props.onUpdate,
+  })
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const modal = computed<boolean>(() => toValue(props.modal) ?? true)
   const content = ref<HTMLElement>()
   const isUsingKeyboardRef = useIsUsingKeyboard()
 
-  function onOpenChange(value: boolean) {
-    open.value = value
+  function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
+    return setState(value, reason, event)
   }
-  function onClose() {
-    open.value = false
+  function onClose(reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
+    return setState(false, reason, event)
   }
 
   const menuContext: MenuContext = {
@@ -93,11 +129,11 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
     modal: modal as Ref<boolean>,
   }
 
-  return { open, onOpenChange, onClose, menuContext, menuRootContext }
+  return { open, onOpenChange, onClose, lastChangeDetails, isControlled, menuContext, menuRootContext }
 }
 
 // -----------------------------------------------------------------------------
-// 2. getMenuItemBaseSurface — the item render surface (MenuItemImpl)
+// 2. createMenuItemSurface — the item render surface (MenuItemImpl)
 // -----------------------------------------------------------------------------
 
 export type MenuItemState = { disabled: boolean, highlighted: boolean }
@@ -126,8 +162,11 @@ export interface MenuItemBaseOptions {
  *
  * `highlightedElement` is content-owned shared state; the item both reads it (for
  * `isHighlighted`) and writes it (on pointer-enter/focus) through the context.
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle setup
  */
-export function getMenuItemBaseSurface(
+export function createMenuItemSurface(
   contentContext: MenuContentContext,
   options: MenuItemBaseOptions,
 ): MenuItemBaseSurface {
@@ -185,8 +224,8 @@ export function getMenuItemBaseSurface(
     isFocused.value = false
   }
 
-  return {
-    props: computed(() => ({
+  const surface = createPartSurface<MenuItemState>(
+    computed(() => ({
       'role': 'menuitem',
       'tabindex': -1,
       'aria-disabled': isDisabled.value || undefined,
@@ -195,14 +234,14 @@ export function getMenuItemBaseSurface(
       'onFocus': handleFocus,
       'onBlur': handleBlur,
     })),
-    state: computed(() => ({ disabled: isDisabled.value, highlighted: isHighlighted.value })),
-    isFocused,
-    isHighlighted,
-  }
+    () => ({ disabled: isDisabled.value, highlighted: isHighlighted.value }),
+  )
+
+  return { props: surface.props, state: surface.state, attrs: surface.attrs, isFocused, isHighlighted }
 }
 
 // -----------------------------------------------------------------------------
-// 3. getMenuItemSelectSurface — the select protocol (MenuItem)
+// 3. createMenuItemSelectSurface — the select protocol (MenuItem)
 // -----------------------------------------------------------------------------
 
 export interface MenuItemSelectOptions {
@@ -230,15 +269,21 @@ export interface MenuItemSelectSurface {
  * close unless `defaultPrevented`), and the pointerdown/pointerup/keydown wiring.
  * Handlers stay async so the `defaultPrevented`-after-`nextTick` consumer veto
  * keeps working once bound via `mergeProps` (surface handlers first).
+ *
+ * A context-SCOPED FACTORY (it owns `isPointerDownRef`), so — like
+ * `createMenuItemSurface` — call it exactly once per item instance.
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle pure
  */
-export function getMenuItemSelectSurface(
+export function createMenuItemSelectSurface(
   rootContext: MenuRootContext,
   options: MenuItemSelectOptions,
 ): MenuItemSelectSurface {
   const isDisabled = computed(() => toValue(options.disabled) ?? false)
   const isPointerDownRef = ref(false)
 
-  async function handleSelect() {
+  async function handleSelect(event?: Event) {
     const menuItem = options.currentElement.value
     if (!isDisabled.value && menuItem) {
       const itemSelectEvent = new CustomEvent(ITEM_SELECT, { bubbles: true, cancelable: true })
@@ -247,7 +292,7 @@ export function getMenuItemSelectSurface(
       if (itemSelectEvent.defaultPrevented)
         isPointerDownRef.value = false
       else
-        rootContext.onClose()
+        rootContext.onClose('item-press', event)
     }
   }
 
@@ -316,7 +361,7 @@ export interface UseMenuContentOptions {
   onOpenAutoFocus?: (event: Event) => void
 }
 
-export type MenuContentState = { state: 'open' | 'closed' }
+export type MenuContentState = { state: DisclosureState }
 
 export interface UseMenuContentReturn {
   /** The `role=menu` surface for `PopperContent`; positioning props stay in the SFC. */
@@ -336,6 +381,9 @@ export interface UseMenuContentReturn {
  * `role=menu` surface + the `MenuContentContext` value; the SFC keeps the four
  * component wrappers and the two mount side-effects. Owns watchers + `onUnmounted`,
  * so it runs inside the mounted content's `setup()` (not standalone-callable).
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle setup
  */
 export function useMenuContent(options: UseMenuContentOptions): UseMenuContentReturn {
   const { menuContext, rootContext, contentElement, getItems } = options
@@ -350,7 +398,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   const currentItemId = ref<string | null>(null)
   const highlightedElement = ref<HTMLElement>()
   const filterElement = ref<HTMLElement>()
-  const activeSubmenuContext = ref<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> }>()
+  const activeSubmenuContext = ref<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
   const { handleTypeaheadSearch } = useTypeahead()
 
@@ -463,8 +511,12 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
       // disappearing highlight (pointer left all items) must not close it.
       if (el === undefined)
         return
-      activeSubmenuContext.value.onOpenChange(false)
-      activeSubmenuContext.value = undefined
+      // The highlight moved to a sibling item — the only path by which one
+      // submenu opening (or another item taking the highlight) closes the
+      // previously open submenu. A close vetoed via `beforeUpdate:open` keeps
+      // the submenu open, so it must stay the active one.
+      if (activeSubmenuContext.value.onOpenChange(false, 'sibling-open'))
+        activeSubmenuContext.value = undefined
     }
   })
 
@@ -503,8 +555,8 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     },
   }
 
-  const content: PartSurface<MenuContentState> = {
-    props: computed(() => ({
+  const content = createPartSurface<MenuContentState>(
+    computed(() => ({
       'role': 'menu',
       'aria-orientation': 'vertical',
       // Functional selector (submenu `closest()` scoping) — lives in `props`,
@@ -516,8 +568,8 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
       'onPointermove': handlePointerMove,
       'onPointerenter': handlePointerEnter,
     })),
-    state: computed(() => ({ state: getOpenState(menuContext.open.value) })),
-  }
+    () => ({ state: disclosureState(menuContext.open.value) }),
+  )
 
   return { content, contentContext, handleMountAutoFocus, currentItemId, highlightedElement, searchRef }
 }

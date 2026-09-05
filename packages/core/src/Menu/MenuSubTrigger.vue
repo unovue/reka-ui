@@ -14,7 +14,7 @@ import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
-import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
+import { getOpenState, isMouseEvent, SELECTION_KEYS, SUB_OPEN_KEYS } from './utils'
 
 const props = defineProps<MenuSubTriggerProps>()
 
@@ -59,7 +59,7 @@ function handlePointerMove(event: PointerEvent) {
   if (!props.disabled && !menuContext.open.value && !openTimerRef.value) {
     contentContext.onPointerGraceIntentChange(null)
     openTimerRef.value = window.setTimeout(() => {
-      menuContext.onOpenChange(true)
+      menuContext.onOpenChange(true, 'trigger-hover', event)
       clearOpenTimer()
     }, 100)
   }
@@ -115,14 +115,19 @@ async function handleKeyDown(event: KeyboardEvent) {
   if (props.disabled || (isTypingAhead && event.key === ' '))
     return
   if (SUB_OPEN_KEYS[rootContext.dir.value].includes(event.key)) {
-    menuContext.onOpenChange(true)
+    // Enter/Space activate the trigger; ArrowRight/ArrowLeft are list navigation.
+    const opened = menuContext.onOpenChange(true, SELECTION_KEYS.includes(event.key) ? 'trigger-press' : 'list-navigation', event)
+    // prevent window from scrolling
+    event.preventDefault()
+    // `false` is either "already open" (re-focus the content below) or a
+    // cancelled open (`beforeUpdate:open`) — never move focus into a closed submenu.
+    if (!opened && !menuContext.open.value)
+      return
 
     await nextTick()
     // The trigger may hold focus if opened via pointer interaction
     // so we ensure content is given focus again when switching to keyboard.
     menuContext.content.value?.focus()
-    // prevent window from scrolling
-    event.preventDefault()
   }
 }
 </script>
@@ -153,7 +158,7 @@ async function handleKeyDown(event: KeyboardEvent) {
            * between separate submenus.
            */
           (event.currentTarget as HTMLElement)?.focus();
-          if (!menuContext.open.value) menuContext.onOpenChange(true);
+          if (!menuContext.open.value) menuContext.onOpenChange(true, 'trigger-press', event);
         }
       "
       @pointermove="handlePointerMove"

@@ -67,12 +67,12 @@ menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
           // hovering between submenu and parent menu
           const isMovingToParentContent = parentContentContext.filterElement.value?.contains(event.target as Node);
           if (event.target !== menuSubContext.trigger.value && !isMovingToParentContent)
-            menuContext.onOpenChange(false);
+            menuContext.onOpenChange(false, 'focus-outside', event);
         }
       "
       @escape-key-down="
         (event) => {
-          rootContext.onClose();
+          rootContext.onClose('escape-key', event);
           // ensure pressing escape in submenu doesn't escape full screen mode
           event.preventDefault();
         }
@@ -82,7 +82,7 @@ menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
         const isKeyDownInside = (event.currentTarget as HTMLElement)?.contains(event.target as HTMLElement);
         const isCloseKey = SUB_CLOSE_KEYS[rootContext.dir.value].includes(event.key);
         if (isKeyDownInside && isCloseKey) {
-          menuContext.onOpenChange(false);
+          menuContext.onOpenChange(false, 'list-navigation', event);
           // We focus manually because we prevented it in `onCloseAutoFocus`
           if (parentContentContext.filterElement.value) {
             parentContentContext.filterElement.value.focus();

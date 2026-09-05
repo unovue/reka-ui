@@ -9,7 +9,7 @@ export {
   type SwitchThumbProps,
 } from './SwitchThumb.vue'
 export {
-  type PartSurface,
+  type SwitchChangeReason,
   type SwitchState,
   useSwitch,
   type UseSwitchProps,

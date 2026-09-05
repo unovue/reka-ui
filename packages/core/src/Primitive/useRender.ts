@@ -1,38 +1,17 @@
 import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { PartState, StateAttributesMapping } from '../shared/stateToDataAttrs'
 import type { AsTag } from './Primitive'
 import { computed, getCurrentInstance, mergeProps, toValue } from 'vue'
+// Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
+import { stateToDataAttrs } from '../shared/stateToDataAttrs'
 import { useForwardExpose } from '../shared/useForwardExpose'
 import { SELF_CLOSING_TAGS } from './Primitive'
 import { Slot } from './Slot'
 
-export type PrimitiveState = Record<string, string | boolean | number | null | undefined>
+/** Alias of the shared `PartState`; kept so existing `useRender` imports keep working. */
+export type PrimitiveState = PartState
 
-export type StateAttributesMapping<S extends PrimitiveState>
-  = { [K in keyof S]?: (value: S[K]) => Record<string, string | undefined> | undefined }
-
-function kebab(key: string): string {
-  return key.replace(/([a-z\d])([A-Z])/g, '$1-$2').toLowerCase()
-}
-
-function getStateAttributes<S extends PrimitiveState>(
-  state: S | undefined,
-  mapping?: StateAttributesMapping<S>,
-): Record<string, string> {
-  const out: Record<string, string> = {}
-  if (!state)
-    return out
-  for (const key in state) {
-    const value = state[key]
-    if (mapping?.[key]) {
-      Object.assign(out, mapping[key]!(value) ?? {})
-      continue
-    }
-    if (value === false || value == null)
-      continue
-    out[`data-${kebab(key)}`] = value === true ? '' : String(value)
-  }
-  return out
-}
+export type { StateAttributesMapping }
 
 export interface UseRenderOptions<S extends PrimitiveState = PrimitiveState> {
   /** Fallback tag when `as` is undefined. @default 'div' */
@@ -100,7 +79,7 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
 
   const state = computed(() => toValue(options.state))
 
-  const stateAttrs = computed(() => getStateAttributes(toValue(options.state), options.stateAttributesMapping))
+  const stateAttrs = computed(() => stateToDataAttrs(toValue(options.state), options.stateAttributesMapping))
   const renderProps = computed<Record<string, any>>(() => mergeProps(stateAttrs.value, toValue(options.props) ?? {}))
 
   const { forwardRef, currentElement } = useForwardExpose()

@@ -20,7 +20,7 @@ type MenuRootContentModalEmits = MenuContentImplEmits
     :trap-focus="false"
     :disable-outside-pointer-events="false"
     :disable-outside-scroll="false"
-    @dismiss="menuContext.onOpenChange(false)"
+    @dismiss="(details) => menuContext.onOpenChange(false, details.reason, details.event)"
   >
     <slot />
   </MenuContentImpl>

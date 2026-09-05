@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
-import { createContext } from '@/shared'
+import type { MenuOpenChangeReason } from './useMenu'
+import type { ChangeEventDetails } from '@/shared'
+import { createContext, useControllableState } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -20,16 +22,17 @@ export interface MenuSubProps {
 }
 
 export type MenuSubEmits = {
+  /** Called before the open state of the submenu changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
   /** Event handler called when the open state of the submenu changes. */
-  'update:open': [payload: boolean]
+  'update:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
 }
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import {
   ref,
-  watchEffect,
+  watch,
 } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
@@ -39,27 +42,29 @@ const props = withDefaults(defineProps<MenuSubProps>(), {
 })
 const emits = defineEmits<MenuSubEmits>()
 
-const open = useVModel(props, 'open', emits, {
+const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
+  prop: () => props.open,
   defaultValue: false,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
+  name: 'open',
+  emit: emits,
+})
 
 const parentMenuContext = injectMenuContext()
 const trigger = ref<HTMLElement>()
 const content = ref<HTMLElement>()
 
-// Prevent the parent menu from reopening with open submenus.
-watchEffect((cleanupFn) => {
-  if (parentMenuContext?.open.value === false)
-    open.value = false
-  cleanupFn(() => (open.value = false))
-})
+// Prevent the parent menu from reopening with open submenus. A getter-source
+// `watch` (not `watchEffect`): `setState` reads the sub's own `open` for its
+// equality check, which must not become a dependency of this effect.
+watch(() => parentMenuContext?.open.value, (parentOpen, _, onCleanup) => {
+  if (parentOpen === false)
+    setState(false)
+  onCleanup(() => setState(false))
+}, { immediate: true })
 
 provideMenuContext({
   open,
-  onOpenChange: (value) => {
-    open.value = value
-  },
+  onOpenChange: (value, reason, event) => setState(value, reason, event),
   content,
   onContentChange: (element) => {
     content.value = element

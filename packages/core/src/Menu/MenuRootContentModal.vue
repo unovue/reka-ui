@@ -24,7 +24,7 @@ useHideOthers(currentElement)
     :trap-focus="menuContext.open.value"
     :disable-outside-pointer-events="menuContext.open.value"
     :disable-outside-scroll="true"
-    @dismiss="menuContext.onOpenChange(false)"
+    @dismiss="(details) => menuContext.onOpenChange(false, details.reason, details.event)"
     @focus-outside.prevent="emits('focusOutside', $event)"
   >
     <slot />

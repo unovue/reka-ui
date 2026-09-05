@@ -12,4 +12,24 @@ describe('stateToDataAttrs', () => {
     expect(stateToDataAttrs({ state: 'checked', someFlag: 2 }))
       .toEqual({ 'data-state': 'checked', 'data-some-flag': '2' })
   })
+  it('returns an empty record for undefined state', () => {
+    expect(stateToDataAttrs(undefined)).toEqual({})
+  })
+
+  describe('mapping overrides (moved from useRender.getStateAttributes)', () => {
+    it('replaces the default data-* for a mapped key', () => {
+      expect(stateToDataAttrs({ checked: true }, { checked: v => ({ 'aria-checked': String(v) }) }))
+        .toEqual({ 'aria-checked': 'true' })
+    })
+    it('emits nothing for a mapped key whose mapper returns undefined', () => {
+      expect(stateToDataAttrs({ checked: true, open: true }, { checked: () => undefined }))
+        .toEqual({ 'data-open': '' })
+    })
+    it('leaves unmapped keys on the default path', () => {
+      expect(stateToDataAttrs(
+        { checked: false, orientation: 'horizontal' },
+        { checked: v => ({ 'data-checked': v ? 'yes' : 'no' }) },
+      )).toEqual({ 'data-checked': 'no', 'data-orientation': 'horizontal' })
+    })
+  })
 })

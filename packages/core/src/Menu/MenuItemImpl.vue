@@ -16,9 +16,9 @@ export interface MenuItemImplProps extends PrimitiveProps {
 import { mergeProps } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { stateToDataAttrs, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
-import { getMenuItemBaseSurface } from './useMenu'
+import { createMenuItemSurface } from './useMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -33,7 +33,7 @@ const { CollectionItem } = useCollection()
 // role/aria/data-* + the hover-highlight (pointermove/leave/focus/blur) come from
 // the shared item surface. The `<CollectionItem>` registration wrapper stays in
 // the SFC — it is vnode-bound provide/inject a composable can't absorb.
-const surface = getMenuItemBaseSurface(contentContext, {
+const surface = createMenuItemSurface(contentContext, {
   disabled: () => props.disabled,
   currentElement,
 })
@@ -45,7 +45,7 @@ const surface = getMenuItemBaseSurface(contentContext, {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      v-bind="mergeProps(surface.props.value, stateToDataAttrs(surface.state.value), $attrs)"
+      v-bind="mergeProps(surface.attrs.value, $attrs)"
     >
       <slot />
     </Primitive>

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import Switch from './_Switch.vue'
 import SwitchRoot from './SwitchRoot.vue'
@@ -90,12 +90,12 @@ describe('switchRoot characterization (pre-refactor contract)', () => {
     const order: string[] = []
     const onClick = vi.fn(() => order.push('consumer'))
     const wrapper = mount(SwitchRoot as any, {
-      props: { 'modelValue': false, 'onUpdate:modelValue': () => order.push('update') },
+      props: { 'modelValue': false, 'onUpdate:modelValue': (_value: unknown, _details: unknown) => order.push('update') },
       attrs: { onClick },
     })
     await wrapper.find('button').trigger('click')
     expect(onClick).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe(true)
     expect(order).toEqual(['consumer', 'update'])
   })
 
@@ -103,12 +103,12 @@ describe('switchRoot characterization (pre-refactor contract)', () => {
     const order: string[] = []
     const onKeydown = vi.fn(() => order.push('consumer'))
     const wrapper = mount(SwitchRoot as any, {
-      props: { 'modelValue': false, 'onUpdate:modelValue': () => order.push('update') },
+      props: { 'modelValue': false, 'onUpdate:modelValue': (_value: unknown, _details: unknown) => order.push('update') },
       attrs: { onKeydown },
     })
     await wrapper.find('button').trigger('keydown', { key: 'Enter' })
     expect(onKeydown).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe(true)
     expect(order).toEqual(['consumer', 'update'])
   })
 
@@ -126,9 +126,75 @@ describe('switchRoot characterization (pre-refactor contract)', () => {
   it('emits update:modelValue without mutating a controlled model', async () => {
     const wrapper = mount(SwitchRoot as any, { props: { modelValue: false } })
     await wrapper.find('button').trigger('click')
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true])
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe(true)
     // controlled: the rendered state stays until the parent updates the prop
     expect(wrapper.find('button').attributes('data-state')).toBe('unchecked')
+  })
+})
+
+describe('switchRoot change events (v3 foundation contract)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('emits beforeUpdate:modelValue before update:modelValue, both with (value, details)', async () => {
+    const wrapper = mount(SwitchRoot as any, { props: { modelValue: false } })
+    await wrapper.find('button').trigger('click')
+    const keys = Object.keys(wrapper.emitted()).filter(k => k.endsWith(':modelValue'))
+    expect(keys).toEqual(['beforeUpdate:modelValue', 'update:modelValue'])
+    const [beforeValue, beforeDetails] = wrapper.emitted('beforeUpdate:modelValue')![0]
+    const [value, details] = wrapper.emitted('update:modelValue')![0]
+    expect(beforeValue).toBe(true)
+    expect(value).toBe(true)
+    expect(beforeDetails).toBe(details)
+    expect(details).toMatchObject({ reason: 'trigger-press', isCanceled: false })
+    expect(details.event).toBeInstanceOf(Event)
+    expect(typeof details.cancel).toBe('function')
+  })
+
+  it('reports reason "trigger-keydown" for the Enter key', async () => {
+    const wrapper = mount(SwitchRoot as any, { props: { modelValue: false } })
+    await wrapper.find('button').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'trigger-keydown' })
+  })
+
+  it('details.cancel() in @before-update:model-value keeps a v-model parent unchanged', async () => {
+    const onBefore = vi.fn((_value: boolean, details: { cancel: () => void }) => details.cancel())
+    const wrapper = mount({
+      components: { SwitchRoot },
+      setup() {
+        const checked = ref(false)
+        return { checked, onBefore }
+      },
+      template: '<SwitchRoot v-model="checked" @before-update:model-value="onBefore" />',
+    })
+    await wrapper.find('button').trigger('click')
+    expect(onBefore).toHaveBeenCalledTimes(1)
+    const root = wrapper.findComponent(SwitchRoot)
+    expect(root.emitted('beforeUpdate:modelValue')).toHaveLength(1)
+    expect(root.emitted('update:modelValue')).toBeUndefined()
+    expect((wrapper.vm as any).checked).toBe(false)
+    expect(wrapper.find('button').attributes('data-state')).toBe('unchecked')
+  })
+
+  it('a v-model parent updates through update:modelValue when not cancelled', async () => {
+    const wrapper = mount({
+      components: { SwitchRoot },
+      setup() {
+        return { checked: ref(false) }
+      },
+      template: '<SwitchRoot v-model="checked" />',
+    })
+    await wrapper.find('button').trigger('click')
+    expect((wrapper.vm as any).checked).toBe(true)
+    expect(wrapper.find('button').attributes('data-state')).toBe('checked')
+  })
+
+  it('uncontrolled: emits update:modelValue and re-renders from internal state', async () => {
+    const wrapper = mount(SwitchRoot as any, { props: { defaultValue: false } })
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe(true)
+    expect(wrapper.find('button').attributes('data-state')).toBe('checked')
   })
 })
 
