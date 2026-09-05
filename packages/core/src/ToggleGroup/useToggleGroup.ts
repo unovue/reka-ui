@@ -32,7 +32,11 @@ export function getToggleGroupItemSurface(
     () => ({
       'aria-pressed': pressed.value,
       'disabled': isDisabled.value,
-      'onClick': (event: MouseEvent) => context.changeModelValue(toValue(value), 'item-press', event),
+      'onClick': (event: MouseEvent) => {
+        if (isDisabled.value)
+          return
+        context.changeModelValue(toValue(value), 'item-press', event)
+      },
     }),
     () => ({ state: selectionState(pressed.value), disabled: isDisabled.value }),
   )

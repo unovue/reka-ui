@@ -50,10 +50,16 @@ describe('useCheckbox — state', () => {
     expect(c.checked.value).toBe(false)
     expect(c.checkedState.value).toBe(false)
   })
-  it('disabled is reflected in state but, like the SFC, does not guard the handler body', () => {
-    const c = useCheckbox({ disabled: true })
+  it('disabled is reflected in state and ignores the click, while the imperative toggle() still works', () => {
+    const onUpdate = vi.fn()
+    const c = useCheckbox({ disabled: true, onUpdate })
     expect(c.disabled.value).toBe(true)
     expect(c.root.state.value.disabled).toBe(true)
+    c.root.props.value.onClick(new MouseEvent('click'))
+    expect(c.checked.value).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+    c.toggle()
+    expect(c.checked.value).toBe(true)
   })
   it('ref-owned mode writes through the passed ref', () => {
     const model = ref<boolean | 'indeterminate'>(false)

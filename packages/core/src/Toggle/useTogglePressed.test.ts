@@ -125,6 +125,15 @@ describe('useTogglePressed — root surface', () => {
     expect(t.root.attrs.value['aria-pressed']).toBe(true)
     expect(t.root.attrs.value['data-state']).toBe('checked')
   })
+  it('onClick is ignored while disabled; the imperative toggle() is not', () => {
+    const onUpdate = vi.fn()
+    const t = useTogglePressed({ disabled: true, onUpdate })
+    t.root.props.value.onClick(new MouseEvent('click'))
+    expect(t.pressed.value).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+    t.toggle()
+    expect(t.pressed.value).toBe(true)
+  })
   it('onClick toggles with reason "trigger-press" and the native event', () => {
     const onUpdate = vi.fn()
     const t = useTogglePressed({ onUpdate })

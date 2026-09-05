@@ -53,9 +53,9 @@ type ToggleModelOptions = UseControllableStateOptions<boolean | null | undefined
  * consumers can drive a toggle button entirely from JS. SSR-safe (no
  * `document` at call scope) and reactive — props are read with `toValue`.
  *
- * Ported verbatim from `Toggle.vue`: there is NO disabled guard on the
- * click/imperative path (the native `disabled` attribute is what blocks the
- * click), so do not add one.
+ * The trigger click is ignored while disabled (an `asChild` non-native
+ * element does not get the native `disabled` blocking); the imperative
+ * `toggle()` / `setPressed()` are not guarded, as in `Toggle.vue`.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
@@ -89,7 +89,13 @@ export function useTogglePressed(props: UseTogglePressedProps = {}): UseTogglePr
       'aria-pressed': modelValue.value,
       // Boolean, matching `:disabled="disabled"` (Vue drops a `false` boolean attribute).
       'disabled': disabled.value,
-      'onClick': (event: MouseEvent) => toggle('trigger-press', event),
+      // Guarded here (not in `toggle`): a native `disabled` button never fires
+      // the click, but an `asChild` non-native element does.
+      'onClick': (event: MouseEvent) => {
+        if (disabled.value)
+          return
+        toggle('trigger-press', event)
+      },
     }),
     () => ({ state: selectionState(pressed.value), disabled: disabled.value }),
   )

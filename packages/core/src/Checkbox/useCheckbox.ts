@@ -132,9 +132,9 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
   })
 
   function toggle(reason: CheckboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    // Ported verbatim from CheckboxRoot.vue's `handleClick` — no disabled guard
-    // (a disabled native button never fires the click). Group writes go through
-    // the group's `changeModelValue` so its `beforeUpdate` can veto them.
+    // Ported verbatim from CheckboxRoot.vue's `handleClick` — the disabled guard
+    // sits on the click handler, not here. Group writes go through the group's
+    // `changeModelValue` so its `beforeUpdate` can veto them.
     if (!isNullish(group?.modelValue.value))
       return group.changeModelValue(toggleArrayValue(group.modelValue.value, value()), toGroupReason(reason), event)
 
@@ -174,7 +174,13 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
       'aria-required': toValue(props.required),
       // Boolean pass-through, like CheckboxRoot's `:disabled="disabled"`.
       'disabled': disabled.value,
-      'onClick': (event: MouseEvent) => toggle('trigger-press', event),
+      // Guarded here (not in `toggle`): a native `disabled` button never fires
+      // the click, but an `asChild` non-native element does.
+      'onClick': (event: MouseEvent) => {
+        if (disabled.value)
+          return
+        toggle('trigger-press', event)
+      },
       'onKeydown': onKeydown,
     }),
     () => checkboxStateOf(context),

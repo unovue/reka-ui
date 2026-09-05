@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
+import type { Ref } from 'vue'
 import type { CheckboxChangeReason } from './useCheckbox'
 import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
@@ -85,7 +85,7 @@ const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
 // Group membership (checked state + press toggling) lives there too, keyed on
 // the injected group context.
-const checkbox = useCheckbox<T>({
+const { modelValue, checkedState: checkboxState, disabled, root, context } = useCheckbox<T>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -96,9 +96,6 @@ const checkbox = useCheckbox<T>({
   falseValue: () => props.falseValue as T,
   group: checkboxGroupContext,
 })
-const { checkedState: checkboxState, disabled, root, context } = checkbox
-// Slot type parity with v2 (`useVModel(...) as Ref<T | 'indeterminate'>`).
-const modelValue = checkbox.modelValue as ComputedRef<T | 'indeterminate'>
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive

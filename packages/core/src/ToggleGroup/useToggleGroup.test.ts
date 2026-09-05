@@ -179,6 +179,16 @@ describe('useToggleGroup — surfaces', () => {
     value.value = 'b'
     expect(item.state.value.state).toBe('unchecked')
   })
+  it('item onClick is ignored while the item or the group is disabled', () => {
+    const onUpdate = vi.fn()
+    const g = useToggleGroup({ type: 'single', onUpdate })
+    g.getItemSurface('a', true).props.value.onClick(new MouseEvent('click'))
+    expect(g.modelValue.value).toBeUndefined()
+    const disabledGroup = useToggleGroup({ type: 'single', disabled: true, onUpdate })
+    disabledGroup.getItemSurface('a').props.value.onClick(new MouseEvent('click'))
+    expect(disabledGroup.modelValue.value).toBeUndefined()
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
   it('item onClick presses the item with reason "item-press" and the native event', () => {
     const onUpdate = vi.fn()
     const g = useToggleGroup({ type: 'single', onUpdate })
