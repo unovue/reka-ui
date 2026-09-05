@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
+import type { AccordionChangeReason, UseAccordionReturn } from './useAccordion'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType } from '@/shared/types'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 
@@ -47,7 +49,9 @@ export type AccordionRootEmits<T extends SingleOrMultipleType = SingleOrMultiple
   /**
    * Event handler called when the expanded state of an item changes
    */
-  'update:modelValue': [value: (T extends 'single' ? string : string[]) | undefined]
+  'update:modelValue': [value: (T extends 'single' ? string : string[]) | undefined, details: ChangeEventDetails<AccordionChangeReason>]
+  /** Event handler called before a change; call details.cancel() to keep the current value. */
+  'beforeUpdate:modelValue': [value: (T extends 'single' ? string : string[]) | undefined, details: ChangeEventDetails<AccordionChangeReason>]
 }
 
 export type AccordionRootContext<P extends AccordionRootProps> = {
@@ -55,9 +59,9 @@ export type AccordionRootContext<P extends AccordionRootProps> = {
   direction: Ref<P['dir']>
   orientation: P['orientation']
   parentElement: Ref<HTMLElement | undefined>
-  changeModelValue: (value: string) => void
+  changeModelValue: UseAccordionReturn['changeModelValue']
   isSingle: ComputedRef<boolean>
-  modelValue: Ref<AcceptableValue | AcceptableValue[] | undefined>
+  modelValue: ComputedRef<string | string[] | undefined>
   collapsible: boolean
   unmountOnHide: Ref<boolean>
 }
@@ -69,7 +73,7 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
+import { useAccordion } from './useAccordion'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
   disabled: false,
@@ -83,28 +87,29 @@ const emits = defineEmits<AccordionRootEmits<ExplicitType>>()
 defineSlots<{
   default?: (props: {
     /** Current active value */
-    modelValue: typeof modelValue.value
+    modelValue: AcceptableValue | AcceptableValue[] | undefined
   }) => any
 }>()
 
 const { dir, disabled, unmountOnHide } = toRefs(props)
 const direction = useDirection(dir)
 
-const { modelValue, changeModelValue, isSingle } = useSingleOrMultipleValue(props, emits)
-
 const { forwardRef, currentElement: parentElement } = useForwardExpose()
 
-provideAccordionRootContext({
+const { context, modelValue } = useAccordion({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  emit: emits,
+  type: () => props.type,
+  collapsible: () => props.collapsible,
+  dir: direction,
   disabled,
-  direction,
-  orientation: props.orientation,
+  orientation: () => props.orientation,
   parentElement,
-  isSingle,
-  collapsible: props.collapsible,
-  modelValue,
-  changeModelValue,
   unmountOnHide,
 })
+
+provideAccordionRootContext(context)
 </script>
 
 <template>

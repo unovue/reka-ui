@@ -2,7 +2,7 @@
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
 import type { DisclosureState } from '@/shared'
-import { createContext, disclosureState, useArrowNavigation, useForwardExpose } from '@/shared'
+import { createContext, useForwardExpose } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 export interface AccordionItemProps
@@ -38,6 +38,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
+import { getAccordionItemSurface } from './useAccordion'
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
@@ -55,20 +56,14 @@ defineSlots<{
 
 const rootContext = injectAccordionRootContext()
 
-const open = computed(() =>
-  rootContext.isSingle.value
-    ? props.value === rootContext.modelValue.value
-    : Array.isArray(rootContext.modelValue.value)
-      && rootContext.modelValue.value.includes(props.value),
-)
-
-const disabled = computed(() => {
-  return (rootContext.disabled.value || props.disabled)
+const surface = getAccordionItemSurface(rootContext, () => props.value, {
+  disabled: () => props.disabled,
+  unmountOnHide: () => props.unmountOnHide,
 })
+const { open, disabled } = surface
 
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
-
-const dataState = computed(() => disclosureState(open.value))
+const dataState = computed<DisclosureState>(() => surface.item.state.value.state)
 
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
@@ -83,39 +78,13 @@ provideAccordionItemContext({
   currentElement,
   value: computed(() => props.value),
 })
-
-function handleArrowKey(e: KeyboardEvent) {
-  const target = e.target as HTMLElement
-  const allCollectionItems: HTMLElement[] = Array.from(rootContext.parentElement.value?.querySelectorAll('[data-reka-collection-item]') ?? [])
-
-  const collectionItemIndex = allCollectionItems.findIndex(item => item === target)
-  if (collectionItemIndex === -1)
-    return null
-
-  useArrowNavigation(
-    e,
-    target,
-    rootContext.parentElement.value!,
-    {
-      arrowKeyOptions: rootContext.orientation,
-      dir: rootContext.direction.value,
-      focus: true,
-    },
-  )
-}
 </script>
 
 <template>
   <CollapsibleRoot
-    :data-orientation="rootContext.orientation"
-    :data-disabled="dataDisabled"
-    :data-state="dataState"
-    :disabled="disabled"
-    :open="open"
     :as="props.as"
     :as-child="props.asChild"
-    :unmount-on-hide="props.unmountOnHide ?? rootContext.unmountOnHide.value"
-    @keydown.up.down.left.right.home.end="handleArrowKey"
+    v-bind="surface.item.attrs.value"
   >
     <slot :open="open" />
   </CollapsibleRoot>

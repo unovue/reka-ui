@@ -1,7 +1,8 @@
 # Headless Composable Migration Recipe (`useX()`)
 
 > Status: **validated on Switch (form-control archetype) + Tabs (collection /
-> per-item / roving-focus archetype) + Menu (overlay archetype).** The pilots have
+> per-item / roving-focus archetype) + Accordion (disclosure archetype) + Menu
+> (overlay archetype).** The pilots have
 > shipped; the recipe is ready to batch-apply to the tiers below, still one family
 > per PR with its own characterization gate. Updated for the accepted foundation
 > decisions of #2823 (`data-state` axes), #2828 (`beforeUpdate` + details) and the
@@ -171,6 +172,44 @@ computed from `(context, itemValue)`. What converting Tabs settled:
   callable outside `setup()` (Tabs is computed-only — no watchers/lifecycle in
   the composable). Never call `useId` inside the composable.
 
+### Disclosure refinement (validated on Accordion)
+
+Accordion confirms the collection contract but adds a nested disclosure wrapper and
+one stateful factory boundary:
+
+- **The root is state/context-only; parts start at the item.** `AccordionRoot`
+  renders no Accordion-specific attrs, so `useAccordion()` returns model state,
+  `changeModelValue`, the frozen-shape root context, and `getItemSurface(value)`.
+  There is no empty root `PartSurface` merely to satisfy a shape.
+- **The item surface is a once-per-item factory.** `getAccordionItemSurface()` owns
+  the item's `open`/`disabled` computeds plus the root-element-backed arrow-key
+  handler. It returns the item/header/trigger/content surfaces for standalone use.
+  The descendant SFCs inject the existing item context and call the same internal
+  header/trigger/content builders, so aria/handlers/state do not fork into an SFC-
+  only implementation.
+- **Component wrappers stay wrappers, but can consume surfaces.** `AccordionItem`,
+  `AccordionTrigger`, and `AccordionContent` keep `CollapsibleRoot`/
+  `CollapsibleTrigger`/`CollapsibleContent`; their surfaces carry the wrapper inputs
+  (`open`, `disabled`, `unmountOnHide`) and Accordion attrs/handlers. Collapsible's
+  Presence, measurement, animation suppression, and `beforematch` listener remain
+  inside Collapsible.
+- **Functional selectors still live in `props`.** The trigger's
+  `data-reka-collection-item` is queried by arrow navigation, so it is the same
+  functional-data exemption established by Menu, not semantic state.
+- **Per-trigger SSR ids stay in the Trigger shell.** Existing Accordion ids are
+  allocation-order-based rather than `(baseId, value)`-derived. `AccordionTrigger`
+  therefore keeps `useId` and writes the id into the existing item context before
+  building trigger/content surfaces. Standalone `getItemSurface` calls derive a
+  reactive trigger id from `(baseId, value)`, with a unique per-call counter
+  default. SSR consumers must supply a stable `baseId`; callers can still override
+  `triggerId` explicitly.
+- **Model changes share the foundation.** `useAccordion()` owns single/multiple
+  state through `useControllableState`; trigger presses and content-found events
+  carry `AccordionChangeReason` and the native event through cancellable
+  `beforeUpdate:modelValue` and `update:modelValue`. Each part uses
+  `createPartSurface` and `DisclosureState` / `disclosureState(open)`, and shells
+  bind `attrs.value`. Surface builders stay internal.
+
 ## Overlay families (validated on Menu)
 
 Overlays (Menu/DropdownMenu, Dialog, Popover, Select, Combobox) differ again: the
@@ -238,7 +277,7 @@ core Menu parts settled the overlay contract:
   (`ComboboxRoot` reads `ListboxRoot`'s exposed methods) require the dependency
   converted first: **Listbox → Combobox → Select**.
 - **Tiers:** (1) form/toggle: Checkbox, RadioGroup, ToggleGroup, Toggle; (2)
-  collection/disclosure: Tabs ✓(gate), Accordion, Collapsible; (3) delegation
+  collection/disclosure: Tabs ✓(gate), Accordion ✓, Collapsible; (3) delegation
   chains: Listbox → Combobox → Select; (4) overlays — Menu ✓(contract), rest joint
   with #2724; (5) date/calendar family last (heavy generics; `useDateField` is
   already composable-shaped — the house prior art for this whole effort).
