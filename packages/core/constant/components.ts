@@ -169,6 +169,8 @@ export const components = {
     'DatePickerClose',
     'DatePickerTrigger',
     'DatePickerContent',
+    'DatePickerView',
+    'DatePickerViewTrigger',
   ] as const,
 
   dateRangePicker: [
@@ -192,6 +194,8 @@ export const components = {
     'DateRangePickerClose',
     'DateRangePickerTrigger',
     'DateRangePickerContent',
+    'DateRangePickerView',
+    'DateRangePickerViewTrigger',
   ] as const,
 
   dateRangeField: [

@@ -27,3 +27,5 @@ export { default as DateRangePickerNext, type DateRangePickerNextProps } from '.
 export { default as DateRangePickerPrev, type DateRangePickerPrevProps } from './DateRangePickerPrev.vue'
 export { default as DateRangePickerRoot, type DateRangePickerRootEmits, type DateRangePickerRootProps, injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 export { default as DateRangePickerTrigger, type DateRangePickerTriggerProps } from './DateRangePickerTrigger.vue'
+export { default as DateRangePickerView, type DateRangePickerViewProps } from './DateRangePickerView.vue'
+export { default as DateRangePickerViewTrigger, type DateRangePickerViewTriggerProps } from './DateRangePickerViewTrigger.vue'

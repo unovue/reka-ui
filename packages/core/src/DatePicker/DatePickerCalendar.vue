@@ -12,7 +12,7 @@ const rootContext = injectDatePickerRootContext()
 
 <template>
   <CalendarRoot
-    v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks }"
+    v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"
     v-bind="{
       isDateDisabled: rootContext.isDateDisabled,
       isDateUnavailable: rootContext.isDateUnavailable,
@@ -28,9 +28,13 @@ const rootContext = injectDatePickerRootContext()
       readonly: rootContext.readonly.value,
       preventDeselect: rootContext.preventDeselect.value,
       dir: rootContext.dir.value,
+      maxView: rootContext.maxView.value,
+      yearsPerPage: rootContext.yearsPerPage.value,
+      columns: rootContext.columns.value,
     }"
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
+    :view="rootContext.view.value"
     :multiple="false"
     @update:model-value="(value: CalendarModelValue) => {
       // `multiple` is pinned to false above, so the model is never an array.
@@ -42,6 +46,7 @@ const rootContext = injectDatePickerRootContext()
       if (isEqualDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
+    @update:view="(next) => rootContext.onViewChange(next)"
   >
     <slot
       :date="date"
@@ -50,6 +55,7 @@ const rootContext = injectDatePickerRootContext()
       :week-starts-on="weekStartsOn"
       :locale="locale"
       :fixed-weeks="fixedWeeks"
+      :view="view"
     />
   </CalendarRoot>
 </template>

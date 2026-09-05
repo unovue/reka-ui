@@ -112,10 +112,10 @@ Verify: `vitest run src/date src/shared/date src/Calendar src/RangeCalendar src/
 
 **Files:** `DatePickerRoot.vue`, `DatePickerCalendar.vue`, `DatePickerCell.vue`, `DatePickerCellTrigger.vue`, `DatePickerGrid.vue`; new `DatePickerView.vue`, `DatePickerViewTrigger.vue`; `DatePicker/index.ts`; the `DateRangePicker` mirrors; stories, tests.
 
-- [ ] **4.1** Root: pass `view` / `defaultView` / `granularity` / `maxView` / `yearsPerPage` / `columns` through; re-emit `update:view`; `closeOnSelect` only on a commit reason (D13). When this lands after the roadmap branch's `DatePickerRoot` conversion to `useControllableState` (`open` with details), rebase on it; otherwise convert `open` here per the recipe so the family is done once.
-- [ ] **4.2** `DatePickerCalendar` slot exposes `view`; add `DatePickerView` / `DatePickerViewTrigger` pass-throughs; `DatePickerCell` / `DatePickerCellTrigger` / `DatePickerGrid` forward the renamed props.
-- [ ] **4.3** Story `DatePickerViews` (drill-down inside the popover, `closeOnSelect`); tests for "drill does not close, commit does".
-- [ ] **4.4** Commit: `feat(DatePicker): expose calendar views and granularity` (+ `DateRangePicker`).
+- [x] **4.1** Roots pass `view` / `defaultView` / `maxView` / `yearsPerPage` / `columns` (and, on the range picker, `maximumLength`) through and re-emit `update:view`. **`granularity` is deliberately not exposed on the pickers**: the name is already taken by the field's time granularity (`day | hour | minute | second`), and a field always edits full dates, so the picker's calendar commits days and offers the drill-down views only; month or year pickers use `Calendar` / `RangeCalendar` directly (D13 amended). `closeOnSelect` already fires only on a model change, i.e. a commit, never a drill. The roots keep `useVModel` for now; the `open` conversion to `useControllableState` lands with the roadmap branch.
+- [x] **4.2** `DatePickerCalendar` / `DateRangePickerCalendar` slots expose `view`; new `DatePickerView` / `DatePickerViewTrigger` / `DateRangePickerView` / `DateRangePickerViewTrigger` pass-throughs, exported and registered; `Cell` / `CellTrigger` / `Grid` pass-throughs forward the renamed props through their extended prop interfaces.
+- [x] **4.3** Harness `story/_DatePickerViews.vue` and `DatePickerViews.test.ts`: drilling through the views keeps the popover open and the model untouched, committing a day closes it with `closeOnSelect`; controlled `view` and `maxView`.
+- [x] **4.4** Commit: `feat(DatePicker): expose calendar views` (+ `DateRangePicker`).
 
 ---
 

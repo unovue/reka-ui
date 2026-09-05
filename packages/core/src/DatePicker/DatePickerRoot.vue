@@ -3,7 +3,7 @@ import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootEmits, PopoverRootProps } from '..'
-import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRefs, watch } from 'vue'
@@ -43,9 +43,20 @@ type DatePickerRootContext = {
   dir: Ref<Direction>
   step: Ref<DateStep | undefined>
   closeOnSelect: Ref<boolean>
+  /** The calendar view (`day` | `month` | `year`); `undefined` while uncontrolled and untouched. */
+  view: Ref<CalendarUnit | undefined>
+  maxView: Ref<CalendarUnit>
+  yearsPerPage: Ref<number>
+  columns: Ref<number>
+  onViewChange: (view: CalendarUnit) => void
 }
 
-export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
+/**
+ * The calendar inside a DatePicker always commits days (the field edits full
+ * dates), so the calendar's `granularity` is not exposed here; the drill-down
+ * views are.
+ */
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'view' | 'defaultView' | 'maxView' | 'yearsPerPage' | 'columns'> & {
   /** Whether or not to close the popover on date select */
   closeOnSelect?: boolean
 }
@@ -55,6 +66,8 @@ export type DatePickerRootEmits = PopoverRootEmits & {
   'update:modelValue': [date: DateValue | undefined]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
+  /** Event handler called whenever the calendar view changes */
+  'update:view': [view: CalendarUnit]
 }
 
 export const [injectDatePickerRootContext, provideDatePickerRootContext]
@@ -83,10 +96,18 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
   closeOnSelect: false,
+  view: undefined,
+  defaultView: undefined,
+  maxView: 'year',
+  yearsPerPage: 12,
+  columns: 4,
 })
 const emits = defineEmits<DatePickerRootEmits>()
 const {
   locale: propLocale,
+  maxView,
+  yearsPerPage,
+  columns,
   disabled,
   readonly,
   pagedNavigation,
@@ -137,6 +158,11 @@ const open = useVModel(props, 'open', emits, {
   defaultValue: defaultOpen.value,
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
+
+const view = useVModel(props, 'view', emits, {
+  defaultValue: props.defaultView,
+  passive: (props.view === undefined) as false,
+}) as Ref<CalendarUnit | undefined>
 
 const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()
 
@@ -208,6 +234,13 @@ provideDatePickerRootContext({
     placeholder.value = date.copy()
   },
   closeOnSelect,
+  view,
+  maxView,
+  yearsPerPage,
+  columns,
+  onViewChange(next: CalendarUnit) {
+    view.value = next
+  },
 })
 </script>
 

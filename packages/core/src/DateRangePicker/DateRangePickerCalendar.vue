@@ -10,7 +10,7 @@ const rootContext = injectDateRangePickerRootContext()
 
 <template>
   <RangeCalendarRoot
-    v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks }"
+    v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"
     v-bind="{
       allowNonContiguousRanges: rootContext.allowNonContiguousRanges.value,
       isDateDisabled: rootContext.isDateDisabled,
@@ -30,9 +30,14 @@ const rootContext = injectDateRangePickerRootContext()
       dir: rootContext.dir.value,
       fixedDate: rootContext.fixedDate.value,
       maximumDays: rootContext.maximumDays?.value,
+      maximumLength: rootContext.maximumLength?.value,
+      maxView: rootContext.maxView.value,
+      yearsPerPage: rootContext.yearsPerPage.value,
+      columns: rootContext.columns.value,
     }"
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
+    :view="rootContext.view.value"
     @update:start-value="(date) => {
       rootContext.onStartValueChange(date)
     }"
@@ -44,6 +49,7 @@ const rootContext = injectDateRangePickerRootContext()
       if (isEqualDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
+    @update:view="(next) => rootContext.onViewChange(next)"
   >
     <slot
       :date="date"
@@ -52,6 +58,7 @@ const rootContext = injectDateRangePickerRootContext()
       :week-starts-on="weekStartsOn"
       :locale="locale"
       :fixed-weeks="fixedWeeks"
+      :view="view"
     />
   </RangeCalendarRoot>
 </template>
