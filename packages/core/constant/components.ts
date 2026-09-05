@@ -61,6 +61,8 @@ export const components = {
     'CalendarGridBody',
     'CalendarGridRow',
     'CalendarCellTrigger',
+    'CalendarView',
+    'CalendarViewTrigger',
   ] as const,
 
   checkbox: [

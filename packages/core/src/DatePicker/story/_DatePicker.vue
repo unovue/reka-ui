@@ -69,6 +69,7 @@ const props = defineProps<{ datePickerProps?: DatePickerRootProps, emits?: { 'on
         <DatePickerGrid
           v-for="month in grid"
           :key="month.value.toString()"
+          :value="month.value"
           :data-testid="`grid-${month.value.month}`"
         >
           <DatePickerGridHead :data-testid="`grid-head-${month.value.month}`">
@@ -91,12 +92,11 @@ const props = defineProps<{ datePickerProps?: DatePickerRootProps, emits?: { 'on
               <DatePickerCell
                 v-for="(weekDate, d) in weekDates"
                 :key="weekDate.toString()"
-                :date="weekDate"
+                :value="weekDate"
                 :data-testid="`cell-${weekDate.month}-${d}`"
               >
                 <DatePickerCellTrigger
-                  :day="weekDate"
-                  :month="month.value"
+                  :value="weekDate"
                   :data-testid="`date-${weekDate.month}-${weekDate.day}`"
                 />
               </DatePickerCell>

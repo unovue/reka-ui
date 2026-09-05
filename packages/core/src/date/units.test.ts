@@ -109,6 +109,16 @@ describe('month adapter', () => {
     expect(month.rowLength({ ...layout, columns: 3 })).toBe(3)
   })
 
+  it('resolves a selection against a reference and detects the current unit', () => {
+    expect(month.resolve(new CalendarDate(2026, 3, 1), sep5).toString()).toBe('2026-03-05')
+    expect(month.resolve(new CalendarDate(2026, 2, 1), new CalendarDate(2026, 1, 31)).toString()).toBe('2026-02-28')
+    expect(month.resolve(new CalendarDate(2026, 3, 1)).toString()).toBe('2026-03-01')
+    expect(getUnitAdapter('year').resolve(new CalendarDate(2030, 1, 1), sep5).toString()).toBe('2030-09-05')
+    expect(getUnitAdapter('day').resolve(new CalendarDate(2030, 1, 1), sep5).toString()).toBe('2030-01-01')
+    expect(month.isCurrent(new CalendarDate(1900, 1, 1))).toBe(false)
+    expect(getUnitAdapter('year').isCurrent(new CalendarDate(1900, 1, 1))).toBe(false)
+  })
+
   it('compares, bounds and pages by month and year', () => {
     expect(month.isSame(sep5, new CalendarDate(2026, 9, 30))).toBe(true)
     expect(month.compare(new CalendarDate(2026, 9, 30), new CalendarDate(2026, 10, 1))).toBeLessThan(0)

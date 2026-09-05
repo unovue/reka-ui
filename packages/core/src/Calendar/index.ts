@@ -5,6 +5,7 @@ export {
 export {
   default as CalendarCellTrigger,
   type CalendarCellTriggerProps,
+  type CalendarCellTriggerSlot,
 } from './CalendarCellTrigger.vue'
 export {
   default as CalendarGrid,
@@ -45,7 +46,31 @@ export {
 } from './CalendarPrev.vue'
 export {
   default as CalendarRoot,
+  type CalendarRootContext,
   type CalendarRootEmits,
   type CalendarRootProps,
   injectCalendarRootContext,
 } from './CalendarRoot.vue'
+export {
+  default as CalendarView,
+  type CalendarViewProps,
+} from './CalendarView.vue'
+export {
+  default as CalendarViewTrigger,
+  type CalendarViewTriggerProps,
+  type CalendarViewTriggerSlot,
+} from './CalendarViewTrigger.vue'
+export {
+  type CalendarCellState,
+  type CalendarCellTriggerState,
+  type CalendarChangeReason,
+  type CalendarGridState,
+  type CalendarHeadingState,
+  type CalendarModelValue,
+  type CalendarNavState,
+  type CalendarRootState,
+  type CalendarViewTriggerState,
+  useCalendar,
+  type UseCalendarProps,
+  type UseCalendarReturn,
+} from './useCalendar'

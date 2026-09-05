@@ -1,394 +1,710 @@
-/*
-  * Adapted from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/builders/calendar/create.ts
-*/
+import type { DateValue } from '@internationalized/date'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { CalendarRootContext } from './CalendarRoot.vue'
+import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
+import type { Direction } from '@/shared/types'
+import { computed, nextTick, ref, toValue, watch } from 'vue'
+import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
+import { createPartSurface, useControllableState, useKbd } from '@/shared'
+import { getDefaultDate, useCalendarGrid } from '@/shared/date'
 
-import type { DateFields, DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
-import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { isEqualMonth, isSameDay, isSameMonth } from '@internationalized/date'
-import { computed, ref, watch } from 'vue'
-import { createMonths, getDaysInMonth, isAfter, isBefore, toDate } from '@/date'
-import { useDateFormatter } from '@/shared'
+/** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
+export type CalendarChangeReason
+  = | 'cell-press'
+    | 'cell-keydown'
+    | 'view-drill'
+    | 'view-trigger'
+    | 'page-navigation'
+    | 'focus-navigation'
 
-export type UseCalendarProps = {
-  locale: Ref<string>
-  placeholder: Ref<DateValue>
-  weekStartsOn: Ref<WeekStartsOn>
-  fixedWeeks: Ref<boolean>
-  numberOfMonths: Ref<number>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
-  disabled: Ref<boolean>
-  weekdayFormat: Ref<WeekDayFormat>
-  pagedNavigation: Ref<boolean>
-  isDateDisabled?: Matcher
-  isDateUnavailable?: Matcher
-  calendarLabel: Ref<string | undefined>
-  nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
-  prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
+export type CalendarModelValue = DateValue | DateValue[] | undefined
+
+export type CalendarRootState = { disabled: boolean, readonly: boolean, invalid: boolean, view: CalendarUnit }
+export type CalendarHeadingState = { disabled: boolean, view: CalendarUnit }
+export type CalendarViewTriggerState = { disabled: boolean, view: CalendarUnit }
+export type CalendarNavState = { disabled: boolean }
+export type CalendarGridState = { disabled: boolean, readonly: boolean, view: CalendarUnit }
+export type CalendarCellState = { disabled: boolean, view: CalendarUnit }
+export type CalendarCellTriggerState = {
+  selected: boolean
+  disabled: boolean
+  unavailable: boolean
+  today: boolean
+  outsideView: boolean
+  outsideVisibleView: boolean
+  focused: boolean
+  view: CalendarUnit
 }
 
-export type UseCalendarStateProps = {
-  isDateDisabled: Matcher
-  isDateUnavailable: Matcher
-  date: Ref<DateValue | DateValue[] | undefined>
+/** The cell trigger surface plus the formatted cell text (`5`, `Sep`, `2026`) for the default slot. */
+export interface CalendarCellTriggerSurface extends PartSurface<CalendarCellTriggerState> {
+  cellValue: ComputedRef<string>
 }
 
-export function useCalendarState(props: UseCalendarStateProps) {
-  function isDateSelected(dateObj: DateValue) {
-    if (Array.isArray(props.date.value))
-      return props.date.value.some(d => isSameDay(d, dateObj))
+export interface UseCalendarProps {
+  /** Controlled selected value. A getter resolving to `undefined` is uncontrolled. */
+  modelValue?: MaybeRefOrGetter<CalendarModelValue | null>
+  defaultValue?: CalendarModelValue
+  /** Controlled placeholder: the date that decides which page is shown. */
+  placeholder?: MaybeRefOrGetter<DateValue | undefined>
+  defaultPlaceholder?: DateValue
+  /** Controlled view. Clamped into `[granularity, maxView]`. */
+  view?: MaybeRefOrGetter<CalendarUnit | undefined>
+  /** @default granularity */
+  defaultView?: CalendarUnit
+  /** The unit a selection commits. @default 'day' */
+  granularity?: MaybeRefOrGetter<CalendarUnit | undefined>
+  /** The coarsest view the heading trigger can reach. @default 'year' */
+  maxView?: MaybeRefOrGetter<CalendarUnit | undefined>
+  multiple?: MaybeRefOrGetter<boolean | undefined>
+  preventDeselect?: MaybeRefOrGetter<boolean | undefined>
+  disabled?: MaybeRefOrGetter<boolean | undefined>
+  readonly?: MaybeRefOrGetter<boolean | undefined>
+  initialFocus?: MaybeRefOrGetter<boolean | undefined>
+  disableDaysOutsideCurrentView?: MaybeRefOrGetter<boolean | undefined>
+  locale: MaybeRefOrGetter<string>
+  dir?: MaybeRefOrGetter<Direction | undefined>
+  weekStartsOn: MaybeRefOrGetter<WeekStartsOn>
+  weekdayFormat?: MaybeRefOrGetter<WeekDayFormat | undefined>
+  fixedWeeks?: MaybeRefOrGetter<boolean | undefined>
+  numberOfMonths?: MaybeRefOrGetter<number | undefined>
+  pagedNavigation?: MaybeRefOrGetter<boolean | undefined>
+  yearsPerPage?: MaybeRefOrGetter<number | undefined>
+  columns?: MaybeRefOrGetter<number | undefined>
+  minValue?: MaybeRefOrGetter<DateValue | undefined>
+  maxValue?: MaybeRefOrGetter<DateValue | undefined>
+  isDateDisabled?: MaybeRefOrGetter<Matcher | undefined>
+  isDateUnavailable?: MaybeRefOrGetter<Matcher | undefined>
+  calendarLabel?: MaybeRefOrGetter<string | undefined>
+  nextPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
+  prevPage?: MaybeRefOrGetter<CalendarPageFunction | undefined>
+  /** Id of the (visually hidden) heading that labels the grids. The SFC passes `useId()`. */
+  headingId?: string
+  /** The root element, used for keyboard focus queries. The SFC passes its `currentElement`. */
+  parentElement?: Ref<HTMLElement | undefined>
+  /** Component `emit`; receives `beforeUpdate:` / `update:` for `modelValue`, `placeholder` and `view`. */
+  emit?: (event: any, ...args: any[]) => void
+  onBeforeUpdate?: (value: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>) => void
+  onUpdate?: (value: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>) => void
+  onUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<CalendarChangeReason>) => void
+  onUpdateView?: (value: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>) => void
+}
 
-    else if (!props.date.value)
+export interface UseCalendarReturn {
+  modelValue: ComputedRef<CalendarModelValue>
+  placeholder: ComputedRef<DateValue>
+  view: ComputedRef<CalendarUnit>
+  granularity: ComputedRef<CalendarUnit>
+  maxView: ComputedRef<CalendarUnit>
+  grid: Ref<CalendarGridData[]>
+  weekDays: ComputedRef<string[]>
+  headingValue: ComputedRef<string>
+  fullCalendarLabel: ComputedRef<string>
+  isInvalid: ComputedRef<boolean>
+  /** Select a cell: commits at the granularity, drills down above it. */
+  select: (value: DateValue, reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => void
+  setPlaceholder: (value: DateValue, reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => boolean
+  setView: (view: CalendarUnit, reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Switch to the next coarser view, up to `maxView`. */
+  drillUp: (reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => boolean
+  nextPage: (fn?: CalendarPageFunction) => void
+  prevPage: (fn?: CalendarPageFunction) => void
+  isNextButtonDisabled: (fn?: CalendarPageFunction) => boolean
+  isPrevButtonDisabled: (fn?: CalendarPageFunction) => boolean
+  lastChangeDetails: Readonly<Ref<ChangeEventDetails<CalendarChangeReason>>>
+  isControlled: ComputedRef<boolean>
+  root: PartSurface<CalendarRootState>
+  heading: PartSurface<CalendarHeadingState>
+  viewTrigger: PartSurface<CalendarViewTriggerState>
+  prev: PartSurface<CalendarNavState>
+  next: PartSurface<CalendarNavState>
+  getGridSurface: (page?: MaybeRefOrGetter<DateValue | undefined>) => PartSurface<CalendarGridState>
+  getCellSurface: (value: MaybeRefOrGetter<DateValue>, page?: MaybeRefOrGetter<DateValue | undefined>) => PartSurface<CalendarCellState>
+  getCellTriggerSurface: (value: MaybeRefOrGetter<DateValue>, page?: MaybeRefOrGetter<DateValue | undefined>, unit?: MaybeRefOrGetter<CalendarUnit | undefined>) => CalendarCellTriggerSurface
+  context: CalendarRootContext
+}
+
+/** Standalone `useCalendar()` calls without a `headingId` draw `reka-calendar-heading-<n>` from here (not SSR-stable — the SFC passes `useId()`). */
+let calendarCount = 0
+
+const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'PageUp', 'PageDown'])
+
+/** Disabled for the purpose of the root `data-invalid` / focus fallbacks: evaluated at the granularity, not the active view. */
+function isDisabledAtUnit(context: CalendarRootContext, adapter: CalendarUnitAdapter, date: DateValue) {
+  if (context.disabledMatcher.value?.(date, adapter.unit) || context.disabled.value)
+    return true
+  if (context.maxValue.value && isAfter(adapter.startOf(date), context.maxValue.value))
+    return true
+  if (context.minValue.value && isBefore(adapter.endOf(date), context.minValue.value))
+    return true
+  return false
+}
+
+/** The `CalendarHeading` surface: static text, `data-disabled`, `data-view`. */
+export function getCalendarHeadingSurface(context: CalendarRootContext): PartSurface<CalendarHeadingState> {
+  return createPartSurface<CalendarHeadingState>(
+    () => ({}),
+    () => ({ disabled: context.disabled.value, view: context.view.value }),
+  )
+}
+
+/** The `CalendarViewTrigger` surface: a button that drills up to the next coarser view. */
+export function getCalendarViewTriggerSurface(context: CalendarRootContext): PartSurface<CalendarViewTriggerState> {
+  const nextView = computed(() => {
+    const next = coarserUnit(context.view.value)
+    return next && !isCoarserUnit(next, context.maxView.value) ? next : undefined
+  })
+  const disabled = computed(() => context.disabled.value || !nextView.value)
+  return createPartSurface<CalendarViewTriggerState>(
+    () => ({
+      'aria-label': nextView.value ? `Switch to ${nextView.value} view` : undefined,
+      'aria-disabled': disabled.value || undefined,
+      'disabled': disabled.value,
+      'onClick': (event: MouseEvent) => {
+        if (disabled.value)
+          return
+        context.drillUp('view-trigger', event)
+      },
+    }),
+    () => ({ disabled: disabled.value, view: context.view.value }),
+  )
+}
+
+/** The `CalendarPrev` / `CalendarNext` surface. */
+export function getCalendarNavSurface(
+  context: CalendarRootContext,
+  direction: 'prev' | 'next',
+  fn?: MaybeRefOrGetter<CalendarPageFunction | undefined>,
+): PartSurface<CalendarNavState> {
+  const disabled = computed(() => context.disabled.value || (direction === 'next'
+    ? context.isNextButtonDisabled(toValue(fn))
+    : context.isPrevButtonDisabled(toValue(fn))))
+  return createPartSurface<CalendarNavState>(
+    () => ({
+      'aria-label': direction === 'next' ? 'Next page' : 'Previous page',
+      'aria-disabled': disabled.value || undefined,
+      'disabled': disabled.value,
+      'onClick': () => {
+        if (disabled.value)
+          return
+        if (direction === 'next')
+          context.nextPage(toValue(fn))
+        else
+          context.prevPage(toValue(fn))
+      },
+    }),
+    () => ({ disabled: disabled.value }),
+  )
+}
+
+/** The `CalendarGrid` surface: `role="application"` (#2502), labelled by the root heading. */
+export function getCalendarGridSurface(context: CalendarRootContext): PartSurface<CalendarGridState> {
+  return createPartSurface<CalendarGridState>(
+    () => ({
+      'tabindex': -1,
+      'role': 'application',
+      'aria-labelledby': context.headingId,
+      'aria-readonly': context.readonly.value || undefined,
+      'aria-disabled': context.disabled.value || undefined,
+    }),
+    () => ({ disabled: context.disabled.value, readonly: context.readonly.value, view: context.view.value }),
+  )
+}
+
+/** The `CalendarCell` (`role="gridcell"`) surface. */
+export function getCalendarCellSurface(
+  context: CalendarRootContext,
+  value: MaybeRefOrGetter<DateValue>,
+  page?: MaybeRefOrGetter<DateValue | undefined>,
+): PartSurface<CalendarCellState> {
+  const outsideView = computed(() => {
+    const p = toValue(page)
+    return p ? !context.adapter.value.isInPage(toValue(value), p) : false
+  })
+  const disabled = computed(() => context.isDateDisabled(toValue(value)) || (context.disableDaysOutsideCurrentView.value && outsideView.value))
+  return createPartSurface<CalendarCellState>(
+    () => ({
+      'role': 'gridcell',
+      'aria-selected': context.isDateSelected(toValue(value)) ? true : undefined,
+      'aria-disabled': disabled.value || context.isDateUnavailable(toValue(value)) || undefined,
+    }),
+    () => ({ disabled: disabled.value, view: context.view.value }),
+  )
+}
+
+/**
+ * The `CalendarCellTrigger` surface — the one keyboard/selection implementation
+ * for every view (D8). Derived purely from `(context, value, page, unit)`, so
+ * the SFC and a standalone `useCalendar()` consumer share it.
+ */
+export function getCalendarCellTriggerSurface(
+  context: CalendarRootContext,
+  value: MaybeRefOrGetter<DateValue>,
+  page?: MaybeRefOrGetter<DateValue | undefined>,
+  unit?: MaybeRefOrGetter<CalendarUnit | undefined>,
+): CalendarCellTriggerSurface {
+  const kbd = useKbd()
+  const cellUnit = computed(() => toValue(unit) ?? context.view.value)
+  const adapter = computed(() => getUnitAdapter(cellUnit.value))
+  const date = computed(() => toValue(value))
+
+  const cellValue = computed(() => {
+    // Read the locale so a locale change re-renders the cell text.
+    const locale = context.locale.value
+    return adapter.value.formatCell(context.formatter, date.value, locale)
+  })
+  const labelText = computed(() => {
+    void context.locale.value
+    return adapter.value.formatLabel(context.formatter, date.value)
+  })
+
+  const isOutsideView = computed(() => {
+    const p = toValue(page)
+    return p ? !adapter.value.isInPage(date.value, p) : false
+  })
+  const isOutsideVisibleView = computed(() => context.isOutsideVisibleView(date.value))
+  const isUnavailable = computed(() => context.isDateUnavailable(date.value))
+  const isDisabled = computed(() => context.isDateDisabled(date.value) || (context.disableDaysOutsideCurrentView.value && isOutsideView.value))
+  const isCurrent = computed(() => adapter.value.isCurrent(date.value))
+  const isSelected = computed(() => context.isDateSelected(date.value))
+
+  const isFocused = computed(() => {
+    if (isOutsideView.value || isDisabled.value)
       return false
+    if (!context.disabled.value && context.isPlaceholderFocusable.value && adapter.value.isSame(date.value, context.placeholder.value))
+      return true
+    if ((!context.hasSelectedDate.value || context.isSelectedDateDisabled.value) && !context.isPlaceholderFocusable.value)
+      return !!context.firstFocusableDate.value && adapter.value.isSame(date.value, context.firstFocusableDate.value)
+    return false
+  })
 
-    else
-      return isSameDay(props.date.value, dateObj)
+  function isWithinBounds(candidate: DateValue) {
+    if (context.minValue.value && adapter.value.endOf(candidate).compare(context.minValue.value) < 0)
+      return false
+    if (context.maxValue.value && adapter.value.startOf(candidate).compare(context.maxValue.value) > 0)
+      return false
+    return true
   }
 
-  const isInvalid = computed(
-    () => {
-      if (Array.isArray(props.date.value)) {
-        if (!props.date.value.length)
-          return false
-        for (const dateObj of props.date.value) {
-          if (props.isDateDisabled?.(dateObj))
-            return true
-          if (props.isDateUnavailable?.(dateObj))
-            return true
-        }
-      }
-      else {
-        if (!props.date.value)
-          return false
-        if (props.isDateDisabled?.(props.date.value))
-          return true
-        if (props.isDateUnavailable?.(props.date.value))
-          return true
-      }
-      return false
-    },
+  function queryCell(candidate: DateValue) {
+    return context.parentElement.value?.querySelector<HTMLElement>(`[data-value='${candidate.toString()}']:not([data-outside-view])`) ?? null
+  }
+
+  /** Flip one page in `direction`; `false` when the button is disabled. */
+  function flipPage(direction: 1 | -1) {
+    if (direction > 0) {
+      if (context.isNextButtonDisabled())
+        return false
+      context.nextPage()
+    }
+    else {
+      if (context.isPrevButtonDisabled())
+        return false
+      context.prevPage()
+    }
+    return true
+  }
+
+  function focusCell(candidate: DateValue, el: HTMLElement, event?: Event) {
+    context.onPlaceholderChange(candidate, 'focus-navigation', event)
+    el.focus()
+  }
+
+  /** Move focus by `add` units, flipping pages and skipping disabled cells (#2781: depth-guarded). */
+  function shiftFocus(from: DateValue, add: number, event?: Event, depth = 0) {
+    if (depth > 48)
+      return
+    const candidate = adapter.value.add(from, add)
+    if (!isWithinBounds(candidate))
+      return
+
+    const el = queryCell(candidate)
+    if (!el) {
+      // Not rendered: the target is on another page.
+      if (!flipPage(add > 0 ? 1 : -1))
+        return
+      nextTick(() => shiftFocus(from, add, event, depth + 1))
+      return
+    }
+    if (el.hasAttribute('data-disabled')) {
+      shiftFocus(candidate, add, event, depth + 1)
+      return
+    }
+    focusCell(candidate, el, event)
+  }
+
+  /** PageUp / PageDown: the same cell one page away. */
+  function shiftFocusPage(direction: 1 | -1, event?: Event) {
+    const duration = adapter.value.pageDuration(context.layout.value)
+    const candidate = direction > 0 ? date.value.add(duration) : date.value.subtract(duration)
+    if (!isWithinBounds(candidate))
+      return
+    if (!flipPage(direction))
+      return
+    nextTick(() => {
+      const el = queryCell(candidate)
+      if (el && !el.hasAttribute('data-disabled'))
+        focusCell(candidate, el, event)
+    })
+  }
+
+  function onKeydown(event: KeyboardEvent) {
+    if (!CELL_TRIGGER_KEYS.has(event.code))
+      return
+    if (isDisabled.value)
+      return
+    // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
+    // let them bubble so parent listeners can react (e.g. submit a form).
+    if ((event.code === kbd.ENTER || event.code === kbd.SPACE_CODE) && (event.ctrlKey || event.metaKey || event.altKey))
+      return
+    event.preventDefault()
+    event.stopPropagation()
+
+    const sign = context.dir.value === 'rtl' ? -1 : 1
+    const stride = context.rowLength.value
+    switch (event.code) {
+      case kbd.ARROW_RIGHT:
+        shiftFocus(date.value, sign, event)
+        break
+      case kbd.ARROW_LEFT:
+        shiftFocus(date.value, -sign, event)
+        break
+      case kbd.ARROW_UP:
+        shiftFocus(date.value, -stride, event)
+        break
+      case kbd.ARROW_DOWN:
+        shiftFocus(date.value, stride, event)
+        break
+      case kbd.PAGE_UP:
+        shiftFocusPage(-1, event)
+        break
+      case kbd.PAGE_DOWN:
+        shiftFocusPage(1, event)
+        break
+      case kbd.ENTER:
+      case kbd.SPACE_CODE:
+        context.onDateChange(date.value, 'cell-keydown', event)
+    }
+  }
+
+  const surface = createPartSurface<CalendarCellTriggerState>(
+    () => ({
+      'role': 'button',
+      'aria-label': labelText.value,
+      'aria-disabled': isDisabled.value || isUnavailable.value ? true : undefined,
+      // Selectors (not semantic state): `data-value` drives keyboard focus queries,
+      // the `data-reka-*` marker is what `handleCalendarInitialFocus` looks for.
+      'data-value': date.value.toString(),
+      'data-reka-calendar-cell-trigger': '',
+      'tabindex': isFocused.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1,
+      'onClick': (event: MouseEvent) => {
+        if (isDisabled.value)
+          return
+        context.onDateChange(date.value, 'cell-press', event)
+      },
+      'onKeydown': onKeydown,
+    }),
+    () => ({
+      selected: isSelected.value,
+      disabled: isDisabled.value,
+      unavailable: isUnavailable.value,
+      today: isCurrent.value,
+      outsideView: isOutsideView.value,
+      outsideVisibleView: isOutsideVisibleView.value,
+      focused: isFocused.value,
+      view: cellUnit.value,
+    }),
   )
 
-  const hasSelectedDate = computed(() => {
-    return Array.isArray(props.date.value) ? props.date.value.length > 0 : !!props.date.value
+  return { ...surface, cellValue }
+}
+
+/**
+ * Headless Calendar logic: the model, placeholder and view state, selection
+ * (commit at the granularity, drill above it), and the per-part surfaces.
+ * `CalendarRoot.vue` composes this; standalone consumers can drive a calendar
+ * from JS and bind the surfaces themselves.
+ *
+ * @experimental Signatures may change in 3.x minors.
+ * @lifecycle setup — installs watchers (model → placeholder sync, grid rebuilds).
+ */
+export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
+  const locale = computed(() => toValue(props.locale))
+  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const disabled = computed(() => toValue(props.disabled) ?? false)
+  const readonly = computed(() => toValue(props.readonly) ?? false)
+  const initialFocus = computed(() => toValue(props.initialFocus) ?? false)
+  const multiple = computed(() => toValue(props.multiple) ?? false)
+  const preventDeselect = computed(() => toValue(props.preventDeselect) ?? false)
+  const disableDaysOutsideCurrentView = computed(() => toValue(props.disableDaysOutsideCurrentView) ?? false)
+  const minValue = computed(() => toValue(props.minValue))
+  const maxValue = computed(() => toValue(props.maxValue))
+  const granularity = computed<CalendarUnit>(() => toValue(props.granularity) ?? 'day')
+  const maxView = computed<CalendarUnit>(() => {
+    const requested = toValue(props.maxView) ?? 'year'
+    return isCoarserUnit(granularity.value, requested) ? granularity.value : requested
   })
+  const granularityAdapter = computed(() => getUnitAdapter(granularity.value))
+  const disabledMatcher = computed(() => toValue(props.isDateDisabled))
+  const headingId = props.headingId ?? `reka-calendar-heading-${++calendarCount}`
+  const parentElement = props.parentElement ?? ref<HTMLElement>()
+
+  const { state: modelValue, setState: setModelValue, lastChangeDetails, isControlled } = useControllableState<CalendarModelValue, CalendarChangeReason>({
+    prop: () => toValue(props.modelValue) ?? undefined,
+    defaultValue: () => props.defaultValue,
+    name: 'modelValue',
+    emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdate,
+    onUpdate: props.onUpdate,
+  })
+
+  const { state: placeholder, setState: setPlaceholderState } = useControllableState<DateValue, CalendarChangeReason>({
+    prop: () => toValue(props.placeholder),
+    defaultValue: () => props.defaultPlaceholder?.copy() ?? getDefaultDate({
+      defaultPlaceholder: toValue(props.placeholder),
+      defaultValue: modelValue.value,
+      locale: locale.value,
+    }).copy(),
+    name: 'placeholder',
+    emit: props.emit,
+    onUpdate: props.onUpdatePlaceholder,
+    isEqual: (a, b) => a.compare(b) === 0,
+  })
+
+  const { state: rawView, setState: setViewState } = useControllableState<CalendarUnit, CalendarChangeReason>({
+    prop: () => toValue(props.view),
+    defaultValue: () => props.defaultView ?? granularity.value,
+    name: 'view',
+    emit: props.emit,
+    onUpdate: props.onUpdateView,
+  })
+  const view = computed(() => clampCalendarView(rawView.value, granularity.value, maxView.value))
+
+  function setPlaceholder(value: DateValue, reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    return setPlaceholderState(value.copy(), reason, event)
+  }
+
+  function setView(next: CalendarUnit, reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    return setViewState(clampCalendarView(next, granularity.value, maxView.value), reason, event)
+  }
+
+  function drillUp(reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    const next = coarserUnit(view.value)
+    if (!next || isCoarserUnit(next, maxView.value))
+      return false
+    return setView(next, reason, event)
+  }
+
+  const gridApi = useCalendarGrid({
+    unit: view,
+    placeholder,
+    setPlaceholder: value => setPlaceholder(value, 'page-navigation'),
+    locale,
+    weekStartsOn: () => toValue(props.weekStartsOn),
+    weekdayFormat: () => toValue(props.weekdayFormat),
+    fixedWeeks: () => toValue(props.fixedWeeks),
+    numberOfMonths: () => toValue(props.numberOfMonths),
+    pagedNavigation: () => toValue(props.pagedNavigation),
+    yearsPerPage: () => toValue(props.yearsPerPage),
+    columns: () => toValue(props.columns),
+    minValue,
+    maxValue,
+    disabled,
+    isDateDisabled: disabledMatcher,
+    isDateUnavailable: () => toValue(props.isDateUnavailable),
+    calendarLabel: () => toValue(props.calendarLabel),
+    nextPage: () => toValue(props.nextPage),
+    prevPage: () => toValue(props.prevPage),
+  })
+
+  // ---- selection state, evaluated at the granularity ----
+
+  const isDateSelected: Matcher = (date) => {
+    const a = granularityAdapter.value
+    const current = modelValue.value
+    if (Array.isArray(current))
+      return current.some(d => a.isSame(d, date))
+    if (!current)
+      return false
+    return a.isSame(current, date)
+  }
+
+  const hasSelectedDate = computed(() => Array.isArray(modelValue.value) ? modelValue.value.length > 0 : !!modelValue.value)
 
   const isSelectedDateDisabled = computed(() => {
-    if (Array.isArray(props.date.value)) {
-      if (!props.date.value.length)
-        return false
-      return props.date.value.some(dateObj => props.isDateDisabled?.(dateObj))
-    }
-    if (!props.date.value)
+    const current = modelValue.value
+    if (Array.isArray(current))
+      return current.length > 0 && current.some(d => isDisabledAtUnit(context, granularityAdapter.value, d))
+    if (!current)
       return false
-    return !!props.isDateDisabled?.(props.date.value)
+    return isDisabledAtUnit(context, granularityAdapter.value, current)
   })
 
-  return {
-    isDateSelected,
+  const isInvalid = computed(() => {
+    const current = modelValue.value
+    const unavailable = toValue(props.isDateUnavailable)
+    const check = (d: DateValue) => isDisabledAtUnit(context, granularityAdapter.value, d) || !!unavailable?.(d, granularity.value)
+    if (Array.isArray(current))
+      return current.length > 0 && current.some(check)
+    if (!current)
+      return false
+    return check(current)
+  })
+
+  // An external model change moves the page to the (last) selected value.
+  watch(modelValue, (current) => {
+    const a = granularityAdapter.value
+    if (Array.isArray(current) && current.length) {
+      const last = current.at(-1)
+      if (last && !a.isSame(placeholder.value, last))
+        setPlaceholder(last)
+    }
+    else if (!Array.isArray(current) && current && !a.isSame(placeholder.value, current)) {
+      setPlaceholder(current)
+    }
+  })
+
+  function select(value: DateValue, reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    if (readonly.value)
+      return
+    if (gridApi.isDateDisabled(value) || gridApi.isDateUnavailable(value))
+      return
+
+    // Above the granularity a cell is navigation, not selection (D2).
+    if (isCoarserUnit(view.value, granularity.value)) {
+      const finer = finerUnit(view.value)!
+      setPlaceholder(gridApi.adapter.value.resolve(value, placeholder.value), 'view-drill', event)
+      setView(finer, 'view-drill', event)
+      return
+    }
+
+    const a = granularityAdapter.value
+    const current = modelValue.value
+
+    if (!multiple.value) {
+      if (!current || Array.isArray(current)) {
+        setModelValue(a.resolve(value, placeholder.value), reason, event)
+        return
+      }
+      if (!preventDeselect.value && a.isSame(current, value)) {
+        setPlaceholder(a.resolve(value, current), reason, event)
+        setModelValue(undefined, reason, event)
+      }
+      else {
+        setModelValue(a.resolve(value, current), reason, event)
+      }
+      return
+    }
+
+    if (!current) {
+      setModelValue([a.resolve(value, placeholder.value)], reason, event)
+      return
+    }
+    const list = Array.isArray(current) ? current : [current]
+    const index = list.findIndex(d => a.isSame(d, value))
+    if (index === -1) {
+      setModelValue([...list, a.resolve(value, placeholder.value)], reason, event)
+    }
+    else if (!preventDeselect.value) {
+      const next = list.filter(d => !a.isSame(d, value))
+      if (!next.length) {
+        setPlaceholder(a.resolve(value, list[index]), reason, event)
+        setModelValue(undefined, reason, event)
+        return
+      }
+      setModelValue(next.map(d => d.copy()), reason, event)
+    }
+  }
+
+  const context: CalendarRootContext = {
+    locale,
+    dir,
+    disabled,
+    readonly,
+    initialFocus,
+    multiple,
+    preventDeselect,
+    disableDaysOutsideCurrentView,
+    minValue,
+    maxValue,
+    disabledMatcher,
+    modelValue,
+    placeholder,
+    view,
+    granularity,
+    maxView,
+    headingId,
+    parentElement,
+    grid: gridApi.grid,
+    weekDays: gridApi.weekdays,
+    weekStartsOn: computed(() => toValue(props.weekStartsOn)),
+    weekdayFormat: computed(() => toValue(props.weekdayFormat) ?? 'narrow'),
+    fixedWeeks: computed(() => toValue(props.fixedWeeks) ?? false),
+    numberOfMonths: computed(() => toValue(props.numberOfMonths) ?? 1),
+    pagedNavigation: computed(() => toValue(props.pagedNavigation) ?? false),
+    layout: gridApi.layout,
+    headingValue: gridApi.headingValue,
+    fullCalendarLabel: gridApi.fullCalendarLabel,
     isInvalid,
     hasSelectedDate,
     isSelectedDateDisabled,
-  }
-}
-
-function handleNextDisabled(lastPeriodInView: DateValue, nextPageFunc: (date: DateValue) => DateValue): DateValue {
-  const firstPeriodOfNextPage = nextPageFunc(lastPeriodInView)
-  const diff = firstPeriodOfNextPage.compare(lastPeriodInView)
-  const duration: DateFields = {}
-  if (diff >= 7)
-    duration.day = 1
-  if (diff >= getDaysInMonth(lastPeriodInView))
-    duration.month = 1
-  return firstPeriodOfNextPage.set({ ...duration })
-}
-function handlePrevDisabled(firstPeriodInView: DateValue, prevPageFunc: (date: DateValue) => DateValue): DateValue {
-  const lastPeriodOfPrevPage = prevPageFunc(firstPeriodInView)
-  const diff = firstPeriodInView.compare(lastPeriodOfPrevPage)
-  const duration: DateFields = {}
-  if (diff >= 7)
-    duration.day = 35
-  if (diff >= getDaysInMonth(firstPeriodInView))
-    duration.month = 13
-  return lastPeriodOfPrevPage.set({ ...duration })
-}
-function handleNextPage(date: DateValue, nextPageFunc: (date: DateValue) => DateValue): DateValue {
-  return nextPageFunc(date)
-}
-
-function handlePrevPage(date: DateValue, prevPageFunc: (date: DateValue) => DateValue): DateValue {
-  return prevPageFunc(date)
-}
-
-export function useCalendar(props: UseCalendarProps) {
-  const formatter = useDateFormatter(props.locale.value)
-
-  const headingFormatOptions = computed(() => {
-    const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendar.identifier,
-    }
-
-    if (props.placeholder.value.calendar.identifier === 'gregory' && props.placeholder.value.era === 'BC')
-      options.era = 'short'
-
-    return options
-  })
-
-  const grid = ref<Grid<DateValue>[]>(createMonths({
-    dateObj: props.placeholder.value,
-    weekStartsOn: props.weekStartsOn.value,
-    locale: props.locale.value,
-    fixedWeeks: props.fixedWeeks.value,
-    numberOfMonths: props.numberOfMonths.value,
-  })) as Ref<Grid<DateValue>[]>
-
-  const visibleView = computed(() => {
-    return grid.value.map(month => month.value)
-  })
-
-  function isOutsideVisibleView(date: DateValue) {
-    return !visibleView.value.some(month => isEqualMonth(date, month))
+    isPlaceholderFocusable: gridApi.isPlaceholderFocusable,
+    firstFocusableDate: gridApi.firstFocusableDate,
+    rowLength: gridApi.rowLength,
+    formatter: gridApi.formatter,
+    adapter: gridApi.adapter,
+    isDateDisabled: gridApi.isDateDisabled,
+    isDateUnavailable: gridApi.isDateUnavailable,
+    isDateSelected,
+    isOutsideVisibleView: gridApi.isOutsideVisibleView,
+    prevPage: gridApi.prevPage,
+    nextPage: gridApi.nextPage,
+    isPrevButtonDisabled: gridApi.isPrevButtonDisabled,
+    isNextButtonDisabled: gridApi.isNextButtonDisabled,
+    onDateChange: select,
+    onPlaceholderChange: setPlaceholder,
+    setView,
+    drillUp,
   }
 
-  const isNextButtonDisabled = (nextPageFunc?: (date: DateValue) => DateValue) => {
-    if (!props.maxValue.value || !grid.value.length)
-      return false
-    if (props.disabled.value)
-      return true
-
-    const lastPeriodInView = grid.value.at(-1)!.value
-
-    if (!nextPageFunc && !props.nextPage.value) {
-      const firstPeriodOfNextPage = lastPeriodInView.add({ months: 1 }).set({ day: 1 })
-      return isAfter(firstPeriodOfNextPage, props.maxValue.value)
-    }
-
-    const firstPeriodOfNextPage = handleNextDisabled(lastPeriodInView, nextPageFunc || props.nextPage.value!)
-    return isAfter(firstPeriodOfNextPage, props.maxValue.value)
-  }
-
-  const isPrevButtonDisabled = (prevPageFunc?: (date: DateValue) => DateValue) => {
-    if (!props.minValue.value || !grid.value.length)
-      return false
-    if (props.disabled.value)
-      return true
-    const firstPeriodInView = grid.value[0].value
-
-    if (!prevPageFunc && !props.prevPage.value) {
-      const lastPeriodOfPrevPage = firstPeriodInView.subtract({ months: 1 }).set({ day: 35 })
-      return isBefore(lastPeriodOfPrevPage, props.minValue.value)
-    }
-
-    const lastPeriodOfPrevPage = handlePrevDisabled(firstPeriodInView, prevPageFunc || props.prevPage.value!)
-    return isBefore(lastPeriodOfPrevPage, props.minValue.value)
-  }
-
-  function isDateDisabled(dateObj: DateValue) {
-    if (props.isDateDisabled?.(dateObj) || props.disabled.value)
-      return true
-    if (props.maxValue.value && isAfter(dateObj, props.maxValue.value))
-      return true
-    if (props.minValue.value && isBefore(dateObj, props.minValue.value))
-      return true
-    return false
-  }
-
-  const isDateUnavailable = (date: DateValue) => {
-    if (props.isDateUnavailable?.(date))
-      return true
-    return false
-  }
-
-  const weekdays = computed(() => {
-    if (!grid.value.length)
-      return []
-    return grid.value[0].rows[0].map((date) => {
-      return formatter.dayOfWeek(toDate(date), props.weekdayFormat.value)
-    })
-  })
-
-  const nextPage = (nextPageFunc?: (date: DateValue) => DateValue) => {
-    const firstDate = grid.value[0].value
-
-    if (!nextPageFunc && !props.nextPage.value) {
-      const newDate = firstDate.add({ months: props.pagedNavigation.value ? props.numberOfMonths.value : 1 })
-
-      const newGrid = createMonths({
-        dateObj: newDate,
-        weekStartsOn: props.weekStartsOn.value,
-        locale: props.locale.value,
-        fixedWeeks: props.fixedWeeks.value,
-        numberOfMonths: props.numberOfMonths.value,
-      })
-
-      grid.value = newGrid
-
-      props.placeholder.value = newGrid[0].value.set({ day: 1 })
-      return
-    }
-
-    const newDate = handleNextPage(firstDate, nextPageFunc || props.nextPage.value!)
-    const newGrid = createMonths({
-      dateObj: newDate,
-      weekStartsOn: props.weekStartsOn.value,
-      locale: props.locale.value,
-      fixedWeeks: props.fixedWeeks.value,
-      numberOfMonths: props.numberOfMonths.value,
-    })
-
-    grid.value = newGrid
-
-    const duration: DateFields = {}
-
-    // Do not adjust the placeholder if the nextPageFunc is defined (overwrite)
-    if (!nextPageFunc) {
-      const diff = newGrid[0].value.compare(firstDate)
-      if (diff >= getDaysInMonth(firstDate))
-        duration.day = 1
-
-      if (diff >= 365)
-        duration.month = 1
-    }
-
-    props.placeholder.value = newGrid[0].value.set({ ...duration })
-  }
-
-  const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
-    const firstDate = grid.value[0].value
-
-    if (!prevPageFunc && !props.prevPage.value) {
-      const newDate = firstDate.subtract({ months: props.pagedNavigation.value ? props.numberOfMonths.value : 1 })
-
-      const newGrid = createMonths({
-        dateObj: newDate,
-        weekStartsOn: props.weekStartsOn.value,
-        locale: props.locale.value,
-        fixedWeeks: props.fixedWeeks.value,
-        numberOfMonths: props.numberOfMonths.value,
-      })
-
-      grid.value = newGrid
-
-      props.placeholder.value = newGrid[0].value.set({ day: 1 })
-      return
-    }
-
-    const newDate = handlePrevPage(firstDate, prevPageFunc || props.prevPage.value!)
-    const newGrid = createMonths({
-      dateObj: newDate,
-      weekStartsOn: props.weekStartsOn.value,
-      locale: props.locale.value,
-      fixedWeeks: props.fixedWeeks.value,
-      numberOfMonths: props.numberOfMonths.value,
-    })
-
-    grid.value = newGrid
-
-    const duration: DateFields = {}
-
-    // Do not adjust the placeholder if the prevPageFunc is defined (overwrite)
-    if (!prevPageFunc) {
-      const diff = firstDate.compare(newGrid[0].value)
-      if (diff >= getDaysInMonth(firstDate))
-        duration.day = 1
-
-      if (diff >= 365)
-        duration.month = 1
-    }
-
-    props.placeholder.value = newGrid[0].value.set({ ...duration })
-  }
-
-  watch(props.placeholder, (value) => {
-    if (visibleView.value.some(month => isEqualMonth(month, value)))
-      return
-    grid.value = createMonths({
-      dateObj: value,
-      weekStartsOn: props.weekStartsOn.value,
-      locale: props.locale.value,
-      fixedWeeks: props.fixedWeeks.value,
-      numberOfMonths: props.numberOfMonths.value,
-    })
-  })
-
-  watch([props.locale, props.weekStartsOn, props.fixedWeeks, props.numberOfMonths], () => {
-    grid.value = createMonths({
-      dateObj: props.placeholder.value,
-      weekStartsOn: props.weekStartsOn.value,
-      locale: props.locale.value,
-      fixedWeeks: props.fixedWeeks.value,
-      numberOfMonths: props.numberOfMonths.value,
-    })
-  })
-
-  const headingValue = computed(() => {
-    if (!grid.value.length)
-      return ''
-
-    if (props.locale.value !== formatter.getLocale())
-      formatter.setLocale(props.locale.value)
-
-    if (grid.value.length === 1) {
-      const month = grid.value[0].value
-      return `${formatter.fullMonthAndYear(toDate(month), headingFormatOptions.value)}`
-    }
-
-    const startMonth = toDate(grid.value[0].value)
-    const endMonth = toDate(grid.value.at(-1)!.value)
-
-    const startMonthName = formatter.fullMonth(startMonth, headingFormatOptions.value)
-    const endMonthName = formatter.fullMonth(endMonth, headingFormatOptions.value)
-    const startMonthYear = formatter.fullYear(startMonth, headingFormatOptions.value)
-    const endMonthYear = formatter.fullYear(endMonth, headingFormatOptions.value)
-
-    const content
-      = startMonthYear === endMonthYear
-        ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
-        : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
-
-    return content
-  })
-
-  const fullCalendarLabel = computed(() => `${props.calendarLabel.value ?? 'Event Date'}, ${headingValue.value}`)
-
-  const isPlaceholderFocusable = computed(() => {
-    return !(isDateDisabled(props.placeholder.value) || isDateUnavailable(props.placeholder.value) || isOutsideVisibleView(props.placeholder.value))
-  })
-
-  const firstFocusableDate = computed(() => {
-    for (const month of grid.value) {
-      if (props.minValue.value && isBefore(month.value, props.minValue.value))
-        continue
-
-      const daysInMonth = getDaysInMonth(month.value)
-      const startDay = props.minValue.value && isSameMonth(props.minValue.value, month.value) ? props.minValue.value.day : 1
-
-      for (let day = startDay; day <= daysInMonth; day++) {
-        const date = month.value.set({ day })
-        if (isDateDisabled(date) || isDateUnavailable(date))
-          continue
-        return date
-      }
-    }
-  })
+  const root = createPartSurface<CalendarRootState>(
+    () => ({
+      'aria-label': gridApi.fullCalendarLabel.value,
+      'dir': dir.value,
+    }),
+    () => ({ disabled: disabled.value, readonly: readonly.value, invalid: isInvalid.value, view: view.value }),
+  )
 
   return {
-    isDateDisabled,
-    isDateUnavailable,
-    isNextButtonDisabled,
-    isPrevButtonDisabled,
-    grid,
-    weekdays,
-    visibleView,
-    isOutsideVisibleView,
-    formatter,
-    nextPage,
-    prevPage,
-    headingValue,
-    fullCalendarLabel,
-    isPlaceholderFocusable,
-    firstFocusableDate,
+    modelValue,
+    placeholder,
+    view,
+    granularity,
+    maxView,
+    grid: gridApi.grid,
+    weekDays: gridApi.weekdays,
+    headingValue: gridApi.headingValue,
+    fullCalendarLabel: gridApi.fullCalendarLabel,
+    isInvalid,
+    select,
+    setPlaceholder,
+    setView,
+    drillUp,
+    nextPage: gridApi.nextPage,
+    prevPage: gridApi.prevPage,
+    isNextButtonDisabled: gridApi.isNextButtonDisabled,
+    isPrevButtonDisabled: gridApi.isPrevButtonDisabled,
+    lastChangeDetails,
+    isControlled,
+    root,
+    heading: getCalendarHeadingSurface(context),
+    viewTrigger: getCalendarViewTriggerSurface(context),
+    prev: getCalendarNavSurface(context, 'prev'),
+    next: getCalendarNavSurface(context, 'next'),
+    getGridSurface: () => getCalendarGridSurface(context),
+    getCellSurface: (value, page) => getCalendarCellSurface(context, value, page),
+    getCellTriggerSurface: (value, page, unit) => getCalendarCellTriggerSurface(context, value, page, unit),
+    context,
   }
 }

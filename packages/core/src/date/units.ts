@@ -2,7 +2,7 @@ import type { DateDuration, DateFields, DateValue } from '@internationalized/dat
 import type { WeekStartsOn } from './calendar'
 import type { CalendarGridData, CalendarUnit, Matcher } from './types'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
-import { endOfMonth, endOfYear, isEqualMonth, isSameDay, isSameMonth, startOfMonth, startOfYear } from '@internationalized/date'
+import { endOfMonth, endOfYear, getLocalTimeZone, isEqualMonth, isSameDay, isSameMonth, isToday, startOfMonth, startOfYear, toCalendar, today } from '@internationalized/date'
 import { createMonthGrid, createMonths, createYearGrid } from './calendar'
 import {
   areAllDaysBetweenValid,
@@ -64,6 +64,14 @@ export interface CalendarUnitAdapter {
   endOf: (d: DateValue) => DateValue
   /** Move by `n` units (negative moves back). */
   add: (d: DateValue, n: number) => DateValue
+  /**
+   * A copy of `value` that keeps the finer fields of `reference`: selecting a
+   * month keeps the reference's day, selecting a year keeps its month and day.
+   * Identity (a copy) for days.
+   */
+  resolve: (value: DateValue, reference?: DateValue) => DateValue
+  /** Whether `d` is in the same unit as today (in `d`'s calendar system). */
+  isCurrent: (d: DateValue) => boolean
   /** Inclusive number of units from `start` to `end`. */
   distance: (start: DateValue, end: DateValue) => number
   /** Whether every unit strictly between `start` and `end` passes the matchers. */
@@ -103,6 +111,8 @@ const dayAdapter: CalendarUnitAdapter = {
   startOf: d => d,
   endOf: d => d,
   add: (d, n) => d.add({ days: n }),
+  resolve: value => value.copy(),
+  isCurrent: d => isToday(d, getLocalTimeZone()),
   distance: (start, end) => end.compare(start) + 1,
   areAllBetweenValid: areAllDaysBetweenValid,
   createGrid: (placeholder, layout) => createMonths({
@@ -200,6 +210,8 @@ const monthAdapter: CalendarUnitAdapter = {
   startOf: startOfMonth,
   endOf: endOfMonth,
   add: (d, n) => d.add({ months: n }),
+  resolve: (value, reference) => reference ? value.copy().set({ day: reference.day }) : value.copy(),
+  isCurrent: d => isSameYearMonth(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
   distance: getMonthsBetween,
   areAllBetweenValid: (start, end, isUnavailable, isDisabled) => areAllMonthsBetweenValid(start, end, isUnavailable, isDisabled),
   createGrid: (placeholder, layout) => [createMonthGrid({ dateObj: placeholder, columns: layout.columns })],
@@ -239,6 +251,8 @@ const yearAdapter: CalendarUnitAdapter = {
   startOf: startOfYear,
   endOf: endOfYear,
   add: (d, n) => d.add({ years: n }),
+  resolve: (value, reference) => reference ? value.copy().set({ month: reference.month, day: reference.day }) : value.copy(),
+  isCurrent: d => isSameYear(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
   distance: getYearsBetween,
   areAllBetweenValid: (start, end, isUnavailable, isDisabled) => areAllYearsBetweenValid(start, end, isUnavailable, isDisabled),
   createGrid: (placeholder, layout, options) => [createYearGrid({

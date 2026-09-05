@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
+import type { CalendarModelValue } from '..'
 import { isEqualDay } from '@internationalized/date'
 import { CalendarRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
@@ -31,7 +32,9 @@ const rootContext = injectDatePickerRootContext()
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
     :multiple="false"
-    @update:model-value="(date: DateValue | undefined) => {
+    @update:model-value="(value: CalendarModelValue) => {
+      // `multiple` is pinned to false above, so the model is never an array.
+      const date = Array.isArray(value) ? value.at(-1) : value
       if (date && rootContext.modelValue.value && isEqualDay(date, rootContext.modelValue.value)) return
       rootContext.onDateChange(date)
     }"

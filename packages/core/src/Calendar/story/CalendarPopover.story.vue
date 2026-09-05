@@ -89,6 +89,7 @@ const formatter = useDateFormatter('en')
           <CalendarGrid
             v-for="month in grid"
             :key="month.value.toString()"
+            :value="month.value"
             class="w-full border-collapse select-none space-y-1"
           >
             <CalendarGridHead>
@@ -111,12 +112,11 @@ const formatter = useDateFormatter('en')
                 <CalendarCell
                   v-for="weekDate in weekDates"
                   :key="weekDate.toString()"
-                  :date="weekDate"
+                  :value="weekDate"
                   class="relative text-center text-sm"
                 >
                   <CalendarCellTrigger
-                    :day="weekDate"
-                    :month="month.value"
+                    :value="weekDate"
                     class="relative flex items-center justify-center whitespace-nowrap rounded-[9px] border border-transparent bg-transparent text-sm font-normal text-black p-2 outline-none focus:shadow-[0_0_0_2px] focus:shadow-black hover:border-black data-[selected]:bg-black data-[selected]:font-medium data-[outside-view]:text-black/30 data-[selected]:text-white data-[unavailable]:text-black/30 data-[unavailable]:line-through before:absolute before:top-[5px] before:hidden before:rounded-full before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-grass9 data-[selected]:before:bg-white"
                   />
                 </CalendarCell>

@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { CalendarPageFunction } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarPrevProps extends PrimitiveProps {
-  /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `CalendarRoot`. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `CalendarRoot`. Receives the placeholder and the active view. */
+  prevPage?: CalendarPageFunction
 }
 
 export interface CalendarPrevSlot {
@@ -16,36 +16,25 @@ export interface CalendarPrevSlot {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
+import { getCalendarNavSurface } from './useCalendar'
 
-const props = withDefaults(defineProps<CalendarPrevProps>(), { as: 'button', step: 'month' })
+const props = withDefaults(defineProps<CalendarPrevProps>(), { as: 'button' })
 defineSlots<CalendarPrevSlot>()
 
-const disabled = computed(() => rootContext.disabled.value || rootContext.isPrevButtonDisabled(props.prevPage))
-
 const rootContext = injectCalendarRootContext()
-
-function handleClick() {
-  if (disabled.value)
-    return
-  rootContext.prevPage(props.prevPage)
-}
+const surface = getCalendarNavSurface(rootContext, 'prev', () => props.prevPage)
 </script>
 
 <template>
   <Primitive
-    aria-label="Previous page"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
-    :aria-disabled="disabled || undefined"
-    :data-disabled="disabled || undefined"
-    :disabled="disabled"
-    @click="handleClick"
+    v-bind="surface.attrs.value"
   >
-    <slot :disabled>
+    <slot :disabled="surface.state.value.disabled">
       Prev page
     </slot>
   </Primitive>

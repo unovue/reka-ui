@@ -3,15 +3,17 @@ import type { CalendarUnit } from '@/date'
 import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
-import { useCalendar } from '@/Calendar/useCalendar'
 import { useMonthPicker } from '@/MonthPicker/useMonthPicker'
 import { useYearPicker } from '@/YearPicker/useYearPicker'
+import { useCalendar } from './__fixtures__/useCalendarV2'
 import { useCalendarGrid } from './useCalendarGrid'
 
 /**
  * Parity harness: the new composable must reproduce the three v2 composables
  * it replaces, scenario by scenario. Each scenario builds both, drives them
- * identically and compares their observable output.
+ * identically and compares their observable output. The v2 day composable is
+ * a frozen fixture (the live one was rewritten in Phase 2); the month and
+ * year ones are the still-shipping v2 families until Phase 5 removes them.
  */
 
 type Scenario = {
