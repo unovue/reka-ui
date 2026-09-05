@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { RadioGroupChangeReason } from './useRadioGroup'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
@@ -23,13 +25,16 @@ export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
   loop?: boolean
 }
 export type RadioGroupRootEmits = {
+  /** Event handler called before the radio group value changes; call `details.cancel()` to keep the current value */
+  'beforeUpdate:modelValue': [payload: AcceptableValue, details: ChangeEventDetails<RadioGroupChangeReason>]
   /** Event handler called when the radio group value changes */
-  'update:modelValue': [payload: AcceptableValue]
+  'update:modelValue': [payload: AcceptableValue, details: ChangeEventDetails<RadioGroupChangeReason>]
 }
 
-interface RadioGroupRootContext {
+export interface RadioGroupRootContext {
   modelValue?: Readonly<Ref<AcceptableValue | undefined>>
-  changeModelValue: (value?: AcceptableValue) => void
+  /** Returns `false` when the value is unchanged or the change was cancelled. */
+  changeModelValue: (value?: AcceptableValue, reason?: RadioGroupChangeReason | BaseChangeReason, event?: Event) => boolean
   disabled: Ref<boolean>
   loop: Ref<boolean>
   orientation: Ref<DataOrientation | undefined>
@@ -42,11 +47,11 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useRadioGroup } from './useRadioGroup'
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
   disabled: false,
@@ -65,26 +70,26 @@ defineSlots<{
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue,
-  passive: (props.modelValue === undefined) as false,
-})
 
-const { disabled, loop, orientation, name, required, dir: propDir } = toRefs(props)
+// `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
+// owns the controlled/uncontrolled model (`useControllableState`) and emits.
+const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 const isFormControl = useFormControl(currentElement)
 
-provideRadioGroupRootContext({
-  modelValue,
-  changeModelValue: (value) => {
-    modelValue.value = value
-  },
-  disabled,
-  loop,
-  orientation,
-  name: name?.value,
-  required,
+const { modelValue, root, context } = useRadioGroup({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  emit: emits,
+  disabled: () => props.disabled,
+  required: () => props.required,
+  orientation: () => props.orientation,
+  loop: () => props.loop,
+  dir,
+  name: () => props.name,
 })
+
+provideRadioGroupRootContext(context)
 </script>
 
 <template>
@@ -96,13 +101,9 @@ provideRadioGroupRootContext({
   >
     <Primitive
       :ref="forwardRef"
-      role="radiogroup"
-      :data-disabled="disabled ? '' : undefined"
       :as-child="asChild"
       :as="as"
-      :aria-orientation="orientation"
-      :aria-required="required"
-      :dir="dir"
+      v-bind="root.attrs.value"
     >
       <slot :model-value="modelValue" />
 
