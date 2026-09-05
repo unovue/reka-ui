@@ -20,7 +20,7 @@ Each rendered part returns a **`PartSurface`**, the shared contract homed in
 export interface PartSurface<S extends PartState = PartState> {
   props: ComputedRef<Record<string, any>> // aria/role/value/id?/handlers — NO data-*
   state: ComputedRef<S> // semantic state ({ state: 'checked', disabled })
-  attrs: ComputedRef<Record<string, any>> // mergeProps(props, stateToDataAttrs(state)) — bind THIS
+  attrs: ComputedRef<Record<string, any>> // mergeProps(stateToDataAttrs(state), props) — bind THIS
 }
 ```
 
@@ -103,10 +103,11 @@ lands — that PR only changes the values, not the shape.
    `v-bind="mergeProps(part.attrs.value, scopeIdAttrs, $attrs)"` (drop `$attrs` when
    the SFC keeps `inheritAttrs: true`). Object spread makes a consumer's `onClick` in
    `$attrs` clobber the part's handler. Never call `stateToDataAttrs` in an SFC.
-5. **Export policy.** From the family `index.ts` export ONLY `useX` + `UseXProps` /
-   `UseXReturn` / `<Family><Part>State` / `<Family>ChangeReason`. Builders
-   (`get<...>Surface`, `create<...>Surface`) are internal: importable by the family's
-   own SFCs, not re-exported. Overlay composables export from the family index only
+5. **Export policy.** The family `index.ts` keeps exporting its components exactly
+   as before; the composable-specific additions are limited to `useX` +
+   `UseXProps` / `UseXReturn` / `<Family><Part>State` / `<Family>ChangeReason`.
+   Builders (`get<...>Surface`, `create<...>Surface`) are internal: importable by
+   the family's own SFCs, not re-exported. Overlay composables export from the family index only
    — that index is reachable via `reka-ui/internal`, not the package root. Do the
    **collision audit** against `vue` (`useId`), `@vueuse/core` (`useToggle`!), and
    common Nuxt auto-imports first; rename on a clash (`useTogglePressed`).
@@ -163,9 +164,12 @@ computed from `(context, itemValue)`. What converting Tabs settled:
   `baseId: useId(undefined, 'reka-<family>')` in. The composable's standalone
   default must be **unique per call** — a module-level counter
   (`` `reka-<family>-${++count}` ``), never a shared literal: two standalone
-  instances on one page would otherwise collide on every trigger/content id. It
-  stays callable outside `setup()` (Tabs is computed-only — no watchers/lifecycle
-  in the composable). Never call `useId` inside the composable.
+  instances on one page would otherwise collide on every trigger/content id.
+  That counter is **NOT SSR-stable**: server and client count independently, so
+  a standalone consumer that renders on the server MUST pass an explicit
+  `baseId` (the SFCs do, via `useId`) or hydration ids mismatch. It stays
+  callable outside `setup()` (Tabs is computed-only — no watchers/lifecycle in
+  the composable). Never call `useId` inside the composable.
 
 ## Overlay families (validated on Menu)
 

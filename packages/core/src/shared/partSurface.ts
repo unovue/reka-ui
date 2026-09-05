@@ -17,7 +17,7 @@ export interface PartSurface<S extends PartState = PartState> {
   props: ComputedRef<Record<string, any>>
   /** Semantic state; `data-*` derive from it. */
   state: ComputedRef<S>
-  /** `mergeProps(props, stateToDataAttrs(state))` — bind this and never touch the vocabulary. */
+  /** `mergeProps(stateToDataAttrs(state), props)` — bind this and never touch the vocabulary. */
   attrs: ComputedRef<Record<string, any>>
 }
 
@@ -34,6 +34,7 @@ export function createPartSurface<S extends PartState>(
 ): PartSurface<S> {
   const propsRef = typeof props === 'function' ? computed(props) : props
   const stateRef = typeof state === 'function' ? computed(state) : state
-  const attrs = computed(() => mergeProps(propsRef.value, stateToDataAttrs(stateRef.value, mapping)))
+  // State attrs first, explicit props last — same precedence as `useRender`, so a mapping that emits `aria-*` never overrides a prop.
+  const attrs = computed(() => mergeProps(stateToDataAttrs(stateRef.value, mapping), propsRef.value))
   return { props: propsRef, state: stateRef, attrs }
 }

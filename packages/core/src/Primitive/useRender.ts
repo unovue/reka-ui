@@ -1,6 +1,6 @@
 import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
-import type { AsTag } from './Primitive'
 import type { PartState, StateAttributesMapping } from '../shared/stateToDataAttrs'
+import type { AsTag } from './Primitive'
 import { computed, getCurrentInstance, mergeProps, toValue } from 'vue'
 // Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
 import { stateToDataAttrs } from '../shared/stateToDataAttrs'

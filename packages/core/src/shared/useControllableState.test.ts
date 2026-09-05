@@ -66,12 +66,66 @@ describe('useControllableState', () => {
     expect(model.value).toBeUndefined()
   })
 
+  it('controlled then cleared to undefined stays controlled and reads undefined, not the default', () => {
+    const emit = vi.fn()
+    const model = ref<string | undefined>('a')
+    const { state, setState, isControlled } = useControllableState<string>({
+      prop: () => model.value,
+      defaultValue: 'b',
+      name: 'modelValue',
+      emit,
+    })
+    expect(isControlled.value).toBe(true)
+    expect(state.value).toBe('a')
+    model.value = undefined
+    expect(isControlled.value).toBe(true)
+    expect(state.value).toBeUndefined()
+    // Still controlled: no internal write, the parent's update: handler owns it.
+    expect(setState('c')).toBe(true)
+    expect(state.value).toBeUndefined()
+    expect(emit).toHaveBeenCalledWith('update:modelValue', 'c', expect.objectContaining({ reason: 'imperative-action' }))
+  })
+
+  it('a getter that starts undefined then resolves switches to controlled and never falls back', () => {
+    const model = ref<boolean | undefined>(undefined)
+    const { state, setState, isControlled } = useControllableState<boolean>({
+      prop: () => model.value,
+      defaultValue: false,
+    })
+    expect(isControlled.value).toBe(false)
+    // Uncontrolled write leaves a stale internal value behind …
+    setState(true)
+    expect(state.value).toBe(true)
+    // … the parent takes over …
+    model.value = false
+    expect(isControlled.value).toBe(true)
+    expect(state.value).toBe(false)
+    // … and clearing the prop must not resurrect the stale internal value.
+    model.value = undefined
+    expect(isControlled.value).toBe(true)
+    expect(state.value).toBeUndefined()
+  })
+
   it('ref-owned mode writes the ref when neither emit nor onUpdate is given', () => {
     const model = ref<boolean | undefined>(false)
-    const { state, setState } = useControllableState<boolean>({ prop: model })
+    const { state, setState, isControlled } = useControllableState<boolean>({ prop: model })
+    expect(isControlled.value).toBe(true)
     expect(setState(true)).toBe(true)
     expect(model.value).toBe(true)
     expect(state.value).toBe(true)
+  })
+
+  it('ref-owned mode with an initially-undefined ref: reads the default and setState writes the ref', () => {
+    const model = ref<boolean | undefined>(undefined)
+    const { state, setState, isControlled } = useControllableState<boolean>({ prop: model, defaultValue: false })
+    expect(isControlled.value).toBe(true)
+    expect(state.value).toBe(false)
+    expect(setState(true)).toBe(true)
+    expect(model.value).toBe(true)
+    expect(state.value).toBe(true)
+    // The ref is the single store: clearing it falls back to the default, not a stale internal value.
+    model.value = undefined
+    expect(state.value).toBe(false)
   })
 
   it('onUpdate mode does not write the ref', () => {
