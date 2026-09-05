@@ -106,13 +106,13 @@ const triggerElement = ref<HTMLElement>()
 
 function handleOpen(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
   clearTimeout(closeTimerRef.value)
-  openTimerRef.value = window.setTimeout(() => setState(true, reason, event), openDelay.value)
+  openTimerRef.value = window.setTimeout(setState, openDelay.value, true, reason, event)
 }
 
 function handleClose(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
   clearTimeout(openTimerRef.value)
   if (!hasSelectionRef.value && !isPointerDownOnContentRef.value)
-    closeTimerRef.value = window.setTimeout(() => setState(false, reason, event), closeDelay.value)
+    closeTimerRef.value = window.setTimeout(setState, closeDelay.value, false, reason, event)
 }
 
 function handleDismiss(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {

@@ -167,6 +167,14 @@ const trigger = ref<HTMLElement>()
 const stateAttribute = computed<DisclosureState>(() => disclosureState(open.value))
 const isDelayed = computed(() => open.value && wasOpenDelayedRef.value)
 
+// A closed tooltip keeps no "delayed" history: a later parent-driven or
+// imperative open must not render `data-delayed`. A cancelled close never
+// flips `open`, so the flag survives it.
+watch(open, (isOpen) => {
+  if (!isOpen)
+    wasOpenDelayedRef.value = false
+})
+
 // The `pointermove` that armed the delay timer, handed to `update:open` when it fires.
 let delayedOpenEvent: PointerEvent | undefined
 

@@ -1,5 +1,7 @@
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { axe } from 'vitest-axe'
+import { defineComponent, ref } from 'vue'
 import * as Reka from '../index'
 import { usePopover } from './usePopover'
 
@@ -190,6 +192,50 @@ describe('usePopover — context', () => {
     const event = new KeyboardEvent('keydown', { key: 'Escape' })
     expect(p.context.onOpenChange(false, 'escape-key', event)).toBe(true)
     expect(p.lastChangeDetails.value).toMatchObject({ reason: 'escape-key', event })
+  })
+})
+
+describe('usePopover — rendered surfaces', () => {
+  // A standalone consumer binding the surfaces to plain elements, without the
+  // Popper / Presence / FocusScope / DismissableLayer wrappers: the aria wiring
+  // alone has to satisfy axe, closed and open.
+  const Fixture = defineComponent({
+    setup() {
+      const p = usePopover({ baseId: 'fixture' })
+      return { p }
+    },
+    template: `
+      <button v-bind="p.trigger.attrs.value">Toggle</button>
+      <div v-if="p.open.value" v-bind="p.content.attrs.value">
+        <p>Body</p>
+        <button v-bind="p.close.attrs.value">Close</button>
+      </div>
+    `,
+  })
+
+  it('wires trigger and content together and passes axe, closed and open', async () => {
+    const { container, getByRole, getByText, queryByRole } = render(Fixture)
+    const trigger = getByText('Toggle')
+    expect(trigger.id).toBe('fixture-trigger')
+    expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    expect(trigger.getAttribute('aria-controls')).toBe('fixture-content')
+    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(queryByRole('dialog')).toBeNull()
+    expect(await axe(container)).toHaveNoViolations()
+
+    await fireEvent.click(trigger)
+    const dialog = getByRole('dialog')
+    expect(dialog.id).toBe('fixture-content')
+    expect(dialog.getAttribute('aria-labelledby')).toBe(trigger.id)
+    expect(dialog.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(await axe(container)).toHaveNoViolations()
+
+    await fireEvent.click(getByText('Close'))
+    expect(queryByRole('dialog')).toBeNull()
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
   })
 })
 

@@ -373,6 +373,25 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     expect(content().exists()).toBe(true)
   })
 
+  it('forgets a delayed open once closed: a later parent-driven open carries no data-delayed', async () => {
+    const { vm, trigger } = mountTooltip()
+    await trigger().trigger('pointermove', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(700)
+    await nextTick()
+    await nextTick()
+    expect(trigger().attributes('data-delayed')).toBe('')
+
+    await trigger().trigger('blur')
+    await nextTick()
+    expect(vm.open).toBe(false)
+    expect(trigger().attributes('data-state')).toBe('closed')
+
+    vm.open = true
+    await nextTick()
+    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-delayed')).toBeUndefined()
+  })
+
   it('v-model:open round-trips through a wrapper component', async () => {
     const { root, vm, trigger, content } = mountTooltip()
     expect(vm.open).toBe(false)
