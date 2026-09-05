@@ -52,6 +52,15 @@ jobs:
       - name: Build Packages
         run: pnpm build
 
-      # Must publish from repo root for provenance to work with OIDC
+      # Must publish from repo root for provenance to work with OIDC.
+      # npm refuses to publish over an existing version, so a rerun after a
+      # failure that followed a successful publish skips the publish instead
+      # of dying on the 403.
       - name: Publish to npm
-        run: npm publish ./packages/core --access public --provenance
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          if npm view "reka-ui@$version" version >/dev/null 2>&1; then
+            echo "reka-ui@$version is already on npm, skipping"
+          else
+            npm publish ./packages/core --access public --provenance
+          fi
