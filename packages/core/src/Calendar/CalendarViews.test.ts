@@ -72,12 +72,14 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(selected(calendar)).toHaveLength(1)
     await user.click(getByTestId('cell-2026-09-01'))
     expect(selected(calendar)).toHaveLength(0)
+  })
 
+  it('keeps the selection on a second click with preventDeselect', async () => {
     const onUpdate = vi.fn()
-    const kept = setupUnit({ granularity: 'month', modelValue: sep5, preventDeselect: true }, { 'onUpdate:modelValue': onUpdate })
-    await kept.user.click(kept.getByTestId('cell-2026-09-01'))
+    const { user, getByTestId, calendar } = setupUnit({ granularity: 'month', modelValue: sep5, preventDeselect: true }, { 'onUpdate:modelValue': onUpdate })
+    await user.click(getByTestId('cell-2026-09-01'))
     expect(onUpdate).not.toHaveBeenCalled()
-    expect(selected(kept.calendar)).toHaveLength(1)
+    expect(selected(calendar)).toHaveLength(1)
   })
 
   it('pages by a year and disables Next past maxValue', async () => {
