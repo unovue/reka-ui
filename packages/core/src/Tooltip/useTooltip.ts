@@ -303,11 +303,14 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
 
   // A closed tooltip keeps no "delayed" history: a later parent-driven or
   // imperative open must not render `data-delayed`. A cancelled close never
-  // flips `open`, so the flag survives it.
+  // flips `open`, so the flag survives it. `flush: 'sync'` because a pre-flush
+  // watcher coalesces an open and a close that land in the same tick (the delay
+  // timer firing, then a synchronous ref-driven close) into "no change" and
+  // never resets the flag.
   watch(open, (isOpen) => {
     if (!isOpen)
       wasOpenDelayedRef.value = false
-  })
+  }, { flush: 'sync' })
 
   // The `pointermove` that armed the delay timer, handed to `update:open` when it fires.
   let delayedOpenEvent: PointerEvent | undefined
