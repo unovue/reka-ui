@@ -39,7 +39,7 @@ export interface HoverCardRootContext {
   /** Sets `open` immediately. Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   /**
-   * Cancels a pending close and opens after `openDelay`. The change is deferred,
+   * Cancels a pending open or close and opens after `openDelay`. The change is deferred,
    * so its outcome is only known when the timer fires; `reason`/`event` travel
    * with it into `beforeUpdate:open` / `update:open`.
    */

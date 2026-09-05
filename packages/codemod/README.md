@@ -13,7 +13,7 @@ npx @reka-ui/codemod data-state ./src --dry-run
 npx @reka-ui/codemod data-state ./src ./docs --ext vue,css
 ```
 
-The package is versioned and published in lockstep with `reka-ui`, so pin the major you are migrating to (`npx @reka-ui/codemod@3 …`) to get the codemods written for that release. A pull request's build can be tried before it is published with `npx https://pkg.pr.new/unovue/reka-ui/@reka-ui/codemod@<pr-number> data-state ./src`.
+The package is versioned and published in lockstep with `reka-ui` (the release process bumps every workspace package to the same version before tagging, so the codemod's major is always the `reka-ui` major it migrates to), so pin the major you are migrating to (`npx @reka-ui/codemod@3 …`) to get the codemods written for that release. A pull request's build can be tried before it is published with `npx https://pkg.pr.new/unovue/reka-ui/@reka-ui/codemod@<pr-number> data-state ./src`.
 
 ## `data-state`
 

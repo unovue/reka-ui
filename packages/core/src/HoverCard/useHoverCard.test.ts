@@ -1,7 +1,7 @@
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, effectScope, ref } from 'vue'
 import * as Reka from '../index'
 import { useHoverCard } from './useHoverCard'
 
@@ -177,6 +177,36 @@ describe('useHoverCard — timers', () => {
     expect(h.open.value).toBe(false)
   })
 
+  it('onOpen() replaces a pending open, so the next onClose() cancels both', () => {
+    const onUpdate = vi.fn()
+    const h = useHoverCard({ onUpdate })
+    h.onOpen('trigger-hover')
+    vi.advanceTimersByTime(100)
+    h.onOpen('trigger-focus')
+    h.onClose('trigger-leave')
+    vi.advanceTimersByTime(2000)
+    expect(h.open.value).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('clears pending timers when the owning effect scope is disposed', () => {
+    const onUpdate = vi.fn()
+    const scope = effectScope()
+    const h = scope.run(() => useHoverCard({ onUpdate }))!
+    h.onOpen('trigger-hover')
+    scope.stop()
+    vi.advanceTimersByTime(1000)
+    expect(h.open.value).toBe(false)
+
+    const scope2 = effectScope()
+    const h2 = scope2.run(() => useHoverCard({ defaultOpen: true, onUpdate }))!
+    h2.onClose('trigger-leave')
+    scope2.stop()
+    vi.advanceTimersByTime(1000)
+    expect(h2.open.value).toBe(true)
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
   it('onDismiss() closes immediately, cancels a pending open and returns false when already closed', () => {
     const onUpdate = vi.fn()
     const h = useHoverCard({ defaultOpen: true, onUpdate })
@@ -241,6 +271,18 @@ describe('useHoverCard — trigger surface', () => {
     vi.advanceTimersByTime(700)
     expect(h.open.value).toBe(true)
     expect(onUpdate).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-hover', event }))
+  })
+
+  it('a focus that follows a hover leaves one pending open for pointerleave to cancel', () => {
+    const onUpdate = vi.fn()
+    const h = useHoverCard({ onUpdate })
+    h.trigger.props.value.onPointerenter(pointerEvent('pointerenter'))
+    vi.advanceTimersByTime(100)
+    h.trigger.props.value.onFocus(new FocusEvent('focus'))
+    h.trigger.props.value.onPointerleave(pointerEvent('pointerleave'))
+    vi.advanceTimersByTime(2000)
+    expect(h.open.value).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
   })
 
   it('onPointerleave only cancels a pending open (a tick later); open cards are left to the grace area', () => {

@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { HoverCardOpenChangeReason, HoverCardRootContext } from './HoverCardRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { computed, ref, toValue } from 'vue'
+import { computed, getCurrentScope, onScopeDispose, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
 import { excludeTouch } from './utils'
 
@@ -121,9 +121,9 @@ export interface UseHoverCardReturn {
   /** Sets `open` immediately. Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   /**
-   * Cancels a pending close and opens after `openDelay`. The change is deferred,
-   * so its outcome is only known when the timer fires; `reason`/`event` travel
-   * with it into `beforeUpdate:open` / `update:open`.
+   * Cancels a pending open or close and opens after `openDelay`. The change is
+   * deferred, so its outcome is only known when the timer fires; `reason`/`event`
+   * travel with it into `beforeUpdate:open` / `update:open`.
    */
   onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) => void
   /**
@@ -158,12 +158,12 @@ export interface UseHoverCardReturn {
  *
  * SSR-safe: no `document`/`window` at call scope — the `window.setTimeout`
  * calls only run inside `onOpen` / `onClose`, i.e. from browser events. No
- * lifecycle hooks, so it is callable outside `setup()`; pending timers are
- * cancelled by the next `onOpen` / `onClose` / `onDismiss`, not on unmount —
- * a stray timer only reaches `setState`, which the consumer can veto.
+ * lifecycle hooks, so it is callable outside `setup()`; inside a component or
+ * `effectScope` the pending timers are cleared when that scope is disposed,
+ * standalone they are cancelled by the next `onOpen` / `onClose` / `onDismiss`.
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle pure
+ * @lifecycle pure — the only scope hook is the guarded timer cleanup above.
  */
 export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn {
   // Every write to `open` — the delayed hover/focus timers, the touch toggle
@@ -196,6 +196,10 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
   }
 
   function onOpen(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
+    // Re-arming replaces a pending open too: `pointerenter` then `focus` must
+    // leave ONE timer for the following `onClose` to cancel, or the first one
+    // opens the card after the pointer has left.
+    clearTimeout(openTimer)
     clearTimeout(closeTimer)
     openTimer = window.setTimeout(setState, openDelay.value, true, reason, event)
   }
@@ -209,6 +213,17 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
   function onDismiss(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     clearTimeout(openTimer)
     return setState(false, reason, event)
+  }
+
+  // Inside a component or `effectScope`, a pending timer must not outlive its
+  // owner: it would write the model (or emit `update:open`) after unmount.
+  // Standalone calls have no scope to hook, so there the next `onOpen` /
+  // `onClose` / `onDismiss` is what cancels a pending timer.
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      clearTimeout(openTimer)
+      clearTimeout(closeTimer)
+    })
   }
 
   const context: HoverCardRootContext = {
