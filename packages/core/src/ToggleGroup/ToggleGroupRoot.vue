@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, SingleOrMultipleProps } from '../shared/types'
+import type { ToggleGroupChangeReason } from './useToggleGroup'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -19,14 +21,17 @@ export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
   loop?: boolean
 }
 export type ToggleGroupRootEmits = {
+  /** Event handler called before the value changes; call `details.cancel()` to keep the current value. */
+  'beforeUpdate:modelValue': [payload: AcceptableValue | AcceptableValue[], details: ChangeEventDetails<ToggleGroupChangeReason>]
   /** Event handler called when the value changes. */
-  'update:modelValue': [payload: AcceptableValue | AcceptableValue[]]
+  'update:modelValue': [payload: AcceptableValue | AcceptableValue[], details: ChangeEventDetails<ToggleGroupChangeReason>]
 }
 
-interface ToggleGroupRootContext {
+export interface ToggleGroupRootContext {
   isSingle: ComputedRef<boolean>
   modelValue: Ref<AcceptableValue | AcceptableValue[] | undefined>
-  changeModelValue: (value: AcceptableValue) => void
+  /** Returns `false` when the value is unchanged or the change was cancelled. */
+  changeModelValue: (value: AcceptableValue, reason?: ToggleGroupChangeReason | BaseChangeReason, event?: Event) => boolean
   dir?: Ref<Direction>
   orientation?: DataOrientation
   loop: Ref<boolean>
@@ -42,7 +47,7 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
-import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
+import { useToggleGroup } from './useToggleGroup'
 
 const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
   loop: true,
@@ -58,23 +63,26 @@ defineSlots<{
   }) => any
 }>()
 
-const { loop, rovingFocus, disabled, dir: propDir } = toRefs(props)
+// `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
+// owns the single/multiple model (`useControllableState`) and the emits.
+const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 const { forwardRef, currentElement } = useForwardExpose()
 
-const { modelValue, changeModelValue, isSingle } = useSingleOrMultipleValue(props, emits)
+const { modelValue, root, context } = useToggleGroup({
+  type: () => props.type,
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  emit: emits,
+  disabled: () => props.disabled,
+  orientation: props.orientation,
+  dir,
+  loop: () => props.loop,
+  rovingFocus: () => props.rovingFocus,
+})
 const isFormControl = useFormControl(currentElement)
 
-provideToggleGroupRootContext({
-  isSingle,
-  modelValue,
-  changeModelValue,
-  dir,
-  orientation: props.orientation,
-  loop,
-  rovingFocus,
-  disabled,
-})
+provideToggleGroupRootContext(context)
 </script>
 
 <template>
@@ -87,9 +95,9 @@ provideToggleGroupRootContext({
   >
     <Primitive
       :ref="forwardRef"
-      role="group"
       :as-child="asChild"
       :as="as"
+      v-bind="root.attrs.value"
     >
       <slot :model-value="modelValue" />
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { selectionState, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
 
 export interface RadioGroupIndicatorProps extends PrimitiveProps {
   /**
@@ -12,9 +12,11 @@ export interface RadioGroupIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectRadioGroupItemContext } from './RadioGroupItem.vue'
+import { getRadioGroupIndicatorSurface } from './useRadioGroup'
 
 withDefaults(defineProps<RadioGroupIndicatorProps>(), {
   as: 'span',
@@ -22,6 +24,8 @@ withDefaults(defineProps<RadioGroupIndicatorProps>(), {
 
 const { forwardRef } = useForwardExpose()
 const itemContext = injectRadioGroupItemContext()
+// Same derivation as a standalone consumer — one source for `data-state` / `data-disabled`.
+const indicator = getRadioGroupIndicatorSurface(itemContext)
 </script>
 
 <template>
@@ -30,11 +34,9 @@ const itemContext = injectRadioGroupItemContext()
   >
     <Primitive
       :ref="forwardRef"
-      :data-state="selectionState(itemContext.checked.value)"
-      :data-disabled="itemContext.disabled.value ? '' : undefined"
       :as-child="asChild"
       :as="as"
-      v-bind="$attrs"
+      v-bind="mergeProps(indicator.attrs.value, $attrs)"
     >
       <slot />
     </Primitive>
