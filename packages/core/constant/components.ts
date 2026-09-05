@@ -393,6 +393,8 @@ export const components = {
     'RangeCalendarGridBody',
     'RangeCalendarGridRow',
     'RangeCalendarCellTrigger',
+    'RangeCalendarView',
+    'RangeCalendarViewTrigger',
   ] as const,
 
   rating: [

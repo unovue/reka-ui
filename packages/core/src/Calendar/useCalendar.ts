@@ -4,10 +4,10 @@ import type { CalendarRootContext } from './CalendarRoot.vue'
 import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, nextTick, ref, toValue, watch } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
-import { createPartSurface, useControllableState, useKbd } from '@/shared'
-import { getDefaultDate, useCalendarGrid } from '@/shared/date'
+import { createPartSurface, useControllableState } from '@/shared'
+import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
 export type CalendarChangeReason
@@ -128,7 +128,12 @@ export interface UseCalendarReturn {
 /** Standalone `useCalendar()` calls without a `headingId` draw `reka-calendar-heading-<n>` from here (not SSR-stable — the SFC passes `useId()`). */
 let calendarCount = 0
 
-const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'PageUp', 'PageDown'])
+/**
+ * The slice of a root context the chrome parts (heading, view trigger, prev /
+ * next, grid) read. `RangeCalendarRootContext` satisfies it too, so those
+ * builders are shared by both families.
+ */
+export type CalendarChromeContext = Pick<CalendarRootContext, 'disabled' | 'readonly' | 'view' | 'maxView' | 'headingId' | 'drillUp' | 'nextPage' | 'prevPage' | 'isNextButtonDisabled' | 'isPrevButtonDisabled'>
 
 /** Disabled for the purpose of the root `data-invalid` / focus fallbacks: evaluated at the granularity, not the active view. */
 function isDisabledAtUnit(context: CalendarRootContext, adapter: CalendarUnitAdapter, date: DateValue) {
@@ -142,7 +147,7 @@ function isDisabledAtUnit(context: CalendarRootContext, adapter: CalendarUnitAda
 }
 
 /** The `CalendarHeading` surface: static text, `data-disabled`, `data-view`. */
-export function getCalendarHeadingSurface(context: CalendarRootContext): PartSurface<CalendarHeadingState> {
+export function getCalendarHeadingSurface(context: CalendarChromeContext): PartSurface<CalendarHeadingState> {
   return createPartSurface<CalendarHeadingState>(
     () => ({}),
     () => ({ disabled: context.disabled.value, view: context.view.value }),
@@ -150,7 +155,7 @@ export function getCalendarHeadingSurface(context: CalendarRootContext): PartSur
 }
 
 /** The `CalendarViewTrigger` surface: a button that drills up to the next coarser view. */
-export function getCalendarViewTriggerSurface(context: CalendarRootContext): PartSurface<CalendarViewTriggerState> {
+export function getCalendarViewTriggerSurface(context: CalendarChromeContext): PartSurface<CalendarViewTriggerState> {
   const nextView = computed(() => {
     const next = coarserUnit(context.view.value)
     return next && !isCoarserUnit(next, context.maxView.value) ? next : undefined
@@ -173,7 +178,7 @@ export function getCalendarViewTriggerSurface(context: CalendarRootContext): Par
 
 /** The `CalendarPrev` / `CalendarNext` surface. */
 export function getCalendarNavSurface(
-  context: CalendarRootContext,
+  context: CalendarChromeContext,
   direction: 'prev' | 'next',
   fn?: MaybeRefOrGetter<CalendarPageFunction | undefined>,
 ): PartSurface<CalendarNavState> {
@@ -199,7 +204,7 @@ export function getCalendarNavSurface(
 }
 
 /** The `CalendarGrid` surface: `role="application"` (#2502), labelled by the root heading. */
-export function getCalendarGridSurface(context: CalendarRootContext): PartSurface<CalendarGridState> {
+export function getCalendarGridSurface(context: CalendarChromeContext): PartSurface<CalendarGridState> {
   return createPartSurface<CalendarGridState>(
     () => ({
       'tabindex': -1,
@@ -244,7 +249,6 @@ export function getCalendarCellTriggerSurface(
   page?: MaybeRefOrGetter<DateValue | undefined>,
   unit?: MaybeRefOrGetter<CalendarUnit | undefined>,
 ): CalendarCellTriggerSurface {
-  const kbd = useKbd()
   const cellUnit = computed(() => toValue(unit) ?? context.view.value)
   const adapter = computed(() => getUnitAdapter(cellUnit.value))
   const date = computed(() => toValue(value))
@@ -279,113 +283,13 @@ export function getCalendarCellTriggerSurface(
     return false
   })
 
-  function isWithinBounds(candidate: DateValue) {
-    if (context.minValue.value && adapter.value.endOf(candidate).compare(context.minValue.value) < 0)
-      return false
-    if (context.maxValue.value && adapter.value.startOf(candidate).compare(context.maxValue.value) > 0)
-      return false
-    return true
-  }
-
-  function queryCell(candidate: DateValue) {
-    return context.parentElement.value?.querySelector<HTMLElement>(`[data-value='${candidate.toString()}']:not([data-outside-view])`) ?? null
-  }
-
-  /** Flip one page in `direction`; `false` when the button is disabled. */
-  function flipPage(direction: 1 | -1) {
-    if (direction > 0) {
-      if (context.isNextButtonDisabled())
-        return false
-      context.nextPage()
-    }
-    else {
-      if (context.isPrevButtonDisabled())
-        return false
-      context.prevPage()
-    }
-    return true
-  }
-
-  function focusCell(candidate: DateValue, el: HTMLElement, event?: Event) {
-    context.onPlaceholderChange(candidate, 'focus-navigation', event)
-    el.focus()
-  }
-
-  /** Move focus by `add` units, flipping pages and skipping disabled cells (#2781: depth-guarded). */
-  function shiftFocus(from: DateValue, add: number, event?: Event, depth = 0) {
-    if (depth > 48)
-      return
-    const candidate = adapter.value.add(from, add)
-    if (!isWithinBounds(candidate))
-      return
-
-    const el = queryCell(candidate)
-    if (!el) {
-      // Not rendered: the target is on another page.
-      if (!flipPage(add > 0 ? 1 : -1))
-        return
-      nextTick(() => shiftFocus(from, add, event, depth + 1))
-      return
-    }
-    if (el.hasAttribute('data-disabled')) {
-      shiftFocus(candidate, add, event, depth + 1)
-      return
-    }
-    focusCell(candidate, el, event)
-  }
-
-  /** PageUp / PageDown: the same cell one page away. */
-  function shiftFocusPage(direction: 1 | -1, event?: Event) {
-    const duration = adapter.value.pageDuration(context.layout.value)
-    const candidate = direction > 0 ? date.value.add(duration) : date.value.subtract(duration)
-    if (!isWithinBounds(candidate))
-      return
-    if (!flipPage(direction))
-      return
-    nextTick(() => {
-      const el = queryCell(candidate)
-      if (el && !el.hasAttribute('data-disabled'))
-        focusCell(candidate, el, event)
-    })
-  }
+  const navigation = createCellFocusNavigation(context, adapter, date)
 
   function onKeydown(event: KeyboardEvent) {
-    if (!CELL_TRIGGER_KEYS.has(event.code))
-      return
-    if (isDisabled.value)
-      return
-    // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
-    // let them bubble so parent listeners can react (e.g. submit a form).
-    if ((event.code === kbd.ENTER || event.code === kbd.SPACE_CODE) && (event.ctrlKey || event.metaKey || event.altKey))
-      return
-    event.preventDefault()
-    event.stopPropagation()
-
-    const sign = context.dir.value === 'rtl' ? -1 : 1
-    const stride = context.rowLength.value
-    switch (event.code) {
-      case kbd.ARROW_RIGHT:
-        shiftFocus(date.value, sign, event)
-        break
-      case kbd.ARROW_LEFT:
-        shiftFocus(date.value, -sign, event)
-        break
-      case kbd.ARROW_UP:
-        shiftFocus(date.value, -stride, event)
-        break
-      case kbd.ARROW_DOWN:
-        shiftFocus(date.value, stride, event)
-        break
-      case kbd.PAGE_UP:
-        shiftFocusPage(-1, event)
-        break
-      case kbd.PAGE_DOWN:
-        shiftFocusPage(1, event)
-        break
-      case kbd.ENTER:
-      case kbd.SPACE_CODE:
-        context.onDateChange(date.value, 'cell-keydown', event)
-    }
+    navigation.handleKeydown(event, {
+      disabled: isDisabled.value,
+      onSelect: e => context.onDateChange(date.value, 'cell-keydown', e),
+    })
   }
 
   const surface = createPartSurface<CalendarCellTriggerState>(

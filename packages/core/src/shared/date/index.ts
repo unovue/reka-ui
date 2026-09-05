@@ -39,6 +39,7 @@ export type {
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
+export { type CellKeydownOptions, type CellNavigationHost, createCellFocusNavigation } from './cellFocusNavigation'
 export { useCalendarGrid, type UseCalendarGridProps, type UseCalendarGridReturn } from './useCalendarGrid'
 export { useDateField } from './useDateField'
 export * from './utils'
