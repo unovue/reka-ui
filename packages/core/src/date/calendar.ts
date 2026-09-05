@@ -189,20 +189,22 @@ export function createMonths(props: SetMonthProps) {
 }
 
 /**
- * Creates a 3x4 grid of months for a given year.
+ * Creates a grid of the 12 months of the given year, `columns` per row
+ * (default 4, i.e. 3 rows of 4).
  */
-export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
-  const { dateObj } = props
+export function createMonthGrid(props: CreateSelectProps & { columns?: number }): Grid<DateValue> {
+  const { dateObj, columns = 4 } = props
   const months = createYear({ dateObj })
-  return { value: dateObj, cells: months, rows: chunk(months, 4) }
+  return { value: dateObj, cells: months, rows: chunk(months, columns) }
 }
 
 /**
- * Creates a 3x4 grid of years (decade-aligned).
- * The grid starts from the decade that contains the given date.
+ * Creates a grid of `yearsPerPage` years (default 12), `columns` per row
+ * (default 4). When `decadeAligned` (the default) the grid starts from the
+ * decade that contains the given date; otherwise it starts at the given year.
  */
-export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean }): Grid<DateValue> {
-  const { dateObj, yearsPerPage = 12, decadeAligned = true } = props
+export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean, columns?: number }): Grid<DateValue> {
+  const { dateObj, yearsPerPage = 12, decadeAligned = true, columns = 4 } = props
 
   let startYear: number
   if (decadeAligned) {
@@ -214,7 +216,7 @@ export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: numbe
 
   const years = Array.from({ length: yearsPerPage }, (_, i) => startOfYear(dateObj.set({ year: startYear + i })))
   const firstYear = years[0]
-  return { value: firstYear, cells: years, rows: chunk(years, 4) }
+  return { value: firstYear, cells: years, rows: chunk(years, columns) }
 }
 
 export function createYearRange({ start, end }: DateRange): DateValue[] {

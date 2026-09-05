@@ -4,7 +4,7 @@
 **Epic:** [unovue/reka-ui#2721](https://github.com/unovue/reka-ui/issues/2721) (v3 roadmap)
 **Related:** #741, #1199, #1730, #2191, #2389 (drill-down month/year views), #1933 (MonthPicker/YearPicker), #2781 (month picker keyboard bug)
 **Branch:** `claude/dates-components-refactor-lhs0j2`
-**Status:** Proposal — decisions marked *open* still need a call before Phase 2 of the plan starts.
+**Status:** Accepted 2026-09-05 — the four proposals under "Open questions" were approved as written (`granularity`, optional `CalendarView`, `columns` default 4, `view` argument on `nextPage` / `prevPage`). D12 and D13 remain follow-ups. Implementation runs on this branch per the plan.
 
 ## Summary
 
@@ -322,10 +322,15 @@ Every change is a rename or a one-level wrap, so the "Migration - v2 to v3" guid
 
 ## Open questions
 
-1. **`granularity` vs `minView`.** `granularity` matches `DateField`; `minView` matches Ark, which the shadcn-vue audience knows. Proposal: `granularity`.
-2. **`CalendarView` optional** (D5) or required? Optional keeps day-calendar migration to renames; required is more explicit. Proposal: optional.
-3. **`columns` default** 4 (v2 layout, 3 rows of 4) or 3 (the shadcn / Ark layout). Proposal: 4, to keep existing month-picker styling working.
-4. **`nextPage` / `prevPage` props** gain a `view` argument (D7)? Proposal: yes.
+Resolved 2026-09-05 (items 1–4 accepted as proposed):
+
+1. **`granularity` vs `minView`.** `granularity` matches `DateField`; `minView` matches Ark, which the shadcn-vue audience knows. **Decision: `granularity`.**
+2. **`CalendarView` optional** (D5) or required? Optional keeps day-calendar migration to renames; required is more explicit. **Decision: optional.**
+3. **`columns` default** 4 (v2 layout, 3 rows of 4) or 3 (the shadcn / Ark layout). **Decision: 4**, to keep existing month-picker styling working.
+4. **`nextPage` / `prevPage` props** gain a `view` argument (D7). **Decision: yes**, additive — `(placeholder: DateValue, view: CalendarView) => DateValue`.
+
+Still open:
+
 5. **Selection mode merge** (D12): decide after Phase 3 lands.
 6. **`DatePicker` pass-through parts** (D13): decide with #2726.
 

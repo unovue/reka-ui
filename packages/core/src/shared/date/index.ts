@@ -39,5 +39,6 @@ export type {
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
+export { useCalendarGrid, type UseCalendarGridProps, type UseCalendarGridReturn } from './useCalendarGrid'
 export { useDateField } from './useDateField'
 export * from './utils'
