@@ -2,7 +2,7 @@
 import type { DismissableLayerDismissDetails, DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { disclosureState, useForwardExpose, useGraceArea } from '@/shared'
+import { useForwardExpose, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
@@ -10,11 +10,12 @@ export interface HoverCardContentImplProps extends PopperContentProps {}
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { mergeProps, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { useForwardProps } from '..'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
+import { getHoverCardContentSurface } from './useHoverCard'
 import { getTabbableNodes } from './utils'
 
 const props = defineProps<HoverCardContentImplProps>()
@@ -24,6 +25,13 @@ const forwarded = useForwardProps(props)
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 const rootContext = injectHoverCardRootContext()
 const { isPointerInTransit, onPointerExit } = useGraceArea(rootContext.triggerElement, contentElement)
+
+// `data-state` comes from the shared surface builder (single source with
+// `useHoverCard()`); the grace area, selection containment, tabbable
+// neutralisation, scroll dismissal, DismissableLayer (which hands the dismiss
+// reason + event to `onDismiss`), PopperContent and the `--reka-hover-card-*`
+// CSS variables stay in the SFC.
+const content = getHoverCardContentSurface(rootContext)
 
 syncRef(rootContext.isPointerInTransitRef, isPointerInTransit, { direction: 'rtl' })
 
@@ -125,9 +133,8 @@ onUnmounted(() => {
     @dismiss="handleDismiss"
   >
     <PopperContent
-      v-bind="{ ...forwarded, ...$attrs }"
+      v-bind="mergeProps(forwarded, $attrs, content.attrs.value)"
       :ref="forwardRef"
-      :data-state="disclosureState(rootContext.open.value)"
       :style="{
         'userSelect': containSelection ? 'text' : undefined,
         // Safari requires prefix

@@ -50,7 +50,7 @@ const steps = [{
     >
       <StepperTrigger class="p-1 flex flex-col items-center text-center gap-2 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none rounded-md">
         <StepperIndicator
-          class="inline-flex items-center group-data-[disabled]:text-gray-400 group-data-[state=active]:bg-mauve12 group-data-[state=active]:text-white justify-center rounded-full text-grass11 w-10 h-10 shrink-0 bg-white group-data-[state=active]:shadow-mauve12 group-data-[state=completed]:bg-green9 group-data-[state=completed]:text-white group-data-[state=completed]:shadow-green9 shadow-[0_0_0_2px] "
+          class="inline-flex items-center group-data-[disabled]:text-gray-400 group-data-[state=current]:bg-mauve12 group-data-[state=current]:text-white justify-center rounded-full text-grass11 w-10 h-10 shrink-0 bg-white group-data-[state=current]:shadow-mauve12 group-data-[state=completed]:bg-green9 group-data-[state=completed]:text-white group-data-[state=completed]:shadow-green9 shadow-[0_0_0_2px] "
         >
           <Icon
             :icon="item.icon"

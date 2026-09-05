@@ -5,6 +5,11 @@
  * `peer-data-[state=on]:`, quoted or not) and CSS attribute selectors
  * (`[data-state=on]`, `[data-state='on']`, `[data-state="on"]`).
  *
+ * `active` / `inactive` mean three different things in v3 (`checked` /
+ * `unchecked` for Tabs, TagsInput and Rating; `current` / `upcoming` for
+ * Stepper; unchanged for the Splitter resize handle), so they are decided once
+ * per file from the component names the file mentions.
+ *
  * Anything that cannot be decided mechanically is left untouched and reported
  * as a warning so a human can finish the job.
  */
@@ -20,20 +25,29 @@ const RENAMES = {
   'instant-open': 'open',
 }
 
-/** Values whose meaning depends on the component the file is styling. */
+/**
+ * Values whose meaning depends on the component the file is styling, keyed by
+ * the group of components that share a rewrite. Each group lists the component
+ * names that identify it and the v3 value for each ambiguous v2 value (`null`
+ * keeps the v2 value, for components that still emit it).
+ */
 const AMBIGUOUS = {
-  active: 'checked',
-  inactive: 'unchecked',
+  selection: {
+    components: ['Tabs', 'TagsInput', 'Rating'],
+    values: { active: 'checked', inactive: 'unchecked' },
+  },
+  stepper: {
+    components: ['Stepper'],
+    values: { active: 'current', inactive: 'upcoming' },
+  },
+  splitter: {
+    components: ['SplitterResizeHandle'],
+    values: { active: null, inactive: null },
+  },
 }
 
-/** Components that moved `active` / `inactive` to `checked` / `unchecked`. */
-const SELECTION_COMPONENTS = ['Tabs', 'TagsInput', 'Rating']
-
-/** Components that still emit `active` / `inactive`. */
-const MULTI_STATE_COMPONENTS = ['Stepper', 'SplitterResizeHandle']
-
 const ALWAYS_VALUES = Object.keys(RENAMES)
-const AMBIGUOUS_VALUES = Object.keys(AMBIGUOUS)
+const AMBIGUOUS_VALUES = ['active', 'inactive']
 
 /**
  * `data-[state=X]` / `data-[state='X']` / `data-[state="X"]`, optionally
@@ -70,24 +84,24 @@ function mentionsAny(source, names) {
 }
 
 /**
- * Decide, once per file, what to do with `active` / `inactive`.
- * @returns {'rewrite' | 'keep' | 'warn'}
+ * Decide, once per file, what to do with `active` / `inactive` from the
+ * component names the file mentions: exactly one group → that group's
+ * mapping (a `null` entry keeps the value); more than one, or none → `null`,
+ * and every occurrence is reported instead of rewritten.
+ * @returns {Record<string, string | null> | null}
  */
 function decideAmbiguous(source) {
-  const selection = mentionsAny(source, SELECTION_COMPONENTS)
-  const multiState = mentionsAny(source, MULTI_STATE_COMPONENTS)
-  if (selection && !multiState)
-    return 'rewrite'
-  if (multiState && !selection)
-    return 'keep'
-  return 'warn'
+  const groups = Object.values(AMBIGUOUS).filter(group => mentionsAny(source, group.components))
+  return groups.length === 1 ? groups[0].values : null
 }
 
 function ambiguousWarning(value) {
-  return `ambiguous data-state "${value}": rewrite to "${AMBIGUOUS[value]}" for Tabs/TagsInput/Rating, keep for Stepper/Splitter`
+  const outcomes = Object.values(AMBIGUOUS)
+    .map(({ components, values }) => `${values[value] === null ? 'keep' : `rewrite to "${values[value]}"`} for ${components.join('/')}`)
+  return `ambiguous data-state "${value}": ${outcomes.join(', ')}`
 }
 
-function transformLine(line, mode) {
+function transformLine(line, mapping) {
   const warnings = []
 
   let out = line
@@ -97,12 +111,12 @@ function transformLine(line, mode) {
     .replace(TAILWIND_RENAME, (_, prefix = '', quote, value) => `${prefix}data-[state=${quote}${RENAMES[value]}${quote}]`)
     .replace(CSS_RENAME, (_, open, quote, value, close) => `${open}${quote}${RENAMES[value]}${quote}${close}`)
 
-  if (mode === 'rewrite') {
+  if (mapping) {
     out = out
-      .replace(TAILWIND_AMBIGUOUS, (_, prefix = '', quote, value) => `${prefix}data-[state=${quote}${AMBIGUOUS[value]}${quote}]`)
-      .replace(CSS_AMBIGUOUS, (_, open, quote, value, close) => `${open}${quote}${AMBIGUOUS[value]}${quote}${close}`)
+      .replace(TAILWIND_AMBIGUOUS, (_, prefix = '', quote, value) => `${prefix}data-[state=${quote}${mapping[value] ?? value}${quote}]`)
+      .replace(CSS_AMBIGUOUS, (_, open, quote, value, close) => `${open}${quote}${mapping[value] ?? value}${quote}${close}`)
   }
-  else if (mode === 'warn') {
+  else {
     const found = new Set()
     for (const pattern of [TAILWIND_AMBIGUOUS, CSS_AMBIGUOUS]) {
       for (const match of out.matchAll(pattern))
@@ -128,13 +142,13 @@ function transformLine(line, mode) {
  * @returns {{ code: string, changed: boolean, warnings: Array<{ line: number, message: string }> }}
  */
 export function transformDataState(source, _options = {}) {
-  const mode = decideAmbiguous(source)
+  const mapping = decideAmbiguous(source)
   const warnings = []
   const lines = source.split('\n')
 
   const code = lines
     .map((line, index) => {
-      const result = transformLine(line, mode)
+      const result = transformLine(line, mapping)
       for (const message of result.warnings)
         warnings.push({ line: index + 1, message })
       return result.line

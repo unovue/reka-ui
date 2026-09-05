@@ -52,6 +52,26 @@ jobs:
       - name: Build Packages
         run: pnpm build
 
-      # Must publish from repo root for provenance to work with OIDC
+      # Must publish from repo root for provenance to work with OIDC.
+      # `@reka-ui/codemod` is dependency-free (no build) and versioned in
+      # lockstep with `reka-ui` by `pnpm bumpp`, so `npx @reka-ui/codemod@3`
+      # always resolves to the codemods for that major. It needs its own
+      # trusted-publisher entry on npm pointing at this workflow.
+      # npm refuses to publish a version that already exists, so a package
+      # whose version is already on the registry is skipped: a rerun after a
+      # partial failure (the codemod failing after `reka-ui` succeeded) then
+      # gets past the first package instead of dying on it.
       - name: Publish to npm
-        run: npm publish ./packages/core --access public --provenance
+        run: |
+          publish() {
+            local name version
+            name=$(node -p "require('$1/package.json').name")
+            version=$(node -p "require('$1/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on npm, skipping"
+            else
+              npm publish "$1" --access public --provenance
+            fi
+          }
+          publish ./packages/core
+          publish ./packages/codemod

@@ -108,10 +108,10 @@ describe('delayed-open', () => {
 })
 
 describe('active / inactive', () => {
-  const activeWarning = 'ambiguous data-state "active": rewrite to "checked" for Tabs/TagsInput/Rating, keep for Stepper/Splitter'
-  const inactiveWarning = 'ambiguous data-state "inactive": rewrite to "unchecked" for Tabs/TagsInput/Rating, keep for Stepper/Splitter'
+  const activeWarning = 'ambiguous data-state "active": rewrite to "checked" for Tabs/TagsInput/Rating, rewrite to "current" for Stepper, keep for SplitterResizeHandle'
+  const inactiveWarning = 'ambiguous data-state "inactive": rewrite to "unchecked" for Tabs/TagsInput/Rating, rewrite to "upcoming" for Stepper, keep for SplitterResizeHandle'
 
-  it('rewrites when the file only mentions Tabs, TagsInput or Rating', () => {
+  it('rewrites to checked / unchecked when the file only mentions Tabs, TagsInput or Rating', () => {
     const source = [
       '<TabsTrigger class="data-[state=active]:text-grass-11 data-[state=inactive]:text-gray-11" />',
       `.TagsInputItem[data-state='active'] {}`,
@@ -126,9 +126,27 @@ describe('active / inactive', () => {
     assert.deepEqual(result.warnings, [])
   })
 
-  it('keeps active and inactive when the file only mentions Stepper or SplitterResizeHandle', () => {
+  it('rewrites to current / upcoming when the file only mentions Stepper', () => {
     const source = [
-      '<StepperItem class="data-[state=active]:font-bold data-[state=inactive]:opacity-50 data-[state=completed]:text-green" />',
+      '<StepperItem class="group data-[state=active]:font-bold data-[state=inactive]:opacity-50 data-[state=completed]:text-green" />',
+      '<StepperTrigger class="group-data-[state=active]:bg-black group-data-[state=inactive]:bg-white" />',
+      `.StepperItem[data-state='active'] .StepperIndicator {}`,
+      `.StepperSeparator[data-state="inactive"] {}`,
+    ].join('\n')
+    const result = transformDataState(source)
+    assert.equal(result.code, [
+      '<StepperItem class="group data-[state=current]:font-bold data-[state=upcoming]:opacity-50 data-[state=completed]:text-green" />',
+      '<StepperTrigger class="group-data-[state=current]:bg-black group-data-[state=upcoming]:bg-white" />',
+      `.StepperItem[data-state='current'] .StepperIndicator {}`,
+      `.StepperSeparator[data-state="upcoming"] {}`,
+    ].join('\n'))
+    assert.equal(result.changed, true)
+    assert.deepEqual(result.warnings, [])
+  })
+
+  it('keeps active and inactive when the file only mentions SplitterResizeHandle', () => {
+    const source = [
+      '<SplitterResizeHandle class="data-[state=inactive]:bg-gray-3 data-[state=active]:bg-gray-5" />',
       `.SplitterResizeHandle[data-state='inactive'] {}`,
     ].join('\n')
     const result = transformDataState(source)
@@ -137,7 +155,7 @@ describe('active / inactive', () => {
     assert.deepEqual(result.warnings, [])
   })
 
-  it('warns per line when the file mentions both families', () => {
+  it('warns per line when the file mentions more than one group', () => {
     const source = [
       '<TabsTrigger class="data-[state=active]:font-bold" />',
       '<StepperItem class="data-[state=active]:font-bold" />',
@@ -153,7 +171,21 @@ describe('active / inactive', () => {
     ])
   })
 
-  it('warns when the file mentions neither family', () => {
+  it('warns when the file mentions both Stepper and SplitterResizeHandle', () => {
+    const source = [
+      '<StepperItem class="data-[state=inactive]:opacity-50" />',
+      `.SplitterResizeHandle[data-state='inactive'] {}`,
+    ].join('\n')
+    const result = transformDataState(source)
+    assert.equal(result.code, source)
+    assert.equal(result.changed, false)
+    assert.deepEqual(result.warnings, [
+      { line: 1, message: inactiveWarning },
+      { line: 2, message: inactiveWarning },
+    ])
+  })
+
+  it('warns when the file mentions no group', () => {
     const source = `.trigger[data-state="active"] { color: red; }`
     const result = transformDataState(source)
     assert.equal(result.code, source)

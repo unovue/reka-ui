@@ -44,11 +44,12 @@ export interface TooltipContentImplProps
 <script setup lang="ts">
 import type { DismissableLayerDismissDetails } from '@/DismissableLayer'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted } from 'vue'
+import { computed, mergeProps, onMounted } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
+import { getTooltipContentSurface, getTooltipLabelSurface } from './useTooltip'
 import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipContentImplProps>(), {
@@ -63,6 +64,15 @@ const providerContext = injectTooltipProviderContext()
 
 const { forwardRef, currentElement } = useForwardExpose()
 const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent)
+
+// data-state / data-delayed on the content and id / role="tooltip" on the
+// hidden label come from the shared surface builders (single source with
+// `useTooltip()`); the PopperContent positioning, the CSS variables, the
+// DismissableLayer wrapper and the scroll / TOOLTIP_OPEN listeners stay here.
+// `$attrs` and the positioning props merge AFTER the surface, as before, so a
+// consumer's explicit `data-state` still wins.
+const content = getTooltipContentSurface(rootContext)
+const label = getTooltipLabelSurface(rootContext)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props
@@ -116,9 +126,7 @@ function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
   >
     <PopperContent
       :ref="forwardRef"
-      :data-state="rootContext.stateAttribute.value"
-      :data-delayed="rootContext.isDelayed.value ? '' : undefined"
-      v-bind="{ ...$attrs, ...popperContentProps }"
+      v-bind="mergeProps(content.attrs.value, { ...$attrs, ...popperContentProps })"
       :style="{
         '--reka-tooltip-content-transform-origin': 'var(--reka-popper-transform-origin)',
         '--reka-tooltip-content-available-width': 'var(--reka-popper-available-width)',
@@ -128,10 +136,7 @@ function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
       }"
     >
       <slot />
-      <VisuallyHidden
-        :id="rootContext.contentId"
-        role="tooltip"
-      >
+      <VisuallyHidden v-bind="label.attrs.value">
         {{ ariaLabel }}
       </VisuallyHidden>
     </PopperContent>
