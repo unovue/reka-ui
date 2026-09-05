@@ -92,6 +92,7 @@ Verify: `vitest run src/date src/shared/date src/Calendar src/RangeCalendar src/
 - [x] **2.7** Harnesses `story/_CalendarViews.vue` (three views + trigger) and `story/_CalendarUnit.vue` (single-view picker); every Calendar and DatePicker story, docs demo and docs snippet moved to `CalendarCell :value` / `CalendarCellTrigger :value` / `CalendarGrid :value`. `CalendarView` / `CalendarViewTrigger` registered in `constant/components.ts` and the namespaced plugin export. Histoire story `CalendarViews.story.vue` (drill-down, month picker, year picker with `columns` / `yearsPerPage`).
 - [ ] **2.8** axe on the drill-down harness (in `CalendarViews.test.ts`); `type-check`; family-scoped `docs:gen` (expect a real diff — new props). **Tests are syntax-checked only in the drafting environment; CI (`pnpm run build` on push) provides the type-check signal, vitest needs a PR or a local run.**
 - [x] **2.9** Commit: `feat(Calendar)!: view and granularity — day, month and year views in one family`.
+- [x] **2.10** `RangeCalendarRoot` consumed the v2 day-view `useCalendar`; it now builds its grid on `useCalendarGrid({ unit: 'day' })` until Phase 3 gives it views. No public change.
 
 ---
 
