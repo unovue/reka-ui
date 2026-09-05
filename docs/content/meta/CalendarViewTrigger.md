@@ -14,19 +14,23 @@
     'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
-  },
-  {
-    'name': 'prevPage',
-    'description': '<p>The function to be used for the prev page. Overwrites the <code>prevPage</code> function set on the <code>CalendarRoot</code>. Receives the placeholder and the active view.</p>\n',
-    'type': 'CalendarPageFunction',
-    'required': false
   }
 ]" />
 
 <SlotsTable :data="[
   {
+    'name': 'headingValue',
+    'description': '<p>Heading of the active view (<code>September 2026</code>, <code>2026</code>, <code>2020 - 2031</code>)</p>\n',
+    'type': 'string'
+  },
+  {
+    'name': 'view',
+    'description': '<p>The active view</p>\n',
+    'type': '\'day\' | \'month\' | \'year\''
+  },
+  {
     'name': 'disabled',
-    'description': '<p>Current disable state</p>\n',
+    'description': '<p>Whether the trigger is disabled (at <code>maxView</code>, or the calendar is disabled)</p>\n',
     'type': 'boolean'
   }
 ]" />
@@ -40,12 +44,13 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the CalendarRoot. Receives the placeholder and the active view. | `CalendarPageFunction` | No | - |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `disabled` | Current disable state | `boolean` |
+| `headingValue` | Heading of the active view (September 2026, 2026, 2020 - 2031) | `string` |
+| `view` | The active view | `"day" \| "month" \| "year"` |
+| `disabled` | Whether the trigger is disabled (at maxView, or the calendar is disabled) | `boolean` |
 
 </llm-only>
