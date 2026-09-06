@@ -379,14 +379,22 @@ describe('given horizontal Listbox with a filter', () => {
     }), { attachTo: document.body })
     const filter = wrapper.find('input')
     const items = wrapper.findAll('[role=option]')
-    // ArrowDown/ArrowUp map to nothing in a horizontal listbox; ArrowRight would
-    // map to `next` but the caret must keep it.
-    await filter.trigger('keydown', { key: 'ArrowRight' })
-    expect(items.some(item => item.attributes('data-highlighted') === '')).toBe(false)
+    // The mount highlight lands on the first item (nothing is selected).
+    await nextTick()
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    // ArrowRight would map to `next` in a horizontal listbox; the caret keeps it
+    // (no highlight move, default not prevented). End still navigates.
+    const right = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true, bubbles: true })
+    filter.element.dispatchEvent(right)
+    await nextTick()
+    expect(right.defaultPrevented).toBe(false)
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    expect(items[1].attributes('data-highlighted')).toBeUndefined()
     await filter.trigger('keydown', { key: 'End' })
     expect(items[2].attributes('data-highlighted')).toBe('')
     await filter.trigger('keydown', { key: 'ArrowLeft' })
     expect(items[2].attributes('data-highlighted')).toBe('')
+    expect(items[1].attributes('data-highlighted')).toBeUndefined()
     wrapper.unmount()
   })
 })
