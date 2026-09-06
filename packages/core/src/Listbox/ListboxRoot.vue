@@ -71,7 +71,7 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   selectionBehavior?: 'toggle' | 'replace'
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
-  /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
+  /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. */
   by?: string | ((a: T, b: T) => boolean)
   /**
    * Resolves what a keydown means for keyboard navigation. Return `undefined` to fall back to the default mapping

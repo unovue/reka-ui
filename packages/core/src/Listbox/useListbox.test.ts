@@ -374,6 +374,29 @@ describe('useListboxRoot — label registry', () => {
     expect(api.context.labels).toBe(api.labels)
   })
 
+  it('honours a function `by` for string values', () => {
+    const api = harness<string>({ by: (a, b) => a.toLowerCase() === b.toLowerCase() })
+    api.labels.register('Apple', 'Apple')
+    expect(api.labels.get('APPLE')).toBe('Apple')
+    api.labels.register('apple', 'apple', true)
+    expect(api.labels.entries()).toEqual([{ value: 'apple', label: 'apple', disabled: true }])
+  })
+
+  it('indexes primitive identities (plain values and a key `by`) without a scan', () => {
+    const plain = harness<string>()
+    plain.labels.register('a', 'A')
+    plain.labels.register('b', 'B')
+    plain.labels.register('a', 'A2')
+    expect(plain.labels.get('a')).toBe('A2')
+    expect(plain.labels.get('c')).toBeUndefined()
+    expect(plain.labels.entries().map(i => i.label)).toEqual(['A2', 'B'])
+
+    const keyed = harness<{ id: number }>({ by: 'id' })
+    keyed.labels.register({ id: 1 }, 'One')
+    keyed.labels.register({ id: 1 }, 'Uno')
+    expect(keyed.labels.entries()).toEqual([{ value: { id: 1 }, label: 'Uno', disabled: false }])
+  })
+
   it('is sticky through the SFCs: an unmounted ListboxItem keeps its label', async () => {
     let context!: ListboxRootContext<AcceptableValue>
     const Probe = defineComponent({
@@ -398,6 +421,34 @@ describe('useListboxRoot — label registry', () => {
     await wrapper.setProps({ showBanana: false })
     expect(wrapper.findAll('[role=option]')).toHaveLength(1)
     expect(context.labels.get('banana')).toBe('Banana')
+    wrapper.unmount()
+  })
+
+  it('follows `textValue`, slot text and `disabled` changes of a mounted ListboxItem', async () => {
+    let context!: ListboxRootContext<AcceptableValue>
+    const Probe = defineComponent({
+      setup() {
+        context = injectListboxRootContext()
+        return () => null
+      },
+    })
+    const App = defineComponent({
+      props: { textValue: String, text: { type: String, default: 'Cherry' }, disabled: Boolean },
+      setup(props) {
+        return () => h(ListboxRoot, null, () => [
+          h(ListboxItem, { value: 'cherry', textValue: props.textValue, disabled: props.disabled }, () => props.text),
+          h(Probe),
+        ])
+      },
+    })
+    const wrapper = mount(App, { attachTo: document.body })
+    expect(context.labels.entries()).toEqual([{ value: 'cherry', label: 'Cherry', disabled: false }])
+    await wrapper.setProps({ text: 'Cerise' })
+    expect(context.labels.get('cherry')).toBe('Cerise')
+    await wrapper.setProps({ textValue: 'Cherry label' })
+    expect(context.labels.get('cherry')).toBe('Cherry label')
+    await wrapper.setProps({ disabled: true })
+    expect(context.labels.entries()).toEqual([{ value: 'cherry', label: 'Cherry label', disabled: true }])
     wrapper.unmount()
   })
 })

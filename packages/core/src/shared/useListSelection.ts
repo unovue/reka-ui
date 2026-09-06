@@ -16,9 +16,10 @@ export interface UseListSelectionOptions<T, R extends string = string> {
   /** Whether several values can be selected at once. @defaultValue `false` */
   multiple?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * Identity strategy for object values (a key or an equality function).
-   * A plain value, NOT a getter: a comparison function would otherwise be
-   * mistaken for a getter by `toValue`.
+   * Identity strategy (a key or an equality function; a function runs for
+   * every value, strings included). A plain value read once at setup, NOT a
+   * getter: a comparison function would otherwise be mistaken for a getter by
+   * `toValue`.
    */
   by?: By<T>
   /**
@@ -54,6 +55,13 @@ export interface UseListSelectionReturn<T, R extends string = string> {
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<R>>>
 }
 
+/** `Object.is`, applied entry by entry to two arrays — the change-only rule for a multiple selection. */
+function isSameSelection<T>(a: T | T[] | undefined, b: T | T[] | undefined) {
+  if (Array.isArray(a) && Array.isArray(b))
+    return a.length === b.length && a.every((value, index) => Object.is(value, b[index]))
+  return Object.is(a, b)
+}
+
 /**
  * The single/multiple selection model shared by Listbox (and later Combobox
  * and Select, #2824), on top of `useControllableState`. `select` is ported
@@ -61,8 +69,9 @@ export interface UseListSelectionReturn<T, R extends string = string> {
  * adds/removes the value, multiple + replace selects `[value]` and records it
  * as the range anchor, single + toggle clears a re-selected value.
  *
- * The change comparison stays `Object.is`: a multiple selection always
- * produces a new array, so it always emits (the `useVModel` parity).
+ * A multiple selection is compared entry by entry (`Object.is` on each), so
+ * re-selecting the current value in `'replace'` mode emits nothing — the same
+ * change-only rule as a single value (v2 emitted a fresh array every time).
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
@@ -80,6 +89,7 @@ export function useListSelection<T, R extends string = string>(options: UseListS
     emit: options.emit,
     onBeforeUpdate: options.onBeforeUpdate,
     onUpdate: options.onUpdate,
+    isEqual: isSameSelection,
   })
 
   const firstValue = ref<T>() as Ref<T | undefined>

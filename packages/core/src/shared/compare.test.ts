@@ -9,9 +9,15 @@ describe('compare', () => {
     expect(compare(undefined, undefined)).toBe(false)
   })
 
-  it('compares strings strictly, ignoring the comparator', () => {
+  it('compares strings strictly, ignoring a key comparator', () => {
     expect(compare('a', 'a', 'id')).toBe(true)
     expect(compare('a', 'b')).toBe(false)
+  })
+
+  it('runs a comparison function for strings too', () => {
+    const caseInsensitive = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+    expect(compare('Apple', 'apple', caseInsensitive)).toBe(true)
+    expect(compare('Apple', 'apple')).toBe(false)
   })
 
   it('compares objects structurally by default', () => {

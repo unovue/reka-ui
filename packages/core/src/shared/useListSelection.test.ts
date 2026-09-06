@@ -66,13 +66,15 @@ describe('useListSelection — multiple', () => {
     expect(s.firstValue.value).toBe('b')
   })
 
-  it('always emits for a multiple selection (a new array is never `Object.is` equal)', () => {
+  it('replace: re-selecting the current value emits nothing (entries compared with Object.is)', () => {
     const onUpdate = vi.fn()
     const s = useListSelection<string>({ multiple: true, selectionBehavior: 'replace', onUpdate })
-    s.select('a')
-    s.select('a')
+    expect(s.select('a')).toBe(true)
+    expect(s.select('a')).toBe(false)
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(s.setModelValue(['a'])).toBe(false)
+    expect(s.setModelValue(['a', 'b'])).toBe(true)
     expect(onUpdate).toHaveBeenCalledTimes(2)
-    expect(onUpdate.mock.calls[1][0]).toEqual(['a'])
   })
 
   it('reads `multiple` reactively', () => {

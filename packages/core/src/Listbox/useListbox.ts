@@ -231,9 +231,9 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   /** When `true`, hovering an item highlights it. @defaultValue `false` */
   highlightOnHover?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * Identity strategy for object values (a key or an equality function).
-   * A plain value, NOT a getter — a comparison function would otherwise be
-   * mistaken for a getter.
+   * Identity strategy (a key or an equality function; a function runs for
+   * every value, strings included). A plain value read once at setup, NOT a
+   * getter — a comparison function would otherwise be mistaken for a getter.
    */
   by?: By<T>
   /**
@@ -625,16 +625,52 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }, { immediate: true, deep: true })
 
   // Sticky label registry: by-aware, last write wins, never auto-removed.
+  // Primitive identities (a primitive value, or a primitive `value[by]` for a
+  // key `by`) are indexed in a Map; a function `by` (and object identities
+  // without a key) fall back to a `compare` scan.
   const labelEntries = shallowRef<Array<{ value: T, label: string, disabled: boolean }>>([])
+  const labelIndex = new Map<string, number>()
+  function labelKey(value: T): string | undefined {
+    if (typeof props.by === 'function')
+      return undefined
+    const keyed = typeof props.by === 'string' && value !== null && typeof value === 'object'
+    const key: unknown = keyed ? value[props.by as keyof T] : value
+    const type = typeof key
+    if (type !== 'string' && type !== 'number' && type !== 'bigint' && type !== 'boolean')
+      return undefined
+    // Tagged so a plain `'1'`, a `1` and a `{ id: 1 }` under `by: 'id'` never collide.
+    return `${keyed ? 'k' : 'v'}:${type}:${String(key)}`
+  }
+  function labelIndexOf(value: T) {
+    const key = labelKey(value)
+    if (key !== undefined)
+      return labelIndex.get(key) ?? -1
+    return labelEntries.value.findIndex(i => compare(i.value, value, props.by))
+  }
   const labels: ListboxLabelRegistry<T> = {
     register: (value, label, disabled = false) => {
       const entry = { value, label, disabled }
-      const index = labelEntries.value.findIndex(i => compare(i.value, value, props.by))
+      const index = labelIndexOf(value)
+      const current = labelEntries.value[index]
+      // Items re-register on every render; only an actual change is written.
+      if (current && current.label === label && current.disabled === disabled)
+        return
       const next = [...labelEntries.value]
-      index === -1 ? next.push(entry) : next.splice(index, 1, entry)
+      if (index === -1) {
+        const key = labelKey(value)
+        if (key !== undefined)
+          labelIndex.set(key, next.length)
+        next.push(entry)
+      }
+      else {
+        next.splice(index, 1, entry)
+      }
       labelEntries.value = next
     },
-    get: value => labelEntries.value.find(i => compare(i.value, value, props.by))?.label,
+    get: (value) => {
+      const index = labelIndexOf(value)
+      return index === -1 ? undefined : labelEntries.value[index].label
+    },
     entries: () => [...labelEntries.value],
   }
 

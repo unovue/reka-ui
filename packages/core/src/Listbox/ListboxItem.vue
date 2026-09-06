@@ -28,7 +28,7 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import { computed, mergeProps, onMounted } from 'vue'
+import { computed, mergeProps, onUpdated, watchPostEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
@@ -57,10 +57,17 @@ const isHighlighted = computed(() => surface.state.value.highlighted)
 const isSelected = computed(() => surface.state.value.state === 'checked')
 const disabled = computed(() => surface.state.value.disabled)
 
-// Sticky: registered once mounted, never unregistered (#2824).
-onMounted(() => {
+// Sticky: registered once mounted, never unregistered (#2824). Re-registered
+// whenever `value` / `textValue` / `disabled` change (the post effect) or the
+// item re-renders (`onUpdated`, which covers slot text that is not a prop);
+// the registry ignores a rewrite that changes nothing. Text that changes
+// without re-rendering this item (a child component updating on its own) is
+// what `textValue` is for.
+function syncLabel() {
   rootContext.labels.register(props.value, props.textValue ?? currentElement.value?.textContent ?? '', disabled.value)
-})
+}
+watchPostEffect(syncLabel)
+onUpdated(syncLabel)
 
 provideListboxItemContext({
   isSelected,

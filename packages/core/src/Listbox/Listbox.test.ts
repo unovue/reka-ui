@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import { ListboxContent, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -341,9 +341,9 @@ describe('given multiple `true` Listbox', () => {
       await content.trigger('keydown', { key: kbd.ARROW_DOWN })
       await content.trigger('keydown', { key: kbd.ENTER })
       // v3: the second emit argument is the `ChangeEventDetails`; only the value is asserted here.
+      // v3: re-selecting the current value emits nothing, also for a multiple selection.
       expect(wrapper.emitted('update:modelValue')?.map(args => args[0])).toEqual([
         [items[0].text()],
-        [items[0].text()], // there's a bug here, it shouldn't emit the same value twice
         [items[1].text()],
       ])
     })
@@ -363,6 +363,31 @@ describe('given multiple `true` Listbox', () => {
           expect(items[i].attributes('aria-selected')).toBe('true')
       })
     })
+  })
+})
+
+describe('given horizontal Listbox with a filter', () => {
+  it('leaves ArrowLeft/ArrowRight to the text input instead of navigating', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { orientation: 'horizontal' }, () => [
+          h(ListboxFilter, { autoFocus: true }),
+          h(ListboxContent, { 'aria-label': 'Letters' }, () => ['a', 'b', 'c'].map(value => h(ListboxItem, { value }, () => value))),
+        ])
+      },
+    }), { attachTo: document.body })
+    const filter = wrapper.find('input')
+    const items = wrapper.findAll('[role=option]')
+    // ArrowDown/ArrowUp map to nothing in a horizontal listbox; ArrowRight would
+    // map to `next` but the caret must keep it.
+    await filter.trigger('keydown', { key: 'ArrowRight' })
+    expect(items.some(item => item.attributes('data-highlighted') === '')).toBe(false)
+    await filter.trigger('keydown', { key: 'End' })
+    expect(items[2].attributes('data-highlighted')).toBe('')
+    await filter.trigger('keydown', { key: 'ArrowLeft' })
+    expect(items[2].attributes('data-highlighted')).toBe('')
+    wrapper.unmount()
   })
 })
 

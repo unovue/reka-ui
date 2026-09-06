@@ -20,11 +20,13 @@ export function compare<T>(value?: T, currentValue?: T, comparator?: By<T>) {
   if (value === undefined || currentValue === undefined)
     return false
 
-  if (typeof value === 'string')
-    return value === currentValue
-
+  // A comparison function is the caller's whole identity strategy, so it runs
+  // for every value, strings included (v2 skipped it for strings).
   if (typeof comparator === 'function')
     return comparator(value, currentValue)
+
+  if (typeof value === 'string')
+    return value === currentValue
 
   if (typeof comparator === 'string')
     return value?.[comparator as keyof T] === currentValue?.[comparator as keyof T]
