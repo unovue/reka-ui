@@ -17,7 +17,7 @@
   },
   {
     'name': 'by',
-    'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
+    'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect.</p>\n',
     'type': 'string | ((a: T, b: T) =&gt; boolean)',
     'required': false
   },
@@ -43,6 +43,12 @@
     'name': 'disabled',
     'description': '<p>When <code>true</code>, prevents the user from interacting with listbox</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown means for keyboard navigation. Return <code>undefined</code> to fall back to the default mapping\n(arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), <code>null</code> to declare the key is not\na navigation key, or <code>\'select\'</code> to select the highlighted item as Enter does.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
     'required': false
   },
   {
@@ -165,11 +171,12 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: T, b: T) => boolean)` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to declare the key is not a navigation key, or 'select' to select the highlighted item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |

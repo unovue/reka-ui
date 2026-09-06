@@ -83,8 +83,19 @@ function handleKeydownNavigation(event: KeyboardEvent) {
   // Don't navigate mid-composition, arrow keys are used for IME candidate navigation
   if (isComposing.value)
     return
-  event.preventDefault()
-  rootContext.onKeydownNavigation(event)
+  // Enter stays on `handleKeydownEnter` below; resolving it here too (as a
+  // `'select'` intent) would run the Enter path twice.
+  if (event.key === 'Enter')
+    return
+  // The filter is a text input: left/right (and their Shift variants) keep
+  // moving the caret even when a horizontal listbox maps them to prev/next
+  // (v2 never bound them here either).
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+    return
+  // Was `@keydown.down.up.home.end`: the key list now lives in the navigation
+  // intent resolution, and the default is prevented only for a handled key.
+  if (rootContext.onKeydownNavigation(event))
+    event.preventDefault()
 }
 
 function handleKeydownEnter(event: KeyboardEvent) {
@@ -106,7 +117,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
     :aria-disabled="disabled ?? undefined"
     :aria-activedescendant="activedescendant"
     type="text"
-    @keydown.down.up.home.end="handleKeydownNavigation"
+    @keydown="handleKeydownNavigation"
     @keydown.enter="handleKeydownEnter"
     @input="handleInput"
     @compositionstart="onCompositionStart"

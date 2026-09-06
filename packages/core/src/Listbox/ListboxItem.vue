@@ -1,11 +1,16 @@
 <script lang="ts">
-import { createContext, handleAndDispatchCustomEvent, selectionState, useForwardExpose, useId } from '@/shared'
+import type { Ref } from 'vue'
+import type { PrimitiveProps } from '..'
+import type { AcceptableValue } from '@/shared/types'
+import { createContext, useForwardExpose, useId } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
   value: T
   /** When `true`, prevents the user from interacting with the item. */
   disabled?: boolean
+  /** Text used for the label registry; defaults to the rendered text content. */
+  textValue?: string
 }
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent, value?: T }>
 
@@ -13,8 +18,6 @@ export type ListboxItemEmits<T = AcceptableValue> = {
   /** Event handler called when the selecting item. <br> It can be prevented by calling `event.preventDefault`. */
   select: [event: SelectEvent<T>]
 }
-
-const LISTBOX_SELECT = 'listbox.select'
 
 interface ListboxItemContext {
   isSelected: Ref<boolean>
@@ -25,14 +28,11 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import type { Ref } from 'vue'
-import type { PrimitiveProps } from '..'
-import type { AcceptableValue } from '@/shared/types'
-import { computed } from 'vue'
+import { computed, mergeProps, onUpdated, watchPostEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { valueComparator } from './utils'
+import { getListboxItemSurface } from './useListbox'
 
 const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
   as: 'div',
@@ -44,57 +44,53 @@ const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
-const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
+// role/tabindex/aria-selected/disabled + the click/Space select protocol and
+// the hover highlight all come from the shared surface builder (single source
+// with `useListboxRoot()`); the collection registration, the SSR id and the
+// label registration stay in the SFC.
+const surface = getListboxItemSurface(rootContext, () => props.value, () => props.disabled, {
+  element: currentElement,
+  onSelect: event => emits('select', event as SelectEvent<T>),
+})
 
-const disabled = computed(() => rootContext.disabled.value || props.disabled)
+const isHighlighted = computed(() => surface.state.value.highlighted)
+const isSelected = computed(() => surface.state.value.state === 'checked')
+const disabled = computed(() => surface.state.value.disabled)
 
-async function handleSelect(ev: SelectEvent<T>) {
-  emits('select', ev)
-  if (ev?.defaultPrevented)
-    return
-
-  if (!disabled.value && ev) {
-    rootContext.onValueChange(props.value)
-    rootContext.changeHighlight(currentElement.value)
-  }
+// Sticky: registered once mounted, never unregistered (#2824). Re-registered
+// whenever `value` / `textValue` / `disabled` change (the post effect) or the
+// item re-renders (`onUpdated`, which covers slot text that is not a prop);
+// the registry ignores a rewrite that changes nothing. Text that changes
+// without re-rendering this item (a child component updating on its own) is
+// what `textValue` is for.
+function syncLabel() {
+  rootContext.labels.register(props.value, props.textValue ?? currentElement.value?.textContent ?? '', disabled.value)
 }
-
-function handleSelectCustomEvent(ev: PointerEvent) {
-  const eventDetail = { originalEvent: ev, value: props.value as T }
-  handleAndDispatchCustomEvent(LISTBOX_SELECT, handleSelect, eventDetail)
-}
+watchPostEffect(syncLabel)
+onUpdated(syncLabel)
 
 provideListboxItemContext({
   isSelected,
 })
+
+// Binding order is part of the v2 contract: `v-bind="$attrs"` sat after `:id`
+// and before every other binding, so a consumer `id` (e.g. ComboboxItem's)
+// overrides the generated one, the surface's role/aria/data-* override
+// same-named `$attrs`, and a consumer listener runs before the surface's
+// handler. `mergeProps($attrs, surface.attrs.value)` in the template keeps
+// exactly that precedence and listener chaining (never an object spread, which
+// would clobber the handlers).
 </script>
 
 <template>
   <CollectionItem :value="value">
     <Primitive
       :id="id"
-      v-bind="$attrs"
+      v-bind="mergeProps($attrs, surface.attrs.value)"
       :ref="forwardRef"
       v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value]"
-      role="option"
-      :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
-      :aria-selected="isSelected"
       :as="as"
       :as-child="asChild"
-      :disabled="disabled ? '' : undefined"
-      :data-disabled="disabled ? '' : undefined"
-      :data-highlighted="isHighlighted ? '' : undefined"
-      :data-state="selectionState(isSelected)"
-      @click="handleSelectCustomEvent"
-      @keydown.space.prevent="handleSelectCustomEvent"
-      @pointermove="() => {
-        if (rootContext.highlightedElement.value === currentElement)
-          return
-
-        if (rootContext.highlightOnHover.value)
-          rootContext.changeHighlight(currentElement, false, false)
-      }"
     >
       <slot />
     </Primitive>

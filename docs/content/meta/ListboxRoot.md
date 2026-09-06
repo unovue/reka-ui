@@ -17,7 +17,7 @@
   },
   {
     'name': 'by',
-    'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
+    'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect.</p>\n',
     'type': 'string | ((a: AcceptableValue, b: AcceptableValue) =&gt; boolean)',
     'required': false
   },
@@ -37,6 +37,12 @@
     'name': 'disabled',
     'description': '<p>When <code>true</code>, prevents the user from interacting with listbox</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown means for keyboard navigation. Return <code>undefined</code> to fall back to the default mapping\n(arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), <code>null</code> to declare the key is not\na navigation key, or <code>\'select\'</code> to select the highlighted item as Enter does.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
     'required': false
   },
   {
@@ -87,6 +93,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value.</p>\n',
+    'type': '[value: AcceptableValue, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
+  },
+  {
     'name': 'entryFocus',
     'description': '<p>Event handler called when container is being focused. Can be prevented.</p>\n',
     'type': '[event: CustomEvent&lt;any&gt;]'
@@ -104,7 +115,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: AcceptableValue]'
+    'type': '[value: AcceptableValue, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -125,10 +136,11 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to declare the key is not a navigation key, or 'select' to select the highlighted item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
@@ -141,10 +153,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. | `[value: AcceptableValue, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 
 **Slots**
 
