@@ -46,6 +46,12 @@
     'required': false
   },
   {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown means for keyboard navigation. Return <code>undefined</code> to fall back to the default mapping\n(arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), <code>null</code> to declare the key is not\na navigation key, or <code>\'select\'</code> to select the highlighted item as Enter does.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'required': false
+  },
+  {
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
@@ -170,6 +176,7 @@
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to declare the key is not a navigation key, or 'select' to select the highlighted item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
