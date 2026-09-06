@@ -165,12 +165,14 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
     await flushPromises()
   })
 
-  it('still closes on pointerleave after the trigger tag changes', async () => {
+  it('should still close on pointerleave after the trigger element is replaced', async () => {
     await wrapper.find('button').trigger('focus')
     expect(document.body.innerHTML).toContain('tooltip content')
 
     wrapper.vm.tag = 'a'
     await flushPromises()
+
+    expect(document.body.innerHTML).toContain('tooltip content')
 
     const trigger = wrapper.find('a').element as HTMLElement
     trigger.dispatchEvent(pointerEvent('pointerleave', { clientX: 0, clientY: 0 }))
