@@ -634,7 +634,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     if (typeof props.by === 'function')
       return undefined
     const keyed = typeof props.by === 'string' && value !== null && typeof value === 'object'
-    const key: unknown = keyed ? value[props.by as keyof T] : value
+    const key: unknown = keyed ? (value as Record<string, unknown>)[props.by as string] : value
     const type = typeof key
     if (type !== 'string' && type !== 'number' && type !== 'bigint' && type !== 'boolean')
       return undefined
