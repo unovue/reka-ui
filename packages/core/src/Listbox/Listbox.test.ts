@@ -307,10 +307,11 @@ describe('given multiple `true` Listbox', () => {
     await content.trigger('keydown', { key: kbd.ENTER })
     await content.trigger('keydown', { key: kbd.ARROW_UP })
     await content.trigger('keydown', { key: kbd.ENTER })
-    expect(wrapper.emitted('update:modelValue')).toEqual([
-      [[items[0].text()]],
-      [[items[0].text(), items[1].text()]],
-      [[items[1].text()]],
+    // v3: the second emit argument is the `ChangeEventDetails`; only the value is asserted here.
+    expect(wrapper.emitted('update:modelValue')?.map(args => args[0])).toEqual([
+      [items[0].text()],
+      [items[0].text(), items[1].text()],
+      [items[1].text()],
     ])
   })
 
@@ -339,10 +340,11 @@ describe('given multiple `true` Listbox', () => {
       await content.trigger('keydown', { key: kbd.ENTER })
       await content.trigger('keydown', { key: kbd.ARROW_DOWN })
       await content.trigger('keydown', { key: kbd.ENTER })
-      expect(wrapper.emitted('update:modelValue')).toEqual([
-        [[items[0].text()]],
-        [[items[0].text()]], // there's a bug here, it shouldn't emit the same value twice
-        [[items[1].text()]],
+      // v3: the second emit argument is the `ChangeEventDetails`; only the value is asserted here.
+      expect(wrapper.emitted('update:modelValue')?.map(args => args[0])).toEqual([
+        [items[0].text()],
+        [items[0].text()], // there's a bug here, it shouldn't emit the same value twice
+        [items[1].text()],
       ])
     })
 
