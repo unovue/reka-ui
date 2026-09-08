@@ -321,19 +321,19 @@ const segmentContents = computed(() => ({
 
 const editableSegmentContents = computed(() => ({ start: segmentContents.value.start.filter(({ part }) => part !== 'literal'), end: segmentContents.value.end.filter(({ part }) => part !== 'literal') }))
 
-watch(convertedModelValue, (_modelValue) => {
-  const isStartChanged = _modelValue?.start && convertedStartValue.value
-    ? _modelValue.start.compare(convertedStartValue.value) !== 0
-    : _modelValue?.start !== convertedStartValue.value
+watch(modelValue, (_modelValue) => {
+  const isStartChanged = _modelValue?.start && startValue.value
+    ? convertValue(_modelValue.start).compare(convertValue(startValue.value)) !== 0
+    : _modelValue?.start !== startValue.value
   if (isStartChanged) {
-    convertedStartValue.value = _modelValue?.start?.copy()
+    startValue.value = _modelValue?.start?.copy()
   }
 
-  const isEndChanged = _modelValue?.end && convertedEndValue.value
-    ? _modelValue.end.compare(convertedEndValue.value) !== 0
-    : _modelValue?.end !== convertedEndValue.value
+  const isEndChanged = _modelValue?.end && endValue.value
+    ? convertValue(_modelValue.end).compare(convertValue(endValue.value)) !== 0
+    : _modelValue?.end !== endValue.value
   if (isEndChanged) {
-    convertedEndValue.value = _modelValue?.end?.copy()
+    endValue.value = _modelValue?.end?.copy()
   }
 })
 
