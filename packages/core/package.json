@@ -88,8 +88,7 @@
     "vue": ">= 3.4.0"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.6.13",
-    "@floating-ui/vue": "^1.1.6",
+    "@floating-ui/vue": "^2.0.0",
     "@internationalized/date": "^3.5.0",
     "@internationalized/number": "^3.5.0",
     "@tanstack/vue-virtual": "^3.12.0",
