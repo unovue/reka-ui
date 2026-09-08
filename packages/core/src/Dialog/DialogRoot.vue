@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext } from '@/shared'
+import type { DOMTarget } from '@/shared'
+import { createContext, resolveDOMTarget } from '@/shared'
 
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
@@ -12,6 +13,13 @@ export interface DialogRootProps {
    * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
    */
   modal?: boolean
+  /**
+   * The element (or CSS selector) that contains this dialog:
+   * - `DialogPortal` teleports into it,
+   * - `DialogOverlay` positions against it, and scrolling is locked on it.
+   * Falls back to `document.body` if `undefined`.
+   */
+  container?: DOMTarget
   /**
    * When set to `false`, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br>
    * Useful for SEO or when you want to improve performance by not remounting the component on every open.
@@ -28,6 +36,7 @@ export type DialogRootEmits = {
 export interface DialogRootContext {
   open: Readonly<Ref<boolean>>
   modal: Ref<boolean>
+  container: Ref<HTMLElement | string | null | undefined>
   unmountOnHide: Ref<boolean>
   openModal: () => void
   onOpenChange: (value: boolean) => void
@@ -44,8 +53,8 @@ export const [injectDialogRootContext, provideDialogRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { isClient, useVModel } from '@vueuse/core'
+import { ref, toRefs, watchEffect } from 'vue'
 
 defineOptions({
   inheritAttrs: false,
@@ -55,6 +64,7 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
   open: undefined,
   defaultOpen: false,
   modal: true,
+  container: undefined,
   unmountOnHide: true,
 })
 const emit = defineEmits<DialogRootEmits>()
@@ -75,11 +85,12 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
-const { modal, unmountOnHide } = toRefs(props)
+const { modal, container, unmountOnHide } = toRefs(props)
 
 provideDialogRootContext({
   open,
   modal,
+  container,
   unmountOnHide,
   openModal: () => {
     open.value = true
@@ -96,6 +107,20 @@ provideDialogRootContext({
   triggerElement,
   contentElement,
 })
+
+if (import.meta.env.DEV && isClient) {
+  watchEffect(() => {
+    const container = props.container
+    if (container === undefined)
+      return
+
+    const el = resolveDOMTarget(container)
+    if (el === document.body)
+      console.warn('Warning: `container` resolves to `document.body` - omit the prop for a page modal.')
+    else if (el == null)
+      console.warn('Warning: `container` is currently unresolved. This is expected behavior for pending template refs; otherwise, your string selector is invalid or explicitly null.')
+  })
+}
 </script>
 
 <template>

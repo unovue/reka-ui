@@ -36,6 +36,7 @@ const { forwardRef } = useForwardExpose()
       :as="as"
       :as-child="asChild"
       :present="rootContext.unmountOnHide.value || present"
+      :lock-target="lockTarget"
     >
       <slot />
     </DialogOverlayImpl>

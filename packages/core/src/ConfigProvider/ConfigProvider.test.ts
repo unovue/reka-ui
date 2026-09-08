@@ -28,6 +28,12 @@ describe('given a default ConfigProvider', async () => {
   Object.defineProperty(document, 'clientWidth', { writable: true, configurable: true, value: 190 })
   Object.defineProperty(document.documentElement, 'clientWidth', { writable: true, configurable: true, value: 190 })
 
+  beforeAll(() => {
+    // override default body margin (8px) to match test expectations (0px).
+    const style = document.createElement('style')
+    style.textContent = 'body { margin: 0; padding: 0 }'
+    document.head.appendChild(style)
+  })
   beforeEach(() => {
     document.body.innerHTML = ''
     wrapper = mount(ConfigProviderTest, { attachTo: document.body })
