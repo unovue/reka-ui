@@ -25,6 +25,7 @@ import {
 
   syncSegmentValues,
 } from '@/shared/date'
+import { useSegmentNavigation } from '@/shared/date/useSegmentNavigation'
 
 export type DateRangeType = 'start' | 'end'
 
@@ -311,27 +312,11 @@ watch([endValue, locale], ([_endValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() => Array.from(segmentElements.value).findIndex(el =>
-  el.getAttribute('data-reka-date-field-segment') === currentFocusedElement.value?.getAttribute('data-reka-date-field-segment')
-  && el.getAttribute('data-reka-date-range-field-segment-type') === currentFocusedElement.value?.getAttribute('data-reka-date-range-field-segment-type')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { currentSegmentIndex, nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-date-field-segment', 'data-reka-date-range-field-segment-type'],
 })
 
 const kbd = useKbd()
@@ -368,12 +353,7 @@ provideDateRangeFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    // Auto-advance follows the segments' DOM order (the locale's format
-    // order) regardless of writing direction; only arrow-key navigation is
-    // direction-aware via nextFocusableSegment/prevFocusableSegment.
-    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
