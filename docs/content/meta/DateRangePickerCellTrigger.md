@@ -18,13 +18,13 @@
   {
     'name': 'day',
     'description': '',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': true
   },
   {
     'name': 'month',
     'description': '',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': true
   }
 ]" />
@@ -101,8 +101,8 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `day` |  | `DateValue` | Yes | - |
-| `month` |  | `DateValue` | Yes | - |
+| `day` |  | `TemporalDate` | Yes | - |
+| `month` |  | `TemporalDate` | Yes | - |
 
 **Slots**
 

@@ -1,30 +1,17 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import type { DateStep, Formatter } from '@/shared'
-import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
+import type { Formatter } from '@/shared'
+import type { DateStep, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { hasTime, isBefore } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
-import {
-  createContent,
-  getDefaultDate,
-  getInputType,
-  getSegmentElements,
-  initializeSegmentValues,
-  isSegmentNavigationKey,
-  normalizeDateStep,
-  normalizeHourCycle,
-  normalizeInputValue,
-  syncSegmentValues,
-} from '@/shared/date'
+import type { Matcher, TemporalDate } from '@/temporal/types'
+import { createContext, useDirection, useLocale } from '@/shared'
+import { getDefaultDate, useSegmentFieldShell } from '@/shared/date'
 
 type DateFieldRootContext = {
   locale: Ref<string>
-  modelValue: Ref<DateValue | undefined>
-  placeholder: Ref<DateValue>
+  modelValue: Ref<TemporalDate | undefined>
+  placeholder: Ref<TemporalDate>
   isDateUnavailable?: Matcher
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
@@ -42,13 +29,13 @@ type DateFieldRootContext = {
 
 export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value for the calendar */
-  defaultValue?: DateValue
+  defaultValue?: TemporalDate
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: TemporalDate
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
-  placeholder?: DateValue
+  placeholder?: TemporalDate
   /** The controlled value of the field. Can be bound as `v-model`. */
-  modelValue?: DateValue | null
+  modelValue?: TemporalDate | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
@@ -60,9 +47,9 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** Whether or not to hide the time zone segment of the field */
   hideTimeZone?: boolean
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: TemporalDate
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: TemporalDate
   /** The locale to use for formatting dates */
   locale?: string
   /** Whether or not the date field is disabled */
@@ -79,9 +66,9 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
 
 export type DateFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | undefined]
+  'update:modelValue': [date: TemporalDate | undefined]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: TemporalDate]
 }
 
 export const [injectDateFieldRootContext, provideDateFieldRootContext]
@@ -90,7 +77,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 
@@ -110,7 +97,7 @@ const emits = defineEmits<DateFieldRootEmits>()
 defineSlots<{
   default?: (props: {
     /** The current date of the field */
-    modelValue: DateValue | undefined
+    modelValue: TemporalDate | undefined
     /** The date field segment contents */
     segments: { part: SegmentPart, value: string }[]
     /** Value if the input is invalid */
@@ -118,25 +105,25 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, granularity, defaultValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
+const {
+  disabled,
+  readonly,
+  isDateUnavailable: propsIsDateUnavailable,
+  granularity,
+  defaultValue,
+  stepSnapping,
+  dir: propDir,
+  locale: propLocale,
+} = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value, {
-  hourCycle: normalizeHourCycle(props.hourCycle),
-})
-const { primitiveElement, currentElement: parentElement }
-  = usePrimitiveElement()
-const segmentElements = ref<Set<HTMLElement>>(new Set())
-
-onMounted(() => {
-  getSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
-})
+const { primitiveElement, currentElement: parentElement } = usePrimitiveElement()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
@@ -146,129 +133,38 @@ const defaultDate = getDefaultDate({
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
-const step = computed(() => normalizeDateStep(props))
-
-const inferredGranularity = computed(() => {
-  if (props.granularity)
-    return !hasTime(placeholder.value) ? 'day' : props.granularity
-
-  return hasTime(placeholder.value) ? 'minute' : 'day'
-})
-
-const isInvalid = computed(() => {
-  if (!modelValue.value)
-    return false
-
-  if (propsIsDateUnavailable.value?.(modelValue.value))
-    return true
-
-  if (props.minValue && isBefore(modelValue.value, props.minValue))
-    return true
-
-  if (props.maxValue && isBefore(props.maxValue, modelValue.value))
-    return true
-
-  return false
-})
-
-const initialSegments = initializeSegmentValues(inferredGranularity.value)
-
-const segmentValues = ref<SegmentValueObj>(modelValue.value ? { ...syncSegmentValues({ value: modelValue.value, formatter }) } : { ...initialSegments })
-
-const allSegmentContent = computed(() => createContent({
-  granularity: inferredGranularity.value,
-  dateRef: placeholder.value,
-  formatter,
-  hideTimeZone: props.hideTimeZone,
-  hourCycle: props.hourCycle,
-  segmentValues: segmentValues.value,
+const {
+  segmentContents,
+  isInvalid,
+  inputType,
+  inputValue,
+  inputMinValue,
+  inputMaxValue,
+  segmentElements,
+  handleKeydown,
+  ...shell
+} = useSegmentFieldShell({
+  segmentAttribute: 'data-reka-date-field-segment',
+  parentElement,
   locale,
-}))
-
-const segmentContents = computed(() => allSegmentContent.value.arr)
-
-const editableSegmentContents = computed(() => segmentContents.value.filter(({ part }) => part !== 'literal'))
-
-watch(locale, (value) => {
-  if (formatter.getLocale() !== value) {
-    formatter.setLocale(value)
-    // Locale changed, so we need to clear the segment elements and re-get them (different order)
-    // Get the focusable elements again on the next tick
-    nextTick(() => {
-      segmentElements.value.clear()
-      getSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
-    })
-  }
+  dir,
+  modelValue,
+  placeholder,
+  granularity,
+  hourCycle: props.hourCycle,
+  hideTimeZone: props.hideTimeZone,
+  step: props.step,
+  stepSnapping,
+  minValue: props.minValue,
+  maxValue: props.maxValue,
+  isDateUnavailable: propsIsDateUnavailable.value,
+  disabled,
+  readonly,
 })
-
-watch(modelValue, (_modelValue) => {
-  if (!isNullish(_modelValue) && placeholder.value.compare(_modelValue) !== 0) {
-    placeholder.value = _modelValue.copy()
-  }
-})
-
-watch([modelValue, locale], ([_modelValue]) => {
-  if (!isNullish(_modelValue)) {
-    segmentValues.value = { ...syncSegmentValues({ value: _modelValue, formatter }) }
-  }
-  // If segment has null value, means that user modified it, thus do not reset the segmentValues
-  else if (Object.values(segmentValues.value).every(value => value !== null) && isNullish(_modelValue)) {
-    segmentValues.value = { ...initialSegments }
-  }
-})
-
-const currentFocusedElement = ref<HTMLElement | null>(null)
-
-const currentSegmentIndex = computed(() =>
-  Array.from(segmentElements.value).findIndex(el =>
-    el.getAttribute('data-reka-date-field-segment')
-    === currentFocusedElement.value?.getAttribute('data-reka-date-field-segment')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
-})
-
-const inputType = computed(() => getInputType(inferredGranularity.value))
-const inputValue = computed(() => normalizeInputValue(modelValue.value, inferredGranularity.value))
-const inputMaxValue = computed(() => props.maxValue ? normalizeInputValue(props.maxValue, inferredGranularity.value) : undefined)
-const inputMinValue = computed(() => props.minValue ? normalizeInputValue(props.minValue, inferredGranularity.value) : undefined)
-
-const kbd = useKbd()
-
-function handleKeydown(e: KeyboardEvent) {
-  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
-  if (e.isComposing)
-    return
-  if (!isSegmentNavigationKey(e.key))
-    return
-  if (e.key === kbd.ARROW_LEFT)
-    prevFocusableSegment.value?.focus()
-  if (e.key === kbd.ARROW_RIGHT)
-    nextFocusableSegment.value?.focus()
-}
-
-function setFocusedElement(el: HTMLElement) {
-  currentFocusedElement.value = el
-}
 
 provideDateFieldRootContext({
   isDateUnavailable: propsIsDateUnavailable.value,
@@ -276,27 +172,22 @@ provideDateFieldRootContext({
   modelValue,
   placeholder,
   disabled,
-  formatter,
-  hourCycle: props.hourCycle,
-  step,
-  stepSnapping,
+  formatter: shell.formatter,
+  hourCycle: shell.hourCycle,
+  step: shell.step,
+  stepSnapping: shell.stepSnapping,
   readonly,
-  segmentValues,
+  segmentValues: shell.segmentValues,
   isInvalid,
-  segmentContents: editableSegmentContents,
+  segmentContents: shell.editableSegmentContents,
   elements: segmentElements,
-  setFocusedElement,
-  focusNext() {
-    // Auto-advance follows the segments' DOM order (the locale's format
-    // order) regardless of writing direction; only arrow-key navigation is
-    // direction-aware via nextFocusableSegment/prevFocusableSegment.
-    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
-  },
+  setFocusedElement: shell.setFocusedElement,
+  focusNext: shell.focusNext,
 })
 
 defineExpose({
   /** Helper to set the focused element inside the DateField */
-  setFocusedElement,
+  setFocusedElement: shell.setFocusedElement,
 })
 </script>
 

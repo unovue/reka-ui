@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import type { DateValue } from '@internationalized/date'
 import type { DateRangePickerRootProps } from '..'
+import type { DateRange } from '@/shared'
+import type { TemporalDate } from '@/temporal/types'
 import { Label } from '@/Label'
 import {
   DateRangePickerCalendar,
@@ -22,7 +23,7 @@ import {
   DateRangePickerTrigger,
 } from '..'
 
-const props = defineProps<{ dateFieldProps?: DateRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
+const props = defineProps<{ dateFieldProps?: DateRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void } }>()
 </script>
 
 <template>
@@ -32,7 +33,7 @@ const props = defineProps<{ dateFieldProps?: DateRangePickerRootProps, emits?: {
   >Input label</Label>
   <DateRangePickerRoot
     id="date-picker-field"
-    :is-date-unavailable="(date:DateValue) => date.day === 19"
+    :is-date-unavailable="(date: TemporalDate) => date.day === 19"
     v-bind="props.dateFieldProps"
     data-testid="picker"
     v-on="{ 'update:modelValue': props.emits?.['onUpdate:modelValue'] }"

@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
-import { isEqualDay } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { isSameDay } from '@/temporal/comparators'
 import { CalendarRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 </script>
@@ -31,12 +31,13 @@ const rootContext = injectDatePickerRootContext()
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
     :multiple="false"
-    @update:model-value="(date: DateValue | undefined) => {
-      if (date && rootContext.modelValue.value && isEqualDay(date, rootContext.modelValue.value)) return
-      rootContext.onDateChange(date)
+    @update:model-value="(date: TemporalDate | TemporalDate[] | undefined) => {
+      const singleDate = Array.isArray(date) ? date[0] : date
+      if (singleDate && rootContext.modelValue.value && isSameDay(singleDate, rootContext.modelValue.value)) return
+      rootContext.onDateChange(singleDate)
     }"
-    @update:placeholder="(date: DateValue) => {
-      if (isEqualDay(date, rootContext.placeholder.value)) return
+    @update:placeholder="(date: TemporalDate) => {
+      if (isSameDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
   >

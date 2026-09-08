@@ -9,7 +9,6 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@internationalized/date": "^3.7.0",
     "@internationalized/number": "^3.6.0",
     "reka-ui": "file:../../packages/core"
   },

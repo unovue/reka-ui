@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import type { DateValue } from '@internationalized/date'
 import type { CalendarRootProps } from '..'
+import type { TemporalDate } from '@/temporal/types'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 
-const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
+const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate) => void } }>()
 
-function pagingFunc(date: DateValue, sign: -1 | 1) {
+function pagingFunc(date: TemporalDate, sign: -1 | 1) {
   if (sign === -1)
     return date.subtract({ years: 1 })
   return date.add({ years: 1 })
@@ -21,7 +21,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
   >
     <CalendarHeader data-testid="header">
       <CalendarPrev
-        :prev-page="(date: DateValue) => pagingFunc(date, -1)"
+        :prev-page="(date: TemporalDate) => pagingFunc(date, -1)"
         data-testid="prev-year-button"
       />
       <CalendarPrev
@@ -32,7 +32,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
         data-testid="next-button"
       />
       <CalendarNext
-        :next-page="(date: DateValue) => pagingFunc(date, 1)"
+        :next-page="(date: TemporalDate) => pagingFunc(date, 1)"
         data-testid="next-year-button"
       />
     </CalendarHeader>

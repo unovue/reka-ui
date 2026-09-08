@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import { CalendarDateTime, getLocalTimeZone, now } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 import DateRangeField from './_DummyDateRangeField.vue'
 
-const defaultValue = { start: new CalendarDateTime(2024, 2, 20), end: new CalendarDateTime(2024, 2, 27) }
-const modelValue = ref(defaultValue) as Ref<{ start: DateValue, end: DateValue }>
+const defaultValue = {
+  start: Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 }),
+  end: Temporal.PlainDate.from({ year: 2024, month: 2, day: 27 }),
+}
+const modelValue = ref(defaultValue) as Ref<{ start: TemporalDate, end: TemporalDate }>
 
-const defaultPlaceholder = new CalendarDateTime(2023, 10, 11, 12, 30)
-const localTimezonePlaceholder = now(getLocalTimeZone())
+const defaultPlaceholder = Temporal.PlainDate.from({ year: 2023, month: 10, day: 11 })
+const localTimezonePlaceholder = Temporal.PlainDate.from({ year: 2024, month: 3, day: 15 })
 </script>
 
 <template>

@@ -9,19 +9,20 @@ description: Creates a wrapper around the `DateFormatter`, which is an improved 
 Creates a wrapper around the `DateFormatter`, which is an improved version of the Intl.DateTimeFormat API, that is used internally by the various date builders to easily format dates in a consistent way.
 </Description>
 
-More information on the DateFormatter [here](https://react-spectrum.adobe.com/internationalized/date/DateFormatter.html).
+`useDateFormatter` wraps `Intl.DateTimeFormat` with a stable API used across Reka UI date components.
 
 ## Usage
 
 ```vue
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { TemporalDate } from 'reka-ui'
 import type { Ref } from 'vue'
-import { CalendarDate, getLocalTimeZone } from '@internationalized/date'
-import { toDate, useDateFormatter } from 'reka-ui'
+import { useDateFormatter } from 'reka-ui'
+import { toDate } from 'reka-ui/date'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 
-const value = ref(new CalendarDate(1995, 8, 18)) as Ref<DateValue>
+const value = ref(Temporal.PlainDate.from({ year: 1995, month: 8, day: 18 })) as Ref<TemporalDate>
 // provide the locale
 const formatter = useDateFormatter('en')
 </script>
@@ -29,7 +30,7 @@ const formatter = useDateFormatter('en')
 <template>
   <span>
     <!-- output the month in short format. e.g.: Jan, Feb, etc. -->
-    {{ formatter.custom(value.toDate(getLocalTimeZone()), { month: 'short' }) }}
+    {{ formatter.custom(toDate(value), { month: 'short' }) }}
   </span>
 </template>
 ```

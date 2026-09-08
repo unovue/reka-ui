@@ -18,7 +18,7 @@
   {
     'name': 'defaultPlaceholder',
     'description': '<p>The default placeholder date</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -79,13 +79,13 @@
   {
     'name': 'maxValue',
     'description': '<p>The maximum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
     'name': 'minValue',
     'description': '<p>The minimum date that can be selected</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -103,7 +103,7 @@
   {
     'name': 'placeholder',
     'description': '<p>The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': false
   },
   {
@@ -136,7 +136,7 @@
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: TemporalDate]'
   }
 ]" />
 
@@ -175,7 +175,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `TemporalDate` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | - |
 | `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
@@ -185,11 +185,11 @@
 | `id` | Id of the element | `string` | No | - |
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
-| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `maxValue` | The maximum date that can be selected | `TemporalDate` | No | - |
+| `minValue` | The minimum date that can be selected | `TemporalDate` | No | - |
 | `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `TemporalDate` | No | - |
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
@@ -199,7 +199,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TemporalDate]` |
 
 **Slots**
 

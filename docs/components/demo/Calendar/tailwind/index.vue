@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { CalendarRootProps } from 'reka-ui'
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 
-const date = new CalendarDate(2024, 10, 3)
+const date = Temporal.PlainDate.from({ year: 2024, month: 10, day: 3 })
 
 const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
   return date.day === 17 || date.day === 18

@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-
-import { CalendarDate } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 import DatePicker from './_DummyDatePicker.vue'
 
-const defaultValue = new CalendarDate(2024, 2, 20)
-const modelValue = ref(defaultValue) as Ref<DateValue>
+const defaultValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 })
+const modelValue = ref(defaultValue) as Ref<TemporalDate>
 </script>
 
 <template>

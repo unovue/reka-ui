@@ -14,11 +14,11 @@
     "typescript": "*"
   },
   "dependencies": {
-    "@internationalized/date": "^3.7.0",
     "@stackblitz/sdk": "^1.11.0",
     "@vueuse/core": "^14.1.0",
     "motion-v": "2.2.0",
     "reka-ui": "link:../packages/core",
+    "temporal-polyfill": "^1.0.2",
     "vue": "3.5.17",
     "vue-sonner": "^2.0.9"
   },

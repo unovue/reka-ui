@@ -1,22 +1,17 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import {
-
-  getLocalTimeZone,
-  isSameDay,
-  isSameMonth,
-  isToday,
-} from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
 import { toDate } from '@/date'
 import { useKbd } from '@/shared'
+import { isEqualMonth, isSameDay, isToday, toPlainDate } from '@/temporal/comparators'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
-  day: DateValue
+  day: TemporalDate
   /** The month in which the cell is rendered */
-  month: DateValue
+  month: TemporalDate
 }
 
 export interface CalendarCellTriggerSlot {
@@ -69,10 +64,10 @@ const isUnavailable = computed(() =>
   rootContext.isDateUnavailable?.(props.day) ?? false,
 )
 const isDateToday = computed(() => {
-  return isToday(props.day, getLocalTimeZone())
+  return isToday(props.day)
 })
 const isOutsideView = computed(() => {
-  return !isSameMonth(props.day, props.month)
+  return !isEqualMonth(props.day, props.month)
 })
 
 const isOutsideVisibleView = computed(() =>
@@ -93,7 +88,7 @@ const isFocusedDate = computed(() => {
 
 const isSelectedDate = computed(() => rootContext.isDateSelected(props.day))
 
-function changeDate(date: DateValue) {
+function changeDate(date: TemporalDate) {
   if (rootContext.readonly.value)
     return
   if (rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date))
@@ -138,10 +133,10 @@ function handleArrowKey(e: KeyboardEvent) {
       changeDate(props.day)
   }
 
-  function shiftFocus(day: DateValue, add: number) {
+  function shiftFocus(day: TemporalDate, add: number) {
     const candidateDayValue = day.add({ days: add })
 
-    if ((rootContext.minValue.value && candidateDayValue.compare(rootContext.minValue.value) < 0) || (rootContext.maxValue.value && candidateDayValue.compare(rootContext.maxValue.value) > 0))
+    if ((rootContext.minValue.value && Temporal.PlainDate.compare(toPlainDate(candidateDayValue), toPlainDate(rootContext.minValue.value)) < 0) || (rootContext.maxValue.value && Temporal.PlainDate.compare(toPlainDate(candidateDayValue), toPlainDate(rootContext.maxValue.value)) > 0))
       return
 
     const candidateDay = parentElement.querySelector<HTMLElement>(`[data-value='${candidateDayValue.toString()}']:not([data-outside-view])`)

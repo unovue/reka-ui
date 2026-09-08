@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
+import type { TemporalDate } from '@/temporal/types'
 
 export interface MonthPickerCellProps extends PrimitiveProps {
   /** The date value for the cell */
-  date: DateValue
+  date: TemporalDate
 }
 </script>
 

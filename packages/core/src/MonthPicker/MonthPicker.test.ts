@@ -1,21 +1,21 @@
-import type { DateValue } from '@internationalized/date'
 import type { MonthPickerRootProps } from './MonthPickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import { MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot } from '..'
 import MonthPicker from './story/_MonthPicker.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = Temporal.PlainDate.from({ year: 1980, month: 1, day: 20 })
+const calendarDateTime = Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 30, second: 0, millisecond: 0 })
+const zonedDateTime = calendarDateTime.toZonedDateTime('America/New_York')
 
 const kbd = useTestKbd()
 
-function setup(props: { pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue | DateValue[] | undefined) => void } } = {}) {
+function setup(props: { pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate | TemporalDate[] | undefined) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(MonthPicker, { props })
   const picker = returned.getByTestId('month-picker')
@@ -55,8 +55,8 @@ describe('month picker', async () => {
         MonthPickerNext,
       },
       setup() {
-        const placeholder = new CalendarDate(1980, 1, 1)
-        const minValue = new CalendarDate(1980, 1, 1)
+        const placeholder = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+        const minValue = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
         return { placeholder, minValue }
       },
       template: `
@@ -140,7 +140,7 @@ describe('month picker', async () => {
   it('allows months to be deselected by clicking the selected month', async () => {
     const { user, picker, rerender } = setup({
       pickerProps: { modelValue: calendarDate },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data } }) },
     })
 
     const selectedMonth = getSelectedMonth(picker)
@@ -152,7 +152,7 @@ describe('month picker', async () => {
   it.each([kbd.ENTER, kbd.SPACE])('allows deselection with %s key', async (key) => {
     const { user, picker, rerender } = setup({
       pickerProps: { modelValue: calendarDate },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data } }) },
     })
 
     const selectedMonth = getSelectedMonth(picker)
@@ -192,7 +192,7 @@ describe('month picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         modelValue: calendarDate,
-        minValue: new CalendarDate(1979, 6, 1),
+        minValue: Temporal.PlainDate.from({ year: 1979, month: 6, day: 1 }),
       },
     })
 
@@ -211,7 +211,7 @@ describe('month picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         modelValue: calendarDate,
-        maxValue: new CalendarDate(1981, 6, 30),
+        maxValue: Temporal.PlainDate.from({ year: 1981, month: 6, day: 30 }),
       },
     })
 
@@ -230,7 +230,7 @@ describe('month picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         placeholder: calendarDate,
-        isMonthUnavailable: (date: DateValue) => {
+        isMonthUnavailable: (date: TemporalDate) => {
           return date.month === 3
         },
       },
@@ -248,7 +248,7 @@ describe('month picker', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         placeholder: calendarDate,
-        isMonthDisabled: (date: DateValue) => {
+        isMonthDisabled: (date: TemporalDate) => {
           return date.month === 3
         },
       },
@@ -366,12 +366,12 @@ describe('month picker - keyboard navigation', () => {
 
 describe('month picker - multiple', () => {
   it('handles multiple selection', async () => {
-    const d1 = new CalendarDate(1980, 1, 1)
-    const d2 = new CalendarDate(1980, 3, 1)
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+    const d2 = Temporal.PlainDate.from({ year: 1980, month: 3, day: 1 })
 
     const { picker, getByTestId, user, rerender } = setup({
       pickerProps: { modelValue: [d1, d2], multiple: true },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
     } as any)
 
     const selectedMonths = getSelectedMonths(picker)
@@ -384,12 +384,12 @@ describe('month picker - multiple', () => {
   })
 
   it('allows deselection in multiple mode', async () => {
-    const d1 = new CalendarDate(1980, 1, 1)
-    const d2 = new CalendarDate(1980, 3, 1)
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
+    const d2 = Temporal.PlainDate.from({ year: 1980, month: 3, day: 1 })
 
     const { picker, user, rerender } = setup({
       pickerProps: { modelValue: [d1, d2], multiple: true },
-      emits: { 'onUpdate:modelValue': (data: DateValue) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
+      emits: { 'onUpdate:modelValue': (data: TemporalDate) => rerender({ pickerProps: { modelValue: data as any, multiple: true } }) },
     } as any)
 
     const selectedMonths = getSelectedMonths(picker)
@@ -400,7 +400,7 @@ describe('month picker - multiple', () => {
   })
 
   it('normalizes single modelValue when multiple is true', async () => {
-    const d1 = new CalendarDate(1980, 1, 1)
+    const d1 = Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 })
 
     const { picker, getByTestId, user, rerender } = setup({
       pickerProps: { modelValue: d1, multiple: true },

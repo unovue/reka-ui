@@ -1,5 +1,6 @@
 <script lang="ts">
-import { isEqualDay } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { isSameDay } from '@/temporal/comparators'
 import { RangeCalendarRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
@@ -33,15 +34,15 @@ const rootContext = injectDateRangePickerRootContext()
     }"
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
-    @update:start-value="(date) => {
+    @update:start-value="(date: TemporalDate | undefined) => {
       rootContext.onStartValueChange(date)
     }"
     @update:model-value="(date) => {
-      if (date.start && rootContext.modelValue.value?.start && date.end && rootContext.modelValue.value?.end && isEqualDay(date.start, rootContext.modelValue.value?.start) && isEqualDay(date.end, rootContext.modelValue.value?.end)) return
+      if (date.start && rootContext.modelValue.value?.start && date.end && rootContext.modelValue.value?.end && isSameDay(date.start, rootContext.modelValue.value?.start) && isSameDay(date.end, rootContext.modelValue.value?.end)) return
       rootContext.onDateChange(date)
     }"
-    @update:placeholder="(date) => {
-      if (isEqualDay(date, rootContext.placeholder.value)) return
+    @update:placeholder="(date: TemporalDate) => {
+      if (isSameDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
   >

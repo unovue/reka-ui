@@ -1,14 +1,16 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { endOfYear, getLocalTimeZone, startOfYear, toCalendar, today } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { computed, nextTick } from 'vue'
 import { isSameYear, toDate } from '@/date'
 import { useKbd } from '@/shared'
+import { toCalendar } from '@/temporal/calendar'
+import { endOfYear, startOfYear, toPlainDate } from '@/temporal/comparators'
 
 export interface YearPickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
-  year: DateValue
+  year: TemporalDate
 }
 
 export interface YearPickerCellTriggerSlot {
@@ -55,8 +57,10 @@ const labelText = computed(() => {
 const isUnavailable = computed(() => rootContext.isYearUnavailable?.(props.year) ?? false)
 
 const isCurrentYear = computed(() => {
-  const todayDate = toCalendar(today(getLocalTimeZone()), props.year.calendar)
-  return isSameYear(props.year, todayDate)
+  const todayDate = Temporal.Now.plainDateISO()
+  const calendarId = rootContext.placeholder.value.calendarId
+  const normalizedToday = toCalendar(todayDate, calendarId as Parameters<typeof toCalendar>[1])
+  return isSameYear(props.year, normalizedToday)
 })
 
 const isDisabled = computed(() => rootContext.isYearDisabled(props.year))
@@ -67,7 +71,7 @@ const isFocusedYear = computed(() => {
 
 const isSelectedYear = computed(() => rootContext.isYearSelected(props.year))
 
-function changeYear(date: DateValue) {
+function changeYear(date: TemporalDate) {
   if (rootContext.readonly.value)
     return
   if (rootContext.isYearDisabled(date) || rootContext.isYearUnavailable?.(date))
@@ -118,13 +122,13 @@ function handleArrowKey(e: KeyboardEvent) {
       changeYear(props.year)
   }
 
-  function shiftFocus(currentYear: DateValue, add: number, depth = 0) {
+  function shiftFocus(currentYear: TemporalDate, add: number, depth = 0) {
     if (depth > 48)
       return
     const candidateYearValue = currentYear.add({ years: add })
 
-    if ((rootContext.minValue.value && endOfYear(candidateYearValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && startOfYear(candidateYearValue).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && Temporal.PlainDate.compare(endOfYear(candidateYearValue), toPlainDate(rootContext.minValue.value)) < 0)
+      || (rootContext.maxValue.value && Temporal.PlainDate.compare(startOfYear(candidateYearValue), toPlainDate(rootContext.maxValue.value)) > 0)) {
       return
     }
 
@@ -158,8 +162,8 @@ function handleArrowKey(e: KeyboardEvent) {
     const yearsPerPage = rootContext.yearsPerPage.value
     const candidateYearValue = props.year.add({ years: direction * yearsPerPage })
 
-    if ((rootContext.minValue.value && endOfYear(candidateYearValue).compare(rootContext.minValue.value) < 0)
-      || (rootContext.maxValue.value && startOfYear(candidateYearValue).compare(rootContext.maxValue.value) > 0)) {
+    if ((rootContext.minValue.value && Temporal.PlainDate.compare(endOfYear(candidateYearValue), toPlainDate(rootContext.minValue.value)) < 0)
+      || (rootContext.maxValue.value && Temporal.PlainDate.compare(startOfYear(candidateYearValue), toPlainDate(rootContext.maxValue.value)) > 0)) {
       return
     }
 
