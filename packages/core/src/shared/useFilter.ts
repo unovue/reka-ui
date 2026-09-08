@@ -45,11 +45,19 @@ export function useFilter(options?: MaybeRef<Intl.CollatorOptions>) {
     string = string.normalize('NFC')
     substring = substring.normalize('NFC')
 
-    let scan = 0
+    if (substring.length > string.length)
+      return false
+
+    // Read before the fast path below, so callers inside an effect keep tracking the collator.
+    const compare = collator.value.compare
+
+    // Identical strings always collate equal, so an exact match short-circuits the scan.
+    if (string.includes(substring))
+      return true
+
     const sliceLen = substring.length
-    for (; scan + sliceLen <= string.length; scan++) {
-      const slice = string.slice(scan, scan + sliceLen)
-      if (collator.value.compare(substring, slice) === 0)
+    for (let scan = 0; scan + sliceLen <= string.length; scan++) {
+      if (compare(substring, string.slice(scan, scan + sliceLen)) === 0)
         return true
     }
 
