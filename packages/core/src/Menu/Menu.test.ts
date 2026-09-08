@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { findAllByRole } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import Menu from './story/_Menu.vue'
@@ -63,6 +63,7 @@ describe('given a default Menu', () => {
 })
 
 describe('given a Menu with submenu', () => {
+  let wrapper: VueWrapper<InstanceType<typeof MenuWithSubmenu>>
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
@@ -70,9 +71,16 @@ describe('given a Menu with submenu', () => {
   }
   beforeEach(() => {
     document.body.innerHTML = ''
-    mount(MenuWithSubmenu, {
+    wrapper = mount(MenuWithSubmenu, {
       attachTo: document.body,
     })
+  })
+
+  afterEach(async () => {
+    wrapper.unmount()
+    if (vi.isFakeTimers())
+      await vi.runOnlyPendingTimersAsync()
+    vi.useRealTimers()
   })
 
   it('should highlight sub trigger on pointermove', async () => {
@@ -90,5 +98,28 @@ describe('given a Menu with submenu', () => {
     await nextTick()
 
     expect(subTrigger.hasAttribute('data-highlighted')).toBe(true)
+  })
+
+  it('should keep the submenu open when the pointer moves within its focused trigger', async () => {
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+
+    async function movePointer() {
+      // jsdom does not support PointerEvent.
+      const event = new MouseEvent('pointermove', { bubbles: true })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      subTrigger.dispatchEvent(event)
+      await nextTick()
+    }
+
+    await movePointer()
+    expect(subTrigger).toHaveFocus()
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    await movePointer()
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(wrapper.find('[role="menu"][aria-labelledby]').exists()).toBe(true)
   })
 })
