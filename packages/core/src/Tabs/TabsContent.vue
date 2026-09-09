@@ -18,6 +18,7 @@ export interface TabsContentProps extends PrimitiveProps {
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { isBrowser } from '@/shared/browser'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { makeContentId, makeTriggerId } from './utils'
 
@@ -48,7 +49,7 @@ onBeforeUnmount(() => {
   <Presence
     v-slot="{ present }"
     :present="forceMount || isSelected"
-    force-mount
+    :force-mount="!isBrowser || forceMount"
   >
     <Primitive
       :id="contentId"
