@@ -16,13 +16,14 @@ export type CollapsibleContentEmits = {
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, mergeProps, nextTick, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { disclosureState, useForwardExpose, useId } from '@/shared'
+import { useForwardExpose, useId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
+import { getCollapsibleContentSurface } from './useCollapsible'
 
 defineOptions({
   inheritAttrs: false,
@@ -39,6 +40,11 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const width = ref(0)
 const height = ref(0)
+const surface = getCollapsibleContentSurface(rootContext, {
+  present: () => presentRef.value?.present ?? Boolean(props.forceMount || rootContext.open.value),
+  width,
+  height,
+})
 
 // when opening we want it to immediately open to retrieve dimensions
 // when closing we delay `present` to retrieve dimensions before closing
@@ -85,7 +91,10 @@ onMounted(() => {
 
 useEventListener(currentElement, 'beforematch', (ev) => {
   requestAnimationFrame(() => {
-    rootContext.onOpenToggle()
+    if (rootContext.onContentFound)
+      rootContext.onContentFound(ev)
+    else
+      rootContext.onOpenToggle(ev)
     emits('contentFound', ev)
   })
 })
@@ -99,18 +108,10 @@ useEventListener(currentElement, 'beforematch', (ev) => {
     :force-mount="true"
   >
     <Primitive
-      v-bind="$attrs"
-      :id="rootContext.contentId"
+      v-bind="mergeProps($attrs, surface.attrs.value)"
       :ref="forwardRef"
       :as-child="props.asChild"
       :as="as"
-      :hidden="!present ? rootContext.unmountOnHide.value ? '' : 'until-found' : undefined"
-      :data-state="disclosureState(rootContext.open.value)"
-      :data-disabled="rootContext.disabled?.value ? '' : undefined"
-      :style="{
-        [`--reka-collapsible-content-height`]: `${height}px`,
-        [`--reka-collapsible-content-width`]: `${width}px`,
-      }"
     >
       <slot v-if="rootContext.unmountOnHide.value ? present : true" />
     </Primitive>

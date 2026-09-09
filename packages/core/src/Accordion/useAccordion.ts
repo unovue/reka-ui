@@ -3,6 +3,7 @@ import type { AccordionRootContext, AccordionRootProps } from './AccordionRoot.v
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { DataOrientation, Direction, SingleOrMultipleType } from '@/shared/types'
 import { computed, ref, toValue } from 'vue'
+import { getCollapsibleTriggerSurface } from '@/Collapsible/useCollapsible'
 import { createPartSurface, disclosureState, useArrowNavigation, useControllableState } from '@/shared'
 
 /** Why the expanded value changed; carried as `details.reason` on every change. */
@@ -131,7 +132,7 @@ export function getAccordionTriggerSurface(
   rootContext: AccordionRootContext<AccordionRootProps>,
   itemContext: AccordionItemSurfaceContext,
 ): PartSurface<AccordionPartState> {
-  function changeItem(event?: MouseEvent) {
+  function changeItem(event?: Event) {
     const triggerDisabled = rootContext.isSingle.value && itemContext.open.value && !rootContext.collapsible
     if (itemContext.disabled.value || triggerDisabled)
       return
@@ -139,14 +140,17 @@ export function getAccordionTriggerSurface(
     rootContext.changeModelValue(itemContext.value.value, 'trigger-press', event)
   }
 
+  const disclosureTrigger = getCollapsibleTriggerSurface({
+    open: itemContext.open,
+    disabled: itemContext.disabled,
+    onOpenToggle: changeItem,
+  })
   return createPartSurface(
     () => ({
+      ...disclosureTrigger.props.value,
       'id': toValue(itemContext.triggerId),
       'aria-disabled': itemContext.disabled.value || undefined,
-      'aria-expanded': itemContext.open.value || false,
       'data-reka-collection-item': '',
-      'disabled': itemContext.disabled.value,
-      'onClick': changeItem,
     }),
     getAccordionPartState(rootContext, itemContext),
   )

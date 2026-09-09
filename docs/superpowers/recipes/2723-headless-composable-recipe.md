@@ -172,7 +172,7 @@ computed from `(context, itemValue)`. What converting Tabs settled:
   callable outside `setup()` (Tabs is computed-only — no watchers/lifecycle in
   the composable). Never call `useId` inside the composable.
 
-### Disclosure refinement (validated on Accordion)
+### Disclosure refinement (validated on Accordion and Collapsible)
 
 Accordion confirms the collection contract but adds a nested disclosure wrapper and
 one stateful factory boundary:
@@ -209,6 +209,15 @@ one stateful factory boundary:
   `beforeUpdate:modelValue` and `update:modelValue`. Each part uses
   `createPartSurface` and `DisclosureState` / `disclosureState(open)`, and shells
   bind `attrs.value`. Surface builders stay internal.
+
+- **Collapsible owns the shared disclosure surfaces.** `useCollapsible()` exposes
+  root/trigger/content surfaces and cancellable `open` state. Accordion reuses the
+  Collapsible trigger builder with its own selection callback and collapse guard.
+  Collapsible shells keep Presence, measurements and animation suppression; content
+  discovery requests an open state with `content-found` details. The content shell
+  retains its existing SSR id allocation order, while standalone consumers receive
+  ids derived from `baseId`. The context's string `contentId` uses a reactive backing
+  ref so trigger surfaces observe late content-shell allocation.
 
 ## Overlay families (validated on Menu)
 
@@ -277,7 +286,7 @@ core Menu parts settled the overlay contract:
   (`ComboboxRoot` reads `ListboxRoot`'s exposed methods) require the dependency
   converted first: **Listbox → Combobox → Select**.
 - **Tiers:** (1) form/toggle: Checkbox, RadioGroup, ToggleGroup, Toggle; (2)
-  collection/disclosure: Tabs ✓(gate), Accordion ✓, Collapsible; (3) delegation
+  collection/disclosure: Tabs ✓(gate), Accordion ✓, Collapsible ✓; (3) delegation
   chains: Listbox → Combobox → Select; (4) overlays — Menu ✓(contract), rest joint
   with #2724; (5) date/calendar family last (heavy generics; `useDateField` is
   already composable-shaped — the house prior art for this whole effort).
