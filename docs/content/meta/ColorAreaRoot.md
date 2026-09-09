@@ -84,6 +84,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '',
+    'type': '[value: string, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
+  },
+  {
     'name': 'change',
     'description': '',
     'type': '[value: string]'
@@ -100,8 +105,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: string]'
+    'description': '',
+    'type': '[value: string, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -137,10 +142,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` |  | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 | `change` |  | `[value: string]` |
 | `changeEnd` |  | `[value: string]` |
 | `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string]` |
+| `update:modelValue` |  | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 
 **Slots**
 

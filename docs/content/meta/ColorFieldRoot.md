@@ -96,14 +96,19 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '',
+    'type': '[value: string, details: ChangeEventDetails&lt;ColorFieldChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:color',
     'description': '',
     'type': '[value: Color]'
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: string]'
+    'description': '',
+    'type': '[value: string, details: ChangeEventDetails&lt;ColorFieldChangeReason, Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -133,7 +138,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` |  | `[value: string, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
 | `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string]` |
+| `update:modelValue` |  | `[value: string, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
 
 </llm-only>

@@ -1,6 +1,8 @@
 <script lang="ts">
+import type { ColorSwatchPickerChangeReason } from './useColorSwatchPicker'
 import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
-import { useVModel } from '@vueuse/core'
+import type { ChangeEventDetails } from '@/shared'
+import type { AcceptableValue } from '@/shared/types'
 import { useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by'> {
@@ -8,11 +10,16 @@ export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by'>
   modelValue?: string | string[]
 }
 
-export type ColorSwatchPickerRootEmits = ListboxRootEmits
+export type ColorSwatchPickerRootEmits = Omit<ListboxRootEmits, 'update:modelValue'> & {
+  'beforeUpdate:modelValue': [value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
+  'update:modelValue': [value: AcceptableValue, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
+}
 </script>
 
 <script setup lang="ts">
+import { computed, mergeProps } from 'vue'
 import { ListboxContent, ListboxRoot } from '@/Listbox'
+import { useColorSwatchPicker } from './useColorSwatchPicker'
 
 const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
   as: 'div',
@@ -25,19 +32,26 @@ const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
 
 const emits = defineEmits<ColorSwatchPickerRootEmits>()
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue ?? (props.multiple ? [] : ''),
-  // Cast required for VueUse's passive option type; enables passive sync when modelValue is undefined
-  passive: (props.modelValue === undefined) as false,
+const { modelValue, root } = useColorSwatchPicker({
+  modelValue: () => props.modelValue,
+  defaultValue: () => props.defaultValue,
+  multiple: () => props.multiple,
+  disabled: () => props.disabled,
+  selectionBehavior: () => props.selectionBehavior,
+  emit: emits,
 })
 
-const forwarded = useForwardPropsEmits(props, emits)
+// The model has one update channel so cancellation cannot be bypassed by forwarding.
+const forwardedProps = useForwardPropsEmits(props, emits)
+const forwarded = computed(() => {
+  const { modelValue, defaultValue, 'onUpdate:modelValue': update, 'onBeforeUpdate:modelValue': beforeUpdate, ...rest } = forwardedProps.value
+  return rest
+})
 </script>
 
 <template>
   <ListboxRoot
-    v-bind="forwarded"
-    v-model="modelValue"
+    v-bind="mergeProps(forwarded, root.attrs.value)"
     as-child
   >
     <ListboxContent

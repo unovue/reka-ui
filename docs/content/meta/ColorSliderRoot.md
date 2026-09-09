@@ -70,7 +70,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the slider.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -90,6 +90,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '',
+    'type': '[value: string | Color, details: ChangeEventDetails&lt;\'slider\', Event&gt;]'
+  },
+  {
     'name': 'change',
     'description': '',
     'type': '[value: string]'
@@ -106,8 +111,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: string | Color]'
+    'description': '',
+    'type': '[value: string | Color, details: ChangeEventDetails&lt;\'slider\', Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -128,7 +133,7 @@
 | `inverted` | Whether the slider is visually inverted. | `boolean` | No | `false` |
 | `modelValue` | The color value (controlled). Can be a hex string or Color object. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the slider. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the slider. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | Custom step value for increment/decrement. Defaults to the channel's natural step. | `number` | No | - |
 
@@ -136,9 +141,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` |  | `[value: string \| Color, details: ChangeEventDetails<"slider", Event>]` |
 | `change` |  | `[value: string]` |
 | `changeEnd` |  | `[value: string]` |
 | `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string \| Color]` |
+| `update:modelValue` |  | `[value: string \| Color, details: ChangeEventDetails<"slider", Event>]` |
 
 </llm-only>
