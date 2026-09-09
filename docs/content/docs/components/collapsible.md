@@ -210,3 +210,34 @@ Adheres to the [Disclosure WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/
     },
   ]"
 />
+
+## Headless composable
+
+`useCollapsible` exposes reactive `open` state and `root`, `trigger`, and `content`
+part surfaces for custom rendering. Bind each surface's `attrs.value` to its element.
+
+```vue
+<script setup lang="ts">
+import { useCollapsible } from 'reka-ui'
+
+const disclosure = useCollapsible({ baseId: 'details', unmountOnHide: false })
+</script>
+
+<template>
+  <div v-bind="disclosure.root.attrs.value">
+    <button type="button" v-bind="disclosure.trigger.attrs.value">Details</button>
+    <div v-bind="disclosure.content.attrs.value">Additional information</div>
+  </div>
+</template>
+```
+
+Pass `open` as a writable ref for ref-owned state, or a getter with `onUpdate` for
+controlled state. `onBeforeUpdate(value, details)` can call `details.cancel()` to
+prevent a change. Changes include `trigger-press`, `content-found`, or
+`imperative-action` reasons and the originating event when available.
+
+The composable is experimental and callable outside component setup. Supply a
+stable, unique `baseId` when rendering on the server. Custom renderers own mounting,
+presence, measurements, animations, and browser `beforematch` handling; call
+`disclosure.onContentFound(event)` to request opening discovered content.
+Use the components when you need those rendering behaviors included.

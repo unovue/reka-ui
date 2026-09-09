@@ -27,7 +27,7 @@
   {
     'name': 'contentFound',
     'description': '',
-    'type': '[(void)?]'
+    'type': '[event: Event]'
   }
 ]" />
 </llm-exclude>
@@ -46,6 +46,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `contentFound` |  | `[(void)?]` |
+| `contentFound` |  | `[event: Event]` |
 
 </llm-only>

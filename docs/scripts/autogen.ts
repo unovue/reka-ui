@@ -199,7 +199,8 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render((eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
-        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        // Unlike optional props, undefined in an event payload is a value consumers can receive.
+        type: type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
     })
     .sort((a, b) => a.name.localeCompare(b.name))

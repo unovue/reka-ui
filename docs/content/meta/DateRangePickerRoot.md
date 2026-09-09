@@ -238,7 +238,7 @@
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue | undefined]'
   }
 ]" />
 
@@ -304,7 +304,7 @@
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined]` |
 
 **Slots**
 

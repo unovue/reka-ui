@@ -118,7 +118,7 @@
   {
     'name': 'submit',
     'description': '<p>Event handler called when a value is submitted</p>\n',
-    'type': '[value: string | null]'
+    'type': '[value: string | null | undefined]'
   },
   {
     'name': 'update:modelValue',
@@ -212,7 +212,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `submit` | Event handler called when a value is submitted | `[value: string \| null]` |
+| `submit` | Event handler called when a value is submitted | `[value: string \| null \| undefined]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[value: string]` |
 | `update:state` | Event handler called when the editable field changes state | `[state: "cancel" \| "submit" \| "edit"]` |
 

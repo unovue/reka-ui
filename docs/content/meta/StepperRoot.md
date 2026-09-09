@@ -54,7 +54,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes</p>\n',
-    'type': '[payload: number]'
+    'type': '[payload: number | undefined]'
   }
 ]" />
 
@@ -163,7 +163,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes | `[payload: number]` |
+| `update:modelValue` | Event handler called when the value changes | `[payload: number \| undefined]` |
 
 **Slots**
 

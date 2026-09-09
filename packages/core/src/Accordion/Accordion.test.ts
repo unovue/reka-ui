@@ -13,6 +13,7 @@ import {
   AccordionRoot,
   AccordionTrigger,
 } from '.'
+import * as Reka from '../index'
 import Accordion from './story/_Accordion.vue'
 
 const AccordionHydrationFixture = defineComponent({
@@ -286,5 +287,315 @@ describe('given a multiple Accordion', () => {
         expect(document.body.innerHTML).toContain(contentOne?.innerHTML)
       })
     })
+  })
+})
+
+// Characterization tests: lock the public DOM/event contract through the
+// `useAccordion()` extraction. These exercise the real components so a surface-
+// builder refactor cannot silently lose aria/id wiring, semantic data attributes,
+// or consumer-listener chaining. See #2723 recipe step 1.
+describe('accordion characterization contract', () => {
+  const twoItemFixture = {
+    components: {
+      AccordionContent,
+      AccordionHeader,
+      AccordionItem,
+      AccordionRoot,
+      AccordionTrigger,
+    },
+    template: `
+      <AccordionRoot type="single" default-value="one" orientation="horizontal">
+        <AccordionItem value="one" data-testid="item-one">
+          <AccordionHeader data-testid="header-one">
+            <AccordionTrigger>One</AccordionTrigger>
+          </AccordionHeader>
+          <AccordionContent force-mount>Content one</AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="two" data-testid="item-two">
+          <AccordionHeader>
+            <AccordionTrigger>Two</AccordionTrigger>
+          </AccordionHeader>
+          <AccordionContent force-mount>Content two</AccordionContent>
+        </AccordionItem>
+      </AccordionRoot>
+    `,
+  }
+
+  it('wires content to its trigger while preserving stable SSR-safe ids', async () => {
+    const wrapper = mount(twoItemFixture, { attachTo: document.body })
+    await nextTick()
+
+    const [trigger] = wrapper.findAll('button')
+    const [content] = wrapper.findAll('[role="region"]')
+    const triggerId = trigger.attributes('id')
+    const contentId = content.attributes('id')
+
+    expect(triggerId).toMatch(/^reka-accordion-trigger-/)
+    expect(contentId).toMatch(/^reka-collapsible-content-/)
+    expect(content.attributes('aria-labelledby')).toBe(triggerId)
+
+    await wrapper.findAll('button')[1].trigger('click')
+    await nextTick()
+    expect(trigger.attributes('id')).toBe(triggerId)
+    expect(content.attributes('id')).toBe(contentId)
+    wrapper.unmount()
+  })
+
+  it('defaults an untyped root with no model to single mode', async () => {
+    const modelUpdate = vi.fn()
+    const wrapper = mount({
+      components: {
+        AccordionContent,
+        AccordionHeader,
+        AccordionItem,
+        AccordionRoot,
+        AccordionTrigger,
+      },
+      setup() {
+        return { modelUpdate }
+      },
+      template: `
+        <AccordionRoot @update:model-value="modelUpdate">
+          <AccordionItem value="one">
+            <AccordionHeader><AccordionTrigger>One</AccordionTrigger></AccordionHeader>
+            <AccordionContent>Content one</AccordionContent>
+          </AccordionItem>
+        </AccordionRoot>
+      `,
+    }, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+
+    expect(modelUpdate).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'trigger-press' }))
+    wrapper.unmount()
+  })
+
+  it('preserves item exposes when forwarding the rendered element', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = mount({
+      components: {
+        AccordionItem,
+        AccordionRoot,
+      },
+      template: `
+        <AccordionRoot type="single" default-value="one" disabled>
+          <AccordionItem ref="item" value="one" />
+        </AccordionRoot>
+      `,
+    })
+    const item = wrapper.vm.$refs.item as {
+      open: boolean
+      dataDisabled: '' | undefined
+      value: string
+      $el: HTMLElement
+    }
+
+    expect(item.open).toBe(true)
+    expect(item.dataDisabled).toBe('')
+    expect(item.value).toBe('one')
+    expect(item.$el).toBeInstanceOf(HTMLElement)
+    expect(warn.mock.calls.flat().join('\n')).not.toContain('expose() should be called only once')
+    wrapper.unmount()
+  })
+
+  it('reflects open state and orientation across item, header, trigger, and content', async () => {
+    const wrapper = mount(twoItemFixture, { attachTo: document.body })
+    await nextTick()
+
+    const item = wrapper.find('[data-testid="item-one"]')
+    const header = wrapper.find('[data-testid="header-one"]')
+    const trigger = wrapper.find('button')
+    const content = wrapper.find('[role="region"]')
+
+    expect({
+      item: item.attributes('data-state'),
+      header: header.attributes('data-state'),
+      trigger: trigger.attributes('data-state'),
+    }).toEqual({ item: 'open', header: 'open', trigger: 'open' })
+    expect({
+      item: item.attributes('data-orientation'),
+      header: header.attributes('data-orientation'),
+      trigger: trigger.attributes('data-orientation'),
+      content: content.attributes('data-orientation'),
+    }).toEqual({ item: 'horizontal', header: 'horizontal', trigger: 'horizontal', content: 'horizontal' })
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('propagates root disabled state without opening an item', async () => {
+    const wrapper = mount({
+      components: {
+        AccordionContent,
+        AccordionHeader,
+        AccordionItem,
+        AccordionRoot,
+        AccordionTrigger,
+      },
+      template: `
+        <AccordionRoot type="single" disabled>
+          <AccordionItem value="one" data-testid="item">
+            <AccordionHeader data-testid="header">
+              <AccordionTrigger>One</AccordionTrigger>
+            </AccordionHeader>
+            <AccordionContent force-mount>Content one</AccordionContent>
+          </AccordionItem>
+        </AccordionRoot>
+      `,
+    }, { attachTo: document.body })
+    await nextTick()
+
+    const item = wrapper.find('[data-testid="item"]')
+    const header = wrapper.find('[data-testid="header"]')
+    const trigger = wrapper.find('button')
+    const content = wrapper.find('[role="region"]')
+
+    for (const part of [item, header, trigger, content])
+      expect(part.attributes('data-disabled')).toBe('')
+    expect(trigger.attributes('aria-disabled')).toBe('true')
+    expect(trigger.attributes('disabled')).toBe('')
+
+    await trigger.trigger('click')
+    await nextTick()
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(item.attributes('data-state')).toBe('closed')
+    wrapper.unmount()
+  })
+
+  it('chains a consumer click listener with internal activation', async () => {
+    const consumerClick = vi.fn()
+    const modelUpdate = vi.fn()
+    const wrapper = mount({
+      components: {
+        AccordionContent,
+        AccordionHeader,
+        AccordionItem,
+        AccordionRoot,
+        AccordionTrigger,
+      },
+      setup() {
+        return { consumerClick, modelUpdate }
+      },
+      template: `
+        <AccordionRoot type="single" @update:model-value="modelUpdate">
+          <AccordionItem value="one">
+            <AccordionHeader>
+              <AccordionTrigger @click="consumerClick">One</AccordionTrigger>
+            </AccordionHeader>
+            <AccordionContent>Content one</AccordionContent>
+          </AccordionItem>
+        </AccordionRoot>
+      `,
+    }, { attachTo: document.body })
+
+    const trigger = wrapper.find('button')
+    await trigger.trigger('click')
+    await nextTick()
+
+    expect(consumerClick).toHaveBeenCalledTimes(1)
+    expect(modelUpdate).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'trigger-press' }))
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('chains a consumer keydown listener with internal arrow navigation', async () => {
+    const consumerKeydown = vi.fn()
+    const wrapper = mount({
+      components: {
+        AccordionContent,
+        AccordionHeader,
+        AccordionItem,
+        AccordionRoot,
+        AccordionTrigger,
+      },
+      setup() {
+        return { consumerKeydown }
+      },
+      template: `
+        <AccordionRoot type="single">
+          <AccordionItem value="one" @keydown="consumerKeydown">
+            <AccordionHeader><AccordionTrigger>One</AccordionTrigger></AccordionHeader>
+            <AccordionContent>Content one</AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="two">
+            <AccordionHeader><AccordionTrigger>Two</AccordionTrigger></AccordionHeader>
+            <AccordionContent>Content two</AccordionContent>
+          </AccordionItem>
+        </AccordionRoot>
+      `,
+    }, { attachTo: document.body })
+
+    const [first, second] = wrapper.findAll('button')
+    first.element.focus()
+    await first.trigger('keydown', { key: 'ArrowDown' })
+
+    expect(consumerKeydown).toHaveBeenCalledTimes(1)
+    expect(document.activeElement).toBe(second.element)
+    wrapper.unmount()
+  })
+})
+
+describe('useAccordion public API', () => {
+  it('exports useAccordion from the package barrel', () => {
+    expect(typeof Reka.useAccordion).toBe('function')
+  })
+
+  it('keeps Accordion surface builders internal', () => {
+    expect('getAccordionItemSurface' in Reka).toBe(false)
+    expect('getAccordionHeaderSurface' in Reka).toBe(false)
+    expect('getAccordionTriggerSurface' in Reka).toBe(false)
+    expect('getAccordionContentSurface' in Reka).toBe(false)
+  })
+})
+
+describe('accordion change details through the shell', () => {
+  const fixture = {
+    components: { AccordionRoot, AccordionItem, AccordionHeader, AccordionTrigger, AccordionContent },
+    template: `
+      <AccordionRoot type="single" :unmount-on-hide="false" @before-update:model-value="before">
+        <AccordionItem value="one">
+          <AccordionHeader><AccordionTrigger @click="click">One</AccordionTrigger></AccordionHeader>
+          <AccordionContent>Content one</AccordionContent>
+        </AccordionItem>
+      </AccordionRoot>
+    `,
+  }
+
+  it.each([false, true])('honors beforeUpdate cancellation (%s) and chains consumer clicks', async (cancel) => {
+    const click = vi.fn()
+    const before = vi.fn((_, details) => {
+      if (cancel)
+        details.cancel()
+    })
+    const wrapper = mount({ ...fixture, setup: () => ({ before, click }) })
+    const root = wrapper.findComponent(AccordionRoot)
+    await wrapper.find('button').trigger('click')
+
+    expect(before).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'trigger-press', event: expect.any(MouseEvent) }))
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('button').attributes('aria-expanded')).toBe(String(!cancel))
+    expect(wrapper.find('[role="region"]').attributes('data-state')).toBe(cancel ? 'closed' : 'open')
+    if (cancel)
+      expect(root.emitted('update:modelValue')).toBeUndefined()
+    else
+      expect(root.emitted('update:modelValue')?.[0]).toEqual(['one', before.mock.calls[0][1]])
+    wrapper.unmount()
+  })
+
+  it.each([false, true])('forwards the native beforematch event and honors cancellation (%s)', async (cancel) => {
+    const before = vi.fn((_, details) => {
+      if (cancel)
+        details.cancel()
+    })
+    const wrapper = mount({ ...fixture, setup: () => ({ before, click: vi.fn() }) }, { attachTo: document.body })
+    const root = wrapper.findComponent(AccordionRoot)
+    const event = new Event('beforematch')
+    wrapper.find('[role="region"]').element.dispatchEvent(event)
+    await vi.waitFor(() => expect(before).toHaveBeenCalledTimes(1))
+    await nextTick()
+
+    expect(before).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'content-found', event }))
+    expect(wrapper.find('button').attributes('aria-expanded')).toBe(String(!cancel))
+    expect(Boolean(root.emitted('update:modelValue'))).toBe(!cancel)
+    wrapper.unmount()
   })
 })
