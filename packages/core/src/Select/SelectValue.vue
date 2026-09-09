@@ -10,7 +10,7 @@ export interface SelectValueProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -28,7 +28,7 @@ onMounted(() => {
   rootContext.valueElement = currentElement
 })
 
-const selectedLabel = computed(() => {
+const resolvedLabel = computed(() => {
   let list: string[] = []
   const options = Array.from(rootContext.optionsSet.value)
   const getOption = (value?: AcceptableValue) => options.find(option => valueComparator(value, option.value, rootContext.by))
@@ -40,6 +40,15 @@ const selectedLabel = computed(() => {
   }
   return list.filter(Boolean)
 })
+
+// Keep the last resolved label so the placeholder doesn't flash when the
+// options are transiently unregistered, e.g. while the content is closing and
+// the items are being moved between the popper and the fallback fragment.
+const selectedLabel = ref<string[]>(resolvedLabel.value)
+watch(resolvedLabel, (value) => {
+  if (value.length || rootContext.isEmptyModelValue.value)
+    selectedLabel.value = value
+}, { immediate: true })
 
 const slotText = computed(() => {
   return selectedLabel.value.length ? selectedLabel.value.join(', ') : props.placeholder
