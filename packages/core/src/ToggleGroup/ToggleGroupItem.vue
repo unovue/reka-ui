@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { AcceptableValue } from '@/shared/types'
-import type { ToggleProps } from '@/Toggle'
-import { isValueEqualOrExist, useForwardExpose, useForwardScopeId } from '@/shared'
+import type { ToggleEmits, ToggleProps } from '@/Toggle'
+import { useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'required' | 'modelValue' | 'defaultValue'> {
   /**
@@ -17,14 +17,29 @@ import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { Toggle } from '@/Toggle'
 import { injectToggleGroupRootContext } from './ToggleGroupRoot.vue'
+import { getToggleGroupItemSurface } from './useToggleGroup'
 
 const props = withDefaults(defineProps<ToggleGroupItemProps>(), {
   as: 'button',
 })
 
 const rootContext = injectToggleGroupRootContext()
-const disabled = computed(() => rootContext.disabled?.value || props.disabled)
-const pressed = computed(() => isValueEqualOrExist(rootContext.modelValue.value, props.value))
+// pressed/disabled come from the shared surface builder (single derivation with
+// `useToggleGroup().getItemSurface`); the rendered attrs still come from the
+// nested `Toggle`, which is fed those two values below.
+const surface = getToggleGroupItemSurface(rootContext, () => props.value, () => props.disabled)
+const disabled = computed(() => surface.state.value.disabled)
+const pressed = computed(() => surface.state.value.state === 'checked')
+
+// The nested `Toggle` composes `useTogglePressed` with its own `emit`, so its
+// `beforeUpdate:modelValue` / `update:modelValue` form an inner channel that
+// only reports the press of this item's controlled `pressed`. The group value
+// change is routed through `rootContext.changeModelValue` (reason `item-press`,
+// the Toggle's native event), so the `beforeUpdate:modelValue` a consumer
+// cancels is the one emitted by `ToggleGroupRoot`.
+function onTogglePressed(_value: boolean, details: ToggleEmits['update:modelValue'][1]) {
+  rootContext.changeModelValue(props.value, 'item-press', details.event)
+}
 
 const { forwardRef } = useForwardExpose()
 // `ToggleGroupItem` wraps the multi-root `Toggle`, so the parent's scoped-style id
@@ -44,7 +59,7 @@ const scopeIdAttrs = useForwardScopeId()
       v-slot="slotProps"
       :disabled="disabled"
       :model-value="pressed"
-      @update:model-value="rootContext.changeModelValue(value)"
+      @update:model-value="onTogglePressed"
     >
       <slot v-bind="slotProps" />
     </Toggle>

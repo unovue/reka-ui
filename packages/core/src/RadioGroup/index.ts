@@ -15,5 +15,13 @@ export {
   type RadioGroupRootProps,
 } from './RadioGroupRoot.vue'
 export {
+  type RadioGroupChangeReason,
+  type RadioGroupItemState,
+  type RadioGroupState,
+  useRadioGroup,
+  type UseRadioGroupProps,
+  type UseRadioGroupReturn,
+} from './useRadioGroup'
+export {
   type SelectEvent as RadioGroupItemSelectEvent,
 } from './utils'

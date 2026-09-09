@@ -1,14 +1,17 @@
 <script lang="ts">
+import type { ToggleChangeReason } from './useTogglePressed'
 import type { PrimitiveProps } from '@/Primitive'
-import type { SelectionState } from '@/shared'
+import type { ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { selectionState, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export type ToggleEmits = {
+  /** Event handler called before the value of the toggle changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [value: boolean, details: ChangeEventDetails<ToggleChangeReason>]
   /** Event handler called when the value of the toggle changes. */
-  'update:modelValue': [value: boolean]
+  'update:modelValue': [value: boolean, details: ChangeEventDetails<ToggleChangeReason>]
 }
 
 export interface ToggleProps extends PrimitiveProps, FormFieldProps {
@@ -28,10 +31,9 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
-import type { Ref } from 'vue'
-import { useVModel } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useTogglePressed } from './useTogglePressed'
 
 defineOptions({
   inheritAttrs: false,
@@ -50,7 +52,7 @@ defineSlots<{
     /** Current value */
     modelValue: typeof modelValue.value
     /** Current state */
-    state: typeof dataState.value
+    state: typeof root.state.value.state
     /** Current pressed state */
     pressed: typeof modelValue.value
     /** Current disabled state */
@@ -64,18 +66,27 @@ const { forwardRef, currentElement } = useForwardExpose()
 const scopeIdAttrs = useForwardScopeId()
 const toggleGroupContext = injectToggleGroupRootContext(null)
 
-const modelValue = useVModel(props, 'modelValue', emits, {
+// Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
+// composable's `useControllableState` (`modelValue === undefined` → uncontrolled;
+// `null` is controlled and reads through, exactly as `useVModel` did).
+const { modelValue, root } = useTogglePressed({
+  modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<boolean>
-
-function togglePressed() {
-  modelValue.value = !modelValue.value
-}
-
-const dataState = computed<SelectionState>(() => selectionState(modelValue.value))
+  disabled: () => props.disabled,
+  emit: emits,
+})
 
 const isFormControl = useFormControl(currentElement)
+
+// Listener order is part of the v2 contract: `v-bind="$attrs"` sat AFTER the
+// `aria-*` / `data-*` / `disabled` bindings (a consumer attribute wins) but
+// BEFORE `@click` (a consumer listener runs first and observes the pre-toggle
+// model). `mergeProps` chains same-named listeners in argument order, so the
+// composable's click handler is bound separately below, after `$attrs`.
+const rootAttrs = computed(() => {
+  const { onClick: _onClick, ...attrs } = root.attrs.value
+  return attrs
+})
 </script>
 
 <template>
@@ -84,18 +95,14 @@ const isFormControl = useFormControl(currentElement)
     :type="as === 'button' ? 'button' : undefined"
     :as-child="props.asChild"
     :as="as"
-    :aria-pressed="modelValue"
-    :data-state="dataState"
-    :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
-    v-bind="{ ...scopeIdAttrs, ...$attrs }"
-    @click="togglePressed"
+    v-bind="mergeProps(rootAttrs, scopeIdAttrs, $attrs)"
+    @click="root.props.value.onClick"
   >
     <slot
       :model-value="modelValue"
       :disabled="disabled"
       :pressed="modelValue"
-      :state="dataState"
+      :state="root.state.value.state"
     />
   </Primitive>
 

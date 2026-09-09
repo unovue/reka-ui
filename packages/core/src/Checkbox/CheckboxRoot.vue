@@ -1,10 +1,11 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { CheckboxChangeReason } from './useCheckbox'
 import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { useVModel } from '@vueuse/core'
-import { createContext, getRootNode, isNullish, isValueEqualOrExist, selectionState, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
@@ -32,11 +33,13 @@ export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFiel
 }
 
 export type CheckboxRootEmits<T = boolean> = {
+  /** Event handler called before the value of the checkbox changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [value: T | 'indeterminate', details: ChangeEventDetails<CheckboxChangeReason>]
   /** Event handler called when the value of the checkbox changes. */
-  'update:modelValue': [value: T | 'indeterminate']
+  'update:modelValue': [value: T | 'indeterminate', details: ChangeEventDetails<CheckboxChangeReason>]
 }
 
-interface CheckboxRootContext {
+export interface CheckboxRootContext {
   disabled: Ref<boolean>
   state: Ref<CheckedState>
 }
@@ -46,12 +49,11 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 </script>
 
 <script setup lang="ts" generic="T = boolean">
-import { isEqual } from 'ohash'
-import { computed, useAttrs } from 'vue'
+import { computed, mergeProps, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { isIndeterminate } from './utils'
+import { useCheckbox } from './useCheckbox'
 
 defineOptions({
   inheritAttrs: false,
@@ -79,47 +81,21 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 
-const modelValue = useVModel(props as any, 'modelValue', emits as any, {
-  defaultValue: props.defaultValue ?? props.falseValue,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<T | 'indeterminate'>
-
-const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
-
-const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
-
-const checkboxState = computed<CheckedState>(() => {
-  if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
-  }
-  else {
-    if (modelValue.value === 'indeterminate')
-      return 'indeterminate'
-    return isChecked.value
-  }
+// Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
+// composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
+// Group membership (checked state + press toggling) lives there too, keyed on
+// the injected group context.
+const { modelValue, checkedState: checkboxState, disabled, root, context } = useCheckbox<T>({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  emit: emits,
+  disabled: () => props.disabled,
+  required: () => props.required,
+  value: () => props.value,
+  trueValue: () => props.trueValue as T,
+  falseValue: () => props.falseValue as T,
+  group: checkboxGroupContext,
 })
-
-function handleClick() {
-  if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    const modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
-    if (isValueEqualOrExist(modelValueArray, props.value)) {
-      const index = modelValueArray.findIndex(i => isEqual(i, props.value))
-      modelValueArray.splice(index, 1)
-    }
-    else {
-      modelValueArray.push(props.value)
-    }
-    checkboxGroupContext.modelValue.value = modelValueArray
-  }
-  else {
-    if (modelValue.value === 'indeterminate') {
-      modelValue.value = props.trueValue as T
-    }
-    else {
-      modelValue.value = isChecked.value ? props.falseValue as T : props.trueValue as T
-    }
-  }
-}
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
@@ -137,33 +113,28 @@ const ariaLabel = computed(() => {
     : undefined
 })
 
-provideCheckboxRootContext({
-  disabled,
-  state: checkboxState,
-})
+provideCheckboxRootContext(context)
+
+// Precedence is part of the v2 contract: `{ ...$attrs, ...scopeIdAttrs }` was
+// bound BEFORE the component's own `role` / `aria-*` / `data-*` / `disabled`,
+// so the component's attributes win over a consumer's for the same key, while
+// same-named listeners chain consumer-first (a consumer `@click` observes the
+// pre-toggle model). `mergeProps($attrs, scopeIdAttrs, root.attrs.value)` keeps
+// exactly that order; the explicit bindings that follow it in the template win
+// over all three, as they did before.
 </script>
 
 <template>
   <component
-    v-bind="{ ...$attrs, ...scopeIdAttrs }"
+    v-bind="mergeProps($attrs, scopeIdAttrs, root.attrs.value)"
     :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
     :id="id"
     :ref="forwardRef"
-    role="checkbox"
     :as-child="asChild"
     :as="as"
     :type="as === 'button' ? 'button' : undefined"
-    :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState"
-    :aria-required="required"
     :aria-label="$attrs['aria-label'] || ariaLabel"
-    :data-state="selectionState(checkboxState)"
-    :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
     :focusable="checkboxGroupContext?.rovingFocus.value ? !disabled : undefined"
-    @keydown.enter.prevent="() => {
-      // According to WAI ARIA, Checkboxes don't activate on enter keypress
-    }"
-    @click="handleClick"
   >
     <slot
       :model-value="modelValue"
