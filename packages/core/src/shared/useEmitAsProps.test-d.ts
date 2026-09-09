@@ -31,6 +31,10 @@ declare const singleEmit: SingleEmit
 type LooseEmit = (name: string, ...args: any[]) => void
 declare const looseEmit: LooseEmit
 
+// Void-argument emit (regression test for #2769)
+type VoidEmit = (e: 'contentFound', payload: void) => void
+declare const voidEmit: VoidEmit
+
 // useEmitAsProps — overloaded emit maps each event to its `onXxx` handler prop
 {
   const result = useEmitAsProps(overloadedEmit)
@@ -48,6 +52,16 @@ declare const looseEmit: LooseEmit
   type _args = Expect<Equal<Parameters<NonNullable<Result['onClose']>>, [reason: string]>>
 }
 
+// useEmitAsProps — void argument emit (regression test for #2769)
+// Note: OverloadUnion normalises `void` params to optional, but this is
+// still type-safe — calling the handler with or without args is valid.
+{
+  const result = useEmitAsProps(voidEmit)
+  type Result = typeof result
+  type _keys = Expect<Equal<keyof Result, 'onContentFound'>>
+  type _args = Expect<Equal<Parameters<NonNullable<Result['onContentFound']>>, [payload?: void | undefined]>>
+}
+
 // useEmitAsProps — loose signature stays accepted (backwards compatibility)
 {
   const result = useEmitAsProps(looseEmit)
@@ -56,6 +70,7 @@ declare const looseEmit: LooseEmit
 
 // EmitAsProps utility — emit signature to handler props
 type _emitAsProps = Expect<Equal<keyof EmitAsProps<OverloadedEmit>, 'onUpdate:modelValue' | 'onChange'>>
+type _emitAsPropsVoid = Expect<Equal<keyof EmitAsProps<VoidEmit>, 'onContentFound'>>
 
 // useForwardPropsEmits — fixtures
 interface DemoProps { foo: string, bar: boolean }
@@ -67,6 +82,16 @@ declare const props: DemoProps
   type Value = typeof forwarded extends ComputedRef<infer V> ? V : never
   type _prop = Expect<Equal<Value['foo'], string>>
   type _emit = Expect<Equal<Parameters<NonNullable<Value['onChange']>>, [value: number, extra: boolean]>>
+}
+
+// With void-argument emit: must not hit TS2589 (regression test for #2769)
+// Note: OverloadUnion normalises `void` params to optional, but this is
+// still type-safe — calling the handler with or without args is valid.
+{
+  const forwarded = useForwardPropsEmits(props, voidEmit)
+  type Value = typeof forwarded extends ComputedRef<infer V> ? V : never
+  type _prop = Expect<Equal<Value['foo'], string>>
+  type _emit = Expect<Equal<Parameters<NonNullable<Value['onContentFound']>>, [payload?: void | undefined]>>
 }
 
 // Without emit: only forwarded props, no `on*` handler keys leak in
