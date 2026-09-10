@@ -61,6 +61,31 @@ import {
 </template>
 ```
 
+## Headless composable
+
+These composables are experimental. Reactive options accept refs or getters. Pass a writable `modelValue` ref for ref-owned state, or use `onUpdate` to handle controlled updates. `onBeforeUpdate(value, details)` can synchronously call `details.cancel()` to prevent a change. Component users can use `@before-update:model-value` for the same behavior.
+
+`useColorField()` exposes parsing, channel stepping, the editable input value, and a root surface. Call it in setup (or an effect scope). Call `createInputSurface()` once per input to keep focus and IME composition state independent.
+
+```vue
+<script setup>
+import { useColorField } from 'reka-ui'
+import { ref } from 'vue'
+
+const modelValue = ref('#ff0000')
+const { root, createInputSurface } = useColorField({ modelValue })
+const input = createInputSurface()
+</script>
+
+<template>
+  <div v-bind="root.attrs.value">
+    <input aria-label="Color" v-bind="input.attrs.value">
+  </div>
+</template>
+```
+
+The return also exposes `updateValue`, `commit`, `increment`, `decrement`, page stepping, and min/max actions. Hidden form input rendering remains in `ColorFieldRoot`.
+
 ## API Reference
 
 ### ColorFieldRoot

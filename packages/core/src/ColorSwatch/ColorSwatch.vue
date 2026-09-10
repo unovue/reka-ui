@@ -16,78 +16,22 @@ export interface ColorSwatchProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { colorToString, getColorContrast, getColorName, normalizeColor } from '@/shared/color'
+import { useColorSwatch } from './useColorSwatch'
 
 const props = withDefaults(defineProps<ColorSwatchProps>(), { as: 'div', color: '' })
 
-const colorString = computed(() => {
-  if (!props.color)
-    return ''
-  if (typeof props.color === 'string') {
-    return props.color
-  }
-  return colorToString(props.color, 'hex')
-})
-
-const colorObj = computed(() => {
-  if (!props.color)
-    return null
-  try {
-    return normalizeColor(props.color)
-  }
-  catch {
-    return null
-  }
-})
-
-const alpha = computed(() => colorObj.value?.alpha ?? 0)
-const isNoColor = computed(() => !props.color || alpha.value <= 0)
-
-const label = computed(() => {
-  if (props.label)
-    return props.label
-
-  // Match React Aria: transparent colors get "transparent" label
-  if (!colorObj.value || colorObj.value.alpha === 0)
-    return 'transparent'
-
-  try {
-    return getColorName(colorString.value)
-  }
-  catch {
-    return colorString.value || 'transparent'
-  }
-})
-
-const colorContrast = computed(() => {
-  try {
-    return getColorContrast(colorString.value)
-  }
-  catch {
-    if (import.meta.env.DEV) {
-      console.warn(`WARNING: Unable to resolve contrast color for "${colorString.value}".
-           Please check that the color provided is a valid hex color.`)
-    }
-    return undefined
-  }
+const { root, colorString, alpha } = useColorSwatch({
+  color: () => props.color,
+  label: () => props.label,
 })
 </script>
 
 <template>
   <Primitive
-    role="img"
-    :aria-label="label"
-    aria-roledescription="color swatch"
     :as-child="asChild"
     :as="as"
-    :data-color-contrast="colorContrast"
-    :data-no-color="isNoColor ? '' : undefined"
-    :style="{
-      '--reka-color-swatch-color': colorString,
-      '--reka-color-swatch-alpha': String(alpha),
-    }"
+    v-bind="root.attrs.value"
   >
     <slot
       :color="colorString"

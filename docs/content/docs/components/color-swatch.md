@@ -53,6 +53,24 @@ import {
 </template>
 ```
 
+## Headless composable
+
+`useColorSwatch()` is a pure composable exposing the color string, alpha, accessible label, contrast, and a root surface. It accepts refs or getters and can be called outside component setup.
+
+```vue
+<script setup>
+import { useColorSwatch } from 'reka-ui'
+
+const { root } = useColorSwatch({ color: '#16a372', label: 'Brand green' })
+</script>
+
+<template>
+  <div v-bind="root.attrs.value" />
+</template>
+```
+
+Use the `--reka-color-swatch-color` and `--reka-color-swatch-alpha` CSS variables to style the swatch, as with the component.
+
 ## API Reference
 
 ### ColorSwatch

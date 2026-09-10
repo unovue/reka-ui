@@ -34,6 +34,8 @@ import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { valueComparator } from './utils'
 
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
   as: 'div',
 })

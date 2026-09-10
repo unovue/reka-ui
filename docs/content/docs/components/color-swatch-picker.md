@@ -71,6 +71,38 @@ import {
 </template>
 ```
 
+## Headless composable
+
+These composables are experimental. Reactive options accept refs or getters. Pass a writable `modelValue` ref for ref-owned state, or use `onUpdate` to handle controlled updates. `onBeforeUpdate(value, details)` can synchronously call `details.cancel()` to prevent a change. Component users can use `@before-update:model-value` for the same behavior.
+
+`useColorSwatchPicker()` is pure and exposes the model, `setValue`, programmatic `select`, and color-specific part surfaces. Compose them with the Listbox components for collection registration, selection interactions, keyboard navigation, focus, and indicator presence.
+
+```vue
+<script setup>
+import { ListboxContent, ListboxItem, ListboxRoot, useColorSwatchPicker } from 'reka-ui'
+
+const colors = ['#ff0000', '#00ff00', '#0000ff']
+const { root, getItemSurface } = useColorSwatchPicker({ defaultValue: '#ff0000' })
+</script>
+
+<template>
+  <ListboxRoot v-bind="root.attrs.value">
+    <ListboxContent aria-label="Color">
+      <ListboxItem
+        v-for="color in colors"
+        :key="color"
+        :value="color"
+        v-bind="getItemSurface(color).attrs.value"
+      >
+        {{ color }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
+`getItemSwatchSurface(color)` supplies props for `ColorSwatch`; `itemIndicator` composes with `ListboxItemIndicator`. These surfaces do not implement Listbox behavior on plain elements. Delegated model updates have the `selection` reason; Listbox's model event does not supply a native event.
+
 ## API Reference
 
 ### ColorSwatchPickerRoot

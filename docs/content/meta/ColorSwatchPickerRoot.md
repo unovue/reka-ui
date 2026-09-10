@@ -82,6 +82,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: string | string[], details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
+  },
+  {
     'name': 'entryFocus',
     'description': '<p>Event handler called when container is being focused. Can be prevented.</p>\n',
     'type': '[event: CustomEvent&lt;any&gt;]'
@@ -99,7 +104,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: AcceptableValue]'
+    'type': '[value: AcceptableValue, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   }
 ]" />
 
@@ -135,10 +140,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string \| string[], details: ChangeEventDetails<"selection", Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue, details: ChangeEventDetails<"selection", Event>]` |
 
 **Slots**
 
