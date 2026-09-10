@@ -96,6 +96,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   }
 
   function updateValue(value: string) {
+    isEditing.value = true
     inputValue.value = value
   }
 

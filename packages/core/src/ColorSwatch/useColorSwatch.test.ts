@@ -18,6 +18,23 @@ describe('useColorSwatch', () => {
     expect(swatch.root.props.value['aria-label']).toBe('Clear')
   })
 
+  it('does not warn for omitted or empty colors but still warns for invalid colors', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      for (const color of [undefined, '']) {
+        const swatch = useColorSwatch({ color })
+        expect(swatch.root.attrs.value['data-no-color']).toBe('')
+        expect(swatch.colorContrast.value).toBeUndefined()
+      }
+      expect(warn).not.toHaveBeenCalled()
+      expect(useColorSwatch({ color: 'invalid' }).colorContrast.value).toBeUndefined()
+      expect(warn).toHaveBeenCalledOnce()
+    }
+    finally {
+      warn.mockRestore()
+    }
+  })
+
   it('supports color objects, empty values and invalid color fallback', () => {
     const swatch = useColorSwatch({ color: { space: 'rgb', r: 255, g: 0, b: 0, alpha: 1 } })
     expect(swatch.colorString.value).toBe('#ff0000')

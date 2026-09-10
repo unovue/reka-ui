@@ -60,7 +60,7 @@ describe('color shell characterization', () => {
     const update = vi.fn()
     const wrapper = mount(() => h(ColorSwatchPickerRoot, { 'modelValue': '#ff0000', 'onUpdate:modelValue': update }, () => h(ColorSwatchPickerItem, { value: '#00ff00', onClick: listener })))
     await wrapper.find('[role=option]').trigger('click')
-    expect(listener).toHaveBeenCalledTimes(2)
+    expect(listener).toHaveBeenCalledOnce()
     expect(update).toHaveBeenCalled()
     expect(update.mock.calls[0][0]).toBe('#00ff00')
     expect(wrapper.find('[role=option]').attributes('data-color')).toBe('#00ff00')

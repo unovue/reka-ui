@@ -29,7 +29,9 @@ export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
 }
 
 export type ColorSliderRootEmits = {
+  /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
   'beforeUpdate:modelValue': [value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>]
+  /** Event handler called when the color value changes. */
   'update:modelValue': [value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>]
   'update:color': [value: Color]
   'change': [value: string]

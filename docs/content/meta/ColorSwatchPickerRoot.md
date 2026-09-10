@@ -62,7 +62,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the listbox. &lt;br&gt;Mainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down)</p>\n',
-    'type': '\'horizontal\' | \'vertical\'',
+    'type': '\'vertical\' | \'horizontal\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -83,7 +83,7 @@
 <EmitsTable :data="[
   {
     'name': 'beforeUpdate:modelValue',
-    'description': '',
+    'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
     'type': '[value: string | string[], details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   },
   {
@@ -132,7 +132,7 @@
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `string \| string[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"horizontal" \| "vertical"` | No | `"horizontal"` |
+| `orientation` | The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"horizontal"` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | - |
 
@@ -140,7 +140,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` |  | `[value: string \| string[], details: ChangeEventDetails<"selection", Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string \| string[], details: ChangeEventDetails<"selection", Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |

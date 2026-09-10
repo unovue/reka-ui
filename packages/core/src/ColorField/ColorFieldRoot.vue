@@ -31,7 +31,9 @@ export interface ColorFieldRootProps extends PrimitiveProps, FormFieldProps {
 }
 
 export type ColorFieldRootEmits = {
+  /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<ColorFieldChangeReason>]
+  /** Event handler called when the color value changes. */
   'update:modelValue': [value: string, details: ChangeEventDetails<ColorFieldChangeReason>]
   'update:color': [value: Color]
 }

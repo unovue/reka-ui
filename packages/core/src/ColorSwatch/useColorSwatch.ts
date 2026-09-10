@@ -59,6 +59,8 @@ export function useColorSwatch(props: UseColorSwatchProps = {}) {
   })
 
   const colorContrast = computed(() => {
+    if (!colorString.value)
+      return undefined
     try {
       return getColorContrast(colorString.value)
     }

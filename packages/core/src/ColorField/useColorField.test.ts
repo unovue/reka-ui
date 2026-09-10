@@ -24,6 +24,20 @@ describe('useColorField', () => {
     expect(modelValue.value).toBe('#123456')
   })
 
+  it('preserves a draft during external updates and resumes synchronization after commit', async () => {
+    const modelValue = ref('#000000')
+    const field = setup({ modelValue })
+    field.updateValue('#123')
+    modelValue.value = '#ffffff'
+    await nextTick()
+    expect(field.inputValue.value).toBe('#123')
+    field.commit()
+    expect(modelValue.value).toBe('#112233')
+    modelValue.value = '#ff0000'
+    await nextTick()
+    expect(field.inputValue.value).toBe('#ff0000')
+  })
+
   it('cancels keyboard and blur commits and preserves the native event', () => {
     const onUpdate = vi.fn()
     const field = setup({ onUpdate, onBeforeUpdate: (_, details) => details.cancel() })
