@@ -139,4 +139,46 @@ describe('given Tabs without TabsContent', () => {
     expect(triggers[0].attributes('aria-controls')).toBeDefined()
     expect(triggers[1].attributes('aria-controls')).toBeUndefined()
   })
+
+  it('should render aria-controls matching the TabsContent id', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+          </TabsList>
+          <TabsContent id="rendered-id" value="tab1">Content 1</TabsContent>
+        </TabsRoot>
+      `,
+    })
+    await flushPromises()
+
+    const trigger = wrapper.find('[role="tab"]')
+    const content = wrapper.find('[role="tabpanel"]')
+    expect(trigger.attributes('aria-controls')).toBe(content.attributes('id'))
+  })
+
+  it('should update aria-controls when the TabsContent value changes', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      props: { value: String },
+      template: `
+        <TabsRoot :default-value="value">
+          <TabsList>
+            <TabsTrigger :value="value">Tab 1</TabsTrigger>
+          </TabsList>
+          <TabsContent :value="value">Content 1</TabsContent>
+        </TabsRoot>
+      `,
+    }, { props: { value: 'tab1' } })
+    await flushPromises()
+
+    await wrapper.setProps({ value: 'tab2' })
+    await flushPromises()
+
+    const trigger = wrapper.find('[role="tab"]')
+    const content = wrapper.find('[role="tabpanel"]')
+    expect(trigger.attributes('aria-controls')).toBe(content.attributes('id'))
+  })
 })
