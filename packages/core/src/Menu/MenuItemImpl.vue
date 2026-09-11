@@ -88,10 +88,11 @@ async function handlePointerLeave(event: PointerEvent) {
       @pointerleave="handlePointerLeave"
       @focus="
         async (event: FocusEvent) => {
+          const item = event.currentTarget as HTMLElement;
           await nextTick();
           if (event.defaultPrevented || disabled) return;
           isFocused = true;
-          contentContext.highlightedElement.value = event.currentTarget as HTMLElement
+          contentContext.highlightedElement.value = item
         }
       "
       @blur="

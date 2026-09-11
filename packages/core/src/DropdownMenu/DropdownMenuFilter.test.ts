@@ -18,6 +18,10 @@ describe('given DropdownMenu with Filter', () => {
     wrapper = mount(DropdownMenuWithFilter, { attachTo: document.body })
   })
 
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
   it('should render trigger button', () => {
     expect(wrapper.find('button').exists()).toBeTruthy()
   })
