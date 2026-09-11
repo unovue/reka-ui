@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, ref } from 'vue'
+import { injectPopperRootContext } from '@/Popper'
 import Tooltip from './stories/_Tooltip.vue'
 import TooltipContent from './TooltipContent.vue'
 import TooltipPortal from './TooltipPortal.vue'
@@ -131,8 +132,15 @@ describe('given tooltip within TooltipProvider', () => {
 describe('given a tooltip trigger whose element is replaced after mount', () => {
   let wrapper: VueWrapper
 
+  const AnchorProbe = defineComponent({
+    setup() {
+      return { anchor: injectPopperRootContext().anchor }
+    },
+    template: '<span />',
+  })
+
   const SwappableTrigger = defineComponent({
-    components: { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger },
+    components: { AnchorProbe, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger },
     setup() {
       return { tag: ref('button') }
     },
@@ -140,6 +148,7 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
       <TooltipProvider>
         <TooltipRoot>
           <TooltipTrigger :as="tag">trigger</TooltipTrigger>
+          <AnchorProbe />
           <TooltipPortal>
             <TooltipContent>tooltip content</TooltipContent>
           </TooltipPortal>
@@ -181,5 +190,30 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
     await flushPromises()
 
     expect(document.body.innerHTML).not.toContain('tooltip content')
+  })
+
+  it('should stop listening on the replaced trigger element', async () => {
+    await wrapper.find('button').trigger('focus')
+    const replacedTrigger = wrapper.find('button').element as HTMLElement
+
+    wrapper.vm.tag = 'a'
+    await flushPromises()
+
+    replacedTrigger.dispatchEvent(pointerEvent('pointerleave', { clientX: 0, clientY: 0 }))
+    await flushPromises()
+    document.body.dispatchEvent(pointerEvent('pointermove', { clientX: 9999, clientY: 9999 }))
+    await flushPromises()
+
+    expect(document.body.innerHTML).toContain('tooltip content')
+  })
+
+  it('should anchor the content to the new trigger element', async () => {
+    const probe = wrapper.findComponent(AnchorProbe)
+    expect(probe.vm.anchor).toBe(wrapper.find('button').element)
+
+    wrapper.vm.tag = 'a'
+    await flushPromises()
+
+    expect(probe.vm.anchor).toBe(wrapper.find('a').element)
   })
 })

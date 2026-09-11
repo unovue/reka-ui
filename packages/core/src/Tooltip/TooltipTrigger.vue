@@ -103,7 +103,7 @@ function handleClick() {
 <template>
   <PopperAnchor
     as-child
-    :reference="reference"
+    :reference="reference ?? triggerElement"
   >
     <Primitive
       :ref="forwardRef"
