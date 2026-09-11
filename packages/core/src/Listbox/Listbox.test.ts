@@ -132,6 +132,47 @@ describe('given default Listbox', () => {
   })
 })
 
+describe('given a Listbox with hover highlighting', () => {
+  it('emits the highlighted item without querying the collection', async () => {
+    const wrapper = mount(ListboxRoot, {
+      attachTo: document.body,
+      props: { highlightOnHover: true },
+      slots: {
+        default: () => h(ListboxContent, null, {
+          default: () => ['first', 'second', 'third'].map(value =>
+            h(ListboxItem, { value }, () => value)),
+        }),
+      },
+    })
+    await nextTick()
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    const items = wrapper.findAll('[role=option]')
+    const querySpy = vi.spyOn(content.element, 'querySelectorAll')
+    try {
+      for (const item of items.slice(1)) {
+        await item.trigger('pointermove', { pointerType: 'mouse' })
+        expect(wrapper.emitted('highlight')?.at(-1)?.[0]).toEqual({
+          ref: item.element,
+          value: item.text(),
+        })
+        expect(item.attributes('data-highlighted')).toBe('')
+      }
+      expect(querySpy).not.toHaveBeenCalled()
+
+      const eventCount = wrapper.emitted('highlight')?.length
+      await items[2].trigger('pointermove', { pointerType: 'mouse' })
+      expect(wrapper.emitted('highlight')).toHaveLength(eventCount!)
+      expect(querySpy).not.toHaveBeenCalled()
+    }
+    finally {
+      querySpy.mockRestore()
+      wrapper.unmount()
+    }
+  })
+})
+
 describe('given a Listbox on initial mount', () => {
   let wrapper: VueWrapper<InstanceType<typeof Listbox>>
   let scrollSpy: ReturnType<typeof vi.fn>
