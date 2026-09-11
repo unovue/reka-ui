@@ -145,7 +145,7 @@ describe('given a Presence with animated content', () => {
 })
 
 describe('given a Presence with an animated descendant', () => {
-  it('should ignore bubbled animation events before reading styles', async () => {
+  it('should handle animation events from cached styles and ignore bubbled events', async () => {
     const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle')
     const createAnimationEndEvent = () => {
       const event = new Event('animationend', { bubbles: true })
@@ -170,11 +170,10 @@ describe('given a Presence with an animated descendant', () => {
       getComputedStyleSpy.mockClear()
 
       presenceElement.dispatchEvent(createAnimationEndEvent())
-      expect(getComputedStyleSpy).toHaveBeenCalledWith(presenceElement)
-      getComputedStyleSpy.mockClear()
+      expect(getComputedStyleSpy).not.toHaveBeenCalled()
 
       animatedChild.dispatchEvent(createAnimationEndEvent())
-      expect(getComputedStyleSpy).not.toHaveBeenCalledWith(presenceElement)
+      expect(getComputedStyleSpy).not.toHaveBeenCalled()
     }
     finally {
       wrapper?.unmount()
@@ -182,3 +181,250 @@ describe('given a Presence with an animated descendant', () => {
     }
   })
 })
+
+describe('given batched Presence updates', () => {
+  it('waits for the batch to mount before reading initial animation names', async () => {
+    const present = ref(false)
+    const animationReadNodeCounts: number[] = []
+    const deferredAnimationReads: boolean[] = []
+    const styles = new WeakMap<Element, CSSStyleDeclaration>()
+    const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element) => {
+      let style = styles.get(element)
+      if (!style) {
+        let canReadAnimation = false
+        queueMicrotask(() => canReadAnimation = true)
+        style = {
+          get animationName() {
+            animationReadNodeCounts.push(document.querySelectorAll('[data-batch-presence]').length)
+            deferredAnimationReads.push(canReadAnimation)
+            return 'none'
+          },
+          get display() {
+            return 'block'
+          },
+        } as CSSStyleDeclaration
+        styles.set(element, style)
+      }
+      return style
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ present }),
+      template: `<div>
+        <Presence v-for="index in 6" :key="index" :present="present">
+          <span data-batch-presence />
+        </Presence>
+      </div>`,
+    }), { attachTo: host })
+
+    try {
+      await flushPresence()
+      animationReadNodeCounts.length = 0
+      deferredAnimationReads.length = 0
+
+      present.value = true
+      await flushPresence()
+
+      expect(wrapper.findAll('[data-batch-presence]')).toHaveLength(6)
+      expect(animationReadNodeCounts.length).toBeGreaterThan(0)
+      expect(animationReadNodeCounts.every(count => count === 6)).toBe(true)
+      expect(deferredAnimationReads.every(Boolean)).toBe(true)
+    }
+    finally {
+      wrapper.unmount()
+      host.remove()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('does not read computed styles while unmounting non-animated nodes', async () => {
+    const present = ref(true)
+    const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle')
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ present }),
+      template: `<div>
+        <Presence v-for="index in 6" :key="index" :present="present">
+          <span :data-index="index" />
+        </Presence>
+      </div>`,
+    }))
+
+    try {
+      await flushPresence()
+      getComputedStyleSpy.mockClear()
+
+      present.value = false
+      await flushPresence()
+
+      expect(wrapper.findAll('span')).toHaveLength(0)
+      expect(getComputedStyleSpy).not.toHaveBeenCalled()
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('keeps animated content mounted until its exit animation ends', async () => {
+    const open = ref(true)
+    const events: string[] = []
+    const getComputedStyleSpy = mockLiveAnimationStyles()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ events, open }),
+      template: `<Presence :present="open">
+        <div
+          data-testid="animated"
+          :data-state="open ? 'open' : 'closed'"
+          @leave="events.push('leave')"
+          @after-leave="events.push('after-leave')"
+        />
+      </Presence>`,
+    }))
+
+    try {
+      await flushPresence()
+      events.length = 0
+
+      open.value = false
+      await flushPresence()
+
+      const element = wrapper.find('[data-testid="animated"]')
+      expect(element.exists()).toBe(true)
+      expect(events).toEqual(['leave'])
+
+      element.element.dispatchEvent(createAnimationEvent('animationend', 'fadeOut'))
+      await flushPresence()
+
+      expect(wrapper.find('[data-testid="animated"]').exists()).toBe(false)
+      expect(events).toEqual(['leave', 'after-leave'])
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('does not let a stale exit animation unmount a quickly remounted node', async () => {
+    const open = ref(true)
+    const getComputedStyleSpy = mockLiveAnimationStyles()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ open }),
+      template: `<Presence :present="open">
+        <div data-testid="animated" :data-state="open ? 'open' : 'closed'" />
+      </Presence>`,
+    }))
+
+    try {
+      await flushPresence()
+
+      open.value = false
+      await flushPresence()
+      const element = wrapper.find('[data-testid="animated"]')
+
+      open.value = true
+      await flushPresence()
+      element.element.dispatchEvent(createAnimationEvent('animationend', 'fadeOut'))
+      await flushPresence()
+
+      expect(wrapper.find('[data-testid="animated"]').exists()).toBe(true)
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('caches the initial animation name when the node mounts', async () => {
+    const open = ref(true)
+    const getComputedStyleSpy = mockLiveAnimationStyles(() => 'stableAnimation')
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ open }),
+      template: `<Presence :present="open">
+        <div data-testid="animated" />
+      </Presence>`,
+    }))
+
+    try {
+      await flushPresence()
+      expect(getComputedStyleSpy).toHaveBeenCalledTimes(1)
+
+      open.value = false
+      await flushPresence()
+
+      expect(wrapper.find('[data-testid="animated"]').exists()).toBe(false)
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('preserves enter and leave event order without animations', async () => {
+    const open = ref(false)
+    const events: string[] = []
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ events, open }),
+      template: `<Presence :present="open">
+        <div
+          @enter="events.push('enter')"
+          @after-enter="events.push('after-enter')"
+          @leave="events.push('leave')"
+          @after-leave="events.push('after-leave')"
+        />
+      </Presence>`,
+    }))
+
+    try {
+      open.value = true
+      await flushPresence()
+      open.value = false
+      await flushPresence()
+
+      expect(events).toEqual(['enter', 'after-enter', 'leave', 'after-leave'])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
+
+async function flushPresence() {
+  await nextTick()
+  await nextTick()
+  await nextTick()
+}
+
+function mockLiveAnimationStyles(
+  getAnimationName: (element: HTMLElement) => string = element =>
+    element.dataset.state === 'closed' ? 'fadeOut' : 'fadeIn',
+) {
+  const styles = new WeakMap<Element, CSSStyleDeclaration>()
+  return vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element) => {
+    let style = styles.get(element)
+    if (!style) {
+      style = {
+        get animationName() {
+          return getAnimationName(element as HTMLElement)
+        },
+        get display() {
+          return 'block'
+        },
+      } as CSSStyleDeclaration
+      styles.set(element, style)
+    }
+    return style
+  })
+}
+
+function createAnimationEvent(type: 'animationend' | 'animationcancel', animationName: string) {
+  const event = new Event(type)
+  Object.defineProperty(event, 'animationName', { value: animationName })
+  return event
+}
