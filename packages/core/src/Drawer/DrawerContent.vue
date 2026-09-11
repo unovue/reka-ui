@@ -14,7 +14,10 @@ import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
-const props = defineProps<DrawerContentProps>()
+const props = withDefaults(defineProps<DrawerContentProps>(), {
+  initialFocus: true,
+  finalFocus: true,
+})
 const emits = defineEmits<DrawerContentEmits>()
 
 const rootContext = injectDrawerRootContext()

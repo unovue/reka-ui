@@ -41,7 +41,10 @@ import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
 
-const props = defineProps<DrawerContentImplProps>()
+const props = withDefaults(defineProps<DrawerContentImplProps>(), {
+  initialFocus: true,
+  finalFocus: true,
+})
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()

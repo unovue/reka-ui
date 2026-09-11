@@ -247,8 +247,36 @@ describe('given a Drawer with focus props', () => {
     `,
   })
 
+  const DrawerWithoutFocusProps = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    template: `
+      <DrawerRoot>
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent>
+            <DrawerTitle>T</DrawerTitle>
+            <input data-testid="field">
+            <DrawerClose>Close</DrawerClose>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
   beforeEach(() => {
     document.body.innerHTML = ''
+  })
+
+  it('keeps the default focus behaviour when neither prop is bound', async () => {
+    const user = userEvent.setup()
+    const { getByText, getByTestId } = render(DrawerWithoutFocusProps)
+    const trigger = getByText('Open')
+    await user.click(trigger)
+    await nextTick()
+    expect(document.activeElement).toBe(getByTestId('field'))
+    await user.click(getByText('Close'))
+    await nextTick()
+    expect(document.activeElement).toBe(trigger)
   })
 
   it('focuses the first tabbable element on open by default', async () => {
