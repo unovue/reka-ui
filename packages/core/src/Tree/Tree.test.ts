@@ -406,3 +406,102 @@ describe('given a Tree with disabled items', () => {
     expect(items()[0].attributes('aria-selected')).toBe('false')
   })
 })
+
+describe('given a Tree with a text field inside an item', () => {
+  let wrapper: VueWrapper<any>
+  let input: DOMWrapper<HTMLInputElement>
+
+  // An inline rename is the common shape: the row stays a tree item, but while
+  // it is being edited the keys belong to the input.
+  const Fixture = defineComponent({
+    setup() {
+      const items = [
+        { title: 'components', children: [{ title: 'Card.vue' }, { title: 'Button.vue' }] },
+        { title: 'app.vue' },
+      ]
+
+      return () => h(
+        TreeRoot,
+        { items, getKey: (item: any) => item.title, defaultExpanded: ['components'] },
+        {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(
+              TreeItem,
+              { key: item._id, ...item.bind },
+              () => {
+                if (item.value.title === 'app.vue')
+                  return h('input', { 'data-testid': 'rename' })
+                if (item.value.title === 'Card.vue')
+                  return h('select', { 'data-testid': 'picker' }, [h('option', 'components'), h('option', 'other')])
+                return h('span', item.value.title)
+              },
+            ),
+          ),
+        },
+      )
+    },
+  })
+
+  function pressIn(target: HTMLElement, key: string) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Fixture, { attachTo: document.body })
+    input = wrapper.find('[data-testid=rename]') as DOMWrapper<HTMLInputElement>
+    input.element.focus()
+    await nextTick()
+  })
+
+  it('leaves ArrowRight to the caret instead of walking the tree', async () => {
+    const rowsBefore = wrapper.findAll('[role=treeitem]').length
+    const event = pressIn(input.element, kbd.ARROW_RIGHT)
+    await nextTick()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(input.element)
+    expect(wrapper.findAll('[role=treeitem]')).toHaveLength(rowsBefore)
+  })
+
+  it('leaves ArrowLeft to the caret instead of jumping to the parent row', async () => {
+    const rowsBefore = wrapper.findAll('[role=treeitem]').length
+    const event = pressIn(input.element, kbd.ARROW_LEFT)
+    await nextTick()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(input.element)
+    expect(wrapper.findAll('[role=treeitem]')).toHaveLength(rowsBefore)
+  })
+
+  it('does not run typeahead while typing', async () => {
+    // 'c' matches both "components" and "Card.vue"; typeahead would focus one.
+    pressIn(input.element, 'c')
+    await nextTick()
+
+    expect(document.activeElement).toBe(input.element)
+  })
+
+  it('does not run typeahead while a select inside an item is focused', async () => {
+    // A native select owns character keys for its own option typeahead.
+    const picker = wrapper.find('[data-testid=picker]').element as HTMLSelectElement
+    picker.focus()
+    await nextTick()
+
+    pressIn(picker, 'c')
+    await nextTick()
+
+    expect(document.activeElement).toBe(picker)
+  })
+
+  it('still walks the tree when the key lands on the item itself', async () => {
+    const items = wrapper.findAll('[role=treeitem]')
+    const folder = items[0]
+    await folder.trigger('keydown', { key: kbd.ARROW_LEFT })
+
+    // "components" was expanded, so ArrowLeft on the row collapses it.
+    expect(wrapper.findAll('[role=treeitem]').length).toBeLessThan(items.length)
+  })
+})
