@@ -4,14 +4,14 @@ import type {
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { Ref } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
+import { createContext, useCspSafePositioning, useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -210,7 +210,7 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import { computed, mergeProps, ref, useAttrs, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -235,6 +235,11 @@ const emits = defineEmits<{
 const rootContext = injectPopperRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 const dir = useDirection(computed(() => props.dir))
+
+// When CSP-safe positioning is enabled, positioning styles are withheld until after
+// mount so SSR emits no inline `style` attribute (which a strict `style-src` would block
+// on parse); the client then applies them via the CSP-exempt CSSOM. See issue #2732.
+const { shouldApplyPositioningStyle } = useCspSafePositioning()
 
 const floatingRef = ref<HTMLElement>()
 
@@ -381,6 +386,48 @@ watchEffect(() => {
 const arrowX = computed(() => middlewareData.value.arrow?.x ?? 0)
 const arrowY = computed(() => middlewareData.value.arrow?.y ?? 0)
 
+const wrapperStyle = computed<CSSProperties | undefined>(() => {
+  if (!shouldApplyPositioningStyle.value)
+    return undefined
+
+  return {
+    ...floatingStyles.value,
+    // keep off the page when measuring
+    transform: isPositioned.value ? floatingStyles.value.transform : 'translate(0, -200%)',
+    minWidth: 'max-content',
+    zIndex: contentZIndex.value,
+    ['--reka-popper-transform-origin' as any]: [
+      middlewareData.value.transformOrigin?.x,
+      middlewareData.value.transformOrigin?.y,
+    ].join(' '),
+
+    // hide the content if using the hide middleware and should be hidden
+    // set visibility to hidden and disable pointer events so the UI behaves
+    // as if the PopperContent isn't there at all
+    ...(middlewareData.value.hide?.referenceHidden && {
+      visibility: 'hidden' as const,
+      pointerEvents: 'none' as const,
+    }),
+  }
+})
+
+// if the PopperContent hasn't been placed yet (not all measurements done)
+// we prevent animations so that users's animation don't kick in too early referring wrong sides
+const primitiveStyle = computed<CSSProperties | undefined>(() => {
+  if (!shouldApplyPositioningStyle.value)
+    return undefined
+  return { animation: !isPositioned.value ? 'none' : undefined }
+})
+
+// Bind `style` only when there is something to apply. An empty `style=""` attribute
+// still triggers a `style-src-attr` CSP violation, so it must be omitted entirely (not
+// emitted empty) from the SSR markup when positioning styles are withheld.
+const wrapperProps = computed(() => (wrapperStyle.value ? { style: wrapperStyle.value } : {}))
+const primitiveProps = computed(() => (primitiveStyle.value ? { style: primitiveStyle.value } : {}))
+// merge our (optional) style with fallthrough attrs so a consumer-provided `style` is preserved
+const attrs = useAttrs()
+const mergedPrimitiveProps = computed(() => mergeProps(attrs, primitiveProps.value))
+
 providePopperContentContext({
   placedSide,
   onArrowChange: element => arrow.value = element,
@@ -395,24 +442,7 @@ providePopperContentContext({
     ref="floatingRef"
     data-reka-popper-content-wrapper=""
     :dir="dir"
-    :style="{
-      ...floatingStyles,
-      transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
-      minWidth: 'max-content',
-      zIndex: contentZIndex,
-      ['--reka-popper-transform-origin' as any]: [
-        middlewareData.transformOrigin?.x,
-        middlewareData.transformOrigin?.y,
-      ].join(' '),
-
-      // hide the content if using the hide middleware and should be hidden
-      // set visibility to hidden and disable pointer events so the UI behaves
-      // as if the PopperContent isn't there at all
-      ...(middlewareData.hide?.referenceHidden && {
-        visibility: 'hidden',
-        pointerEvents: 'none',
-      }),
-    }"
+    v-bind="wrapperProps"
   >
     <Primitive
       v-if="props.memoDependencies"
@@ -426,16 +456,11 @@ providePopperContentContext({
         ...Object.values($attrs),
         ...props.memoDependencies,
       ]"
-      v-bind="$attrs"
+      v-bind="mergedPrimitiveProps"
       :as-child="props.asChild"
       :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
-      :style="{
-        // if the PopperContent hasn't been placed yet (not all measurements done)
-        // we prevent animations so that users's animation don't kick in too early referring wrong sides
-        animation: !isPositioned ? 'none' : undefined,
-      }"
     >
       <slot />
     </Primitive>
@@ -443,17 +468,12 @@ providePopperContentContext({
     <Primitive
       v-else
       :ref="forwardRef"
-      v-bind="$attrs"
+      v-bind="mergedPrimitiveProps"
       :as-child="props.asChild"
       :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
       :dir="dir"
-      :style="{
-        // if the PopperContent hasn't been placed yet (not all measurements done)
-        // we prevent animations so that users's animation don't kick in too early referring wrong sides
-        animation: !isPositioned ? 'none' : undefined,
-      }"
     >
       <slot />
     </Primitive>
