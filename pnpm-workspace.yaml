@@ -7,10 +7,10 @@ packages:
   - docs
   - .histoire
 overrides:
-  minimatch@>=5.0.0 <5.1.8: '>=10.2.3'
+  minimatch@>=5.0.0 <5.1.8: '>=10.2.6'
   picomatch@<2.3.2: '>=4.0.7'
-  rollup@>=3.0.0 <3.30.0: '>=4.63.1'
-  rollup@>=4.0.0 <4.59.0: '>=4.59.0'
+  rollup@>=3.0.0 <3.30.0: '>=4.63.2'
+  rollup@>=4.0.0 <4.59.0: '>=4.63.2'
   svgo@>=3.0.0 <3.3.3: '>=4.0.2'
 patchedDependencies:
   vitepress: patches/vitepress.patch
