@@ -48,6 +48,7 @@ import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuFilter,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuItemIndicator,
@@ -70,6 +71,7 @@ import {
 
     <DropdownMenuPortal>
       <DropdownMenuContent>
+        <DropdownMenuFilter />
         <DropdownMenuLabel />
         <DropdownMenuItem />
 
@@ -183,6 +185,21 @@ The component that pops out when the dropdown menu is open.
     {
       cssVariable: '--reka-dropdown-menu-trigger-height',
       description: 'The height of the trigger',
+    },
+  ]"
+/>
+
+### Filter
+
+An optional search input inside `DropdownMenuContent` or `DropdownMenuSubContent`. It integrates text input with the menu's keyboard navigation.
+
+<!-- @include: @/meta/DropdownMenuFilter.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-disabled]',
+      values: 'Present when disabled',
     },
   ]"
 />
@@ -796,6 +813,65 @@ import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenu
 }
 ```
 
+### With filtering
+
+Use `DropdownMenuFilter` with a computed list to control which items are displayed. This example matches labels without regard to case and displays a message when no items match.
+
+```vue
+<script setup lang="ts">
+import {
+  DropdownMenuContent,
+  DropdownMenuFilter,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  useId,
+} from 'reka-ui'
+import { computed, ref } from 'vue'
+
+const menuId = useId()
+const search = ref('')
+const items = [
+  { id: 'new-tab', label: 'New Tab' },
+  { id: 'new-window', label: 'New Window' },
+  { id: 'bookmarks', label: 'Show Bookmarks' },
+  { id: 'history', label: 'Show History' },
+]
+const filteredItems = computed(() =>
+  items.filter(item =>
+    item.label.toLowerCase().includes(search.value.toLowerCase()),
+  ),
+)
+</script>
+
+<template>
+  <DropdownMenuRoot>
+    <DropdownMenuTrigger>Browse actions</DropdownMenuTrigger>
+    <DropdownMenuPortal>
+      <DropdownMenuContent>
+        <DropdownMenuFilter
+          v-model="search"
+          auto-focus
+          aria-label="Filter actions"
+          placeholder="Filter actions…"
+        />
+        <DropdownMenuItem
+          v-for="item in filteredItems"
+          :id="`${menuId}-${item.id}`"
+          :key="item.id"
+        >
+          {{ item.label }}
+        </DropdownMenuItem>
+        <div v-if="filteredItems.length === 0" role="status">
+          No actions found.
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex) to manage focus movement among menu items.
@@ -860,6 +936,31 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
           <Code>DropdownMenuTrigger</Code>.
         </span>
       `,
+    },
+  ]"
+/>
+
+#### When focus is on the filter
+
+The input keeps focus while keyboard navigation updates the highlighted item through `aria-activedescendant`.
+
+<KeyboardTable
+  :data="[
+    {
+      keys: ['ArrowDown', 'ArrowUp'],
+      description: 'Highlights the next or previous enabled item.',
+    },
+    {
+      keys: ['Home', 'End'],
+      description: 'Highlights the first or last enabled item.',
+    },
+    {
+      keys: ['Enter'],
+      description: 'Activates the highlighted item.',
+    },
+    {
+      keys: ['Esc'],
+      description: 'Clears a non-empty filter without closing the menu. If the filter is empty, closes the menu and returns focus to the trigger.',
     },
   ]"
 />
