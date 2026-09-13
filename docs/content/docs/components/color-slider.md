@@ -73,7 +73,7 @@ These composables are experimental. Reactive options accept refs or getters. Pas
 <script setup>
 import { SliderRoot, SliderThumb, SliderTrack, useColorSlider } from 'reka-ui'
 
-const { root, track, thumb, setValue } = useColorSlider({
+const { sliderProps, track, thumb, setValue } = useColorSlider({
   channel: 'hue',
   defaultValue: '#ff0000',
 })
@@ -81,7 +81,7 @@ setValue([120])
 </script>
 
 <template>
-  <SliderRoot v-bind="root.attrs.value">
+  <SliderRoot v-bind="sliderProps">
     <SliderTrack v-bind="track.attrs.value" />
     <SliderThumb v-bind="thumb.attrs.value" />
   </SliderRoot>
@@ -89,6 +89,10 @@ setValue([120])
 ```
 
 Binding these surfaces to plain elements does not supply Slider interactions. Delegated updates have the `slider` reason; Slider's model event does not supply a native event. Hidden color form inputs remain in `ColorSliderRoot`.
+
+`root.attrs` contains only DOM attributes. `sliderProps` contains the bindings for the child component shown above.
+
+`onColorUpdate` receives accepted color objects and `onChange` / `onChangeEnd` receive interaction and commit notifications. These callbacks work without a component `emit` function. Returned state refs are read-only; use the exposed actions to request changes.
 
 ## API Reference
 

@@ -1,4 +1,5 @@
-import type { MaybeRefOrGetter } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter } from 'vue'
+import type { PartSurface } from '@/shared'
 import type { Color } from '@/shared/color'
 import { computed, toValue } from 'vue'
 import { createPartSurface } from '@/shared'
@@ -9,14 +10,22 @@ export interface UseColorSwatchProps {
   label?: MaybeRefOrGetter<string | undefined>
 }
 export type ColorSwatchState = { colorContrast: string | undefined, noColor: boolean }
-export type UseColorSwatchReturn = ReturnType<typeof useColorSwatch>
+export interface UseColorSwatchReturn {
+  readonly colorString: ComputedRef<string>
+  readonly color: ComputedRef<Readonly<Color> | null>
+  readonly alpha: ComputedRef<number>
+  readonly isNoColor: ComputedRef<boolean>
+  readonly label: ComputedRef<string>
+  readonly colorContrast: ComputedRef<string | undefined>
+  readonly root: PartSurface<ColorSwatchState>
+}
 
 /**
  * Headless color swatch styling and accessible description.
  * @experimental
  * @lifecycle pure
  */
-export function useColorSwatch(props: UseColorSwatchProps = {}) {
+export function useColorSwatch(props: UseColorSwatchProps = {}): UseColorSwatchReturn {
   const color = computed(() => toValue(props.color))
   const customLabel = computed(() => toValue(props.label))
   const colorString = computed(() => {

@@ -1,21 +1,48 @@
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorSliderRootContext, ColorSliderRootProps } from './ColorSliderRoot.vue'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel as ColorChannelType, ColorSpace } from '@/shared/color'
+import type { SliderRootProps } from '@/Slider'
 import { computed, ref, toValue, watch } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { colorToString, convertToHsb, convertToHsl, convertToRgb, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, normalizeColor, setChannelValue } from '@/shared/color'
+import { isEqualColor } from '@/shared/color/isEqualColor'
 
 type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorSliderChangeReason = 'slider'
 export type UseColorSliderProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
+  onColorUpdate?: (color: Color) => void
+  onChange?: (value: string) => void
+  onChangeEnd?: (value: string) => void
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void
   onUpdate?: (value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void
 }
 
 export type ColorSliderRootState = { disabled: boolean }
-export type UseColorSliderReturn = ReturnType<typeof useColorSlider>
+export interface UseColorSliderReturn {
+  readonly modelValue: ComputedRef<string | Color>
+  readonly color: ComputedRef<Readonly<Color>>
+  readonly disabled: ComputedRef<boolean>
+  readonly isControlled: ComputedRef<boolean>
+  readonly lastChangeDetails: Readonly<Ref<ChangeEventDetails<ColorSliderChangeReason>>>
+  setColor: (color: Color, reason?: ColorSliderChangeReason | BaseChangeReason, event?: Event) => boolean
+  readonly root: PartSurface<ColorSliderRootState>
+  readonly context: { readonly [K in keyof ColorSliderRootContext]: ColorSliderRootContext[K] extends Ref ? Readonly<ColorSliderRootContext[K]> : ColorSliderRootContext[K] }
+  readonly channelValue: ComputedRef<number>
+  readonly min: ComputedRef<number>
+  readonly max: ComputedRef<number>
+  readonly step: ComputedRef<number>
+  readonly sliderValue: ComputedRef<readonly number[]>
+  readonly sliderProps: ComputedRef<Pick<SliderRootProps, 'orientation' | 'disabled' | 'inverted' | 'min' | 'max' | 'step' | 'modelValue'> & {
+    'onUpdate:modelValue': (value: number[]) => void
+    'onValueCommit': () => void
+  }>
+  readonly track: PartSurface<ColorSliderTrackState>
+  readonly thumb: PartSurface<ColorSliderThumbState>
+  setValue: (values: number[], reason?: ColorSliderChangeReason | BaseChangeReason, event?: Event) => void
+  handleValueCommit: () => void
+}
 
 /**
  * Headless ColorSlider state. Call in setup or an effect scope to dispose synchronization watchers.
@@ -23,7 +50,7 @@ export type UseColorSliderReturn = ReturnType<typeof useColorSlider>
  * @experimental
  * @lifecycle setup
  */
-export function useColorSlider(props: UseColorSliderProps) {
+export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn {
   const orientation = computed(() => toValue(props.orientation) ?? 'horizontal')
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const inverted = computed(() => toValue(props.inverted) ?? false)
@@ -31,13 +58,14 @@ export function useColorSlider(props: UseColorSliderProps) {
   const colorSpace = computed(() => toValue(props.colorSpace) ?? 'hsl')
   const stepProp = computed(() => toValue(props.step))
 
+  let precisionChanged = false
+
   // Normalize the model value to a Color object
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorSliderChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? '#000000',
-    // Distinct channel values can serialize to the same hex (grayscale hue or
-    // sub-byte precision). Each color action must still pass the cancellation gate.
-    isEqual: () => false,
+    // Hex equality alone loses hue and fractional channel changes.
+    isEqual: (next, current) => next === current && !precisionChanged,
     name: 'modelValue',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdate,
@@ -112,11 +140,13 @@ export function useColorSlider(props: UseColorSliderProps) {
   const color = computed(() => internalColor.value)
 
   function setColor(newColor: Color, reason: ColorSliderChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    precisionChanged = !isEqualColor(internalColor.value, newColor)
     const hexString = colorToString(newColor, 'hex')
     const changed = setState(hexString, reason, event)
     if (!changed)
       return false
     internalColor.value = newColor
+    props.onColorUpdate?.(newColor)
     props.emit?.('update:color', newColor)
     return true
   }
@@ -135,12 +165,17 @@ export function useColorSlider(props: UseColorSliderProps) {
   function setValue(newValue: number[], reason: ColorSliderChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     const clamped = Math.max(min.value, Math.min(max.value, newValue[0]))
     const newColor = setChannelValue(color.value, channel.value, clamped)
-    if (setColor(newColor, reason, event))
-      props.emit?.('change', colorToString(newColor, 'hex'))
+    if (setColor(newColor, reason, event)) {
+      const value = colorToString(newColor, 'hex')
+      props.onChange?.(value)
+      props.emit?.('change', value)
+    }
   }
 
   function handleValueCommit() {
-    props.emit?.('changeEnd', colorToString(color.value, 'hex'))
+    const value = colorToString(color.value, 'hex')
+    props.onChangeEnd?.(value)
+    props.emit?.('changeEnd', value)
   }
 
   const context: ColorSliderRootContext = {
@@ -156,7 +191,7 @@ export function useColorSlider(props: UseColorSliderProps) {
     step,
   }
 
-  const root = createPartSurface<ColorSliderRootState>(() => ({
+  const sliderProps = computed(() => ({
     'modelValue': sliderValue.value,
     'onUpdate:modelValue': (value: number[]) => setValue(value, 'slider'),
     'onValueCommit': handleValueCommit,
@@ -166,6 +201,10 @@ export function useColorSlider(props: UseColorSliderProps) {
     'min': min.value,
     'max': max.value,
     'step': step.value,
+  }))
+  const root = createPartSurface<ColorSliderRootState>(() => ({
+    'role': 'group',
+    'aria-disabled': disabled.value || undefined,
   }), () => ({ disabled: disabled.value }))
   return {
     modelValue,
@@ -175,6 +214,7 @@ export function useColorSlider(props: UseColorSliderProps) {
     lastChangeDetails,
     isControlled,
     root,
+    sliderProps,
     context,
     track: getColorSliderTrackSurface(context),
     thumb: getColorSliderThumbSurface(context),

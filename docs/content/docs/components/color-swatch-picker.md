@@ -82,11 +82,11 @@ These composables are experimental. Reactive options accept refs or getters. Pas
 import { ListboxContent, ListboxItem, ListboxRoot, useColorSwatchPicker } from 'reka-ui'
 
 const colors = ['#ff0000', '#00ff00', '#0000ff']
-const { root, getItemSurface } = useColorSwatchPicker({ defaultValue: '#ff0000' })
+const { listboxProps, getItemSurface } = useColorSwatchPicker({ defaultValue: '#ff0000' })
 </script>
 
 <template>
-  <ListboxRoot v-bind="root.attrs.value">
+  <ListboxRoot v-bind="listboxProps">
     <ListboxContent aria-label="Color">
       <ListboxItem
         v-for="color in colors"
@@ -102,6 +102,8 @@ const { root, getItemSurface } = useColorSwatchPicker({ defaultValue: '#ff0000' 
 ```
 
 `getItemSwatchSurface(color)` supplies props for `ColorSwatch`; `itemIndicator` composes with `ListboxItemIndicator`. These surfaces do not implement Listbox behavior on plain elements. Delegated model updates have the `selection` reason; Listbox's model event does not supply a native event.
+
+`root.attrs` contains only DOM attributes. `listboxProps` contains the bindings for the child component shown above.
 
 ## API Reference
 

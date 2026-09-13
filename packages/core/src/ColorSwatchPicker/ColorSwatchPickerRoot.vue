@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
 
 const emits = defineEmits<ColorSwatchPickerRootEmits>()
 
-const { modelValue, root } = useColorSwatchPicker({
+const { listboxProps } = useColorSwatchPicker({
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   multiple: () => props.multiple,
@@ -53,14 +53,14 @@ const forwarded = computed(() => {
 
 <template>
   <ListboxRoot
-    v-bind="mergeProps(forwarded, root.attrs.value)"
+    v-bind="mergeProps(forwarded, listboxProps)"
     as-child
   >
     <ListboxContent
       :as-child="asChild"
       :as="as"
     >
-      <slot :model-value="modelValue" />
+      <slot :model-value="listboxProps.modelValue" />
     </ListboxContent>
   </ListboxRoot>
 </template>

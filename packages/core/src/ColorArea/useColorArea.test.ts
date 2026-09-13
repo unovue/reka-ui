@@ -71,7 +71,7 @@ describe('useColorArea', () => {
     element.setPointerCapture = vi.fn()
     element.hasPointerCapture = () => true
     element.releasePointerCapture = vi.fn()
-    area.thumbRef.value = document.createElement('span')
+    area.setThumbElement(document.createElement('span'))
     const focus = vi.spyOn(area.thumbRef.value, 'focus')
     const surface = area.createAreaSurface(ref(element))
     const event = { target: element, pointerId: 1, clientX: 60, clientY: 45, preventDefault: vi.fn() }

@@ -28,7 +28,7 @@ describe('useColorSwatchPicker', () => {
   it('cancels delegated selection and preserves controlled ownership', () => {
     const onUpdate = vi.fn()
     const picker = useColorSwatchPicker({ onUpdate, onBeforeUpdate: (_, details) => details.cancel() })
-    picker.root.props.value['onUpdate:modelValue']('#ff0000')
+    picker.listboxProps.value['onUpdate:modelValue']('#ff0000')
     expect(picker.modelValue.value).toBe('')
     expect(onUpdate).not.toHaveBeenCalled()
     expect(picker.lastChangeDetails.value).toMatchObject({ reason: 'selection', isCanceled: true })

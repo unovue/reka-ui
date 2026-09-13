@@ -86,6 +86,8 @@ const input = createInputSurface()
 
 The return also exposes `updateValue`, `commit`, `increment`, `decrement`, page stepping, and min/max actions. Hidden form input rendering remains in `ColorFieldRoot`.
 
+`onColorUpdate` receives accepted color objects. These callbacks work without a component `emit` function. Returned state refs are read-only; use the exposed actions to request changes.
+
 ## API Reference
 
 ### ColorFieldRoot

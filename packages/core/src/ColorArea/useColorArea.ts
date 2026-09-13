@@ -1,22 +1,44 @@
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, CSSProperties, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.vue'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { colorToString, convertToHsb, convertToHsl, getAreaBackgroundStyle, getChannelName, getChannelRange, getChannelValue, normalizeColor, setChannelValues } from '@/shared/color'
+import { isEqualColor } from '@/shared/color/isEqualColor'
 import { convertValueToPercentage, linearScale } from './utils'
 
 type Inputs = Pick<ColorAreaRootProps, 'colorSpace' | 'xChannel' | 'yChannel' | 'disabled' | 'modelValue' | 'defaultValue'>
 export type ColorAreaChangeReason = 'pointer' | 'keyboard'
 export type UseColorAreaProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
+  onColorUpdate?: (color: Color) => void
+  onChange?: (value: string) => void
+  onChangeEnd?: (value: string) => void
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: string | Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void
   onUpdate?: (value: string | Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void
 }
 
 export type ColorAreaRootState = { disabled: boolean }
-export type UseColorAreaReturn = ReturnType<typeof useColorArea>
+export interface UseColorAreaReturn {
+  readonly modelValue: ComputedRef<string | Color>
+  readonly color: ComputedRef<Readonly<Color>>
+  readonly disabled: ComputedRef<boolean>
+  readonly isControlled: ComputedRef<boolean>
+  readonly lastChangeDetails: Readonly<Ref<ChangeEventDetails<ColorAreaChangeReason>>>
+  setColor: (color: Color, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
+  readonly root: PartSurface<ColorAreaRootState>
+  readonly context: { readonly [K in keyof ColorAreaRootContext]: ColorAreaRootContext[K] extends Ref ? Readonly<ColorAreaRootContext[K]> : ColorAreaRootContext[K] }
+  readonly areaStyles: ComputedRef<CSSProperties>
+  readonly xValue: ComputedRef<number>
+  readonly yValue: ComputedRef<number>
+  readonly thumbRef: ComputedRef<HTMLElement | undefined>
+  setThumbElement: (element: HTMLElement | null | undefined) => void
+  readonly thumb: PartSurface<ColorAreaThumbState>
+  createAreaSurface: (element: Ref<HTMLElement | undefined>) => PartSurface<ColorAreaAreaState>
+  updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => void
+  commitValues: () => void
+}
 
 /**
  * Headless ColorArea state. Call in setup or an effect scope to dispose synchronization watchers.
@@ -24,19 +46,20 @@ export type UseColorAreaReturn = ReturnType<typeof useColorArea>
  * @experimental
  * @lifecycle setup
  */
-export function useColorArea(props: UseColorAreaProps = {}) {
+export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn {
   const colorSpace = computed(() => toValue(props.colorSpace) ?? 'hsl')
   const xChannel = computed(() => toValue(props.xChannel) ?? 'hue')
   const yChannel = computed(() => toValue(props.yChannel) ?? 'saturation')
   const disabled = computed(() => toValue(props.disabled) ?? false)
 
+  let precisionChanged = false
+
   // Normalize the model value to a Color object
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorAreaChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? '#ff0000',
-    // Distinct channel values can serialize to the same hex (grayscale hue or
-    // sub-byte precision). Each color action must still pass the cancellation gate.
-    isEqual: () => false,
+    // Hex equality alone loses hue and fractional channel changes.
+    isEqual: (next, current) => next === current && !precisionChanged,
     name: 'modelValue',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdate,
@@ -46,12 +69,17 @@ export function useColorArea(props: UseColorAreaProps = {}) {
   // The actual color object for rendering
   const color = computed(() => normalizeColor(modelValue.value ?? '#000000'))
 
+  let precisionColor = color.value
+
   function setColor(newColor: Color, reason: ColorAreaChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    precisionChanged = !isEqualColor(precisionColor, newColor)
     const hexString = colorToString(newColor, 'hex')
     const changed = setState(hexString, reason, event)
     if (!changed)
       return false
 
+    precisionColor = newColor
+    props.onColorUpdate?.(newColor)
     props.emit?.('update:color', newColor)
     return true
   }
@@ -81,6 +109,8 @@ export function useColorArea(props: UseColorAreaProps = {}) {
     if (isUpdating)
       return
 
+    if (colorToString(precisionColor, 'hex') !== colorToString(newColor, 'hex'))
+      precisionColor = newColor
     const newX = Math.round(getChannelValue(newColor, xChannel.value))
     const newY = Math.round(getChannelValue(newColor, yChannel.value))
 
@@ -125,6 +155,9 @@ export function useColorArea(props: UseColorAreaProps = {}) {
     const clampedX = Math.max(xRange.value.min, Math.min(xRange.value.max, x))
     const clampedY = Math.max(yRange.value.min, Math.min(yRange.value.max, y))
 
+    if (clampedX === xValue.value && clampedY === yValue.value)
+      return
+
     // Prevent watch from syncing back to xValue/yValue
     isUpdating = true
 
@@ -143,6 +176,9 @@ export function useColorArea(props: UseColorAreaProps = {}) {
     if (setColor(setChannelValues(color.value, channels), reason, event)) {
       xValue.value = clampedX
       yValue.value = clampedY
+      const value = colorToString(precisionColor, 'hex')
+      props.onChange?.(value)
+      props.emit?.('change', value)
     }
 
     // Re-enable watch sync after Vue has processed the update
@@ -152,7 +188,9 @@ export function useColorArea(props: UseColorAreaProps = {}) {
   }
 
   function commitValues() {
-    props.emit?.('changeEnd', colorToString(color.value, 'hex'))
+    const value = colorToString(color.value, 'hex')
+    props.onChangeEnd?.(value)
+    props.emit?.('changeEnd', value)
   }
 
   const thumbRef = ref<HTMLElement>()
@@ -185,11 +223,12 @@ export function useColorArea(props: UseColorAreaProps = {}) {
     thumb: getColorAreaThumbSurface(context),
     createAreaSurface: (element: Ref<HTMLElement | undefined>) => createColorAreaAreaSurface(context, element),
     areaStyles,
-    xValue,
-    yValue,
+    xValue: computed(() => xValue.value),
+    yValue: computed(() => yValue.value),
     updateValues,
     commitValues,
-    thumbRef,
+    thumbRef: computed(() => thumbRef.value),
+    setThumbElement: (element) => { thumbRef.value = element ?? undefined },
   }
 }
 

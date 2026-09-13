@@ -66,7 +66,7 @@ import {
 
 These composables are experimental. Reactive options accept refs or getters. Pass a writable `modelValue` ref for ref-owned state, or use `onUpdate` to handle controlled updates. `onBeforeUpdate(value, details)` can synchronously call `details.cancel()` to prevent a change. Component users can use `@before-update:model-value` for the same behavior.
 
-`useColorArea()` exposes the model, exact channel values, background styles, and shared root and thumb surfaces. Call it in component setup (or an effect scope) so its synchronization watchers are disposed. Create one area surface per element and assign `thumbRef` to the thumb so pointer interaction can focus it.
+`useColorArea()` exposes the model, exact channel values, background styles, and shared root and thumb surfaces. Call it in component setup (or an effect scope) so its synchronization watchers are disposed. Create one area surface per element and bind `setThumbElement` to the thumb so pointer interaction can focus it.
 
 ```vue
 <script setup>
@@ -74,7 +74,7 @@ import { useColorArea } from 'reka-ui'
 import { ref } from 'vue'
 
 const areaElement = ref()
-const { root, thumb, thumbRef, areaStyles, createAreaSurface, updateValues } = useColorArea({
+const { root, thumb, setThumbElement, areaStyles, createAreaSurface, updateValues } = useColorArea({
   defaultValue: '#ff0000',
   xChannel: 'saturation',
   yChannel: 'lightness',
@@ -91,13 +91,15 @@ updateValues(75, 50)
       v-bind="area.attrs.value"
       :style="[areaStyles, { position: 'relative', width: '200px', height: '200px' }]"
     >
-      <span ref="thumbRef" v-bind="thumb.attrs.value" />
+      <span :ref="setThumbElement" v-bind="thumb.attrs.value" />
     </div>
   </div>
 </template>
 ```
 
 Hidden form inputs remain part of `ColorAreaRoot`; add them yourself when rendering the composable directly.
+
+`onColorUpdate` receives accepted color objects and `onChange` / `onChangeEnd` receive interaction and commit notifications. These callbacks work without a component `emit` function. Returned state refs are read-only; use the exposed actions to request changes.
 
 ## API Reference
 

@@ -26,7 +26,7 @@ describe('useColorSlider', () => {
   it('cancels delegated slider updates before precision state and change events mutate', () => {
     const emit = vi.fn()
     const slider = setup({ channel: 'red', emit, onBeforeUpdate: (_, details) => details.cancel() })
-    slider.root.props.value['onUpdate:modelValue']([100])
+    slider.sliderProps.value['onUpdate:modelValue']([100])
     expect(slider.channelValue.value).toBe(0)
     expect(slider.lastChangeDetails.value).toMatchObject({ reason: 'slider', isCanceled: true })
     expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue'])
@@ -56,7 +56,7 @@ describe('useColorSlider', () => {
     expect(owned.thumb.props.value['aria-label']).toBe('Alpha')
     const committed = setup({ channel: 'red', emit })
     committed.setValue([255])
-    committed.root.props.value.onValueCommit([255])
+    committed.sliderProps.value.onValueCommit([255])
     expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', '#ff0000'])
     await nextTick()
   })

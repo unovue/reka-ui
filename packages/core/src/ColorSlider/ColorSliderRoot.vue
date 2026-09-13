@@ -80,7 +80,7 @@ const isFormControl = useFormControl(currentElement)
 const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
-const { root, context, color, disabled } = useColorSlider({
+const { sliderProps, context, color, disabled } = useColorSlider({
   orientation: () => props.orientation,
   disabled: () => props.disabled,
   inverted: () => props.inverted,
@@ -97,7 +97,7 @@ provideColorSliderRootContext(context)
 
 <template>
   <SliderRoot
-    v-bind="mergeProps(root.attrs.value, $attrs)"
+    v-bind="mergeProps(sliderProps, $attrs)"
     :ref="forwardRef"
     :dir="dir"
     :as="as"

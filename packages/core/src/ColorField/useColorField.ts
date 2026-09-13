@@ -1,6 +1,6 @@
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorFieldRootContext, ColorFieldRootProps } from './ColorFieldRoot.vue'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color } from '@/shared/color'
 import { computed, ref, toValue, watch } from 'vue'
 import { createPartSurface, useComposing, useControllableState } from '@/shared'
@@ -9,13 +9,34 @@ import { colorToString, convertToRgb, getChannelRange, getChannelValue, isValidC
 type Inputs = Pick<ColorFieldRootProps, 'colorSpace' | 'channel' | 'disabled' | 'readonly' | 'disableWheelChange' | 'placeholder' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorFieldChangeReason = 'keyboard' | 'wheel' | 'blur'
 export type UseColorFieldProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
+  onColorUpdate?: (color: Color) => void
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: string | Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
   onUpdate?: (value: string | Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
 }
 
 export type ColorFieldRootState = { disabled: boolean, readonly: boolean }
-export type UseColorFieldReturn = ReturnType<typeof useColorField>
+export interface UseColorFieldReturn {
+  readonly modelValue: ComputedRef<string | Color>
+  readonly color: ComputedRef<Readonly<Color>>
+  readonly disabled: ComputedRef<boolean>
+  readonly isControlled: ComputedRef<boolean>
+  readonly lastChangeDetails: Readonly<Ref<ChangeEventDetails<ColorFieldChangeReason>>>
+  setColor: (color: Color, reason?: ColorFieldChangeReason | BaseChangeReason, event?: Event) => boolean
+  readonly root: PartSurface<ColorFieldRootState>
+  readonly context: { readonly [K in keyof ColorFieldRootContext]: ColorFieldRootContext[K] extends Ref ? Readonly<ColorFieldRootContext[K]> : ColorFieldRootContext[K] }
+  readonly inputValue: ComputedRef<string>
+  createInputSurface: () => PartSurface<ColorFieldInputState>
+  updateValue: (value: string) => void
+  commit: (event?: Event) => void
+  increment: (event?: Event) => void
+  decrement: (event?: Event) => void
+  incrementPage: (event?: Event) => void
+  decrementPage: (event?: Event) => void
+  incrementToMax: (event?: Event) => void
+  decrementToMin: (event?: Event) => void
+  handleWheel: (event: WheelEvent) => void
+}
 
 /**
  * Headless ColorField state. Call in setup or an effect scope to dispose synchronization watchers.
@@ -23,7 +44,7 @@ export type UseColorFieldReturn = ReturnType<typeof useColorField>
  * @experimental
  * @lifecycle setup
  */
-export function useColorField(props: UseColorFieldProps = {}) {
+export function useColorField(props: UseColorFieldProps = {}): UseColorFieldReturn {
   const colorSpace = computed(() => toValue(props.colorSpace) ?? 'hsl')
   const channel = computed(() => toValue(props.channel))
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -54,6 +75,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
     if (!changed)
       return false
 
+    props.onColorUpdate?.(newColor)
     props.emit?.('update:color', newColor)
     return true
   }
@@ -142,6 +164,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   function increment(event?: Event) {
     if (disabled.value || readonly.value)
       return
+    isEditing.value = false
     const step = getStep()
     if (channel.value) {
       const currentValue = getChannelValue(color.value, channel.value)
@@ -156,6 +179,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   function decrement(event?: Event) {
     if (disabled.value || readonly.value)
       return
+    isEditing.value = false
     const step = getStep()
     if (channel.value) {
       const currentValue = getChannelValue(color.value, channel.value)
@@ -170,6 +194,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   function incrementPage(event?: Event) {
     if (disabled.value || readonly.value)
       return
+    isEditing.value = false
     const step = getStep() * PAGE_STEP_MULTIPLIER
     if (channel.value) {
       const currentValue = getChannelValue(color.value, channel.value)
@@ -184,6 +209,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   function decrementPage(event?: Event) {
     if (disabled.value || readonly.value)
       return
+    isEditing.value = false
     const step = getStep() * PAGE_STEP_MULTIPLIER
     if (channel.value) {
       const currentValue = getChannelValue(color.value, channel.value)
@@ -198,6 +224,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   function incrementToMax(event?: Event) {
     if (disabled.value || readonly.value)
       return
+    isEditing.value = false
     if (channel.value) {
       const range = getChannelRange(channel.value)
       setColor(setChannelValue(color.value, channel.value, range.max), reasonFromEvent(event), event)
@@ -211,6 +238,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
   function decrementToMin(event?: Event) {
     if (disabled.value || readonly.value)
       return
+    isEditing.value = false
     if (channel.value) {
       const range = getChannelRange(channel.value)
       setColor(setChannelValue(color.value, channel.value, range.min), reasonFromEvent(event), event)
@@ -264,7 +292,7 @@ export function useColorField(props: UseColorFieldProps = {}) {
     root,
     context,
     createInputSurface: () => createColorFieldInputSurface(context),
-    inputValue,
+    inputValue: computed(() => inputValue.value),
     updateValue,
     commit,
     increment,

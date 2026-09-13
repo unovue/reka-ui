@@ -1,6 +1,6 @@
-import type { MaybeRefOrGetter } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorSwatchPickerItemContext } from './ColorSwatchPickerItem.vue'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { getColorName } from '@/shared/color'
@@ -22,7 +22,26 @@ export interface UseColorSwatchPickerProps {
   onUpdate?: (value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>) => void
 }
 
-export type UseColorSwatchPickerReturn = ReturnType<typeof useColorSwatchPicker>
+export interface UseColorSwatchPickerReturn {
+  readonly modelValue: ComputedRef<string | readonly string[] | undefined>
+  readonly multiple: ComputedRef<boolean>
+  readonly disabled: ComputedRef<boolean>
+  readonly isControlled: ComputedRef<boolean>
+  readonly lastChangeDetails: Readonly<Ref<ChangeEventDetails<ColorSwatchPickerChangeReason>>>
+  readonly root: PartSurface<ColorSwatchPickerRootState>
+  readonly listboxProps: ComputedRef<{
+    'modelValue': string | string[] | undefined
+    'multiple': boolean
+    'disabled': boolean
+    'selectionBehavior': 'toggle' | 'replace'
+    'onUpdate:modelValue': (value: string | string[] | undefined) => void
+  }>
+  setValue: (value: string | string[] | undefined, reason?: ColorSwatchPickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  select: (value: string, event?: Event) => boolean
+  getItemSurface: (value: MaybeRefOrGetter<string>) => PartSurface<ColorSwatchPickerItemState>
+  getItemSwatchSurface: (value: MaybeRefOrGetter<string>) => PartSurface<ColorSwatchPickerItemSwatchState>
+  readonly itemIndicator: PartSurface<ColorSwatchPickerItemIndicatorState>
+}
 
 /**
  * Headless picker model and color-specific part surfaces. Compose ListboxRoot,
@@ -31,7 +50,7 @@ export type UseColorSwatchPickerReturn = ReturnType<typeof useColorSwatchPicker>
  * @experimental
  * @lifecycle pure
  */
-export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}) {
+export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): UseColorSwatchPickerReturn {
   const multiple = computed(() => toValue(props.multiple) ?? false)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | string[] | undefined, ColorSwatchPickerChangeReason>({
@@ -58,12 +77,17 @@ export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}) {
     return setValue(toggle && modelValue.value === value ? undefined : value, 'selection', event)
   }
 
-  const root = createPartSurface<ColorSwatchPickerRootState>(() => ({
+  const listboxProps = computed(() => ({
     'modelValue': modelValue.value,
     'multiple': multiple.value,
     'disabled': disabled.value,
     'selectionBehavior': toValue(props.selectionBehavior) ?? 'toggle',
     'onUpdate:modelValue': (value: string | string[] | undefined) => setValue(value, 'selection'),
+  }))
+  const root = createPartSurface<ColorSwatchPickerRootState>(() => ({
+    'role': 'listbox',
+    'aria-disabled': disabled.value || undefined,
+    'aria-multiselectable': multiple.value || undefined,
   }), () => ({}))
 
   return {
@@ -75,6 +99,7 @@ export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}) {
     lastChangeDetails,
     isControlled,
     root,
+    listboxProps,
     getItemSurface: getColorSwatchPickerItemSurface,
     getItemSwatchSurface: (color: MaybeRefOrGetter<string>) => getColorSwatchPickerItemSwatchSurface({ color: computed(() => toValue(color)) }),
     itemIndicator: getColorSwatchPickerItemIndicatorSurface(),
