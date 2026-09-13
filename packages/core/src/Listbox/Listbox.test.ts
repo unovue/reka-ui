@@ -538,3 +538,32 @@ describe('given Listbox in a form', async () => {
     })
   })
 })
+
+describe('listboxItem attribute forwarding', () => {
+  it.each([false, true])('chains consumer listeners once (asChild=%s) and preserves attributes', async (asChild) => {
+    const click = vi.fn()
+    const select = vi.fn()
+    const wrapper = mount(() => h(ListboxRoot, {}, () => h(ListboxContent, {}, () => h(ListboxItem, {
+      'value': 'red',
+      asChild,
+      'onClick': click,
+      'onSelect': select,
+      'aria-label': 'Red',
+      'class': 'custom-option',
+      'style': { color: 'red' },
+    }, () => asChild ? h('button', {}, 'Red') : 'Red'))))
+    try {
+      const item = wrapper.find('[role=option]')
+      await item.trigger('click')
+      expect(click).toHaveBeenCalledOnce()
+      expect(select).toHaveBeenCalledOnce()
+      expect(item.attributes('aria-selected')).toBe('true')
+      expect(item.attributes('aria-label')).toBe('Red')
+      expect(item.classes()).toContain('custom-option')
+      expect(item.attributes('style')).toContain('color: red')
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
