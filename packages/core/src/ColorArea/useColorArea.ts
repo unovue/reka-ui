@@ -109,7 +109,8 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     if (isUpdating)
       return
 
-    if (colorToString(precisionColor, 'hex') !== colorToString(newColor, 'hex'))
+    const hasExplicitHue = newColor.space === 'hsl' || newColor.space === 'hsb'
+    if (hasExplicitHue || colorToString(precisionColor, 'hex') !== colorToString(newColor, 'hex'))
       precisionColor = newColor
     const newX = Math.round(getChannelValue(newColor, xChannel.value))
     const newY = Math.round(getChannelValue(newColor, yChannel.value))
@@ -122,15 +123,15 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     if (Math.round(yValue.value) !== newY)
       yValue.value = newY
 
-    // Update hue if saturation is not 0 (to preserve hue for grayscale colors)
+    // Explicit color objects retain hue even when grayscale; RGB echoes do not.
     if (colorSpace.value === 'hsl') {
       const hsl = convertToHsl(newColor)
-      if (hsl.s > 0)
+      if (hasExplicitHue || hsl.s > 0)
         hueValue.value = hsl.h
     }
     else if (colorSpace.value === 'hsb') {
       const hsb = convertToHsb(newColor)
-      if (hsb.s > 0)
+      if (hasExplicitHue || hsb.s > 0)
         hueValue.value = hsb.h
     }
   }, { immediate: true })

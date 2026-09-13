@@ -1,3 +1,4 @@
+import type { Color } from '@/shared/color'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { useColorArea } from './useColorArea'
@@ -61,6 +62,22 @@ describe('useColorArea', () => {
     area.updateValues(120, 0)
     expect(before).toHaveBeenCalledOnce()
     expect(area.xValue.value).toBe(0)
+  })
+
+  it.each(['hsl', 'hsb'] as const)('uses external grayscale hue updates in %s', async (space) => {
+    const initial: Color = space === 'hsl'
+      ? { space, h: 0, s: 0, l: 50, alpha: 1 }
+      : { space, h: 0, s: 0, b: 50, alpha: 1 }
+    const model = ref<Color>(initial)
+    const onUpdate = vi.fn()
+    const onColorUpdate = vi.fn()
+    const area = setup({ modelValue: model, colorSpace: space, xChannel: 'saturation', yChannel: space === 'hsl' ? 'lightness' : 'brightness', onUpdate, onColorUpdate })
+    model.value = { ...initial, h: 240 }
+    await nextTick()
+    expect(onUpdate).not.toHaveBeenCalled()
+    area.updateValues(100, 50)
+    expect(onColorUpdate).toHaveBeenCalledOnce()
+    expect(onColorUpdate.mock.calls[0][0]).toMatchObject({ space, h: 240, s: 100 })
   })
 
   it('maps captured pointer coordinates, focuses the thumb, and commits on release', () => {

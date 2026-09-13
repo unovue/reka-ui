@@ -56,7 +56,7 @@ describe('useColorSlider', () => {
     expect(owned.thumb.props.value['aria-label']).toBe('Alpha')
     const committed = setup({ channel: 'red', emit })
     committed.setValue([255])
-    committed.sliderProps.value.onValueCommit([255])
+    committed.sliderProps.value.onValueCommit()
     expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', '#ff0000'])
     await nextTick()
   })
