@@ -863,7 +863,7 @@ const filteredItems = computed(() =>
         >
           {{ item.label }}
         </DropdownMenuItem>
-        <div v-if="filteredItems.length === 0" role="status">
+        <div v-if="filteredItems.length === 0">
           No actions found.
         </div>
       </DropdownMenuContent>
