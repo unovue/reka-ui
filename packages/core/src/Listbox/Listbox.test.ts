@@ -566,4 +566,30 @@ describe('listboxItem attribute forwarding', () => {
       wrapper.unmount()
     }
   })
+
+  it.each([false, true])('updates forwarded attributes after mount (asChild=%s)', async (asChild) => {
+    const label = ref('Red')
+    const ReactiveAttributeListbox = defineComponent({
+      setup() {
+        return () => h(ListboxRoot, {}, () => h(ListboxContent, {}, () => h(ListboxItem, {
+          'value': 'red',
+          asChild,
+          'aria-label': label.value,
+        }, () => asChild ? h('button', {}, 'Red') : 'Red')))
+      },
+    })
+    const wrapper = mount(ReactiveAttributeListbox)
+
+    try {
+      expect(wrapper.find('[role=option]').attributes('aria-label')).toBe('Red')
+
+      label.value = 'Rouge'
+      await nextTick()
+
+      expect(wrapper.find('[role=option]').attributes('aria-label')).toBe('Rouge')
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
 })
