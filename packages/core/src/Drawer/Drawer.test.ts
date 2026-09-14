@@ -222,3 +222,120 @@ describe('update:open change event details', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
   })
 })
+
+describe('given a Drawer with focus props', () => {
+  const DrawerWithFocusProps = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    props: {
+      initialFocus: { type: [Boolean, Object], default: undefined },
+      finalFocus: { type: [Boolean, Object], default: undefined },
+    },
+    template: `
+      <div>
+        <button data-testid="outside">Outside</button>
+        <DrawerRoot>
+          <DrawerTrigger>Open</DrawerTrigger>
+          <DrawerPortal>
+            <DrawerContent :initial-focus="initialFocus" :final-focus="finalFocus">
+              <DrawerTitle>T</DrawerTitle>
+              <input data-testid="field">
+              <DrawerClose>Close</DrawerClose>
+            </DrawerContent>
+          </DrawerPortal>
+        </DrawerRoot>
+      </div>
+    `,
+  })
+
+  const DrawerWithoutFocusProps = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    template: `
+      <DrawerRoot>
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent>
+            <DrawerTitle>T</DrawerTitle>
+            <input data-testid="field">
+            <DrawerClose>Close</DrawerClose>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('keeps the default focus behaviour when neither prop is bound', async () => {
+    const user = userEvent.setup()
+    const { getByText, getByTestId } = render(DrawerWithoutFocusProps)
+    const trigger = getByText('Open')
+    await user.click(trigger)
+    await nextTick()
+    expect(document.activeElement).toBe(getByTestId('field'))
+    await user.click(getByText('Close'))
+    await nextTick()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('focuses the first tabbable element on open by default', async () => {
+    const user = userEvent.setup()
+    const { getByText, getByTestId } = render(DrawerWithFocusProps)
+    await user.click(getByText('Open'))
+    await nextTick()
+    expect(document.activeElement).toBe(getByTestId('field'))
+  })
+
+  it('does not move focus on open when initialFocus is false', async () => {
+    const user = userEvent.setup()
+    const { getByText, getByTestId } = render(DrawerWithFocusProps, { props: { initialFocus: false } })
+    const trigger = getByText('Open')
+    await user.click(trigger)
+    await nextTick()
+    expect(document.activeElement).not.toBe(getByTestId('field'))
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('focuses the given element on open when initialFocus is an element', async () => {
+    const user = userEvent.setup()
+    const { getByText, getByTestId, rerender } = render(DrawerWithFocusProps)
+    await rerender({ initialFocus: getByTestId('outside') })
+    await user.click(getByText('Open'))
+    await nextTick()
+    expect(document.activeElement).toBe(getByTestId('outside'))
+  })
+
+  it('restores focus to the trigger on close by default', async () => {
+    const user = userEvent.setup()
+    const { getByText } = render(DrawerWithFocusProps)
+    const trigger = getByText('Open')
+    await user.click(trigger)
+    await nextTick()
+    await user.click(getByText('Close'))
+    await nextTick()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('does not restore focus on close when finalFocus is false', async () => {
+    const user = userEvent.setup()
+    const { getByText } = render(DrawerWithFocusProps, { props: { finalFocus: false } })
+    const trigger = getByText('Open')
+    await user.click(trigger)
+    await nextTick()
+    await user.click(getByText('Close'))
+    await nextTick()
+    expect(document.activeElement).not.toBe(trigger)
+  })
+
+  it('focuses the given element on close when finalFocus is an element', async () => {
+    const user = userEvent.setup()
+    const { getByText, getByTestId, rerender } = render(DrawerWithFocusProps)
+    await rerender({ finalFocus: getByTestId('outside') })
+    await user.click(getByText('Open'))
+    await nextTick()
+    await user.click(getByText('Close'))
+    await nextTick()
+    expect(document.activeElement).toBe(getByTestId('outside'))
+  })
+})
