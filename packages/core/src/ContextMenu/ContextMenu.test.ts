@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { findByRole, queryByRole } from '@testing-library/vue'
+import { findByRole, queryByRole, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import ContextMenu from './story/_ContextMenu.vue'
 import ControlledContextMenu from './story/_ControlledContextMenu.vue'
@@ -11,6 +11,11 @@ globalThis.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 }
+globalThis.IntersectionObserver = class IntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as any
 
 describe('given default ContextMenu', () => {
   let wrapper: VueWrapper<InstanceType<typeof ContextMenu>>
@@ -62,6 +67,78 @@ describe('given controlled ContextMenu', () => {
       await wrapper.find('#close-button').trigger('click')
 
       expect(queryByRole(document.body, 'menu')).toBeNull()
+    })
+
+    it('should position relative to the trigger when opened programmatically', async () => {
+      const trigger = wrapper.find('#context-menu-trigger')
+
+      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+        x: 100,
+        y: 100,
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 140,
+        width: 100,
+        height: 40,
+        toJSON: () => {},
+      } as DOMRect)
+
+      await wrapper.find('#open-button').trigger('click')
+
+      const menu = await findByRole(document.body, 'menu')
+      const menuWrapper = menu.parentElement
+
+      await waitFor(() => {
+        expect(menuWrapper?.style.transform)
+          .toContain('translate(98px, 100px)')
+      })
+    })
+
+    it('should position relative to the trigger when reopened programmatically', async () => {
+      const trigger = wrapper.find('#context-menu-trigger')
+
+      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+        x: 100,
+        y: 100,
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 140,
+        width: 100,
+        height: 40,
+        toJSON: () => {},
+      } as DOMRect)
+
+      // First open from a pointer position.
+      await trigger.trigger('contextmenu', {
+        clientX: 300,
+        clientY: 400,
+      })
+
+      const menu = await findByRole(document.body, 'menu')
+      const menuWrapper = menu.parentElement
+
+      await waitFor(() => {
+        expect(menuWrapper?.style.transform)
+          .toContain('translate(298px, 400px)')
+      })
+
+      // Close the pointer-opened menu.
+      await wrapper.find('#close-button').trigger('click')
+
+      expect(queryByRole(document.body, 'menu')).toBeNull()
+
+      // Reopen programmatically.
+      await wrapper.find('#open-button').trigger('click')
+
+      const reopenedMenu = await findByRole(document.body, 'menu')
+      const reopenedMenuWrapper = reopenedMenu.parentElement
+
+      await waitFor(() => {
+        expect(reopenedMenuWrapper?.style.transform)
+          .toContain('translate(98px, 100px)')
+      })
     })
   })
 })

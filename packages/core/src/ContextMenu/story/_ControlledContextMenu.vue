@@ -18,7 +18,9 @@ const open = ref(false)
     {{ open ? 'Close' : 'Open' }}
   </button>
   <ContextMenuRoot v-model:open="open">
-    <ContextMenuTrigger> Right click for contextmenu </ContextMenuTrigger>
+    <ContextMenuTrigger id="context-menu-trigger">
+      Right click for contextmenu
+    </ContextMenuTrigger>
 
     <ContextMenuContent>
       <ContextMenuItem>Item 1</ContextMenuItem>
