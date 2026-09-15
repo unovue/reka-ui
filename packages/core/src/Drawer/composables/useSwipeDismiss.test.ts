@@ -386,3 +386,249 @@ describe('useSwipeDismiss — releases the popup never sees', () => {
     wrapper.unmount()
   })
 })
+
+/**
+ * A side drawer holding `overflow-y: auto` content used to treat every vertical
+ * flick as a horizontal drag, sliding along X and swallowing the scroll
+ * (unovue/reka-ui#2876). `shouldYieldTouchMove` now arbitrates the two axes.
+ */
+describe('useSwipeDismiss — cross-axis scroll arbitration', () => {
+  /** Marks an element as genuinely scrollable on `axis` for jsdom, which reports every box as 0x0. */
+  function makeScrollable(el: HTMLElement, axis: 'vertical' | 'horizontal', scrollOffset = 0) {
+    el.style.setProperty(axis === 'vertical' ? 'overflow-y' : 'overflow-x', 'auto')
+    const sizes = axis === 'vertical'
+      ? { scrollHeight: 2000, clientHeight: 500, scrollTop: scrollOffset }
+      : { scrollWidth: 2000, clientWidth: 500, scrollLeft: scrollOffset }
+    for (const [key, value] of Object.entries(sizes))
+      Object.defineProperty(el, key, { value, configurable: true, writable: true })
+  }
+
+  function mountTouchHarness(opts: { directions?: Array<'up' | 'down' | 'left' | 'right'> } = {}) {
+    const elementRef = ref<HTMLElement | null>(null)
+    const scrollRef = ref<HTMLElement | null>(null)
+    const onDismiss = vi.fn()
+    const onCancel = vi.fn()
+
+    const Harness = defineComponent({
+      setup() {
+        useSwipeDismiss({
+          enabled: true,
+          elementRef,
+          directions: opts.directions ?? ['right'],
+          movementCssVars: {
+            x: '--drawer-swipe-movement-x',
+            y: '--drawer-swipe-movement-y',
+          },
+          onDismiss,
+          onCancel,
+        })
+        return {}
+      },
+      render() {
+        return h(
+          'div',
+          {
+            ref: (el) => {
+              elementRef.value = el as HTMLElement | null
+            },
+          },
+          [
+            h('div', {
+              ref: (el) => {
+                scrollRef.value = el as HTMLElement | null
+              },
+            }, [h('p', 'content')]),
+          ],
+        )
+      },
+    })
+
+    const wrapper = mount(Harness, { attachTo: document.body })
+    return { wrapper, elementRef, scrollRef, onDismiss, onCancel }
+  }
+
+  // jsdom's `TouchEvent`/`Touch` support varies, so build the event by hand.
+  function dispatchTouch(
+    el: HTMLElement,
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    x: number,
+    y: number,
+    { cancelable = true, target = el }: { cancelable?: boolean, target?: HTMLElement } = {},
+  ) {
+    const event = new Event(type, { bubbles: true, cancelable })
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [{ clientX: x, clientY: y }],
+      configurable: true,
+    })
+    Object.defineProperty(event, 'timeStamp', { value: 0, configurable: true })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('yields a mostly-vertical flick to the content scroll on a right drawer', async () => {
+    const { wrapper, elementRef, scrollRef, onDismiss, onCancel } = mountTouchHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    makeScrollable(scroller, 'vertical')
+
+    // A real finger never travels on one axis alone; this flick drifts 3px right
+    // while scrolling 40px down, and that 3px used to start the drag.
+    dispatchTouch(el, 'touchstart', 200, 400, { target: scroller })
+    const move1 = dispatchTouch(el, 'touchmove', 201, 388, { target: scroller })
+    const move2 = dispatchTouch(el, 'touchmove', 203, 360, { target: scroller })
+
+    // The browser keeps both moves, and the drawer never budges along X.
+    expect(move1.defaultPrevented).toBe(false)
+    expect(move2.defaultPrevented).toBe(false)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('')
+
+    dispatchTouch(el, 'touchend', 203, 360, { target: scroller })
+    await nextTick()
+
+    expect(onDismiss).not.toHaveBeenCalled()
+    expect(onCancel).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('keeps yielding for the rest of the gesture once the cross axis has won', async () => {
+    const { wrapper, elementRef, scrollRef, onDismiss } = mountTouchHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    makeScrollable(scroller, 'vertical')
+
+    dispatchTouch(el, 'touchstart', 200, 400, { target: scroller })
+    dispatchTouch(el, 'touchmove', 200, 380, { target: scroller }) // vertical claims it
+
+    // Re-arbitrating on this hard curve would hand the drawer the gesture
+    // mid-scroll.
+    const curve = dispatchTouch(el, 'touchmove', 320, 380, { target: scroller })
+    expect(curve.defaultPrevented).toBe(false)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('')
+
+    dispatchTouch(el, 'touchend', 320, 380, { target: scroller })
+    await nextTick()
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('still swipes when the drag is decisively along the dismiss axis', async () => {
+    const { wrapper, elementRef, scrollRef, onDismiss } = mountTouchHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    makeScrollable(scroller, 'vertical')
+
+    // The scroller has nothing to offer on the horizontal axis.
+    dispatchTouch(el, 'touchstart', 100, 400, { target: scroller })
+    dispatchTouch(el, 'touchmove', 110, 402, { target: scroller })
+    const move = dispatchTouch(el, 'touchmove', 180, 404, { target: scroller })
+
+    expect(move.defaultPrevented).toBe(true)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('80px')
+
+    dispatchTouch(el, 'touchend', 180, 404, { target: scroller })
+    await nextTick()
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+  })
+
+  it('does not arbitrate when the content has no cross-axis scroller', async () => {
+    const { wrapper, elementRef, scrollRef } = mountTouchHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    // Short content: nothing to scroll, so the drawer owns every pixel as before.
+    makeScrollable(scroller, 'horizontal')
+
+    dispatchTouch(el, 'touchstart', 100, 400, { target: scroller })
+    const move = dispatchTouch(el, 'touchmove', 102, 430, { target: scroller })
+
+    expect(move.defaultPrevented).toBe(true)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('2px')
+
+    dispatchTouch(el, 'touchend', 102, 430, { target: scroller })
+    wrapper.unmount()
+  })
+
+  it('yields when the browser has already committed the gesture to a native scroll', async () => {
+    const { wrapper, elementRef, scrollRef, onDismiss } = mountTouchHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    makeScrollable(scroller, 'vertical')
+
+    dispatchTouch(el, 'touchstart', 100, 400, { target: scroller })
+    // Non-cancelable: the scroll is already under way.
+    dispatchTouch(el, 'touchmove', 140, 402, { target: scroller, cancelable: false })
+    // Even a decisive horizontal move afterwards stays with the scroll.
+    const move = dispatchTouch(el, 'touchmove', 260, 404, { target: scroller })
+
+    expect(move.defaultPrevented).toBe(false)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('')
+
+    dispatchTouch(el, 'touchend', 260, 404, { target: scroller })
+    await nextTick()
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('yields a horizontal drift on a bottom drawer to horizontally scrollable content', async () => {
+    const { wrapper, elementRef, scrollRef, onDismiss } = mountTouchHarness({ directions: ['down'] })
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    makeScrollable(scroller, 'horizontal')
+
+    // Swiping a carousel inside a bottom sheet must not pull the sheet down.
+    dispatchTouch(el, 'touchstart', 200, 400, { target: scroller })
+    const move1 = dispatchTouch(el, 'touchmove', 188, 401, { target: scroller })
+    const move2 = dispatchTouch(el, 'touchmove', 160, 403, { target: scroller })
+
+    expect(move1.defaultPrevented).toBe(false)
+    expect(move2.defaultPrevented).toBe(false)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('')
+
+    dispatchTouch(el, 'touchend', 160, 403, { target: scroller })
+    await nextTick()
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('starts clean after a gesture whose end was never seen', async () => {
+    const { wrapper, elementRef, scrollRef, onDismiss } = mountTouchHarness()
+    await nextTick()
+
+    const el = elementRef.value!
+    const scroller = scrollRef.value!
+    makeScrollable(scroller, 'vertical')
+
+    // A vertical scroll that the cross axis wins, abandoned without a touchend.
+    dispatchTouch(el, 'touchstart', 200, 400, { target: scroller })
+    dispatchTouch(el, 'touchmove', 200, 360, { target: scroller })
+
+    // Inheriting that verdict would leave the drawer unswipeable for good.
+    dispatchTouch(el, 'touchstart', 100, 400, { target: scroller })
+    dispatchTouch(el, 'touchmove', 110, 400, { target: scroller })
+    const move = dispatchTouch(el, 'touchmove', 180, 400, { target: scroller })
+
+    expect(move.defaultPrevented).toBe(true)
+    dispatchTouch(el, 'touchend', 180, 400, { target: scroller })
+    await nextTick()
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+  })
+})

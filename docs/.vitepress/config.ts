@@ -325,6 +325,12 @@ export default defineConfig({
         link: '/examples/checkbox-group',
         items: [
           {
+            text: 'Avatar',
+            items: [
+              { text: 'Avatar Stack', link: '/examples/avatar-stack' },
+            ],
+          },
+          {
             text: 'Checkbox',
             items: [
               { text: 'Checkbox Group', link: '/examples/checkbox-group' },
@@ -339,6 +345,7 @@ export default defineConfig({
           {
             text: 'Combobox',
             items: [
+              { text: 'Combobox Async', link: '/examples/combobox-async' },
               {
                 text: 'Combobox Tags Input',
                 link: '/examples/combobox-tags-input',
@@ -346,6 +353,10 @@ export default defineConfig({
               {
                 text: 'Combobox Textarea',
                 link: '/examples/combobox-textarea',
+              },
+              {
+                text: 'Combobox Virtualized',
+                link: '/examples/combobox-virtualized',
               },
             ],
           },
@@ -360,6 +371,10 @@ export default defineConfig({
                 text: 'Date Picker View Switching',
                 link: '/examples/date-picker-view-switching',
               },
+              {
+                text: 'Date Range Presets',
+                link: '/examples/date-range-presets',
+              },
             ],
           },
           {
@@ -367,12 +382,55 @@ export default defineConfig({
             items: [
               { text: 'Dialog Command Menu', link: '/examples/dialog-command-menu' },
               { text: 'Dialog Gesture Driven', link: '/examples/dialog-gesture-driven' },
+              {
+                text: 'Command Menu with Tabs',
+                link: '/examples/dialog-command-tabs',
+              },
+              {
+                text: 'Responsive Dialog Drawer',
+                link: '/examples/dialog-responsive-drawer',
+              },
+              {
+                text: 'Dialog with Unsaved Changes',
+                link: '/examples/dialog-unsaved-changes',
+              },
             ],
           },
           {
             text: 'Listbox',
             items: [
               { text: 'Listbox Transfer', link: '/examples/listbox-transfer' },
+            ],
+          },
+          {
+            text: 'Menu',
+            items: [
+              { text: 'Searchable Menu', link: '/examples/menu-filter' },
+            ],
+          },
+          {
+            text: 'Navigation Menu',
+            items: [
+              {
+                text: 'Navigation Mega Menu',
+                link: '/examples/navigation-mega-menu',
+              },
+              {
+                text: 'Navigation Mobile Nav',
+                link: '/examples/navigation-mobile-nav',
+              },
+            ],
+          },
+          {
+            text: 'Pin Input',
+            items: [
+              { text: 'Pin Input OTP', link: '/examples/pin-input-otp' },
+            ],
+          },
+          {
+            text: 'Popover',
+            items: [
+              { text: 'Selection Popover', link: '/examples/popover-selection' },
             ],
           },
           {
@@ -386,9 +444,51 @@ export default defineConfig({
             ],
           },
           {
+            text: 'Splitter',
+            items: [
+              {
+                text: 'Splitter IDE Layout',
+                link: '/examples/splitter-ide-layout',
+              },
+            ],
+          },
+          {
+            text: 'Stepper',
+            items: [
+              {
+                text: 'Stepper Form Wizard',
+                link: '/examples/stepper-form-wizard',
+              },
+            ],
+          },
+          {
+            text: 'Table',
+            items: [
+              { text: 'Data Table', link: '/examples/data-table' },
+            ],
+          },
+          {
+            text: 'Toast',
+            items: [
+              { text: 'Toast Undo', link: '/examples/toast-undo' },
+            ],
+          },
+          {
+            text: 'Toolbar',
+            items: [
+              { text: 'Toolbar Rich Text', link: '/examples/toolbar-rich-text' },
+            ],
+          },
+          {
             text: 'Tooltip',
             items: [
               { text: 'Tooltip Cursor', link: '/examples/tooltip-cursor' },
+            ],
+          },
+          {
+            text: 'Tree',
+            items: [
+              { text: 'Tree Multi Select', link: '/examples/tree-multi-select' },
             ],
           },
           {

@@ -13,7 +13,7 @@ export interface DropdownMenuFilterProps extends PrimitiveProps {
   modelValue?: string
   /** Focus on element when mounted. */
   autoFocus?: boolean
-  /** When `true`, prevents the user from interacting with item */
+  /** When `true`, prevents the user from interacting with the filter input. */
   disabled?: boolean
 }
 

@@ -108,7 +108,7 @@ defineSlots<{
 }>()
 
 const { multiple, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
-const { getItems } = useCollection<{ value: T }>({ isProvider: true })
+const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
@@ -200,7 +200,7 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
     highlightedElement.value.scrollIntoView({ block: 'nearest' })
   }
 
-  const highlightedItem = getItems().find(i => i.ref === el)
+  const highlightedItem = getItem(el)
   emits('highlight', highlightedItem)
 }
 
