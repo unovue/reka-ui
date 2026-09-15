@@ -136,7 +136,9 @@ function handlePointerOut(event: MouseEvent) {
 }
 
 function isIframeElement(target: EventTarget | null): boolean {
-  return target instanceof Element && target.tagName === 'IFRAME'
+  // Avoid `instanceof Element`: the target may belong to another realm
+  // (e.g. a splitter rendered inside an iframe or a popup window)
+  return target !== null && 'tagName' in target && target.tagName === 'IFRAME'
 }
 
 function handlePointerUp(event: ResizeEvent) {
