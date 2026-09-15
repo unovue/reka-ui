@@ -12,8 +12,9 @@ import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
 import { transformJSDocLinks } from './utils'
 
-// @ts-expect-error ignore
-const traverse = _traverse.default as typeof _traverse
+// `@babel/traverse` 8 is ESM-only and exports the function directly; older
+// builds wrap it in a CJS `default`. Accept both.
+const traverse = (typeof _traverse === 'function' ? _traverse : (_traverse as any).default) as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const md = new MarkdownIt()

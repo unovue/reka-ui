@@ -373,6 +373,8 @@ visible and exposes `--drawer-keyboard-inset` on `DrawerViewport`, which it
 requires (see [Soft keyboard](#soft-keyboard)). Takes no props and renders no
 markup of its own.
 
+<!-- @include: @/meta/DrawerVirtualKeyboardProvider.md -->
+
 ### Indent
 
 Wraps page content that should visually shift (scale/indent) as the drawer is
