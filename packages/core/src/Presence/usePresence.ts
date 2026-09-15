@@ -156,6 +156,7 @@ export function usePresence(
           if (
             attachedNode !== newNode
             || state.value !== 'mounted'
+            || !prevPresentRef.value
           ) {
             return
           }

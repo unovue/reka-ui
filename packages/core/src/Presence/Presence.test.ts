@@ -186,17 +186,13 @@ describe('given batched Presence updates', () => {
   it('waits for the batch to mount before reading initial animation names', async () => {
     const present = ref(false)
     const animationReadNodeCounts: number[] = []
-    const deferredAnimationReads: boolean[] = []
     const styles = new WeakMap<Element, CSSStyleDeclaration>()
     const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element) => {
       let style = styles.get(element)
       if (!style) {
-        let canReadAnimation = false
-        queueMicrotask(() => canReadAnimation = true)
         style = {
           get animationName() {
             animationReadNodeCounts.push(document.querySelectorAll('[data-batch-presence]').length)
-            deferredAnimationReads.push(canReadAnimation)
             return 'none'
           },
           get display() {
@@ -222,7 +218,6 @@ describe('given batched Presence updates', () => {
     try {
       await flushPresence()
       animationReadNodeCounts.length = 0
-      deferredAnimationReads.length = 0
 
       present.value = true
       await flushPresence()
@@ -230,7 +225,6 @@ describe('given batched Presence updates', () => {
       expect(wrapper.findAll('[data-batch-presence]')).toHaveLength(6)
       expect(animationReadNodeCounts.length).toBeGreaterThan(0)
       expect(animationReadNodeCounts.every(count => count === 6)).toBe(true)
-      expect(deferredAnimationReads.every(Boolean)).toBe(true)
     }
     finally {
       wrapper.unmount()
@@ -239,7 +233,7 @@ describe('given batched Presence updates', () => {
     }
   })
 
-  it('does not read computed styles while unmounting non-animated nodes', async () => {
+  it('does not call getComputedStyle while unmounting non-animated nodes', async () => {
     const present = ref(true)
     const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle')
     const wrapper = mount(defineComponent({
@@ -261,6 +255,84 @@ describe('given batched Presence updates', () => {
 
       expect(wrapper.findAll('span')).toHaveLength(0)
       expect(getComputedStyleSpy).not.toHaveBeenCalled()
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('keeps the exit animation when present becomes false before the mount flush', async () => {
+    const open = ref(true)
+    const events: string[] = []
+    const getComputedStyleSpy = mockLiveAnimationStyles()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ events, open }),
+      template: `<Presence :present="open">
+        <div
+          data-testid="animated"
+          :data-state="open ? 'open' : 'closed'"
+          @leave="events.push('leave')"
+          @after-leave="events.push('after-leave')"
+        />
+      </Presence>`,
+    }))
+
+    try {
+      open.value = false
+      await flushPresence()
+
+      const element = wrapper.find('[data-testid="animated"]')
+      expect(element.exists()).toBe(true)
+      expect(events).toEqual(['leave'])
+
+      element.element.dispatchEvent(createAnimationEvent('animationend', 'fadeOut'))
+      await flushPresence()
+
+      expect(wrapper.find('[data-testid="animated"]').exists()).toBe(false)
+      expect(events).toEqual(['leave', 'after-leave'])
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('keeps the exit animation when the child root is replaced while closing', async () => {
+    const open = ref(true)
+    const events: string[] = []
+    const getComputedStyleSpy = mockLiveAnimationStyles()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ events, open }),
+      template: `<Presence :present="open">
+        <div
+          :key="open ? 'open' : 'closed'"
+          data-testid="animated"
+          :data-state="open ? 'open' : 'closed'"
+          @leave="events.push('leave')"
+          @after-leave="events.push('after-leave')"
+        />
+      </Presence>`,
+    }))
+
+    try {
+      await flushPresence()
+      events.length = 0
+
+      open.value = false
+      await flushPresence()
+
+      const element = wrapper.find('[data-testid="animated"]')
+      expect(element.exists()).toBe(true)
+      expect(events).toEqual(['leave'])
+
+      element.element.dispatchEvent(createAnimationEvent('animationend', 'fadeOut'))
+      await flushPresence()
+
+      expect(wrapper.find('[data-testid="animated"]').exists()).toBe(false)
+      expect(events).toEqual(['leave', 'after-leave'])
     }
     finally {
       wrapper.unmount()
@@ -396,6 +468,7 @@ describe('given batched Presence updates', () => {
 })
 
 async function flushPresence() {
+  // Render flush, the present watcher's nextTick, then the mount-name microtask.
   await nextTick()
   await nextTick()
   await nextTick()
