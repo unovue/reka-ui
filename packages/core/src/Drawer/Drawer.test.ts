@@ -392,8 +392,11 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     // @ts-expect-error - restoring the jsdom default
     delete window.visualViewport
+    // @ts-expect-error - restoring the jsdom default
+    delete window.innerHeight
   })
 
   it('publishes the keyboard inset on the viewport', async () => {
@@ -410,7 +413,6 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     vi.advanceTimersByTime(100)
 
     expect(getByTestId('viewport').style.getPropertyValue('--drawer-keyboard-inset')).toBe('300px')
-    vi.useRealTimers()
   })
 
   it('warns when the drawer has no DrawerViewport to measure against', async () => {
@@ -432,6 +434,49 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     })
 
     const { getByText } = render(NoViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
+  })
+
+  it('forgets the viewport once it unmounts', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ToggleableViewport = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      props: { withViewport: { type: Boolean, default: true } },
+      template: `
+        <DrawerRoot>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+            <DrawerPortal>
+              <DrawerViewport v-if="withViewport">
+                <DrawerContent>
+                  <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                </DrawerContent>
+              </DrawerViewport>
+              <DrawerContent v-else>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+              </DrawerContent>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { getByText, rerender } = render(ToggleableViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
+
+    await rerender({ withViewport: false })
+    await nextTick()
+    // Reopen so the provider re-checks for a viewport.
+    await fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await nextTick()
     await fireEvent.click(getByText(OPEN_TEXT))
     await nextTick()
     await nextTick()

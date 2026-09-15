@@ -81,6 +81,9 @@ function stubScrollMetrics(element: HTMLElement, scrollHeight: number, clientHei
   Object.defineProperty(element, 'clientHeight', { configurable: true, get: () => clientHeight })
 }
 
+const originalScrollTo = window.scrollTo
+const originalElementFromPoint = document.elementFromPoint
+
 beforeEach(() => {
   vi.useFakeTimers()
   visualViewport = createVisualViewport()
@@ -98,8 +101,13 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+  window.scrollTo = originalScrollTo
+  document.elementFromPoint = originalElementFromPoint
+  Object.defineProperty(window, 'scrollY', { configurable: true, writable: true, value: 0 })
   // @ts-expect-error - restoring the jsdom default (no visual viewport)
   delete window.visualViewport
+  // @ts-expect-error - restoring the jsdom default
+  delete window.innerHeight
 })
 
 /** Runs the rAF-scheduled alignment, including its settle passes. */

@@ -21,13 +21,20 @@ const props = withDefaults(defineProps<DrawerViewportProps>(), { as: 'div' })
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectDrawerRootContext()
 
+// `currentElement` is already cleared by the time `onUnmounted` runs (Vue
+// nulls the template ref before the unmount hooks), so keep our own handle
+// for the identity check.
+let registeredElement: HTMLElement | undefined
+
 onMounted(() => {
-  rootContext.viewportElement.value = currentElement.value
+  registeredElement = currentElement.value
+  rootContext.viewportElement.value = registeredElement
 })
 
 onUnmounted(() => {
-  if (rootContext.viewportElement.value === currentElement.value)
+  if (registeredElement && rootContext.viewportElement.value === registeredElement)
     rootContext.viewportElement.value = undefined
+  registeredElement = undefined
 })
 </script>
 
