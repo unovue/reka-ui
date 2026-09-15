@@ -214,7 +214,8 @@ function focusKeyboardInputWithoutPageScroll(target: HTMLElement) {
 }
 
 function isVerticallyScrollable(element: HTMLElement, allowOverflowIntent: boolean): boolean {
-  const { overflowY } = window.getComputedStyle(element)
+  const win = element.ownerDocument.defaultView ?? window
+  const { overflowY } = win.getComputedStyle(element)
   if (overflowY !== 'auto' && overflowY !== 'scroll')
     return false
   // With intent, a container that overflows only once slack is added counts too.
@@ -309,7 +310,7 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
     }
 
     if (!scrollAdjustment) {
-      const styles = window.getComputedStyle(element)
+      const styles = (element.ownerDocument.defaultView ?? window).getComputedStyle(element)
       scrollAdjustment = {
         element,
         paddingBottom: element.style.paddingBottom,
@@ -327,7 +328,8 @@ export function useDrawerVirtualKeyboard(options: UseDrawerVirtualKeyboardOption
   }
 
   function animateScroll(element: HTMLElement, scrollTop: number) {
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    const win = element.ownerDocument.defaultView ?? window
+    const reducedMotion = win.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
     element.scrollTo?.({ top: scrollTop, behavior: reducedMotion ? 'auto' : 'smooth' })
   }
 
