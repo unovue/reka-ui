@@ -344,6 +344,7 @@ describe('given a Drawer with focus props', () => {
 
 describe('drawer with DrawerVirtualKeyboardProvider', () => {
   const LAYOUT_HEIGHT = 800
+  const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
   let listeners: Set<() => void>
 
   const KeyboardDrawer = defineComponent({
@@ -395,8 +396,11 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     vi.useRealTimers()
     // @ts-expect-error - restoring the jsdom default
     delete window.visualViewport
-    // @ts-expect-error - restoring the jsdom default
-    delete window.innerHeight
+    if (originalInnerHeight)
+      Object.defineProperty(window, 'innerHeight', originalInnerHeight)
+    else
+      // @ts-expect-error - restoring the jsdom default
+      delete window.innerHeight
   })
 
   it('publishes the keyboard inset on the viewport', async () => {

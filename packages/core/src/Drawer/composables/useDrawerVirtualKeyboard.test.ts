@@ -82,6 +82,7 @@ function stubScrollMetrics(element: HTMLElement, scrollHeight: number, clientHei
 }
 
 const originalScrollTo = window.scrollTo
+const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
 const originalElementFromPoint = document.elementFromPoint
 
 beforeEach(() => {
@@ -106,8 +107,11 @@ afterEach(() => {
   Object.defineProperty(window, 'scrollY', { configurable: true, writable: true, value: 0 })
   // @ts-expect-error - restoring the jsdom default (no visual viewport)
   delete window.visualViewport
-  // @ts-expect-error - restoring the jsdom default
-  delete window.innerHeight
+  if (originalInnerHeight)
+    Object.defineProperty(window, 'innerHeight', originalInnerHeight)
+  else
+    // @ts-expect-error - restoring the jsdom default
+    delete window.innerHeight
 })
 
 /** Runs the rAF-scheduled alignment, including its settle passes. */
