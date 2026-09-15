@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -44,14 +45,12 @@ describe('resize handle hover state next to an iframe (issue #2893)', () => {
 
     // jsdom reports a zero rect for every element, so (0, 0) lands inside the
     // handle's hit area and puts it into the hover state.
-    handle.element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 0, clientY: 0 }))
-    await nextTick()
+    await fireEvent.mouseMove(handle.element, { clientX: 0, clientY: 0 })
     expect(handle.attributes('data-state')).toBe('hover')
 
     // Moving into the iframe only yields a mouseout on the handle; no further
     // mousemove reaches the parent document.
-    handle.element.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, clientX: 0, clientY: 0, relatedTarget: iframe.element }))
-    await nextTick()
+    await fireEvent.mouseOut(handle.element, { clientX: 0, clientY: 0, relatedTarget: iframe.element })
     expect(handle.attributes('data-state')).toBe('inactive')
   })
 
@@ -62,14 +61,12 @@ describe('resize handle hover state next to an iframe (issue #2893)', () => {
     const handle = wrapper.find('#handle')
     const right = wrapper.find('#right')
 
-    handle.element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 0, clientY: 0 }))
-    await nextTick()
+    await fireEvent.mouseMove(handle.element, { clientX: 0, clientY: 0 })
     expect(handle.attributes('data-state')).toBe('hover')
 
     // A mouseout to a regular element is followed by mousemove events, which
     // keep managing the hover state, so mouseout alone must not reset it.
-    handle.element.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, clientX: 0, clientY: 0, relatedTarget: right.element }))
-    await nextTick()
+    await fireEvent.mouseOut(handle.element, { clientX: 0, clientY: 0, relatedTarget: right.element })
     expect(handle.attributes('data-state')).toBe('hover')
   })
 
@@ -80,17 +77,14 @@ describe('resize handle hover state next to an iframe (issue #2893)', () => {
     const handle = wrapper.find('#handle')
     const iframe = wrapper.find('#frame')
 
-    handle.element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 0, clientY: 0 }))
-    handle.element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 0, clientY: 0 }))
-    await nextTick()
+    await fireEvent.mouseMove(handle.element, { clientX: 0, clientY: 0 })
+    await fireEvent.mouseDown(handle.element, { clientX: 0, clientY: 0 })
     expect(handle.attributes('data-state')).toBe('drag')
 
-    handle.element.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, clientX: 0, clientY: 0, relatedTarget: iframe.element }))
-    await nextTick()
+    await fireEvent.mouseOut(handle.element, { clientX: 0, clientY: 0, relatedTarget: iframe.element })
     expect(handle.attributes('data-state')).toBe('drag')
 
-    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 0, clientY: 0 }))
-    await nextTick()
+    await fireEvent.mouseUp(window, { clientX: 0, clientY: 0 })
     expect(handle.attributes('data-state')).toBe('hover')
   })
 })
