@@ -22,6 +22,25 @@ describe('isLayerExist', () => {
     expect(isLayerExist(layer, document as any)).toBe(false)
     expect(isLayerExist(layer, document.createTextNode('x') as any)).toBe(false)
   })
+
+  it('should treat the layer root and its unmarked descendants as inside (#2803)', () => {
+    // Mirrors `FocusScope > DismissableLayer > PopperContent` rendered `asChild`:
+    // the layer root is the popper wrapper, `[data-dismissable-layer]` lands on
+    // the content element inside it.
+    const root = document.createElement('div')
+    const layer = document.createElement('div')
+    layer.setAttribute('data-dismissable-layer', '')
+    root.appendChild(layer)
+    const outside = document.createElement('button')
+    document.body.append(root, outside)
+
+    expect(isLayerExist(root, root)).toBe(true)
+    expect(isLayerExist(root, layer)).toBe(true)
+    expect(isLayerExist(root, outside)).toBe(false)
+
+    root.remove()
+    outside.remove()
+  })
 })
 
 describe('given a DismissableLayerBranch', () => {
