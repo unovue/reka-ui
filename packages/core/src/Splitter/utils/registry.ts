@@ -121,6 +121,24 @@ function handlePointerMove(event: ResizeEvent) {
     event.preventDefault()
 }
 
+function handlePointerOut(event: MouseEvent) {
+  // Once the pointer enters an iframe, the parent document stops receiving
+  // mousemove events, so the hover state would never be cleared by
+  // handlePointerMove. The last event we do get is the "mouseout" whose
+  // relatedTarget is the iframe, so reset the hover state here.
+  // See https://github.com/unovue/reka-ui/issues/2893
+  if (isPointerDown || !isIframeElement(event.relatedTarget))
+    return
+
+  intersectingHandles.splice(0)
+  updateResizeHandlerStates('move', event)
+  updateCursor()
+}
+
+function isIframeElement(target: EventTarget | null): boolean {
+  return target instanceof Element && target.tagName === 'IFRAME'
+}
+
 function handlePointerUp(event: ResizeEvent) {
   const { target } = event
   const { x, y } = getResizeEventCoordinates(event)
@@ -267,6 +285,7 @@ function updateListeners() {
     body.removeEventListener('mousedown', handlePointerDown)
     body.removeEventListener('mouseleave', handlePointerMove)
     body.removeEventListener('mousemove', handlePointerMove)
+    body.removeEventListener('mouseout', handlePointerOut)
     body.removeEventListener('touchmove', handlePointerMove)
     body.removeEventListener('touchstart', handlePointerDown)
   })
@@ -303,6 +322,7 @@ function updateListeners() {
         if (count > 0) {
           body.addEventListener('mousedown', handlePointerDown)
           body.addEventListener('mousemove', handlePointerMove)
+          body.addEventListener('mouseout', handlePointerOut)
           body.addEventListener('touchmove', handlePointerMove, {
             passive: false,
           })
