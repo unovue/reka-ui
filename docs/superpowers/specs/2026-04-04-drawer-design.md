@@ -235,6 +235,7 @@ All set imperatively via `element.style.setProperty` (no Vue reactivity) for 60f
 | `--drawer-swipe-progress` | `DrawerOverlay` + `DrawerIndent` | Backdrop/indent swipe progress (0–1) |
 | `--drawer-swipe-strength` | `DrawerOverlay` | Resistance factor |
 | `--nested-drawers` | `DrawerContentImpl` | Nesting depth count |
+| `--drawer-keyboard-inset` | `DrawerContentImpl` | Software keyboard height (visual viewport) |
 
 `CSS.registerProperty` called once per var with `inherits: false` to avoid style recalc cascade.
 

@@ -13,6 +13,8 @@ import {
   DrawerRoot,
   DrawerTitle,
   DrawerTrigger,
+  DrawerViewport,
+  DrawerVirtualKeyboardProvider,
 } from '.'
 
 const OPEN_TEXT = 'Open Drawer'
@@ -337,5 +339,153 @@ describe('given a Drawer with focus props', () => {
     await user.click(getByText('Close'))
     await nextTick()
     expect(document.activeElement).toBe(getByTestId('outside'))
+  })
+})
+
+describe('drawer with DrawerVirtualKeyboardProvider', () => {
+  const LAYOUT_HEIGHT = 800
+  const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+  let listeners: Set<() => void>
+
+  const KeyboardDrawer = defineComponent({
+    components: {
+      DrawerRoot,
+      DrawerVirtualKeyboardProvider,
+      DrawerTrigger,
+      DrawerPortal,
+      DrawerContent,
+      DrawerViewport,
+      DrawerTitle,
+    },
+    template: `
+      <DrawerRoot>
+        <DrawerVirtualKeyboardProvider>
+          <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+          <DrawerPortal>
+            <DrawerViewport data-testid="viewport">
+              <DrawerContent>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                <div data-testid="scroll" style="overflow-y: auto">
+                  <input data-testid="field" type="text">
+                </div>
+              </DrawerContent>
+            </DrawerViewport>
+          </DrawerPortal>
+        </DrawerVirtualKeyboardProvider>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    listeners = new Set()
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      writable: true,
+      value: {
+        height: LAYOUT_HEIGHT,
+        offsetTop: 0,
+        scale: 1,
+        addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      },
+    })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: LAYOUT_HEIGHT })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    // @ts-expect-error - restoring the jsdom default
+    delete window.visualViewport
+    if (originalInnerHeight)
+      Object.defineProperty(window, 'innerHeight', originalInnerHeight)
+    else
+      // @ts-expect-error - restoring the jsdom default
+      delete window.innerHeight
+  })
+
+  it('publishes the keyboard inset on the viewport', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { getByText, getByTestId } = render(KeyboardDrawer)
+
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+
+    getByTestId('field').focus()
+    await nextTick()
+    ;(window.visualViewport as any).height = LAYOUT_HEIGHT - 300
+    listeners.forEach(listener => listener())
+    vi.advanceTimersByTime(100)
+
+    expect(getByTestId('viewport').style.getPropertyValue('--drawer-keyboard-inset')).toBe('300px')
+  })
+
+  it('warns when the drawer has no DrawerViewport to measure against', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const NoViewport = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle },
+      template: `
+        <DrawerRoot>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+            <DrawerPortal>
+              <DrawerContent>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+              </DrawerContent>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { getByText } = render(NoViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
+  })
+
+  it('forgets the viewport once it unmounts', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ToggleableViewport = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      props: { withViewport: { type: Boolean, default: true } },
+      template: `
+        <DrawerRoot>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+            <DrawerPortal>
+              <DrawerViewport v-if="withViewport">
+                <DrawerContent>
+                  <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                </DrawerContent>
+              </DrawerViewport>
+              <DrawerContent v-else>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+              </DrawerContent>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { getByText, rerender } = render(ToggleableViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
+
+    await rerender({ withViewport: false })
+    await nextTick()
+    // Reopen so the provider re-checks for a viewport.
+    await fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await nextTick()
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
   })
 })

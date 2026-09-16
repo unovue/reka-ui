@@ -84,6 +84,7 @@ export interface DrawerRootContext {
   notifyParentHasNestedDrawer?: (present: boolean) => void
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
+  viewportElement: Ref<HTMLElement | undefined>
   contentId: string
   titleId: string
   descriptionId: string
@@ -132,6 +133,7 @@ const { modal, swipeDirection, snapPoints, snapToSequentialPoints } = toRefs(pro
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
+const viewportElement = ref<HTMLElement>()
 const popupHeight = ref(0)
 const frontmostHeight = ref(0)
 const hasNestedDrawer = ref(false)
@@ -201,6 +203,7 @@ provideDrawerRootContext({
   notifyParentHasNestedDrawer: parentContext?.onNestedDrawerPresenceChange,
   triggerElement,
   contentElement,
+  viewportElement,
   contentId,
   titleId,
   descriptionId,
