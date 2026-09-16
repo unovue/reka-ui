@@ -34,6 +34,8 @@ import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxItemSurface } from './useListbox'
 
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
   as: 'div',
 })
@@ -88,7 +90,7 @@ provideListboxItemContext({
       :id="id"
       v-bind="mergeProps($attrs, surface.attrs.value)"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value]"
+      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value, ...Object.entries($attrs).flat()]"
       :as="as"
       :as-child="asChild"
     >
