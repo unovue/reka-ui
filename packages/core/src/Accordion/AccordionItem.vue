@@ -36,7 +36,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
 import { getAccordionItemSurface } from './useAccordion'
 
@@ -60,7 +60,7 @@ const surface = getAccordionItemSurface(rootContext, () => props.value, {
   disabled: () => props.disabled,
   unmountOnHide: () => props.unmountOnHide,
 })
-const { open, disabled } = surface
+const { open, disabled, unmountOnHide } = surface
 
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
 const dataState = computed<DisclosureState>(() => surface.item.state.value.state)
@@ -68,12 +68,16 @@ const dataState = computed<DisclosureState>(() => surface.item.state.value.state
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
 
+// AccordionTrigger assigns the id during setup; a reactive backing ref lets
+// content surfaces built before that assignment still observe it.
+const triggerId = ref('')
 provideAccordionItemContext({
   open,
   dataState,
   disabled,
   dataDisabled,
-  triggerId: '',
+  get triggerId() { return triggerId.value },
+  set triggerId(value) { triggerId.value = value },
   currentRef,
   currentElement,
   value: computed(() => props.value),
@@ -84,6 +88,9 @@ provideAccordionItemContext({
   <CollapsibleRoot
     :as="props.as"
     :as-child="props.asChild"
+    :open="open"
+    :disabled="disabled"
+    :unmount-on-hide="unmountOnHide"
     v-bind="surface.item.attrs.value"
   >
     <slot :open="open" />

@@ -341,6 +341,34 @@ describe('accordion characterization contract', () => {
     wrapper.unmount()
   })
 
+  it('labels content rendered before its trigger once the trigger allocates an id', async () => {
+    const wrapper = mount({
+      components: {
+        AccordionContent,
+        AccordionHeader,
+        AccordionItem,
+        AccordionRoot,
+        AccordionTrigger,
+      },
+      template: `
+        <AccordionRoot type="single" default-value="one">
+          <AccordionItem value="one">
+            <AccordionContent>Content one</AccordionContent>
+            <AccordionHeader><AccordionTrigger>One</AccordionTrigger></AccordionHeader>
+          </AccordionItem>
+        </AccordionRoot>
+      `,
+    }, { attachTo: document.body })
+    await nextTick()
+
+    const trigger = wrapper.find('button')
+    const content = wrapper.find('[role="region"]')
+    expect(trigger.attributes('id')).toMatch(/^reka-accordion-trigger-/)
+    expect(content.attributes('aria-labelledby')).toBe(trigger.attributes('id'))
+    expect(trigger.attributes('aria-controls')).toBe(content.attributes('id'))
+    wrapper.unmount()
+  })
+
   it('defaults an untyped root with no model to single mode', async () => {
     const modelUpdate = vi.fn()
     const wrapper = mount({

@@ -154,11 +154,9 @@ describe('useAccordion — item surface', () => {
 
     expect(item.open.value).toBe(true)
     expect(item.disabled.value).toBe(false)
-    expect(item.item.props.value).toMatchObject({
-      disabled: false,
-      open: true,
-      unmountOnHide: true,
-    })
+    expect(item.unmountOnHide.value).toBe(true)
+    // The item surface is bound onto a plain element standalone, so it carries no component props.
+    expect(Object.keys(item.item.props.value)).toEqual(['onKeydown'])
     expect(Object.keys(item.item.props.value).some(key => key.startsWith('data-'))).toBe(false)
     expect(item.item.state.value).toEqual({
       state: 'open',
@@ -213,9 +211,32 @@ describe('useAccordion — item surface', () => {
     expect(item.trigger.props.value.id).toBe('reka-accordion-trigger-one')
     expect(item.content.props.value['aria-labelledby']).toBe('reka-accordion-trigger-one')
 
+    expect(item.trigger.props.value['aria-controls']).toBe('reka-accordion-content-one')
+    expect(item.content.props.value.id).toBe('reka-accordion-content-one')
+
     value.value = 'two'
     expect(item.trigger.props.value.id).toBe('reka-accordion-trigger-two')
     expect(item.content.props.value['aria-labelledby']).toBe('reka-accordion-trigger-two')
+    expect(item.trigger.props.value['aria-controls']).toBe('reka-accordion-content-two')
+    expect(item.content.props.value.id).toBe('reka-accordion-content-two')
+  })
+
+  it('keeps derived ids free of whitespace so aria id references resolve', () => {
+    const item = useAccordion({ baseId: 'faq' }).getItemSurface('Is it accessible?')
+    const triggerId = item.trigger.props.value.id
+    const contentId = item.content.props.value.id
+
+    expect(triggerId).not.toMatch(/\s/)
+    expect(contentId).not.toMatch(/\s/)
+    expect(item.content.props.value['aria-labelledby']).toBe(triggerId)
+    expect(item.trigger.props.value['aria-controls']).toBe(contentId)
+    expect(useAccordion({ baseId: 'faq' }).getItemSurface('Is-it-accessible?').trigger.props.value.id).not.toBe(triggerId)
+  })
+
+  it('accepts an explicit content id', () => {
+    const item = useAccordion().getItemSurface('one', { contentId: 'panel-one' })
+    expect(item.content.props.value.id).toBe('panel-one')
+    expect(item.trigger.props.value['aria-controls']).toBe('panel-one')
   })
 
   it('keeps an active single item open unless the root is collapsible', () => {

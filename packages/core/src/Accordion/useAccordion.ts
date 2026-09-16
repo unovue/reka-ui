@@ -61,8 +61,10 @@ export interface AccordionItemSurfaceOptions {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** SSR-stable trigger id supplied by the rendering shell. */
   triggerId?: MaybeRefOrGetter<string | undefined>
+  /** SSR-stable content id; standalone callers get one derived from `(baseId, value)`. */
+  contentId?: MaybeRefOrGetter<string | undefined>
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
-  /** Base id used when a standalone caller does not supply a trigger id. */
+  /** Base id used when a standalone caller does not supply trigger/content ids. */
   baseId?: string
 }
 
@@ -71,12 +73,16 @@ export interface AccordionItemSurfaceContext {
   disabled: ComputedRef<boolean>
   state?: ComputedRef<AccordionPartState>
   triggerId: MaybeRefOrGetter<string>
+  /** Omitted by the SFC shells, where Collapsible links trigger and content. */
+  contentId?: MaybeRefOrGetter<string>
   value: ComputedRef<string>
 }
 
 export interface AccordionItemSurfaceReturn {
   open: ComputedRef<boolean>
   disabled: ComputedRef<boolean>
+  /** Whether closed content should be unmounted rather than `hidden="until-found"`. */
+  unmountOnHide: ComputedRef<boolean>
   item: PartSurface<AccordionPartState>
   header: PartSurface<AccordionPartState>
   trigger: PartSurface<AccordionPartState>
@@ -105,6 +111,7 @@ export function getAccordionContentSurface(
 ): PartSurface<AccordionPartState> {
   return createPartSurface(
     () => ({
+      ...contentIdAttr(itemContext, 'id'),
       'role': 'region',
       'aria-labelledby': toValue(itemContext.triggerId),
       'style': `
@@ -115,6 +122,13 @@ export function getAccordionContentSurface(
     }),
     getAccordionPartState(rootContext, itemContext),
   )
+}
+
+// Keys are omitted, not set to undefined: a fallthrough `undefined` would override
+// the id/aria-controls that the Collapsible shells render.
+function contentIdAttr(itemContext: AccordionItemSurfaceContext, key: 'id' | 'aria-controls') {
+  const contentId = toValue(itemContext.contentId)
+  return contentId === undefined ? {} : { [key]: contentId }
 }
 
 function getAccordionPartState(
@@ -149,6 +163,7 @@ export function getAccordionTriggerSurface(
     () => ({
       ...disclosureTrigger.props.value,
       'id': toValue(itemContext.triggerId),
+      ...contentIdAttr(itemContext, 'aria-controls'),
       'aria-disabled': itemContext.disabled.value || undefined,
       'data-reka-collection-item': '',
     }),
@@ -193,27 +208,29 @@ export function getAccordionItemSurface(
     })
   }
 
+  const unmountOnHide = computed(() => toValue(options.unmountOnHide) ?? rootContext.unmountOnHide.value)
+  // Only DOM-safe props: standalone callers bind this onto a plain element.
   const item = createPartSurface(
     () => ({
-      disabled: disabled.value,
-      open: open.value,
-      unmountOnHide: toValue(options.unmountOnHide) ?? rootContext.unmountOnHide.value,
       onKeydown: handleKeydown,
     }),
     state,
   )
+  // Values become part of ids, and `aria-labelledby`/`aria-controls` are space-separated id lists.
+  const idPart = () => encodeURIComponent(toValue(value))
   const itemContext: AccordionItemSurfaceContext = {
     open,
     disabled,
     state,
-    triggerId: computed(() => toValue(options.triggerId) ?? `${options.baseId ?? 'reka-accordion'}-trigger-${toValue(value)}`),
+    triggerId: computed(() => toValue(options.triggerId) ?? `${options.baseId ?? 'reka-accordion'}-trigger-${idPart()}`),
+    contentId: computed(() => toValue(options.contentId) ?? `${options.baseId ?? 'reka-accordion'}-content-${idPart()}`),
     value: computed(() => toValue(value)),
   }
   const header = getAccordionHeaderSurface(rootContext, itemContext)
   const trigger = getAccordionTriggerSurface(rootContext, itemContext)
   const content = getAccordionContentSurface(rootContext, itemContext)
 
-  return { open, disabled, item, header, trigger, content, context: itemContext }
+  return { open, disabled, unmountOnHide, item, header, trigger, content, context: itemContext }
 }
 
 /**

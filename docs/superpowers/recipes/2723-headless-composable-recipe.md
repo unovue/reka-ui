@@ -189,8 +189,10 @@ one stateful factory boundary:
   only implementation.
 - **Component wrappers stay wrappers, but can consume surfaces.** `AccordionItem`,
   `AccordionTrigger`, and `AccordionContent` keep `CollapsibleRoot`/
-  `CollapsibleTrigger`/`CollapsibleContent`; their surfaces carry the wrapper inputs
-  (`open`, `disabled`, `unmountOnHide`) and Accordion attrs/handlers. Collapsible's
+  `CollapsibleTrigger`/`CollapsibleContent`; their surfaces carry only DOM-safe
+  Accordion attrs/handlers, because standalone callers bind them onto plain
+  elements. The item factory returns the wrapper inputs (`open`, `disabled`,
+  `unmountOnHide`) as refs, and `AccordionItem` passes them as props. Collapsible's
   Presence, measurement, animation suppression, and `beforematch` listener remain
   inside Collapsible.
 - **Functional selectors still live in `props`.** The trigger's
@@ -199,10 +201,14 @@ one stateful factory boundary:
 - **Per-trigger SSR ids stay in the Trigger shell.** Existing Accordion ids are
   allocation-order-based rather than `(baseId, value)`-derived. `AccordionTrigger`
   therefore keeps `useId` and writes the id into the existing item context before
-  building trigger/content surfaces. Standalone `getItemSurface` calls derive a
-  reactive trigger id from `(baseId, value)`, with a unique per-call counter
-  default. SSR consumers must supply a stable `baseId`; callers can still override
-  `triggerId` explicitly.
+  building trigger/content surfaces; the item context backs `triggerId` with a
+  reactive ref so content rendered before its trigger still observes it.
+  Standalone `getItemSurface` calls derive reactive trigger and content ids from
+  `(baseId, encodeURIComponent(value))`, so values with spaces stay valid id
+  references, and link them with `aria-labelledby`/`aria-controls`. The default
+  `baseId` is a unique per-call counter; SSR consumers must supply a stable one.
+  Callers can still override `triggerId` and `contentId` explicitly. The shells
+  omit `contentId`, leaving that link to Collapsible.
 - **Model changes share the foundation.** `useAccordion()` owns single/multiple
   state through `useControllableState`; trigger presses and content-found events
   carry `AccordionChangeReason` and the native event through cancellable
