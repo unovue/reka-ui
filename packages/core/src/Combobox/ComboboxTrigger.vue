@@ -10,7 +10,7 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
 
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectComboboxRootContext()
+rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
 const disabled = computed(() => props.disabled || rootContext.disabled.value || false)
 
 onMounted(() => {
@@ -36,7 +37,7 @@ onMounted(() => {
     aria-label="Show popup"
     aria-haspopup="listbox"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
+    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     :disabled="disabled"
     :data-disabled="disabled ? '' : undefined"
