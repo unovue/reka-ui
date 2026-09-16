@@ -2,6 +2,16 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface VisuallyHiddenProps extends PrimitiveProps {
+  /**
+   * How the content is hidden.
+   *
+   * - `focusable` (default): hidden visually only. The content stays in the
+   *   accessibility tree, so slotted text is announced and can label its
+   *   parent, and it keeps whatever focusability it has.
+   * - `fully-hidden`: also removed from the accessibility tree
+   *   (`aria-hidden="true"`) and the tab order (`tabindex="-1"`). Use for
+   *   hidden form inputs.
+   */
   feature?: 'focusable' | 'fully-hidden'
 }
 </script>
@@ -16,7 +26,7 @@ withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusab
   <Primitive
     :as="as"
     :as-child="asChild"
-    :aria-hidden="feature === 'focusable' || feature === 'fully-hidden' ? 'true' : undefined"
+    :aria-hidden="feature === 'fully-hidden' ? 'true' : undefined"
     :data-hidden="feature === 'fully-hidden' ? '' : undefined"
     :tabindex="feature === 'fully-hidden' ? '-1' : undefined"
     :style="{

@@ -145,6 +145,7 @@ providePinInputRootContext({
       :id="id"
       as="input"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
       :value="currentModelValue.join('')"
       :name="name ?? ''"

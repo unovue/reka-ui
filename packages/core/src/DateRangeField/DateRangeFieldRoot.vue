@@ -403,6 +403,7 @@ defineExpose({
       :id="id"
       as="input"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
       :value="`${modelValue?.start?.toString()} - ${modelValue?.end?.toString()}`"
       :name="name"
