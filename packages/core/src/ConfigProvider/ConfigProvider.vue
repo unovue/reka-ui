@@ -8,6 +8,7 @@ interface ConfigProviderContextValue {
   locale?: Ref<string>
   scrollBody?: Ref<boolean | ScrollBodyOption>
   nonce?: Ref<string | undefined>
+  cspSafePositioning?: Ref<boolean>
   teleportTo?: Ref<string | HTMLElement | undefined>
   useId?: () => string
 }
@@ -37,6 +38,19 @@ export interface ConfigProviderProps {
    */
   nonce?: string
   /**
+   * When `true`, floating/popper components (e.g. `Popover`, `Tooltip`, `Select`) apply their
+   * positioning styles on the client after mount instead of emitting inline `style` attributes
+   * during SSR. This avoids `style-src` CSP violations on the server-rendered markup for apps
+   * running a strict Content Security Policy without `'unsafe-inline'`.
+   *
+   * Inline `style` attributes serialized during SSR cannot be allowed by a `nonce` (nonces only
+   * apply to `<style>`/`<link>` elements), so this is the way to keep SSR output CSP-clean.
+   * Default `false` — no change to existing behavior.
+   * @type boolean
+   * @defaultValue false
+   */
+  cspSafePositioning?: boolean
+  /**
    * The global default teleport target for all portalled primitives (e.g. `Dialog`, `Popover`, `Tooltip`).
    * Individual `*Portal` components can still override this via their own `to` prop.
    * Useful when rendering inside a custom element / shadow DOM.
@@ -62,17 +76,19 @@ const props = withDefaults(defineProps<ConfigProviderProps>(), {
   locale: 'en',
   scrollBody: true,
   nonce: undefined,
+  cspSafePositioning: false,
   teleportTo: undefined,
   useId: undefined,
 })
 
-const { dir, locale, scrollBody, nonce, teleportTo } = toRefs(props)
+const { dir, locale, scrollBody, nonce, cspSafePositioning, teleportTo } = toRefs(props)
 
 provideConfigProviderContext({
   dir,
   locale,
   scrollBody,
   nonce,
+  cspSafePositioning,
   teleportTo,
   useId: props.useId,
 })
