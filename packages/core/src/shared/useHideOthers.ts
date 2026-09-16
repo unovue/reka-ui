@@ -1,6 +1,6 @@
 import type { MaybeElementRef } from '@vueuse/core'
 import { unrefElement } from '@vueuse/core'
-import { hideOthers } from 'aria-hidden'
+import { suppressOthers } from 'aria-hidden'
 import { onUnmounted, watch } from 'vue'
 
 /**
@@ -11,7 +11,7 @@ import { onUnmounted, watch } from 'vue'
  * to hide other elements when it is clicked or focused.
  */
 export function useHideOthers(target: MaybeElementRef) {
-  let undo: ReturnType<typeof hideOthers>
+  let undo: ReturnType<typeof suppressOthers>
   watch(() => unrefElement(target), (el) => {
     // disable hideOthers on test mode
     if (import.meta.env.MODE === 'test')
@@ -24,7 +24,7 @@ export function useHideOthers(target: MaybeElementRef) {
     }
     catch {}
     if (el && !isInsideClosedPopover)
-      undo = hideOthers(el)
+      undo = suppressOthers(el)
     else if (undo)
       undo()
   })
