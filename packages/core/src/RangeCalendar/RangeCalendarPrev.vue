@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
+import type { TemporalDate } from '@/temporal/types'
 
 export interface RangeCalendarPrevProps extends PrimitiveProps {
   /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `RangeCalendarRoot`. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: (placeholder: TemporalDate) => TemporalDate
 }
 
 export interface RangeCalendarPrevSlot {

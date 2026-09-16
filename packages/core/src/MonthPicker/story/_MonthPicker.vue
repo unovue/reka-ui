@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import type { DateValue } from '@internationalized/date'
 import type { MonthPickerRootProps } from '..'
+import type { TemporalDate } from '@/temporal/types'
 import { MonthPickerCell, MonthPickerCellTrigger, MonthPickerGrid, MonthPickerGridBody, MonthPickerGridRow, MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot } from '..'
 
-const props = defineProps<{ pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
+const props = defineProps<{ pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate) => void } }>()
 </script>
 
 <template>

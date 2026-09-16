@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { YearPickerCell, YearPickerCellTrigger, YearPickerGrid, YearPickerGridBody, YearPickerGridRow, YearPickerHeader, YearPickerHeading, YearPickerNext, YearPickerPrev, YearPickerRoot } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 
-const date = new CalendarDate(2024, 1, 1)
+const date = Temporal.PlainDate.from({ year: 2024, month: 1, day: 1 })
 </script>
 
 <template>

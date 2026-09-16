@@ -1,33 +1,33 @@
-import type { DateValue } from '@internationalized/date'
 import type { MonthRangePickerRootProps } from './MonthRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import MonthRangePicker from './story/_MonthRangePicker.vue'
 
 const calendarDateRange = {
-  start: new CalendarDate(1980, 1, 20),
-  end: new CalendarDate(1980, 3, 25),
+  start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 20 }),
+  end: Temporal.PlainDate.from({ year: 1980, month: 3, day: 25 }),
 }
 
 const updatedCalendarDateRange = {
-  start: new CalendarDate(1980, 4, 5),
-  end: new CalendarDate(1980, 6, 5),
+  start: Temporal.PlainDate.from({ year: 1980, month: 4, day: 5 }),
+  end: Temporal.PlainDate.from({ year: 1980, month: 6, day: 5 }),
 }
 
 const calendarDateTimeRange = {
-  start: new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0),
-  end: new CalendarDateTime(1980, 3, 25, 12, 30, 0, 0),
+  start: Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 30, second: 0, millisecond: 0 }),
+  end: Temporal.PlainDateTime.from({ year: 1980, month: 3, day: 25, hour: 12, minute: 30, second: 0, millisecond: 0 }),
 }
 
 const zonedDateTimeRange = {
-  start: toZoned(calendarDateTimeRange.start, 'America/New_York'),
-  end: toZoned(calendarDateTimeRange.end, 'America/New_York'),
+  start: calendarDateTimeRange.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTimeRange.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
@@ -115,9 +115,9 @@ describe('month range picker', () => {
   })
 
   it('keeps controlled end when parent preserves it after start edit', async () => {
-    const preservedEnd = new CalendarDate(1980, 8, 1)
+    const preservedEnd = Temporal.PlainDate.from({ year: 1980, month: 8, day: 1 })
     const controlledRange = {
-      start: new CalendarDate(1980, 1, 1),
+      start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
       end: preservedEnd,
     }
 
@@ -301,7 +301,7 @@ describe('month range picker', () => {
       pickerProps: {
         placeholder: calendarDateRange.start,
         allowNonContiguousRanges: true,
-        isMonthUnavailable: (date: DateValue) => {
+        isMonthUnavailable: (date: TemporalDate) => {
           return date.month === 3
         },
       },
@@ -320,7 +320,7 @@ describe('month range picker - maximumMonths', () => {
   it('limits the maximum number of months that can be selected', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
-        placeholder: new CalendarDate(1980, 3, 15),
+        placeholder: Temporal.PlainDate.from({ year: 1980, month: 3, day: 15 }),
         maximumMonths: 3,
       },
     })
@@ -347,7 +347,7 @@ describe('month range picker - maximumMonths', () => {
   it('highlights backwards within maximumMonths without inverting', async () => {
     const { getByTestId, user } = setup({
       pickerProps: {
-        placeholder: new CalendarDate(1980, 3, 15),
+        placeholder: Temporal.PlainDate.from({ year: 1980, month: 3, day: 15 }),
         maximumMonths: 3,
       },
     })
@@ -367,8 +367,8 @@ describe('month range picker - maximumMonths', () => {
 
   it('enforces maximumMonths for out-of-bounds controlled ranges with fixedDate="start"', async () => {
     const outOfBoundsRange = {
-      start: new CalendarDate(1980, 1, 1),
-      end: new CalendarDate(1980, 6, 1),
+      start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
+      end: Temporal.PlainDate.from({ year: 1980, month: 6, day: 1 }),
     }
 
     const { getByTestId, user, rerender } = setup({
@@ -394,8 +394,8 @@ describe('month range picker - maximumMonths', () => {
 
   it('enforces maximumMonths for out-of-bounds controlled ranges with fixedDate="end"', async () => {
     const outOfBoundsRange = {
-      start: new CalendarDate(1980, 1, 1),
-      end: new CalendarDate(1980, 6, 1),
+      start: Temporal.PlainDate.from({ year: 1980, month: 1, day: 1 }),
+      end: Temporal.PlainDate.from({ year: 1980, month: 6, day: 1 }),
     }
 
     const { getByTestId, user, rerender } = setup({
@@ -464,7 +464,7 @@ describe('month range picker - keyboard navigation', () => {
     const { getByTestId, user } = setup({
       pickerProps: {
         placeholder: calendarDateRange.start,
-        isMonthDisabled: (date: DateValue) => date.year === 1981 && date.month === 1,
+        isMonthDisabled: (date: TemporalDate) => date.year === 1981 && date.month === 1,
       },
     })
 

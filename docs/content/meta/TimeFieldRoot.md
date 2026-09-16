@@ -18,13 +18,13 @@
   {
     'name': 'defaultPlaceholder',
     'description': '<p>The default placeholder date</p>\n',
-    'type': 'TimeValue',
+    'type': 'TemporalDateTime',
     'required': false
   },
   {
     'name': 'defaultValue',
     'description': '<p>The default value for the calendar</p>\n',
-    'type': 'TimeValue',
+    'type': 'TemporalDateTime',
     'required': false
   },
   {
@@ -73,19 +73,19 @@
   {
     'name': 'maxValue',
     'description': '<p>The maximum date that can be selected</p>\n',
-    'type': 'TimeValue',
+    'type': 'TemporalDateTime',
     'required': false
   },
   {
     'name': 'minValue',
     'description': '<p>The minimum date that can be selected</p>\n',
-    'type': 'TimeValue',
+    'type': 'TemporalDateTime',
     'required': false
   },
   {
     'name': 'modelValue',
     'description': '<p>The controlled checked state of the field. Can be bound as <code>v-model</code>.</p>\n',
-    'type': 'TimeValue | null',
+    'type': 'TemporalDateTime | null',
     'required': false
   },
   {
@@ -97,7 +97,7 @@
   {
     'name': 'placeholder',
     'description': '<p>The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field</p>\n',
-    'type': 'TimeValue',
+    'type': 'TemporalDateTime',
     'required': false
   },
   {
@@ -132,12 +132,12 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: TimeValue]'
+    'type': '[date: TemporalDateTime]'
   },
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: TimeValue]'
+    'type': '[date: TemporalDateTime]'
   }
 ]" />
 
@@ -145,7 +145,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The current time of the field</p>\n',
-    'type': 'TimeValue | undefined'
+    'type': 'TemporalDateTime | undefined'
   },
   {
     'name': 'segments',
@@ -162,7 +162,7 @@
 <MethodsTable :data="[
   {
     'name': 'setFocusedElement',
-    'description': '<p>Helper to set the focused element inside the DateField</p>\n',
+    'description': '<p>Helper to set the focused element inside the TimeField</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
@@ -176,8 +176,8 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultPlaceholder` | The default placeholder date | `TimeValue` | No | - |
-| `defaultValue` | The default value for the calendar | `TimeValue` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `TemporalDateTime` | No | - |
+| `defaultValue` | The default value for the calendar | `TemporalDateTime` | No | - |
 | `dir` | The reading direction of the time field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the time field is disabled | `boolean` | No | `false` |
 | `granularity` | The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"hour" \| "minute" \| "second"` | No | - |
@@ -185,11 +185,11 @@
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
-| `maxValue` | The maximum date that can be selected | `TimeValue` | No | - |
-| `minValue` | The minimum date that can be selected | `TimeValue` | No | - |
-| `modelValue` | The controlled checked state of the field. Can be bound as v-model. | `TimeValue \| null` | No | - |
+| `maxValue` | The maximum date that can be selected | `TemporalDateTime` | No | - |
+| `minValue` | The minimum date that can be selected | `TemporalDateTime` | No | - |
+| `modelValue` | The controlled checked state of the field. Can be bound as v-model. | `TemporalDateTime \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `placeholder` | The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field | `TimeValue` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field | `TemporalDateTime` | No | - |
 | `readonly` | Whether or not the time field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
@@ -199,14 +199,14 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeValue]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: TemporalDateTime]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TemporalDateTime]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | The current time of the field | `TimeValue \| undefined` |
+| `modelValue` | The current time of the field | `TemporalDateTime \| undefined` |
 | `segments` | The time field segment contents | `{ part: SegmentPart; value: string; }[]` |
 | `isInvalid` | Value if the input is invalid | `boolean` |
 
@@ -214,6 +214,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `setFocusedElement` | Helper to set the focused element inside the DateField | `(el: HTMLElement) => void` |
+| `setFocusedElement` | Helper to set the focused element inside the TimeField | `(el: HTMLElement) => void` |
 
 </llm-only>

@@ -49,9 +49,9 @@ export * from './Separator'
 export {
   createContext,
   type DateRange,
-  type DateValue,
   type Formatter,
   type SegmentPart,
+  type TemporalDate,
   type TimeValue,
   useBodyScrollLock,
   useDateFormatter,

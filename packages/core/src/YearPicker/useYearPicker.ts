@@ -1,34 +1,34 @@
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Grid, Matcher } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { endOfYear, startOfYear } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import { computed, ref, watch } from 'vue'
-import { createYearGrid, isAfter, isBefore, isSameYear, toDate } from '@/date'
+import { createYearGrid, isAfter, isBefore, isSameYear, startOfYear, toDate } from '@/date'
 import { useDateFormatter } from '@/shared'
+import { endOfYear } from '@/temporal/comparators'
 
 export type UseYearPickerProps = {
   locale: Ref<string>
-  placeholder: Ref<DateValue>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
+  placeholder: Ref<TemporalDate>
+  minValue: Ref<TemporalDate | undefined>
+  maxValue: Ref<TemporalDate | undefined>
   disabled: Ref<boolean>
   yearsPerPage: Ref<number>
   isYearDisabled?: Matcher | Ref<Matcher | undefined>
   isYearUnavailable?: Matcher | Ref<Matcher | undefined>
   calendarLabel: Ref<string | undefined>
-  nextPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
-  prevPage: Ref<((placeholder: DateValue) => DateValue) | undefined>
+  nextPage: Ref<((placeholder: TemporalDate) => TemporalDate) | undefined>
+  prevPage: Ref<((placeholder: TemporalDate) => TemporalDate) | undefined>
 }
 
 export type UseYearPickerStateProps = {
   isYearDisabled: Matcher
   isYearUnavailable: Matcher
-  date: Ref<DateValue | DateValue[] | undefined>
+  date: Ref<TemporalDate | TemporalDate[] | undefined>
 }
 
 export function useYearPickerState(props: UseYearPickerStateProps) {
-  function isYearSelected(dateObj: DateValue) {
+  function isYearSelected(dateObj: TemporalDate) {
     if (Array.isArray(props.date.value))
       return props.date.value.some(d => isSameYear(d, dateObj))
     else if (!props.date.value)
@@ -69,22 +69,33 @@ export function useYearPicker(props: UseYearPickerProps) {
     typeof matcher === 'function' ? matcher : matcher?.value
 
   const headingFormatOptions = computed(() => {
+    const calendarId = props.placeholder.value.calendarId
+    const resolvedCalendar = calendarId === 'iso8601' ? 'gregory' : calendarId
+
     const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendar.identifier,
+      calendar: resolvedCalendar,
     }
 
-    if (props.placeholder.value.calendar.identifier === 'gregory' && props.placeholder.value.era === 'BC')
-      options.era = 'short'
+    if (resolvedCalendar === 'gregory') {
+      const parts = new Intl.DateTimeFormat(props.locale.value, {
+        calendar: resolvedCalendar,
+        era: 'short',
+      }).formatToParts(toDate(props.placeholder.value))
+      const eraPart = parts.find(p => p.type === 'era')
+      if (eraPart && (eraPart.value.toLowerCase() === 'bc' || eraPart.value.toLowerCase() === 'bce')) {
+        options.era = 'short'
+      }
+    }
 
     return options
   })
 
-  const grid = ref<Grid<DateValue>>(createYearGrid({
+  const grid = ref<Grid<TemporalDate>>(createYearGrid({
     dateObj: props.placeholder.value,
     yearsPerPage: props.yearsPerPage.value,
-  })) as Ref<Grid<DateValue>>
+  })) as Ref<Grid<TemporalDate>>
 
-  function isYearDisabled(dateObj: DateValue) {
+  function isYearDisabled(dateObj: TemporalDate) {
     if (resolveMatcher(props.isYearDisabled)?.(dateObj) || props.disabled.value)
       return true
     if (props.maxValue.value && isAfter(startOfYear(dateObj), props.maxValue.value))
@@ -94,13 +105,13 @@ export function useYearPicker(props: UseYearPickerProps) {
     return false
   }
 
-  const isYearUnavailable = (date: DateValue) => {
+  const isYearUnavailable = (date: TemporalDate) => {
     if (resolveMatcher(props.isYearUnavailable)?.(date))
       return true
     return false
   }
 
-  const isNextButtonDisabled = (nextPageFunc?: (date: DateValue) => DateValue) => {
+  const isNextButtonDisabled = (nextPageFunc?: (date: TemporalDate) => TemporalDate) => {
     if (!props.maxValue.value)
       return false
     if (props.disabled.value)
@@ -116,7 +127,7 @@ export function useYearPicker(props: UseYearPickerProps) {
     return isAfter(nextPageStart, props.maxValue.value)
   }
 
-  const isPrevButtonDisabled = (prevPageFunc?: (date: DateValue) => DateValue) => {
+  const isPrevButtonDisabled = (prevPageFunc?: (date: TemporalDate) => TemporalDate) => {
     if (!props.minValue.value)
       return false
     if (props.disabled.value)
@@ -132,34 +143,34 @@ export function useYearPicker(props: UseYearPickerProps) {
     return isBefore(prevPageEnd, props.minValue.value)
   }
 
-  const nextPage = (nextPageFunc?: (date: DateValue) => DateValue) => {
+  const nextPage = (nextPageFunc?: (date: TemporalDate) => TemporalDate) => {
     const firstYearInGrid = grid.value.value
 
     if (nextPageFunc || props.nextPage.value) {
       const newDate = (nextPageFunc || props.nextPage.value)!(firstYearInGrid)
       grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+      props.placeholder.value = newDate.with({ month: 1, day: 1 })
       return
     }
 
     const newDate = firstYearInGrid.add({ years: props.yearsPerPage.value })
     grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+    props.placeholder.value = newDate.with({ month: 1, day: 1 })
   }
 
-  const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
+  const prevPage = (prevPageFunc?: (date: TemporalDate) => TemporalDate) => {
     const firstYearInGrid = grid.value.value
 
     if (prevPageFunc || props.prevPage.value) {
       const newDate = (prevPageFunc || props.prevPage.value)!(firstYearInGrid)
       grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+      props.placeholder.value = newDate.with({ month: 1, day: 1 })
       return
     }
 
     const newDate = firstYearInGrid.subtract({ years: props.yearsPerPage.value })
     grid.value = createYearGrid({ dateObj: newDate, yearsPerPage: props.yearsPerPage.value, decadeAligned: false })
-    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+    props.placeholder.value = newDate.with({ month: 1, day: 1 })
   }
 
   watch(props.placeholder, (value) => {

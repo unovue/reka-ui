@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Grid, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
+import type { TemporalDate } from '@/temporal/types'
 import { isSameYearMonth } from '@/date'
 import { createContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
@@ -12,16 +12,16 @@ import { useMonthPicker, useMonthPickerState } from './useMonthPicker'
 
 type MonthPickerRootContext = {
   locale: Ref<string>
-  modelValue: Ref<DateValue | DateValue[] | undefined>
-  placeholder: Ref<DateValue>
+  modelValue: Ref<TemporalDate | TemporalDate[] | undefined>
+  placeholder: Ref<TemporalDate>
   multiple: Ref<boolean>
   preventDeselect: Ref<boolean>
-  grid: Ref<Grid<DateValue>>
+  grid: Ref<Grid<TemporalDate>>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   initialFocus: Ref<boolean>
-  onMonthChange: (date: DateValue) => void
-  onPlaceholderChange: (date: DateValue) => void
+  onMonthChange: (date: TemporalDate) => void
+  onPlaceholderChange: (date: TemporalDate) => void
   fullCalendarLabel: Ref<string>
   parentElement: Ref<HTMLElement | undefined>
   headingValue: Ref<string>
@@ -30,31 +30,31 @@ type MonthPickerRootContext = {
   isMonthDisabled: Matcher
   isMonthSelected: Matcher
   isMonthUnavailable?: Matcher
-  prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
-  nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
-  isNextButtonDisabled: (nextPageFunc?: (date: DateValue) => DateValue) => boolean
-  isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
+  prevPage: (prevPageFunc?: (date: TemporalDate) => TemporalDate) => void
+  nextPage: (nextPageFunc?: (date: TemporalDate) => TemporalDate) => void
+  isNextButtonDisabled: (nextPageFunc?: (date: TemporalDate) => TemporalDate) => boolean
+  isPrevButtonDisabled: (prevPageFunc?: (date: TemporalDate) => TemporalDate) => boolean
   formatter: Formatter
   dir: Ref<Direction>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
+  minValue: Ref<TemporalDate | undefined>
+  maxValue: Ref<TemporalDate | undefined>
 }
 
 export interface MonthPickerRootProps extends PrimitiveProps {
   /** The default value for the month picker */
-  defaultValue?: DateValue
+  defaultValue?: TemporalDate
   /** The default placeholder date */
-  defaultPlaceholder?: DateValue
+  defaultPlaceholder?: TemporalDate
   /** The placeholder date, which is used to determine what year to display when no date is selected */
-  placeholder?: DateValue
+  placeholder?: TemporalDate
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
   preventDeselect?: boolean
   /** The accessible label for the month picker */
   calendarLabel?: string
   /** The maximum date that can be selected */
-  maxValue?: DateValue
+  maxValue?: TemporalDate
   /** The minimum date that can be selected */
-  minValue?: DateValue
+  minValue?: TemporalDate
   /** The locale to use for formatting dates */
   locale?: string
   /** Whether the month picker is disabled */
@@ -70,20 +70,20 @@ export interface MonthPickerRootProps extends PrimitiveProps {
   /** The reading direction of the calendar when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR. */
   dir?: Direction
   /** A function that returns the next page of the month picker. Receives the current placeholder as an argument. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: (placeholder: TemporalDate) => TemporalDate
   /** A function that returns the previous page of the month picker. Receives the current placeholder as an argument. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  prevPage?: (placeholder: TemporalDate) => TemporalDate
   /** The controlled selected month value of the month picker. Can be bound as `v-model`. */
-  modelValue?: DateValue | DateValue[] | null
+  modelValue?: TemporalDate | TemporalDate[] | undefined
   /** Whether multiple months can be selected */
   multiple?: boolean
 }
 
 export type MonthPickerRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | DateValue[] | undefined]
+  'update:modelValue': [date: TemporalDate | TemporalDate[] | undefined]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: TemporalDate]
 }
 
 export const [injectMonthPickerRootContext, provideMonthPickerRootContext]
@@ -111,13 +111,13 @@ const emits = defineEmits<MonthPickerRootEmits>()
 defineSlots<{
   default?: (props: {
     /** The current date of the placeholder */
-    date: DateValue
+    date: TemporalDate
     /** The grid of months */
-    grid: Grid<DateValue>
+    grid: Grid<TemporalDate>
     /** The month picker locale */
     locale: string
     /** The current selected value */
-    modelValue: DateValue | DateValue[] | undefined
+    modelValue: TemporalDate | TemporalDate[] | undefined
   }) => any
 }>()
 
@@ -147,7 +147,7 @@ const headingId = useId(undefined, 'reka-month-picker-heading')
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<DateValue | DateValue[] | undefined>
+}) as Ref<TemporalDate | TemporalDate[] | undefined>
 
 const defaultDate = getDefaultDate({
   defaultPlaceholder: props.placeholder,
@@ -156,12 +156,12 @@ const defaultDate = getDefaultDate({
 })
 
 const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
+  defaultValue: props.defaultPlaceholder ?? defaultDate,
   passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
+}) as Ref<TemporalDate>
 
-function onPlaceholderChange(value: DateValue) {
-  placeholder.value = value.copy()
+function onPlaceholderChange(value: TemporalDate) {
+  placeholder.value = value
 }
 
 const {
@@ -205,29 +205,23 @@ watch(modelValue, (_modelValue) => {
   }
 })
 
-function resolveMonthValue(value: DateValue, reference?: DateValue) {
-  if (!reference)
-    return value.copy()
-  return value.copy().set({ day: reference.day })
-}
-
-function onMonthChange(value: DateValue) {
+function onMonthChange(value: TemporalDate) {
   if (!multiple.value) {
     if (!modelValue.value) {
-      modelValue.value = resolveMonthValue(value, placeholder.value)
+      modelValue.value = value
       return
     }
 
-    if (!preventDeselect.value && isSameYearMonth(modelValue.value as DateValue, value)) {
-      placeholder.value = resolveMonthValue(value, modelValue.value as DateValue)
+    if (!preventDeselect.value && isSameYearMonth(modelValue.value as TemporalDate, value)) {
+      placeholder.value = value
       modelValue.value = undefined
     }
     else {
-      modelValue.value = resolveMonthValue(value, modelValue.value as DateValue)
+      modelValue.value = value
     }
   }
   else if (!modelValue.value) {
-    modelValue.value = [resolveMonthValue(value, placeholder.value)]
+    modelValue.value = [value]
   }
   else {
     const modelValueArray = Array.isArray(modelValue.value)
@@ -236,16 +230,16 @@ function onMonthChange(value: DateValue) {
 
     const index = modelValueArray.findIndex(date => isSameYearMonth(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValueArray, resolveMonthValue(value, placeholder.value)]
+      modelValue.value = [...modelValueArray, value]
     }
     else if (!preventDeselect.value) {
       const next = modelValueArray.filter(date => !isSameYearMonth(date, value))
       if (!next.length) {
-        placeholder.value = resolveMonthValue(value, modelValueArray[index])
+        placeholder.value = value
         modelValue.value = undefined
         return
       }
-      modelValue.value = next.map(date => date.copy())
+      modelValue.value = next
     }
   }
 }

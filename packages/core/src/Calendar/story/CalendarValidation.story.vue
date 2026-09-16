@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import type { CalendarRootProps } from '..'
-import { CalendarDate, isWeekend } from '@internationalized/date'
+import { Temporal } from 'temporal-polyfill'
+import { isWeekend } from '@/temporal/comparators'
 import Calendar from './_DummyCalendar.vue'
 
 const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
-  return isWeekend(date, 'en')
+  return isWeekend(date)
 }
 const isDateDisabled: CalendarRootProps['isDateUnavailable'] = (date) => {
   return date.day > 20
 }
 
-const defaultValue = new CalendarDate(2024, 2, 14)
-const minValue = new CalendarDate(2024, 2, 12)
-const maxValue = new CalendarDate(2024, 2, 20)
+const defaultValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 14 })
+const minValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 12 })
+const maxValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 })
 </script>
 
 <template>

@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-import { CalendarDate, isWeekend } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
+import { isWeekend } from '@/temporal/comparators'
 import RangeCalendar from './_DummyRangeCalendar.vue'
 
-function isDateUnavailable(date: DateValue) {
-  return isWeekend(date, 'en')
+function isDateUnavailable(date: TemporalDate) {
+  return isWeekend(date)
 }
-function isDateDisabled(date: DateValue) {
+function isDateDisabled(date: TemporalDate) {
   return date.day > 20
 }
 
-const defaultValue = { start: new CalendarDate(2024, 2, 20), end: new CalendarDate(2024, 2, 24) }
-const minValue = new CalendarDate(2024, 2, 12)
-const maxValue = new CalendarDate(2024, 2, 20)
+const defaultValue = {
+  start: Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 }),
+  end: Temporal.PlainDate.from({ year: 2024, month: 2, day: 24 }),
+}
+const minValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 12 })
+const maxValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 })
 </script>
 
 <template>

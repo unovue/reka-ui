@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import type { DateRange } from 'reka-ui'
 import { Icon } from '@iconify/vue'
-import { getLocalTimeZone, today } from '@internationalized/date'
 import { DateRangeFieldInput, DateRangeFieldRoot, RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, useDateFormatter } from 'reka-ui'
+import { toDate } from 'reka-ui/date'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 
 const formatter = useDateFormatter('en-UK')
 
 const selectedRange = ref<DateRange>()
+const getToday = () => Temporal.Now.plainDateISO(Temporal.Now.timeZoneId())
 
 const quickOptions = [
   {
     label: 'Today',
     action: () => {
-      const _today = today(getLocalTimeZone())
+      const _today = getToday()
       selectedRange.value = {
         start: _today,
         end: _today,
@@ -23,7 +25,7 @@ const quickOptions = [
   {
     label: 'Yesterday',
     action: () => {
-      const yesterday = today(getLocalTimeZone()).subtract({ days: 1 })
+      const yesterday = getToday().subtract({ days: 1 })
       selectedRange.value = {
         start: yesterday,
         end: yesterday,
@@ -34,8 +36,8 @@ const quickOptions = [
     label: 'Last 7 days',
     action: () => {
       selectedRange.value = {
-        start: today(getLocalTimeZone()).subtract({ days: 6 }),
-        end: today(getLocalTimeZone()),
+        start: getToday().subtract({ days: 6 }),
+        end: getToday(),
       }
     },
   },
@@ -43,15 +45,15 @@ const quickOptions = [
     label: 'Last 30 days',
     action: () => {
       selectedRange.value = {
-        start: today(getLocalTimeZone()).subtract({ days: 29 }),
-        end: today(getLocalTimeZone()),
+        start: getToday().subtract({ days: 29 }),
+        end: getToday(),
       }
     },
   },
   {
     label: 'This month',
     action: () => {
-      const now = today(getLocalTimeZone())
+      const now = getToday()
       const startOfMonth = now.set({ day: 1 })
       selectedRange.value = {
         start: startOfMonth,
@@ -62,7 +64,7 @@ const quickOptions = [
   {
     label: 'Last month',
     action: () => {
-      const now = today(getLocalTimeZone())
+      const now = getToday()
       const lastMonth = now.subtract({ months: 1 })
       const startOfLastMonth = lastMonth.set({ day: 1 })
       const endOfLastMonth = startOfLastMonth.add({ months: 1 }).subtract({ days: 1 })
@@ -75,9 +77,9 @@ const quickOptions = [
   {
     label: 'This quarter',
     action: () => {
-      const now = today(getLocalTimeZone())
+      const now = getToday()
       const currentMonth = now.month
-      const startMonth = currentMonth - (currentMonth % 3)
+      const startMonth = currentMonth - ((currentMonth - 1) % 3)
       const startOfQuarter = now.set({ month: startMonth, day: 1 })
       selectedRange.value = {
         start: startOfQuarter,
@@ -88,7 +90,7 @@ const quickOptions = [
   {
     label: 'Last quarter',
     action: () => {
-      const now = today(getLocalTimeZone())
+      const now = getToday()
       const currentMonth = now.month
       const currentQuarter = Math.floor(currentMonth / 3)
 
@@ -116,7 +118,7 @@ const quickOptions = [
   {
     label: 'This year',
     action: () => {
-      const now = today(getLocalTimeZone())
+      const now = getToday()
       const startOfYear = now.set({ month: 1, day: 1 })
       selectedRange.value = {
         start: startOfYear,
@@ -127,7 +129,7 @@ const quickOptions = [
   {
     label: 'Last year',
     action: () => {
-      const now = today(getLocalTimeZone())
+      const now = getToday()
       const lastYear = now.subtract({ years: 1 })
       const startOfLastYear = lastYear.set({ month: 1, day: 1 })
       const endOfLastYear = startOfLastYear.add({ years: 1 }).subtract({ days: 1 })
@@ -179,7 +181,7 @@ const quickOptions = [
                 class="w-4 h-4"
               />
             </RangeCalendarPrev>
-            <span class="font-semibold flex-1 text-center">{{ formatter.custom(month.value.toDate(getLocalTimeZone()), { month: 'long', year: 'numeric' }) }}</span>
+            <span class="font-semibold flex-1 text-center">{{ formatter.custom(toDate(month.value), { month: 'long', year: 'numeric' }) }}</span>
             <span class="w-7" />
           </div>
           <div
@@ -187,7 +189,7 @@ const quickOptions = [
             class="flex items-center"
           >
             <span class="w-7" />
-            <span class="font-semibold flex-1 text-center">{{ formatter.custom(month.value.toDate(getLocalTimeZone()), { month: 'long', year: 'numeric' }) }}</span>
+            <span class="font-semibold flex-1 text-center">{{ formatter.custom(toDate(month.value), { month: 'long', year: 'numeric' }) }}</span>
             <RangeCalendarNext
               class="place-self-end inline-flex items-center cursor-pointer justify-center text-black rounded-md bg-transparent w-7 h-7 hover:bg-stone-50 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
             >

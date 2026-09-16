@@ -1,20 +1,23 @@
-import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
-
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+
+import type { TemporalDate } from '@/temporal/types'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import DatePicker from './story/_DatePicker.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = Temporal.PlainDate.from({ year: 1980, month: 1, day: 20 })
+const calendarDateTime = Temporal.PlainDateTime.from({ year: 1980, month: 1, day: 20, hour: 12, minute: 30, second: 0, millisecond: 0 })
+const zonedDateTime = calendarDateTime.toZonedDateTime('America/New_York')
 
 const kbd = useTestKbd()
+
+type DateFields = 'year' | 'month' | 'day'
+type TimeFields = 'hour' | 'minute' | 'second'
 
 function getTimeSegments(getByTestId: (...args: any[]) => HTMLElement) {
   return {
@@ -26,7 +29,7 @@ function getTimeSegments(getByTestId: (...args: any[]) => HTMLElement) {
   }
 }
 
-function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue | undefined) => void } } = {}) {
+function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: TemporalDate | undefined) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(DatePicker, { props })
   const month = returned.getByTestId('month')
@@ -116,8 +119,17 @@ describe('datePicker', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, 1)[segment])
+    function cycle(segment: DateFields | TimeFields) {
+      const unitMap = {
+        year: 'years',
+        month: 'months',
+        day: 'days',
+        hour: 'hours',
+        minute: 'minutes',
+        second: 'seconds',
+      }
+      const unit = unitMap[segment]
+      return String(zonedDateTime.add({ [unit]: 1 })[segment])
     }
 
     await user.click(day)
@@ -152,8 +164,17 @@ describe('datePicker', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, -1)[segment])
+    function cycle(segment: DateFields | TimeFields) {
+      const unitMap = {
+        year: 'years',
+        month: 'months',
+        day: 'days',
+        hour: 'hours',
+        minute: 'minutes',
+        second: 'seconds',
+      }
+      const unit = unitMap[segment]
+      return String(zonedDateTime.add({ [unit]: -1 })[segment])
     }
 
     await user.click(day)
@@ -253,7 +274,7 @@ describe('datePicker', async () => {
   })
 
   it('resets stale placeholder time when selecting a date after the model value is cleared', async () => {
-    const emittedValues: (DateValue | undefined)[] = []
+    const emittedValues: (TemporalDate | undefined)[] = []
     const { user, trigger, getByTestId, rerender } = setup({
       datePickerProps: {
         modelValue: calendarDateTime,
@@ -278,16 +299,16 @@ describe('datePicker', async () => {
     await user.click(getByTestId('date-1-1'))
 
     const selectedValue = emittedValues.at(-1)
-    expect(selectedValue).toBeInstanceOf(CalendarDateTime)
-    expect((selectedValue as CalendarDateTime).hour).toBe(0)
-    expect((selectedValue as CalendarDateTime).minute).toBe(0)
-    expect((selectedValue as CalendarDateTime).second).toBe(0)
-    expect((selectedValue as CalendarDateTime).millisecond).toBe(0)
+    expect(selectedValue).toBeInstanceOf(Temporal.PlainDateTime)
+    expect((selectedValue as Temporal.PlainDateTime).hour).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).minute).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).second).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).millisecond).toBe(0)
   })
 
   it('resets stale ZonedDateTime placeholder time when selecting a date after the model value is cleared', async () => {
-    const emittedValues: (DateValue | undefined)[] = []
-    const zonedValue = toZoned(new CalendarDateTime(1980, 1, 20, 12, 30, 45, 123), 'America/New_York')
+    const emittedValues: (TemporalDate | undefined)[] = []
+    const zonedValue = new Temporal.PlainDateTime(1980, 1, 20, 12, 30, 45, 123).toZonedDateTime('America/New_York')
     const { user, trigger, getByTestId, rerender } = setup({
       datePickerProps: {
         modelValue: zonedValue,
@@ -312,7 +333,7 @@ describe('datePicker', async () => {
     await user.click(getByTestId('date-1-1'))
 
     const selectedValue = emittedValues.at(-1)
-    expect(selectedValue).toHaveProperty('timeZone', 'America/New_York')
+    expect(selectedValue).toHaveProperty('timeZoneId', 'America/New_York')
     expect(selectedValue?.hour).toBe(0)
     expect(selectedValue?.minute).toBe(0)
     expect(selectedValue?.second).toBe(0)
@@ -320,9 +341,9 @@ describe('datePicker', async () => {
   })
 
   it('preserves typed time when typing a date after the model value is cleared', async () => {
-    const emittedValues: (DateValue | undefined)[] = []
+    const emittedValues: (TemporalDate | undefined)[] = []
     let rerender: ReturnType<typeof setup>['rerender']
-    const handleUpdateModelValue = (value: DateValue | undefined) => {
+    const handleUpdateModelValue = (value: TemporalDate | undefined) => {
       emittedValues.push(value)
       return rerender({
         datePickerProps: {
@@ -417,11 +438,11 @@ describe('datePicker', async () => {
         components: { ConfigProvider, DatePicker },
         template: `
           <ConfigProvider locale="de">
-            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15) }" />
+            <DatePicker :datePickerProps="{ modelValue: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }) }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 
@@ -439,11 +460,11 @@ describe('datePicker', async () => {
         components: { ConfigProvider, DatePicker },
         template: `
           <ConfigProvider locale="de">
-            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15), locale: 'en-US' }" />
+            <DatePicker :datePickerProps="{ modelValue: Temporal.PlainDate.from({ year: 2024, month: 1, day: 15 }), locale: 'en-US' }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 

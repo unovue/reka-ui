@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-import { CalendarDate } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 import { DateFieldInput, DateFieldRoot } from '..'
 
-const modelValue = ref<DateValue>()
-const defaultValue = new CalendarDate(2024, 2, 28)
-const minValue = new CalendarDate(2024, 2, 24)
-const maxValue = new CalendarDate(2024, 2, 29)
+const modelValue = ref<TemporalDate>()
+const defaultValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 28 })
+const minValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 24 })
+const maxValue = Temporal.PlainDate.from({ year: 2024, month: 2, day: 29 })
 </script>
 
 <template>

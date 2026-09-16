@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import { CalendarDate, PersianCalendar, toCalendar } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
+import { Temporal } from 'temporal-polyfill/full'
 import { ref } from 'vue'
 import RangeCalendar from './_DummyRangeCalendar.vue'
 
-const defaultValue = { start: new CalendarDate(2024, 2, 20), end: new CalendarDate(2024, 2, 27) }
-const persianCalendar = ref({ start: toCalendar(defaultValue.start, new PersianCalendar()), end: toCalendar(defaultValue.end, new PersianCalendar()) }) as Ref<{ start: DateValue, end: DateValue }>
-const modelValue = ref(defaultValue) as Ref<{ start: DateValue, end: DateValue }>
+const defaultValue = {
+  start: Temporal.PlainDate.from({ year: 2024, month: 2, day: 20 }),
+  end: Temporal.PlainDate.from({ year: 2024, month: 2, day: 27 }),
+}
+const persianCalendar = ref({
+  start: defaultValue.start.withCalendar('persian'),
+  end: defaultValue.end.withCalendar('persian'),
+}) as Ref<{ start: TemporalDate, end: TemporalDate }>
+const modelValue = ref(defaultValue) as Ref<{ start: TemporalDate, end: TemporalDate }>
 
-const placeholder = ref(new CalendarDate(2024, 4, 1)) as Ref<CalendarDate>
+const placeholder = ref(Temporal.PlainDate.from({ year: 2024, month: 4, day: 1 })) as Ref<TemporalDate>
 
-function paging(date: DateValue, sign: -1 | 1) {
+function paging(date: TemporalDate, sign: -1 | 1) {
   if (sign === -1)
     return date.subtract({ years: 1 })
   return date.add({ years: 1 })
@@ -89,8 +95,8 @@ function paging(date: DateValue, sign: -1 | 1) {
     <Variant title="Pagination functions">
       <RangeCalendar
         :default-value="defaultValue"
-        :prev-page="(date: DateValue) => paging(date, -1)"
-        :next-page="(date:DateValue) => paging(date, 1)"
+        :prev-page="(date: TemporalDate) => paging(date, -1)"
+        :next-page="(date: TemporalDate) => paging(date, 1)"
       />
     </Variant>
   </Story>

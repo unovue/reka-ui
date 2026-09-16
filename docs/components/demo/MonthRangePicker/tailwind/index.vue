@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { MonthRangePickerCell, MonthRangePickerCellTrigger, MonthRangePickerGrid, MonthRangePickerGridBody, MonthRangePickerGridRow, MonthRangePickerHeader, MonthRangePickerHeading, MonthRangePickerNext, MonthRangePickerPrev, MonthRangePickerRoot } from 'reka-ui'
+import { Temporal } from 'temporal-polyfill'
 
 const defaultValue = {
-  start: new CalendarDate(2024, 3, 1),
-  end: new CalendarDate(2024, 6, 1),
+  start: Temporal.PlainDate.from({ year: 2024, month: 3, day: 1 }),
+  end: Temporal.PlainDate.from({ year: 2024, month: 6, day: 1 }),
 }
 </script>
 

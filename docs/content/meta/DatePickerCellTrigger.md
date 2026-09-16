@@ -18,13 +18,13 @@
   {
     'name': 'day',
     'description': '<p>The date value provided to the cell trigger</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': true
   },
   {
     'name': 'month',
     'description': '<p>The month in which the cell is rendered</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': true
   }
 ]" />
@@ -76,8 +76,8 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `day` | The date value provided to the cell trigger | `DateValue` | Yes | - |
-| `month` | The month in which the cell is rendered | `DateValue` | Yes | - |
+| `day` | The date value provided to the cell trigger | `TemporalDate` | Yes | - |
+| `month` | The month in which the cell is rendered | `TemporalDate` | Yes | - |
 
 **Slots**
 

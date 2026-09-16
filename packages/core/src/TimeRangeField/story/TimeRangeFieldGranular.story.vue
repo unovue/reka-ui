@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { Time } from '@internationalized/date'
+import { Temporal } from '@/temporal'
 import TimeRangeField from './_DummyTimeRangeField.vue'
 
-const defaultValue = { start: new Time(10, 30, 45), end: new Time(14, 15, 20) }
+const defaultValue = {
+  start: Temporal.PlainTime.from({ hour: 10, minute: 30, second: 45 }),
+  end: Temporal.PlainTime.from({ hour: 14, minute: 15, second: 20 }),
+}
 </script>
 
 <template>

@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
+import type { TemporalDate } from '@/temporal/types'
 
 export interface YearPickerNextProps extends PrimitiveProps {
   /** The function to be used for the next page. Overwrites the `nextPage` function set on the `YearPickerRoot`. */
-  nextPage?: (placeholder: DateValue) => DateValue
+  nextPage?: (placeholder: TemporalDate) => TemporalDate
 }
 
 export interface YearPickerNextSlot {

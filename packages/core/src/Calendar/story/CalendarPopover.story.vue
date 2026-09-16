@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
+import type { TemporalDate } from '@/temporal/types'
 import { Icon } from '@iconify/vue'
-import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date'
+import { Temporal } from 'temporal-polyfill'
 import { ref } from 'vue'
 
 import { createDecade, createYear, toDate } from '@/date'
@@ -11,9 +11,9 @@ import { useDateFormatter } from '@/shared'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 import CalendarPopover from './_CalendarPopover.vue'
 
-const value = ref(new CalendarDate(2024, 3, 20)) as Ref<DateValue>
+const value = ref(Temporal.PlainDate.from({ year: 2024, month: 3, day: 20 })) as Ref<TemporalDate>
 
-const placeholder = ref(today(getLocalTimeZone())) as Ref<DateValue>
+const placeholder = ref(Temporal.Now.plainDateISO()) as Ref<TemporalDate>
 const formatter = useDateFormatter('en')
 </script>
 
@@ -50,7 +50,7 @@ const formatter = useDateFormatter('en')
                   :key="month.toString()"
                   class="relative cursor-pointer flex items-center justify-center whitespace-nowrap rounded-[9px] border border-transparent bg-transparent text-sm font-normal text-black p-2 outline-none focus:shadow-[0_0_0_2px] focus:shadow-black hover:border-black"
                   :class="{ 'before:absolute before:top-[5px] before:rounded-full before:w-1 before:h-1 before:block before:bg-grass9': placeholder.month === month.month }"
-                  @click="placeholder = month.copy()"
+                  @click="placeholder = month"
                 >
                   <span class="cursor-pointer">{{ formatter.custom(toDate(month), { month: 'short' }) }}</span>
                 </div>
@@ -66,7 +66,7 @@ const formatter = useDateFormatter('en')
                   :key="yearValue.toString()"
                   class="relative cursor-pointer flex items-center justify-center whitespace-nowrap rounded-[9px] border border-transparent bg-transparent text-sm font-normal text-black p-2 outline-none focus:shadow-[0_0_0_2px] focus:shadow-black hover:border-black"
                   :class="{ 'before:absolute before:top-[5px] before:rounded-full before:w-1 before:h-1 before:block before:bg-grass9': placeholder.year === yearValue.year }"
-                  @click="placeholder = yearValue.copy()"
+                  @click="placeholder = yearValue"
                 >
                   {{ formatter.fullYear(toDate(yearValue)) }}
                 </div>

@@ -2,7 +2,7 @@ import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchem
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import _traverse from '@babel/traverse'
+import traverse from '@babel/traverse'
 
 const STARTS_WITH_UPPERCASE_RE = /^[A-Z]/
 import fg from 'fast-glob'
@@ -12,8 +12,6 @@ import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
 import { transformJSDocLinks } from './utils'
 
-// @ts-expect-error ignore
-const traverse = _traverse.default as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const md = new MarkdownIt()

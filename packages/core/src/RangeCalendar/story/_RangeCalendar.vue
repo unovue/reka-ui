@@ -1,14 +1,15 @@
 <script lang="ts" setup>
-import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from '..'
+import type { DateRange } from '@/shared/date'
+import type { TemporalDate } from '@/temporal/types'
 import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 
 const props = defineProps<{
   calendarProps?: RangeCalendarRootProps
-  emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }
+  emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void }
 }>()
 
-function pagingFunc(date: DateValue, sign: -1 | 1) {
+function pagingFunc(date: TemporalDate, sign: -1 | 1) {
   if (sign === -1)
     return date.subtract({ years: 1 })
   return date.add({ years: 1 })
@@ -25,7 +26,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
     <RangeCalendarHeader data-testid="header">
       <RangeCalendarPrev
         data-testid="prev-year-button"
-        :prev-page="(date: DateValue) => pagingFunc(date, -1)"
+        :prev-page="(date: TemporalDate) => pagingFunc(date, -1)"
       />
       <RangeCalendarPrev
         data-testid="prev-button"
@@ -36,7 +37,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       />
       <RangeCalendarNext
         data-testid="next-year-button"
-        :next-page="(date: DateValue) => pagingFunc(date, 1)"
+        :next-page="(date: TemporalDate) => pagingFunc(date, 1)"
       />
     </RangeCalendarHeader>
 

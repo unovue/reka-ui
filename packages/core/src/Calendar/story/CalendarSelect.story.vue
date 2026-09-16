@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { CalendarId } from '@/temporal/calendar'
 import { Icon } from '@iconify/vue'
-import { createCalendar, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
+import { Temporal } from 'temporal-polyfill'
 import { computed, ref } from 'vue'
 import { Label } from '@/Label'
 import { SelectContent, SelectGroup, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
+import { toCalendar } from '@/temporal/calendar'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 
 const preferences = [
@@ -39,7 +41,7 @@ const calendars = [
 ]
 
 const locale = ref(preferences[0].locale)
-const calendar = ref(calendars[0].key)
+const calendar = ref<CalendarId>(calendars[0].key as CalendarId)
 
 const pref = computed(() => preferences.find(p => p.locale === locale.value))
 const preferredCalendars = computed(() => pref.value ? pref.value.ordering.split(' ').map(p => calendars.find(c => c.key === p)).filter(Boolean) : [calendars[0]])
@@ -47,9 +49,9 @@ const otherCalendars = computed(() => calendars.filter(c => !preferredCalendars.
 
 function updateLocale(newLocale: string) {
   locale.value = newLocale
-  calendar.value = pref.value!.ordering.split(' ')[0]
+  calendar.value = pref.value!.ordering.split(' ')[0] as CalendarId
 }
-const value = computed(() => toCalendar(today(getLocalTimeZone()), createCalendar(calendar.value)))
+const value = computed(() => toCalendar(Temporal.Now.plainDateISO(), calendar.value))
 </script>
 
 <template>

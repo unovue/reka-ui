@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { TemporalDate } from '@/temporal/types'
 import { Icon } from '@iconify/vue'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 
-function paging(date: DateValue, sign: -1 | 1) {
+function paging(date: TemporalDate, sign: -1 | 1) {
   if (sign === -1)
     return date.subtract({ years: 1 })
   return date.add({ years: 1 })
@@ -22,7 +22,7 @@ function paging(date: DateValue, sign: -1 | 1) {
       >
         <CalendarHeader class="flex items-center justify-between">
           <CalendarPrev
-            :prev-page="(date: DateValue) => paging(date, -1)"
+            :prev-page="(date: TemporalDate) => paging(date, -1)"
             class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-10 h-10 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
           >
             <Icon
@@ -50,7 +50,7 @@ function paging(date: DateValue, sign: -1 | 1) {
             />
           </CalendarNext>
           <CalendarNext
-            :next-page="(date: DateValue) => paging(date, 1)"
+            :next-page="(date: TemporalDate) => paging(date, 1)"
             class="inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-10 h-10 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black"
           >
             <Icon

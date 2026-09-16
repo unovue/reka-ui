@@ -18,7 +18,7 @@
   {
     'name': 'nextPage',
     'description': '<p>The function to be used for the next page. Overwrites the <code>nextPage</code> function set on the <code>CalendarRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'type': '((placeholder: TemporalDate) =&gt; TemporalDate)',
     'required': false
   }
 ]" />
@@ -40,7 +40,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `nextPage` | The function to be used for the next page. Overwrites the nextPage function set on the CalendarRoot. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `nextPage` | The function to be used for the next page. Overwrites the nextPage function set on the CalendarRoot. | `((placeholder: TemporalDate) => TemporalDate)` | No | - |
 
 **Slots**
 

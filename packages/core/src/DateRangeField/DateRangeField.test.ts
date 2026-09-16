@@ -1,31 +1,31 @@
-import type { DateValue } from '@internationalized/date'
-
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+
+import type { DateRange } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import { Temporal } from '@/temporal'
 import DateRangeField from './story/_DateRangeField.vue'
 
 const calendarDate = {
-  start: new CalendarDate(2022, 1, 1),
-  end: new CalendarDate(2022, 3, 1),
+  start: Temporal.PlainDate.from({ year: 2022, month: 1, day: 1 }),
+  end: Temporal.PlainDate.from({ year: 2022, month: 3, day: 1 }),
 }
 
 const calendarDateTime = {
-  start: new CalendarDateTime(2022, 1, 1, 12, 30),
-  end: new CalendarDateTime(2022, 3, 1, 12, 30),
+  start: Temporal.PlainDateTime.from({ year: 2022, month: 1, day: 1, hour: 12, minute: 30 }),
+  end: Temporal.PlainDateTime.from({ year: 2022, month: 3, day: 1, hour: 12, minute: 30 }),
 }
 const zonedDateTime = {
-  start: toZoned(calendarDateTime.start, 'America/New_York'),
-  end: toZoned(calendarDateTime.end, 'America/New_York'),
+  start: calendarDateTime.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTime.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
 
-function setup(props: { dateFieldProps?: DateRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { dateFieldProps?: DateRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(DateRangeField, { props })
 
@@ -207,5 +207,127 @@ describe('dateField', async () => {
     await user.keyboard('2')
     expect(start.month).toHaveTextContent('2')
     expect(end.month).toHaveTextContent(String(calendarDate.end.month))
+  })
+
+  it('marks the field as invalid when start is after end', async () => {
+    const invertedRange = {
+      start: Temporal.PlainDate.from({ year: 2022, month: 6, day: 1 }),
+      end: Temporal.PlainDate.from({ year: 2022, month: 1, day: 1 }),
+    }
+    const { input } = setup({
+      dateFieldProps: { modelValue: invertedRange },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('does not mark the field as invalid when start is before end', async () => {
+    const { input } = setup({
+      dateFieldProps: { modelValue: calendarDate },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('does not mark the field as invalid when start equals end', async () => {
+    const sameDay = {
+      start: Temporal.PlainDate.from({ year: 2022, month: 1, day: 1 }),
+      end: Temporal.PlainDate.from({ year: 2022, month: 1, day: 1 }),
+    }
+    const { input } = setup({
+      dateFieldProps: { modelValue: sameDay },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('prevents modification to either side when disabled', async () => {
+    const { start, end, user } = setup({
+      dateFieldProps: { modelValue: calendarDate, disabled: true },
+    })
+
+    await user.click(start.month)
+    expect(start.month).not.toHaveFocus()
+    expect(start.month).toHaveTextContent(String(calendarDate.start.month))
+
+    await user.click(end.year)
+    expect(end.year).not.toHaveFocus()
+    expect(end.year).toHaveTextContent(String(calendarDate.end.year))
+  })
+
+  it('prevents modification to either side when readonly', async () => {
+    const { start, end, user } = setup({
+      dateFieldProps: { modelValue: calendarDate, readonly: true },
+    })
+
+    await user.click(start.month)
+    expect(start.month).toHaveFocus()
+    await user.keyboard(kbd.ARROW_UP)
+    expect(start.month).toHaveTextContent(String(calendarDate.start.month))
+
+    await user.click(end.year)
+    expect(end.year).toHaveFocus()
+    await user.keyboard(kbd.ARROW_UP)
+    expect(end.year).toHaveTextContent(String(calendarDate.end.year))
+  })
+
+  it('tracks the placeholder from the start value, not the end value', async () => {
+    // The hidden input value is a built-in probe for the placeholder: it serialises
+    // `${start} - ${end}`, so a placeholder that drifted to the end would show in
+    // the month/year segments after the user navigated to the end side.
+    const { start, end, user } = setup({
+      dateFieldProps: { modelValue: calendarDate },
+    })
+
+    // The start month/year reflect the start value, not the end.
+    expect(start.month).toHaveTextContent(String(calendarDate.start.month))
+    expect(start.year).toHaveTextContent(String(calendarDate.start.year))
+    expect(end.month).toHaveTextContent(String(calendarDate.end.month))
+    expect(end.year).toHaveTextContent(String(calendarDate.end.year))
+
+    // Focus the end side and type a new month — the placeholder should stay anchored
+    // to the start value, so the start month segment must not change.
+    await user.click(end.month)
+    expect(end.month).toHaveFocus()
+    await user.keyboard('5')
+    expect(end.month).toHaveTextContent('5')
+    expect(start.month).toHaveTextContent(String(calendarDate.start.month))
+  })
+
+  it('marks the field as invalid when a day between start and end is unavailable', async () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: calendarDate,
+        isDateUnavailable: date => date.day === 15,
+      },
+    })
+
+    // calendarDate spans 2022-01-01 to 2022-03-01 — 2022-01-15 is between them.
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('does not mark the field as invalid when no day between start and end is unavailable', async () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: calendarDate,
+        isDateUnavailable: date => date.day === 15 && date.month === 6, // June 15, outside the range
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('does not mark the field as invalid for days-between-unavailable when only one side is set', async () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: { start: calendarDate.start, end: undefined },
+        // isDateUnavailable returns true for days *between* what would be the
+        // range, but the start itself is available. With only one side set
+        // there's no range to validate, so the field must stay valid.
+        isDateUnavailable: date => date.day === 15 && date.month === 1,
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
   })
 })

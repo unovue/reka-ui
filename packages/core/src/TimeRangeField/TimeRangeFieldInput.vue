@@ -29,6 +29,7 @@ const {
   handleSegmentBeforeInput,
   handleSegmentCompositionStart,
   handleSegmentCompositionEnd,
+  handleSegmentFocusOut,
   attributes,
 } = useDateField({
   hasLeftFocus,
@@ -36,6 +37,7 @@ const {
   placeholder: rootContext.placeholder,
   hourCycle: rootContext.hourCycle,
   step: rootContext.step,
+  stepSnapping: rootContext.stepSnapping,
   segmentValues: rootContext.segmentValues[props.type],
   formatter: rootContext.formatter,
   part: props.part,
@@ -69,7 +71,10 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
       beforeinput: handleSegmentBeforeInput,
       compositionstart: handleSegmentCompositionStart,
       compositionend: handleSegmentCompositionEnd,
-      focusout: () => { hasLeftFocus = true },
+      focusout: () => {
+        hasLeftFocus = true
+        handleSegmentFocusOut()
+      },
       focusin: (e: FocusEvent) => {
         rootContext.setFocusedElement(e.target as HTMLElement)
       },

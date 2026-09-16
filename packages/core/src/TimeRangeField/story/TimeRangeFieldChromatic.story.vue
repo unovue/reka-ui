@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import type { TimeValue } from '@/shared/date'
-import { Time } from '@internationalized/date'
 import { ref } from 'vue'
+import { Temporal } from '@/temporal'
 import TimeRangeField from './_DummyTimeRangeField.vue'
 
-const defaultValue = { start: new Time(10, 0, 0), end: new Time(11, 0, 0) }
+const defaultValue = {
+  start: Temporal.PlainTime.from({ hour: 10, minute: 0, second: 0 }),
+  end: Temporal.PlainTime.from({ hour: 11, minute: 0, second: 0 }),
+}
 const modelValue = ref(defaultValue) as Ref<{ start: TimeValue, end: TimeValue }>
 
-const defaultPlaceholder = new Time(12, 30)
+const defaultPlaceholder = Temporal.PlainTime.from({ hour: 12, minute: 30, second: 0 })
 </script>
 
 <template>

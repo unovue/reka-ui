@@ -18,7 +18,7 @@
   {
     'name': 'year',
     'description': '<p>The date value provided to the cell trigger</p>\n',
-    'type': 'DateValue',
+    'type': 'TemporalDate',
     'required': true
   }
 ]" />
@@ -85,7 +85,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `year` | The date value provided to the cell trigger | `DateValue` | Yes | - |
+| `year` | The date value provided to the cell trigger | `TemporalDate` | Yes | - |
 
 **Slots**
 
