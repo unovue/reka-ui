@@ -45,9 +45,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Called before a change; call details.cancel() to keep the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;CollapsibleChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the collapsible changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;CollapsibleChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -77,7 +82,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the collapsible changes. | `[value: boolean]` |
+| `beforeUpdate:open` | Called before a change; call details.cancel() to keep the current state. | `[value: boolean, details: ChangeEventDetails<CollapsibleChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the collapsible changes. | `[value: boolean, details: ChangeEventDetails<CollapsibleChangeReason, Event>]` |
 
 **Slots**
 

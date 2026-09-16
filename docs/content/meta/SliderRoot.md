@@ -108,7 +108,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the slider value changes</p>\n',
-    'type': '[payload: number[]]'
+    'type': '[payload: number[] | undefined]'
   },
   {
     'name': 'valueCommit',
@@ -152,7 +152,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the slider value changes | `[payload: number[]]` |
+| `update:modelValue` | Event handler called when the slider value changes | `[payload: number[] \| undefined]` |
 | `valueCommit` | Event handler called when the value changes at the end of an interaction. Useful when you only need to capture a final value e.g. to update a backend service. | `[payload: number[]]` |
 
 **Slots**

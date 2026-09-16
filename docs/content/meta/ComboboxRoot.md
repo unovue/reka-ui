@@ -129,7 +129,7 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: T; }]'
+    'type': '[payload: { ref: HTMLElement; value: T; } | undefined]'
   },
   {
     'name': 'update:modelValue',
@@ -187,7 +187,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; }]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; } \| undefined]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: T]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean]` |
 

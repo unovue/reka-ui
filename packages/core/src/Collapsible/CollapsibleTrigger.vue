@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
 
 export interface CollapsibleTriggerProps extends PrimitiveProps {}
 </script>
@@ -8,6 +8,7 @@ export interface CollapsibleTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
+import { getCollapsibleTriggerSurface } from './useCollapsible'
 
 const props = withDefaults(defineProps<CollapsibleTriggerProps>(), {
   as: 'button',
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<CollapsibleTriggerProps>(), {
 
 useForwardExpose()
 const rootContext = injectCollapsibleRootContext()
+const surface = getCollapsibleTriggerSurface(rootContext)
 </script>
 
 <template>
@@ -22,12 +24,7 @@ const rootContext = injectCollapsibleRootContext()
     :type="as === 'button' ? 'button' : undefined"
     :as="as"
     :as-child="props.asChild"
-    :aria-controls="rootContext.contentId"
-    :aria-expanded="rootContext.open.value"
-    :data-state="disclosureState(rootContext.open.value)"
-    :data-disabled="rootContext.disabled?.value ? '' : undefined"
-    :disabled="rootContext.disabled?.value"
-    @click="rootContext.onOpenToggle"
+    v-bind="surface.attrs.value"
   >
     <slot />
   </Primitive>

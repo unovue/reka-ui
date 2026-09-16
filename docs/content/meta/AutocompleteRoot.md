@@ -103,7 +103,7 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: string; }]'
+    'type': '[payload: { ref: HTMLElement; value: string; } | undefined]'
   },
   {
     'name': 'update:modelValue',
@@ -157,7 +157,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; }]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; } \| undefined]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: string]` |
 | `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean]` |
 

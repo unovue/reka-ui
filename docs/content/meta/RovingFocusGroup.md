@@ -64,7 +64,7 @@
   {
     'name': 'update:currentTabStopId',
     'description': '',
-    'type': '[value: string | null]'
+    'type': '[value: string | null | undefined]'
   }
 ]" />
 
@@ -97,7 +97,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: Event]` |
-| `update:currentTabStopId` |  | `[value: string \| null]` |
+| `update:currentTabStopId` |  | `[value: string \| null \| undefined]` |
 
 **Methods**
 
