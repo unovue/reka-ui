@@ -66,7 +66,8 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
+import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
 
@@ -90,7 +91,25 @@ defineSlots<{
   }) => any
 }>()
 
-const { required, disabled, multiple, dir: propDir } = toRefs(props)
+const { multiple, dir: propDir } = toRefs(props)
+
+// Optional Field participation: `injectFieldRootContext(null)` returns
+// `null` (instead of throwing) outside a `FieldRoot`, so every binding below
+// is inert — and byte-for-byte identical to before — when there is no Field.
+// The focusable element lives on `SelectTrigger`, which independently
+// injects the same context for id/aria wiring; here we only need to let
+// Field's `name`/`required`/`disabled` act as fallbacks for the local props
+// (local props always win), since both are read from this root's context by
+// `SelectTrigger` and by the hidden native `<select>` below.
+const fieldContext = injectFieldRootContext(null)
+
+const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+// `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
+// it to `false` rather than `undefined` when omitted — `props.required` can
+// never actually be `undefined`. Only fall back to the Field's `required`
+// when a Field is present, so standalone output is untouched.
+const required = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
+const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error Missing infer for AcceptableValue
@@ -116,6 +135,14 @@ const isEmptyModelValue = computed(() => {
     return modelValue.value?.length === 0
   else
     return isNullish(modelValue.value)
+})
+
+// `dirty` is reported from `handleValueChange` instead (the user-driven
+// path) — this watcher also fires for a programmatic/parent-driven
+// `modelValue` change, which should update `filled` but must not mark the
+// field dirty.
+watch(modelValue, () => {
+  fieldContext?.reportControlState({ filled: !isEmptyModelValue.value })
 })
 
 useCollection({ isProvider: true })
@@ -145,6 +172,18 @@ function handleValueChange(value: T) {
   else {
     modelValue.value = value
   }
+
+  // User-driven selection (as opposed to a programmatic/parent-driven
+  // `modelValue` change, handled by the `watch` above) — this is what
+  // should mark the field dirty, and what lets a Field's custom `validate`
+  // run against the Select's actual value.
+  //
+  // Report the resulting model, not the toggled `value`: in `multiple` mode
+  // `value` is the single item just added *or removed*, so a `validate` would
+  // otherwise see a deselected item as the field's value. This also matches
+  // what `SelectTrigger` reports on blur.
+  fieldContext?.reportControlState({ dirty: true })
+  fieldContext?.handleControlInput({ value: modelValue.value })
 }
 
 function getOption(value: SelectOption['value']) {
@@ -204,13 +243,13 @@ provideSelectRootContext({
     />
 
     <BubbleSelect
-      v-if="isFormControl && name"
+      v-if="isFormControl && resolvedName"
       :key="nativeSelectKey"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"
       :required="required"
-      :name="name"
+      :name="resolvedName"
       :autocomplete="autocomplete"
       :disabled="disabled"
       :value="modelValue"
