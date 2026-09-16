@@ -104,6 +104,7 @@ import './styles.css'
             <DatePickerGrid
               v-for="month in grid"
               :key="month.value.toString()"
+              :value="month.value"
               class="CalendarGrid"
             >
               <DatePickerGridHead>
@@ -126,12 +127,11 @@ import './styles.css'
                   <DatePickerCell
                     v-for="weekDate in weekDates"
                     :key="weekDate.toString()"
-                    :date="weekDate"
+                    :value="weekDate"
                     class="CalendarCell"
                   >
                     <DatePickerCellTrigger
-                      :day="weekDate"
-                      :month="month.value"
+                      :value="weekDate"
                       class="CalendarCellTrigger"
                     />
                   </DatePickerCell>

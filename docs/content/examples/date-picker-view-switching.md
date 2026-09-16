@@ -2,15 +2,13 @@
 title: Date Picker View Switching
 tags:
   - Calendar
-  - Month Picker
-  - Year Picker
 ---
 
 # Date Picker View Switching
 
 <Description>
 
-Compose Calendar, MonthPicker, and YearPicker to create a date picker with drill-down view switching.
+One Calendar with day, month and year views: click the heading to drill up, select a cell to drill back down.
 
 </Description>
 
@@ -22,6 +20,6 @@ Compose Calendar, MonthPicker, and YearPicker to create a date picker with drill
 
 ### View Switching Pattern
 
-Click the month or year in the header to switch views. Selecting a month returns to day view, selecting a year returns to month view. Common pattern in native OS calendars and libraries like Mantine.
+`CalendarViewTrigger` renders the heading as a button that switches the root's `view` from `day` to `month` to `year`. Each `CalendarView` renders only while its view is active. Selecting a year moves the placeholder into that year and drops to the month view; selecting a month drops to the day view; selecting a day commits the value. Bind `v-model:view` to control or observe the active view, and `max-view` to stop the drill-up early.
 
 </ExampleSection>

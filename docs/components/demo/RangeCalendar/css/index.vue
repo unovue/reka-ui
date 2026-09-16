@@ -42,6 +42,7 @@ const isDateUnavailable: RangeCalendarRootProps['isDateUnavailable'] = (date) =>
       <RangeCalendarGrid
         v-for="month in grid"
         :key="month.value.toString()"
+        :value="month.value"
         class="CalendarGrid"
       >
         <RangeCalendarGridHead>
@@ -64,12 +65,11 @@ const isDateUnavailable: RangeCalendarRootProps['isDateUnavailable'] = (date) =>
             <RangeCalendarCell
               v-for="weekDate in weekDates"
               :key="weekDate.toString()"
-              :date="weekDate"
+              :value="weekDate"
               class="CalendarCell"
             >
               <RangeCalendarCellTrigger
-                :day="weekDate"
-                :month="month.value"
+                :value="weekDate"
                 class="CalendarCellTrigger"
               />
             </RangeCalendarCell>

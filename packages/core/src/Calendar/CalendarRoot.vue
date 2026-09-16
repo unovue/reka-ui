@@ -1,66 +1,90 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
-
-import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { ComputedRef, Ref } from 'vue'
+import type { CalendarChangeReason, CalendarModelValue } from './useCalendar'
+import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-
-import type { Formatter } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { isEqualDay, isSameDay } from '@internationalized/date'
 import { getWeekStartsOn } from '@/date'
-import { createContext, useDirection, useLocale } from '@/shared'
-import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
-import { useCalendar, useCalendarState } from './useCalendar'
+import { createContext, useDirection, useId, useLocale } from '@/shared'
+import { handleCalendarInitialFocus } from '@/shared/date'
 
-type CalendarRootContext = {
-  locale: Ref<string>
-  modelValue: Ref<DateValue | DateValue[] | undefined>
-  placeholder: Ref<DateValue>
-  pagedNavigation: Ref<boolean>
-  preventDeselect: Ref<boolean>
-  grid: Ref<Grid<DateValue>[]>
-  weekDays: Ref<string[]>
-  weekStartsOn: Ref<WeekStartsOn>
-  weekdayFormat: Ref<WeekDayFormat>
-  fixedWeeks: Ref<boolean>
-  multiple: Ref<boolean>
-  numberOfMonths: Ref<number>
-  disabled: Ref<boolean>
-  readonly: Ref<boolean>
-  initialFocus: Ref<boolean>
-  onDateChange: (date: DateValue) => void
-  onPlaceholderChange: (date: DateValue) => void
-  fullCalendarLabel: Ref<string>
+export interface CalendarRootContext {
+  locale: ComputedRef<string>
+  dir: ComputedRef<Direction>
+  disabled: ComputedRef<boolean>
+  readonly: ComputedRef<boolean>
+  initialFocus: ComputedRef<boolean>
+  multiple: ComputedRef<boolean>
+  preventDeselect: ComputedRef<boolean>
+  disableDaysOutsideCurrentView: ComputedRef<boolean>
+  minValue: ComputedRef<DateValue | undefined>
+  maxValue: ComputedRef<DateValue | undefined>
+  /** The consumer's `isDateDisabled` matcher, before bounds and `disabled` are applied. */
+  disabledMatcher: ComputedRef<Matcher | undefined>
+  modelValue: ComputedRef<CalendarModelValue>
+  placeholder: ComputedRef<DateValue>
+  /** The active view, clamped into `[granularity, maxView]`. */
+  view: ComputedRef<CalendarUnit>
+  granularity: ComputedRef<CalendarUnit>
+  maxView: ComputedRef<CalendarUnit>
+  /** Id of the visually hidden heading; grids point `aria-labelledby` at it. */
+  headingId: string
   parentElement: Ref<HTMLElement | undefined>
-  headingValue: Ref<string>
-  isInvalid: Ref<boolean>
-  isDateDisabled: Matcher
-  isDateSelected: Matcher
-  isDateUnavailable?: Matcher
-  isOutsideVisibleView: (date: DateValue) => boolean
-  prevPage: (prevPageFunc?: (date: DateValue) => DateValue) => void
-  nextPage: (nextPageFunc?: (date: DateValue) => DateValue) => void
-  isNextButtonDisabled: (nextPageFunc?: (date: DateValue) => DateValue) => boolean
-  isPrevButtonDisabled: (prevPageFunc?: (date: DateValue) => DateValue) => boolean
+  /** The rendered page(s) of the active view. */
+  grid: Ref<CalendarGridData[]>
+  weekDays: ComputedRef<string[]>
+  weekStartsOn: ComputedRef<WeekStartsOn>
+  weekdayFormat: ComputedRef<WeekDayFormat>
+  fixedWeeks: ComputedRef<boolean>
+  numberOfMonths: ComputedRef<number>
+  pagedNavigation: ComputedRef<boolean>
+  layout: ComputedRef<CalendarLayout>
+  headingValue: ComputedRef<string>
+  fullCalendarLabel: ComputedRef<string>
+  isInvalid: ComputedRef<boolean>
+  hasSelectedDate: ComputedRef<boolean>
+  isSelectedDateDisabled: ComputedRef<boolean>
+  isPlaceholderFocusable: ComputedRef<boolean>
+  firstFocusableDate: ComputedRef<DateValue | undefined>
+  /** Up/down keyboard stride of the active view. */
+  rowLength: ComputedRef<number>
   formatter: Formatter
-  dir: Ref<Direction>
-  disableDaysOutsideCurrentView: Ref<boolean>
-  minValue: Ref<DateValue | undefined>
-  maxValue: Ref<DateValue | undefined>
-  isPlaceholderFocusable: Ref<boolean>
-  firstFocusableDate: Ref<DateValue | undefined>
-  hasSelectedDate: Ref<boolean>
-  isSelectedDateDisabled: Ref<boolean>
+  /** Adapter of the active view. */
+  adapter: ComputedRef<CalendarUnitAdapter>
+  /** Evaluated at the active view's unit. */
+  isDateDisabled: Matcher
+  isDateUnavailable: Matcher
+  /** Evaluated at the granularity. */
+  isDateSelected: Matcher
+  isOutsideVisibleView: (date: DateValue) => boolean
+  prevPage: (fn?: CalendarPageFunction) => void
+  nextPage: (fn?: CalendarPageFunction) => void
+  isPrevButtonDisabled: (fn?: CalendarPageFunction) => boolean
+  isNextButtonDisabled: (fn?: CalendarPageFunction) => boolean
+  /** Select a cell: commits at the granularity, drills down above it. */
+  onDateChange: (date: DateValue, reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => void
+  onPlaceholderChange: (date: DateValue, reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => boolean
+  setView: (view: CalendarUnit, reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => boolean
+  drillUp: (reason?: CalendarChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
 export interface CalendarRootProps extends PrimitiveProps {
   /** The default value for the calendar */
-  defaultValue?: DateValue
+  defaultValue?: DateValue | DateValue[]
   /** The default placeholder date */
   defaultPlaceholder?: DateValue
-  /** The placeholder date, which is used to determine what month to display when no date is selected */
+  /** The placeholder date, which is used to determine what page to display when no date is selected */
   placeholder?: DateValue
+  /** The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. */
+  view?: CalendarUnit
+  /** The view shown initially. Defaults to `granularity`. */
+  defaultView?: CalendarUnit
+  /** The unit a selection commits: a day, a month or a year. Views finer than this are unreachable. */
+  granularity?: CalendarUnit
+  /** The coarsest view `CalendarViewTrigger` can switch to. */
+  maxView?: CalendarUnit
   /** This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month */
   pagedNavigation?: boolean
   /** Whether or not to prevent the user from deselecting a date without selecting another date first */
@@ -79,24 +103,28 @@ export interface CalendarRootProps extends PrimitiveProps {
   minValue?: DateValue
   /** The locale to use for formatting dates */
   locale?: string
-  /** The number of months to display at once */
+  /** The number of months to display at once in the day view */
   numberOfMonths?: number
+  /** The number of years to display per page in the year view */
+  yearsPerPage?: number
+  /** The number of cells per row in the month and year views */
+  columns?: number
   /** Whether the calendar is disabled */
   disabled?: boolean
   /** Whether the calendar is readonly */
   readonly?: boolean
   /** If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted */
   initialFocus?: boolean
-  /** A function that returns whether or not a date is disabled */
+  /** A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument. */
   isDateDisabled?: Matcher
-  /** A function that returns whether or not a date is unavailable */
+  /** A function that returns whether or not a date is unavailable. Receives the unit of the cell being tested as its second argument. */
   isDateUnavailable?: Matcher
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
-  /** A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. */
-  nextPage?: (placeholder: DateValue) => DateValue
-  /** A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. */
-  prevPage?: (placeholder: DateValue) => DateValue
+  /** A function that returns the next page of the calendar. It receives the current placeholder and the active view. */
+  nextPage?: CalendarPageFunction
+  /** A function that returns the previous page of the calendar. It receives the current placeholder and the active view. */
+  prevPage?: CalendarPageFunction
   /** The controlled selected date value of the calendar. Can be bound as `v-model`. */
   modelValue?: DateValue | DateValue[] | null
   /** Whether multiple dates can be selected */
@@ -106,10 +134,18 @@ export interface CalendarRootProps extends PrimitiveProps {
 }
 
 export type CalendarRootEmits = {
+  /** Event handler called before the model value changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [date: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>]
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | undefined]
+  'update:modelValue': [date: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>]
+  /** Event handler called before the placeholder changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:placeholder': [date: DateValue, details: ChangeEventDetails<CalendarChangeReason>]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: DateValue, details: ChangeEventDetails<CalendarChangeReason>]
+  /** Event handler called before the view changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>]
+  /** Event handler called whenever the view changes */
+  'update:view': [view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>]
 }
 
 export const [injectCalendarRootContext, provideCalendarRootContext]
@@ -117,9 +153,9 @@ export const [injectCalendarRootContext, provideCalendarRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { computed, onMounted, toRefs, watch } from 'vue'
+import { computed, onMounted, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useCalendar } from './useCalendar'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
   defaultValue: undefined,
@@ -130,6 +166,12 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   fixedWeeks: false,
   multiple: false,
   numberOfMonths: 1,
+  yearsPerPage: 12,
+  columns: 4,
+  granularity: 'day',
+  maxView: 'year',
+  view: undefined,
+  defaultView: undefined,
   disabled: false,
   readonly: false,
   initialFocus: false,
@@ -138,14 +180,14 @@ const props = withDefaults(defineProps<CalendarRootProps>(), {
   isDateUnavailable: undefined,
   disableDaysOutsideCurrentView: false,
 })
-const emits = defineEmits<CalendarRootEmits>()
+const emit = defineEmits<CalendarRootEmits>()
 defineSlots<{
   default?: (props: {
     /** The current date of the placeholder */
     date: DateValue
-    /** The grid of dates */
-    grid: Grid<DateValue>[]
-    /** The days of the week */
+    /** The rendered page(s) of the active view */
+    grid: CalendarGridData[]
+    /** The days of the week (day view only) */
     weekDays: string[]
     /** The start of the week */
     weekStartsOn: WeekStartsOn
@@ -153,192 +195,66 @@ defineSlots<{
     locale: string
     /** Whether or not to always display 6 weeks in the calendar */
     fixedWeeks: boolean
-    /** The current date of the calendar */
-    modelValue: DateValue | DateValue[] | undefined
+    /** The current value of the calendar */
+    modelValue: CalendarModelValue
+    /** The active view */
+    view: CalendarUnit
+    /** The unit a selection commits */
+    granularity: CalendarUnit
   }) => any
 }>()
 
-const {
-  disabled,
-  readonly,
-  initialFocus,
-  pagedNavigation,
-  weekdayFormat,
-  fixedWeeks,
-  multiple,
-  minValue,
-  maxValue,
-  numberOfMonths,
-  preventDeselect,
-  isDateDisabled: propsIsDateDisabled,
-  isDateUnavailable: propsIsDateUnavailable,
-  calendarLabel,
-  defaultValue,
-  nextPage: propsNextPage,
-  prevPage: propsPrevPage,
-  dir: propDir,
-  locale: propLocale,
-  disableDaysOutsideCurrentView,
-} = toRefs(props)
+const { dir: propDir, locale: propLocale } = toRefs(props)
 
-const { primitiveElement, currentElement: parentElement }
-  = usePrimitiveElement()
+const { primitiveElement, currentElement: parentElement } = usePrimitiveElement()
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
+const headingId = useId(undefined, 'reka-calendar-heading')
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: defaultValue.value,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<DateValue | DateValue[] | undefined>
-
-const defaultDate = getDefaultDate({
-  defaultPlaceholder: props.placeholder,
-  defaultValue: modelValue.value,
-  locale: props.locale,
-})
-
-const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
-  passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
-
-function onPlaceholderChange(value: DateValue) {
-  placeholder.value = value.copy()
-}
-
-const {
-  fullCalendarLabel,
-  headingValue,
-  isDateDisabled,
-  isDateUnavailable,
-  isNextButtonDisabled,
-  isPrevButtonDisabled,
-  weekdays,
-  isOutsideVisibleView,
-  nextPage,
-  prevPage,
-  formatter,
-  grid,
-  isPlaceholderFocusable,
-  firstFocusableDate,
-} = useCalendar({
+// Controlled/uncontrolled + `beforeUpdate:` / `update:` emits for the model,
+// the placeholder and the view live in the composable's `useControllableState`.
+const { root, context, placeholder, grid, weekDays, modelValue, view, granularity, fullCalendarLabel } = useCalendar({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  placeholder: () => props.placeholder,
+  defaultPlaceholder: props.defaultPlaceholder,
+  view: () => props.view,
+  defaultView: props.defaultView,
+  granularity: () => props.granularity,
+  maxView: () => props.maxView,
+  multiple: () => props.multiple,
+  preventDeselect: () => props.preventDeselect,
+  disabled: () => props.disabled,
+  readonly: () => props.readonly,
+  initialFocus: () => props.initialFocus,
+  disableDaysOutsideCurrentView: () => props.disableDaysOutsideCurrentView,
   locale,
-  placeholder,
+  dir,
   weekStartsOn,
-  fixedWeeks,
-  numberOfMonths,
-  minValue,
-  maxValue,
-  disabled,
-  weekdayFormat,
-  pagedNavigation,
-  isDateDisabled: propsIsDateDisabled.value,
-  isDateUnavailable: propsIsDateUnavailable.value,
-  calendarLabel,
-  nextPage: propsNextPage,
-  prevPage: propsPrevPage,
+  weekdayFormat: () => props.weekdayFormat,
+  fixedWeeks: () => props.fixedWeeks,
+  numberOfMonths: () => props.numberOfMonths,
+  pagedNavigation: () => props.pagedNavigation,
+  yearsPerPage: () => props.yearsPerPage,
+  columns: () => props.columns,
+  minValue: () => props.minValue,
+  maxValue: () => props.maxValue,
+  isDateDisabled: computed(() => props.isDateDisabled),
+  isDateUnavailable: computed(() => props.isDateUnavailable),
+  calendarLabel: () => props.calendarLabel,
+  nextPage: computed(() => props.nextPage),
+  prevPage: computed(() => props.prevPage),
+  headingId,
+  parentElement,
+  emit,
 })
 
-const {
-  isInvalid,
-  isDateSelected,
-  hasSelectedDate,
-  isSelectedDateDisabled,
-} = useCalendarState({
-  date: modelValue,
-  isDateDisabled,
-  isDateUnavailable,
-})
-
-watch(modelValue, (_modelValue) => {
-  if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue.at(-1)
-    if (lastValue && !isEqualDay(placeholder.value, lastValue))
-      onPlaceholderChange(lastValue)
-  }
-  else if (!Array.isArray(_modelValue) && _modelValue && !isEqualDay(placeholder.value, _modelValue)) {
-    onPlaceholderChange(_modelValue)
-  }
-})
-
-function onDateChange(value: DateValue) {
-  if (!multiple.value) {
-    if (!modelValue.value) {
-      modelValue.value = value.copy()
-      return
-    }
-
-    if (!preventDeselect.value && isEqualDay(modelValue.value as DateValue, value)) {
-      placeholder.value = value.copy()
-      modelValue.value = undefined
-    }
-    else { modelValue.value = value.copy() }
-  }
-  else if (!modelValue.value) {
-    modelValue.value = [value.copy()]
-  }
-  else if (Array.isArray(modelValue.value)) {
-    const index = modelValue.value.findIndex(date => isSameDay(date, value))
-    if (index === -1) {
-      modelValue.value = [...modelValue.value, value]
-    }
-    else if (!preventDeselect.value) {
-      const next = modelValue.value.filter(date => !isSameDay(date, value))
-      if (!next.length) {
-        placeholder.value = value.copy()
-        modelValue.value = undefined
-        return
-      }
-      modelValue.value = next.map(date => date.copy())
-    }
-  }
-}
+provideCalendarRootContext(context)
 
 onMounted(() => {
-  if (initialFocus.value)
+  if (props.initialFocus)
     handleCalendarInitialFocus(parentElement.value)
-})
-
-provideCalendarRootContext({
-  isDateUnavailable,
-  dir,
-  isDateDisabled,
-  locale,
-  formatter,
-  modelValue,
-  placeholder,
-  disabled,
-  initialFocus,
-  pagedNavigation,
-  grid,
-  weekDays: weekdays,
-  weekStartsOn,
-  weekdayFormat,
-  fixedWeeks,
-  multiple,
-  numberOfMonths,
-  readonly,
-  preventDeselect,
-  fullCalendarLabel,
-  headingValue,
-  isInvalid,
-  isDateSelected,
-  isNextButtonDisabled,
-  isPrevButtonDisabled,
-  isOutsideVisibleView,
-  nextPage,
-  prevPage,
-  parentElement,
-  onPlaceholderChange,
-  onDateChange,
-  disableDaysOutsideCurrentView,
-  minValue,
-  maxValue,
-  isPlaceholderFocusable,
-  firstFocusableDate,
-  hasSelectedDate,
-  isSelectedDateDisabled,
 })
 </script>
 
@@ -347,25 +263,24 @@ provideCalendarRootContext({
     ref="primitiveElement"
     :as="as"
     :as-child="asChild"
-    :aria-label="fullCalendarLabel"
-    :data-readonly="readonly ? '' : undefined"
-    :data-disabled="disabled ? '' : undefined"
-    :data-invalid="isInvalid ? '' : undefined"
-    :dir="dir"
+    v-bind="root.attrs.value"
   >
     <slot
       :date="placeholder"
       :grid="grid"
-      :week-days="weekdays"
+      :week-days="weekDays"
       :week-starts-on="weekStartsOn"
       :locale="locale"
       :fixed-weeks="fixedWeeks"
       :model-value="modelValue"
+      :view="view"
+      :granularity="granularity"
     />
     <div
       style="border: 0px; clip: rect(0px, 0px, 0px, 0px); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0px; position: absolute; white-space: nowrap; width: 1px;"
     >
       <div
+        :id="headingId"
         role="heading"
         aria-level="2"
       >

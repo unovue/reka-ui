@@ -20,8 +20,13 @@
 <SlotsTable :data="[
   {
     'name': 'headingValue',
-    'description': '<p>Current month and year</p>\n',
+    'description': '<p>Heading of the active view: <code>September 2026</code>, <code>2026</code>, <code>2020 - 2031</code></p>\n',
     'type': 'string'
+  },
+  {
+    'name': 'view',
+    'description': '<p>The active view</p>\n',
+    'type': '\'day\' | \'month\' | \'year\''
   }
 ]" />
 </llm-exclude>
@@ -39,6 +44,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `headingValue` | Current month and year | `string` |
+| `headingValue` | Heading of the active view: September 2026, 2026, 2020 - 2031 | `string` |
+| `view` | The active view | `"day" \| "month" \| "year"` |
 
 </llm-only>

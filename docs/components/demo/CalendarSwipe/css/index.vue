@@ -70,6 +70,7 @@ onMounted(() => {
       <CalendarGrid
         v-for="month in grid"
         :key="month.value.toString()"
+        :value="month.value"
         class="CalendarGrid"
       >
         <CalendarGridHead>
@@ -92,12 +93,11 @@ onMounted(() => {
             <CalendarCell
               v-for="weekDate in weekDates"
               :key="weekDate.toString()"
-              :date="weekDate"
+              :value="weekDate"
               class="CalendarCell"
             >
               <CalendarCellTrigger
-                :day="weekDate"
-                :month="month.value"
+                :value="weekDate"
                 class="CalendarCellTrigger"
               />
             </CalendarCell>

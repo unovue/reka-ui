@@ -121,6 +121,7 @@ const forwarded = useForwardPropsEmits(props, emits)
           <DateRangePickerGrid
             v-for="month in grid"
             :key="month.value.toString()"
+            :value="month.value"
             class="w-full border-collapse select-none space-y-1"
           >
             <DateRangePickerGridHead>
@@ -143,12 +144,11 @@ const forwarded = useForwardPropsEmits(props, emits)
                 <DateRangePickerCell
                   v-for="weekDate in weekDates"
                   :key="weekDate.toString()"
-                  :date="weekDate"
+                  :value="weekDate"
                   class="relative text-center text-sm p-0"
                 >
                   <DateRangePickerCellTrigger
-                    :day="weekDate"
-                    :month="month.value"
+                    :value="weekDate"
                     class="relative flex items-center justify-center whitespace-nowrap bg-transparent text-sm font-normal text-black w-8 h-8 outline-offset-0 outline-none data-[selection-start]:rounded-l-lg data-[selection-end]:rounded-r-lg focus:outline-black hover:outline-black data-[selected]:bg-green10 data-[selected]:font-medium data-[outside-view]:text-black/30 data-[selected]:text-white data-[highlighted]:bg-grass9/30 data-[selection-start]:bg-green10  data-[selection-end]:bg-green10  data-[unavailable]:text-black/30 data-[unavailable]:line-through before:absolute before:top-[5px] before:hidden before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-grass9 data-[selected]:before:bg-white"
                   />
                 </DateRangePickerCell>

@@ -1,208 +1,87 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
+import type { CalendarUnit } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import {
-
-  getLocalTimeZone,
-  isSameDay,
-  isSameMonth,
-  isToday,
-} from '@internationalized/date'
-import { computed, nextTick } from 'vue'
-import { toDate } from '@/date'
-import { useKbd } from '@/shared'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {
-  /** The date value provided to the cell trigger */
-  day: DateValue
-  /** The month in which the cell is rendered */
-  month: DateValue
+  /** The date value of the cell: a day, the first day of a month, or the first day of a year */
+  value: DateValue
 }
 
 export interface CalendarCellTriggerSlot {
   default?: (props: {
-    /** Current day */
-    dayValue: string
+    /** Formatted cell text: `5`, `Sep`, `2026` */
+    cellValue: string
     /** Current disable state */
     disabled: boolean
     /** Current selected state */
     selected: boolean
-    /** Current today state */
+    /** Whether the cell is today / the current month / the current year */
     today: boolean
-    /** Current outside view state */
+    /** Whether the cell belongs to a neighbouring page (a leading/trailing day) */
     outsideView: boolean
-    /** Current outside visible view state */
+    /** Whether the cell's unit is outside the rendered page(s) */
     outsideVisibleView: boolean
     /** Current unavailable state */
     unavailable: boolean
+    /** The unit the cell renders */
+    view: CalendarUnit
   }) => any
 }
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { computed } from 'vue'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
+import { injectCalendarGridContext } from './CalendarGrid.vue'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
+import { injectCalendarViewContext } from './CalendarView.vue'
+import { getCalendarCellTriggerSurface } from './useCalendar'
 
-const props = withDefaults(defineProps<CalendarCellTriggerProps>(), {
-  as: 'div',
-})
-
+const props = withDefaults(defineProps<CalendarCellTriggerProps>(), { as: 'div' })
 defineSlots<CalendarCellTriggerSlot>()
 
-const kbd = useKbd()
+const { forwardRef } = useForwardExpose()
 const rootContext = injectCalendarRootContext()
+const viewContext = injectCalendarViewContext(null)
+const gridContext = injectCalendarGridContext(null)
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
-
-const dayValue = computed(() => props.day.day.toLocaleString(rootContext.locale.value))
-
-const labelText = computed(() => {
-  return rootContext.formatter.custom(toDate(props.day), {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
-})
-
-const isUnavailable = computed(() =>
-  rootContext.isDateUnavailable?.(props.day) ?? false,
-)
-const isDateToday = computed(() => {
-  return isToday(props.day, getLocalTimeZone())
-})
-const isOutsideView = computed(() => {
-  return !isSameMonth(props.day, props.month)
-})
-
-const isOutsideVisibleView = computed(() =>
-  rootContext.isOutsideVisibleView(props.day),
+// Selection, keyboard navigation, aria and data attributes all come from the
+// shared surface builder (single source with `useCalendar()`). The unit comes
+// from the enclosing `CalendarView`, else the root's active view; the page
+// from the enclosing `CalendarGrid`.
+const surface = getCalendarCellTriggerSurface(
+  rootContext,
+  () => props.value,
+  () => gridContext?.value.value,
+  () => viewContext?.unit.value,
 )
 
-const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || (rootContext.disableDaysOutsideCurrentView.value && isOutsideView.value))
-
-const isFocusedDate = computed(() => {
-  if (isOutsideView.value || isDisabled.value)
-    return false
-  if (!rootContext.disabled.value && rootContext.isPlaceholderFocusable.value && isSameDay(props.day, rootContext.placeholder.value))
-    return true
-  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDateDisabled.value) && !rootContext.isPlaceholderFocusable.value)
-    return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
-  return false
+const slotProps = computed(() => {
+  const state = surface.state.value
+  return {
+    cellValue: surface.cellValue.value,
+    disabled: state.disabled,
+    selected: state.selected,
+    today: state.today,
+    outsideView: state.outsideView,
+    outsideVisibleView: state.outsideVisibleView,
+    unavailable: state.unavailable,
+    view: state.view,
+  }
 })
-
-const isSelectedDate = computed(() => rootContext.isDateSelected(props.day))
-
-function changeDate(date: DateValue) {
-  if (rootContext.readonly.value)
-    return
-  if (rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date))
-    return
-
-  rootContext.onDateChange(date)
-}
-
-function handleClick() {
-  if (isDisabled.value)
-    return
-  changeDate(props.day)
-}
-
-function handleArrowKey(e: KeyboardEvent) {
-  if (isDisabled.value)
-    return
-  // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
-  // let them bubble so parent listeners can react (e.g. submit a form).
-  if ((e.code === kbd.ENTER || e.code === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
-    return
-  e.preventDefault()
-  e.stopPropagation()
-  const parentElement = rootContext.parentElement.value!
-  const indexIncrementation = 7
-  const sign = rootContext.dir.value === 'rtl' ? -1 : 1
-  switch (e.code) {
-    case kbd.ARROW_RIGHT:
-      shiftFocus(props.day, sign)
-      break
-    case kbd.ARROW_LEFT:
-      shiftFocus(props.day, -sign)
-      break
-    case kbd.ARROW_UP:
-      shiftFocus(props.day, -indexIncrementation)
-      break
-    case kbd.ARROW_DOWN:
-      shiftFocus(props.day, indexIncrementation)
-      break
-    case kbd.ENTER:
-    case kbd.SPACE_CODE:
-      changeDate(props.day)
-  }
-
-  function shiftFocus(day: DateValue, add: number) {
-    const candidateDayValue = day.add({ days: add })
-
-    if ((rootContext.minValue.value && candidateDayValue.compare(rootContext.minValue.value) < 0) || (rootContext.maxValue.value && candidateDayValue.compare(rootContext.maxValue.value) > 0))
-      return
-
-    const candidateDay = parentElement.querySelector<HTMLElement>(`[data-value='${candidateDayValue.toString()}']:not([data-outside-view])`)
-    // If the date is not found it means we must change the page
-    if (!candidateDay) {
-      if (add > 0) {
-        if (rootContext.isNextButtonDisabled())
-          return
-        rootContext.nextPage()
-      }
-      else {
-        if (rootContext.isPrevButtonDisabled())
-          return
-        rootContext.prevPage()
-      }
-      nextTick(() => {
-        shiftFocus(day, add)
-      })
-      return
-    }
-
-    if (candidateDay && candidateDay.hasAttribute('data-disabled')) {
-      return shiftFocus(candidateDayValue, add)
-    }
-    rootContext.onPlaceholderChange(candidateDayValue)
-    candidateDay?.focus()
-  }
-}
 </script>
 
 <template>
   <Primitive
-    ref="primitiveElement"
+    :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
-    role="button"
-    :aria-label="labelText"
-    data-reka-calendar-cell-trigger
-    :aria-disabled="isDisabled || isUnavailable ? true : undefined"
-    :data-selected="isSelectedDate ? true : undefined"
-    :data-value="day.toString()"
-    :data-disabled="isDisabled ? '' : undefined"
-    :data-unavailable="isUnavailable ? '' : undefined"
-    :data-today="isDateToday ? '' : undefined"
-    :data-outside-view="isOutsideView ? '' : undefined"
-    :data-outside-visible-view="isOutsideVisibleView ? '' : undefined"
-    :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="isFocusedDate ? 0 : isOutsideView || isDisabled ? undefined : -1"
-    @click="handleClick"
-    @keydown.up.down.left.right.space.enter="handleArrowKey"
+    v-bind="surface.attrs.value"
   >
-    <slot
-      :day-value="dayValue"
-      :disabled="isDisabled"
-      :today="isDateToday"
-      :selected="isSelectedDate"
-      :outside-view="isOutsideView"
-      :outside-visible-view="isOutsideVisibleView"
-      :unavailable="isUnavailable"
-    >
-      {{ dayValue }}
+    <slot v-bind="slotProps">
+      {{ surface.cellValue.value }}
     </slot>
   </Primitive>
 </template>

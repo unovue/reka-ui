@@ -17,8 +17,8 @@
   },
   {
     'name': 'prevPage',
-    'description': '<p>The function to be used for the prev page. Overwrites the <code>prevPage</code> function set on the <code>RangeCalendarRoot</code>.</p>\n',
-    'type': '((placeholder: DateValue) =&gt; DateValue)',
+    'description': '<p>The function to be used for the prev page. Overwrites the <code>prevPage</code> function set on the <code>RangeCalendarRoot</code>. Receives the placeholder and the active view.</p>\n',
+    'type': 'CalendarPageFunction',
     'required': false
   }
 ]" />
@@ -40,7 +40,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the RangeCalendarRoot. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the RangeCalendarRoot. Receives the placeholder and the active view. | `CalendarPageFunction` | No | - |
 
 **Slots**
 
