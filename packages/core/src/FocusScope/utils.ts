@@ -6,6 +6,17 @@ export const EVENT_OPTIONS = { bubbles: false, cancelable: true }
 
 type FocusableTarget = HTMLElement | { focus: () => void }
 
+/** Like `Node.contains`, but crosses shadow boundaries by walking up through host elements. */
+export function containsComposed(container: Node, node: Node | null): boolean {
+  let current: Node | null = node
+  while (current) {
+    if (container.contains(current))
+      return true
+    current = (current.getRootNode() as ShadowRoot).host ?? null
+  }
+  return false
+}
+
 /**
  * Attempts focusing the first element in a list of candidates.
  * Stops when focus has actually moved.
