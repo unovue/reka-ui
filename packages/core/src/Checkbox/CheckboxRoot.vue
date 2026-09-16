@@ -84,7 +84,14 @@ const modelValue = useVModel(props as any, 'modelValue', emits as any, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T | 'indeterminate'>
 
-const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
+const disabled = computed(() =>
+  checkboxGroupContext?.disabled.value
+  || props.disabled
+  || (
+    !isNullish(checkboxGroupContext?.max.value)
+    && !isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
+    && (checkboxGroupContext.modelValue.value?.length || 0) >= checkboxGroupContext?.max.value),
+)
 
 const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
@@ -107,6 +114,9 @@ function handleClick() {
       modelValueArray.splice(index, 1)
     }
     else {
+      if (checkboxGroupContext?.max.value !== undefined && modelValueArray.length >= checkboxGroupContext?.max.value) {
+        return
+      }
       modelValueArray.push(props.value)
     }
     checkboxGroupContext.modelValue.value = modelValueArray
