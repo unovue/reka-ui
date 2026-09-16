@@ -58,6 +58,15 @@ describe('given default NavigationMenu', () => {
       expect(await axe(document.body)).toHaveNoViolations()
     })
 
+    it('should render a focus proxy that is tabbable but not aria-hidden', () => {
+      // The trigger renders a tabbable sentinel (tabindex="0") that catches
+      // focus leaving the trigger and redirects it into the content. A tabbable
+      // element must not be aria-hidden (axe `aria-hidden-focus`).
+      const proxies = document.querySelectorAll('span[tabindex="0"]')
+      expect(proxies).toHaveLength(1)
+      expect(proxies[0].getAttribute('aria-hidden')).toBeNull()
+    })
+
     describe('after pressing tab', async () => {
       beforeEach(async () => {
         await userEvent.tab()

@@ -17,7 +17,7 @@
   },
   {
     'name': 'feature',
-    'description': '',
+    'description': '<p>How the content is hidden.</p>\n<ul>\n<li><code>focusable</code> (default): hidden visually only. The content stays in the\naccessibility tree, so slotted text is announced and can label its\nparent, and it keeps whatever focusability it has.</li>\n<li><code>fully-hidden</code>: also removed from the accessibility tree\n(<code>aria-hidden=&quot;true&quot;</code>) and the tab order (<code>tabindex=&quot;-1&quot;</code>). Use for\nhidden form inputs.</li>\n</ul>\n',
     'type': '\'focusable\' | \'fully-hidden\'',
     'required': false,
     'default': '\'focusable\''
@@ -33,6 +33,6 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `feature` |  | `"focusable" \| "fully-hidden"` | No | `"focusable"` |
+| `feature` | How the content is hidden.  focusable (default): hidden visually only. The content stays in the accessibility tree, so slotted text is announced and can label its parent, and it keeps whatever focusability it has. fully-hidden: also removed from the accessibility tree (aria-hidden="true") and the tab order (tabindex="-1"). Use for hidden form inputs. | `"focusable" \| "fully-hidden"` | No | `"focusable"` |
 
 </llm-only>

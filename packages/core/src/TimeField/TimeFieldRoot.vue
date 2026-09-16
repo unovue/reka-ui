@@ -360,6 +360,7 @@ defineExpose({
       :id="id"
       as="input"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
       :value="modelValue ? modelValue.toString() : ''"
       :name="name"
