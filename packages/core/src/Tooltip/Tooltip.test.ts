@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, ref } from 'vue'
 import { injectPopperRootContext } from '@/Popper'
@@ -215,5 +215,118 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
     await flushPromises()
 
     expect(probe.vm.anchor).toBe(wrapper.find('a').element)
+  })
+})
+
+describe('given stacked tooltips whose content covers another trigger', () => {
+  // Two triggers stacked vertically, like rows in a table. The second one's
+  // tooltip opens on top of it, i.e. over the first trigger.
+  const StackedTooltips = defineComponent({
+    components: { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipPortal, TooltipContent },
+    template: `
+      <TooltipProvider>
+        <TooltipRoot>
+          <TooltipTrigger data-testid="trigger-1">First</TooltipTrigger>
+          <TooltipPortal>
+            <TooltipContent data-testid="content-1">First tooltip</TooltipContent>
+          </TooltipPortal>
+        </TooltipRoot>
+        <TooltipRoot>
+          <TooltipTrigger data-testid="trigger-2">Second</TooltipTrigger>
+          <TooltipPortal>
+            <TooltipContent data-testid="content-2">Second tooltip</TooltipContent>
+          </TooltipPortal>
+        </TooltipRoot>
+      </TooltipProvider>
+    `,
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof StackedTooltips>>
+
+  // jsdom has no layout, so `elementsFromPoint` is stubbed with the hit-test
+  // stack a browser would return for the given scenario.
+  function stubElementsFromPoint(stack: () => Element[]) {
+    Object.defineProperty(document, 'elementsFromPoint', { value: vi.fn(stack), configurable: true })
+  }
+
+  function pointerMove(target: Element, pointerType = 'mouse') {
+    const event = new MouseEvent('pointermove', { bubbles: true, clientX: 10, clientY: 10 })
+    Object.defineProperty(event, 'pointerType', { value: pointerType })
+    target.dispatchEvent(event)
+    return flushPromises()
+  }
+
+  const getContent = () => document.querySelector('[data-testid="content-2"]')
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(StackedTooltips, { attachTo: document.body })
+    await wrapper.find('[data-testid="trigger-2"]').trigger('focus')
+    expect(getContent()).not.toBeNull()
+  })
+
+  afterEach(async () => {
+    // @ts-expect-error jsdom does not implement it, remove the stub entirely
+    delete document.elementsFromPoint
+    wrapper.unmount()
+    await flushPromises()
+  })
+
+  it('should close when the pointer over the content sits above another trigger', async () => {
+    const content = getContent()!
+    const otherTrigger = wrapper.find('[data-testid="trigger-1"]').element
+    stubElementsFromPoint(() => [content, otherTrigger, document.body])
+
+    await pointerMove(content)
+
+    expect(getContent()).toBeNull()
+  })
+
+  it('should close when the covered trigger is hit through a descendant of the trigger', async () => {
+    const content = getContent()!
+    const otherTrigger = wrapper.find('[data-testid="trigger-1"]').element
+    const icon = document.createElement('svg')
+    otherTrigger.appendChild(icon)
+    stubElementsFromPoint(() => [content, icon, document.body])
+
+    await pointerMove(content)
+
+    expect(getContent()).toBeNull()
+  })
+
+  it('should stay open while the pointer over the content covers nothing interactive', async () => {
+    const content = getContent()!
+    stubElementsFromPoint(() => [content, document.body])
+
+    await pointerMove(content)
+
+    expect(getContent()).not.toBeNull()
+  })
+
+  it('should stay open when the content only covers its own trigger', async () => {
+    const content = getContent()!
+    const ownTrigger = wrapper.find('[data-testid="trigger-2"]').element
+    stubElementsFromPoint(() => [content, ownTrigger, document.body])
+
+    await pointerMove(content)
+
+    expect(getContent()).not.toBeNull()
+  })
+
+  it('should ignore touch pointers', async () => {
+    const content = getContent()!
+    const otherTrigger = wrapper.find('[data-testid="trigger-1"]').element
+    stubElementsFromPoint(() => [content, otherTrigger, document.body])
+
+    await pointerMove(content, 'touch')
+
+    expect(getContent()).not.toBeNull()
+  })
+
+  it('should not throw when elementsFromPoint is unavailable', async () => {
+    const content = getContent()!
+
+    await expect(pointerMove(content)).resolves.not.toThrow()
+    expect(getContent()).not.toBeNull()
   })
 })
