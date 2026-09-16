@@ -25,6 +25,11 @@ jobs:
 
       - name: Build Docs
         run: pnpm docs:build
+        env:
+          # The VitePress build compiles every demo and example into both the
+          # client and SSR bundles, and now peaks just past Node's default ~4GB
+          # heap. Without this the build dies with "Reached heap limit".
+          NODE_OPTIONS: --max-old-space-size=8192
 
       # Run a action to publish docs
       - name: Publish to Cloudflare Pages

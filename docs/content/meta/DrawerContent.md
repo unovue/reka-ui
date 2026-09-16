@@ -25,7 +25,8 @@
     'name': 'finalFocus',
     'description': '<p>Final focus target when the drawer closes.</p>\n<ul>\n<li><code>true</code> / default: focus the trigger</li>\n<li><code>false</code>: do not restore focus</li>\n<li>element ref: focus that specific element</li>\n</ul>\n',
     'type': 'boolean | HTMLElement | null',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'forceMount',
@@ -37,7 +38,8 @@
     'name': 'initialFocus',
     'description': '<p>Initial focus target when the drawer opens.</p>\n<ul>\n<li><code>true</code> / default: focus the first focusable element inside</li>\n<li><code>false</code>: do not focus anything</li>\n<li>element ref: focus that specific element</li>\n</ul>\n',
     'type': 'boolean | HTMLElement | null',
-    'required': false
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -84,9 +86,9 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disableOutsidePointerEvents` | When true, hover/focus/click interactions will be disabled on elements outside the DismissableLayer. Users will need to click twice on outside elements to interact with them: once to close the DismissableLayer, and again to trigger the element. | `boolean` | No | - |
-| `finalFocus` | Final focus target when the drawer closes.  true / default: focus the trigger false: do not restore focus element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | - |
+| `finalFocus` | Final focus target when the drawer closes.  true / default: focus the trigger false: do not restore focus element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 | `forceMount` |  | `boolean` | No | - |
-| `initialFocus` | Initial focus target when the drawer opens.  true / default: focus the first focusable element inside false: do not focus anything element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | - |
+| `initialFocus` | Initial focus target when the drawer opens.  true / default: focus the first focusable element inside false: do not focus anything element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 
 **Events**
 

@@ -121,6 +121,9 @@ function handleChange() {
     @wheel="handleWheelEvent"
     @beforeinput="(event: InputEvent) => {
       if (event.isComposing) return
+      // A collapsed deletion carries no data, so nextValue would repeat the current value; undo and redo read the same
+      // Every deletion is skipped so they stay consistent, and applyInputValue reformats on blur
+      if (event.inputType.startsWith('delete') || event.inputType.startsWith('history')) return
       const target = event.target as HTMLInputElement
       let nextValue
         = target.value.slice(0, target.selectionStart ?? undefined)

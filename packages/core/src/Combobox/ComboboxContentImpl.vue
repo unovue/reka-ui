@@ -31,7 +31,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
@@ -46,6 +46,9 @@ const emits = defineEmits<ComboboxContentImplEmits>()
 
 const { position } = toRefs(props)
 const rootContext = injectComboboxRootContext()
+const contentId = Symbol('ComboboxContent')
+
+watch(position, value => rootContext.onContentPositionChange(contentId, value), { immediate: true })
 
 const isEmpty = computed(() => rootContext.ignoreFilter.value
   ? rootContext.allItems.value.size === 0
@@ -53,7 +56,6 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 )
 
 const { forwardRef, currentElement } = useForwardExpose()
-watchEffect(() => rootContext.contentElement.value = currentElement.value)
 useBodyScrollLock(props.bodyLock)
 useFocusGuards()
 useHideOthers(rootContext.parentElement)
@@ -93,7 +95,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  rootContext.contentElement.value = undefined
+  rootContext.onContentUnmount(contentId)
   const activeElement = getActiveElement()
   if (isInputWithinContent.value && (!activeElement || activeElement === document.body)) {
     rootContext.triggerElement.value?.focus()
@@ -111,6 +113,10 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
   const label = target instanceof Element ? target.closest('label') : null
   const control = label?.control
   return !!control && !!rootContext.parentElement.value?.contains(control)
+}
+
+const popperContentEvents = {
+  placed: () => rootContext.onContentPlaced(contentId),
 }
 </script>
 
@@ -157,6 +163,7 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
             outline: 'none',
             ...(position === 'popper' ? popperStyle : {}),
           }"
+          v-on="position === 'popper' ? popperContentEvents : {}"
         >
           <slot />
         </component>

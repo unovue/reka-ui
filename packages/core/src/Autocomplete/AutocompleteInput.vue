@@ -38,7 +38,7 @@ onMounted(() => {
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
 })
 
-const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
   const el = event.target as HTMLInputElement
   if (el)
     processInputValue(el.value)
@@ -71,7 +71,7 @@ function processInputValue(value: string) {
 }
 
 function handleInput(event: InputEvent) {
-  if (isComposing.value)
+  if (shouldDeferInput.value)
     return
   processInputValue((event.target as HTMLInputElement).value)
 }
@@ -114,7 +114,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :auto-focus="autoFocus"
     :disabled="disabled"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentElement.value ? rootContext.contentId : undefined"
+    :aria-controls="rootContext.contentId"
     aria-autocomplete="list"
     role="combobox"
     autocomplete="off"
@@ -123,6 +123,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     @keydown.down.up="handleKeyDown"
     @focus="handleFocus"
     @compositionstart="handleCompositionStart"
+    @compositionupdate="handleCompositionUpdate"
     @compositionend="handleCompositionEnd"
   >
     <slot />

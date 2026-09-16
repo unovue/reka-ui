@@ -34,13 +34,17 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
+import { focus } from '@/FocusScope/utils'
 import { useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
 
-const props = defineProps<DrawerContentImplProps>()
+const props = withDefaults(defineProps<DrawerContentImplProps>(), {
+  initialFocus: true,
+  finalFocus: true,
+})
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
@@ -255,6 +259,19 @@ function onInteractOutside(event: any) {
   emits('interactOutside', event)
 }
 
+function onMountAutoFocus(event: Event) {
+  emits('openAutoFocus', event)
+  if (event.defaultPrevented)
+    return
+  if (props.initialFocus === false) {
+    event.preventDefault()
+  }
+  else if (props.initialFocus instanceof HTMLElement) {
+    event.preventDefault()
+    focus(props.initialFocus, { select: true })
+  }
+}
+
 // --- update:openComplete wiring ---
 // Fire `update:openComplete` on the popup's own transitionend/animationend,
 // not on a microtask — consumers rely on this marker to know the enter/exit
@@ -361,7 +378,7 @@ if (process.env.NODE_ENV !== 'production') {
     as-child
     loop
     :trapped="props.trapFocus"
-    @mount-auto-focus="emits('openAutoFocus', $event)"
+    @mount-auto-focus="onMountAutoFocus"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer

@@ -38,15 +38,14 @@ describe('given default Select', () => {
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
-  it('should only render aria-controls while content is mounted', async () => {
+  it('should only render aria-controls while open', async () => {
     const trigger = wrapper.find('[role="combobox"]')
     expect(trigger.attributes('aria-controls')).toBeUndefined()
 
     await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
     await nextTick()
-    const contentId = trigger.attributes('aria-controls')
-    expect(contentId).toBeDefined()
-    expect(document.getElementById(contentId!)).not.toBeNull()
+
+    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
   })
 
   describe('trigger mouse interop', () => {
