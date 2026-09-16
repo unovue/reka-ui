@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'textValue',
+    'description': '<p>Text used for the label registry; defaults to the rendered text content.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'value',
     'description': '<p>The value given as data when submitted with a <code>name</code>.</p>\n',
     'type': 'T',
@@ -47,6 +53,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `textValue` | Text used for the label registry; defaults to the rendered text content. | `string` | No | - |
 | `value` | The value given as data when submitted with a name. | `T` | Yes | - |
 
 **Events**

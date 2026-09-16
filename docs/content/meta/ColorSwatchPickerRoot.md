@@ -36,6 +36,12 @@
     'default': 'false'
   },
   {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown means for keyboard navigation. Return <code>undefined</code> to fall back to the default mapping\n(arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), <code>null</code> to declare the key is not\na navigation key, or <code>\'select\'</code> to select the highlighted item as Enter does.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'required': false
+  },
+  {
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
@@ -82,6 +88,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value.</p>\n',
+    'type': '[value: AcceptableValue, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
+  },
+  {
     'name': 'entryFocus',
     'description': '<p>Event handler called when container is being focused. Can be prevented.</p>\n',
     'type': '[event: CustomEvent&lt;any&gt;]'
@@ -99,7 +110,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: AcceptableValue]'
+    'type': '[value: AcceptableValue, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -123,6 +134,7 @@
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `string \| string[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | `"ltr"` |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | `false` |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to declare the key is not a navigation key, or 'select' to select the highlighted item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `string \| string[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
@@ -135,10 +147,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. | `[value: AcceptableValue, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 
 **Slots**
 

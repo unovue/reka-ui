@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'textValue',
+    'description': '<p>Text used for the label registry; defaults to the rendered text content.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'value',
     'description': '<p>The color to display in the swatch as a hex string.\nExample: <code>#16a372</code> or <code>#ff5733</code>.</p>\n',
     'type': 'string',
@@ -47,6 +53,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `textValue` | Text used for the label registry; defaults to the rendered text content. | `string` | No | - |
 | `value` | The color to display in the swatch as a hex string. Example: #16a372 or #ff5733. | `string` | Yes | - |
 
 **Events**
