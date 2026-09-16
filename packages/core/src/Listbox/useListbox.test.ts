@@ -167,7 +167,7 @@ describe('useListboxRoot — reasons', () => {
     expect(onUpdate.mock.calls[0][1]).toMatchObject({ reason: 'item-keydown', event: space })
   })
 
-  it('Enter on the content synthesizes a click on the highlighted item, so it arrives as item-press', () => {
+  it('enter on the content synthesizes a click on the highlighted item, so it arrives as item-press', () => {
     const onUpdate = vi.fn()
     const { items, getItems } = createItems(['a', 'b'])
     const api = harness({ getItems, onUpdate })
@@ -181,7 +181,7 @@ describe('useListboxRoot — reasons', () => {
     expect(onUpdate.mock.calls[0][1].event).toBeInstanceOf(MouseEvent)
   })
 
-  it('Enter with a modifier bubbles through untouched (no selection, no preventDefault)', () => {
+  it('enter with a modifier bubbles through untouched (no selection, no preventDefault)', () => {
     const onUpdate = vi.fn()
     const { items, getItems } = createItems(['a'])
     const api = harness({ getItems, onUpdate })
@@ -344,6 +344,15 @@ describe('useListboxRoot — navigation intent', () => {
     const down = keydown('ArrowDown')
     api.content.props.value.onKeydown(down)
     expect(down.defaultPrevented).toBe(false)
+    expect(api.highlightedElement.value).toBe(items[0].ref)
+  })
+
+  it('highlightFirstItem ignores a getNavigationIntent override (an internal move, not a keydown)', async () => {
+    const { items, getItems } = createItems(['a', 'b', 'c'])
+    const api = harness({ getItems, getNavigationIntent: event => event.key === 'PageUp' ? null : undefined })
+    api.highlightItem('c')
+    api.highlightFirstItem()
+    await nextTick()
     expect(api.highlightedElement.value).toBe(items[0].ref)
   })
 

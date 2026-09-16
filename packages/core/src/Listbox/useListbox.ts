@@ -479,8 +479,12 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
 
   function highlightFirstItem() {
     nextTick(() => {
+      // An internal move, not a keydown: it never consults the consumer's
+      // `getNavigationIntent` (an override opting PageUp out must not break the
+      // filter's highlight-on-type). The synthetic event still feeds the
+      // range-select and virtualizer paths as before.
       const event = new KeyboardEvent('keydown', { key: 'PageUp' })
-      onKeydownNavigation(event)
+      navigate('first', event)
     })
   }
 
@@ -522,7 +526,11 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
 
   /** Returns `true` when the key was handled, so a shell prevents the default only then. */
   function onKeydownNavigation(event: KeyboardEvent): boolean {
-    const intent = getNavigationIntent(event)
+    return navigate(getNavigationIntent(event), event)
+  }
+
+  /** Runs a resolved intent: `'select'` takes the Enter path, the four moves shift the highlight. */
+  function navigate(intent: ListboxNavigationIntent | undefined, event: KeyboardEvent): boolean {
     if (!intent)
       return false
     if (intent === 'select')
