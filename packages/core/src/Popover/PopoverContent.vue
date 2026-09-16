@@ -34,9 +34,14 @@ rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    v-slot="{ present }"
+    :present="forceMount || rootContext.open.value"
+    :force-mount="forceMount || !rootContext.unmountOnHide.value"
+  >
     <PopoverContentModal
       v-if="rootContext.modal.value"
+      v-show="present"
       v-bind="forwarded"
       :ref="forwardRef"
     >
@@ -44,6 +49,7 @@ rootContext.contentId ||= useId(undefined, 'reka-popover-content')
     </PopoverContentModal>
     <PopoverContentNonModal
       v-else
+      v-show="present"
       v-bind="forwarded"
       :ref="forwardRef"
     >
