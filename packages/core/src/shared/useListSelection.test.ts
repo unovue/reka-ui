@@ -147,6 +147,25 @@ describe('useListSelection — model plumbing', () => {
     expect(s.lastChangeDetails.value.isCanceled).toBe(true)
   })
 
+  it('cancel of a ref-owned default-value write keeps the range anchor', () => {
+    // A ref-owned `undefined` model reads its default through the fallback, so
+    // a write of that default is a real write, not a no-op re-press: cancelled,
+    // it must not move the anchor.
+    const model = ref<string | string[] | undefined>(undefined)
+    const s = useListSelection<string>({
+      modelValue: model,
+      defaultValue: ['a'],
+      multiple: true,
+      selectionBehavior: 'replace',
+      onBeforeUpdate: (_value, details) => details.cancel(),
+    })
+    expect(s.modelValue.value).toEqual(['a'])
+    expect(s.select('a')).toBe(false)
+    expect(s.lastChangeDetails.value.isCanceled).toBe(true)
+    expect(s.firstValue.value).toBeUndefined()
+    expect(model.value).toBeUndefined()
+  })
+
   it('imperative select reports reason "imperative-action"', () => {
     const s = useListSelection<string>()
     s.select('a')

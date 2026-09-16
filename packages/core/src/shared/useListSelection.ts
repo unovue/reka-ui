@@ -111,9 +111,13 @@ export function useListSelection<T, R extends string = string>(options: UseListS
         // committed replace, and a re-press of the current selection (a no-op
         // write, so `setState` reports `false` for it as well). A cancelled
         // `beforeUpdate` keeps the previous anchor with the previous selection.
+        // A no-op write returns before touching `lastChangeDetails`; a cancelled
+        // one records its details, which tells the two `false`s apart (a
+        // ref-owned `undefined` model treats a write of its default as real).
         const isCurrent = isSameSelection([val], toRaw(modelValue.value))
+        const detailsBefore = lastChangeDetails.value
         const changed = setState([val], reason, event)
-        if (changed || isCurrent)
+        if (changed || (isCurrent && lastChangeDetails.value === detailsBefore))
           firstValue.value = val
         return changed
       }
