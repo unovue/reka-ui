@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { CollapsibleChangeReason } from './useCollapsible'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
-import { toRefs } from 'vue'
+import { computed, toRefs } from 'vue'
 import { createContext, useForwardExpose } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
@@ -57,7 +57,7 @@ defineSlots<{
 }>()
 
 const { disabled, unmountOnHide } = toRefs(props)
-const { open, root, context } = useCollapsible({
+const { open, setOpen, root, context } = useCollapsible({
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   disabled,
@@ -70,7 +70,13 @@ const { open, root, context } = useCollapsible({
 context.contentId = ''
 provideCollapsibleRootContext(context)
 
-defineExpose({ open })
+// Writable like the previous `useVModel` ref: assigning requests a change through the model.
+defineExpose({
+  open: computed({
+    get: () => open.value,
+    set: value => setOpen(value, 'imperative-action'),
+  }),
+})
 useForwardExpose()
 </script>
 

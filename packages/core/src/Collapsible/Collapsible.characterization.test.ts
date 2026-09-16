@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from './index'
 
 function mountCollapsible(props = {}, triggerProps = {}, contentProps = {}) {
@@ -37,6 +37,25 @@ describe('collapsible characterization', () => {
     expect(wrapper.find('button').attributes('data-disabled')).toBe('')
     await wrapper.find('button').trigger('click')
     expect(wrapper.emitted('update:open')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('opens through the writable exposed open ref', async () => {
+    const root = ref<{ open: boolean }>()
+    const onUpdate = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(CollapsibleRoot, { 'ref': root, 'onUpdate:open': onUpdate }, () => [
+        h(CollapsibleTrigger, null, () => 'Toggle'),
+        h(CollapsibleContent, null, () => 'Content'),
+      ]),
+    }))
+    expect(root.value!.open).toBe(false)
+
+    root.value!.open = true
+    await nextTick()
+    expect(root.value!.open).toBe(true)
+    expect(wrapper.find('button').attributes('aria-expanded')).toBe('true')
+    expect(onUpdate).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'imperative-action' }))
     wrapper.unmount()
   })
 
