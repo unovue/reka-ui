@@ -110,8 +110,13 @@ function handleKeydown(event: KeyboardEvent) {
   // Don't move between inputs mid-composition, arrow keys are used for IME candidate navigation
   if (isComposing.value || event.isComposing)
     return
+  // In OTP mode, arrow keys must not move past the first empty input
+  const firstEmptyInputIdx = getFirstEmptyInputIndex()
+  const itemsArray = firstEmptyInputIdx === -1
+    ? inputElements.value
+    : inputElements.value.slice(0, firstEmptyInputIdx + 1)
   useArrowNavigation(event, getActiveElement() as HTMLElement, undefined, {
-    itemsArray: inputElements.value,
+    itemsArray,
     focus: true,
     loop: false,
     arrowKeyOptions: 'horizontal',
@@ -143,15 +148,43 @@ function handleDelete(event: KeyboardEvent) {
   }
 }
 
+/**
+ * In OTP mode, inputs should be filled one by one without skipping middle inputs.
+ * Returns the index of the first empty input, or `-1` when not in OTP mode / all filled.
+ */
+function getFirstEmptyInputIndex() {
+  if (!context.otp.value)
+    return -1
+  return inputElements.value.findIndex((_, idx) =>
+    context.currentModelValue.value[idx] === ''
+    || context.currentModelValue.value[idx] === undefined,
+  )
+}
+
+function getEarlierEmptyInput() {
+  const firstEmptyInputIdx = getFirstEmptyInputIndex()
+  if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < props.index)
+    return inputElements.value[firstEmptyInputIdx]
+  return undefined
+}
+
+function handleMousedown(event: MouseEvent) {
+  const earlierEmptyInput = getEarlierEmptyInput()
+  if (!earlierEmptyInput)
+    return
+  // Prevent this input from receiving focus and send it to the first empty one instead
+  event.preventDefault()
+  earlierEmptyInput.focus()
+}
+
 function handleFocus(event: FocusEvent) {
-  // In OTP mode, inputs should be filled one by one without skipping middle inputs
-  if (context.otp.value) {
-    const firstEmptyInputIdx = inputElements.value.findIndex((_, idx) =>
-      context.currentModelValue.value[idx] === ''
-      || context.currentModelValue.value[idx] === undefined,
-    )
-    if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < props.index) {
-      inputElements.value[firstEmptyInputIdx].focus()
+  // Focus arriving from a sibling input (e.g. `Tab`) must not be redirected,
+  // otherwise keyboard users get trapped inside the pin input (#2943)
+  const isFromSiblingInput = inputElements.value.includes(event.relatedTarget as HTMLInputElement)
+  if (!isFromSiblingInput) {
+    const earlierEmptyInput = getEarlierEmptyInput()
+    if (earlierEmptyInput) {
+      earlierEmptyInput.focus()
       return
     }
   }
@@ -261,6 +294,7 @@ onUnmounted(() => {
     @keydown.left.right.up.down.home.end="handleKeydown"
     @keydown.backspace="handleBackspace"
     @keydown.delete="handleDelete"
+    @mousedown="handleMousedown"
     @focus="handleFocus"
     @blur="handleBlur"
     @paste="handlePaste"
