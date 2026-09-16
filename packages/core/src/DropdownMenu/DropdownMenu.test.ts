@@ -74,7 +74,7 @@ describe('given default DropdownMenu', () => {
     expect(wrapper.find('button').exists()).toBeTruthy()
   })
 
-  it('should only render aria-controls while content is mounted', async () => {
+  it('should only render aria-controls while open', async () => {
     const trigger = wrapper.find('button')
     expect(trigger.attributes('aria-controls')).toBeUndefined()
 
@@ -175,5 +175,56 @@ describe('given DropdownMenu tab navigation', () => {
     fireEvent(submenu, event)
 
     expect(event.defaultPrevented).toBe(true)
+  })
+})
+
+describe('given a DropdownMenu with a submenu', () => {
+  const DropdownMenuSubAriaTest = defineComponent({
+    components: {
+      DropdownMenuContent,
+      DropdownMenuItem,
+      DropdownMenuPortal,
+      DropdownMenuRoot,
+      DropdownMenuSub,
+      DropdownMenuSubContent,
+      DropdownMenuSubTrigger,
+      DropdownMenuTrigger,
+    },
+    props: {
+      subOpen: Boolean,
+    },
+    template: `
+      <DropdownMenuRoot :open="true" :modal="false">
+        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+        <DropdownMenuPortal disabled>
+          <DropdownMenuContent>
+            <DropdownMenuSub :open="subOpen">
+              <DropdownMenuSubTrigger>Sub Trigger</DropdownMenuSubTrigger>
+              <DropdownMenuPortal disabled>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem>Sub Item</DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
+    `,
+  })
+
+  it('should only render aria-controls on the sub trigger while the submenu is open', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(DropdownMenuSubAriaTest, { attachTo: document.body, props: { subOpen: false } })
+    await nextTick()
+    const subTrigger = wrapper.find('[id^="reka-menu-sub-trigger"]')
+    expect(subTrigger.exists()).toBe(true)
+    expect(subTrigger.attributes('aria-controls')).toBeUndefined()
+
+    await wrapper.setProps({ subOpen: true })
+    await nextTick()
+    const contentId = subTrigger.attributes('aria-controls')
+    expect(contentId).toBeTruthy()
+    expect(document.getElementById(contentId!)).not.toBeNull()
+    wrapper.unmount()
   })
 })

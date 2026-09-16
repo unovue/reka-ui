@@ -40,7 +40,7 @@ describe('given default Combobox', () => {
     expect(wrapper.html()).toContain('Placeholder...')
   })
 
-  it('should only render aria-controls while content is mounted', async () => {
+  it('should only render aria-controls while open', async () => {
     const input = wrapper.find('[role="combobox"]')
     const trigger = wrapper.find('button')
     expect(input.attributes('aria-controls')).toBeUndefined()
@@ -1352,5 +1352,29 @@ describe('combobox highlight scrolling with popper positioning', () => {
 
     expect(getHighlightedElement(input).textContent).toContain('Alpha')
     expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' })
+  })
+})
+
+describe('given a Combobox rendered open', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  it('should point aria-controls at the content without toggling', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { open: true }, () => [
+        h(ComboboxInput),
+        h(ComboboxContent, () => h(ComboboxItem, { value: 'a' }, () => 'A')),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const contentId = wrapper.find('[role="combobox"]').attributes('aria-controls')
+    expect(contentId).toBeTruthy()
+    expect(document.getElementById(contentId!)).not.toBeNull()
+    wrapper.unmount()
   })
 })

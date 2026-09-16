@@ -41,7 +41,7 @@ describe('given default Autocomplete', () => {
     expect(input.element.value).toBe('')
   })
 
-  it('should only render aria-controls while content is mounted', async () => {
+  it('should only render aria-controls while open', async () => {
     const trigger = wrapper.find('button')
     expect(input.attributes('aria-controls')).toBeUndefined()
 

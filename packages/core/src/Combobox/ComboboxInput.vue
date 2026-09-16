@@ -3,7 +3,7 @@ import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
 import { useVModel } from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
-import { useComposing } from '@/shared'
+import { useComposing, useId } from '@/shared'
 
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
@@ -23,6 +23,7 @@ const props = withDefaults(defineProps<ComboboxInputProps>(), {
 const emits = defineEmits<ComboboxInputEmits>()
 
 const rootContext = injectComboboxRootContext()
+rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
 const listboxContext = injectListboxRootContext()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 
@@ -160,7 +161,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :auto-focus="autoFocus"
     :disabled="disabled"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
+    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
     aria-autocomplete="list"
     role="combobox"
     autocomplete="off"
