@@ -8,6 +8,14 @@ import {
 } from '..'
 
 const open = ref(false)
+const rejectOpen = ref(false)
+
+function handleOpenChange(value: boolean) {
+  if (value && rejectOpen.value)
+    return
+
+  open.value = value
+}
 </script>
 
 <template>
@@ -17,7 +25,16 @@ const open = ref(false)
   >
     {{ open ? 'Close' : 'Open' }}
   </button>
-  <ContextMenuRoot v-model:open="open">
+  <button
+    id="reject-open-button"
+    @click="rejectOpen = true"
+  >
+    Reject open
+  </button>
+  <ContextMenuRoot
+    :open="open"
+    @update:open="handleOpenChange"
+  >
     <ContextMenuTrigger id="context-menu-trigger">
       Right click for contextmenu
     </ContextMenuTrigger>

@@ -66,10 +66,16 @@ function clearLongPress() {
   window.clearTimeout(longPressTimer.value)
 }
 
-function handleOpen(event: MouseEvent | PointerEvent) {
+async function handleOpen(event: MouseEvent | PointerEvent) {
   isPointerOpen.value = true
   point.value = { x: event.clientX, y: event.clientY }
   rootContext.onOpenChange(true)
+
+  await nextTick()
+
+  // A controlled parent may have refused the request.
+  if (!rootContext.open.value)
+    isPointerOpen.value = false
 }
 
 async function handleContextMenu(event: PointerEvent) {

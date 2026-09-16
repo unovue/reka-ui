@@ -140,5 +140,40 @@ describe('given controlled ContextMenu', () => {
           .toContain('translate(98px, 100px)')
       })
     })
+
+    it('should reset pointer position when a controlled open request is rejected', async () => {
+      const trigger = wrapper.find('#context-menu-trigger')
+
+      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+        x: 100,
+        y: 100,
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 140,
+        width: 100,
+        height: 40,
+        toJSON: () => {},
+      } as DOMRect)
+
+      await wrapper.find('#reject-open-button').trigger('click')
+
+      await trigger.trigger('contextmenu', {
+        clientX: 300,
+        clientY: 400,
+      })
+
+      expect(queryByRole(document.body, 'menu')).toBeNull()
+
+      await wrapper.find('#open-button').trigger('click')
+
+      const menu = await findByRole(document.body, 'menu')
+      const menuWrapper = menu.parentElement
+
+      await waitFor(() => {
+        expect(menuWrapper?.style.transform)
+          .toContain('translate(98px, 100px)')
+      })
+    })
   })
 })
