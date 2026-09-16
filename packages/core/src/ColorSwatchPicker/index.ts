@@ -15,3 +15,6 @@ export {
   type ColorSwatchPickerRootEmits,
   type ColorSwatchPickerRootProps,
 } from './ColorSwatchPickerRoot.vue'
+
+export { useColorSwatchPicker } from './useColorSwatchPicker'
+export type { ColorSwatchPickerChangeReason, ColorSwatchPickerItemIndicatorState, ColorSwatchPickerItemState, ColorSwatchPickerItemSwatchState, ColorSwatchPickerRootState, UseColorSwatchPickerProps, UseColorSwatchPickerReturn } from './useColorSwatchPicker'

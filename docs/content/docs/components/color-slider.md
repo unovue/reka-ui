@@ -63,6 +63,37 @@ import {
 </template>
 ```
 
+## Headless composable
+
+These composables are experimental. Reactive options accept refs or getters. Pass a writable `modelValue` ref for ref-owned state, or use `onUpdate` to handle controlled updates. `onBeforeUpdate(value, details)` can synchronously call `details.cancel()` to prevent a change. Component users can use `@before-update:model-value` for the same behavior.
+
+`useColorSlider()` exposes precise channel state and root, track, and thumb surfaces. Call it in setup (or an effect scope). The surfaces compose with `SliderRoot`, `SliderTrack`, and `SliderThumb`, which supply pointer interaction, keyboard navigation, and positioning.
+
+```vue
+<script setup>
+import { SliderRoot, SliderThumb, SliderTrack, useColorSlider } from 'reka-ui'
+
+const { sliderProps, track, thumb, setValue } = useColorSlider({
+  channel: 'hue',
+  defaultValue: '#ff0000',
+})
+setValue([120])
+</script>
+
+<template>
+  <SliderRoot v-bind="sliderProps">
+    <SliderTrack v-bind="track.attrs.value" />
+    <SliderThumb v-bind="thumb.attrs.value" />
+  </SliderRoot>
+</template>
+```
+
+Binding these surfaces to plain elements does not supply Slider interactions. Delegated updates have the `slider` reason; Slider's model event does not supply a native event. Hidden color form inputs remain in `ColorSliderRoot`.
+
+`root.attrs` contains only DOM attributes. `sliderProps` contains the bindings for the child component shown above.
+
+`onColorUpdate` receives accepted color objects and `onChange` / `onChangeEnd` receive interaction and commit notifications. These callbacks work without a component `emit` function. Returned state refs are read-only; use the exposed actions to request changes.
+
 ## API Reference
 
 ### ColorSliderRoot
