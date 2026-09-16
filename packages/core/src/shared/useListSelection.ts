@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { By } from './compare'
 import type { BaseChangeReason, ChangeEventDetails } from './types'
-import { ref, toValue } from 'vue'
+import { ref, toRaw, toValue } from 'vue'
 import { compare, valueComparator } from './compare'
 import { useControllableState } from './useControllableState'
 
@@ -49,7 +49,7 @@ export interface UseListSelectionReturn<T, R extends string = string> {
   select: (value: T, reason?: R | BaseChangeReason, event?: Event) => boolean
   /** Whether `value` is (part of) the current selection, matched with `by`. */
   isSelected: (value: T) => boolean
-  /** Anchor of a `'replace'` selection — the value the last replace selected (range selections start here). */
+  /** Anchor of a `'replace'` selection — the value the last non-cancelled replace press targeted (range selections start here). */
   firstValue: Ref<T | undefined>
   isControlled: ComputedRef<boolean>
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<R>>>
@@ -107,10 +107,13 @@ export function useListSelection<T, R extends string = string>(options: UseListS
         return setState(modelArray, reason, event)
       }
       else {
-        const changed = setState([val], reason, event)
-        // The range anchor follows a committed replace only — a cancelled
+        // The range anchor follows every press that is not cancelled: a
+        // committed replace, and a re-press of the current selection (a no-op
+        // write, so `setState` reports `false` for it as well). A cancelled
         // `beforeUpdate` keeps the previous anchor with the previous selection.
-        if (changed)
+        const isCurrent = isSameSelection([val], toRaw(modelValue.value))
+        const changed = setState([val], reason, event)
+        if (changed || isCurrent)
           firstValue.value = val
         return changed
       }

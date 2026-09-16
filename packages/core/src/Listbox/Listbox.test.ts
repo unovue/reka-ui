@@ -379,9 +379,9 @@ describe('given horizontal Listbox with a filter', () => {
     }), { attachTo: document.body })
     const filter = wrapper.find('input')
     const items = wrapper.findAll('[role=option]')
-    // The mount highlight lands on the first item (nothing is selected).
-    await nextTick()
-    expect(items[0].attributes('data-highlighted')).toBe('')
+    // The mount highlight lands on the first item (nothing is selected). It is
+    // queued through two `nextTick`s inside `highlightSelected`, so wait for it.
+    await vi.waitFor(() => expect(items[0].attributes('data-highlighted')).toBe(''))
     // ArrowRight would map to `next` in a horizontal listbox; the caret keeps it
     // (no highlight move, default not prevented). End still navigates.
     const right = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true, bubbles: true })
@@ -395,6 +395,27 @@ describe('given horizontal Listbox with a filter', () => {
     await filter.trigger('keydown', { key: 'ArrowLeft' })
     expect(items[2].attributes('data-highlighted')).toBe('')
     expect(items[1].attributes('data-highlighted')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
+describe('given multiple `replace` Listbox with an initial selection', () => {
+  it('pressing the selected item anchors a following Shift+Arrow range on it', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { multiple: true, selectionBehavior: 'replace', defaultValue: ['b'] }, () =>
+          h(ListboxContent, { 'aria-label': 'Letters' }, () => ['a', 'b', 'c', 'd'].map(value => h(ListboxItem, { value }, () => value))))
+      },
+    }), { attachTo: document.body })
+    const items = wrapper.findAll('[role=option]')
+    await vi.waitFor(() => expect(items[1].attributes('data-highlighted')).toBe(''))
+    // Re-pressing the current selection emits nothing, but it still anchors the range.
+    await items[1].trigger('click')
+    await wrapper.find('[role=listbox]').trigger('keydown', { key: 'ArrowDown', shiftKey: true })
+    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([
+      ['b', 'c'],
+    ])
     wrapper.unmount()
   })
 })

@@ -77,6 +77,13 @@ describe('useListSelection — multiple', () => {
     expect(onUpdate).toHaveBeenCalledTimes(2)
   })
 
+  it('replace: re-pressing the current value still anchors the range on it', () => {
+    const s = useListSelection<string>({ multiple: true, selectionBehavior: 'replace', defaultValue: ['b'] })
+    expect(s.firstValue.value).toBeUndefined()
+    expect(s.select('b')).toBe(false)
+    expect(s.firstValue.value).toBe('b')
+  })
+
   it('reads `multiple` reactively', () => {
     const multiple = ref(false)
     const s = useListSelection<string>({ multiple })
