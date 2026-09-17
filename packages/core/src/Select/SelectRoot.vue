@@ -62,11 +62,13 @@ export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
 interface SelectOption { value: any, disabled?: boolean, textContent: string }
+
+const openSelects = new Set<(open: boolean) => void>()
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
 
@@ -152,6 +154,25 @@ function getOption(value: SelectOption['value']) {
     .find(option => valueComparator(value, option.value, props.by))
 }
 
+function handleOpenChange(value: boolean) {
+  open.value = value
+
+  if (value) {
+    openSelects.forEach((onOpenChange) => {
+      if (onOpenChange !== handleOpenChange)
+        onOpenChange(false)
+    })
+  }
+}
+
+onMounted(() => {
+  openSelects.add(handleOpenChange)
+})
+
+onUnmounted(() => {
+  openSelects.delete(handleOpenChange)
+})
+
 provideSelectRootContext({
   triggerElement,
   onTriggerChange: (node) => {
@@ -170,9 +191,7 @@ provideSelectRootContext({
   open,
   multiple,
   required,
-  onOpenChange: (value) => {
-    open.value = value
-  },
+      onOpenChange: handleOpenChange,
   dir,
   triggerPointerDownPosRef,
   disabled,
