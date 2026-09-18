@@ -188,6 +188,25 @@ describe('numberField', () => {
       expect(input.value).toBe('1')
     })
 
+    it('should tolerate minor movement after a touch hold starts', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
     it('should cancel a touch press on pointercancel', async () => {
       vi.useFakeTimers()
       const { input, increment } = setup({ defaultValue: 0 })
