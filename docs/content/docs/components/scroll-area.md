@@ -36,7 +36,7 @@ Import all parts and piece them together.
 
 ```vue
 <script setup>
-import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui'
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
 </script>
 
 <template>
@@ -66,6 +66,12 @@ Contains all the parts of a scroll area.
 The viewport area of the scroll area.
 
 <!-- @include: @/meta/ScrollAreaViewport.md -->
+
+### Virtualizer
+
+Virtualizes large collections within the viewport. Place `ScrollAreaVirtualizer` inside `ScrollAreaViewport` and render each item through its default slot.
+
+<!-- @include: @/meta/ScrollAreaVirtualizer.md -->
 
 ### Scrollbar
 
@@ -110,6 +116,38 @@ The corner where both vertical and horizontal scrollbars meet.
 <!-- @include: @/meta/ScrollAreaCorner.md -->
 
 ## Examples
+
+### Virtualized list
+
+Use `ScrollAreaVirtualizer` for large collections. Only visible items and the configured overscan are mounted.
+
+```vue
+<script setup lang="ts">
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
+
+const items = Array.from({ length: 10_000 }, (_, index) => `Item ${index + 1}`)
+</script>
+
+<template>
+  <ScrollAreaRoot class="h-80 overflow-hidden">
+    <ScrollAreaViewport class="h-full">
+      <ScrollAreaVirtualizer
+        v-slot="{ option }"
+        :options="items"
+        :estimate-size="32"
+      >
+        <div class="h-8">
+          {{ option }}
+        </div>
+      </ScrollAreaVirtualizer>
+    </ScrollAreaViewport>
+    <ScrollAreaScrollbar orientation="vertical">
+      <ScrollAreaThumb />
+    </ScrollAreaScrollbar>
+  </ScrollAreaRoot>
+</template>
+```
+
 ### Custom Scroll
 Use the exposed `viewport` to modify / or set the scroll position outside default methods
 ```vue line=4,18
