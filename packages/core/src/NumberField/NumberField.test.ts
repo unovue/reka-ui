@@ -2,8 +2,9 @@ import type { NumberFieldRootProps } from './NumberFieldRoot.vue'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
 import NumberField from './story/_NumberField.vue'
@@ -21,6 +22,28 @@ function setup(props?: NumberFieldRootProps) {
 }
 
 const kbd = useKbd()
+
+async function dispatchPointerEvent(
+  target: EventTarget,
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
+  init: MouseEventInit & { pointerId?: number, pointerType?: string } = {},
+) {
+  await nextTick()
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    ...init,
+  })
+  Object.defineProperties(event, {
+    pointerId: { value: init.pointerId ?? 1 },
+    pointerType: { value: init.pointerType ?? 'touch' },
+  })
+  target.dispatchEvent(event)
+  await nextTick()
+  return event
+}
+
 describe('numberField', () => {
   beforeEach(() => {
     // @ts-expect-error aXe throwing error complaining getComputedStyle
@@ -28,6 +51,10 @@ describe('numberField', () => {
       display: '',
     })
     document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -89,6 +116,119 @@ describe('numberField', () => {
     expect(input.value).toBe('3')
     await userEvent.click(decrement)
     expect(input.value).toBe('0')
+  })
+
+  describe('with pointer hold controls', () => {
+    it('should preserve immediate mouse activation', async () => {
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      const pointerDown = await dispatchPointerEvent(increment, 'pointerdown', { pointerType: 'mouse' })
+      expect(pointerDown.defaultPrevented).toBe(true)
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointerup', { pointerType: 'mouse' })
+      expect(input.value).toBe('1')
+    })
+
+    it('should activate a touch tap on release', async () => {
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      const pointerDown = await dispatchPointerEvent(increment, 'pointerdown')
+      expect(pointerDown.defaultPrevented).toBe(true)
+      expect(input.value).toBe('0')
+
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('1')
+    })
+
+    it('should ignore a touch press while disabled', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0, disabled: true })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      expect(increment).not.toHaveAttribute('data-pressed')
+
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('0')
+    })
+
+    it('should cancel a touch press when movement exceeds the tolerance', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 21, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 21, clientY: 10 })
+
+      expect(input.value).toBe('0')
+    })
+
+    it('should repeat a stationary touch press after the hold delay', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      await vi.advanceTimersByTimeAsync(399)
+      expect(input.value).toBe('0')
+
+      await vi.advanceTimersByTimeAsync(1)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup')
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
+    it('should stop an active touch hold when movement exceeds the tolerance', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 21, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(120)
+      expect(input.value).toBe('1')
+    })
+
+    it('should tolerate minor movement after a touch hold starts', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
+    it('should cancel a touch press on pointercancel', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      await dispatchPointerEvent(window, 'pointercancel')
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(input.value).toBe('0')
+    })
   })
 
   it('should increase and decrease based on keyboard navigation on input', async () => {
