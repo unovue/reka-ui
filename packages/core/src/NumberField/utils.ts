@@ -59,9 +59,10 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
   // Handle press event, modified version of useMousePressed
   const onPressStart = (event: PointerEvent) => {
     // Only handle left clicks, and ignore events that bubbled through portals.
-    if (event.button !== 0 || isPressed.value)
+    if (event.button !== 0 || isPressed.value || disabled.value)
       return
 
+    event.preventDefault()
     activePointerId = event.pointerId
     activePointerType = event.pointerType
     startX = event.clientX
@@ -70,7 +71,6 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
     isPressed.value = true
 
     if (event.pointerType === 'mouse') {
-      event.preventDefault()
       holdTriggered = true
       if (trigger())
         scheduleRepeat(HOLD_DELAY)

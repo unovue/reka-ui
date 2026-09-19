@@ -134,11 +134,23 @@ describe('numberField', () => {
       const { input, increment } = setup({ defaultValue: 0 })
 
       const pointerDown = await dispatchPointerEvent(increment, 'pointerdown')
-      expect(pointerDown.defaultPrevented).toBe(false)
+      expect(pointerDown.defaultPrevented).toBe(true)
       expect(input.value).toBe('0')
 
       await dispatchPointerEvent(window, 'pointerup')
       expect(input.value).toBe('1')
+    })
+
+    it('should ignore a touch press while disabled', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0, disabled: true })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      expect(increment).not.toHaveAttribute('data-pressed')
+
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('0')
     })
 
     it('should cancel a touch press when movement exceeds the tolerance', async () => {
