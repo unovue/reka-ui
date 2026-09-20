@@ -112,7 +112,7 @@
     "@tsconfig/node24": "^24.0.0",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^24.0.13",
-    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitejs/plugin-vue": "^6.0.9",
     "@vitest/coverage-istanbul": "^3.2.7",
     "@vue/server-renderer": "^3.5.17",
     "@vue/test-utils": "^2.5.0",
