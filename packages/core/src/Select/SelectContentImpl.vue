@@ -190,8 +190,8 @@ function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Tab')
     event.preventDefault()
 
-  // prevent "Space" taken account into handleTypeahead
-  if (event.code === 'Space')
+  // Space selects the item when no search is in progress; otherwise it's part of the search
+  if (event.code === 'Space' && search.value === '')
     return
 
   if (!isModifierKey && event.key.length === 1)
