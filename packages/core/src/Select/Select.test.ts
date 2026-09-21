@@ -367,6 +367,17 @@ describe('given Select with options containing spaces', () => {
 
     expect(document.activeElement?.textContent).toContain('New Jersey')
   })
+
+  it('should prevent scrolling when Space extends the typeahead search', async () => {
+    (wrapper.findAll('[role=option]')[0].element as HTMLElement).focus()
+    await fireEvent.keyDown(document.activeElement!, { key: 'n', code: 'KeyN' })
+    await nextTick()
+
+    const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
 })
 
 describe('given SelectContent cleanup', () => {
