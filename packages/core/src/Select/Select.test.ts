@@ -344,6 +344,31 @@ describe('given Select with object type', async () => {
   })
 })
 
+describe('given Select with options containing spaces', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Select>>
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Select, { attachTo: document.body, props: { options: ['New York', 'Newark', 'New Jersey'] } })
+    await wrapper.find('button').trigger('pointerdown', {
+      button: 0,
+      ctrlKey: false,
+    })
+    await nextTick()
+  })
+
+  it('should include Space in the typeahead search once typing has started', async () => {
+    (wrapper.findAll('[role=option]')[0].element as HTMLElement).focus()
+
+    for (const [key, code] of [['n', 'KeyN'], ['e', 'KeyE'], ['w', 'KeyW'], [' ', 'Space'], ['j', 'KeyJ']]) {
+      await fireEvent.keyDown(document.activeElement!, { key, code })
+      await nextTick()
+    }
+
+    expect(document.activeElement?.textContent).toContain('New Jersey')
+  })
+})
+
 describe('given SelectContent cleanup', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
