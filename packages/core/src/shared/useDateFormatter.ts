@@ -98,19 +98,38 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
     return new DateFormatter(locale.value, { ...opts, weekday: length }).format(date)
   }
 
+  /**
+   * Resolves the internal `'AM'` / `'PM'` token for a date.
+   *
+   * The token is derived from the 24-hour clock rather than from the formatted
+   * `dayPeriod` part, because locales render that part in forms that cannot be
+   * matched reliably: `p. m.` in `es-ES`, `午後` in `ja-JP`, `下午` in `zh-CN`,
+   * `오후` in `ko-KR`, and so on. Matching on those strings made every such
+   * locale silently fall back to `'AM'`, which then made editing the hour
+   * segment convert a PM time into an AM one.
+   *
+   * `hourCycle`, `hour12` and `numberingSystem` are pinned so the hour always
+   * comes back as a Latin-digit 0-23 value, whatever `opts` the caller passed
+   * to `useDateFormatter`. `hour12` in particular takes precedence over
+   * `hourCycle` in `Intl`, so it has to be cleared rather than just overridden.
+   *
+   * Pass a `ZonedDateTime`'s own `timeZone` so the hour is read on that value's
+   * clock rather than the runtime's local one.
+   *
+   * @see https://github.com/unovue/reka-ui/issues/2956
+   */
   function dayPeriod(date: Date, timeZone?: string) {
     const parts = new DateFormatter(locale.value, {
       ...opts,
       hour: 'numeric',
-      minute: 'numeric',
+      hourCycle: 'h23',
+      hour12: undefined,
+      numberingSystem: 'latn',
       ...(timeZone ? { timeZone } : {}),
     }).formatToParts(date)
-    const value = parts.find(p => p.type === 'dayPeriod')?.value
-    // Day period can be "AM"/"PM" or "am"/"pm" or "a.m."/"p.m." in some locales
-    if (value === 'PM' || value === 'pm' || value === 'p.m.')
-      return 'PM'
+    const hour = Number(parts.find(p => p.type === 'hour')?.value)
 
-    return 'AM'
+    return !Number.isNaN(hour) && hour >= 12 ? 'PM' : 'AM'
   }
 
   const defaultPartOptions: DateFormatterOptions = {

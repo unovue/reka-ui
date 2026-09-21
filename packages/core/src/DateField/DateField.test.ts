@@ -1217,3 +1217,45 @@ describe('useDateField – characterization tests (coverage gaps)', () => {
     })
   })
 })
+
+/**
+ * Locales whose formatted day period is not `AM`/`PM` used to fall through to
+ * the `AM` token, so an afternoon value rendered as AM and editing the hour
+ * converted it to the morning.
+ *
+ * @see https://github.com/unovue/reka-ui/issues/2956
+ */
+describe('dayPeriod across locales', () => {
+  const afternoon = new CalendarDateTime(2024, 1, 20, 15, 30)
+  const morning = new CalendarDateTime(2024, 1, 20, 9, 30)
+  const locales = ['en-US', 'nl-NL', 'es-ES', 'ja-JP', 'zh-CN', 'ko-KR', 'ar-EG', 'hi-IN']
+
+  describe.each(locales)('%s', (locale) => {
+    it('shows PM for an afternoon value', async () => {
+      const { getByTestId } = setup({ dateFieldProps: { modelValue: afternoon, locale, hourCycle: 12 } })
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('shows AM for a morning value', async () => {
+      const { getByTestId } = setup({ dateFieldProps: { modelValue: morning, locale, hourCycle: 12 } })
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('keeps an afternoon value in the afternoon when the hour is retyped', async () => {
+      const { getByTestId, user, rerender } = setup({
+        dateFieldProps: { modelValue: afternoon, locale, hourCycle: 12 },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data, locale, hourCycle: 12 } })
+          },
+        },
+      })
+
+      await user.click(getByTestId('hour'))
+      await user.keyboard('{3}')
+
+      expect(getByTestId('value').textContent).toBe(afternoon.set({ hour: 15 }).toString())
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+  })
+})
