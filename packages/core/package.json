@@ -115,7 +115,7 @@
     "@vitejs/plugin-vue": "^6.0.9",
     "@vitest/coverage-istanbul": "^3.2.7",
     "@vue/server-renderer": "^3.5.17",
-    "@vue/test-utils": "^2.5.0",
+    "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.7.0",
     "jsdom": "^26.1.0",
     "size-limit": "^12.0.1",
