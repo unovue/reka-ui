@@ -20,7 +20,7 @@ export type Formatter = {
   fullMonthAndYear: (date: Date, options?: DateFormatterOptions) => string
   fullMonth: (date: Date, options?: DateFormatterOptions) => string
   fullYear: (date: Date, options?: DateFormatterOptions) => string
-  dayPeriod: (date: Date) => string
+  dayPeriod: (date: Date, timeZone?: string) => string
   part: (dateObj: DateValue, type: Intl.DateTimeFormatPartTypes, options?: DateFormatterOptions) => string
   toParts: (date: DateValue, options?: DateFormatterOptions) => Intl.DateTimeFormatPart[]
   getMonths: () => { label: string, value: number }[]
@@ -98,11 +98,12 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
     return new DateFormatter(locale.value, { ...opts, weekday: length }).format(date)
   }
 
-  function dayPeriod(date: Date) {
+  function dayPeriod(date: Date, timeZone?: string) {
     const parts = new DateFormatter(locale.value, {
       ...opts,
       hour: 'numeric',
       minute: 'numeric',
+      ...(timeZone ? { timeZone } : {}),
     }).formatToParts(date)
     const value = parts.find(p => p.type === 'dayPeriod')?.value
     // Day period can be "AM"/"PM" or "am"/"pm" or "a.m."/"p.m." in some locales
