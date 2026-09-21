@@ -190,6 +190,14 @@ function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Tab')
     event.preventDefault()
 
+  // Space selects the item when no search is in progress; otherwise it's part of the search
+  if (event.code === 'Space') {
+    if (search.value === '')
+      return
+    // SelectItem skips Space during a search, so prevent the scroll here
+    event.preventDefault()
+  }
+
   if (!isModifierKey && event.key.length === 1)
     handleTypeaheadSearch(event.key, getItems())
 
