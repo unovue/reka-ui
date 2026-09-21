@@ -133,6 +133,15 @@ describe('given default Select', () => {
       expect(wrapper.html()).toContain('Apple')
     })
 
+    it('should select the focused item with Space', async () => {
+      const selection = wrapper.findAll('[role=option]')[1]
+      ;(selection.element as HTMLElement).focus()
+      await selection.trigger('keydown', { key: ' ', code: 'Space' })
+      await nextTick()
+
+      expect(valueBox.html()).toContain('Banana')
+    })
+
     describe('after selecting a value', () => {
       beforeEach(async () => {
         const selection = wrapper.findAll('[role=option]')[1];
@@ -208,6 +217,16 @@ describe('given Select with multiple props', async () => {
 
     it('should show the modal content', () => {
       expect(wrapper.html()).toContain('Apple')
+    })
+
+    it('should toggle the focused item with Space', async () => {
+      const selection = wrapper.findAll('[role=option]')[1]
+      ;(selection.element as HTMLElement).focus()
+      await selection.trigger('keydown', { key: ' ', code: 'Space' })
+      await nextTick()
+
+      expect(valueBox.html()).toContain('Banana')
+      expect(selection.attributes('data-state')).toBe('checked')
     })
 
     describe('after selecting a value', () => {
