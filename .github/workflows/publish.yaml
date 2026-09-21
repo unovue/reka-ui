@@ -31,20 +31,15 @@ jobs:
           # heap. Without this the build dies with "Reached heap limit".
           NODE_OPTIONS: --max-old-space-size=8192
 
-      # Run a action to publish docs
+      # cloudflare/pages-action was deprecated and its repository removed;
+      # wrangler-action is Cloudflare's supported replacement.
       - name: Publish to Cloudflare Pages
-        uses: cloudflare/pages-action@v1.5.0
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_UNOVUE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_UNOVUE_ACCOUNT_ID }}
-          projectName: reka-ui
-          directory: .vitepress/dist
-          # Optional: Enable this if you want to have GitHub Deployments triggered
+          # Creates a GitHub Deployment for the Pages deploy
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: Switch what branch you are publishing to.
-          # By default this will be the branch which triggered this workflow
-          # TODO: remove the following branch target after merging to main
-          branch: main
-          # Optional: Change the working directory
           workingDirectory: docs
-          wranglerVersion: '3'
+          # Deploy as the production branch regardless of the triggering ref
+          command: pages deploy .vitepress/dist --project-name=reka-ui --branch=main
