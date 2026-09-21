@@ -41,5 +41,8 @@ jobs:
           # Creates a GitHub Deployment for the Pages deploy
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           workingDirectory: docs
+          # The lockfile lives at the repo root, so auto-detection falls back to
+          # npm, which can't install into a pnpm workspace (`link:` deps)
+          packageManager: pnpm
           # Deploy as the production branch regardless of the triggering ref
           command: pages deploy .vitepress/dist --project-name=reka-ui --branch=main
