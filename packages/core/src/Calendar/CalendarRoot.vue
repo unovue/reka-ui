@@ -251,15 +251,42 @@ const {
   isDateUnavailable,
 })
 
-watch(modelValue, (_modelValue) => {
-  if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue.at(-1)
-    if (lastValue && !isEqualDay(placeholder.value, lastValue))
-      onPlaceholderChange(lastValue)
+function isSameSelectedDate(left: DateValue | DateValue[] | undefined, right: DateValue | DateValue[] | undefined) {
+  if (left === right)
+    return true
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
+      return false
+
+    return left.every((item, index) => {
+      const other = right[index]
+      return !!other && isEqualDay(item, other)
+    })
   }
-  else if (!Array.isArray(_modelValue) && _modelValue && !isEqualDay(placeholder.value, _modelValue)) {
-    onPlaceholderChange(_modelValue)
-  }
+
+  if (!left || !right)
+    return false
+
+  return isEqualDay(left, right)
+}
+
+function focusedDate(value: DateValue | DateValue[] | undefined) {
+  if (Array.isArray(value))
+    return value.at(-1)
+
+  return value
+}
+
+// Only follow placeholder when the selected day changes. A new DateValue
+// for the same day is a common render result and must not undo month paging.
+watch(modelValue, (value, previous) => {
+  if (isSameSelectedDate(previous, value))
+    return
+
+  const nextFocused = focusedDate(value)
+  if (nextFocused && !isEqualDay(placeholder.value, nextFocused))
+    onPlaceholderChange(nextFocused)
 })
 
 function onDateChange(value: DateValue) {
