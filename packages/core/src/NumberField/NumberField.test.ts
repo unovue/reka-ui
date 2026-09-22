@@ -397,6 +397,23 @@ describe('numberField', () => {
       expect(input.value).toBe('13 ')
     })
 
+    it('should still reject invalid insertions while showing units', async () => {
+      const { input, user } = setup({
+        defaultValue: 13,
+        formatOptions: {
+          style: 'unit',
+          unit: 'minute',
+          unitDisplay: 'short',
+        },
+      })
+
+      await user.click(input)
+      input.setSelectionRange(2, 2)
+      await user.keyboard('x')
+
+      expect(input.value).toBe('13 min')
+    })
+
     it('should change format based on reactive options', async () => {
       const { input, rerender } = setup({
         defaultValue: 5,
