@@ -414,6 +414,16 @@ describe('numberField', () => {
       expect(input.value).toBe('13 min')
     })
 
+    it('should validate beforeinput events that carry no inputType', async () => {
+      const { input } = setup({ defaultValue: 13 })
+
+      input.value = '13x'
+      const event = new Event('beforeinput', { bubbles: true, cancelable: true })
+      input.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+
     it('should change format based on reactive options', async () => {
       const { input, rerender } = setup({
         defaultValue: 5,
