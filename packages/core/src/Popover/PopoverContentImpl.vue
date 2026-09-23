@@ -57,6 +57,16 @@ watch(() => props.present, (present, wasPresent) => {
     return
   emits('closeAutoFocus', new CustomEvent('focusScope.autoFocusOnUnmount', { cancelable: true }))
 })
+
+// Kept-mounted content (`unmountOnHide: false`) already restored focus when it
+// was hidden, so removing it later (e.g. `v-if`) must not move focus again.
+function handleUnmountAutoFocus(event: Event) {
+  if (!props.present) {
+    event.preventDefault()
+    return
+  }
+  emits('closeAutoFocus', event)
+}
 </script>
 
 <template>
@@ -66,7 +76,7 @@ watch(() => props.present, (present, wasPresent) => {
     :trapped="trapFocus"
     :present="present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
-    @unmount-auto-focus="emits('closeAutoFocus', $event)"
+    @unmount-auto-focus="handleUnmountAutoFocus"
   >
     <DismissableLayer
       as-child
