@@ -222,6 +222,13 @@ watchEffect(async (cleanupFn) => {
     dispatchMountAutoFocus(container, previouslyFocusedElement)
 
   cleanupFn(() => {
+    // A hidden scope (`present: false`) already handed focus back when it was
+    // hidden, so removing it later must not move focus again.
+    if (props.present === false) {
+      focusScopesStack.remove(focusScope)
+      return
+    }
+
     const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
     const unmountEventHandler = (ev: Event) => {
       emits('unmountAutoFocus', ev)

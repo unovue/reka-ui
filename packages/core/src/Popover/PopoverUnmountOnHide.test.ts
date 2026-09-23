@@ -23,12 +23,12 @@ function pressEscape(target: Element | null = document.activeElement) {
 
 const Popovers = defineComponent({
   components: { PopoverContent, PopoverRoot, PopoverTrigger },
-  props: { modal: Boolean, unmountOnHide: Boolean, onInteractOutside: Function, onOpenAutoFocus: Function },
+  props: { modal: Boolean, unmountOnHide: Boolean, showFirst: { type: Boolean, default: true }, onInteractOutside: Function, onOpenAutoFocus: Function, onCloseAutoFocus: Function },
   template: `<div>
   <button data-testid="outside">outside</button>
-  <PopoverRoot :modal="modal" :unmount-on-hide="unmountOnHide">
+  <PopoverRoot v-if="showFirst" :modal="modal" :unmount-on-hide="unmountOnHide">
     <PopoverTrigger data-testid="trigger-1">One</PopoverTrigger>
-    <PopoverContent data-testid="content-1" @interact-outside="onInteractOutside" @open-auto-focus="onOpenAutoFocus">
+    <PopoverContent data-testid="content-1" @interact-outside="onInteractOutside" @open-auto-focus="onOpenAutoFocus" @close-auto-focus="onCloseAutoFocus">
       <button>Inside one</button>
     </PopoverContent>
   </PopoverRoot>
@@ -64,15 +64,17 @@ describe.each([
   let wrapper: VueWrapper
   const onInteractOutside = vi.fn()
   const onOpenAutoFocus = vi.fn()
+  const onCloseAutoFocus = vi.fn()
 
   beforeEach(async () => {
     document.body.innerHTML = ''
     document.body.style.cssText = ''
     onInteractOutside.mockClear()
     onOpenAutoFocus.mockClear()
+    onCloseAutoFocus.mockClear()
     wrapper = mount(Popovers, {
       attachTo: document.body,
-      props: { modal, unmountOnHide, onInteractOutside, onOpenAutoFocus },
+      props: { modal, unmountOnHide, onInteractOutside, onOpenAutoFocus, onCloseAutoFocus },
     })
     await settle()
   })
@@ -133,13 +135,30 @@ describe.each([
     expect(isHidden('content-1')).toBe(true)
   })
 
+  it('should not move focus when closed content is later removed', async () => {
+    get('trigger-1').focus()
+    get('trigger-1').click()
+    await settle()
+    pressEscape()
+    await settle()
+    const closeAutoFocusCalls = onCloseAutoFocus.mock.calls.length
+
+    get('outside').focus()
+    await wrapper.setProps({ showFirst: false })
+    await settle()
+    expect(document.activeElement).toBe(get('outside'))
+    expect(onCloseAutoFocus).toHaveBeenCalledTimes(closeAutoFocusCalls)
+  })
+
   it('should close the open popover on outside click', async () => {
     get('trigger-1').click()
     await settle()
-    get('outside').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
-    get('outside').click()
-    await settle()
-    expect(isHidden('content-1')).toBe(true)
+    // The outside listener attaches on a timer, so retry until it is live.
+    await vi.waitFor(() => {
+      get('outside').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+      get('outside').click()
+      expect(isHidden('content-1')).toBe(true)
+    })
   })
 })
 

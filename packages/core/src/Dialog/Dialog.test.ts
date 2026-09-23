@@ -74,6 +74,21 @@ const NonModalUnmountOnHideDialogTest = defineComponent({
 </DialogRoot>`,
 })
 
+const RemovableUnmountOnHideDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  props: { modal: Boolean, show: { type: Boolean, default: true } },
+  template: `<div>
+  <input data-testid="elsewhere">
+  <DialogRoot v-if="show" :modal="modal" :unmount-on-hide="false">
+    <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+    <DialogContent>
+      <DialogTitle>${TITLE_TEXT}</DialogTitle>
+      <DialogClose>${CLOSE_TEXT}</DialogClose>
+    </DialogContent>
+  </DialogRoot>
+</div>`,
+})
+
 // Reproduces https://github.com/unovue/reka-ui/issues/2660 — the content is
 // nested *inside* the overlay (a common centering pattern), so pointerdown
 // events from controls in the content bubble up to the overlay.
@@ -659,5 +674,24 @@ describe('given a Dialog with content nested inside the overlay', () => {
 
       expect(document.body.innerHTML).toContain(CLOSE_TEXT)
     })
+  })
+})
+
+describe.each([true, false])('given a closed Dialog with unmountOnHide=false and modal=%s', (modal) => {
+  it('should not move focus when the hidden content is removed', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(RemovableUnmountOnHideDialogTest, { attachTo: document.body, props: { modal } })
+    await fireEvent.click(wrapper.get('button').element)
+    await sleep(10)
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await sleep(10)
+
+    const elsewhere = wrapper.get<HTMLInputElement>('[data-testid="elsewhere"]').element
+    elsewhere.focus()
+    await wrapper.setProps({ show: false })
+    await sleep(10)
+
+    expect(document.activeElement).toBe(elsewhere)
+    wrapper.unmount()
   })
 })
