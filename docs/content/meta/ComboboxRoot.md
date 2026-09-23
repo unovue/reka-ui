@@ -122,6 +122,13 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the Combobox content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to improve performance by not remounting the content on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -182,6 +189,7 @@
 | `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple) | `boolean` | No | `false` |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
 | `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
+| `unmountOnHide` | When set to false, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |
 
 **Events**
 
