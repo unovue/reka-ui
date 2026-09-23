@@ -51,6 +51,20 @@ const DialogTest = defineComponent({
 </DialogRoot>`,
 })
 
+const TabindexDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay />
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <input aria-label="Second" tabindex="2">
+    <DialogClose tabindex="1">${CLOSE_TEXT}</DialogClose>
+    <input aria-label="Default">
+  </DialogContent>
+</DialogRoot>`,
+})
+
 const UnmountOnHideDialogTest = defineComponent({
   components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
   template: `<DialogRoot :unmount-on-hide="false">
@@ -89,6 +103,15 @@ const NestedContentDialogTest = defineComponent({
     </DialogContent>
   </DialogOverlay>
 </DialogRoot>`,
+})
+
+describe('given a Dialog with tabindex values', () => {
+  it('should auto-focus the tabbable element with the lowest positive tabindex', async () => {
+    renderAndClickDialogTrigger(TabindexDialogTest)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
+  })
 })
 
 describe('given a Dialog with unmountOnHide=false', () => {
