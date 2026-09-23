@@ -9,9 +9,8 @@ import {
   isToday,
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
-import { getDaysInMonth, toDate } from '@/date'
+import { toDate } from '@/date'
 import { useKbd } from '@/shared'
-import { getSelectableCells } from './utils'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -83,8 +82,15 @@ const isOutsideVisibleView = computed(() =>
 const isDisabled = computed(() => rootContext.isDateDisabled(props.day) || (rootContext.disableDaysOutsideCurrentView.value && isOutsideView.value))
 
 const isFocusedDate = computed(() => {
-  return !rootContext.disabled.value && isSameDay(props.day, rootContext.placeholder.value)
+  if (isOutsideView.value || isDisabled.value)
+    return false
+  if (!rootContext.disabled.value && rootContext.isPlaceholderFocusable.value && isSameDay(props.day, rootContext.placeholder.value))
+    return true
+  if ((!rootContext.hasSelectedDate.value || rootContext.isSelectedDateDisabled.value) && !rootContext.isPlaceholderFocusable.value)
+    return rootContext.firstFocusableDate.value && isSameDay(props.day, rootContext.firstFocusableDate.value)
+  return false
 })
+
 const isSelectedDate = computed(() => rootContext.isDateSelected(props.day))
 
 function changeDate(date: DateValue) {
@@ -105,6 +111,10 @@ function handleClick() {
 function handleArrowKey(e: KeyboardEvent) {
   if (isDisabled.value)
     return
+  // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
+  // let them bubble so parent listeners can react (e.g. submit a form).
+  if ((e.code === kbd.ENTER || e.code === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
@@ -112,101 +122,52 @@ function handleArrowKey(e: KeyboardEvent) {
   const sign = rootContext.dir.value === 'rtl' ? -1 : 1
   switch (e.code) {
     case kbd.ARROW_RIGHT:
-      shiftFocus(currentElement.value, sign)
+      shiftFocus(props.day, sign)
       break
     case kbd.ARROW_LEFT:
-      shiftFocus(currentElement.value, -sign)
+      shiftFocus(props.day, -sign)
       break
     case kbd.ARROW_UP:
-      shiftFocus(currentElement.value, -indexIncrementation)
+      shiftFocus(props.day, -indexIncrementation)
       break
     case kbd.ARROW_DOWN:
-      shiftFocus(currentElement.value, indexIncrementation)
+      shiftFocus(props.day, indexIncrementation)
       break
     case kbd.ENTER:
     case kbd.SPACE_CODE:
       changeDate(props.day)
   }
 
-  function shiftFocus(node: HTMLElement, add: number) {
-    const allCollectionItems: HTMLElement[] = getSelectableCells(parentElement)
-    if (!allCollectionItems.length)
+  function shiftFocus(day: DateValue, add: number) {
+    const candidateDayValue = day.add({ days: add })
+
+    if ((rootContext.minValue.value && candidateDayValue.compare(rootContext.minValue.value) < 0) || (rootContext.maxValue.value && candidateDayValue.compare(rootContext.maxValue.value) > 0))
       return
 
-    const index = allCollectionItems.indexOf(node)
-    const newIndex = index + add
-
-    if (newIndex >= 0 && newIndex < allCollectionItems.length) {
-      if (allCollectionItems[newIndex].hasAttribute('data-disabled')) {
-        shiftFocus(allCollectionItems[newIndex], add)
+    const candidateDay = parentElement.querySelector<HTMLElement>(`[data-value='${candidateDayValue.toString()}']:not([data-outside-view])`)
+    // If the date is not found it means we must change the page
+    if (!candidateDay) {
+      if (add > 0) {
+        if (rootContext.isNextButtonDisabled())
+          return
+        rootContext.nextPage()
       }
-      allCollectionItems[newIndex].focus()
-      return
-    }
-
-    if (newIndex < 0) {
-      if (rootContext.isPrevButtonDisabled())
-        return
-      rootContext.prevPage()
+      else {
+        if (rootContext.isPrevButtonDisabled())
+          return
+        rootContext.prevPage()
+      }
       nextTick(() => {
-        const newCollectionItems: HTMLElement[] = getSelectableCells(parentElement)
-        if (!newCollectionItems.length)
-          return
-        if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
-        // Placeholder is set to first month of the new page
-          const numberOfDays = getDaysInMonth(rootContext.placeholder.value)
-          const computedIndex = numberOfDays - Math.abs(newIndex)
-          if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
-            shiftFocus(newCollectionItems[computedIndex], add)
-          }
-          newCollectionItems[
-            computedIndex
-          ].focus()
-          return
-        }
-        const computedIndex = newCollectionItems.length - Math.abs(newIndex)
-        if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
-          shiftFocus(newCollectionItems[computedIndex], add)
-        }
-        newCollectionItems[
-          computedIndex
-        ].focus()
+        shiftFocus(day, add)
       })
       return
     }
 
-    if (newIndex >= allCollectionItems.length) {
-      if (rootContext.isNextButtonDisabled())
-        return
-      rootContext.nextPage()
-      nextTick(() => {
-        const newCollectionItems: HTMLElement[] = getSelectableCells(parentElement)
-        if (!newCollectionItems.length)
-          return
-
-        if (!rootContext.pagedNavigation.value && rootContext.numberOfMonths.value > 1) {
-        // Placeholder is set to first month of the new page
-          const numberOfDays = getDaysInMonth(
-            rootContext.placeholder.value.add({ months: rootContext.numberOfMonths.value - 1 }),
-          )
-
-          const computedIndex = newIndex - allCollectionItems.length + (newCollectionItems.length - numberOfDays)
-
-          if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
-            shiftFocus(newCollectionItems[computedIndex], add)
-          }
-          newCollectionItems[computedIndex].focus()
-          return
-        }
-
-        const computedIndex = newIndex - allCollectionItems.length
-        if (newCollectionItems[computedIndex].hasAttribute('data-disabled')) {
-          shiftFocus(newCollectionItems[computedIndex], add)
-        }
-
-        newCollectionItems[computedIndex].focus()
-      })
+    if (candidateDay && candidateDay.hasAttribute('data-disabled')) {
+      return shiftFocus(candidateDayValue, add)
     }
+    rootContext.onPlaceholderChange(candidateDayValue)
+    candidateDay?.focus()
   }
 }
 </script>
@@ -214,7 +175,8 @@ function handleArrowKey(e: KeyboardEvent) {
 <template>
   <Primitive
     ref="primitiveElement"
-    v-bind="props"
+    :as="props.as"
+    :as-child="props.asChild"
     role="button"
     :aria-label="labelText"
     data-reka-calendar-cell-trigger
@@ -230,7 +192,6 @@ function handleArrowKey(e: KeyboardEvent) {
     :tabindex="isFocusedDate ? 0 : isOutsideView || isDisabled ? undefined : -1"
     @click="handleClick"
     @keydown.up.down.left.right.space.enter="handleArrowKey"
-    @keydown.enter.prevent
   >
     <slot
       :day-value="dayValue"

@@ -51,6 +51,24 @@ watch(path, () => {
     />
 
     <a
+      href="https://github.com/sponsors/zernonia"
+      target="_blank"
+      aria-label="Sponsor"
+      class="w-9 h-9 text-pink-500 bg-white border border-neutral-300 hover:bg-neutral-100 rounded-lg inline-flex items-center justify-center"
+    >
+      <Icon
+        icon="mdi:heart"
+        class="text-xl"
+      />
+    </a>
+
+    <Separator
+      class="bg-muted h-4 w-px mx-4"
+      decorative
+      orientation="vertical"
+    />
+
+    <a
       v-for="link in theme.socialLinks"
       :key="link.link"
       :href="link.link"
@@ -148,6 +166,25 @@ watch(path, () => {
                 <ThemeToggle />
               </DropdownMenuItem>
             </div>
+
+            <Separator
+              class="bg-muted h-px w-full my-2"
+              decorative
+              orientation="horizontal"
+            />
+
+            <DropdownMenuItem
+              as="a"
+              href="https://github.com/sponsors/zernonia"
+              target="_blank"
+              aria-label="Sponsor"
+              class="w-9 h-9 text-white bg-pink-500 hover:bg-pink-600 rounded inline-flex items-center justify-center"
+            >
+              <Icon
+                icon="lucide:heart"
+                class="text-base"
+              />
+            </DropdownMenuItem>
 
             <Separator
               class="bg-muted h-px w-full my-2"

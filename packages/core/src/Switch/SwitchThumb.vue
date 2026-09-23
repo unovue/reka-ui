@@ -18,7 +18,7 @@ useForwardExpose()
 
 <template>
   <Primitive
-    :data-state="rootContext.modelValue?.value ? 'checked' : 'unchecked'"
+    :data-state="rootContext.checked.value ? 'checked' : 'unchecked'"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :as-child="asChild"
     :as="as"

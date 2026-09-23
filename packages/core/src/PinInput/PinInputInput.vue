@@ -2,7 +2,7 @@
 import type { PinInputContextValue } from './PinInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { getActiveElement, useArrowNavigation } from '@/shared'
+import { getActiveElement, useArrowNavigation, useComposing } from '@/shared'
 import { injectPinInputRootContext } from './PinInputRoot.vue'
 
 export interface PinInputInputProps extends PrimitiveProps {
@@ -21,15 +21,56 @@ const props = withDefaults(defineProps<PinInputInputProps>(), {
 })
 
 const context = injectPinInputRootContext()
-const inputElements = computed(() => Array.from(context.inputElements!.value))
+const inputElements = computed(() => [...context.inputElements!.value])
 const currentValue = computed(() => context.currentModelValue.value[props.index])
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 const isOtpMode = computed(() => context.otp.value)
 const isPasswordMode = computed(() => context.mask.value)
 
+const NUMBER_REG = /^\d*$/
+const NON_NUMBER_REG = /\D/g
+
 const { primitiveElement, currentElement } = usePrimitiveElement()
+
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+  const target = event.target as HTMLInputElement
+  const value = event.data || target.value
+
+  if (context.isNumericMode.value) {
+    const filtered = value.replace(NON_NUMBER_REG, '')
+    if (!filtered) {
+      target.value = ''
+      return
+    }
+    if (filtered.length > 1) {
+      handleMultipleCharacter(filtered)
+      return
+    }
+    target.value = filtered
+    updateModelValueAt(props.index, filtered)
+    const nextEl = inputElements.value[props.index + 1]
+    if (nextEl)
+      nextEl.focus()
+    return
+  }
+
+  if (value.length > 1) {
+    handleMultipleCharacter(value)
+    return
+  }
+
+  target.value = value
+  updateModelValueAt(props.index, value)
+
+  const nextEl = inputElements.value[props.index + 1]
+  if (nextEl)
+    nextEl.focus()
+})
+
 function handleInput(event: InputEvent) {
+  if (isComposing.value || event.isComposing)
+    return
   const target = event.target as HTMLInputElement
 
   if ((event.data?.length ?? 0) > 1) {
@@ -37,12 +78,12 @@ function handleInput(event: InputEvent) {
     return
   }
 
-  if (context.isNumericMode.value && !/^\d*$/.test(target.value)) {
-    target.value = target.value.replace(/\D/g, '')
+  if (context.isNumericMode.value && !NUMBER_REG.test(target.value)) {
+    target.value = target.value.replace(NON_NUMBER_REG, '')
     return
   }
 
-  target.value = event.data ?? ''
+  target.value = event.data || target.value.slice(-1)
   updateModelValueAt(props.index, target.value)
 
   const nextEl = inputElements.value[props.index + 1]
@@ -50,17 +91,32 @@ function handleInput(event: InputEvent) {
     nextEl.focus()
 }
 
-function resetPlaceholder() {
-  const target = currentElement.value as HTMLInputElement
+function updatePlaceholder() {
   nextTick(() => {
-    if (target && !target.value)
+    const target = currentElement.value as HTMLInputElement
+    if (!target) {
+      return
+    }
+    if (!target.value && target === getActiveElement()) {
+      target.placeholder = ''
+    }
+    else {
       target.placeholder = context.placeholder.value
+    }
   })
 }
 
 function handleKeydown(event: KeyboardEvent) {
+  // Don't move between inputs mid-composition, arrow keys are used for IME candidate navigation
+  if (isComposing.value || event.isComposing)
+    return
+  // In OTP mode, arrow keys must not move past the first empty input
+  const firstEmptyInputIdx = getFirstEmptyInputIndex()
+  const itemsArray = firstEmptyInputIdx === -1
+    ? inputElements.value
+    : inputElements.value.slice(0, firstEmptyInputIdx + 1)
   useArrowNavigation(event, getActiveElement() as HTMLElement, undefined, {
-    itemsArray: inputElements.value,
+    itemsArray,
     focus: true,
     loop: false,
     arrowKeyOptions: 'horizontal',
@@ -92,16 +148,54 @@ function handleDelete(event: KeyboardEvent) {
   }
 }
 
+/**
+ * In OTP mode, inputs should be filled one by one without skipping middle inputs.
+ * Returns the index of the first empty input, or `-1` when not in OTP mode / all filled.
+ */
+function getFirstEmptyInputIndex() {
+  if (!context.otp.value)
+    return -1
+  return inputElements.value.findIndex((_, idx) =>
+    context.currentModelValue.value[idx] === ''
+    || context.currentModelValue.value[idx] === undefined,
+  )
+}
+
+function getEarlierEmptyInput() {
+  const firstEmptyInputIdx = getFirstEmptyInputIndex()
+  if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < props.index)
+    return inputElements.value[firstEmptyInputIdx]
+  return undefined
+}
+
+function handleMousedown(event: MouseEvent) {
+  const earlierEmptyInput = getEarlierEmptyInput()
+  if (!earlierEmptyInput)
+    return
+  // Prevent this input from receiving focus and send it to the first empty one instead
+  event.preventDefault()
+  earlierEmptyInput.focus()
+}
+
 function handleFocus(event: FocusEvent) {
+  // Focus arriving from a sibling input (e.g. `Tab`) must not be redirected,
+  // otherwise keyboard users get trapped inside the pin input (#2943)
+  const isFromSiblingInput = inputElements.value.includes(event.relatedTarget as HTMLInputElement)
+  if (!isFromSiblingInput) {
+    const earlierEmptyInput = getEarlierEmptyInput()
+    if (earlierEmptyInput) {
+      earlierEmptyInput.focus()
+      return
+    }
+  }
+
   const target = event.target as HTMLInputElement
   target.setSelectionRange(1, 1)
-
-  if (!target.value)
-    target.placeholder = ''
+  updatePlaceholder()
 }
 
 function handleBlur(event: FocusEvent) {
-  resetPlaceholder()
+  updatePlaceholder()
 }
 
 function handlePaste(event: ClipboardEvent) {
@@ -110,7 +204,10 @@ function handlePaste(event: ClipboardEvent) {
   if (!clipboardData)
     return
 
-  const values = clipboardData.getData('text')
+  const rawValues = clipboardData.getData('text')
+  const values = context.isNumericMode.value
+    ? rawValues.replace(NON_NUMBER_REG, '')
+    : rawValues
   handleMultipleCharacter(values)
 }
 
@@ -121,10 +218,15 @@ function handleMultipleCharacter(values: string) {
   for (let i = initialIndex; i < lastIndex; i++) {
     const input = inputElements.value[i]
     const value = values[i - initialIndex]
-    if (context.isNumericMode.value && !/^\d*$/.test(value))
-      continue
-
-    tempModelValue[i] = value
+    if (context.isNumericMode.value) {
+      const num = Number.parseInt(value)
+      if (Number.isNaN(num))
+        continue
+      tempModelValue[i] = num
+    }
+    else {
+      tempModelValue[i] = value
+    }
     input.focus()
   }
   context.modelValue.value = tempModelValue
@@ -149,7 +251,7 @@ function updateModelValueAt(index: number, value: string) {
     const num = +value
 
     if (value === '' || isNaN(num)) {
-      delete tempModelValue[index]
+      tempModelValue[index] = undefined
     }
     else {
       tempModelValue[index] = num
@@ -162,11 +264,7 @@ function updateModelValueAt(index: number, value: string) {
   context.modelValue.value = removeTrailingEmptyStrings(tempModelValue)
 }
 
-watch(currentValue, () => {
-  if (!currentValue.value) {
-    resetPlaceholder()
-  }
-})
+watch(currentValue, updatePlaceholder)
 
 onMounted(() => {
   context.onInputElementChange(currentElement.value as HTMLInputElement)
@@ -196,9 +294,12 @@ onUnmounted(() => {
     @keydown.left.right.up.down.home.end="handleKeydown"
     @keydown.backspace="handleBackspace"
     @keydown.delete="handleDelete"
+    @mousedown="handleMousedown"
     @focus="handleFocus"
     @blur="handleBlur"
     @paste="handlePaste"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </Primitive>

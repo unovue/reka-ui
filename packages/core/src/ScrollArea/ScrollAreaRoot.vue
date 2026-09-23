@@ -35,7 +35,8 @@ export interface ScrollAreaRootProps extends PrimitiveProps {
    * `auto` - means that scrollbars are visible when content is overflowing on the corresponding orientation. <br>
    * `always` - means that scrollbars are always visible regardless of whether the content is overflowing.<br>
    * `scroll` - means that scrollbars are visible when the user is scrolling along its corresponding orientation.<br>
-   * `hover` - when the user is scrolling along its corresponding orientation and when the user is hovering over the scroll area.
+   * `hover` - when the user is scrolling along its corresponding orientation and when the user is hovering over the scroll area.<br>
+   * `glimpse` - a hybrid approach that briefly shows scrollbars when the user enters the scroll area, then hides them until further interaction.
    */
   type?: ScrollType
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */

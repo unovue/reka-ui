@@ -1,0 +1,138 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/grass.css';
+
+.Icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.YearRangePicker {
+  margin-top: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e5e5;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+}
+
+.YearRangePickerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.YearRangePickerNavButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: #000000;
+  background-color: transparent;
+  cursor: pointer;
+  border-radius: 0.375rem;
+}
+
+.YearRangePickerNavButton:hover {
+  background-color: #fafaf9;
+}
+
+.YearRangePickerNavButton:focus {
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.YearRangePickerHeading {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #000000;
+}
+
+.YearRangePickerWrapper {
+  padding-top: 1rem;
+}
+
+.YearRangePickerGrid {
+  width: 100%;
+  user-select: none;
+}
+
+.YearRangePickerGridWrapper {
+  display: grid;
+  gap: 0.25rem 0;
+}
+
+.YearRangePickerGridRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.YearRangePickerCell {
+  position: relative;
+  text-align: center;
+}
+
+.YearRangePickerCellTrigger {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #000000;
+  background-color: transparent;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+
+.YearRangePickerCellTrigger:hover {
+  background-color: var(--grass-5);
+}
+
+.YearRangePickerCellTrigger:focus {
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.YearRangePickerCellTrigger[data-disabled] {
+  color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.YearRangePickerCellTrigger[data-selected] {
+  background-color: var(--grass-10);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.YearRangePickerCellTrigger[data-highlighted] {
+  background-color: var(--grass-5);
+}
+
+.YearRangePickerCellTrigger[data-unavailable] {
+  color: rgba(0, 0, 0, 0.3);
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+.YearRangePickerCellTrigger::before {
+  content: '';
+  position: absolute;
+  top: 0.25rem;
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  display: none;
+}
+
+.YearRangePickerCellTrigger[data-today]::before {
+  display: block;
+  background-color: var(--grass-9);
+}
+
+.YearRangePickerCellTrigger[data-selected]::before {
+  background-color: #ffffff;
+}

@@ -1,4 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
+
+<llm-exclude>
 
 <SlotsTable :data="[
   {
@@ -9,7 +11,7 @@
   {
     'name': 'grid',
     'description': '',
-    'type': 'Grid<DateValue>[]'
+    'type': 'Grid&lt;DateValue&gt;[]'
   },
   {
     'name': 'weekDays',
@@ -32,3 +34,19 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `date` |  | `DateValue` |
+| `grid` |  | `Grid<DateValue>[]` |
+| `weekDays` |  | `string[]` |
+| `weekStartsOn` |  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
+| `locale` |  | `string` |
+| `fixedWeeks` |  | `boolean` |
+
+</llm-only>

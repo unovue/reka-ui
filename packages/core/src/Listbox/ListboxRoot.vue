@@ -16,7 +16,7 @@ type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<Event | null | undefined>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
   virtualHighlightHook: EventHook<any>
   by?: string | ((a: T, b: T) => boolean)
@@ -27,7 +27,7 @@ type ListboxRootContext<T> = {
 
   onLeave: (event: Event) => void
   onEnter: (event: Event) => void
-  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean) => void
+  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean, focus?: boolean) => void
   onKeydownNavigation: (event: KeyboardEvent) => void
   onKeydownEnter: (event: KeyboardEvent) => void
   onKeydownTypeAhead: (event: KeyboardEvent) => void
@@ -39,8 +39,17 @@ type ListboxRootContext<T> = {
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
+/** Controls highlight scrolling while a parent composite is being positioned. */
+type ListboxHighlightScrollContext = {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+  onHighlightScrollRequest: (scroll: (() => void) | undefined) => void
+}
+
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
-  /** The controlled value of the listbox. Can be binded with with `v-model`. */
+  /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
   /** The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox */
   defaultValue?: T | Array<T>
@@ -79,6 +88,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { createEventHook, useVModel } from '@vueuse/core'
+import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -98,11 +108,18 @@ defineSlots<{
 }>()
 
 const { multiple, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
-const { getItems } = useCollection<{ value: T }>({ isProvider: true })
+const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({
+  suppressHighlightScroll: ref(false),
+  onHighlightScrollRequest: () => {},
+})
 
 const isFormControl = useFormControl(currentElement)
 
@@ -149,7 +166,7 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<Event | null | undefined>()
+const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<T>()
 
@@ -157,22 +174,39 @@ function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
 }
 
-function changeHighlight(el: HTMLElement, scrollIntoView = true) {
+function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
   if (!el)
     return
 
   highlightedElement.value = el
-  if (focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
-    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  const suppressHighlightScroll = highlightScrollContext?.suppressHighlightScroll.value ?? false
+  if (focus ?? focusable.value) {
+    if (suppressHighlightScroll)
+      highlightedElement.value.focus({ preventScroll: true })
+    else
+      highlightedElement.value.focus()
+  }
 
-  const highlightedItem = getItems().find(i => i.ref === el)
+  if (suppressHighlightScroll) {
+    highlightScrollContext?.onHighlightScrollRequest(scrollIntoView
+      ? () => {
+          const element = highlightedElement.value
+          if (element?.isConnected)
+            element.scrollIntoView({ block: 'nearest' })
+        }
+      : undefined)
+  }
+  else if (scrollIntoView) {
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  }
+
+  const highlightedItem = getItem(el)
   emits('highlight', highlightedItem)
 }
 
 function highlightItem(value: T) {
   if (isVirtual.value) {
+    // @ts-expect-error known type issue https://github.com/vueuse/vueuse/issues/4610
     virtualHighlightHook.trigger(value)
   }
   else {
@@ -186,6 +220,11 @@ function highlightItem(value: T) {
 
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
+    // Modifier combos (e.g. Ctrl+Enter) are not handled here —
+    // let them bubble so parent listeners can react (e.g. submit a form).
+    if (event.ctrlKey || event.metaKey || event.altKey)
+      return
+
     event.preventDefault()
     event.stopPropagation()
 
@@ -210,7 +249,9 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
       const values = collection.map(i => i.value)
       modelValue.value = [...values]
       event.preventDefault()
-      changeHighlight(collection[collection.length - 1].ref)
+      const lastItem = collection.at(-1)
+      if (lastItem)
+        changeHighlight(lastItem.ref)
     }
     else if (!isMetaKey) {
       const el = handleTypeaheadSearch(event.key, getItems())
@@ -308,9 +349,9 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
     let lastValue = collection.find(i => i.ref === targetEl)?.value
 
     if (event.key === kbd.END)
-      lastValue = collection[collection.length - 1].value
+      lastValue = collection.at(-1)?.value
     else if (event.key === kbd.HOME)
-      lastValue = collection[0].value
+      lastValue = collection[0]?.value
 
     if (!lastValue || !firstValue.value)
       return
@@ -320,27 +361,49 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
   }
 }
 
-async function highlightSelected(event?: Event) {
+async function highlightSelected(event?: Event, scroll = true) {
+  // highlightSelected is called inside a watch with immediate set to true.
+  // This results in code execution during SSR.
+  // Ensure this code only runs in a browser environment, since it performs
+  // DOM-only side effects (focus, scrollIntoView, synthetic KeyboardEvent).
+  if (!isClient)
+    return
   await nextTick()
   if (isVirtual.value) {
-    // Trigger on nextTick for Virtualizer to be mounted
-    virtualFocusHook.trigger(event)
+    // Trigger on nextTick for Virtualizer to be mounted.
+    // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
+    // its roving-tabindex target without focusing/scrolling — otherwise a
+    // virtualized Listbox below the fold would pull the page to it on load.
+    virtualFocusHook.trigger({ event, scroll })
   }
   else {
     const collection = getCollectionItem()
     const item = collection.find(i => i.dataset.state === 'checked')
+    // On the initial (mount) highlight we only set the roving-tabindex target.
+    // Focusing/scrolling here would scroll the page to a Listbox the user never
+    // interacted with (e.g. one below the fold). Later highlights scroll as before.
+    const focus = scroll ? undefined : false
     if (item)
-      changeHighlight(item)
+      changeHighlight(item, scroll, focus)
     else if (collection.length)
-      changeHighlight(collection[0])
+      changeHighlight(collection[0], scroll, focus)
   }
 }
+
+// `false` until the initial (mount) modelValue highlight has been queued.
+// Flipped synchronously in the watcher so the "is this the mount highlight?"
+// decision never depends on nextTick ordering, which differs between a client
+// mount and SSR hydration. The intent travels with the call as an argument
+// rather than via a shared flag released on a later tick.
+let hasHighlightedOnMount = false
 
 // watch for only programmatic changes
 watch(modelValue, () => {
   if (!isUserAction.value) {
+    const scroll = hasHighlightedOnMount
+    hasHighlightedOnMount = true
     nextTick(() => {
-      highlightSelected()
+      highlightSelected(undefined, scroll)
     })
   }
 }, { immediate: true, deep: true })

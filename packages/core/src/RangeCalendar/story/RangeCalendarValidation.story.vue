@@ -55,6 +55,13 @@ const maxValue = new CalendarDate(2024, 2, 20)
         :max-value="maxValue"
       />
     </Variant>
+
+    <Variant title="Maximum Days">
+      <RangeCalendar
+        :default-value="defaultValue"
+        :maximum-days="5"
+      />
+    </Variant>
   </Story>
 </template>
 ..

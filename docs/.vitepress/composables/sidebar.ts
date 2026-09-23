@@ -231,8 +231,10 @@ export interface SidebarLink {
   docFooterText?: string
 }
 
+const STARTS_WITH_SLASH_RE = /^\//
+
 function ensureStartingSlash(path: string): string {
-  return /^\//.test(path) ? path : `/${path}`
+  return STARTS_WITH_SLASH_RE.test(path) ? path : `/${path}`
 }
 
 /**
@@ -336,7 +338,7 @@ export function hasActiveLink(
 }
 
 function addBase(items: SidebarItem[], _base?: string): SidebarItem[] {
-  return [...items].map((_item) => {
+  return Array.from(items, (_item) => {
     const item = { ..._item }
     const base = item.base || _base
     if (base && item.link)

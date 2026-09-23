@@ -14,6 +14,9 @@ export interface TabsRootContext {
   activationMode: 'automatic' | 'manual'
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
+  contentIds: Ref<Set<StringOrNumber>>
+  registerContent: (value: StringOrNumber) => void
+  unregisterContent: (value: StringOrNumber) => void
 }
 
 export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extends PrimitiveProps {
@@ -55,7 +58,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { ref, toRefs } from 'vue'
+import { ref, shallowRef, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
@@ -82,6 +85,7 @@ const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'
 })
 
 const tabsList = ref<HTMLElement>()
+const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
 
 provideTabsRootContext({
   modelValue,
@@ -94,6 +98,15 @@ provideTabsRootContext({
   activationMode: props.activationMode,
   baseId: useId(undefined, 'reka-tabs'),
   tabsList,
+  contentIds,
+  registerContent: (value: StringOrNumber) => {
+    contentIds.value = new Set([...contentIds.value, value])
+  },
+  unregisterContent: (value: StringOrNumber) => {
+    const newSet = new Set(contentIds.value)
+    newSet.delete(value)
+    contentIds.value = newSet
+  },
 })
 </script>
 

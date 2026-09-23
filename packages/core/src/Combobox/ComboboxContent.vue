@@ -28,10 +28,16 @@ rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    v-slot="{ present }"
+    :present="forceMount || rootContext.open.value"
+    :force-mount="forceMount || !rootContext.unmountOnHide.value"
+  >
     <ComboboxContentImpl
+      v-show="rootContext.unmountOnHide.value || present"
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
+      :present="rootContext.unmountOnHide.value || present"
     >
       <slot />
     </ComboboxContentImpl>

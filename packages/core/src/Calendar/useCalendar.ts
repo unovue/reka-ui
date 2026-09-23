@@ -4,9 +4,9 @@
 
 import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat } from '@/date'
+import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { isEqualMonth, isSameDay } from '@internationalized/date'
+import { isEqualMonth, isSameDay, isSameMonth } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
 import { createMonths, getDaysInMonth, isAfter, isBefore, toDate } from '@/date'
 import { useDateFormatter } from '@/shared'
@@ -14,7 +14,7 @@ import { useDateFormatter } from '@/shared'
 export type UseCalendarProps = {
   locale: Ref<string>
   placeholder: Ref<DateValue>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
   minValue: Ref<DateValue | undefined>
@@ -71,9 +71,26 @@ export function useCalendarState(props: UseCalendarStateProps) {
     },
   )
 
+  const hasSelectedDate = computed(() => {
+    return Array.isArray(props.date.value) ? props.date.value.length > 0 : !!props.date.value
+  })
+
+  const isSelectedDateDisabled = computed(() => {
+    if (Array.isArray(props.date.value)) {
+      if (!props.date.value.length)
+        return false
+      return props.date.value.some(dateObj => props.isDateDisabled?.(dateObj))
+    }
+    if (!props.date.value)
+      return false
+    return !!props.isDateDisabled?.(props.date.value)
+  })
+
   return {
     isDateSelected,
     isInvalid,
+    hasSelectedDate,
+    isSelectedDateDisabled,
   }
 }
 
@@ -141,7 +158,7 @@ export function useCalendar(props: UseCalendarProps) {
     if (props.disabled.value)
       return true
 
-    const lastPeriodInView = grid.value[grid.value.length - 1].value
+    const lastPeriodInView = grid.value.at(-1)!.value
 
     if (!nextPageFunc && !props.nextPage.value) {
       const firstPeriodOfNextPage = lastPeriodInView.add({ months: 1 }).set({ day: 1 })
@@ -319,7 +336,7 @@ export function useCalendar(props: UseCalendarProps) {
     }
 
     const startMonth = toDate(grid.value[0].value)
-    const endMonth = toDate(grid.value[grid.value.length - 1].value)
+    const endMonth = toDate(grid.value.at(-1)!.value)
 
     const startMonthName = formatter.fullMonth(startMonth, headingFormatOptions.value)
     const endMonthName = formatter.fullMonth(endMonth, headingFormatOptions.value)
@@ -327,14 +344,35 @@ export function useCalendar(props: UseCalendarProps) {
     const endMonthYear = formatter.fullYear(endMonth, headingFormatOptions.value)
 
     const content
-    = startMonthYear === endMonthYear
-      ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
-      : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
+      = startMonthYear === endMonthYear
+        ? `${startMonthName} - ${endMonthName} ${endMonthYear}`
+        : `${startMonthName} ${startMonthYear} - ${endMonthName} ${endMonthYear}`
 
     return content
   })
 
   const fullCalendarLabel = computed(() => `${props.calendarLabel.value ?? 'Event Date'}, ${headingValue.value}`)
+
+  const isPlaceholderFocusable = computed(() => {
+    return !(isDateDisabled(props.placeholder.value) || isDateUnavailable(props.placeholder.value) || isOutsideVisibleView(props.placeholder.value))
+  })
+
+  const firstFocusableDate = computed(() => {
+    for (const month of grid.value) {
+      if (props.minValue.value && isBefore(month.value, props.minValue.value))
+        continue
+
+      const daysInMonth = getDaysInMonth(month.value)
+      const startDay = props.minValue.value && isSameMonth(props.minValue.value, month.value) ? props.minValue.value.day : 1
+
+      for (let day = startDay; day <= daysInMonth; day++) {
+        const date = month.value.set({ day })
+        if (isDateDisabled(date) || isDateUnavailable(date))
+          continue
+        return date
+      }
+    }
+  })
 
   return {
     isDateDisabled,
@@ -350,5 +388,7 @@ export function useCalendar(props: UseCalendarProps) {
     prevPage,
     headingValue,
     fullCalendarLabel,
+    isPlaceholderFocusable,
+    firstFocusableDate,
   }
 }

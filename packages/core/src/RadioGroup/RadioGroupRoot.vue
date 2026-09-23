@@ -24,7 +24,7 @@ export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
 }
 export type RadioGroupRootEmits = {
   /** Event handler called when the radio group value changes */
-  'update:modelValue': [payload: string]
+  'update:modelValue': [payload: AcceptableValue]
 }
 
 interface RadioGroupRootContext {

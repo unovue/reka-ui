@@ -102,10 +102,11 @@ function handleFocus(event: FocusEvent) {
     if (!entryFocusEvent.defaultPrevented) {
       const items = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
       const activeItem = items.find(item => item.getAttribute('data-active') === '')
+      const highlightedItem = items.find(item => item.getAttribute('data-highlighted') === '')
       const currentItem = items.find(
         item => item.id === currentTabStopId.value,
       )
-      const candidateItems = [activeItem, currentItem, ...items].filter(
+      const candidateItems = [activeItem, highlightedItem, currentItem, ...items].filter(
         Boolean,
       ) as typeof items
       focusFirst(candidateItems, props.preventScrollOnEntryFocus)

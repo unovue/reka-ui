@@ -23,11 +23,11 @@ In addition to semantics, there are behaviors that are expected from different t
 
 With many built-in form controls, the native HTML `label` element is designed to provide semantic meaning and context for corresponding `input` elements. For non-form control elements, or for custom controls like those provided by Reka UI, [WAI-ARIA provides a specification](https://www.w3.org/TR/wai-aria-1.2/#namecalculation) for how to provide accessible names and descriptions to those controls.
 
-Where possible, Reka UI include abstractions to make labelling our controls simple. The [`Label`](../components/label) primitive is designed to work with many of our controls. Ultimately it's up to you to provide those labels so that users have the proper context when navigating your application.
+Where possible, Reka UI includes abstractions to make labelling our controls simple. The [`Label`](../components/label) primitive is designed to work with many of our controls. Ultimately it's up to you to provide those labels so that users have the proper context when navigating your application.
 
 ## Keyboard Navigation
 
-Many complex components, like [`Tabs`](../components/tabs) and [`Dialog`](../components/dialog), come with expectations from users on how to interact with their content using a keyboard or other non-mouse input modalities. Reka UI provide basic keyboard support in accordance with the [WAI-ARIA authoring practices](https://www.w3.org/TR/wai-aria-practices-1.2/).
+Many complex components, like [`Tabs`](../components/tabs) and [`Dialog`](../components/dialog), come with expectations from users on how to interact with their content using a keyboard or other non-mouse input modalities. Reka UI provides basic keyboard support in accordance with the [WAI-ARIA authoring practices](https://www.w3.org/TR/wai-aria-practices-1.2/).
 
 ## Focus Management
 

@@ -64,9 +64,11 @@ import { ConfigProvider } from 'reka-ui'
 </template>
 ```
 
-## Hydration issue (Vue < 3.5)
+## Hydration issue
 
-We expose a temporary workaround to allow current Nuxt (with version >3.10) project fix the current hydration issue by using [`useId`](https://nuxt.com/docs/api/composables/use-id) provided by Nuxt.
+`ConfigProvider` can accept a custom `useId` function for frameworks that need to provide their own SSR-stable ID source. Reka UI uses this function before Vue's native `useId`, so every primitive that generates accessibility IDs follows the same app-provided source.
+
+This is useful in Nuxt projects where prerendered HTML and client hydration can use different Vue app ID prefixes. Pass Nuxt's [`useId`](https://nuxt.com/docs/api/composables/use-id) through `ConfigProvider` so Reka-generated IDs stay stable across server and client rendering.
 
 > Inspired by [Headless UI](https://github.com/tailwindlabs/headlessui/pull/2959)
 

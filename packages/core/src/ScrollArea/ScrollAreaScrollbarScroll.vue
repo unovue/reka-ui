@@ -44,10 +44,7 @@ const visible = computed(() => state.value !== 'hidden')
 
 watchEffect((onCleanup) => {
   if (state.value === 'idle') {
-    const timeId = window.setTimeout(
-      () => dispatch('HIDE'),
-      rootContext.scrollHideDelay.value,
-    )
+    const timeId = window.setTimeout(dispatch, rootContext.scrollHideDelay.value, 'HIDE')
 
     onCleanup(() => {
       window.clearTimeout(timeId)

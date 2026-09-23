@@ -38,6 +38,8 @@ export default antfu(
       'unicorn/prefer-number-properties': 'off',
       'unused-imports/no-unused-vars': 'off',
       'regexp/no-super-linear-backtracking': 'off',
+      'markdown/heading-increment': 'off',
+      'markdown/no-multiple-h1': 'off',
     },
   },
   {

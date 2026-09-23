@@ -14,7 +14,10 @@ const { forwardRef } = useForwardExpose()
 </script>
 
 <template>
-  <ToolbarButton as-child>
+  <ToolbarButton
+    as-child
+    :disabled="props.disabled"
+  >
     <ToggleGroupItem
       v-bind="props"
       :ref="forwardRef"

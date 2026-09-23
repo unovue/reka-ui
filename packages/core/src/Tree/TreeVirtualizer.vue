@@ -3,7 +3,7 @@ export interface TreeVirtualizerProps {
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */
-  estimateSize?: number
+  estimateSize?: number | ((index: number) => number)
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (item: Record<string, any>) => string
 }
@@ -79,7 +79,10 @@ const virtualizer = useVirtualizer(
     getItemKey(index) {
       return index + rootContext.getKey(rootContext.expandedItems.value[index].value)
     },
-    estimateSize() {
+    estimateSize(index) {
+      if (typeof props.estimateSize === 'function')
+        return props.estimateSize(index)
+
       return props.estimateSize ?? 28
     },
     getScrollElement() { return parentEl.value },
@@ -130,8 +133,10 @@ rootContext.virtualKeydownHook.on((event) => {
     const index = intent === 'first' ? 0 : rootContext.expandedItems.value.length - 1
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
-      const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const items = getItems().filter(i => i.ref.dataset.disabled !== '')
+      if (!items.length)
+        return
+      const item = intent === 'first' ? items[0] : items.at(-1)!
       item.ref.focus()
     })
   }

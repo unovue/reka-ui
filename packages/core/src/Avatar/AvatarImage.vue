@@ -51,7 +51,8 @@ watch(
     :as-child="asChild"
     :as="as"
     :src="src"
-    :referrer-policy="referrerPolicy"
+    :referrerpolicy="referrerPolicy"
+    :crossorigin="crossOrigin"
   >
     <slot />
   </Primitive>

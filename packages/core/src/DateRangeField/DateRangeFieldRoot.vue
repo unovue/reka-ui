@@ -12,15 +12,12 @@ import {
   hasTime,
   isBefore,
   isBeforeOrSame,
-
 } from '@/date'
 import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
-
   getDefaultDate,
   getSegmentElements,
-
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
@@ -57,7 +54,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   defaultPlaceholder?: DateValue
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
@@ -87,7 +84,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
 
 export type DateRangeFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [DateRange]
+  'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
@@ -114,6 +111,16 @@ const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
   isDateUnavailable: undefined,
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
+defineSlots<{
+  default?: (props: {
+    /** The current date range of the field */
+    modelValue: DateRange | null
+    /** The date field segment contents */
+    segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
+    /** Value if the input is invalid */
+    isInvalid: boolean
+  }) => any
+}>()
 const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
@@ -330,6 +337,9 @@ const prevFocusableSegment = computed(() => {
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -359,7 +369,10 @@ provideDateRangeFieldRootContext({
   elements: segmentElements,
   setFocusedElement,
   focusNext() {
-    nextFocusableSegment.value?.focus()
+    // Auto-advance follows the segments' DOM order (the locale's format
+    // order) regardless of writing direction; only arrow-key navigation is
+    // direction-aware via nextFocusableSegment/prevFocusableSegment.
+    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
   },
 })
 
@@ -383,6 +396,7 @@ defineExpose({
     <slot
       :model-value="modelValue"
       :segments="segmentContents"
+      :is-invalid="isInvalid"
     />
 
     <VisuallyHidden

@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -89,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
@@ -130,7 +131,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[DateRange]'
+    'type': '[date: DateRange]'
   },
   {
     'name': 'update:placeholder',
@@ -142,25 +143,76 @@
 <SlotsTable :data="[
   {
     'name': 'modelValue',
-    'description': '',
+    'description': '<p>The current date range of the field</p>\n',
     'type': 'DateRange | null'
   },
   {
     'name': 'segments',
-    'description': '',
+    'description': '<p>The date field segment contents</p>\n',
     'type': '{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }'
+  },
+  {
+    'name': 'isInvalid',
+    'description': '<p>Value if the input is invalid</p>\n',
+    'type': 'boolean'
   }
 ]" />
 
 <MethodsTable :data="[
   {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  },
-  {
     'name': 'setFocusedElement',
     'description': '',
-    'type': '(el: HTMLElement) => void'
+    'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultValue` | The default value for the calendar | `DateRange` | No | - |
+| `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
+| `granularity` | The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
+| `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
+| `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
+| `id` | Id of the element | `string` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
+| `locale` | The locale to use for formatting dates | `string` | No | - |
+| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
+| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
+| `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | The current date range of the field | `DateRange \| null` |
+| `segments` | The date field segment contents | `{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }` |
+| `isInvalid` | Value if the input is invalid | `boolean` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `setFocusedElement` |  | `(el: HTMLElement) => void` |
+
+</llm-only>

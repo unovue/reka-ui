@@ -11,11 +11,13 @@ import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLo
 import {
   createContent,
   getDefaultDate,
+  getInputType,
   getSegmentElements,
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
   normalizeHourCycle,
+  normalizeInputValue,
   syncSegmentValues,
 } from '@/shared/date'
 
@@ -30,6 +32,7 @@ type DateFieldRootContext = {
   formatter: Formatter
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Ref<SegmentValueObj>
   segmentContents: Ref<{ part: SegmentPart, value: string }[]>
   elements: Ref<Set<HTMLElement>>
@@ -44,12 +47,14 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   defaultPlaceholder?: DateValue
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateValue | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
+  /** Whether to enforce snapping the time value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: Granularity
   /** Whether or not to hide the time zone segment of the field */
@@ -99,6 +104,7 @@ const props = withDefaults(defineProps<DateFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<DateFieldRootEmits>()
 defineSlots<{
@@ -112,7 +118,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, granularity, defaultValue, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, granularity, defaultValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
@@ -241,9 +247,17 @@ const prevFocusableSegment = computed(() => {
   return segmentToFocus
 })
 
+const inputType = computed(() => getInputType(inferredGranularity.value))
+const inputValue = computed(() => normalizeInputValue(modelValue.value, inferredGranularity.value))
+const inputMaxValue = computed(() => props.maxValue ? normalizeInputValue(props.maxValue, inferredGranularity.value) : undefined)
+const inputMinValue = computed(() => props.minValue ? normalizeInputValue(props.minValue, inferredGranularity.value) : undefined)
+
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -265,6 +279,7 @@ provideDateFieldRootContext({
   formatter,
   hourCycle: props.hourCycle,
   step,
+  stepSnapping,
   readonly,
   segmentValues,
   isInvalid,
@@ -272,7 +287,10 @@ provideDateFieldRootContext({
   elements: segmentElements,
   setFocusedElement,
   focusNext() {
-    nextFocusableSegment.value?.focus()
+    // Auto-advance follows the segments' DOM order (the locale's format
+    // order) regardless of writing direction; only arrow-key navigation is
+    // direction-aware via nextFocusableSegment/prevFocusableSegment.
+    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
   },
 })
 
@@ -303,12 +321,15 @@ defineExpose({
     <VisuallyHidden
       :id="id"
       as="input"
+      :type="inputType"
       feature="focusable"
       tabindex="-1"
-      :value="modelValue ? modelValue.toString() : ''"
+      :value="inputValue"
       :name="name"
       :disabled="disabled"
       :required="required"
+      :max="inputMaxValue"
+      :min="inputMinValue"
       @focus="Array.from(segmentElements)?.[0]?.focus()"
     />
   </Primitive>

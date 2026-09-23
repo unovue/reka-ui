@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'allowNonContiguousRanges',
@@ -124,14 +125,14 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled selected date range of the calendar. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
   {
     'name': 'nextPage',
     'description': '<p>A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   },
   {
@@ -164,7 +165,7 @@
   {
     'name': 'prevPage',
     'description': '<p>A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component.</p>\n',
-    'type': '((placeholder: DateValue) => DateValue)',
+    'type': '((placeholder: DateValue) =&gt; DateValue)',
     'required': false
   },
   {
@@ -185,8 +186,7 @@
     'name': 'weekStartsOn',
     'description': '<p>The day of the week to start the calendar on</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6',
-    'required': false,
-    'default': '0'
+    'required': false
   }
 ]" />
 
@@ -205,6 +205,11 @@
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
     'type': '[date: DateValue]'
+  },
+  {
+    'name': 'update:validModelValue',
+    'description': '<p>Event handler called whenever there is a new validModel</p>\n',
+    'type': '[date: DateRange]'
   }
 ]" />
 
@@ -217,7 +222,7 @@
   {
     'name': 'grid',
     'description': '<p>The grid of dates</p>\n',
-    'type': 'Grid<DateValue>[]'
+    'type': 'Grid&lt;DateValue&gt;[]'
   },
   {
     'name': 'weekDays',
@@ -245,21 +250,63 @@
     'type': 'DateRange'
   }
 ]" />
+</llm-exclude>
 
-<MethodsTable :data="[
-  {
-    'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateHighlightable',
-    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `allowNonContiguousRanges` | When combined with isDateUnavailable, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. | `boolean` | No | `false` |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `calendarLabel` | The accessible label for the calendar | `string` | No | - |
+| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
+| `dir` | The reading direction of the calendar when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | Whether or not the calendar is disabled | `boolean` | No | `false` |
+| `disableDaysOutsideCurrentView` | Whether or not to disable days outside the current view. | `boolean` | No | `false` |
+| `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
+| `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
+| `initialFocus` | If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted | `boolean` | No | `false` |
+| `isDateDisabled` | A function that returns whether or not a date is disabled | `Matcher` | No | - |
+| `isDateHighlightable` | A function that returns whether or not a date is hightable | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
+| `locale` | The locale to use for formatting dates | `string` | No | - |
+| `maximumDays` | The maximum number of days that can be selected in a range | `number` | No | - |
+| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
+| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `modelValue` | The controlled selected date range of the calendar. Can be bound as v-model. | `DateRange \| null` | No | - |
+| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `numberOfMonths` | The number of months to display at once | `number` | No | `1` |
+| `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
+| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
+| `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
+| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: DateValue) => DateValue)` | No | - |
+| `readonly` | Whether or not the calendar is readonly | `boolean` | No | `false` |
+| `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
+| `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:validModelValue` | Event handler called whenever there is a new validModel | `[date: DateRange]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `date` | The current date of the placeholder | `DateValue` |
+| `grid` | The grid of dates | `Grid<DateValue>[]` |
+| `weekDays` | The days of the week | `string[]` |
+| `weekStartsOn` | The start of the week | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
+| `locale` | The calendar locale | `string` |
+| `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` |
+| `modelValue` | The current date range | `DateRange` |
+
+</llm-only>
