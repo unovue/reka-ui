@@ -2,6 +2,7 @@ import autoprefixer from 'autoprefixer'
 import anchor from 'markdown-it-anchor'
 import tailwind from 'tailwindcss'
 import { defineConfig, postcssIsolateStyles } from 'vitepress'
+import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 import { version } from '../../package.json'
 import { teamMembers } from './contributors'
 import {
@@ -38,6 +39,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#00C38A' }],
     ['link', { rel: 'icon', href: '/logo.png' }],
     ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'canonical', href: 'https://reka-ui.com' }],
     ['meta', { name: 'author', content: `${teamMembers.map(c => c.name).join(', ')} and ${rekaName} contributors` }],
     ['meta', { name: 'keywords', content: 'vue, nuxt, component-library, radix, radix-vue, reka-ui, typescript' }],
     ['meta', { property: 'og:title', content: rekaName }],
@@ -132,6 +134,8 @@ export default defineConfig({
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
+
+          { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
         ],
       },
       {
@@ -141,6 +145,7 @@ export default defineConfig({
           {
             text: 'Form',
             items: [
+              { text: `Autocomplete ${BadgeHTML('Alpha', true)}`, link: '/docs/components/autocomplete' },
               { text: 'Checkbox', link: '/docs/components/checkbox' },
               { text: 'Combobox', link: '/docs/components/combobox' },
               { text: `Editable`, link: '/docs/components/editable' },
@@ -149,12 +154,26 @@ export default defineConfig({
               { text: 'Label', link: '/docs/components/label' },
               { text: 'Pin Input', link: '/docs/components/pin-input' },
               { text: 'Radio Group', link: '/docs/components/radio-group' },
+              { text: `Rating ${BadgeHTML('Alpha', true)}`, link: '/docs/components/rating' },
               { text: 'Select', link: '/docs/components/select' },
               { text: 'Slider', link: '/docs/components/slider' },
               { text: 'Switch', link: '/docs/components/switch' },
               { text: 'Tags Input', link: '/docs/components/tags-input' },
               { text: 'Toggle', link: '/docs/components/toggle' },
               { text: 'Toggle Group', link: '/docs/components/toggle-group' },
+            ],
+          },
+          {
+            text: 'Color',
+            items: [
+              { text: `Color Area ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-area' },
+              { text: `Color Field ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-field' },
+              { text: `Color Slider ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-slider' },
+              { text: `Color Swatch ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-swatch' },
+              {
+                text: `Color Swatch Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/color-swatch-picker',
+              },
             ],
           },
           {
@@ -188,6 +207,26 @@ export default defineConfig({
                 text: `Time Field ${BadgeHTML('Alpha', true)}`,
                 link: '/docs/components/time-field',
               },
+              {
+                text: `Time Range Field ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/time-range-field',
+              },
+              {
+                text: `Month Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-picker',
+              },
+              {
+                text: `Month Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/month-range-picker',
+              },
+              {
+                text: `Year Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-picker',
+              },
+              {
+                text: `Year Range Picker ${BadgeHTML('Alpha', true)}`,
+                link: '/docs/components/year-range-picker',
+              },
             ],
           },
           {
@@ -200,6 +239,7 @@ export default defineConfig({
               { text: 'Collapsible', link: '/docs/components/collapsible' },
               { text: 'Context Menu', link: '/docs/components/context-menu' },
               { text: 'Dialog', link: '/docs/components/dialog' },
+              { text: `Drawer ${BadgeHTML('Alpha', true)}`, link: '/docs/components/drawer' },
               { text: 'Dropdown Menu', link: '/docs/components/dropdown-menu' },
               { text: 'Hover Card', link: '/docs/components/hover-card' },
               { text: 'Menubar', link: '/docs/components/menubar' },
@@ -213,10 +253,7 @@ export default defineConfig({
               { text: 'Scroll Area', link: '/docs/components/scroll-area' },
               { text: 'Separator', link: '/docs/components/separator' },
               { text: 'Splitter', link: '/docs/components/splitter' },
-              {
-                text: `Stepper ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/stepper',
-              },
+              { text: 'Stepper', link: '/docs/components/stepper' },
               { text: 'Tabs', link: '/docs/components/tabs' },
               { text: 'Toast', link: '/docs/components/toast' },
               { text: 'Toolbar', link: '/docs/components/toolbar' },
@@ -254,6 +291,14 @@ export default defineConfig({
                 link: '/docs/utilities/use-date-formatter',
               },
               {
+                text: 'useDirection',
+                link: '/docs/utilities/use-direction',
+              },
+              {
+                text: 'useLocale',
+                link: '/docs/utilities/use-locale',
+              },
+              {
                 text: 'useEmitAsProps',
                 link: '/docs/utilities/use-emit-as-props',
               },
@@ -280,14 +325,27 @@ export default defineConfig({
         link: '/examples/checkbox-group',
         items: [
           {
+            text: 'Avatar',
+            items: [
+              { text: 'Avatar Stack', link: '/examples/avatar-stack' },
+            ],
+          },
+          {
             text: 'Checkbox',
             items: [
               { text: 'Checkbox Group', link: '/examples/checkbox-group' },
             ],
           },
           {
+            text: 'Color',
+            items: [
+              { text: 'Color Picker', link: '/examples/color-picker' },
+            ],
+          },
+          {
             text: 'Combobox',
             items: [
+              { text: 'Combobox Async', link: '/examples/combobox-async' },
               {
                 text: 'Combobox Tags Input',
                 link: '/examples/combobox-tags-input',
@@ -295,6 +353,10 @@ export default defineConfig({
               {
                 text: 'Combobox Textarea',
                 link: '/examples/combobox-textarea',
+              },
+              {
+                text: 'Combobox Virtualized',
+                link: '/examples/combobox-virtualized',
               },
             ],
           },
@@ -305,6 +367,14 @@ export default defineConfig({
                 text: 'Date Picker Selection',
                 link: '/examples/date-picker-selection',
               },
+              {
+                text: 'Date Picker View Switching',
+                link: '/examples/date-picker-view-switching',
+              },
+              {
+                text: 'Date Range Presets',
+                link: '/examples/date-range-presets',
+              },
             ],
           },
           {
@@ -312,12 +382,55 @@ export default defineConfig({
             items: [
               { text: 'Dialog Command Menu', link: '/examples/dialog-command-menu' },
               { text: 'Dialog Gesture Driven', link: '/examples/dialog-gesture-driven' },
+              {
+                text: 'Command Menu with Tabs',
+                link: '/examples/dialog-command-tabs',
+              },
+              {
+                text: 'Responsive Dialog Drawer',
+                link: '/examples/dialog-responsive-drawer',
+              },
+              {
+                text: 'Dialog with Unsaved Changes',
+                link: '/examples/dialog-unsaved-changes',
+              },
             ],
           },
           {
             text: 'Listbox',
             items: [
               { text: 'Listbox Transfer', link: '/examples/listbox-transfer' },
+            ],
+          },
+          {
+            text: 'Menu',
+            items: [
+              { text: 'Searchable Menu', link: '/examples/menu-filter' },
+            ],
+          },
+          {
+            text: 'Navigation Menu',
+            items: [
+              {
+                text: 'Navigation Mega Menu',
+                link: '/examples/navigation-mega-menu',
+              },
+              {
+                text: 'Navigation Mobile Nav',
+                link: '/examples/navigation-mobile-nav',
+              },
+            ],
+          },
+          {
+            text: 'Pin Input',
+            items: [
+              { text: 'Pin Input OTP', link: '/examples/pin-input-otp' },
+            ],
+          },
+          {
+            text: 'Popover',
+            items: [
+              { text: 'Selection Popover', link: '/examples/popover-selection' },
             ],
           },
           {
@@ -331,9 +444,51 @@ export default defineConfig({
             ],
           },
           {
+            text: 'Splitter',
+            items: [
+              {
+                text: 'Splitter IDE Layout',
+                link: '/examples/splitter-ide-layout',
+              },
+            ],
+          },
+          {
+            text: 'Stepper',
+            items: [
+              {
+                text: 'Stepper Form Wizard',
+                link: '/examples/stepper-form-wizard',
+              },
+            ],
+          },
+          {
+            text: 'Table',
+            items: [
+              { text: 'Data Table', link: '/examples/data-table' },
+            ],
+          },
+          {
+            text: 'Toast',
+            items: [
+              { text: 'Toast Undo', link: '/examples/toast-undo' },
+            ],
+          },
+          {
+            text: 'Toolbar',
+            items: [
+              { text: 'Toolbar Rich Text', link: '/examples/toolbar-rich-text' },
+            ],
+          },
+          {
             text: 'Tooltip',
             items: [
               { text: 'Tooltip Cursor', link: '/examples/tooltip-cursor' },
+            ],
+          },
+          {
+            text: 'Tree',
+            items: [
+              { text: 'Tree Multi Select', link: '/examples/tree-multi-select' },
             ],
           },
           {
@@ -371,6 +526,9 @@ export default defineConfig({
     theme: 'github-dark',
     headers: {
       level: [2, 3],
+    },
+    config(md) {
+      md.use(copyOrDownloadAsMarkdownButtons)
     },
     anchor: {
       callback(token) {
@@ -414,6 +572,9 @@ export default defineConfig({
     pageData.frontmatter.sidebar = pageData.frontmatter.layout !== 'showcase'
   },
   vite: {
+    plugins: [llmstxt({
+      ignoreFiles: ['releases/*', 'examples/*', 'showcase.md', 'examples.md', 'meta/*'],
+    })],
     css: {
       postcss: {
         plugins: [

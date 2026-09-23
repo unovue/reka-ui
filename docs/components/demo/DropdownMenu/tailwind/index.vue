@@ -24,7 +24,7 @@ const checkboxOne = ref(false)
 const checkboxTwo = ref(false)
 const person = ref('pedro')
 
-function handleClick() {
+function handleSelect() {
   // eslint-disable-next-line no-alert
   alert('hello!')
 }
@@ -47,7 +47,7 @@ function handleClick() {
         <DropdownMenuItem
           value="New Tab"
           class="group text-xs leading-none text-grass11 rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-green9 data-[highlighted]:text-green1"
-          @click="handleClick"
+          @select="handleSelect"
         >
           New Tab
           <div

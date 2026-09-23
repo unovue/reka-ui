@@ -45,6 +45,7 @@ import {
   ComboboxArrow,
   ComboboxCancel,
   ComboboxContent,
+  ComboboxEmpty,
   ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
@@ -69,9 +70,13 @@ import {
     <ComboboxPortal>
       <ComboboxContent>
         <ComboboxViewport>
+          <ComboboxEmpty />
+
           <ComboboxItem>
             <ComboboxItemIndicator />
           </ComboboxItem>
+
+          <ComboboxSeparator />
 
           <ComboboxGroup>
             <ComboboxLabel />
@@ -79,7 +84,6 @@ import {
               <ComboboxItemIndicator />
             </ComboboxItem>
           </ComboboxGroup>
-          <ComboboxSeparator />
         </ComboboxViewport>
 
         <ComboboxArrow />
@@ -169,6 +173,10 @@ The component that pops out when the combobox is open.
     {
       attribute: '[data-align]',
       values: ['start', 'end', 'center'],
+    },
+    {
+      attribute: '[data-empty]',
+      values: 'Present when there are no items matching the filter',
     },
   ]"
 />

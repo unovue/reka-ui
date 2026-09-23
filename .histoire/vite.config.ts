@@ -28,6 +28,7 @@ export default defineConfig({
     tree: {
       groups: [
         { title: 'Components', include: _file => true },
+        { title: 'Compounds', id: 'compounds' },
         { id: 'utilities', title: 'Utilities' },
       ],
     },

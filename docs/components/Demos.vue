@@ -2,10 +2,12 @@
 import AccordionDemo from './demo/Accordion/tailwind/index.vue'
 import AlertDialogDemo from './demo/AlertDialog/tailwind/index.vue'
 import AspectRatioDemo from './demo/AspectRatio/tailwind/index.vue'
+import AutocompleteDemo from './demo/Autocomplete/tailwind/index.vue'
 import AvatarDemo from './demo/Avatar/tailwind/index.vue'
 import CalendarDemo from './demo/Calendar/tailwind/index.vue'
 import CheckboxDemo from './demo/Checkbox/tailwind/index.vue'
 import CollapsibleDemo from './demo/Collapsible/tailwind/index.vue'
+import ColorFieldDemo from './demo/ColorField/tailwind/index.vue'
 import ComboboxDemo from './demo/Combobox/tailwind/index.vue'
 import ContextMenuDemo from './demo/ContextMenu/tailwind/index.vue'
 import DateFieldDemo from './demo/DateField/tailwind/index.vue'
@@ -15,13 +17,11 @@ import DateRangePickerDemo from './demo/DateRangePicker/tailwind/index.vue'
 import DialogDemo from './demo/Dialog/tailwind/index.vue'
 import DropdownMenuDemo from './demo/DropdownMenu/tailwind/index.vue'
 import EditableDemo from './demo/Editable/tailwind/index.vue'
-import HoverCardDemo from './demo/HoverCard/tailwind/index.vue'
 import LabelDemo from './demo/Label/tailwind/index.vue'
 import MenubarDemo from './demo/Menubar/tailwind/index.vue'
 import NavigationMenuDemo from './demo/NavigationMenu/tailwind/index.vue'
 import NumberFieldDemo from './demo/NumberField/tailwind/index.vue'
 import PaginationDemo from './demo/Pagination/tailwind/index.vue'
-import PinInputDemo from './demo/PinInput/tailwind/index.vue'
 import PopoverDemo from './demo/Popover/tailwind/index.vue'
 import ProgressDemo from './demo/Progress/tailwind/index.vue'
 import RadioGroupDemo from './demo/RadioGroup/tailwind/index.vue'
@@ -34,7 +34,7 @@ import SplitterDemo from './demo/Splitter/tailwind/index.vue'
 import StepperDemo from './demo/Stepper/tailwind/index.vue'
 import SwitchDemo from './demo/Switch/tailwind/index.vue'
 import TabsDemo from './demo/Tabs/tailwind/index.vue'
-import TagsInputDemo from './demo/TagsInput/tailwind/index.vue'
+import TimeRangeFieldDemo from './demo/TimeRangeField/tailwind/index.vue'
 import ToastDemo from './demo/Toast/tailwind/index.vue'
 import ToggleDemo from './demo/Toggle/tailwind/index.vue'
 import ToggleGroupDemo from './demo/ToggleGroup/tailwind/index.vue'
@@ -95,8 +95,11 @@ import DemoContainer from './DemoContainer.vue'
     <DemoContainer title="editable">
       <EditableDemo />
     </DemoContainer>
-    <DemoContainer title="hover card">
-      <HoverCardDemo />
+    <DemoContainer title="autocomplete">
+      <AutocompleteDemo />
+    </DemoContainer>
+    <DemoContainer title="color field">
+      <ColorFieldDemo />
     </DemoContainer>
     <DemoContainer title="label">
       <LabelDemo />
@@ -116,8 +119,8 @@ import DemoContainer from './DemoContainer.vue'
     >
       <PaginationDemo />
     </DemoContainer>
-    <DemoContainer title="pin input">
-      <PinInputDemo />
+    <DemoContainer title="time range field">
+      <TimeRangeFieldDemo />
     </DemoContainer>
     <DemoContainer title="popover">
       <PopoverDemo />
@@ -154,9 +157,6 @@ import DemoContainer from './DemoContainer.vue'
     </DemoContainer>
     <DemoContainer title="tabs">
       <TabsDemo />
-    </DemoContainer>
-    <DemoContainer title="tags input">
-      <TagsInputDemo />
     </DemoContainer>
     <DemoContainer title="time field">
       <TimeFieldDemo />

@@ -1,11 +1,13 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
+import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
 
 describe('given default Combobox', () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
@@ -188,7 +190,103 @@ describe('given a Combobox with multiple prop', async () => {
     })
   })
 })
-// TODO: add Combobox Virtual story and test
+
+describe('given a virtualized Combobox', () => {
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  // jsdom reports zero-sized rects, so `@tanstack/virtual-core` would render no
+  // items. Give the virtualizer a non-zero viewport so items actually mount.
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 100 }, (_, i) => ({ label: `Item ${i}`, value: i }))
+
+  const VirtualCombobox = defineComponent({
+    setup() {
+      const modelValue = ref<{ label: string, value: number } | undefined>(undefined)
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'onUpdate:modelValue': (v: any) => { modelValue.value = v },
+        'open': true,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              h(ComboboxInput),
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxContent, null, {
+            default: () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, {
+              default: () => h(ComboboxVirtualizer, {
+                options,
+                estimateSize: 25,
+                textContent: (o: any) => o.label,
+              }, {
+                default: ({ option }: any) => h(ComboboxItem, { value: option }, { default: () => option.label }),
+              }),
+            }),
+          }),
+        ],
+      })
+    },
+  })
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    // @ts-expect-error aXe throwing error complaining getComputedStyle
+    window.getComputedStyle = () => ({ animationName: '' })
+    document.body.innerHTML = ''
+  })
+
+  it('should mount only a subset of the 100 options (virtualization working)', async () => {
+    const wrapper = mount(VirtualCombobox, { attachTo: document.body })
+    await flush()
+
+    const items = wrapper.findAll('[role=option]')
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.length).toBeLessThan(100)
+
+    wrapper.unmount()
+  })
+
+  it('should handle model update internally when a visible item is clicked', async () => {
+    const wrapper = mount(VirtualCombobox, { attachTo: document.body })
+    await flush()
+
+    const items = wrapper.findAll('[role=option]')
+    expect(items.length).toBeGreaterThan(0)
+
+    await items[0].trigger('click')
+    await nextTick()
+
+    expect(wrapper.emitted('update:modelValue')).toBeFalsy() // event handled internally
+    // verify item state changed: the clicked item should be checked
+    expect(items[0].attributes('data-state')).toBe('checked')
+
+    wrapper.unmount()
+  })
+})
 
 describe('given a Combobox with object', async () => {
   let wrapper: VueWrapper<InstanceType<typeof ComboboxObject>>
@@ -272,6 +370,144 @@ describe('given a Combobox with object', async () => {
   })
 })
 
+describe('given a Combobox with openOnFocus', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, {
+      props: { openOnFocus: true },
+      attachTo: document.body,
+    })
+  })
+
+  it('should open when input is focused', async () => {
+    const input = wrapper.find('input')
+    await input.trigger('focus')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+  })
+
+  it('should not restore focus to input when closing', async () => {
+    const input = wrapper.find('input')
+    const button = wrapper.find('button')
+
+    input.element.focus()
+    await nextTick()
+
+    button.element.focus()
+    button.element.click()
+    await nextTick()
+
+    expect(document.activeElement).toBe(button.element)
+  })
+
+  it('should close content when focus moves to an element outside', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    const input = wrapper.find('input')
+
+    input.element.focus()
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalButton.focus()
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
+  })
+
+  it('should not close when focus is restored inside before deferred close fires', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    const input = wrapper.find('input')
+
+    input.element.focus()
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    // Synthetic blur: fires handleBlur with relatedTarget outside,
+    // but doesn't change document.activeElement — simulates FocusScope
+    // restoring focus back inside before the deferred close callback runs
+    await input.trigger('blur', { relatedTarget: externalButton })
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalButton.remove()
+  })
+})
+
+describe('given combobox with an associated label', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body })
+  })
+
+  it('should not dismiss when interacting with a label tied to a control inside', async () => {
+    // A `<label for="...">` pointing to the combobox input forwards its click/focus
+    // to that input. Clicking it should keep the content open instead of dismissing
+    // on `pointerdown` and immediately re-opening from the forwarded click.
+    const input = wrapper.find('input')
+    input.element.id = 'combobox-input'
+
+    const label = document.createElement('label')
+    label.setAttribute('for', 'combobox-input')
+    label.textContent = 'Fruit'
+    document.body.appendChild(label)
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    // The document `pointerdown` listener is registered via `setTimeout(0)`.
+    await sleep(1)
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    label.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // Wait as long as a real dismiss would take (emitted after an internal
+    // `await nextTick()`) so a regression that fails to prevent it is caught.
+    await sleep(1)
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    label.remove()
+  })
+
+  it('should dismiss when interacting with an unrelated label', async () => {
+    const externalLabel = document.createElement('label')
+    externalLabel.textContent = 'Unrelated'
+    document.body.appendChild(externalLabel)
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    await sleep(1)
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalLabel.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // dismiss is emitted after an internal `await nextTick()`.
+    await sleep(1)
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalLabel.remove()
+  })
+})
+
 describe('given combobox in a form', async () => {
   let wrapper: VueWrapper<InstanceType<any>>
   let valueBox: DOMWrapper<HTMLInputElement>
@@ -346,5 +582,755 @@ describe('given combobox in a form', async () => {
     it('should not bubble up the Enter keydown event to the form', () => {
       expect(enterEventBubbledToForm).toBe(false)
     })
+  })
+})
+
+describe('given Combobox with TagsInput and addOnBlur', () => {
+  let wrapper: VueWrapper<InstanceType<typeof ComboboxTagsInput>>
+  let input: DOMWrapper<HTMLInputElement>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(ComboboxTagsInput, {
+      props: { addOnBlur: true },
+      attachTo: document.body,
+    })
+    input = wrapper.find('input')
+  })
+
+  it('should select the combobox item instead of adding raw input text as tag', async () => {
+    // Focus input and type "a" to filter
+    input.element.focus()
+    await input.setValue('a')
+    await nextTick()
+
+    // Simulate the blur that happens when clicking an option (jsdom doesn't do this automatically)
+    const option = wrapper.find('[role=option]')
+    expect(option.text()).toContain('Apple')
+
+    // In a real browser: mousedown on option → input blurs → click fires
+    await input.trigger('blur', { relatedTarget: option.element })
+    await option.trigger('click')
+    await nextTick()
+
+    // "Apple" should be added as tag, NOT the raw text "a"
+    const tags = wrapper.findAll('[data-reka-collection-item]')
+    const tagTexts = tags.map(t => t.text())
+    expect(tagTexts).toContain('Apple')
+    expect(tagTexts).not.toContain('a')
+  })
+
+  it('should refocus input after selecting in multiple mode', async () => {
+    // Focus input and open dropdown
+    input.element.focus()
+    await input.setValue('a')
+    await nextTick()
+
+    const option = wrapper.find('[role=option]')
+
+    // In a real browser, mousedown on option blurs the input.
+    // Simulate this: blur the input, then click the option.
+    input.element.blur()
+    await option.trigger('click')
+    await nextTick()
+
+    // Input should be refocused so subsequent blur can trigger addOnBlur
+    expect(document.activeElement).toBe(input.element)
+  })
+})
+
+describe('handle IME composition', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+  let input: DOMWrapper<HTMLInputElement>
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  beforeEach(() => {
+    // @ts-expect-error aXe throwing error complaining getComputedStyle
+    window.getComputedStyle = () => ({
+      animationName: '',
+    })
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body })
+    input = wrapper.find('input')
+  })
+
+  it('should not update filter during IME composition', async () => {
+    await input.trigger('compositionstart')
+    input.element.value = 'xiang'
+    await input.trigger('input')
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    expect(content.exists()).toBe(false)
+  })
+
+  it('should update filter after composition ends', async () => {
+    await input.trigger('compositionstart')
+    input.element.value = 'zzzzz'
+    await input.trigger('input')
+    await nextTick()
+
+    input.element.value = 'zzzzz'
+    await input.trigger('compositionend')
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    expect(content.exists()).toBe(true)
+    expect(content.attributes('data-empty')).toBeDefined()
+  })
+
+  it('should not update filter during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+    input.element.value = 'xiang'
+    await input.trigger('input')
+    await nextTick()
+
+    expect(wrapper.find('[role=listbox]').exists()).toBe(false)
+  })
+
+  describe('on Android soft keyboard', () => {
+    beforeEach(() => {
+      Object.defineProperty(window.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+        configurable: true,
+      })
+    })
+
+    afterEach(() => {
+      delete (window.navigator as { userAgent?: string }).userAgent
+    })
+
+    it('should update filter live during plain-text (autocorrect) composition', async () => {
+      await input.trigger('compositionstart')
+      input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'zzzzz', bubbles: true }))
+      input.element.value = 'zzzzz'
+      await input.trigger('input')
+      await nextTick()
+      await nextTick()
+
+      const content = wrapper.find('[role=listbox]')
+      expect(content.exists()).toBe(true)
+      expect(content.attributes('data-empty')).toBeDefined()
+    })
+
+    it('should not update filter during CJK IME composition until compositionend', async () => {
+      await input.trigger('compositionstart')
+      input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+      input.element.value = 'かんじ'
+      await input.trigger('input')
+      await nextTick()
+
+      expect(wrapper.find('[role=listbox]').exists()).toBe(false)
+
+      await input.trigger('compositionend')
+      await nextTick()
+      await nextTick()
+
+      const content = wrapper.find('[role=listbox]')
+      expect(content.exists()).toBe(true)
+      expect(content.attributes('data-empty')).toBeDefined()
+    })
+  })
+})
+
+describe('given combobox handleBlur with deferred close', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Combobox>>
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Combobox, { attachTo: document.body, props: { resetSearchTermOnBlur: true } })
+  })
+
+  it('should not close when focus is restored inside before deferred close fires', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    // Open combobox
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    const input = wrapper.find('input')
+    input.element.focus()
+
+    // Synthetic blur: fires handleBlur with relatedTarget outside,
+    // but doesn't change document.activeElement — simulates FocusScope
+    // restoring focus back inside before the deferred close callback runs
+    await input.trigger('blur', { relatedTarget: externalButton })
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    externalButton.remove()
+  })
+
+  it('should close when focus stays outside after rAF', async () => {
+    const externalButton = document.createElement('button')
+    externalButton.textContent = 'External'
+    document.body.appendChild(externalButton)
+
+    // Open combobox
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[role=group]').exists()).toBe(true)
+
+    const input = wrapper.find('input')
+    input.element.focus()
+
+    // Focus moves outside and stays there
+    externalButton.focus()
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(wrapper.find('[role=group]').exists()).toBe(false)
+
+    externalButton.remove()
+  })
+})
+
+describe('comboboxContent with popper positioning', () => {
+  const getSlotRenderCount = vi.fn(() => ({ value: 0 }))
+
+  const PopperCombobox = defineComponent({
+    setup() {
+      const modelValue = ref('')
+      const slotRenderCount = getSlotRenderCount()
+      const options = Array.from({ length: 60 }, (_, index) => `Option ${index}`)
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              h(ComboboxInput),
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxContent, { position: 'popper' }, {
+            default: () => {
+              slotRenderCount.value += 1
+              return h(ComboboxViewport, null, {
+                default: () => options.map(option => h(ComboboxItem, { key: option, value: option }, { default: () => option })),
+              })
+            },
+          }),
+        ],
+      })
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSlotRenderCount.mockClear()
+    globalThis.ResizeObserver = class ResizeObserver {
+      private callback: ResizeObserverCallback
+
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback
+      }
+
+      observe(target: Element) {
+        this.callback([{ target } as ResizeObserverEntry], this)
+        this.callback([{ target } as ResizeObserverEntry], this)
+      }
+
+      unobserve() {}
+      disconnect() {}
+    }
+  })
+
+  it('does not rerender option slot content after popper position updates', async () => {
+    const slotRenderCount = { value: 0 }
+    getSlotRenderCount.mockReturnValue(slotRenderCount)
+
+    const wrapper = mount(PopperCombobox, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    expect(slotRenderCount.value).toBe(3)
+
+    await sleep(0)
+    await nextTick()
+
+    expect(slotRenderCount.value).toBe(4)
+  })
+
+  it('updates visible options when filtering while popper content is open', async () => {
+    const slotRenderCount = { value: 0 }
+    getSlotRenderCount.mockReturnValue(slotRenderCount)
+
+    const wrapper = mount(PopperCombobox, { attachTo: document.body })
+
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Option 1')
+    expect(wrapper.text()).toContain('Option 59')
+
+    await wrapper.find('input').setValue('Option 59')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Option 59')
+    expect(wrapper.text()).not.toContain('Option 1')
+  })
+})
+
+describe('combobox highlight scrolling with popper positioning', () => {
+  const PopperContentStub = defineComponent({
+    name: 'PopperContent',
+    emits: ['placed'],
+    setup(_, { emit, slots }) {
+      return () => h('div', {
+        'data-test': 'popper-content',
+        'onClick': () => emit('placed'),
+      }, slots.default?.())
+    },
+  })
+
+  const TestCombobox = defineComponent({
+    props: {
+      forceMount: Boolean,
+      showItems: {
+        type: Boolean,
+        default: true,
+      },
+      withInput: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    setup(props) {
+      const modelValue = ref<string>()
+      const open = ref(false)
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'open': open.value,
+        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:open': (value: boolean) => open.value = value,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              props.withInput ? h(ComboboxInput) : null,
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxPortal, null, {
+            default: () => h(ComboboxContent, {
+              forceMount: props.forceMount,
+              position: 'popper',
+            }, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => props.showItems
+                  ? [
+                      h(ComboboxItem, { value: 'alpha' }, { default: () => 'Alpha' }),
+                      h(ComboboxItem, { value: 'beta' }, { default: () => 'Beta' }),
+                    ]
+                  : [],
+              }),
+            }),
+          }),
+        ],
+      })
+    },
+  })
+
+  const InlineCombobox = defineComponent({
+    setup() {
+      const modelValue = ref<string>()
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
+          h(ComboboxContent, { position: 'inline' }, {
+            default: () => h(ComboboxViewport, null, {
+              default: () => [
+                h(ComboboxItem, { value: 'alpha' }, { default: () => 'Alpha' }),
+                h(ComboboxItem, { value: 'beta' }, { default: () => 'Beta' }),
+              ],
+            }),
+          }),
+        ],
+      })
+    },
+  })
+
+  const virtualOptions = Array.from({ length: 100 }, (_, index) => ({ label: `Item ${index}`, value: index }))
+  const VirtualPopperCombobox = defineComponent({
+    setup() {
+      const modelValue = ref(virtualOptions[3])
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'open': true,
+        'onUpdate:modelValue': value => modelValue.value = value as typeof modelValue.value,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
+          h(ComboboxPortal, null, {
+            default: () => h(ComboboxContent, { position: 'popper' }, {
+              default: () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, {
+                default: () => h(ComboboxVirtualizer, {
+                  options: virtualOptions,
+                  estimateSize: 25,
+                  textContent: option => option.label,
+                }, {
+                  default: ({ option }) => h(ComboboxItem, { value: option }, { default: () => option.label }),
+                }),
+              }),
+            }),
+          }),
+        ],
+      })
+    },
+  })
+
+  const OverlappingPopperContentCombobox = defineComponent({
+    props: {
+      first: {
+        type: Boolean,
+        default: true,
+      },
+      second: Boolean,
+    },
+    setup(props) {
+      const modelValue = ref<string>()
+
+      function renderContent(key: string) {
+        return h(ComboboxPortal, { key }, {
+          default: () => h(ComboboxContent, { position: 'popper' }, {
+            default: () => h(ComboboxViewport, null, {
+              default: () => [
+                h(ComboboxItem, { value: 'alpha' }, { default: () => 'Alpha' }),
+                h(ComboboxItem, { value: 'beta' }, { default: () => 'Beta' }),
+              ],
+            }),
+          }),
+        })
+      }
+
+      return () => h(ComboboxRoot, {
+        'modelValue': modelValue.value,
+        'open': true,
+        'onUpdate:modelValue': value => modelValue.value = value as string,
+      }, {
+        default: () => [
+          h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
+          props.first ? renderContent('first') : null,
+          props.second ? renderContent('second') : null,
+        ],
+      })
+    },
+  })
+
+  const wrappers: VueWrapper[] = []
+
+  function mountTestCombobox(props: { forceMount?: boolean, showItems?: boolean, withInput?: boolean } = {}) {
+    const wrapper = mount(TestCombobox, {
+      attachTo: document.body,
+      props,
+      global: {
+        stubs: { PopperContent: PopperContentStub },
+      },
+    })
+    wrappers.push(wrapper)
+    return wrapper
+  }
+
+  async function mountVirtualPopperCombobox() {
+    const getBoundingClientRect = vi.spyOn(window.HTMLElement.prototype, 'getBoundingClientRect')
+    getBoundingClientRect.mockReturnValue({
+      width: 200,
+      height: 200,
+      top: 0,
+      left: 0,
+      right: 200,
+      bottom: 200,
+      x: 0,
+      y: 0,
+      toJSON() {},
+    })
+
+    const wrapper = mount(VirtualPopperCombobox, {
+      attachTo: document.body,
+      global: {
+        stubs: { PopperContent: PopperContentStub },
+      },
+    })
+    wrappers.push(wrapper)
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+    return wrapper
+  }
+
+  function getHighlightedElement(input: DOMWrapper<HTMLInputElement>) {
+    const id = input.attributes('aria-activedescendant')
+    const element = id ? document.getElementById(id) : null
+    expect(element).toBeInstanceOf(HTMLElement)
+    return element as HTMLElement
+  }
+
+  function emitPlaced() {
+    const content = document.querySelector<HTMLElement>('[data-test="popper-content"]')
+    expect(content).toBeInstanceOf(HTMLElement)
+    content?.click()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  })
+
+  afterEach(() => {
+    for (const wrapper of wrappers.splice(0))
+      wrapper.unmount()
+    vi.restoreAllMocks()
+  })
+
+  it('prevents trigger-only option focus from scrolling before placement', async () => {
+    const focusSpy = vi.spyOn(window.HTMLElement.prototype, 'focus')
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox({ withInput: false })
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    const highlightedElement = document.querySelector<HTMLElement>('[role="option"][data-highlighted]')
+    expect(highlightedElement).toBeInstanceOf(HTMLElement)
+    const optionFocusCalls = focusSpy.mock.calls.filter((_, index) => focusSpy.mock.instances[index] === highlightedElement)
+    expect(optionFocusCalls).toContainEqual([{ preventScroll: true }])
+    expect(optionFocusCalls).not.toContainEqual([])
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('defers the opening highlight scroll until placement and handles repeated placement idempotently', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox()
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+
+    await input.setValue('a')
+    await flushPromises()
+
+    const highlightedElement = getHighlightedElement(input)
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+    emitPlaced()
+    await flushPromises()
+
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+    expect(scrollSpy.mock.instances[0]).toBe(highlightedElement)
+
+    scrollSpy.mockClear()
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' })
+  })
+
+  it('scrolls the live highlight when keyboard navigation occurs before placement', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox()
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+
+    await input.setValue('a')
+    await flushPromises()
+    await input.trigger('keydown', { key: 'ArrowDown' })
+
+    const highlightedElement = getHighlightedElement(input)
+    expect(highlightedElement.textContent).toContain('Beta')
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+    expect(scrollSpy.mock.instances[0]).toBe(highlightedElement)
+  })
+
+  it('does not flush a highlight that explicitly opted out of scrolling', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox()
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+
+    await input.setValue('a')
+    await flushPromises()
+
+    const beta = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]'))
+      .find(item => item.textContent?.includes('Beta'))
+    expect(beta).toBeDefined()
+    beta!.dispatchEvent(new Event('pointermove', { bubbles: true }))
+    await flushPromises()
+    expect(getHighlightedElement(input).textContent).toContain('Beta')
+
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not flush the virtualizer mount highlight after placement', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = await mountVirtualPopperCombobox()
+
+    expect(document.querySelector('[role="option"][data-highlighted]')).toBeInstanceOf(HTMLElement)
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).not.toHaveBeenCalled()
+  })
+
+  it('prevents virtualized option focus from scrolling before placement', async () => {
+    const focusSpy = vi.spyOn(window.HTMLElement.prototype, 'focus')
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = await mountVirtualPopperCombobox()
+    const root = wrapper.getComponent(ComboboxRoot)
+    const highlightSelected = root.vm.$.exposed?.highlightSelected as ((event?: Event, scroll?: boolean) => Promise<void>) | undefined
+
+    expect(highlightSelected).toBeTypeOf('function')
+    await highlightSelected!(new Event('keydown'))
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+
+    const highlightedElement = document.querySelector('[role="option"][data-highlighted]')
+    expect(highlightedElement).toBeInstanceOf(HTMLElement)
+    const optionFocusCalls = focusSpy.mock.calls.filter((_, index) => focusSpy.mock.instances[index] === highlightedElement)
+    expect(optionFocusCalls).toContainEqual([{ preventScroll: true }])
+    expect(optionFocusCalls).not.toContainEqual([])
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores an outgoing content unmount after replacement content mounts', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mount(OverlappingPopperContentCombobox, {
+      attachTo: document.body,
+      global: {
+        stubs: { PopperContent: PopperContentStub },
+      },
+    })
+    wrappers.push(wrapper)
+    await flushPromises()
+
+    await wrapper.setProps({ second: true })
+    await flushPromises()
+    await wrapper.setProps({ first: false })
+    await flushPromises()
+    scrollSpy.mockClear()
+
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+    await input.setValue('b')
+    await flushPromises()
+
+    expect(getHighlightedElement(input).textContent).toContain('Beta')
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('resumes normal highlight scrolling when options mount after placement', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox({ showItems: false })
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+
+    await input.setValue('b')
+    await flushPromises()
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    await wrapper.setProps({ showItems: true })
+    await flushPromises()
+
+    expect(getHighlightedElement(input).textContent).toContain('Beta')
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('tracks force-mounted content that is placed while closed', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox({ forceMount: true })
+
+    await flushPromises()
+    emitPlaced()
+    await flushPromises()
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('suppresses highlight scrolling again when content remounts', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mountTestCombobox()
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+
+    await input.setValue('a')
+    await flushPromises()
+    document.querySelector<HTMLElement>('[role="option"]')?.click()
+    await flushPromises()
+    scrollSpy.mockClear()
+
+    await input.setValue('b')
+    await flushPromises()
+
+    const highlightedElement = getHighlightedElement(input)
+    expect(highlightedElement.textContent).toContain('Beta')
+    expect(scrollSpy).not.toHaveBeenCalled()
+
+    emitPlaced()
+    await flushPromises()
+
+    expect(scrollSpy).toHaveBeenCalledTimes(1)
+    expect(scrollSpy.mock.instances[0]).toBe(highlightedElement)
+  })
+
+  it('leaves inline Combobox highlight scrolling immediate', async () => {
+    const scrollSpy = vi.mocked(window.HTMLElement.prototype.scrollIntoView)
+    const wrapper = mount(InlineCombobox, { attachTo: document.body })
+    wrappers.push(wrapper)
+    const input = wrapper.get('input[role="combobox"]') as DOMWrapper<HTMLInputElement>
+
+    await input.setValue('a')
+    await flushPromises()
+
+    expect(getHighlightedElement(input).textContent).toContain('Alpha')
+    expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' })
   })
 })

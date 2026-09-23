@@ -14,7 +14,7 @@ interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-    = createContext<SelectItemContext>('SelectItem')
+  = createContext<SelectItemContext>('SelectItem')
 
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 
@@ -169,7 +169,7 @@ provideSelectItemContext({
       @focus="isFocused = true"
       @blur="isFocused = false"
       @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event) => {
+      @pointerdown="(event: PointerEvent) => {
         (event.currentTarget as HTMLElement).focus({ preventScroll: true })
       }"
       @touchend.prevent.stop

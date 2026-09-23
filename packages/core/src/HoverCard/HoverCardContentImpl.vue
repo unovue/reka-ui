@@ -9,6 +9,7 @@ export interface HoverCardContentImplProps extends PopperContentProps {}
 </script>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
@@ -68,6 +69,12 @@ onMounted(() => {
     const tabbables = getTabbableNodes(contentElement.value)
     tabbables.forEach(tabbable => tabbable.setAttribute('tabindex', '-1'))
   }
+
+  useEventListener(window, 'scroll', (event: Event) => {
+    const target = event.target as HTMLElement
+    if (target?.contains(rootContext.triggerElement.value!))
+      rootContext.onDismiss()
+  }, { capture: true })
 })
 
 onUnmounted(() => {

@@ -59,7 +59,7 @@ export function useSelectionBehavior<T>(
         break
       }
       case 'last': {
-        value = findValuesBetween(options, firstValue.value, options?.[options.length - 1])
+        value = findValuesBetween(options, firstValue.value, options.at(-1))
         break
       }
     }

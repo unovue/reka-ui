@@ -28,6 +28,7 @@ const rootContext = injectDatePickerRootContext()
       isDateUnavailable: rootContext.isDateUnavailable,
       required: rootContext.required.value,
       dir: rootContext.dir.value,
+      step: rootContext.step.value,
     }"
     @update:model-value="(date: DateValue | undefined) => {
       if (date && rootContext.modelValue.value && date.compare(rootContext.modelValue.value) === 0) return

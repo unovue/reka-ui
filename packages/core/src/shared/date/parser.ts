@@ -19,8 +19,10 @@ type SyncTimeSegmentValuesProps = {
 
 export function syncTimeSegmentValues(props: SyncTimeSegmentValuesProps) {
   return Object.fromEntries(TIME_SEGMENT_PARTS.map((part) => {
-    if (part === 'dayPeriod')
-      return [part, props.formatter.dayPeriod(toDate(props.value))]
+    if (part === 'dayPeriod') {
+      const timeZone = isZonedDateTime(props.value) ? props.value.timeZone : undefined
+      return [part, props.formatter.dayPeriod(toDate(props.value), timeZone)]
+    }
     return [part, props.value[part as keyof DateValue]]
   })) as SegmentValueObj
 }
@@ -196,6 +198,16 @@ function createContentArr(props: CreateContentArrProps) {
         return false
       if (segment.part === 'timeZoneName' && (!isZonedDateTime(props.dateRef) || hideTimeZone))
         return false
+
+      // In some locales (e.g., zh-TW), the time zone is represented with square brackets.
+      // We also filter out these literals that are just brackets.
+      // @see https://github.com/unovue/reka-ui/issues/1670
+      if (
+        (!isZonedDateTime(props.dateRef) || hideTimeZone)
+        && segment.part === 'literal' && ['[', ']'].includes(segment.value.trim())
+      ) {
+        return false
+      }
 
       return true
     })

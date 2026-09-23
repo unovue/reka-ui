@@ -103,7 +103,7 @@ function handlePointerDownOutside(ev: PointerDownOutsideEvent) {
       i.ref.contains(target),
     )
     const isRootViewport
-    = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
+      = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
 
     if (isTrigger || isRootViewport || !menuContext.isRootMenu)
       ev.preventDefault()
@@ -180,6 +180,9 @@ function handleKeydown(ev: KeyboardEvent) {
 }
 
 function handleDismiss() {
+  if (menuContext.modelValue.value !== itemContext.value)
+    return
+
   const rootContentDismissEvent = new Event(EVENT_ROOT_CONTENT_DISMISS, {
     bubbles: true,
     cancelable: true,

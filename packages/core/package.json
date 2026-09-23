@@ -1,10 +1,14 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.3.2",
+  "version": "2.10.5",
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/zernonia"
+  },
   "homepage": "https://github.com/unovue/reka-ui",
   "repository": {
     "type": "git",
@@ -29,6 +33,10 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./internal": {
+      "import": "./dist/internal.js",
+      "require": "./dist/internal.cjs"
     },
     "./constant": {
       "import": "./dist/constant.js",
@@ -71,11 +79,13 @@
     "watch": "tsdown --watch",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
     "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test-update": "vitest -u",
-    "pub:release": "pnpm publish --no-git-checks --access public"
+    "pub:release": "npm publish --access public --provenance",
+    "size": "size-limit"
   },
   "peerDependencies": {
-    "vue": ">= 3.2.0"
+    "vue": ">= 3.4.0"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
@@ -83,35 +93,39 @@
     "@internationalized/date": "^3.5.0",
     "@internationalized/number": "^3.5.0",
     "@tanstack/vue-virtual": "^3.12.0",
-    "@vueuse/core": "^12.5.0",
-    "@vueuse/shared": "^12.5.0",
+    "@vueuse/core": "^14.1.0",
+    "@vueuse/shared": "^14.1.0",
     "aria-hidden": "^1.2.4",
-    "defu": "^6.1.4",
+    "defu": "^6.1.5",
     "ohash": "^2.0.11"
   },
   "devDependencies": {
     "@iconify/vue": "^4.3.0",
     "@internationalized/date": "^3.7.0",
     "@internationalized/number": "^3.6.0",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/user-event": "^14.6.1",
+    "@size-limit/esbuild": "^12.0.1",
+    "@size-limit/file": "^12.0.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/user-event": "^14.6.7",
     "@testing-library/vue": "^8.1.0",
-    "@tsconfig/node18": "^18.2.4",
-    "@types/jsdom": "^21.1.7",
+    "@tsconfig/node24": "^24.0.0",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^24.0.13",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "@vitest/coverage-istanbul": "^3.2.4",
-    "@vue/test-utils": "^2.4.6",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitest/coverage-istanbul": "^3.2.7",
+    "@vue/server-renderer": "^3.5.17",
+    "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.7.0",
     "jsdom": "^26.1.0",
+    "size-limit": "^12.0.1",
     "tsdown": "^0.12.9",
-    "vite": "^7.0.4",
-    "vitest": "^3.2.4",
+    "vite": "^8.3.0",
+    "vitest": "^4.1.11",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^0.3.3",
     "vue": "3.5.17",
-    "vue-component-type-helpers": "^3.0.1",
-    "vue-tsc": "2.2.12"
+    "vue-component-type-helpers": "^3.0.3",
+    "vue-tsc": "3.2.6"
   }
 }

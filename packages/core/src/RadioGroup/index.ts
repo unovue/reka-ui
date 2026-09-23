@@ -5,6 +5,7 @@ export {
 export {
   injectRadioGroupItemContext,
   default as RadioGroupItem,
+  type RadioGroupItemEmits,
   type RadioGroupItemProps,
 } from './RadioGroupItem.vue'
 export {

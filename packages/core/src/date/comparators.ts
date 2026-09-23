@@ -143,7 +143,13 @@ export function getLastFirstDayOfWeek<T extends DateValue = DateValue>(
   firstDayOfWeek: number,
   locale: string,
 ): T {
-  const day = getDayOfWeek(date, locale)
+  /**
+   * "firstDayOfWeek" is fixed to 0(Sunday) to avoid confusion regarding locales.
+   * This also aligns with other date libraries, e.g., date-fns.
+   *
+   * #see https://github.com/unovue/reka-ui/issues/2157
+   */
+  const day = getDayOfWeek(date, locale, 'sun')
 
   if (firstDayOfWeek > day)
     return date.subtract({ days: day + 7 - firstDayOfWeek }) as T
@@ -159,7 +165,14 @@ export function getNextLastDayOfWeek<T extends DateValue = DateValue>(
   firstDayOfWeek: number,
   locale: string,
 ): T {
-  const day = getDayOfWeek(date, locale)
+  /**
+   * "firstDayOfWeek" is fixed to 0(Sunday) to avoid confusion regarding locales.
+   * This also aligns with other date libraries, e.g., date-fns.
+   *
+   * #see https://github.com/unovue/reka-ui/issues/2157
+   */
+  const day = getDayOfWeek(date, locale, 'sun')
+
   const lastDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
 
   if (day === lastDayOfWeek)
@@ -169,6 +182,20 @@ export function getNextLastDayOfWeek<T extends DateValue = DateValue>(
     return date.add({ days: 7 - day + lastDayOfWeek }) as T
 
   return date.add({ days: lastDayOfWeek - day }) as T
+}
+
+/**
+ * Check if two dates are in the same year and month.
+ */
+export function isSameYearMonth(a: DateValue, b: DateValue): boolean {
+  return a.year === b.year && a.month === b.month
+}
+
+/**
+ * Check if two dates are in the same year.
+ */
+export function isSameYear(a: DateValue, b: DateValue): boolean {
+  return a.year === b.year
 }
 
 export function areAllDaysBetweenValid(
@@ -194,6 +221,89 @@ export function areAllDaysBetweenValid(
       && !isHighlightable?.(dCurrent)) {
       return false
     }
+  }
+  return true
+}
+
+/**
+ * Compare two dates by year and month only (ignoring day).
+ */
+export function compareYearMonth(a: DateValue, b: DateValue): number {
+  if (a.year !== b.year)
+    return a.year - b.year
+  return a.month - b.month
+}
+
+/**
+ * Check if a date's month is between start and end (inclusive), comparing year+month only.
+ */
+export function isMonthBetweenInclusive(date: DateValue, start: DateValue, end: DateValue): boolean {
+  return compareYearMonth(date, start) >= 0 && compareYearMonth(date, end) <= 0
+}
+
+/**
+ * Check if a date's year is between start and end (inclusive), comparing year only.
+ */
+export function isYearBetweenInclusive(date: DateValue, start: DateValue, end: DateValue): boolean {
+  return date.year >= start.year && date.year <= end.year
+}
+
+/**
+ * Get the number of months between two dates (inclusive).
+ */
+export function getMonthsBetween(start: DateValue, end: DateValue): number {
+  return (end.year - start.year) * 12 + (end.month - start.month) + 1
+}
+
+/**
+ * Get the number of years between two dates (inclusive).
+ */
+export function getYearsBetween(start: DateValue, end: DateValue): number {
+  return end.year - start.year + 1
+}
+
+/**
+ * Check if all months between start and end are valid (not unavailable/disabled).
+ */
+export function areAllMonthsBetweenValid(
+  start: DateValue,
+  end: DateValue,
+  isUnavailable: Matcher | undefined,
+  isDisabled: Matcher | undefined,
+): boolean {
+  if (isUnavailable === undefined && isDisabled === undefined)
+    return true
+
+  let current = start.set({ day: 1 })
+  const endMonth = end.set({ day: 1 })
+
+  while (compareYearMonth(current, endMonth) <= 0) {
+    if (isDisabled?.(current) || isUnavailable?.(current))
+      return false
+    current = current.add({ months: 1 })
+  }
+  return true
+}
+
+/**
+ * Check if all years between start and end are valid (not unavailable/disabled).
+ */
+export function areAllYearsBetweenValid(
+  start: DateValue,
+  end: DateValue,
+  isUnavailable: Matcher | undefined,
+  isDisabled: Matcher | undefined,
+): boolean {
+  if (isUnavailable === undefined && isDisabled === undefined)
+    return true
+
+  let current = start.set({ day: 1, month: 1 })
+  const endYear = end.set({ day: 1, month: 1 })
+
+  while (current.year <= endYear.year) {
+    if (isDisabled?.(current) || isUnavailable?.(current))
+      return false
+    current = current.add({ years: 1 })
   }
   return true
 }
