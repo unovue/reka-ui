@@ -194,15 +194,40 @@ const { isInvalid, isMonthSelected } = useMonthPickerState({
   isMonthUnavailable,
 })
 
-watch(modelValue, (_modelValue) => {
-  if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue.at(-1)
-    if (lastValue && !isSameYearMonth(placeholder.value, lastValue))
-      onPlaceholderChange(lastValue)
+function isSameSelectedMonth(left: DateValue | DateValue[] | undefined, right: DateValue | DateValue[] | undefined) {
+  if (left === right)
+    return true
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
+      return false
+
+    return left.every((item, index) => {
+      const other = right[index]
+      return !!other && isSameYearMonth(item, other)
+    })
   }
-  else if (!Array.isArray(_modelValue) && _modelValue && !isSameYearMonth(placeholder.value, _modelValue)) {
-    onPlaceholderChange(_modelValue)
-  }
+
+  if (!left || !right)
+    return false
+
+  return isSameYearMonth(left, right)
+}
+
+function focusedMonth(value: DateValue | DateValue[] | undefined) {
+  if (Array.isArray(value))
+    return value.at(-1)
+
+  return value
+}
+
+watch(modelValue, (value, previous) => {
+  if (isSameSelectedMonth(previous, value))
+    return
+
+  const nextFocused = focusedMonth(value)
+  if (nextFocused && !isSameYearMonth(placeholder.value, nextFocused))
+    onPlaceholderChange(nextFocused)
 })
 
 function resolveMonthValue(value: DateValue, reference?: DateValue) {

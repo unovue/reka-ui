@@ -468,5 +468,43 @@ describe('datePicker', async () => {
       expect(heading).toHaveTextContent('January')
       expect(heading).toHaveTextContent('1980')
     })
+
+    it('keeps the visible month when modelValue is a new object for the same day', async () => {
+      const selected = new CalendarDate(1980, 1, 20)
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: selected, closeOnSelect: true },
+      })
+
+      await user.click(trigger)
+
+      const heading = getByTestId('heading')
+      const popover = getByTestId('popover-content')
+      expect(heading).toHaveTextContent('January 1980')
+      await user.click(getByTestId('next-button'))
+      expect(heading).toHaveTextContent('February 1980')
+
+      await rerender({
+        datePickerProps: { modelValue: selected.copy(), closeOnSelect: true },
+      })
+
+      expect(heading).toHaveTextContent('February 1980')
+      expect(popover).toBeVisible()
+    })
+
+    it('moves the visible month when the selected day changes', async () => {
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: new CalendarDate(1980, 1, 20) },
+      })
+
+      await user.click(trigger)
+      await user.click(getByTestId('next-button'))
+      expect(getByTestId('heading')).toHaveTextContent('February 1980')
+
+      await rerender({
+        datePickerProps: { modelValue: new CalendarDate(1980, 9, 23) },
+      })
+
+      expect(getByTestId('heading')).toHaveTextContent('September 1980')
+    })
   })
 })

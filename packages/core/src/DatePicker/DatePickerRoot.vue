@@ -6,6 +6,7 @@ import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootE
 import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
+import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
 import { getWeekStartsOn } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
@@ -150,7 +151,12 @@ function resetTime(date: DateValue) {
   return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
 }
 
-watch(modelValue, (value) => {
+watch(modelValue, (value, previous) => {
+  // A new object for the same day is not a new selection. Skip placeholder
+  // reset and closeOnSelect, or paging the calendar is undone.
+  if (value && previous && isEqualDay(value, previous))
+    return
+
   if (value && value.compare(placeholder.value) !== 0) {
     placeholder.value = value.copy()
   }
