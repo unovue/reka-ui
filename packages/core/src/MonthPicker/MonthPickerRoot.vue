@@ -5,7 +5,7 @@ import type { Grid, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { isSameYearMonth } from '@/date'
+import { focusedDateValue, isSameDateSelection, isSameYearMonth } from '@/date'
 import { createContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useMonthPicker, useMonthPickerState } from './useMonthPicker'
@@ -194,38 +194,11 @@ const { isInvalid, isMonthSelected } = useMonthPickerState({
   isMonthUnavailable,
 })
 
-function isSameSelectedMonth(left: DateValue | DateValue[] | undefined, right: DateValue | DateValue[] | undefined) {
-  if (left === right)
-    return true
-
-  if (Array.isArray(left) || Array.isArray(right)) {
-    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
-      return false
-
-    return left.every((item, index) => {
-      const other = right[index]
-      return !!other && isSameYearMonth(item, other)
-    })
-  }
-
-  if (!left || !right)
-    return false
-
-  return isSameYearMonth(left, right)
-}
-
-function focusedMonth(value: DateValue | DateValue[] | undefined) {
-  if (Array.isArray(value))
-    return value.at(-1)
-
-  return value
-}
-
 watch(modelValue, (value, previous) => {
-  if (isSameSelectedMonth(previous, value))
+  if (isSameDateSelection(previous, value, isSameYearMonth))
     return
 
-  const nextFocused = focusedMonth(value)
+  const nextFocused = focusedDateValue(value)
   if (nextFocused && !isSameYearMonth(placeholder.value, nextFocused))
     onPlaceholderChange(nextFocused)
 })

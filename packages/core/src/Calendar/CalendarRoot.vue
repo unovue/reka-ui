@@ -8,7 +8,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { isEqualDay, isSameDay } from '@internationalized/date'
-import { getWeekStartsOn } from '@/date'
+import { focusedDateValue, getWeekStartsOn, isSameDateSelection } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useCalendar, useCalendarState } from './useCalendar'
@@ -251,40 +251,12 @@ const {
   isDateUnavailable,
 })
 
-function isSameSelectedDate(left: DateValue | DateValue[] | undefined, right: DateValue | DateValue[] | undefined) {
-  if (left === right)
-    return true
-
-  if (Array.isArray(left) || Array.isArray(right)) {
-    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
-      return false
-
-    return left.every((item, index) => {
-      const other = right[index]
-      return !!other && isEqualDay(item, other)
-    })
-  }
-
-  if (!left || !right)
-    return false
-
-  return isEqualDay(left, right)
-}
-
-function focusedDate(value: DateValue | DateValue[] | undefined) {
-  if (Array.isArray(value))
-    return value.at(-1)
-
-  return value
-}
-
-// Only follow placeholder when the selected day changes. A new DateValue
-// for the same day is a common render result and must not undo month paging.
+// A new DateValue for the same day must not undo month paging.
 watch(modelValue, (value, previous) => {
-  if (isSameSelectedDate(previous, value))
+  if (isSameDateSelection(previous, value, isEqualDay))
     return
 
-  const nextFocused = focusedDate(value)
+  const nextFocused = focusedDateValue(value)
   if (nextFocused && !isEqualDay(placeholder.value, nextFocused))
     onPlaceholderChange(nextFocused)
 })

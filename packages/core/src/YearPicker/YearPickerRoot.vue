@@ -5,7 +5,7 @@ import type { Grid, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { isSameYear } from '@/date'
+import { focusedDateValue, isSameDateSelection, isSameYear } from '@/date'
 import { createContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useYearPicker, useYearPickerState } from './useYearPicker'
@@ -200,38 +200,11 @@ const { isInvalid, isYearSelected } = useYearPickerState({
   isYearUnavailable,
 })
 
-function isSameSelectedYear(left: DateValue | DateValue[] | undefined, right: DateValue | DateValue[] | undefined) {
-  if (left === right)
-    return true
-
-  if (Array.isArray(left) || Array.isArray(right)) {
-    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
-      return false
-
-    return left.every((item, index) => {
-      const other = right[index]
-      return !!other && isSameYear(item, other)
-    })
-  }
-
-  if (!left || !right)
-    return false
-
-  return isSameYear(left, right)
-}
-
-function focusedYear(value: DateValue | DateValue[] | undefined) {
-  if (Array.isArray(value))
-    return value.at(-1)
-
-  return value
-}
-
 watch(modelValue, (value, previous) => {
-  if (isSameSelectedYear(previous, value))
+  if (isSameDateSelection(previous, value, isSameYear))
     return
 
-  const nextFocused = focusedYear(value)
+  const nextFocused = focusedDateValue(value)
   if (nextFocused && !isSameYear(placeholder.value, nextFocused))
     onPlaceholderChange(nextFocused)
 })

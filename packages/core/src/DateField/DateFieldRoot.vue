@@ -7,7 +7,7 @@ import type { DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
-import { hasTime, isBefore } from '@/date'
+import { hasTime, isBefore, isSameDateSelection } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -207,7 +207,7 @@ watch(locale, (value) => {
 })
 
 watch(modelValue, (value, previous) => {
-  if (value && previous && isEqualDay(value, previous))
+  if (isSameDateSelection(previous, value, isEqualDay))
     return
 
   if (!isNullish(value) && placeholder.value.compare(value) !== 0)
