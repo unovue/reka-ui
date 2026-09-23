@@ -62,6 +62,7 @@
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
+| `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | `true` |
 
 **Events**
 

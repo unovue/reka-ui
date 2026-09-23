@@ -28,24 +28,35 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
    * @defaultValue false
    */
   trapFocus?: FocusScopeProps['trapped']
+  /** Internal: whether a kept-mounted content is currently shown. */
+  present?: boolean
 }
 </script>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
 import { useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
-const props = defineProps<PopoverContentImplPrivateProps>()
+const props = withDefaults(defineProps<PopoverContentImplPrivateProps>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 
-const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
+const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents', 'present'))
 const { forwardRef } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
 useFocusGuards()
+
+// Kept-mounted content (`unmountOnHide: false`) never unmounts its FocusScope,
+// so synthesize `closeAutoFocus` when it hides; consumers restore focus as usual.
+watch(() => props.present, (present, wasPresent) => {
+  if (present || !wasPresent)
+    return
+  emits('closeAutoFocus', new CustomEvent('focusScope.autoFocusOnUnmount', { cancelable: true }))
+})
 </script>
 
 <template>
@@ -53,11 +64,13 @@ useFocusGuards()
     as-child
     loop
     :trapped="trapFocus"
+    :present="present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer
       as-child
+      :present="present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
@@ -69,6 +82,7 @@ useFocusGuards()
         v-bind="forwarded"
         :id="rootContext.contentId"
         :ref="forwardRef"
+        :present="present"
         :data-state="rootContext.open.value ? 'open' : 'closed'"
         :aria-labelledby="rootContext.triggerId"
         :style="{
