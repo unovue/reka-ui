@@ -1002,6 +1002,33 @@ describe('given combobox handleBlur with deferred close', () => {
   })
 })
 
+describe('given a Combobox with popper content', () => {
+  it('forwards popper prop changes after mount', async () => {
+    const side = ref<'bottom' | 'top'>('bottom')
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ComboboxRoot, { open: true }, {
+          default: () => [
+            h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
+            h(ComboboxContent, { position: 'popper', side: side.value }, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => h(ComboboxItem, { value: 'Apple' }, { default: () => 'Apple' }),
+              }),
+            }),
+          ],
+        })
+      },
+    }), { attachTo: document.body })
+
+    const content = () => document.querySelector<HTMLElement>('[role="listbox"]')?.closest('[data-side]')
+    await vi.waitFor(() => expect(content()?.dataset.side).toBe('bottom'))
+
+    side.value = 'top'
+    await vi.waitFor(() => expect(content()?.dataset.side).toBe('top'))
+    wrapper.unmount()
+  })
+})
+
 describe('comboboxContent with popper positioning', () => {
   const getSlotRenderCount = vi.fn(() => ({ value: 0 }))
 

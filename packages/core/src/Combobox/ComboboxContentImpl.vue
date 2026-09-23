@@ -73,7 +73,7 @@ const pickedProps = computed(() => {
   }
 })
 
-const forwardedProps = useForwardProps(pickedProps.value)
+const forwardedProps = useForwardProps(pickedProps)
 
 const popperStyle = {
   // Ensure border-box for floating-ui calculations
