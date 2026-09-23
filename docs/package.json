@@ -1,12 +1,13 @@
 {
   "name": "docs",
   "type": "module",
-  "version": "2.10.1",
+  "version": "2.10.5",
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
     "docs:preview": "vitepress preview",
     "docs:contributors": "tsx scripts/update-contributors.ts",
+    "docs:sponsors": "tsx scripts/update-sponsors.ts",
     "docs:gen": "tsx scripts/autogen.ts"
   },
   "peerDependencies": {
@@ -35,7 +36,7 @@
     "fast-glob": "^3.3.3",
     "hast": "^1.0.0",
     "mark.js": "^8.11.1",
-    "markdown-it": "^14.2.0",
+    "markdown-it": "^15.0.2",
     "markdown-it-anchor": "^9.2.0",
     "minisearch": "^6.3.0",
     "postcss": "^8.5.10",

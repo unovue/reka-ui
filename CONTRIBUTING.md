@@ -69,12 +69,16 @@ All commands run from the repo root.
 | Test coverage | `pnpm --filter reka-ui test:coverage` |
 | Lint / auto-fix | `pnpm lint` / `pnpm lint:fix` |
 | Stories | `pnpm story:dev` |
-| Docs dev | `pnpm docs:install && pnpm docs:dev` |
+| Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
 | Docs API regen | `pnpm docs:gen` (regenerates `docs/content/meta/*.md`) |
 | Bundle size | `pnpm --filter reka-ui size` |
 
-> `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
-> `pnpm --filter reka-ui exec vitest run`.
+> - `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
+>   `pnpm --filter reka-ui exec vitest run`.
+> - The docs site needs `packages/core/dist` to exist — `docs/.vitepress/config.ts`
+>   imports `reka-ui/dist/constant.js` through the workspace link. On a fresh
+>   checkout run `pnpm --filter reka-ui build` first, or `pnpm docs:dev` fails
+>   with `Cannot find module … /dist/constant.js`.
 
 ## Component architecture
 

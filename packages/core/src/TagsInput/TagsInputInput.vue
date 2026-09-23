@@ -48,32 +48,49 @@ function handleBlur(event: FocusEvent) {
     target.value = ''
 }
 
-function handleTab(event: Event) {
+function handleTab(event: KeyboardEvent) {
   if (!context.addOnTab.value)
     return
 
-  handleCustomKeydown(event)
+  return handleCustomKeydown(event)
+}
+
+function handleEnter(event: KeyboardEvent) {
+  return handleCustomKeydown(event, { preventImplicitSubmit: true })
 }
 
 const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
-async function handleCustomKeydown(event: Event) {
+async function handleCustomKeydown(event: KeyboardEvent, { preventImplicitSubmit = false } = {}) {
   if (isComposing.value)
     return
-  await nextTick()
-  // if keydown 'Enter' or `Tab` was prevented, we let user handle updating the value themselves
-  if (event.defaultPrevented)
-    return
+
+  // If keydown `Enter` or `Tab` was prevented, we let user handle updating the value themselves.
+  // Listeners that run after this one (e.g. `@keydown.enter.prevent`, or a wrapping `ComboboxInput`
+  // selecting its highlighted item) can only be observed after dispatch, and by then
+  // `defaultPrevented` may already be set by us, so their `preventDefault()` calls are tracked here.
+  let isPreventedByOthers = event.defaultPrevented
+  const nativePreventDefault = event.preventDefault.bind(event)
+  event.preventDefault = () => {
+    isPreventedByOthers = true
+    nativePreventDefault()
+  }
 
   const target = event.target as HTMLInputElement
+  // A form submits implicitly as soon as the `Enter` keydown dispatch finishes,
+  // so it has to be cancelled synchronously. An empty draft keeps submitting the form.
+  if (preventImplicitSubmit && target.value && !isPreventedByOthers)
+    nativePreventDefault()
+
+  await nextTick()
+  if (isPreventedByOthers)
+    return
+
   if (!target.value)
     return
 
   const isAdded = context.onAddValue(target.value)
   if (isAdded)
     target.value = ''
-
-  // prevent reloading when using inside of form
-  event.preventDefault()
 }
 
 function handleInput(event: InputEvent) {
@@ -159,7 +176,7 @@ onMounted(() => {
     :disabled="context.disabled.value"
     :data-invalid="context.isInvalidInput.value ? '' : undefined"
     @input="handleInput"
-    @keydown.enter="handleCustomKeydown"
+    @keydown.enter="handleEnter"
     @keydown.tab="handleTab"
     @blur="handleBlur"
     @keydown="handleInputKeydown"

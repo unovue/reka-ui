@@ -38,6 +38,16 @@ describe('given default Select', () => {
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
+  it('should only render aria-controls while open', async () => {
+    const trigger = wrapper.find('[role="combobox"]')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+
+    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
+  })
+
   describe('trigger mouse interop', () => {
     async function openSelectWithMouseClick() {
       const button = wrapper.find('button')
@@ -123,6 +133,15 @@ describe('given default Select', () => {
       expect(wrapper.html()).toContain('Apple')
     })
 
+    it('should select the focused item with Space', async () => {
+      const selection = wrapper.findAll('[role=option]')[1]
+      ;(selection.element as HTMLElement).focus()
+      await selection.trigger('keydown', { key: ' ', code: 'Space' })
+      await nextTick()
+
+      expect(valueBox.html()).toContain('Banana')
+    })
+
     describe('after selecting a value', () => {
       beforeEach(async () => {
         const selection = wrapper.findAll('[role=option]')[1];
@@ -198,6 +217,16 @@ describe('given Select with multiple props', async () => {
 
     it('should show the modal content', () => {
       expect(wrapper.html()).toContain('Apple')
+    })
+
+    it('should toggle the focused item with Space', async () => {
+      const selection = wrapper.findAll('[role=option]')[1]
+      ;(selection.element as HTMLElement).focus()
+      await selection.trigger('keydown', { key: ' ', code: 'Space' })
+      await nextTick()
+
+      expect(valueBox.html()).toContain('Banana')
+      expect(selection.attributes('data-state')).toBe('checked')
     })
 
     describe('after selecting a value', () => {
@@ -312,6 +341,42 @@ describe('given Select with object type', async () => {
         expect(group.exists()).toBeFalsy()
       })
     })
+  })
+})
+
+describe('given Select with options containing spaces', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Select>>
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Select, { attachTo: document.body, props: { options: ['New York', 'Newark', 'New Jersey'] } })
+    await wrapper.find('button').trigger('pointerdown', {
+      button: 0,
+      ctrlKey: false,
+    })
+    await nextTick()
+  })
+
+  it('should include Space in the typeahead search once typing has started', async () => {
+    (wrapper.findAll('[role=option]')[0].element as HTMLElement).focus()
+
+    for (const [key, code] of [['n', 'KeyN'], ['e', 'KeyE'], ['w', 'KeyW'], [' ', 'Space'], ['j', 'KeyJ']]) {
+      await fireEvent.keyDown(document.activeElement!, { key, code })
+      await nextTick()
+    }
+
+    expect(document.activeElement?.textContent).toContain('New Jersey')
+  })
+
+  it('should prevent scrolling when Space extends the typeahead search', async () => {
+    (wrapper.findAll('[role=option]')[0].element as HTMLElement).focus()
+    await fireEvent.keyDown(document.activeElement!, { key: 'n', code: 'KeyN' })
+    await nextTick()
+
+    const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
   })
 })
 

@@ -9,15 +9,16 @@ import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 export type PinInputType = 'text' | 'number'
 
 // Using this type to avoid mixed arrays (string | number)[].
-// The value type can be number[] only when the type is explicitly set to 'number'
-export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? number[] : string[]
+// The value type can be (number | undefined)[] only when the type is explicitly set to 'number'.
+// Cleared inputs leave gaps, so numeric values may be `undefined`.
+export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? (number | undefined)[] : string[]
 
 // provide the mixed arrays because the `type` is dynamic in the context
 export type PinInputContextValue<Type extends PinInputType = 'text'>
   = Type extends 'number'
     ? Type extends 'string'
-      ? string[] | number[]
-      : number[]
+      ? string[] | (number | undefined)[]
+      : (number | undefined)[]
     : string[]
 
 export type PinInputRootEmits<Type extends PinInputType = 'text'> = {

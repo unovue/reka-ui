@@ -1,6 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { handleSubmit, sleep } from '@/test'
@@ -173,6 +173,60 @@ describe('given default Autocomplete', () => {
         const emitted = wrapper.emitted('update:modelValue')
         const lastEmit = emitted.at(-1)?.[0]
         expect(lastEmit).toBe('香')
+      })
+
+      it('should not filter during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+        await input.trigger('compositionstart')
+        input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+        input.element.value = 'xiang'
+        await input.trigger('input')
+        await nextTick()
+        const content = wrapper.find('[role=listbox]')
+        expect(content.attributes('data-empty')).toBeUndefined()
+      })
+
+      describe('on Android soft keyboard', () => {
+        beforeEach(() => {
+          Object.defineProperty(window.navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+            configurable: true,
+          })
+        })
+
+        afterEach(() => {
+          delete (window.navigator as { userAgent?: string }).userAgent
+        })
+
+        it('should filter and update modelValue live during plain-text (autocorrect) composition', async () => {
+          await input.trigger('compositionstart')
+          input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'zzzzz', bubbles: true }))
+          input.element.value = 'zzzzz'
+          await input.trigger('input')
+          await nextTick()
+
+          const content = wrapper.find('[role=listbox]')
+          expect(content.attributes('data-empty')).toBeDefined()
+          expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBe('zzzzz')
+        })
+
+        it('should not filter during CJK IME composition until compositionend', async () => {
+          const emittedBefore = wrapper.emitted('update:modelValue')?.length ?? 0
+          await input.trigger('compositionstart')
+          input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+          input.element.value = 'かんじ'
+          await input.trigger('input')
+          await nextTick()
+
+          expect(wrapper.find('[role=listbox]').attributes('data-empty')).toBeUndefined()
+          expect(wrapper.emitted('update:modelValue')?.length ?? 0).toBe(emittedBefore)
+
+          await input.trigger('compositionend')
+          await nextTick()
+          await nextTick()
+
+          expect(wrapper.find('[role=listbox]').attributes('data-empty')).toBeDefined()
+          expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBe('かんじ')
+        })
       })
     })
 

@@ -155,6 +155,43 @@ describe('useCollection', () => {
     wrapper.unmount()
   })
 
+  it('looks up registered items by element and preserves disabled filtering', async () => {
+    const { getCollection, wrapper } = createWrapper([
+      { value: 'enabled' },
+      { value: 'disabled', disabled: true },
+    ])
+    await nextTick()
+
+    const { getItem, getItems } = getCollection()
+    const enabled = wrapper.get<HTMLElement>('[data-testid=enabled]').element
+    const disabled = wrapper.get<HTMLElement>('[data-testid=disabled]').element
+
+    expect(getItem(enabled)).toBe(getItems().find(item => item.ref === enabled))
+    expect(getItem(disabled)).toBeUndefined()
+    expect(getItem(disabled, true)).toBe(getItems(true).find(item => item.ref === disabled))
+    expect(getItem(document.createElement('div'))).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('finds detached registered items but not unmounted items', async () => {
+    const { getCollection, items, wrapper } = createWrapper([{ value: 'item' }])
+    await nextTick()
+
+    const { getItem, getItems } = getCollection()
+    const element = wrapper.get<HTMLElement>('[data-testid=item]').element
+    const item = getItems()[0]
+    element.remove()
+    expect(getItem(element)).toBe(item)
+
+    wrapper.element.appendChild(element)
+    items.splice(0, 1)
+    await nextTick()
+    expect(getItem(element)).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
   it('getItems() returns [] when no CollectionSlot element is mounted', async () => {
     // A provider context whose `collectionRef` is never set (no CollectionSlot
     // currentElement). `getItems()` short-circuits to `[]`.
@@ -171,6 +208,7 @@ describe('useCollection', () => {
     const wrapper = mount(Parent, { attachTo: document.body })
     await nextTick()
 
+    expect(collection.getItem(document.createElement('div'))).toBeUndefined()
     expect(collection.getItems()).toEqual([])
     expect(collection.getItems(true)).toEqual([])
     expect(collection.itemMapSize.value).toBe(0)

@@ -1,7 +1,7 @@
 import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
 
 import type { DateFieldRootProps } from './DateFieldRoot.vue'
-import { CalendarDate, CalendarDateTime, now, parseAbsoluteToLocal, toZoned } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, getLocalTimeZone, now, parseAbsoluteToLocal, toTimeZone, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -38,6 +38,36 @@ function isDaylightSavingsTime(): boolean {
 function thisTimeZone(date: string): string {
   const timezone = Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date(date)).find(p => p.type === 'timeZoneName')?.value ?? ''
   return timezone
+}
+
+/**
+ * Build a `ZonedDateTime` whose own clock reads PM while the same instant
+ * reads 02:30 AM in the test runner's local zone. The zone is picked at
+ * runtime so the mismatch exists wherever the suite runs. The candidates are
+ * spaced at most three hours apart around the globe, and the target window is
+ * twelve hours wide, so one of them always qualifies.
+ */
+function zonedDateTimeInForeignZone() {
+  const local = toZoned(new CalendarDateTime(2024, 1, 20, 2, 30), getLocalTimeZone())
+  const candidateZones = [
+    'Pacific/Honolulu',
+    'America/Los_Angeles',
+    'America/Chicago',
+    'America/Sao_Paulo',
+    'UTC',
+    'Europe/Berlin',
+    'Europe/Moscow',
+    'Asia/Dubai',
+    'Asia/Kolkata',
+    'Asia/Bangkok',
+    'Asia/Tokyo',
+    'Australia/Sydney',
+    'Pacific/Auckland',
+  ]
+  const foreign = candidateZones.map(zone => toTimeZone(local, zone)).find(date => date.hour >= 12)
+  if (!foreign)
+    throw new Error('No candidate zone reads PM while the local zone reads AM')
+  return foreign
 }
 
 function setup(props: { dateFieldProps?: DateFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
@@ -577,6 +607,34 @@ describe('dateField', async () => {
     expect(getByTestId('value').textContent).toBe(calendarDateTime.subtract({ hours: 12 }).toString())
     await user.keyboard('{P}')
     expect(getByTestId('value').textContent).toBe(calendarDateTime.toString())
+  })
+
+  it('keeps the day period of a `ZonedDateTime` in a zone other than the local one while editing the hour', async () => {
+    const foreign = zonedDateTimeInForeignZone()
+    const { getByTestId, user, rerender } = setup({
+      dateFieldProps: { modelValue: foreign },
+      emits: {
+        'onUpdate:modelValue': (data: DateValue) => {
+          return rerender({ dateFieldProps: { modelValue: data } })
+        },
+      },
+    })
+
+    const hour = getByTestId('hour')
+    const dayPeriod = getByTestId('dayPeriod')
+
+    // The value's own clock is in the afternoon, so the segments must say so
+    // even though the same instant is 02:30 AM in the local zone.
+    expect(hour).toHaveTextContent(String(foreign.hour > 12 ? foreign.hour - 12 : foreign.hour))
+    expect(dayPeriod).toHaveTextContent('PM')
+
+    // Typing an hour must be interpreted with the displayed period, not the
+    // period of the local zone, so 3 becomes 15:30 rather than 03:30.
+    await user.click(hour)
+    await user.keyboard('{3}')
+
+    expect(getByTestId('value').textContent).toBe(foreign.set({ hour: 15 }).toString())
+    expect(dayPeriod).toHaveTextContent('PM')
   })
 
   it('fully overwrites on first click and type - `month`', async () => {
@@ -1156,6 +1214,48 @@ describe('useDateField – characterization tests (coverage gaps)', () => {
       const hour = getByTestId('hour')
       expect(hour).toHaveAttribute('aria-valuemin', '0')
       expect(hour).toHaveAttribute('aria-valuemax', '23')
+    })
+  })
+})
+
+/**
+ * Locales whose formatted day period is not `AM`/`PM` used to fall through to
+ * the `AM` token, so an afternoon value rendered as AM and editing the hour
+ * converted it to the morning.
+ *
+ * @see https://github.com/unovue/reka-ui/issues/2956
+ */
+describe('dayPeriod across locales', () => {
+  const afternoon = new CalendarDateTime(2024, 1, 20, 15, 30)
+  const morning = new CalendarDateTime(2024, 1, 20, 9, 30)
+  const locales = ['en-US', 'nl-NL', 'es-ES', 'ja-JP', 'zh-CN', 'ko-KR', 'ar-EG', 'hi-IN']
+
+  describe.each(locales)('%s', (locale) => {
+    it('shows PM for an afternoon value', async () => {
+      const { getByTestId } = setup({ dateFieldProps: { modelValue: afternoon, locale, hourCycle: 12 } })
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+    })
+
+    it('shows AM for a morning value', async () => {
+      const { getByTestId } = setup({ dateFieldProps: { modelValue: morning, locale, hourCycle: 12 } })
+      expect(getByTestId('dayPeriod')).toHaveTextContent('AM')
+    })
+
+    it('keeps an afternoon value in the afternoon when the hour is retyped', async () => {
+      const { getByTestId, user, rerender } = setup({
+        dateFieldProps: { modelValue: afternoon, locale, hourCycle: 12 },
+        emits: {
+          'onUpdate:modelValue': (data: DateValue) => {
+            return rerender({ dateFieldProps: { modelValue: data, locale, hourCycle: 12 } })
+          },
+        },
+      })
+
+      await user.click(getByTestId('hour'))
+      await user.keyboard('{3}')
+
+      expect(getByTestId('value').textContent).toBe(afternoon.set({ hour: 15 }).toString())
+      expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
     })
   })
 })
