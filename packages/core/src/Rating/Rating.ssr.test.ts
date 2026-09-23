@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, nextTick, shallowRef } from 'vue'
 import { RatingItem, RatingItemIndicator, RatingRoot } from '.'
 
-const ssr = vi.hoisted(() => ({ isServer: false }))
+let isServer = false
 
 // On the server `useActiveElement` has no document to read, so it stays `undefined`.
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -12,7 +12,7 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 
   return {
     ...mod,
-    useActiveElement: ((...args) => ssr.isServer ? shallowRef(undefined) : mod.useActiveElement(...args)) as typeof mod.useActiveElement,
+    useActiveElement: ((...args) => isServer ? shallowRef(undefined) : mod.useActiveElement(...args)) as typeof mod.useActiveElement,
   }
 })
 
@@ -30,7 +30,7 @@ const RatingHydrationFixture = defineComponent({
 })
 
 afterEach(() => {
-  ssr.isServer = false
+  isServer = false
   vi.restoreAllMocks()
 })
 
@@ -39,10 +39,10 @@ describe('given a Rating with half steps', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    ssr.isServer = true
+    isServer = true
     const container = document.createElement('div')
     container.innerHTML = await renderToString(createSSRApp(RatingHydrationFixture))
-    ssr.isServer = false
+    isServer = false
     document.body.innerHTML = ''
     document.body.append(container)
 
