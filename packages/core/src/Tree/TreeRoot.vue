@@ -113,7 +113,9 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error idk
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: true,
-  deep: true,
+  // Not `deep`: selected items are tree nodes, and a deep watcher walks every
+  // loaded descendant on each selection. Every selection path assigns a new
+  // value, so a shallow watcher still emits each change.
 }) as Ref<U | U[]>
 
 const expanded = useVModel(props, 'expanded', emits, {

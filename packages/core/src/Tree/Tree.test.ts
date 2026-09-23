@@ -505,3 +505,82 @@ describe('given a Tree with a text field inside an item', () => {
     expect(wrapper.findAll('[role=treeitem]').length).toBeLessThan(items.length)
   })
 })
+
+describe('given a Tree whose items carry a large loaded subtree', () => {
+  // Every read of `probe` counts as one visit. Vue's deep watcher reads every
+  // nested property of a watched value, so a deep selection watcher shows up
+  // here as reads of a node nobody rendered.
+  function createItems() {
+    const counter = { reads: 0 }
+    const deepNode = {
+      title: 'deep.vue',
+      get probe() {
+        counter.reads++
+        return true
+      },
+    }
+    const items = [
+      { title: 'src', children: [{ title: 'lib', children: [deepNode] }] },
+      { title: 'app.vue' },
+    ]
+    return { items, counter }
+  }
+
+  // Test utils walks the props once while mounting, so count only what
+  // happens after mount.
+  async function mountTree(items: Record<string, any>[], counter: { reads: number }, props: Record<string, any> = {}) {
+    const wrapper = mount(TreeRoot, {
+      props: { items, getKey: (item: any) => item.title, ...props },
+      slots: {
+        default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+          h(TreeItem, { key: item._id, ...item.bind }, () => item.value.title),
+        ),
+      },
+      attachTo: document.body,
+    })
+    await nextTick()
+    counter.reads = 0
+    return wrapper
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('selects an item without walking its descendants', async () => {
+    const { items, counter } = createItems()
+    const wrapper = await mountTree(items, counter)
+
+    await wrapper.findAll('[role=treeitem]')[0].trigger('click')
+    await nextTick()
+
+    expect(counter.reads).toBe(0)
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toMatchObject({ title: 'src' })
+    expect(wrapper.findAll('[role=treeitem]')[0].attributes('aria-selected')).toBe('true')
+  })
+
+  it('selects multiple items without walking their descendants', async () => {
+    const { items, counter } = createItems()
+    const wrapper = await mountTree(items, counter, { multiple: true })
+
+    const rows = wrapper.findAll('[role=treeitem]')
+    await rows[0].trigger('click')
+    await rows[1].trigger('click')
+    await nextTick()
+
+    expect(counter.reads).toBe(0)
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toHaveLength(2)
+    expect(rows.map(r => r.attributes('aria-selected'))).toStrictEqual(['true', 'true'])
+  })
+
+  it('keeps a controlled selection in sync when the parent replaces it', async () => {
+    const { items, counter } = createItems()
+    const wrapper = await mountTree(items, counter, { modelValue: items[1] })
+    expect(wrapper.findAll('[role=treeitem]')[1].attributes('aria-selected')).toBe('true')
+
+    await wrapper.setProps({ modelValue: items[0] })
+
+    expect(counter.reads).toBe(0)
+    expect(wrapper.findAll('[role=treeitem]').map(r => r.attributes('aria-selected'))).toStrictEqual(['true', 'false'])
+  })
+})
