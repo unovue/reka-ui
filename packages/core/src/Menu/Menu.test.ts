@@ -122,4 +122,48 @@ describe('given a Menu with submenu', () => {
     expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
     expect(wrapper.find('[role="menu"][aria-labelledby]').exists()).toBe(true)
   })
+
+  it.each([
+    [undefined, 300],
+    [1000, 1000],
+  ])('should keep the submenu open while the pointer heads towards it (graceDuration: %s)', async (graceDuration, expected) => {
+    await wrapper.setProps({ graceDuration })
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+    const siblingItem = wrapper.findAll<HTMLElement>('[role="menuitem"]').find(item => item.text() === 'Item 2')!.element
+
+    // jsdom does not support PointerEvent.
+    async function dispatchPointer(el: HTMLElement, type: string, clientX: number) {
+      const event = new MouseEvent(type, { bubbles: type !== 'pointerleave', clientX, clientY: 50 })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      el.dispatchEvent(event)
+      await nextTick()
+    }
+
+    await dispatchPointer(subTrigger, 'pointermove', 100)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    // jsdom has no layout, so place the submenu to the right of the trigger.
+    const subContent = wrapper.get<HTMLElement>('[role="menu"][aria-labelledby]').element
+    subContent.dataset.side = 'right'
+    vi.spyOn(subContent, 'getBoundingClientRect').mockReturnValue(
+      { left: 200, right: 300, top: 0, bottom: 200, width: 100, height: 200, x: 200, y: 0, toJSON: () => {} },
+    )
+
+    // Leave the trigger and cross a sibling item on the way to the submenu.
+    await dispatchPointer(subTrigger, 'pointerleave', 100)
+    await dispatchPointer(siblingItem, 'pointermove', 150)
+    expect(siblingItem).not.toHaveFocus()
+
+    await vi.advanceTimersByTimeAsync(expected - 50)
+    await dispatchPointer(siblingItem, 'pointermove', 160)
+    expect(siblingItem).not.toHaveFocus()
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    // Once the grace period ends, the sibling item takes over.
+    await vi.advanceTimersByTimeAsync(50)
+    await dispatchPointer(siblingItem, 'pointermove', 170)
+    expect(siblingItem).toHaveFocus()
+  })
 })
