@@ -6,10 +6,10 @@ import ExampleHome from '../components/ExampleHome.vue'
 const { path } = useRoute()
 const { page, frontmatter } = useData()
 
-// @ts-expect-error type issue with `createContentLoader`
-import { data as examples } from '../functions/examples.data'
 import type { ContentData } from 'vitepress'
 import { computed } from 'vue'
+// @ts-expect-error type issue with `createContentLoader`
+import { data as examples } from '../functions/examples.data'
 
 const data = computed(() => examples.filter((example: ContentData) => example.url !== '/examples/') as ContentData[])
 </script>

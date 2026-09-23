@@ -1,10 +1,11 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { type Ref, computed, ref, toRefs } from 'vue'
+import { computed, ref, toRefs } from 'vue'
+import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
-export type AcceptableInputValue = string | Record<string, any>
+export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
 export interface TagsInputRootProps<T = AcceptableInputValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the tags input. Can be bind as `v-model`. */
@@ -68,9 +69,10 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
-import { Primitive } from '@/Primitive'
-import { useCollection } from '@/Collection'
 import { useFocusWithin, useVModel } from '@vueuse/core'
+import { isEqual } from 'ohash'
+import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
@@ -82,7 +84,7 @@ const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
 const emits = defineEmits<TagsInputRootEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any
@@ -110,9 +112,9 @@ const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...m
 
 function handleRemoveTag(index: number) {
   if (index !== -1) {
-    const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+    const removedValue = modelValue.value[index] as T
     modelValue.value = modelValue.value.filter((_, i) => i !== index)
-    emits('removeTag', collection[index].value)
+    emits('removeTag', removedValue)
   }
 }
 
@@ -155,6 +157,9 @@ provideTagsInputRootContext({
   },
   onRemoveValue: handleRemoveTag,
   onInputKeydown: (event) => {
+    // Don't navigate/select tags mid-composition, keys are used for IME candidate navigation
+    if (event.isComposing)
+      return
     const target = event.target as HTMLInputElement
     const collection = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
     if (!collection.length)
@@ -168,7 +173,9 @@ provideTagsInputRootContext({
 
         if (selectedElement.value) {
           const index = collection.findIndex(i => i === selectedElement.value)
-          handleRemoveTag(index)
+          const selectedItem = getItems().find(i => i.ref === selectedElement.value)
+          const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
+          handleRemoveTag(modelIndex)
           selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }

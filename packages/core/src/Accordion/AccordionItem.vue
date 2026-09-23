@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import { injectAccordionRootContext } from './AccordionRoot.vue'
 import { createContext, useArrowNavigation, useForwardExpose } from '@/shared'
+import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 enum AccordionItemState {
   Open = 'open',
@@ -40,13 +40,18 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { CollapsibleRoot } from '@/Collapsible'
 import { computed } from 'vue'
+import { CollapsibleRoot } from '@/Collapsible'
 
-const props = defineProps<AccordionItemProps>()
+const props = withDefaults(
+  defineProps<AccordionItemProps>(),
+  {
+    unmountOnHide: undefined,
+  },
+)
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any
@@ -95,7 +100,7 @@ function handleArrowKey(e: KeyboardEvent) {
 
   useArrowNavigation(
     e,
-    currentElement.value,
+    target,
     rootContext.parentElement.value!,
     {
       arrowKeyOptions: rootContext.orientation,
@@ -115,7 +120,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :open="open"
     :as="props.as"
     :as-child="props.asChild"
-    :unmount-on-hide="rootContext.unmountOnHide.value"
+    :unmount-on-hide="props.unmountOnHide ?? rootContext.unmountOnHide.value"
     @keydown.up.down.left.right.home.end="handleArrowKey"
   >
     <slot :open="open" />

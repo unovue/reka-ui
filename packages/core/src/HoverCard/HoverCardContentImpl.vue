@@ -1,20 +1,21 @@
 <script lang="ts">
-import type { PopperContentProps } from '@/Popper'
 import type { DismissableLayerEmits } from '@/DismissableLayer'
-import { useForwardExpose, useGraceArea } from '@/shared'
+import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
+import { useForwardExpose, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
 </script>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
-import { injectHoverCardRootContext } from './HoverCardRoot.vue'
-import { PopperContent } from '@/Popper'
 import { DismissableLayer } from '@/DismissableLayer'
-import { getTabbableNodes } from './utils'
+import { PopperContent } from '@/Popper'
 import { useForwardProps } from '..'
+import { injectHoverCardRootContext } from './HoverCardRoot.vue'
+import { getTabbableNodes } from './utils'
 
 const props = defineProps<HoverCardContentImplProps>()
 const emits = defineEmits<HoverCardContentImplEmits>()
@@ -68,6 +69,12 @@ onMounted(() => {
     const tabbables = getTabbableNodes(contentElement.value)
     tabbables.forEach(tabbable => tabbable.setAttribute('tabindex', '-1'))
   }
+
+  useEventListener(window, 'scroll', (event: Event) => {
+    const target = event.target as HTMLElement
+    if (target?.contains(rootContext.triggerElement.value!))
+      rootContext.onDismiss()
+  }, { capture: true })
 })
 
 onUnmounted(() => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const states = [
   'California',

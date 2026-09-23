@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
+import type { PrimitiveProps } from '@/Primitive'
 
 export interface RangeCalendarPrevProps extends PrimitiveProps {
   /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `RangeCalendarRoot`. */
@@ -8,7 +8,7 @@ export interface RangeCalendarPrevProps extends PrimitiveProps {
 }
 
 export interface RangeCalendarPrevSlot {
-  default: (props: {
+  default?: (props: {
     /** Current disable state */
     disabled: boolean
   }) => any
@@ -26,17 +26,24 @@ defineSlots<RangeCalendarPrevSlot>()
 const disabled = computed(() => rootContext.disabled.value || rootContext.isPrevButtonDisabled(props.prevPage))
 
 const rootContext = injectRangeCalendarRootContext()
+
+function handleClick() {
+  if (disabled.value)
+    return
+  rootContext.prevPage(props.prevPage)
+}
 </script>
 
 <template>
   <Primitive
-    v-bind="props"
+    :as="props.as"
+    :as-child="props.asChild"
     aria-label="Previous page"
-    :type="as === 'button' ? 'button' : undefined"
+    :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
     :disabled="disabled"
-    @click="rootContext.prevPage(props.prevPage)"
+    @click="handleClick"
   >
     <slot :disabled>
       Prev page

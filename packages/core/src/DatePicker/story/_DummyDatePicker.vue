@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { DatePickerRootEmits, DatePickerRootProps } from '..'
 import { Icon } from '@iconify/vue'
+import { useForwardPropsEmits } from '@/shared'
 import {
   DatePickerArrow,
   DatePickerCalendar,
@@ -18,11 +20,9 @@ import {
   DatePickerNext,
   DatePickerPrev,
   DatePickerRoot,
-  type DatePickerRootEmits,
-  type DatePickerRootProps,
+
   DatePickerTrigger,
 } from '..'
-import { useForwardPropsEmits } from '@/shared'
 
 const props = defineProps<DatePickerRootProps>()
 const emits = defineEmits<DatePickerRootEmits>()

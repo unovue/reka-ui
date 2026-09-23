@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { useForwardExpose } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,13 +11,13 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { injectMenubarRootContext } from './MenubarRoot.vue'
-import { injectMenubarMenuContext } from './MenubarMenu.vue'
+import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
-import { MenuAnchor } from '@/Menu'
 import { RovingFocusItem } from '@/RovingFocus'
+import { injectMenubarMenuContext } from './MenubarMenu.vue'
+import { injectMenubarRootContext } from './MenubarRoot.vue'
 
 withDefaults(defineProps<MenubarTriggerProps>(), {
   as: 'button',
@@ -49,6 +49,7 @@ onMounted(() => {
           :id="menuContext.triggerId"
           :ref="forwardRef"
           :as="as"
+          :as-child="asChild"
           :type="as === 'button' ? 'button' : undefined"
           role="menuitem"
           aria-haspopup="menu"
@@ -59,7 +60,7 @@ onMounted(() => {
           :data-disabled="disabled ? '' : undefined"
           :disabled="disabled"
           :data-value="menuContext.value"
-          @pointerdown="(event) => {
+          @pointerdown="(event: PointerEvent) => {
             // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
             // but not when the control key is pressed (avoiding MacOS right click)
             if (!disabled && event.button === 0 && event.ctrlKey === false) {
@@ -76,7 +77,7 @@ onMounted(() => {
               triggerElement?.focus()
             }
           }"
-          @keydown.enter.space.arrow-down="(event) => {
+          @keydown.enter.space.arrow-down="(event: KeyboardEvent) => {
             if (disabled) return;
             if (['Enter', ' '].includes(event.key)) rootContext.onMenuToggle(menuContext.value);
             if (event.key === 'ArrowDown') rootContext.onMenuOpen(menuContext.value);

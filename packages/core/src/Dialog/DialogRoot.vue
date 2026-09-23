@@ -12,6 +12,12 @@ export interface DialogRootProps {
    * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
    */
   modal?: boolean
+  /**
+   * When set to `false`, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful for SEO or when you want to improve performance by not remounting the component on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 
 export type DialogRootEmits = {
@@ -22,6 +28,7 @@ export type DialogRootEmits = {
 export interface DialogRootContext {
   open: Readonly<Ref<boolean>>
   modal: Ref<boolean>
+  unmountOnHide: Ref<boolean>
   openModal: () => void
   onOpenChange: (value: boolean) => void
   onOpenToggle: () => void
@@ -37,8 +44,8 @@ export const [injectDialogRootContext, provideDialogRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 
 defineOptions({
   inheritAttrs: false,
@@ -48,13 +55,16 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
   open: undefined,
   defaultOpen: false,
   modal: true,
+  unmountOnHide: true,
 })
 const emit = defineEmits<DialogRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
+    /** Close the dialog */
+    close: () => void
   }) => any
 }>()
 
@@ -65,11 +75,12 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
-const { modal } = toRefs(props)
+const { modal, unmountOnHide } = toRefs(props)
 
 provideDialogRootContext({
   open,
   modal,
+  unmountOnHide,
   openModal: () => {
     open.value = true
   },
@@ -88,5 +99,8 @@ provideDialogRootContext({
 </script>
 
 <template>
-  <slot :open="open" />
+  <slot
+    :open="open"
+    :close="() => open = false"
+  />
 </template>

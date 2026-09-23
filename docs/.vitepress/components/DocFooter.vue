@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { Icon } from '@iconify/vue'
 import { useData } from 'vitepress'
+import { computed } from 'vue'
 import { useEditLink } from '../composables/edit-link'
 import { usePrevNext } from '../composables/prev-next'
-import { Icon } from '@iconify/vue'
 import DocFooterLastUpdated from './DocFooterLastUpdated.vue'
 
 const { theme, page, frontmatter } = useData()

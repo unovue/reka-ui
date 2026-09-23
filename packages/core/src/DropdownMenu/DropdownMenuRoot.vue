@@ -26,8 +26,8 @@ export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 import { MenuRoot } from '@/Menu'
 
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
 const emit = defineEmits<DropdownMenuRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any

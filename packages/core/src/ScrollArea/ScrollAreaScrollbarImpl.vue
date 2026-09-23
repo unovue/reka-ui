@@ -11,14 +11,14 @@ export interface ScrollAreaScrollbarImplProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
-import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
-import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
-import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
-import { toInt } from './utils'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
+import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
+import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
+import { toInt } from './utils'
 
 const props = defineProps<ScrollAreaScrollbarImplProps>()
 const emit = defineEmits<ScrollbarAreaScrollbarImplEmits>()
@@ -77,7 +77,7 @@ function handleWheel(event: WheelEvent) {
   const isScrollbarWheel = scrollbar.value?.contains(element)
   const maxScrollPos
     = scrollbarVisibleContext.sizes.value.content
-    - scrollbarVisibleContext.sizes.value.viewport
+      - scrollbarVisibleContext.sizes.value.viewport
   if (isScrollbarWheel)
     scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
 }
@@ -109,11 +109,13 @@ function handleSizeChange() {
       viewport: rootContext.viewport.value?.offsetHeight ?? 0,
       scrollbar: {
         size: scrollbar.value?.clientHeight ?? 0,
-        paddingStart: toInt(getComputedStyle(scrollbar.value!).paddingLeft),
-        paddingEnd: toInt(getComputedStyle(scrollbar.value!).paddingRight),
+        paddingStart: toInt(getComputedStyle(scrollbar.value!).paddingTop),
+        paddingEnd: toInt(getComputedStyle(scrollbar.value!).paddingBottom),
       },
     })
   }
+
+  scrollbarVisibleContext.onThumbPositionChange()
 }
 
 useResizeObserver(scrollbar, handleSizeChange)

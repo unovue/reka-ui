@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { SelectEvent } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 
 export type RadioEmits = {
@@ -19,12 +19,16 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useFormControl, useForwardExpose } from '@/shared'
+import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { handleSelect } from './utils'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<RadioProps>(), {
   disabled: false,
@@ -34,7 +38,7 @@ const props = withDefaults(defineProps<RadioProps>(), {
 const emits = defineEmits<RadioEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current checked state */
     checked: typeof checked.value
   }) => any
@@ -47,10 +51,16 @@ const checked = useVModel(props, 'checked', emits, {
 const { value } = toRefs(props)
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 const isFormControl = useFormControl(triggerElement)
+// Hidden form input is a sibling (not nested) of the control to avoid the
+// `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
+const scopeIdAttrs = useForwardScopeId()
 
-const ariaLabel = computed(() => props.id && triggerElement.value ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText ?? props.value : undefined)
+const ariaLabel = computed(() => props.id && triggerElement.value ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
 
 function handleClick(event: MouseEvent) {
+  if (props.disabled)
+    return
+
   handleSelect(event, props.value, (ev) => {
     emits('select', ev)
     if (ev?.defaultPrevented)
@@ -69,13 +79,12 @@ function handleClick(event: MouseEvent) {
 
 <template>
   <Primitive
-    v-bind="$attrs"
     :id="id"
     :ref="forwardRef"
     role="radio"
     :type="as === 'button' ? 'button' : undefined"
     :as="as"
-    :aria-checked="checked"
+    :aria-checked="checked ?? false"
     :aria-label="ariaLabel"
     :as-child="asChild"
     :disabled="disabled ? '' : undefined"
@@ -84,19 +93,21 @@ function handleClick(event: MouseEvent) {
     :value="value"
     :required="required"
     :name="name"
+    v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click.stop="handleClick"
   >
     <slot :checked="checked" />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      type="radio"
-      tabindex="-1"
-      :value="value"
-      :checked="!!checked"
-      :name="name"
-      :disabled="disabled"
-      :required="required"
-    />
   </Primitive>
+
+  <VisuallyHiddenInput
+    v-if="isFormControl && name"
+    type="radio"
+    tabindex="-1"
+    :value="value"
+    :checked="!!checked"
+    :name="name"
+    :disabled="disabled"
+    :required="required"
+    v-bind="scopeIdAttrs"
+  />
 </template>

@@ -1,5 +1,6 @@
 <script lang="ts">
-import { RangeCalendarHeading, type RangeCalendarHeadingProps } from '..'
+import type { RangeCalendarHeadingProps } from '..'
+import { RangeCalendarHeading } from '..'
 
 export interface DateRangePickerHeadingProps extends RangeCalendarHeadingProps {}
 </script>
@@ -7,7 +8,7 @@ export interface DateRangePickerHeadingProps extends RangeCalendarHeadingProps {
 <script setup lang="ts">
 const props = defineProps<DateRangePickerHeadingProps>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current month and year */
     headingValue: string
   }) => any

@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import ToggleGroup from './story/_ToggleGroup.vue'
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import ToggleGroup from './story/_ToggleGroup.vue'
 
 describe('given default Toggle Group', () => {
   let wrapper: VueWrapper<InstanceType<typeof ToggleGroup>>

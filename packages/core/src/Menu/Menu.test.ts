@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { axe } from 'vitest-axe'
-import Menu from './story/_Menu.vue'
 import { findAllByRole } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import Menu from './story/_Menu.vue'
+import MenuWithSubmenu from './story/_MenuWithSubmenu.vue'
 
 describe('given a default Menu', () => {
   globalThis.ResizeObserver = class ResizeObserver {
@@ -58,5 +59,67 @@ describe('given a default Menu', () => {
         expect(wrapper.emitted('select')?.length).toBe(1)
       })
     })
+  })
+})
+
+describe('given a Menu with submenu', () => {
+  let wrapper: VueWrapper<InstanceType<typeof MenuWithSubmenu>>
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(MenuWithSubmenu, {
+      attachTo: document.body,
+    })
+  })
+
+  afterEach(async () => {
+    wrapper.unmount()
+    if (vi.isFakeTimers())
+      await vi.runOnlyPendingTimersAsync()
+    vi.useRealTimers()
+  })
+
+  it('should highlight sub trigger on pointermove', async () => {
+    const allItems = await findAllByRole(document.body, 'menuitem')
+    const subTrigger = allItems.find(el => el.getAttribute('aria-haspopup') === 'menu')!
+    expect(subTrigger).toBeTruthy()
+
+    // Simulate pointermove (mouse) on the sub trigger
+    // jsdom doesn't support PointerEvent, so we use MouseEvent with pointerType
+    const pointerMoveEvent = new MouseEvent('pointermove', {
+      bubbles: true,
+    })
+    Object.defineProperty(pointerMoveEvent, 'pointerType', { value: 'mouse' })
+    subTrigger.dispatchEvent(pointerMoveEvent)
+    await nextTick()
+
+    expect(subTrigger.hasAttribute('data-highlighted')).toBe(true)
+  })
+
+  it('should keep the submenu open when the pointer moves within its focused trigger', async () => {
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+
+    async function movePointer() {
+      // jsdom does not support PointerEvent.
+      const event = new MouseEvent('pointermove', { bubbles: true })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      subTrigger.dispatchEvent(event)
+      await nextTick()
+    }
+
+    await movePointer()
+    expect(subTrigger).toHaveFocus()
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    await movePointer()
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(wrapper.find('[role="menu"][aria-labelledby]').exists()).toBe(true)
   })
 })

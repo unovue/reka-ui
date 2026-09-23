@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { RovingFocusItemProps } from '..'
 import { computed, inject, ref } from 'vue'
-import { RovingFocusItem, type RovingFocusItemProps } from '..'
+import { RovingFocusItem } from '..'
 
 interface Props extends RovingFocusItemProps {
   value: string

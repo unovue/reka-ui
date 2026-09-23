@@ -1,7 +1,8 @@
 <script lang="ts">
-import { Primitive, type PrimitiveProps } from '..'
-import { injectListboxRootContext } from './ListboxRoot.vue'
+import type { PrimitiveProps } from '..'
 import { refAutoReset } from '@vueuse/shared'
+import { Primitive } from '..'
+import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxContentProps extends PrimitiveProps { }
 </script>
@@ -23,17 +24,33 @@ const isClickFocus = refAutoReset(false, 10)
       role="listbox"
       :as="as"
       :as-child="asChild"
-      :tabindex="rootContext.focusable.value ? rootContext.highlightedElement.value ? '-1' : '0' : undefined"
+      :tabindex="rootContext.focusable.value ? rootContext.highlightedElement.value ? '-1' : '0' : '-1'"
       :aria-orientation="rootContext.orientation.value"
       :aria-multiselectable="!!rootContext.multiple.value"
       :data-orientation="rootContext.orientation.value"
       @mousedown.left="isClickFocus = true"
-      @focus="(ev) => {
+      @focus="(ev: FocusEvent) => {
         if (isClickFocus)
           return
         rootContext.onEnter(ev)
       }"
-      @keydown.down.up.left.right.home.end.prevent="(event) => {
+      @keydown.down.up.left.right.home.end="(event: KeyboardEvent) => {
+        if (
+          // when orientation is vertical, ignore left/right
+          (
+            rootContext.orientation.value === 'vertical'
+            && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+          )
+          // when orientation is horizontal, ignore up/down
+          || (
+            rootContext.orientation.value === 'horizontal'
+            && (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+          )
+        ) {
+          return
+        }
+
+        event.preventDefault()
         rootContext.focusable.value ? rootContext.onKeydownNavigation(event) : undefined
       }"
       @keydown.enter="rootContext.onKeydownEnter"

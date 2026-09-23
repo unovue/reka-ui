@@ -1,5 +1,6 @@
-import { type Ref, watchEffect } from 'vue'
+import type { Ref } from 'vue'
 import type { ResizeHandler } from '../types'
+import { watchEffect } from 'vue'
 import { assert } from '../assert'
 import { getResizeHandleElement, getResizeHandleElementIndex, getResizeHandleElementsForGroup } from '../dom'
 

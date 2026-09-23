@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { MenuProps } from '..'
 import { useVModel } from '@vueuse/core'
 import {
   MenuAnchor,
   MenuContent,
   MenuPortal,
-  type MenuProps,
+
   MenuRoot,
 } from '..'
 

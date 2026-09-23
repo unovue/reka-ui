@@ -6,8 +6,8 @@ export interface SwitchThumbProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { injectSwitchRootContext } from './SwitchRoot.vue'
 import { Primitive } from '@/Primitive'
+import { injectSwitchRootContext } from './SwitchRoot.vue'
 
 withDefaults(defineProps<SwitchThumbProps>(), { as: 'span' })
 
@@ -18,7 +18,7 @@ useForwardExpose()
 
 <template>
   <Primitive
-    :data-state="rootContext.modelValue?.value ? 'checked' : 'unchecked'"
+    :data-state="rootContext.checked.value ? 'checked' : 'unchecked'"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :as-child="asChild"
     :as="as"

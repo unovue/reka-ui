@@ -38,6 +38,8 @@ export default antfu(
       'unicorn/prefer-number-properties': 'off',
       'unused-imports/no-unused-vars': 'off',
       'regexp/no-super-linear-backtracking': 'off',
+      'markdown/heading-increment': 'off',
+      'markdown/no-multiple-h1': 'off',
     },
   },
   {
@@ -46,6 +48,14 @@ export default antfu(
       'no-console': 'off',
       'no-alert': 'off',
       'unused-imports/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['**/package.json'],
+    rules: {
+      // Wrecks the order of `files` otherwise, and breaks the exclusion patterns
+      // pnpm has no issues with that, but npm does and doesn't apply the correct config
+      'jsonc/sort-array-values': 'off',
     },
   },
 )

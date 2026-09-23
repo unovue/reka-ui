@@ -1,5 +1,6 @@
 <script lang="ts">
-import { RangeCalendarCell, type RangeCalendarCellProps } from '..'
+import type { RangeCalendarCellProps } from '..'
+import { RangeCalendarCell } from '..'
 
 export interface DateRangePickerCellProps extends RangeCalendarCellProps {}
 </script>

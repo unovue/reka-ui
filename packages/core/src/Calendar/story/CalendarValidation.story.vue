@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Calendar from './_DummyCalendar.vue'
 import type { CalendarRootProps } from '..'
 import { CalendarDate, isWeekend } from '@internationalized/date'
+import Calendar from './_DummyCalendar.vue'
 
 const isDateUnavailable: CalendarRootProps['isDateUnavailable'] = (date) => {
   return isWeekend(date, 'en')

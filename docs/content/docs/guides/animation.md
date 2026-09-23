@@ -90,12 +90,12 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
 
 ## ⭐️ Animating with Motion Vue
 
-[Motion Vue](https://motion.unovue.com/) is the recommended animation library for Reka UI. This lightweight, powerful library integrates seamlessly with components and offers extensive flexibility for creating smooth, performant animations.
+[Motion Vue](https://motion.dev/docs/vue) is the recommended animation library for Reka UI. This lightweight, powerful library integrates seamlessly with components and offers extensive flexibility for creating smooth, performant animations.
 
 ```vue line=3,12,14-18,22-26,29,31
 <script setup lang="ts">
-import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, } from 'reka-ui'
 import { AnimatePresence, Motion } from 'motion-v'
+import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, } from 'reka-ui'
 </script>
 
 <template>
@@ -143,9 +143,9 @@ For example, if you want to use [@vueuse/motion](https://motion.vueuse.org/) to 
 
 ```vue line=32,34,41
 <script setup lang="ts">
+import { useSpring } from '@vueuse/motion'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, } from 'reka-ui'
 import { reactive, ref, watch } from 'vue'
-import { useSpring } from '@vueuse/motion'
 
 const stages = {
   initial: { opacity: 0, scale: 0, top: 0, },

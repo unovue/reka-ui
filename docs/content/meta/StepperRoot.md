@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -91,16 +92,103 @@
   {
     'name': 'goToStep',
     'description': '<p>Go to a specific step</p>\n',
-    'type': ''
+    'type': '(step: number): void'
   },
   {
     'name': 'nextStep',
     'description': '<p>Go to the next step</p>\n',
-    'type': ''
+    'type': '(): void'
   },
   {
     'name': 'prevStep',
     'description': '<p>Go to the previous step</p>\n',
-    'type': ''
+    'type': '(): void'
+  },
+  {
+    'name': 'hasNext',
+    'description': '<p>Whether or not there is a next step</p>\n',
+    'type': '(): boolean'
+  },
+  {
+    'name': 'hasPrev',
+    'description': '<p>Whether or not there is a previous step</p>\n',
+    'type': '(): boolean'
   }
 ]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'goToStep',
+    'description': '',
+    'type': '(step: number) =&gt; void'
+  },
+  {
+    'name': 'nextStep',
+    'description': '',
+    'type': '() =&gt; void'
+  },
+  {
+    'name': 'prevStep',
+    'description': '',
+    'type': '() =&gt; void'
+  },
+  {
+    'name': 'hasNext',
+    'description': '',
+    'type': '() =&gt; boolean'
+  },
+  {
+    'name': 'hasPrev',
+    'description': '',
+    'type': '() =&gt; boolean'
+  }
+]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultValue` | The value of the step that should be active when initially rendered. Use when you do not need to control the state of the steps. | `number` | No | `1` |
+| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `linear` | Whether or not the steps must be completed in order. | `boolean` | No | `true` |
+| `modelValue` | The controlled value of the step to activate. Can be bound as v-model. | `number` | No | - |
+| `orientation` | The orientation the steps are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down). | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value changes | `[payload: number]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current step | `number \| undefined` |
+| `totalSteps` | Total number of steps | `number` |
+| `isNextDisabled` | Whether or not the next step is disabled | `boolean` |
+| `isPrevDisabled` | Whether or not the previous step is disabled | `boolean` |
+| `isFirstStep` | Whether or not the first step is active | `boolean` |
+| `isLastStep` | Whether or not the last step is active | `boolean` |
+| `goToStep` | Go to a specific step | `(step: number): void` |
+| `nextStep` | Go to the next step | `(): void` |
+| `prevStep` | Go to the previous step | `(): void` |
+| `hasNext` | Whether or not there is a next step | `(): boolean` |
+| `hasPrev` | Whether or not there is a previous step | `(): boolean` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `goToStep` |  | `(step: number) => void` |
+| `nextStep` |  | `() => void` |
+| `prevStep` |  | `() => void` |
+| `hasNext` |  | `() => boolean` |
+| `hasPrev` |  | `() => boolean` |
+
+</llm-only>

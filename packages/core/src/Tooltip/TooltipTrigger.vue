@@ -1,22 +1,23 @@
 <script lang="ts">
 import { useForwardExpose, useId } from '@/shared'
 
-export type TooltipTriggerDataState =
-  | 'closed'
-  | 'delayed-open'
-  | 'instant-open'
+export type TooltipTriggerDataState
+  = | 'closed'
+    | 'delayed-open'
+    | 'instant-open'
 
 export interface TooltipTriggerProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { injectTooltipRootContext } from './TooltipRoot.vue'
-import { PopperAnchor, type PopperAnchorProps } from '@/Popper'
+import type { PopperAnchorProps } from '@/Popper'
+import { computed, ref, watch } from 'vue'
+import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
 } from '@/Primitive'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
+import { injectTooltipRootContext } from './TooltipRoot.vue'
 
 const props = withDefaults(defineProps<TooltipTriggerProps>(), {
   as: 'button',
@@ -45,9 +46,9 @@ const tooltipListeners = computed(() => {
   }
 })
 
-onMounted(() => {
-  rootContext.onTriggerChange(triggerElement.value)
-})
+watch(triggerElement, (el) => {
+  rootContext.onTriggerChange(el)
+}, { immediate: true })
 
 function handlePointerUp() {
   setTimeout(() => {
@@ -56,6 +57,9 @@ function handlePointerUp() {
 }
 
 function handlePointerDown() {
+  if (rootContext.open && !rootContext.disableClosingTrigger.value) {
+    rootContext.onClose()
+  }
   isPointerDown.value = true
   document.addEventListener('pointerup', handlePointerUp, { once: true })
 }
@@ -99,7 +103,7 @@ function handleClick() {
 <template>
   <PopperAnchor
     as-child
-    :reference="reference"
+    :reference="reference ?? triggerElement"
   >
     <Primitive
       :ref="forwardRef"

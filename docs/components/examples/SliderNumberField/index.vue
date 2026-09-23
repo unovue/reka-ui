@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { NumberFieldInput, NumberFieldRoot, SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
+import { ref } from 'vue'
 
 const sliderValue = ref([20, 50])
 </script>

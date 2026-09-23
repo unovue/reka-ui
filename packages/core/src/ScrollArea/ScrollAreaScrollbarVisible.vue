@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
 import type { Direction, Sizes } from './types'
+import { createContext, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaScrollbarVisibleContext {
   sizes: Ref<Sizes>
@@ -9,7 +9,7 @@ export interface ScrollAreaScrollbarVisibleContext {
   handleWheelScroll: (event: WheelEvent, payload: number) => void
   handleThumbDown: (
     event: MouseEvent,
-    payload: { x: number, y: number }
+    payload: { x: number, y: number },
   ) => void
   handleThumbUp: (event: MouseEvent) => void
   handleSizeChange: (payload: Sizes) => void

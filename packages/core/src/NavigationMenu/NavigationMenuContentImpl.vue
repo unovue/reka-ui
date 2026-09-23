@@ -16,6 +16,9 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
+import { DismissableLayer } from '@/DismissableLayer'
+import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
+import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
   EVENT_ROOT_CONTENT_DISMISS,
@@ -25,9 +28,6 @@ import {
   makeContentId,
   makeTriggerId,
 } from './utils'
-import { DismissableLayer } from '@/DismissableLayer'
-import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
-import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 
 const props = defineProps<NavigationMenuContentImplProps>()
 const emits = defineEmits<NavigationMenuContentImplEmits>()
@@ -103,7 +103,7 @@ function handlePointerDownOutside(ev: PointerDownOutsideEvent) {
       i.ref.contains(target),
     )
     const isRootViewport
-    = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
+      = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
 
     if (isTrigger || isRootViewport || !menuContext.isRootMenu)
       ev.preventDefault()
@@ -180,6 +180,9 @@ function handleKeydown(ev: KeyboardEvent) {
 }
 
 function handleDismiss() {
+  if (menuContext.modelValue.value !== itemContext.value)
+    return
+
   const rootContentDismissEvent = new Event(EVENT_ROOT_CONTENT_DISMISS, {
     bubbles: true,
     cancelable: true,

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import type {
   DropdownMenuItemEmits,
 } from '..'
+import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
+import { useEmitAsProps } from '@/shared'
 import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
@@ -18,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '..'
-import { useEmitAsProps } from '@/shared'
 
 const props = defineProps<{ defaultOpen?: boolean }>()
 

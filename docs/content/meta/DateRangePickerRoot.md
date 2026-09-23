@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'allowNonContiguousRanges',
@@ -9,17 +10,11 @@
     'default': 'false'
   },
   {
-    'name': 'as',
-    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
-    'type': 'AsTag | Component',
-    'required': false,
-    'default': '\'div\''
-  },
-  {
-    'name': 'asChild',
-    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'name': 'closeOnSelect',
+    'description': '<p>Whether or not to close the popover on range select</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'false'
   },
   {
     'name': 'defaultOpen',
@@ -53,6 +48,12 @@
     'type': 'boolean',
     'required': false,
     'default': 'false'
+  },
+  {
+    'name': 'fixedDate',
+    'description': '<p>Which part of the range should be fixed</p>\n',
+    'type': '\'start\' | \'end\'',
+    'required': false
   },
   {
     'name': 'fixedWeeks',
@@ -92,6 +93,12 @@
     'required': false
   },
   {
+    'name': 'isDateHighlightable',
+    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
+    'type': 'Matcher',
+    'required': false
+  },
+  {
     'name': 'isDateUnavailable',
     'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
     'type': 'Matcher',
@@ -101,8 +108,13 @@
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',
-    'required': false,
-    'default': '\'en\''
+    'required': false
+  },
+  {
+    'name': 'maximumDays',
+    'description': '<p>The maximum number of days that can be selected in a range</p>\n',
+    'type': 'number',
+    'required': false
   },
   {
     'name': 'maxValue',
@@ -125,7 +137,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the calendar. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
@@ -182,9 +194,15 @@
     'required': false
   },
   {
+    'name': 'step',
+    'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
+    'type': 'DateStep',
+    'required': false
+  },
+  {
     'name': 'weekdayFormat',
     'description': '<p>The format to use for the weekday strings provided via the weekdays slot prop</p>\n',
-    'type': '\'long\' | \'short\' | \'narrow\'',
+    'type': '\'narrow\' | \'short\' | \'long\'',
     'required': false,
     'default': '\'narrow\''
   },
@@ -192,8 +210,7 @@
     'name': 'weekStartsOn',
     'description': '<p>The day of the week to start the calendar on</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6',
-    'required': false,
-    'default': '0'
+    'required': false
   }
 ]" />
 
@@ -232,16 +249,62 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
 
-<MethodsTable :data="[
-  {
-    'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `allowNonContiguousRanges` | When combined with isDateUnavailable, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. | `boolean` | No | `false` |
+| `closeOnSelect` | Whether or not to close the popover on range select | `boolean` | No | `false` |
+| `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
+| `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
+| `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
+| `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
+| `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
+| `granularity` | The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
+| `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
+| `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
+| `id` | Id of the element | `string` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled | `Matcher` | No | - |
+| `isDateHighlightable` | A function that returns whether or not a date is hightable | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
+| `locale` | The locale to use for formatting dates | `string` | No | - |
+| `maximumDays` | The maximum number of days that can be selected in a range | `number` | No | - |
+| `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
+| `minValue` | The minimum date that can be selected | `DateValue` | No | - |
+| `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
+| `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `numberOfMonths` | The number of months to display at once | `number` | No | `1` |
+| `open` | The controlled open state of the popover. | `boolean` | No | - |
+| `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
+| `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
+| `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
+| `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
+| `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
+| `update:open` | Event handler called when the open state of the submenu changes. | `[value: boolean]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` |  | `DateRange` |
+| `open` |  | `boolean` |
+
+</llm-only>

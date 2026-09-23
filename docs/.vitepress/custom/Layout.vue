@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import Docs from './Docs.vue'
+import { useScroll } from '@vueuse/core'
+import { TooltipProvider } from 'reka-ui'
 import { useData, useRoute } from 'vitepress'
-import SearchTrigger from '../components/SearchTrigger.vue'
-import Navbar from '../components/Navbar.vue'
+import { toRefs } from 'vue'
 // import HomePageDemo from '../components/HomePageDemo.vue'
 import Home from '../components/Home.vue'
-import { useScroll } from '@vueuse/core'
-import { toRefs } from 'vue'
-import { TooltipProvider } from 'reka-ui'
+import Navbar from '../components/Navbar.vue'
+import SearchTrigger from '../components/SearchTrigger.vue'
+import Docs from './Docs.vue'
 import Showcase from './Showcase.vue'
 
 const { site, theme, frontmatter } = useData()

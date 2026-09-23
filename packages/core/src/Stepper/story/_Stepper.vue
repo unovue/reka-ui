@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, type StepperRootProps, StepperSeparator, StepperTitle, StepperTrigger } from '..'
+import type { StepperRootProps } from '..'
+import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from '..'
 
 const props = defineProps<{ stepperProps?: StepperRootProps & { steps: { step: number, title: string, description: string, icon: string, isCompleted?: boolean }[] }, emits?: { 'onUpdate:modelValue'?: (data: number) => void } }>()
 const steps = [{

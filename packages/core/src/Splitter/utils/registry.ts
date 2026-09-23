@@ -1,15 +1,15 @@
+import type { Ref } from 'vue'
 import type { Direction, ResizeEvent } from './types'
-import { resetGlobalCursorStyle, setGlobalCursorStyle } from './style'
 import { getResizeEventCoordinates } from './events'
 import { intersects } from './rects'
 import { compare } from './stackingOrder'
-import type { Ref } from 'vue'
+import { resetGlobalCursorStyle, setGlobalCursorStyle } from './style'
 
 export type ResizeHandlerAction = 'down' | 'move' | 'up'
 export type SetResizeHandlerState = (
   action: ResizeHandlerAction,
   isActive: boolean,
-  event: ResizeEvent
+  event: ResizeEvent,
 ) => void
 
 export type PointerHitAreaMargins = {
@@ -21,6 +21,7 @@ export type ResizeHandlerData = {
   direction: Ref<Direction>
   element: HTMLElement
   hitAreaMargins: PointerHitAreaMargins
+  nonce: Ref<string | undefined>
   setResizeHandlerState: SetResizeHandlerState
 }
 
@@ -48,6 +49,7 @@ export function registerResizeHandle(
   element: HTMLElement,
   direction: Ref<Direction>,
   hitAreaMargins: PointerHitAreaMargins,
+  nonce: Ref<string | undefined>,
   setResizeHandlerState: SetResizeHandlerState,
 ) {
   const { ownerDocument } = element
@@ -56,6 +58,7 @@ export function registerResizeHandle(
     direction,
     element,
     hitAreaMargins,
+    nonce,
     setResizeHandlerState,
   }
 
@@ -118,6 +121,26 @@ function handlePointerMove(event: ResizeEvent) {
     event.preventDefault()
 }
 
+function handlePointerOut(event: MouseEvent) {
+  // Once the pointer enters an iframe, the parent document stops receiving
+  // mousemove events, so the hover state would never be cleared by
+  // handlePointerMove. The last event we do get is the "mouseout" whose
+  // relatedTarget is the iframe, so reset the hover state here.
+  // See https://github.com/unovue/reka-ui/issues/2893
+  if (isPointerDown || !isIframeElement(event.relatedTarget))
+    return
+
+  intersectingHandles.splice(0)
+  updateResizeHandlerStates('move', event)
+  updateCursor()
+}
+
+function isIframeElement(target: EventTarget | null): boolean {
+  // Avoid `instanceof Element`: the target may belong to another realm
+  // (e.g. a splitter rendered inside an iframe or a popup window)
+  return target !== null && 'tagName' in target && target.tagName === 'IFRAME'
+}
+
 function handlePointerUp(event: ResizeEvent) {
   const { target } = event
   const { x, y } = getResizeEventCoordinates(event)
@@ -162,9 +185,9 @@ function recalculateIntersectingHandles({
 
     const eventIntersects
       = x >= left - margin
-      && x <= right + margin
-      && y >= top - margin
-      && y <= bottom + margin
+        && x <= right + margin
+        && y >= top - margin
+        && y <= bottom + margin
 
     if (eventIntersects) {
       // TRICKY
@@ -228,14 +251,17 @@ export function reportConstraintsViolation(
 function updateCursor() {
   let intersectsHorizontal = false
   let intersectsVertical = false
+  let nonce: string | undefined
 
   intersectingHandles.forEach((data) => {
-    const { direction } = data
+    const { direction, nonce: _nonce } = data
 
     if (direction.value === 'horizontal')
       intersectsHorizontal = true
     else
       intersectsVertical = true
+
+    nonce = _nonce.value
   })
 
   let constraintFlags = 0
@@ -244,11 +270,11 @@ function updateCursor() {
   })
 
   if (intersectsHorizontal && intersectsVertical)
-    setGlobalCursorStyle('intersection', constraintFlags)
+    setGlobalCursorStyle('intersection', constraintFlags, nonce)
   else if (intersectsHorizontal)
-    setGlobalCursorStyle('horizontal', constraintFlags)
+    setGlobalCursorStyle('horizontal', constraintFlags, nonce)
   else if (intersectsVertical)
-    setGlobalCursorStyle('vertical', constraintFlags)
+    setGlobalCursorStyle('vertical', constraintFlags, nonce)
   else
     resetGlobalCursorStyle()
 }
@@ -261,6 +287,7 @@ function updateListeners() {
     body.removeEventListener('mousedown', handlePointerDown)
     body.removeEventListener('mouseleave', handlePointerMove)
     body.removeEventListener('mousemove', handlePointerMove)
+    body.removeEventListener('mouseout', handlePointerOut)
     body.removeEventListener('touchmove', handlePointerMove)
     body.removeEventListener('touchstart', handlePointerDown)
   })
@@ -297,6 +324,7 @@ function updateListeners() {
         if (count > 0) {
           body.addEventListener('mousedown', handlePointerDown)
           body.addEventListener('mousemove', handlePointerMove)
+          body.addEventListener('mouseout', handlePointerOut)
           body.addEventListener('touchmove', handlePointerMove, {
             passive: false,
           })

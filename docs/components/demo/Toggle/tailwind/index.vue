@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Toggle } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import { Toggle } from 'reka-ui'
 import { ref } from 'vue'
 
 const toggleState = ref(false)

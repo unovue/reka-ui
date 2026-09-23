@@ -1,9 +1,9 @@
 <script lang="ts">
-import { isClient } from '@vueuse/shared'
-import type { PrimitiveProps } from '@/Primitive'
 import type { SwipeEvent } from './utils'
-import { createContext, getActiveElement, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import { isClient } from '@vueuse/shared'
 import { useCollection } from '@/Collection'
+import { createContext, getActiveElement, useForwardExpose } from '@/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -17,6 +17,7 @@ export type ToastRootImplEmits = {
   swipeStart: [event: SwipeEvent]
   /** Event handler called during a swipe interaction. It can be prevented by calling `event.preventDefault`. */
   swipeMove: [event: SwipeEvent]
+  /** Event handler called when swipe interaction is cancelled. It can be prevented by calling `event.preventDefault`. */
   swipeCancel: [event: SwipeEvent]
   /** Event handler called at the end of a swipe interaction. It can be prevented by calling `event.preventDefault`. */
   swipeEnd: [event: SwipeEvent]
@@ -45,12 +46,12 @@ export const [injectToastRootContext, provideToastRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
-import { injectToastProviderContext } from './ToastProvider.vue'
-import { TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME, getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection } from './utils'
 import { onKeyStroke, useRafFn } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import { Primitive } from '@/Primitive'
 import ToastAnnounce from './ToastAnnounce.vue'
+import { injectToastProviderContext } from './ToastProvider.vue'
+import { getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection, TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -81,7 +82,7 @@ const closeTimerRef = ref(0)
 const remainingTime = ref(duration.value)
 
 const remainingRaf = useRafFn(() => {
-  const elapsedTime = new Date().getTime() - closeTimerStartTimeRef.value
+  const elapsedTime = Date.now() - closeTimerStartTimeRef.value
   remainingTime.value = Math.max(closeTimerRemainingTimeRef.value - elapsedTime, 0)
 }, { fpsLimit: 60 })
 
@@ -94,7 +95,7 @@ function startTimer(duration: number) {
   if (!isClient)
     return
   window.clearTimeout(closeTimerRef.value)
-  closeTimerStartTimeRef.value = new Date().getTime()
+  closeTimerStartTimeRef.value = Date.now()
   closeTimerRef.value = window.setTimeout(handleClose, duration)
 }
 
@@ -132,7 +133,7 @@ watchEffect((cleanupFn) => {
       emits('resume')
     }
     const handlePause = () => {
-      const elapsedTime = new Date().getTime() - closeTimerStartTimeRef.value
+      const elapsedTime = Date.now() - closeTimerStartTimeRef.value
       closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
       window.clearTimeout(closeTimerRef.value)
       remainingRaf.pause()
@@ -140,10 +141,10 @@ watchEffect((cleanupFn) => {
     }
     viewport.addEventListener(VIEWPORT_PAUSE, handlePause)
     viewport.addEventListener(VIEWPORT_RESUME, handleResume)
-    return () => {
+    cleanupFn(() => {
       viewport.removeEventListener(VIEWPORT_PAUSE, handlePause)
       viewport.removeEventListener(VIEWPORT_RESUME, handleResume)
-    }
+    })
   }
 })
 
@@ -181,9 +182,21 @@ provideToastRootContext({ onClose: handleClose })
     v-if="announceTextContent"
     role="alert"
     :aria-live="type === 'foreground' ? 'assertive' : 'polite'"
-    aria-atomic="true"
   >
-    {{ announceTextContent }}
+    <!--
+      Render each chunk as its own text node so screen readers get the
+      natural pause break between nodes (see comment in utils.ts).
+      Interpolating the array directly with `{{ announceTextContent }}`
+      would route through Vue's `toDisplayString`, which JSON-stringifies
+      arrays — the live region would then announce literal `[`, quotes
+      and commas instead of the toast title and description.
+    -->
+    <template
+      v-for="(text, i) in announceTextContent"
+      :key="i"
+    >
+      {{ text }}
+    </template>
   </ToastAnnounce>
 
   <Teleport
@@ -193,21 +206,23 @@ provideToastRootContext({ onClose: handleClose })
     <CollectionItem>
       <Primitive
         :ref="forwardRef"
-        role="alert"
-        aria-live="off"
-        aria-atomic="true"
         tabindex="0"
         v-bind="$attrs"
         :as="as"
         :as-child="asChild"
         :data-state="open ? 'open' : 'closed'"
         :data-swipe-direction="providerContext.swipeDirection.value"
-        :style="{ userSelect: 'none', touchAction: 'none' }"
+        :style="providerContext.disableSwipe.value
+          ? undefined
+          : { userSelect: 'none', touchAction: 'none' }"
         @pointerdown.left="(event: PointerEvent) => {
+          if (providerContext.disableSwipe.value) return;
+
           pointerStartRef = { x: event.clientX, y: event.clientY };
         }"
         @pointermove="(event: PointerEvent) => {
-          if (!pointerStartRef) return;
+          if (providerContext.disableSwipe.value || !pointerStartRef) return;
+
           const x = event.clientX - pointerStartRef.x;
           const y = event.clientY - pointerStartRef.y;
           const hasSwipeMoveStarted = Boolean(swipeDeltaRef);
@@ -236,6 +251,8 @@ provideToastRootContext({ onClose: handleClose })
           }
         }"
         @pointerup="(event: PointerEvent) => {
+          if (providerContext.disableSwipe.value) return;
+
           const delta = swipeDeltaRef;
           const target = event.target as HTMLElement;
           if (target.hasPointerCapture(event.pointerId)) {

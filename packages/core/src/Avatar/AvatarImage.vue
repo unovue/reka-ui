@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ImageLoadingStatus } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 
 export type AvatarImageEmits = {
@@ -13,11 +13,13 @@ export type AvatarImageEmits = {
 export interface AvatarImageProps extends PrimitiveProps {
   src: string
   referrerPolicy?: ImgHTMLAttributes['referrerpolicy']
+  crossOrigin?: ImgHTMLAttributes['crossorigin']
 }
 </script>
 
 <script setup lang="ts">
-import { type ImgHTMLAttributes, toRefs, watch } from 'vue'
+import type { ImgHTMLAttributes } from 'vue'
+import { toRefs, watch } from 'vue'
 import { Primitive } from '../Primitive'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 import { useImageLoadingStatus } from './utils'
@@ -25,11 +27,11 @@ import { useImageLoadingStatus } from './utils'
 const props = withDefaults(defineProps<AvatarImageProps>(), { as: 'img' })
 const emits = defineEmits<AvatarImageEmits>()
 
-const { src, referrerPolicy } = toRefs(props)
+const { src, referrerPolicy, crossOrigin } = toRefs(props)
 useForwardExpose()
 const rootContext = injectAvatarRootContext()
 
-const imageLoadingStatus = useImageLoadingStatus(src, referrerPolicy)
+const imageLoadingStatus = useImageLoadingStatus(src, { referrerPolicy, crossOrigin })
 
 watch(
   imageLoadingStatus,
@@ -49,7 +51,8 @@ watch(
     :as-child="asChild"
     :as="as"
     :src="src"
-    :referrer-policy="referrerPolicy"
+    :referrerpolicy="referrerPolicy"
+    :crossorigin="crossOrigin"
   >
     <slot />
   </Primitive>

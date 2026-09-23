@@ -24,13 +24,13 @@ export interface NavigationMenuSubProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
 import { useVModel } from '@vueuse/core'
-import { injectNavigationMenuContext, provideNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { ref, watchEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { injectNavigationMenuContext, provideNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
   orientation: 'horizontal',
@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
 const emits = defineEmits<NavigationMenuSubEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

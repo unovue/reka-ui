@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Calendar from './_DummyCalendar.vue'
 import { BuddhistCalendar, CalendarDate, HebrewCalendar, JapaneseCalendar, PersianCalendar, TaiwanCalendar } from '@internationalized/date'
+import Calendar from './_DummyCalendar.vue'
 
 const gregorian = new CalendarDate(2024, 2, 20)
 

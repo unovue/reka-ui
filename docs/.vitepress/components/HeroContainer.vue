@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import { Label, SwitchRoot, SwitchThumb } from 'reka-ui'
+import { ref, watch } from 'vue'
 import CodeSandbox from '../../components/CodeSandbox.vue'
 import Stackblitz from '../../components/Stackblitz.vue'
 

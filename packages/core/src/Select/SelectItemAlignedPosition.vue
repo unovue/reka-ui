@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { clamp, createContext, useForwardExpose } from '@/shared'
-import { useCollection } from '@/Collection'
 import { useResizeObserver } from '@vueuse/core'
+import { useCollection } from '@/Collection'
+import { clamp, createContext, useForwardExpose } from '@/shared'
 
 interface SelectItemAlignedPositionContext {
   contentWrapper?: Ref<HTMLElement | undefined>
@@ -19,10 +19,10 @@ export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPo
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { injectSelectRootContext } from './SelectRoot.vue'
-import { injectSelectContentContext } from './SelectContentImpl.vue'
-import { CONTENT_MARGIN } from './utils'
 import { Primitive } from '@/Primitive'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
+import { injectSelectRootContext } from './SelectRoot.vue'
+import { CONTENT_MARGIN } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -145,12 +145,12 @@ function position() {
       = contentTopToItemMiddle <= topEdgeToTriggerMiddle
 
     if (willAlignWithoutTopOverflow) {
-      const isLastItem = selectedItem.value === items[items.length - 1]
+      const isLastItem = selectedItem.value === items.at(-1)
       contentWrapperElement.value.style.bottom = `${0}px`
       const viewportOffsetBottom
         = contentElement.value.clientHeight
-        - viewport.value.offsetTop
-        - viewport.value.offsetHeight
+          - viewport.value.offsetTop
+          - viewport.value.offsetHeight
       const clampedTriggerMiddleToBottomEdge = Math.max(
         triggerMiddleToBottomEdge,
         selectedItemHalfHeight
@@ -177,8 +177,8 @@ function position() {
       contentWrapperElement.value.style.height = `${height}px`
       viewport.value.scrollTop
         = contentTopToItemMiddle
-        - topEdgeToTriggerMiddle
-        + viewport.value.offsetTop
+          - topEdgeToTriggerMiddle
+          + viewport.value.offsetTop
     }
 
     contentWrapperElement.value.style.margin = `${CONTENT_MARGIN}px 0`

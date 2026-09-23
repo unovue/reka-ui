@@ -1,13 +1,14 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { SwipeDirection } from './utils'
-import { createContext } from '@/shared'
 import { useCollection } from '@/Collection'
+import { createContext } from '@/shared'
 
 type ToastProviderContext = {
   label: Ref<string>
   duration: Ref<number>
-  swipeDirection: Ref< SwipeDirection>
+  disableSwipe: Ref<boolean>
+  swipeDirection: Ref<SwipeDirection>
   swipeThreshold: Ref<number>
   toastCount: Ref<number>
   viewport: Ref<HTMLElement | undefined>
@@ -30,6 +31,11 @@ export interface ToastProviderProps {
    * @defaultValue 5000
    */
   duration?: number
+  /**
+   * Whether to disable the ability to swipe to close the toast.
+   * @defaultValue false
+   */
+  disableSwipe?: boolean
   /**
    * Direction of pointer swipe that should close the toast.
    * @defaultValue 'right'
@@ -59,7 +65,7 @@ const props = withDefaults(defineProps<ToastProviderProps>(), {
   swipeDirection: 'right',
   swipeThreshold: 50,
 })
-const { label, duration, swipeDirection, swipeThreshold } = toRefs(props)
+const { label, duration, disableSwipe, swipeDirection, swipeThreshold } = toRefs(props)
 useCollection({ isProvider: true })
 
 const viewport = ref<HTMLElement>()
@@ -75,6 +81,7 @@ if (props.label && typeof props.label === 'string' && !props.label.trim()) {
 provideToastProviderContext({
   label,
   duration,
+  disableSwipe,
   swipeDirection,
   swipeThreshold,
   toastCount,

@@ -1,9 +1,12 @@
 export {
-  injectStepperRootContext,
-  default as StepperRoot,
-  type StepperRootProps,
-  type StepperRootEmits,
-} from './StepperRoot.vue'
+  default as StepperDescription,
+  type StepperDescriptionProps,
+} from './StepperDescription.vue'
+
+export {
+  default as StepperIndicator,
+  type StepperIndicatorProps,
+} from './StepperIndicator.vue'
 
 export {
   injectStepperItemContext,
@@ -12,14 +15,16 @@ export {
 } from './StepperItem.vue'
 
 export {
-  default as StepperTrigger,
-  type StepperTriggerProps,
-} from './StepperTrigger.vue'
+  injectStepperRootContext,
+  default as StepperRoot,
+  type StepperRootEmits,
+  type StepperRootProps,
+} from './StepperRoot.vue'
 
 export {
-  default as StepperDescription,
-  type StepperDescriptionProps,
-} from './StepperDescription.vue'
+  default as StepperSeparator,
+  type StepperSeparatorProps,
+} from './StepperSeparator.vue'
 
 export {
   default as StepperTitle,
@@ -27,11 +32,6 @@ export {
 } from './StepperTitle.vue'
 
 export {
-  default as StepperIndicator,
-  type StepperIndicatorProps,
-} from './StepperIndicator.vue'
-
-export {
-  default as StepperSeparator,
-  type StepperSeparatorProps,
-} from './StepperSeparator.vue'
+  default as StepperTrigger,
+  type StepperTriggerProps,
+} from './StepperTrigger.vue'

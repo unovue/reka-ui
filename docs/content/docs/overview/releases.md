@@ -13,6 +13,66 @@ Discover the latest release of Reka UI.
 
 ---
 
+## v2.10
+
+### ✨ New Features
+
+#### Components
+
+- **Drawer**: New drawer primitive with swipe gestures, snap points, handle, and nested drawer support <Badge>Alpha</Badge>
+- **Rating**: New component for star-style rating inputs <Badge>Alpha</Badge>
+
+#### Functionality
+
+- **Select**: Added `nullableValue` prop to allow deselecting the current value
+- **Dialog**: Added `unmountOnHide` prop to control whether content is unmounted when closed
+- **HoverCard**: Added `enableTouch` prop to enable hover cards on touch devices
+- **ConfigProvider**: Added `teleportTo` for setting a global default teleport target
+- **Popper**: Added `dir` prop for `RTL`/`LTR` support
+- **Tree**: Added `disabled` support for `TreeItem`
+- **DateField**: Added `stepSnapping` support
+- **Tabs**: Exposed `--reka-tabs-indicator-thickness` CSS variable
+
+#### Developer Experience
+
+- **Types**: Improved type inference for `useEmitAsProps` and `useForwardPropsEmits`
+
+---
+
+## v2.9
+
+### ✨ New Features
+
+#### Components
+
+- **ColorPicker Suite**: Complete set of color picker components
+  - `ColorArea` - 2D color selection area with thumb
+  - `ColorField` - Text input for entering color values
+  - `ColorSlider` - Slider for adjusting color channels (hue, saturation, etc.)
+  - `ColorSwatch` - Displays a color preview swatch
+  - `ColorSwatchPicker` - Grid of selectable color swatches
+- **TimeRangeField**: New component for selecting time ranges with start/end inputs
+- **Autocomplete**: New component for free-form text inputs with optional suggestions (different from Combobox - uses string `modelValue` instead of selected item)
+- **MonthPicker & YearPicker**: Four new date picker variants
+  - `MonthPicker` - Single month selection
+  - `MonthRangePicker` - Month range selection
+  - `YearPicker` - Single year selection
+  - `YearRangePicker` - Year range selection
+- **DropdownMenuFilter**: New component for filtering menu items within dropdown menus
+
+#### Functionality
+
+- **Splitter**: Added support for pixel sizing and constraints (in addition to percentages)
+- **Checkbox/Switch**: Added support for custom true/false values (not limited to boolean)
+- **Tooltip**: Added global tooltip content configuration support
+- **Combobox/Autocomplete**: Added `data-empty` attribute and `hideWhenEmpty` prop to hide dropdown when nothing matches
+
+#### Internal (Using it at your own risk)
+
+- **Menu**: Now exported via `/internal` path for advanced customization
+
+---
+
 ## 2.0 Changes
 
 ### ✨ New Features

@@ -67,9 +67,9 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
-import { toRefs } from 'vue'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
   disabled: false,
@@ -81,7 +81,7 @@ const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
 const emits = defineEmits<AccordionRootEmits<ExplicitType>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current active value */
     modelValue: typeof modelValue.value
   }) => any

@@ -47,11 +47,11 @@ export const [injectMenuRootContext, provideMenuRootContext]
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
 import {
   ref,
   toRefs,
 } from 'vue'
-import { useVModel } from '@vueuse/core'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<MenuProps>(), {

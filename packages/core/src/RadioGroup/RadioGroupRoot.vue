@@ -24,7 +24,7 @@ export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
 }
 export type RadioGroupRootEmits = {
   /** Event handler called when the radio group value changes */
-  'update:modelValue': [payload: string]
+  'update:modelValue': [payload: AcceptableValue]
 }
 
 interface RadioGroupRootContext {
@@ -42,8 +42,8 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -58,7 +58,7 @@ const props = withDefaults(defineProps<RadioGroupRootProps>(), {
 const emits = defineEmits<RadioGroupRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any

@@ -1,12 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import type { DateValue } from '@internationalized/date'
 
-import { axe } from 'vitest-axe'
-import DateRangeField from './story/_DateRangeField.vue'
-import userEvent from '@testing-library/user-event'
-import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
+import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
+import DateRangeField from './story/_DateRangeField.vue'
 
 const calendarDate = {
   start: new CalendarDate(2022, 1, 1),
@@ -52,6 +53,23 @@ it('should pass axe accessibility tests', async () => {
 })
 
 describe('dateField', async () => {
+  it('advances focus through segments in DOM order when typing in RTL', async () => {
+    const { user, start, end } = setup({
+      dateFieldProps: {
+        dir: 'rtl',
+      },
+    })
+
+    await user.click(start.month)
+    expect(start.month).toHaveFocus()
+    await user.keyboard('{2}')
+    expect(start.day).toHaveFocus()
+    await user.keyboard('{19}')
+    expect(start.year).toHaveFocus()
+    await user.keyboard('1980')
+    expect(end.month).toHaveFocus()
+  })
+
   it('populates segment with value - `CalendarDate`', async () => {
     const { start, end } = setup({
       dateFieldProps: { modelValue: calendarDate },

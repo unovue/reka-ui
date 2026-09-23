@@ -3,6 +3,7 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
@@ -16,12 +17,11 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import SelectContentImpl from './SelectContentImpl.vue'
-import { injectSelectRootContext } from './SelectRoot.vue'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
+import SelectContentImpl from './SelectContentImpl.vue'
 import SelectProvider from './SelectProvider.vue'
+import { injectSelectRootContext } from './SelectRoot.vue'
 
 defineOptions({
   inheritAttrs: false,
@@ -40,21 +40,49 @@ onMounted(() => {
 })
 
 const presenceRef = ref<InstanceType<typeof Presence>>()
-const renderPresence = computed(() => props.forceMount || rootContext.open.value)
+
+const present = computed(() => props.forceMount || rootContext.open.value)
+const renderPresence = ref(present.value)
+
+let renderPresenceTimeout: ReturnType<typeof setTimeout> | undefined
+
+function clearRenderPresenceTimeout() {
+  if (renderPresenceTimeout) {
+    clearTimeout(renderPresenceTimeout)
+    renderPresenceTimeout = undefined
+  }
+}
+
+watch(present, (_value, _oldValue, onCleanup) => {
+  // Toggle render presence after a delay (nextTick is not enough)
+  // to allow children to re-render with the latest state.
+  // Otherwise, they would remain in the old state during the transition,
+  // which would prevent the animation that depend on state (e.g., data-[state=closed])
+  // from being applied accurately.
+  // @see https://github.com/unovue/reka-ui/issues/1865
+  clearRenderPresenceTimeout()
+  renderPresenceTimeout = setTimeout(() => {
+    renderPresence.value = present.value
+    renderPresenceTimeout = undefined
+  })
+  onCleanup(clearRenderPresenceTimeout)
+})
+
+onUnmounted(clearRenderPresenceTimeout)
 </script>
 
 <template>
   <Presence
-    v-if="renderPresence"
+    v-if="present || renderPresence || presenceRef?.present"
     ref="presenceRef"
-    :present="true"
+    :present="present"
   >
     <SelectContentImpl v-bind="{ ...forwarded, ...$attrs }">
       <slot />
     </SelectContentImpl>
   </Presence>
 
-  <div v-else-if="!presenceRef?.present && fragment">
+  <div v-else-if="fragment">
     <Teleport :to="fragment">
       <SelectProvider :context="rootContext">
         <slot />

@@ -50,7 +50,7 @@ import { PinInputInput, PinInputRoot } from 'reka-ui'
 
 ### Root
 
-Contains all the parts of a checkbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
+Contains all the parts of a pin. An `input` will also render when used within a `form` to ensure events propagate correctly.
 
 <!-- @include: @/meta/PinInputRoot.md -->
 

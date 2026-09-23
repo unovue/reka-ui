@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useElementSize } from '@vueuse/core'
 import { ref, watchEffect } from 'vue'
-import { Icon } from '@iconify/vue'
 
 const el = ref<HTMLElement>()
 const { height } = useElementSize(el)

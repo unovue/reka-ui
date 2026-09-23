@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useFormControl, useForwardExpose } from '@/shared'
-import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 import type { FormFieldProps } from '@/shared/types'
+import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
+import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export type ToggleEmits = {
   /** Event handler called when the value of the toggle changes. */
@@ -29,9 +29,14 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
-import { type Ref, computed } from 'vue'
+import type { Ref } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ToggleProps>(), {
   modelValue: undefined,
@@ -42,7 +47,7 @@ const props = withDefaults(defineProps<ToggleProps>(), {
 const emits = defineEmits<ToggleEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current value */
     modelValue: typeof modelValue.value
     /** Current state */
@@ -55,6 +60,9 @@ defineSlots<{
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()
+// Hidden form input is a sibling (not nested) of the control to avoid the
+// `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
+const scopeIdAttrs = useForwardScopeId()
 const toggleGroupContext = injectToggleGroupRootContext(null)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -83,6 +91,7 @@ const isFormControl = useFormControl(currentElement)
     :data-state="dataState"
     :data-disabled="disabled ? '' : undefined"
     :disabled="disabled"
+    v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="togglePressed"
   >
     <slot
@@ -91,13 +100,14 @@ const isFormControl = useFormControl(currentElement)
       :pressed="modelValue"
       :state="dataState"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name && !toggleGroupContext"
-      type="checkbox"
-      :name="name"
-      :value="modelValue"
-      :required="required"
-    />
   </Primitive>
+
+  <VisuallyHiddenInput
+    v-if="isFormControl && name && !toggleGroupContext"
+    type="checkbox"
+    :name="name"
+    :value="modelValue"
+    :required="required"
+    v-bind="scopeIdAttrs"
+  />
 </template>

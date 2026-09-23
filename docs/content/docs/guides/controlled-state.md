@@ -22,8 +22,8 @@ A **controlled** component receives its state as a prop and requires explicit up
 
 ```vue
 <script setup>
-import { ref } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
+import { ref } from 'vue'
 
 const isActive = ref(false)
 
@@ -59,8 +59,8 @@ Example: Using `v-model` with `SwitchRoot`
 
 ```vue
 <script setup>
-import { ref } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
+import { ref } from 'vue'
 
 const isActive = ref(false)
 </script>

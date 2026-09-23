@@ -1,4 +1,5 @@
-import { type Ref, ref } from 'vue'
+import type { Ref } from 'vue'
+import { ref } from 'vue'
 
 interface Machine<S> {
   [k: string]: { [k: string]: S }
@@ -8,7 +9,7 @@ type MachineEvent<T> = keyof UnionToIntersection<T[keyof T]>
 
 // 🤯 https://fettblog.eu/typescript-union-to-intersection/
 type UnionToIntersection<T> = (T extends any ? (x: T) => any : never) extends (
-  x: infer R
+  x: infer R,
 ) => any
   ? R
   : never

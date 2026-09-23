@@ -1,6 +1,7 @@
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
+import { nextTick, ref, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
-import { type Ref, nextTick, ref, watchEffect } from 'vue'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -12,10 +13,23 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+  if (!(targetElement instanceof Element))
+    return false
+
+  // Anything inside the layer's own root element is inside the layer. The root
+  // can differ from the `[data-dismissable-layer]` element when the layer is
+  // rendered `asChild` into a component whose root is not the element that
+  // receives its attrs (e.g. `PopperContent`'s wrapper `div`). `FocusScope`
+  // resolves the same root as its container and may focus it as a fallback
+  // when the content has no tabbable children; that focus must not read as
+  // focus-outside and dismiss the layer it belongs to (#2803).
+  if (layerElement.contains(targetElement))
+    return true
+
   const targetLayer = targetElement.closest(
     '[data-dismissable-layer]',
-  ) as HTMLElement
+  )
 
   const mainLayer = layerElement.dataset.dismissableLayer === ''
     ? layerElement
@@ -26,11 +40,8 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
   const nodeList = Array.from(
     layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
   )
-  if (
-    (targetLayer
-      && mainLayer === targetLayer)
-      || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer)
-  ) {
+
+  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))) {
     return true
   }
   else {
@@ -46,6 +57,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
 export function usePointerDownOutside(
   onPointerDownOutside?: (event: PointerDownOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
@@ -54,15 +66,20 @@ export function usePointerDownOutside(
   const handleClickRef = ref(() => {})
 
   watchEffect((cleanupFn) => {
-    if (!isClient)
+    if (!isClient || !toValue(enabled))
       return
     const handlePointerDown = async (event: PointerEvent) => {
-      const target = event.target as HTMLElement
+      const target = event.target as HTMLElement | undefined
 
-      if (!element?.value)
+      if (!element?.value || !target)
         return
 
       if (isLayerExist(element.value, target)) {
+        // A touch `pointerdown` outside arms a one-shot `click` listener that
+        // never fires when the tap becomes a scroll/drag. Drop it here so the
+        // next tap inside a layer cannot trigger the stale dismissal (mirrors
+        // Radix's inside-tree branch, radix-ui/primitives#2171).
+        ownerDocument.removeEventListener('click', handleClickRef.value)
         isPointerInsideDOMTree.value = false
         return
       }
@@ -133,7 +150,11 @@ export function usePointerDownOutside(
   })
 
   return {
-    onPointerDownCapture: () => (isPointerInsideDOMTree.value = true),
+    onPointerDownCapture: () => {
+      if (!toValue(enabled))
+        return
+      isPointerInsideDOMTree.value = true
+    },
   }
 }
 
@@ -144,13 +165,14 @@ export function usePointerDownOutside(
 export function useFocusOutside(
   onFocusOutside?: (event: FocusOutsideEvent) => void,
   element?: Ref<HTMLElement | undefined>,
+  enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const ownerDocument: Document
     = element?.value?.ownerDocument ?? globalThis?.document
 
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
-    if (!isClient)
+    if (!isClient || !toValue(enabled))
       return
     const handleFocus = async (event: FocusEvent) => {
       if (!element?.value)
@@ -158,7 +180,8 @@ export function useFocusOutside(
 
       await nextTick()
       await nextTick()
-      if (!element.value || isLayerExist(element.value, event.target as HTMLElement))
+      const target = event.target as HTMLElement | undefined
+      if (!element.value || !target || isLayerExist(element.value, target))
         return
 
       if (event.target && !isFocusInsideDOMTree.value) {
@@ -177,8 +200,18 @@ export function useFocusOutside(
   })
 
   return {
-    onFocusCapture: () => (isFocusInsideDOMTree.value = true),
-    onBlurCapture: () => (isFocusInsideDOMTree.value = false),
+    onFocusCapture: () => {
+      if (!toValue(enabled))
+        return
+
+      isFocusInsideDOMTree.value = true
+    },
+    onBlurCapture: () => {
+      if (!toValue(enabled))
+        return
+
+      isFocusInsideDOMTree.value = false
+    },
   }
 }
 

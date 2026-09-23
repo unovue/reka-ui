@@ -13,10 +13,7 @@ import './styles.css'
       aria-label="Manage your account"
     >
       <TabsIndicator class="TabsIndicator">
-        <div
-          style="width: 100%; height: 100%"
-          class="bg-grass8 w-full h-full"
-        />
+        <div class="TabsIndicatorContent"/>
       </TabsIndicator>
       <TabsTrigger
         class="TabsTrigger"

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ListboxGroupProps } from '@/Listbox'
-import { createContext, useId } from '@/shared'
 import { computed, onMounted, onUnmounted } from 'vue'
+import { createContext, useId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 export interface ComboboxGroupProps extends ListboxGroupProps {}
@@ -22,7 +22,7 @@ const props = defineProps<ComboboxGroupProps>()
 const id = useId(undefined, 'reka-combobox-group')
 const rootContext = injectComboboxRootContext()
 
-const isRender = computed(() => rootContext.ignoreFilter.value ? true : !rootContext.filterState.search ? true : rootContext.filterState.filtered.groups.has(id))
+const isRender = computed(() => rootContext.ignoreFilter.value ? true : !rootContext.filterSearch.value ? true : rootContext.filterState.value.groups.has(id))
 
 const context = provideComboboxGroupContext({
   id,

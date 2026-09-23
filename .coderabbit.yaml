@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit only auto-reviews PRs targeting the default branch (`v2`) unless
+# extra base branches are listed here. `v3` is the long-lived major-version
+# branch, so its PRs need review too.
+language: en-US
+reviews:
+  profile: chill
+  auto_review:
+    enabled: true
+    base_branches:
+      - v3

@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection, useFormControl } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
+import { createContext, useDirection, useFormControl } from '@/shared'
 
 type ActivationMode = 'focus' | 'dblclick' | 'none'
 type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
@@ -72,9 +72,10 @@ export const [injectEditableRootContext, provideEditableRootContext]
 </script>
 
 <script setup lang="ts">
-import { type Ref, computed, ref, toRefs, watch } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import type { Ref } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { computed, ref, toRefs, watch } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 defineOptions({
@@ -94,7 +95,7 @@ const props = withDefaults(defineProps<EditableRootProps>(), {
 
 const emits = defineEmits<EditableRootEmits>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Whether the editable field is in edit mode */
     isEditing: boolean
     /** The value of the editable field */
@@ -167,7 +168,7 @@ function submit() {
   isEditing.value = false
 
   emits('update:state', 'submit')
-  emits('submit', modelValue.value)
+  emits('submit', inputValue.value)
 }
 
 function handleDismiss() {
@@ -179,8 +180,9 @@ function handleDismiss() {
   }
 }
 
-const pointerDownOutside = usePointerDownOutside(() => handleDismiss(), currentElement)
-const focusOutside = useFocusOutside(() => handleDismiss(), currentElement)
+const pointerDownOutside = usePointerDownOutside(() => handleDismiss(), currentElement, isEditing)
+const focusOutside = useFocusOutside(() => handleDismiss(), currentElement, isEditing)
+
 const isEmpty = computed(() => modelValue.value === '')
 
 defineExpose({

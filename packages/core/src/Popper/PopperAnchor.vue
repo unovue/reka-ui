@@ -15,10 +15,10 @@ export interface PopperAnchorProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { watchPostEffect } from 'vue'
-import { injectPopperRootContext } from './PopperRoot.vue'
 import {
   Primitive,
 } from '@/Primitive'
+import { injectPopperRootContext } from './PopperRoot.vue'
 
 const props = defineProps<PopperAnchorProps>()
 

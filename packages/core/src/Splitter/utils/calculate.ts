@@ -1,8 +1,8 @@
+import type { PanelData } from '../SplitterPanel.vue'
 import type { Direction, DragState, ResizeEvent } from './types'
 import { assert } from './assert'
 import { getPanelGroupElement, getResizeHandleElement } from './dom'
 import { getResizeEventCursorPosition, isKeyDown } from './events'
-import type { PanelData } from '../SplitterPanel.vue'
 
 export function calculateDragOffsetPercentage(
   event: ResizeEvent,
@@ -140,7 +140,7 @@ export function calculateUnsafeDefaultLayout({
 }: {
   panelDataArray: PanelData[]
 }): number[] {
-  const layout = Array<number>(panelDataArray.length)
+  const layout: number[] = Array.from({ length: panelDataArray.length })
 
   const panelConstraintsArray = panelDataArray.map(
     panelData => panelData.constraints,

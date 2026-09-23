@@ -13,15 +13,13 @@ export interface TooltipContentProps extends TooltipContentImplProps {
 </script>
 
 <script setup lang="ts">
-import TooltipContentImpl from './TooltipContentImpl.vue'
-import TooltipContentHoverable from './TooltipContentHoverable.vue'
-import { injectTooltipRootContext } from './TooltipRoot.vue'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 import { Presence } from '@/Presence'
+import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import TooltipContentHoverable from './TooltipContentHoverable.vue'
+import TooltipContentImpl from './TooltipContentImpl.vue'
+import { injectTooltipRootContext } from './TooltipRoot.vue'
 
-const props = withDefaults(defineProps<TooltipContentProps>(), {
-  side: 'top',
-})
+const props = defineProps<TooltipContentProps>()
 const emits = defineEmits<TooltipContentEmits>()
 
 const rootContext = injectTooltipRootContext()

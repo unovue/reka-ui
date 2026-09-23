@@ -1,5 +1,6 @@
 <script lang="ts">
-import { CalendarHeading, type CalendarHeadingProps } from '..'
+import type { CalendarHeadingProps } from '..'
+import { CalendarHeading } from '..'
 
 export interface DatePickerHeadingProps extends CalendarHeadingProps {}
 </script>
@@ -7,7 +8,7 @@ export interface DatePickerHeadingProps extends CalendarHeadingProps {}
 <script setup lang="ts">
 const props = defineProps<DatePickerHeadingProps>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current month and year */
     headingValue: string
   }) => any

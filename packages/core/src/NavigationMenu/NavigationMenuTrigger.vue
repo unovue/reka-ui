@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { VNode } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { useForwardExpose } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,15 +11,15 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
 import { refAutoReset, unrefElement } from '@vueuse/core'
-import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { computed, onMounted, ref } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
+import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { getOpenState, makeContentId, makeTriggerId } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -87,9 +87,13 @@ function handlePointerLeave(ev: PointerEvent) {
   }
 }
 
-function handleClick(event: PointerEvent) {
-  if (event.pointerType === 'mouse' && menuContext.disableClickTrigger.value)
+function handleClick(event: MouseEvent | PointerEvent) {
+  if (
+    (!('pointerType' in event) || event.pointerType === 'mouse')
+    && menuContext.disableClickTrigger.value
+  ) {
     return
+  }
 
   // if open via pointermove, we prevent click event
   if (hasPointerMoveOpenedRef.value)
@@ -115,7 +119,9 @@ function handleKeydown(ev: KeyboardEvent) {
   }
 }
 
-function setFocusProxyRef(node: VNode) {
+function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
+  if (!node)
+    return undefined
   // @ts-expect-error unrefElement expect MaybeRef, but also support Vnode
   itemContext.focusProxyRef.value = unrefElement(node)
   return undefined

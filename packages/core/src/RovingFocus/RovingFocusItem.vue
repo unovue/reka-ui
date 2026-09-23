@@ -3,23 +3,28 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface RovingFocusItemProps extends PrimitiveProps {
   tabStopId?: string
+  /**
+   * When `false`, item will not be focusable.
+   * @defaultValue `true`
+   */
   focusable?: boolean
+  /** When `true`, item will be initially focused. */
   active?: boolean
+  /** When `true`, shift + arrow key will allow focusing on next/previous item. */
   allowShiftKey?: boolean
 }
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
-import { Primitive } from '@/Primitive'
-import { focusFirst, getFocusIntent, wrapArray } from './utils'
-import { useId } from '@/shared'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useCollection } from '@/Collection'
+import { Primitive } from '@/Primitive'
+import { useId } from '@/shared'
+import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
+import { focusFirst, getFocusIntent, wrapArray } from './utils'
 
 const props = withDefaults(defineProps<RovingFocusItemProps>(), {
   focusable: true,
-  active: true,
   as: 'span',
 })
 
@@ -39,6 +44,17 @@ onMounted(() => {
 onUnmounted(() => {
   if (props.focusable)
     context.onFocusableItemRemove()
+})
+
+watch(() => props.focusable, (newVal, oldVal) => {
+  if (newVal === oldVal)
+    return
+  if (newVal) {
+    context.onFocusableItemAdd()
+  }
+  else {
+    context.onFocusableItemRemove()
+  }
 })
 
 function handleKeydown(event: KeyboardEvent) {
@@ -87,12 +103,12 @@ function handleKeydown(event: KeyboardEvent) {
     <Primitive
       :tabindex="isCurrentTabStop ? 0 : -1"
       :data-orientation="context.orientation.value"
-      :data-active="active"
+      :data-active="active ? '' : undefined"
       :data-disabled="!focusable ? '' : undefined"
       :as="as"
       :as-child="asChild"
       @mousedown="
-        (event) => {
+        (event: MouseEvent) => {
           // We prevent focusing non-focusable items on `mousedown`.
           // Even though the item has tabIndex={-1}, that only means take it out of the tab order.
           if (!focusable) event.preventDefault();

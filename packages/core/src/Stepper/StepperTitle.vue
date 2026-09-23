@@ -1,7 +1,7 @@
 <script lang="ts">
-import { injectStepperItemContext } from './StepperItem.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { injectStepperItemContext } from './StepperItem.vue'
 </script>
 
 <script setup lang="ts">

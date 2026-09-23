@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { createContext } from '@/shared'
-import type { CheckedState } from './utils'
 
 interface MenuItemIndicatorContext {
   modelValue: Ref<CheckedState>
@@ -25,9 +25,9 @@ export const [injectMenuItemIndicatorContext, provideMenuItemIndicatorContext]
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { getCheckedState, isIndeterminate } from './utils'
-import { Primitive } from '@/Primitive'
 import { Presence } from '@/Presence'
+import { Primitive } from '@/Primitive'
+import { getCheckedState, isIndeterminate } from './utils'
 
 withDefaults(defineProps<MenuItemIndicatorProps>(), {
   as: 'span',

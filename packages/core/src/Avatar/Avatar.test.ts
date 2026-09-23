@@ -1,13 +1,43 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import Avatar from './story/_Avatar.vue'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } from '@testing-library/vue'
+import Avatar from './story/_Avatar.vue'
 
 const FALLBACK = 'CT'
 const DELAY = 350
+
+const ImgClass = class MockImage {
+  onload: () => void = () => {}
+  src = ''
+  eventListeners: Record<string, Array<() => void>> = {}
+
+  constructor() {
+    setTimeout(() => {
+      this.onload()
+      // Also trigger 'load' event listeners
+      if (this.eventListeners.load) {
+        this.eventListeners.load.forEach(callback => callback())
+      }
+    }, DELAY)
+    return this
+  }
+
+  addEventListener(event: string, callback: () => void) {
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = []
+    }
+    this.eventListeners[event].push(callback)
+  }
+
+  removeEventListener(event: string, callback: () => void) {
+    if (this.eventListeners[event]) {
+      this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback)
+    }
+  }
+}
 
 it('should pass axe accessibility tests', async () => {
   const wrapper = mount(Avatar)
@@ -17,16 +47,7 @@ it('should pass axe accessibility tests', async () => {
 describe('given an Avatar with fallback and a working image', async () => {
   let wrapper: VueWrapper<InstanceType<typeof Avatar>>
   beforeAll(async () => {
-    (window.Image as any) = class MockImage {
-      onload: () => void = () => {}
-      src = ''
-      constructor() {
-        setTimeout(() => {
-          this.onload()
-        }, DELAY)
-        return this
-      }
-    }
+    (window.Image as any) = ImgClass
     wrapper = mount(Avatar)
   })
 
@@ -60,16 +81,7 @@ describe('given an Avatar with fallback and delayed render', () => {
   let wrapper: VueWrapper<InstanceType<typeof Avatar>>
 
   beforeAll(async () => {
-    (window.Image as any) = class MockImage {
-      onload: () => void = () => {}
-      src = ''
-      constructor() {
-        setTimeout(() => {
-          this.onload()
-        }, DELAY)
-        return this
-      }
-    }
+    (window.Image as any) = ImgClass
     wrapper = mount(Avatar, {
       props: {
         delay: 300,

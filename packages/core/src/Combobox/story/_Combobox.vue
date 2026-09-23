@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxRoot, type ComboboxRootEmits, type ComboboxRootProps, ComboboxSeparator, ComboboxTrigger, ComboboxViewport } from '..'
+import type { ComboboxRootEmits, ComboboxRootProps } from '..'
 import { Icon } from '@iconify/vue'
+import { computed, ref } from 'vue'
 import { useFilter, useForwardPropsEmits } from '@/shared'
+import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxRoot, ComboboxSeparator, ComboboxTrigger, ComboboxViewport } from '..'
 
 const props = defineProps<ComboboxRootProps>()
 const emits = defineEmits<ComboboxRootEmits>()

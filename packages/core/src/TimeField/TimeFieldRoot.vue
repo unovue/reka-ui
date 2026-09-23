@@ -1,24 +1,23 @@
 <script lang="ts">
-import { type DateValue, Time, getLocalTimeZone, isEqualDay, toCalendarDateTime, today } from '@internationalized/date'
-
+import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import type { Formatter } from '@/shared'
+import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
+import type { Direction, FormFieldProps } from '@/shared/types'
+import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
+import { isBefore } from '@/date'
+import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
-  type HourCycle,
-  type SegmentPart,
-  type SegmentValueObj,
-  type TimeValue,
   createContent,
   getDefaultTime,
   getTimeFieldSegmentElements,
   initializeTimeSegmentValues,
   isSegmentNavigationKey,
+  normalizeDateStep,
+  normalizeHourCycle,
   syncTimeSegmentValues,
-
 } from '@/shared/date'
-import { isBefore } from '@/date'
-import type { Direction, FormFieldProps } from '@/shared/types'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
@@ -29,6 +28,8 @@ type TimeFieldRootContext = {
   readonly: Ref<boolean>
   formatter: Formatter
   hourCycle: HourCycle
+  step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Ref<SegmentValueObj>
   segmentContents: Ref<{ part: SegmentPart, value: string }[]>
   elements: Ref<Set<HTMLElement>>
@@ -47,6 +48,10 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   modelValue?: TimeValue | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
+  /** The stepping interval for the time fields. Defaults to `1`. */
+  step?: DateStep
+  /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
@@ -87,9 +92,9 @@ function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { VisuallyHidden } from '@/VisuallyHidden'
 
 defineOptions({
@@ -102,10 +107,11 @@ const props = withDefaults(defineProps<TimeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** The current time of the field */
     modelValue: TimeValue | undefined
     /** The time field segment contents */
@@ -115,14 +121,18 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled, readonly, granularity, defaultValue, minValue, maxValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value)
+const formatter = useDateFormatter(locale.value, {
+  hourCycle: normalizeHourCycle(props.hourCycle),
+})
 const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())
+
+const step = computed(() => normalizeDateStep(props))
 
 const convertedMinValue = computed(() => minValue.value ? convertValue(minValue.value) : undefined)
 const convertedMaxValue = computed(() => maxValue.value ? convertValue(maxValue.value) : undefined)
@@ -138,12 +148,17 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 const convertedModelValue = computed({
   get() {
+    if (isNullish(modelValue.value))
+      return modelValue.value
     return convertValue(modelValue.value)
   },
   set(newValue) {
-    if (newValue)
+    if (newValue) {
       modelValue.value = modelValue.value && 'day' in modelValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, modelValue.value?.millisecond)
-
+    }
+    else {
+      modelValue.value = newValue
+    }
     return newValue
   },
 })
@@ -204,7 +219,25 @@ const allSegmentContent = computed(() => createContent({
   isTimeValue: true,
 }))
 
-const segmentContents = computed(() => allSegmentContent.value.arr)
+const segmentContents = computed(() => {
+  const contents = allSegmentContent.value.arr
+
+  // Convert hour values for 12-hour display
+  if (props.hourCycle === 12) {
+    return contents.map((segment) => {
+      if (segment.part === 'hour' && 'hour' in segmentValues.value) {
+        const hour = segmentValues.value.hour
+        if (hour !== null) {
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+          return { ...segment, value: displayHour.toString() }
+        }
+      }
+      return segment
+    })
+  }
+
+  return contents
+})
 
 const editableSegmentContents = computed(() => segmentContents.value.filter(({ part }) => part !== 'literal'))
 
@@ -221,15 +254,16 @@ watch(locale, (value) => {
 })
 
 watch(convertedModelValue, (_modelValue) => {
-  if (_modelValue !== undefined && (!isEqualDay(convertedPlaceholder.value, _modelValue) || convertedPlaceholder.value.compare(_modelValue) !== 0))
+  if (!isNullish(_modelValue) && (!isEqualDay(convertedPlaceholder.value, _modelValue) || convertedPlaceholder.value.compare(_modelValue) !== 0))
     placeholder.value = _modelValue.copy()
 })
 
 watch([convertedModelValue, locale], ([_modelValue]) => {
-  if (_modelValue !== undefined) {
+  if (!isNullish(_modelValue)) {
     segmentValues.value = { ...syncTimeSegmentValues({ value: _modelValue, formatter }) }
   }
-  else if (Object.values(segmentValues.value).every(value => value === null)) {
+  // If segment has null value, means that user modified it, thus do not reset the segmentValues
+  else if (Object.values(segmentValues.value).every(value => value !== null) && isNullish(_modelValue)) {
     segmentValues.value = { ...initialSegments }
   }
 })
@@ -263,6 +297,9 @@ const prevFocusableSegment = computed(() => {
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -282,6 +319,8 @@ provideTimeFieldRootContext({
   disabled,
   formatter,
   hourCycle: props.hourCycle,
+  step,
+  stepSnapping,
   readonly,
   segmentValues,
   isInvalid,
@@ -289,7 +328,10 @@ provideTimeFieldRootContext({
   elements: segmentElements,
   setFocusedElement,
   focusNext() {
-    nextFocusableSegment.value?.focus()
+    // Auto-advance follows the segments' DOM order (the locale's format
+    // order) regardless of writing direction; only arrow-key navigation is
+    // direction-aware via nextFocusableSegment/prevFocusableSegment.
+    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
   },
 })
 

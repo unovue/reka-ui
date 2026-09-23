@@ -15,9 +15,9 @@ export interface MenuItemProps extends MenuItemImplProps {}
 
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
+import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuRootContext } from './MenuRoot.vue'
-import { injectMenuContentContext } from './MenuContentImpl.vue'
 import { ITEM_SELECT, SELECTION_KEYS } from './utils'
 
 const props = defineProps<MenuItemProps>()
@@ -57,21 +57,21 @@ async function handleSelect() {
       }
     "
     @pointerup="
-      async (event) => {
+      async (event: PointerEvent) => {
         await nextTick();
         if (event.defaultPrevented) return;
         // Pointer down can move to a different menu item which should activate it on pointer up.
         // We dispatch a click for selection to allow composition with click based triggers and to
         // prevent Firefox from getting stuck in text selection mode when the menu closes.
-        if (!isPointerDownRef) event.currentTarget?.click();
+        if (!isPointerDownRef) (event.currentTarget as HTMLElement)?.click();
       }
     "
     @keydown="
-      async (event) => {
+      async (event: KeyboardEvent) => {
         const isTypingAhead = contentContext.searchRef.value !== '';
         if (disabled || (isTypingAhead && event.key === ' ')) return;
         if (SELECTION_KEYS.includes(event.key)) {
-          event.currentTarget.click();
+          (event.currentTarget as HTMLElement)?.click();
           /**
            * We prevent default browser behaviour for selection keys as they should trigger
            * a selection only:

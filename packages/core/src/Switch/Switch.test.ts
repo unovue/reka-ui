@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { mount } from '@vue/test-utils'
-import Switch from './_Switch.vue'
 import { handleSubmit } from '@/test'
+import Switch from './_Switch.vue'
 
 describe('test switch functionalities', () => {
   beforeEach(() => {
@@ -61,6 +61,14 @@ describe('given switch in a form', async () => {
 
   it('should have hidden input field', async () => {
     expect(wrapper.find('[type="checkbox"]').exists()).toBe(true)
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('should not nest the hidden input inside the interactive control', () => {
+    expect(wrapper.find('button input').exists()).toBe(false)
   })
 
   describe('after clicking submit button', () => {

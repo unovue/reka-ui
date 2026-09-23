@@ -1,12 +1,14 @@
+import type { DateValue } from '@internationalized/date'
+import type { CalendarRootProps } from './CalendarRoot.vue'
+import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
+import { handleCalendarInitialFocus } from '@/shared/date'
 import Calendar from './story/_Calendar.vue'
 import CalendarMultiple from './story/_CalendarMultiple.vue'
-import userEvent from '@testing-library/user-event'
-import { CalendarDate, CalendarDateTime, type DateValue, toZoned } from '@internationalized/date'
-import type { CalendarRootProps } from './CalendarRoot.vue'
-import { render } from '@testing-library/vue'
-import { useTestKbd } from '@/shared'
 
 const calendarDate = new CalendarDate(1980, 1, 20)
 const edgeCaseCalendarDate = new CalendarDate(2025, 1, 1)
@@ -516,6 +518,42 @@ describe('calendar', async () => {
     expect(heading).toHaveTextContent('December 1979')
   })
 
+  it('stops propagation for plain Enter but lets Ctrl+Enter bubble to parent listeners', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const cell = getByTestId('date-1-20')
+    cell.focus()
+    expect(cell).toHaveFocus()
+
+    let plainEnterBubbled = false
+    let ctrlEnterBubbled = false
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        if (e.ctrlKey)
+          ctrlEnterBubbled = true
+        else
+          plainEnterBubbled = true
+      }
+    }
+    document.addEventListener('keydown', handler)
+    try {
+      await user.keyboard(kbd.ENTER)
+      await user.keyboard(`{Control>}${kbd.ENTER}{/Control}`)
+    }
+    finally {
+      document.removeEventListener('keydown', handler)
+    }
+
+    // plain Enter is handled by the cell (selection) → propagation stopped
+    expect(plainEnterBubbled).toBe(false)
+    // Ctrl+Enter is not handled by the cell → bubbles so parents can react
+    expect(ctrlEnterBubbled).toBe(true)
+  })
+
   it('handles unavailable dates appropriately', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
@@ -888,6 +926,7 @@ describe('calendar - edge cases', () => {
     expect(heading).toHaveTextContent('January - April 2025')
 
     await user.keyboard(kbd.ARROW_RIGHT)
+    expect(getByTestId('heading')).toHaveTextContent('February - May 2025')
     expect(getByTestId('date-3-5-1')).toHaveFocus()
 
     const firstDayOfMonth = getByTestId('date-0-2-1')
@@ -896,5 +935,104 @@ describe('calendar - edge cases', () => {
 
     await user.keyboard(kbd.ARROW_LEFT)
     expect(getByTestId('date-0-1-31')).toHaveFocus()
+  })
+
+  it('handles initial focus when no date is selected and today is out of view', async () => {
+    const { calendar, getByTestId } = setup({
+      calendarProps: { defaultPlaceholder: edgeCaseCalendarDate },
+    })
+
+    expect(calendar.querySelector('[data-selected]')).toBeNull()
+    expect(calendar.querySelector('[data-today]')).toBeNull()
+
+    handleCalendarInitialFocus(calendar)
+
+    expect(getByTestId('date-1-1')).toHaveFocus()
+  })
+})
+
+describe('calendar - tabindex states', () => {
+  it('sets tabindex to 0 for focused date', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const focusedDay = getByTestId('date-1-20')
+    expect(focusedDay).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to -1 for non-focused dates in current view', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const nonFocusedDay = getByTestId('date-1-15')
+    expect(nonFocusedDay).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('sets tabindex to undefined for dates outside current view', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    const outsideViewDay = getByTestId('date-12-31')
+    expect(outsideViewDay).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to undefined for disabled dates', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+    })
+
+    const disabledDay = getByTestId('date-1-15')
+    expect(disabledDay).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to undefined for dates outside visible view', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        numberOfMonths: 1,
+      },
+    })
+
+    // Dates outside visible view have data-outside-visible-view
+    const outsideVisibleDay = getByTestId('date-0-12-30')
+    expect(outsideVisibleDay).toHaveAttribute('data-outside-visible-view')
+    expect(outsideVisibleDay).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to 0 for first can tab selected date when has modelValue', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        minValue: new CalendarDate(1980, 1, 15),
+        maxValue: new CalendarDate(1980, 1, 19),
+      },
+    })
+
+    const firstCanTabSelectedDate = getByTestId('date-1-15')
+    expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to 0 for first can tab selected date', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        placeholder: calendarDate,
+        maxValue: new CalendarDate(1980, 1, 19),
+      },
+    })
+
+    const firstCanTabSelectedDate = getByTestId('date-1-1')
+    expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
   })
 })

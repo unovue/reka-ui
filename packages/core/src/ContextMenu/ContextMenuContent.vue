@@ -20,8 +20,8 @@ export interface ContextMenuContentProps
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { MenuContent } from '@/Menu'
+import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 
 const props = withDefaults(defineProps<ContextMenuContentProps>(), {
   alignOffset: 0,

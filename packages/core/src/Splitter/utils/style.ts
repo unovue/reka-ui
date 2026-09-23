@@ -1,6 +1,6 @@
+import type { CSSProperties } from 'vue'
 import type { PanelData } from '../SplitterPanel.vue'
 import type { DragState } from './types'
-import type { CSSProperties } from 'vue'
 import {
   EXCEEDED_HORIZONTAL_MAX,
   EXCEEDED_HORIZONTAL_MIN,
@@ -69,6 +69,7 @@ export function resetGlobalCursorStyle() {
 export function setGlobalCursorStyle(
   state: CursorState,
   constraintFlags: number,
+  nonce?: string,
 ) {
   const style = getCursorStyle(state, constraintFlags)
 
@@ -79,11 +80,12 @@ export function setGlobalCursorStyle(
 
   if (styleElement === null) {
     styleElement = document.createElement('style')
-
+    if (nonce)
+      styleElement.nonce = nonce
     document.head.appendChild(styleElement)
   }
 
-  styleElement.innerHTML = `*{cursor: ${style}!important;}`
+  styleElement.textContent = `*{cursor: ${style}!important;}`
 }
 
 // the % of the group's overall space this panel should occupy.

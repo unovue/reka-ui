@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { SelectItem, SelectItemIndicator, SelectItemText } from '..'
 import { Icon } from '@iconify/vue'
+import { SelectItem, SelectItemIndicator, SelectItemText } from '..'
 
 defineProps<{
   options: string[]

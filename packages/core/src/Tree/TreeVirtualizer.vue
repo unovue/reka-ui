@@ -3,26 +3,29 @@ export interface TreeVirtualizerProps {
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */
-  estimateSize?: number
+  estimateSize?: number | ((index: number) => number)
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (item: Record<string, any>) => string
 }
 </script>
 
 <script setup lang="ts">
-import { type VirtualItem, type Virtualizer, useVirtualizer } from '@tanstack/vue-virtual'
-import { type Ref, cloneVNode, computed, nextTick, useSlots } from 'vue'
-import { type FlattenedItem, injectTreeRootContext } from './TreeRoot.vue'
+import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
+import type { Ref } from 'vue'
+import type { FlattenedItem } from './TreeRoot.vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { refAutoReset, useParentElement } from '@vueuse/core'
-import { getNextMatch } from '@/shared/useTypeahead'
-import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
+import { cloneVNode, computed, nextTick, useSlots } from 'vue'
 import { useCollection } from '@/Collection'
+import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { getActiveElement } from '@/shared'
+import { getNextMatch } from '@/shared/useTypeahead'
+import { injectTreeRootContext } from './TreeRoot.vue'
 
 const props = defineProps<TreeVirtualizerProps>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     item: FlattenedItem<Record<string, any>>
     virtualizer: Virtualizer<Element | Window, Element>
     virtualItem: VirtualItem
@@ -76,7 +79,10 @@ const virtualizer = useVirtualizer(
     getItemKey(index) {
       return index + rootContext.getKey(rootContext.expandedItems.value[index].value)
     },
-    estimateSize() {
+    estimateSize(index) {
+      if (typeof props.estimateSize === 'function')
+        return props.estimateSize(index)
+
       return props.estimateSize ?? 28
     },
     getScrollElement() { return parentEl.value },
@@ -127,8 +133,10 @@ rootContext.virtualKeydownHook.on((event) => {
     const index = intent === 'first' ? 0 : rootContext.expandedItems.value.length - 1
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
-      const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const items = getItems().filter(i => i.ref.dataset.disabled !== '')
+      if (!items.length)
+        return
+      const item = intent === 'first' ? items[0] : items.at(-1)!
       item.ref.focus()
     })
   }

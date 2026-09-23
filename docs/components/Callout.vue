@@ -3,7 +3,7 @@ import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{
-  type: 'info' | 'tip' | 'warning' | 'danger'
+  type?: 'info' | 'tip' | 'warning' | 'danger'
   title?: string
 }>(), { type: 'info' })
 

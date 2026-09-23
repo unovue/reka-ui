@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { type SidebarItem, useSidebarControl } from '../composables/sidebar'
+import type { SidebarItem } from '../composables/sidebar'
 import { useCurrentElement } from '@vueuse/core'
+import { computed, watch } from 'vue'
+import { useSidebarControl } from '../composables/sidebar'
 
 const props = defineProps<{
   item: SidebarItem

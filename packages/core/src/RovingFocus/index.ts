@@ -1,7 +1,7 @@
 export {
   default as RovingFocusGroup,
-  type RovingFocusGroupProps,
   type RovingFocusGroupEmits,
+  type RovingFocusGroupProps,
 } from './RovingFocusGroup.vue'
 export {
   default as RovingFocusItem,

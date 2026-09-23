@@ -3,8 +3,10 @@ import type {
   ComponentPublicInstance,
   Ref,
 } from 'vue'
+import type { DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
-import type { PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { AcceptableValue } from '@/shared/types'
+import { useCollection } from '@/Collection'
 import {
   createContext,
   useFocusGuards,
@@ -13,9 +15,7 @@ import {
   useTypeahead,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
-import type { AcceptableValue } from '@/shared/types'
 import { valueComparator } from './utils'
-import { useCollection } from '@/Collection'
 
 export interface SelectContentContext {
   content?: Ref<HTMLElement | undefined>
@@ -24,14 +24,14 @@ export interface SelectContentContext {
   itemRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
-    disabled: boolean
+    disabled: boolean,
   ) => void
   selectedItem?: Ref<HTMLElement | undefined>
   onItemLeave?: () => void
   itemTextRefCallback: (
     node: HTMLElement | undefined,
     value: AcceptableValue,
-    disabled: boolean
+    disabled: boolean,
   ) => void
   focusSelectedItem?: () => void
   selectedItemText?: Ref<HTMLElement | undefined>
@@ -60,7 +60,7 @@ export type SelectContentImplEmits = {
   pointerDownOutside: [event: PointerDownOutsideEvent]
 }
 
-export interface SelectContentImplProps extends PopperContentProps {
+export interface SelectContentImplProps extends PopperContentProps, DismissableLayerProps {
   /**
    *  The positioning mode to use
    *
@@ -81,24 +81,25 @@ export const [injectSelectContentContext, provideSelectContentContext]
 </script>
 
 <script setup lang="ts">
+import { unrefElement } from '@vueuse/core'
 import {
   computed,
   ref,
   watch,
   watchEffect,
 } from 'vue'
-import { unrefElement } from '@vueuse/core'
-import { injectSelectRootContext } from './SelectRoot.vue'
+import { DismissableLayer } from '@/DismissableLayer'
+import { FocusScope } from '@/FocusScope'
+import { focusFirst } from '@/Menu/utils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
-import { FocusScope } from '@/FocusScope'
-import { DismissableLayer } from '@/DismissableLayer'
-import { focusFirst } from '@/Menu/utils'
+import { injectSelectRootContext } from './SelectRoot.vue'
 
 const props = withDefaults(defineProps<SelectContentImplProps>(), {
   align: 'start',
   position: 'item-aligned',
   bodyLock: true,
+  disableOutsidePointerEvents: true,
 })
 const emits = defineEmits<SelectContentImplEmits>()
 
@@ -188,6 +189,14 @@ function handleKeyDown(event: KeyboardEvent) {
   // select should not be navigated using tab key so we prevent it
   if (event.key === 'Tab')
     event.preventDefault()
+
+  // Space selects the item when no search is in progress; otherwise it's part of the search
+  if (event.code === 'Space') {
+    if (search.value === '')
+      return
+    // SelectItem skips Space during a search, so prevent the scroll here
+    event.preventDefault()
+  }
 
   if (!isModifierKey && event.key.length === 1)
     handleTypeaheadSearch(event.key, getItems())
@@ -285,7 +294,7 @@ provideSelectContentContext({
     >
       <DismissableLayer
         as-child
-        disable-outside-pointer-events
+        :disable-outside-pointer-events="disableOutsidePointerEvents"
         @focus-outside.prevent
         @dismiss="rootContext.onOpenChange(false)"
         @escape-key-down="emits('escapeKeyDown', $event)"
@@ -300,8 +309,14 @@ provideSelectContentContext({
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="
-            (vnode: ComponentPublicInstance) => {
-              content = unrefElement(vnode) as HTMLElement
+            (vnode: Element | ComponentPublicInstance | null) => {
+              if (!vnode) return undefined
+              const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
+              // special case for PopperContent
+              if (el?.hasAttribute('data-reka-popper-content-wrapper'))
+                content = el.firstElementChild as HTMLElement
+              else
+                content = el
               return undefined
             }
           "

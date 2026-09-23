@@ -526,6 +526,7 @@ Use the `CheckboxItem` part to add an item that can be checked.
 
 ```vue line=3,25-30
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   ContextMenuCheckboxItem,
   ContextMenuContent,
@@ -536,7 +537,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from 'reka-ui'
-import { Icon } from '@iconify/vue'
 
 const checked = ref(true)
 </script>
@@ -567,6 +567,7 @@ Use the `RadioGroup` and `RadioItem` parts to add an item that can be checked am
 
 ```vue line=8,9,24-43
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import {
   ContextMenuCheckboxItem,
   ContextMenuContent,
@@ -579,7 +580,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from 'reka-ui'
-import { Icon } from '@iconify/vue'
 
 const color = ref('blue')
 </script>

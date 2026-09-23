@@ -1,5 +1,6 @@
 import type { Granularity } from './comparators'
-import type { HourCycle } from './types'
+import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
+import { defu } from 'defu'
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
   const opts: Intl.DateTimeFormatOptions = {
@@ -10,8 +11,8 @@ export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCy
     minute: '2-digit',
     second: '2-digit',
     timeZoneName: 'short',
-    hourCycle: hourCycle === 24 ? 'h23' : undefined,
-    hour12: hourCycle === 24 ? false : undefined,
+    hourCycle: normalizeHourCycle(hourCycle),
+    hour12: normalizeHour12(hourCycle),
   }
   if (isTimeValue) {
     delete opts.year
@@ -36,6 +37,22 @@ export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCy
   return opts
 }
 
+type GetDefaultDateStepProps = {
+  step?: DateStep
+}
+
+export function normalizeDateStep(props?: GetDefaultDateStepProps): DateStep {
+  return defu(props?.step, {
+    year: 1,
+    month: 1,
+    day: 1,
+    hour: 1,
+    minute: 1,
+    second: 1,
+    millisecond: 1,
+  } satisfies DateStep)
+}
+
 export function handleCalendarInitialFocus(calendar: HTMLElement) {
   const selectedDay = calendar.querySelector<HTMLElement>('[data-selected]')
   if (selectedDay)
@@ -45,7 +62,51 @@ export function handleCalendarInitialFocus(calendar: HTMLElement) {
   if (today)
     return today.focus()
 
-  const firstDay = calendar.querySelector<HTMLElement>('[data-reka-calendar-day]')
+  const firstDay = calendar.querySelector<HTMLElement>('[data-value]:not([data-outside-view]):not([data-disabled])')
   if (firstDay)
     return firstDay.focus()
+}
+
+export function normalizeHourCycle(hourCycle: HourCycle) {
+  if (hourCycle === 24)
+    return 'h23'
+  if (hourCycle === 12)
+    return 'h11'
+  return undefined
+}
+
+export function normalizeHour12(hourCycle: HourCycle) {
+  if (hourCycle === 24)
+    return false
+  if (hourCycle === 12)
+    return true
+  return undefined
+}
+
+export function getInputType(granularity: Granularity): DateInputType {
+  return granularity === 'day' ? 'date' : 'datetime-local'
+}
+
+export function normalizeInputValue(date: DateValue | undefined, granularity: Granularity): string {
+  if (!date)
+    return ''
+
+  const type = getInputType(granularity)
+
+  const year = String(date.year).padStart(4, '0')
+  const month = String(date.month).padStart(2, '0')
+  const day = String(date.day).padStart(2, '0')
+
+  if (type === 'date')
+    return `${year}-${month}-${day}`
+
+  const hour = String('hour' in date ? date.hour : 0).padStart(2, '0')
+  const minute = String('minute' in date ? date.minute : 0).padStart(2, '0')
+
+  if (granularity === 'second') {
+    const second = String('second' in date ? date.second : 0).padStart(2, '0')
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+  }
+
+  return `${year}-${month}-${day}T${hour}:${minute}`
 }

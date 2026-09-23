@@ -4,4 +4,4 @@ export {
   type DismissableLayerProps,
 } from './DismissableLayer.vue'
 export { default as DismissableLayerBranch } from './DismissableLayerBranch.vue'
-export { useFocusOutside, usePointerDownOutside, type PointerDownOutsideEvent, type FocusOutsideEvent } from './utils'
+export { type FocusOutsideEvent, type PointerDownOutsideEvent, useFocusOutside, usePointerDownOutside } from './utils'

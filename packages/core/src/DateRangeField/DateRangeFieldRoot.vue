@@ -2,29 +2,29 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
+import type { Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { type Formatter, createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import type { Formatter } from '@/shared'
+import type { DateRange, DateStep, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
+import type { Direction, FormFieldProps } from '@/shared/types'
 import {
-  type DateRange,
-  type Granularity,
-  type HourCycle,
-  type SegmentPart,
-  type SegmentValueObj,
-  createContent,
-  getDefaultDate,
-  getSegmentElements,
-  initializeSegmentValues,
-  isSegmentNavigationKey,
-  syncSegmentValues,
-} from '@/shared/date'
-import {
-  type Matcher,
   areAllDaysBetweenValid,
   hasTime,
   isBefore,
   isBeforeOrSame,
 } from '@/date'
-import type { Direction, FormFieldProps } from '@/shared/types'
+import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import {
+  createContent,
+  getDefaultDate,
+  getSegmentElements,
+  initializeSegmentValues,
+  isSegmentNavigationKey,
+  normalizeDateStep,
+  normalizeHourCycle,
+
+  syncSegmentValues,
+} from '@/shared/date'
 
 export type DateRangeType = 'start' | 'end'
 
@@ -39,6 +39,7 @@ type DateRangeFieldRootContext = {
   readonly: Ref<boolean>
   formatter: Formatter
   hourCycle: HourCycle
+  step: Ref<DateStep>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
   segmentContents: Ref<{ start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }>
   elements: Ref<Set<HTMLElement>>
@@ -53,10 +54,12 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   defaultPlaceholder?: DateValue
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
+  /** The stepping interval for the time fields. Defaults to `1`. */
+  step?: DateStep
   /** The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: Granularity
   /** Whether or not to hide the time zone segment of the field */
@@ -81,7 +84,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
 
 export type DateRangeFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [DateRange]
+  'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
@@ -91,9 +94,9 @@ export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { VisuallyHidden } from '@/VisuallyHidden'
 
 defineOptions({
@@ -108,11 +111,23 @@ const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
   isDateUnavailable: undefined,
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
+defineSlots<{
+  default?: (props: {
+    /** The current date range of the field */
+    modelValue: DateRange | null
+    /** The date field segment contents */
+    segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
+    /** Value if the input is invalid */
+    isInvalid: boolean
+  }) => any
+}>()
 const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value)
+const formatter = useDateFormatter(locale.value, {
+  hourCycle: normalizeHourCycle(props.hourCycle),
+})
 const { primitiveElement, currentElement: parentElement }
   = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())
@@ -137,6 +152,8 @@ const placeholder = useVModel(props, 'placeholder', emits, {
   defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
   passive: (props.placeholder === undefined) as false,
 }) as Ref<DateValue>
+
+const step = computed(() => normalizeDateStep(props))
 
 const inferredGranularity = computed(() => {
   if (props.granularity)
@@ -240,11 +257,18 @@ watch([startValue, endValue], ([_startValue, _endValue]) => {
 })
 
 watch(modelValue, (_modelValue) => {
-  if (_modelValue && _modelValue.start && _modelValue.end) {
-    if (!startValue.value || _modelValue.start.compare(startValue.value) !== 0)
-      startValue.value = _modelValue.start.copy()
-    if (!endValue.value || _modelValue.end.compare(endValue.value) !== 0)
-      endValue.value = _modelValue.end.copy()
+  const isStartChanged = _modelValue?.start && startValue.value
+    ? _modelValue.start.compare(startValue.value) !== 0
+    : _modelValue?.start !== startValue.value
+  if (isStartChanged) {
+    startValue.value = _modelValue?.start?.copy()
+  }
+
+  const isEndChanged = _modelValue?.end && endValue.value
+    ? _modelValue.end.compare(endValue.value) !== 0
+    : _modelValue?.end !== endValue.value
+  if (isEndChanged) {
+    endValue.value = _modelValue?.end?.copy()
   }
 })
 
@@ -313,6 +337,9 @@ const prevFocusableSegment = computed(() => {
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -334,6 +361,7 @@ provideDateRangeFieldRootContext({
   disabled,
   formatter,
   hourCycle: props.hourCycle,
+  step,
   readonly,
   segmentValues: { start: startSegmentValues, end: endSegmentValues },
   isInvalid,
@@ -341,7 +369,10 @@ provideDateRangeFieldRootContext({
   elements: segmentElements,
   setFocusedElement,
   focusNext() {
-    nextFocusableSegment.value?.focus()
+    // Auto-advance follows the segments' DOM order (the locale's format
+    // order) regardless of writing direction; only arrow-key navigation is
+    // direction-aware via nextFocusableSegment/prevFocusableSegment.
+    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
   },
 })
 
@@ -365,6 +396,7 @@ defineExpose({
     <slot
       :model-value="modelValue"
       :segments="segmentContents"
+      :is-invalid="isInvalid"
     />
 
     <VisuallyHidden

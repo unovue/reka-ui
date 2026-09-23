@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarImpl from './ScrollAreaScrollbarImpl.vue'
+import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
 import { getThumbSize } from './utils'
-import { useForwardExpose } from '@/shared'
 
 const rootContext = injectScrollAreaRootContext()
 const scrollbarVisibleContext = injectScrollAreaScrollbarVisibleContext()
@@ -14,6 +14,11 @@ const { forwardRef, currentElement: scrollbarElement } = useForwardExpose()
 onMounted(() => {
   if (scrollbarElement.value)
     rootContext.onScrollbarXChange(scrollbarElement.value)
+})
+// Clear the registration on unmount so consumers (e.g. ScrollAreaCorner) don't
+// hold a stale reference once the scrollbar is removed (e.g. between hover cycles).
+onUnmounted(() => {
+  rootContext.onScrollbarXChange(null)
 })
 const sizes = computed(() => scrollbarVisibleContext.sizes.value)
 </script>

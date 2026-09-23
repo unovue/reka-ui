@@ -163,8 +163,8 @@ Unlike native HTML form controls which only allow you to provide strings as valu
 
 ```vue line=12,16,21
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -198,8 +198,8 @@ The `Listbox` component allows you to select multiple values. You can enable thi
 
 ```vue line=12,18
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -225,8 +225,8 @@ const selectedPeople = ref([people[0], people[1]])
 
 ```vue line=13,15-16,21,24
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, useFilter } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -266,8 +266,8 @@ See the [virtualization guide](../guides/virtualization.md) for more general inf
 
 ```vue line=18-23
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },

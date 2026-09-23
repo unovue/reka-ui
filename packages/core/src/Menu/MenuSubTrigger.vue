@@ -12,14 +12,15 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {
 </script>
 
 <script setup lang="ts">
-import { type ComponentPublicInstance, nextTick, onUnmounted, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { useId } from '@/shared'
+import MenuAnchor from './MenuAnchor.vue'
+import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
-import { injectMenuContentContext } from './MenuContentImpl.vue'
-import { useId } from '@/shared'
-import { SUB_OPEN_KEYS, getOpenState, isMouseEvent } from './utils'
-import MenuAnchor from './MenuAnchor.vue'
+import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
 
 const props = withDefaults(defineProps<MenuSubTriggerProps>(), { grace: 300 })
 
@@ -27,6 +28,18 @@ const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
 const subContext = injectMenuSubContext()
 const contentContext = injectMenuContentContext()
+
+watch(menuContext.open, (open) => {
+  if (open) {
+    contentContext.activeSubmenuContext.value = {
+      onOpenChange: menuContext.onOpenChange,
+      trigger: subContext.trigger,
+    }
+  }
+  else if (contentContext.activeSubmenuContext.value?.trigger.value === subContext.trigger.value) {
+    contentContext.activeSubmenuContext.value = undefined
+  }
+})
 
 const openTimerRef = ref<number | null>(null)
 
@@ -126,7 +139,8 @@ async function handleKeyDown(event: KeyboardEvent) {
       v-bind="props"
       :id="subContext.triggerId"
       :ref="
-        (vnode: ComponentPublicInstance) => {
+        (vnode: Element | ComponentPublicInstance | null) => {
+          if (!vnode) return undefined
           // @ts-ignore
           subContext?.onTriggerChange(vnode?.$el);
           return undefined
@@ -137,14 +151,14 @@ async function handleKeyDown(event: KeyboardEvent) {
       :aria-controls="subContext.contentId"
       :data-state="getOpenState(menuContext.open.value)"
       @click="
-        async (event) => {
+        async (event: MouseEvent) => {
           if (props.disabled || event.defaultPrevented) return;
           /**
            * We manually focus because iOS Safari doesn't always focus on click (e.g. buttons)
            * and we rely heavily on `onFocusOutside` for submenus to close when switching
            * between separate submenus.
            */
-          event.currentTarget.focus();
+          (event.currentTarget as HTMLElement)?.focus();
           if (!menuContext.open.value) menuContext.onOpenChange(true);
         }
       "

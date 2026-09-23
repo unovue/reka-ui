@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { makeCodeSandboxParams } from '../codeeditor'
 import Tooltip from './Tooltip.vue'
-import { Icon } from '@iconify/vue'
 
 defineProps<{
   name: string
@@ -22,23 +22,16 @@ defineProps<{
       value="file=src/App.vue"
     >
     <input
-      type="hidden"
-      name="environment"
-      value="server"
-    >
-    <input
-      type="hidden"
-      name="hidedevtools"
-      value="1"
-    >
-    <input
       :key="name"
       type="hidden"
       name="parameters"
       :value="makeCodeSandboxParams(name, sources)"
     >
 
-    <Tooltip :content="`Open ${name} in CodeSandbox`">
+    <Tooltip
+      :content="`Open ${name} in CodeSandbox <br/><br/> (TailwindCSS is not working in sandbox)`"
+      class="break-words max-w-6"
+    >
       <button
         type="submit"
         aria-label="Open on CodeSandbox"

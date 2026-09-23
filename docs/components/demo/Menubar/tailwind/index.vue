@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   MenubarCheckboxItem,
   MenubarContent,
@@ -17,6 +16,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from 'reka-ui'
+import { ref } from 'vue'
 
 const currentMenu = ref('')
 const checkboxOne = ref(false)

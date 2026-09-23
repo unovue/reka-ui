@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import DateRangePicker from './_DummyDateRangePicker.vue'
+import type { DateValue } from '@internationalized/date'
+import { CalendarDateTime, isWeekend } from '@internationalized/date'
 
-import { CalendarDateTime, type DateValue, isWeekend } from '@internationalized/date'
+import DateRangePicker from './_DummyDateRangePicker.vue'
 
 const defaultValue = { start: new CalendarDateTime(2024, 2, 20), end: new CalendarDateTime(2024, 2, 27) }
 

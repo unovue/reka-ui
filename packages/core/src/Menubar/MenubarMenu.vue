@@ -25,8 +25,8 @@ export const [injectMenubarMenuContext, provideMenubarMenuContext]
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { injectMenubarRootContext } from './MenubarRoot.vue'
 import { MenuRoot } from '@/Menu'
+import { injectMenubarRootContext } from './MenubarRoot.vue'
 
 const props = defineProps<MenubarMenuProps>()
 

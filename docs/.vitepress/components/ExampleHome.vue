@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { ContentData } from 'vitepress'
+import { useRouter } from 'vitepress'
 import { computed, onBeforeMount } from 'vue'
 // @ts-expect-error type issue with `createContentLoader`
 import { data as examples } from '../functions/examples.data'
-import { type ContentData, useRouter } from 'vitepress'
 
 const router = useRouter()
 const data = computed(() => examples.filter((example: ContentData) => example.url !== '/examples/') as ContentData[])

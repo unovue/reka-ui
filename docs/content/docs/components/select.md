@@ -684,7 +684,6 @@ Use our [Label](label) component in order to offer a visual and accessible label
 ```vue line=19,22,26,28
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   Label,
   SelectContent,
@@ -697,6 +696,7 @@ import {
   SelectSeparator,
   SelectTrigger,
 } from 'reka-ui'
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -760,9 +760,9 @@ export { default as SelectItem } from 'SelectItem.vue'
 ```vue
 <!-- Select.vue -->
 <script setup lang="ts">
+import type { SelectRootEmits, SelectRootProps } from 'reka-ui'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, } from '@radix-icons/vue'
 import { SelectContent, SelectIcon, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectTrigger, SelectValue, SelectViewport, useForwardPropsEmits } from 'reka-ui'
-import type { SelectRootEmits, SelectRootProps } from 'reka-ui'
 
 const props = defineProps<SelectRootProps>()
 const emits = defineEmits<SelectRootEmits>()
@@ -799,8 +799,9 @@ const forward = useForwardPropsEmits(props, emits)
 ```vue
 <!-- SelectItem.vue -->
 <script setup lang="ts">
+import type { SelectItemProps } from 'reka-ui'
 import { CheckIcon } from '@radix-icons/vue'
-import { SelectItem, SelectItemIndicator, type SelectItemProps, SelectItemText } from 'reka-ui'
+import { SelectItem, SelectItemIndicator, SelectItemText } from 'reka-ui'
 
 const props = defineProps<SelectItemProps>()
 </script>

@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { ref, toRefs, watch, watchEffect } from 'vue'
+import { useNonce } from '@/shared/useNonce'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
 export interface SplitterResizeHandleProps extends PrimitiveProps {
@@ -12,6 +13,10 @@ export interface SplitterResizeHandleProps extends PrimitiveProps {
   tabindex?: number
   /** Disable drag handle */
   disabled?: boolean
+  /**
+   * Will add `nonce` attribute to the style tag which can be used by Content Security Policy. <br> If omitted, inherits globally from `ConfigProvider`.
+   */
+  nonce?: string
 }
 
 export type PanelResizeHandleOnDragging = (isDragging: boolean) => void
@@ -24,13 +29,13 @@ export type SplitterResizeHandleEmits = {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { injectPanelGroupContext } from './SplitterGroup.vue'
-import type { ResizeEvent, ResizeHandler } from './utils/types'
 import type { PointerHitAreaMargins, ResizeHandlerAction } from './utils/registry'
-import { registerResizeHandle } from './utils/registry'
-import { assert } from './utils/assert'
+import type { ResizeEvent, ResizeHandler } from './utils/types'
+import { Primitive } from '@/Primitive'
 import { isBrowser, useForwardExpose, useId } from '@/shared'
+import { injectPanelGroupContext } from './SplitterGroup.vue'
+import { assert } from './utils/assert'
+import { registerResizeHandle } from './utils/registry'
 
 const props = withDefaults(defineProps<SplitterResizeHandleProps>(), {
   tabindex: 0,
@@ -60,6 +65,8 @@ const resizeHandleId = useId(props.id, 'reka-splitter-resize-handle')
 const state = ref<ResizeHandlerState>('inactive')
 const isFocused = ref(false)
 const resizeHandler = ref<ResizeHandler | null>(null)
+const { nonce: propNonce } = toRefs(props)
+const nonce = useNonce(propNonce)
 
 watch(disabled, () => {
   if (!isBrowser)
@@ -125,6 +132,7 @@ watchEffect((onCleanup) => {
       // Fine inputs (e.g. mouse)
       fine: props.hitAreaMargins?.fine ?? 5,
     },
+    nonce,
     setResizeHandlerState,
   ))
 })

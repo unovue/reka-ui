@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import ScrollAreaStory from './_ScrollAreaStory.vue'
 import ScrollAreaCopy from './_ScrollAreaCopy.vue'
+import ScrollAreaStory from './_ScrollAreaStory.vue'
 
 type Type = 'auto' | 'always' | 'scroll' | 'hover'
 
@@ -86,12 +86,23 @@ const contentChangeState = reactive({
       auto-props-disabled
       title="Animated"
     >
-      <ScrollAreaStory animated>
+      <ScrollAreaStory
+        animated
+        :type="state.type"
+      >
         <ScrollAreaCopy
           v-for="i in 30"
           :key="i"
         />
       </ScrollAreaStory>
+
+      <template #controls>
+        <HstSelect
+          v-model="state.type"
+          title="type"
+          :options="['auto', 'always', 'scroll', 'hover']"
+        />
+      </template>
     </Variant>
   </Story>
 </template>

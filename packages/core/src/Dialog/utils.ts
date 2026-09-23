@@ -1,4 +1,5 @@
-import { type Ref, onMounted } from 'vue'
+import type { Ref } from 'vue'
+import { onMounted } from 'vue'
 
 const DEFAULT_TITLE_NAME = 'DialogTitle'
 const DEFAULT_CONTENT_NAME = 'DialogContent'

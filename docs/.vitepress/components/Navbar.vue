@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, Separator } from 'reka-ui'
-import ThemeToggle from '../components/ThemeToggle.vue'
-import DropdownMenu from '../components/DropdownMenu.vue'
 import { useData, useRoute } from 'vitepress'
 import { ref, toRefs, watch } from 'vue'
+import DropdownMenu from '../components/DropdownMenu.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 const { path } = toRefs(useRoute())
 const { theme } = useData()
@@ -43,6 +43,24 @@ watch(path, () => {
       orientation="vertical"
     />
     <ThemeToggle />
+
+    <Separator
+      class="bg-muted h-4 w-px mx-4"
+      decorative
+      orientation="vertical"
+    />
+
+    <a
+      href="https://github.com/sponsors/zernonia"
+      target="_blank"
+      aria-label="Sponsor"
+      class="w-9 h-9 text-pink-500 bg-white border border-neutral-300 hover:bg-neutral-100 rounded-lg inline-flex items-center justify-center"
+    >
+      <Icon
+        icon="mdi:heart"
+        class="text-xl"
+      />
+    </a>
 
     <Separator
       class="bg-muted h-4 w-px mx-4"
@@ -148,6 +166,25 @@ watch(path, () => {
                 <ThemeToggle />
               </DropdownMenuItem>
             </div>
+
+            <Separator
+              class="bg-muted h-px w-full my-2"
+              decorative
+              orientation="horizontal"
+            />
+
+            <DropdownMenuItem
+              as="a"
+              href="https://github.com/sponsors/zernonia"
+              target="_blank"
+              aria-label="Sponsor"
+              class="w-9 h-9 text-white bg-pink-500 hover:bg-pink-600 rounded inline-flex items-center justify-center"
+            >
+              <Icon
+                icon="lucide:heart"
+                class="text-base"
+              />
+            </DropdownMenuItem>
 
             <Separator
               class="bg-muted h-px w-full my-2"

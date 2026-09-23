@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot, type TagsInputRootProps } from '..'
+import type { TagsInputRootProps } from '..'
 import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
+import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '..'
 
 const props = defineProps<TagsInputRootProps>()
 const people = ref([

@@ -318,6 +318,31 @@ import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPorta
 }
 ```
 
+### Close using slot props
+
+Alternatively, you can use the `close` method provided by the `PopoverRoot` slot props to programmatically close the popover.
+
+```vue line=4,8,16-20
+<script setup>
+import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <PopoverRoot v-slot="{ close }">
+    <PopoverTrigger>Open</PopoverTrigger>
+    <PopoverAnchor />
+    <PopoverPortal>
+      <PopoverContent>
+        <button type="submit" @click="close">
+          Submit
+        </button>
+        <PopoverArrow />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
@@ -384,7 +409,8 @@ export { PopoverRoot as Popover, PopoverTrigger } from 'reka-ui'
 ```vue
 <!-- PopoverContent.vue -->
 <script setup lang="ts">
-import { PopoverContent, type PopoverContentEmits, type PopoverContentProps, PopoverPortal, useForwardPropsEmits, } from 'reka-ui'
+import type { PopoverContentEmits, PopoverContentProps } from 'reka-ui'
+import { PopoverContent, PopoverPortal, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<PopoverContentProps>()
 const emits = defineEmits<PopoverContentEmits>()

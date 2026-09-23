@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { TreeItem, TreeRoot } from '..'
 import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
+import { TreeItem, TreeRoot } from '..'
 import { items } from './constants'
+
+const models = ref([])
 </script>
 
 <template>
@@ -12,16 +15,18 @@ import { items } from './constants'
     <Variant title="default">
       <TreeRoot
         v-slot="{ flattenItems }"
+        v-model="models"
         class="list-none select-none w-64 bg-white text-blackA11 rounded-lg p-2 text-sm font-medium"
         :items="items"
         :get-key="(item) => item.title"
         multiple
         propagate-select
+        bubble-select
       >
         <TreeItem
           v-for="item in flattenItems"
           :key="item._id"
-          v-slot="{ handleSelect, isSelected }"
+          v-slot="{ handleSelect, isSelected, isIndeterminate }"
           v-bind="item.bind"
           :style="{ 'margin-left': `${item.level - 1}rem` }"
           class="flex items-center py-1 px-2 my-0.5 rounded w-max outline-none focus:ring-grass9 focus:ring-2 data-[selected]:bg-grass4"
@@ -39,6 +44,7 @@ import { items } from './constants'
             :checked="isSelected"
             type="checkbox"
             tabindex="-1"
+            :indeterminate="isIndeterminate"
             @click.stop
             @change="handleSelect"
           >

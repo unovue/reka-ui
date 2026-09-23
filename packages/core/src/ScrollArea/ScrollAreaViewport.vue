@@ -13,8 +13,8 @@ export interface ScrollAreaViewportProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { onMounted, ref, toRefs } from 'vue'
-import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { Primitive } from '@/Primitive'
+import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 
 defineOptions({
   inheritAttrs: false,

@@ -5,10 +5,10 @@ export interface ComboboxArrowProps extends PopperArrowProps {}
 </script>
 
 <script setup lang="ts">
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
-import { injectComboboxContentContext } from './ComboboxContentImpl.vue'
-import { useForwardExpose } from '@/shared'
 import { PopperArrow } from '@/Popper'
+import { useForwardExpose } from '@/shared'
+import { injectComboboxContentContext } from './ComboboxContentImpl.vue'
+import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxArrowProps>(), {
   width: 10,

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { useScroll } from '@vueuse/core'
-import { type DefaultTheme, useData, useRoute } from 'vitepress'
-import { computed, ref, toRefs, watch } from 'vue'
+import type { DefaultTheme } from 'vitepress'
 import { Icon } from '@iconify/vue'
+import { useScroll } from '@vueuse/core'
 import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
-import { flatten } from '../functions/flatten'
+import { useData, useRoute } from 'vitepress'
+import { computed, ref, toRefs, watch } from 'vue'
 import DocSidebarItem from '../components/DocSidebarItem.vue'
+import { flatten } from '../functions/flatten'
 
 const { path } = toRefs(useRoute())
 const { page, theme } = useData()

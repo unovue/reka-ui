@@ -10,11 +10,11 @@ export interface DropdownMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue'
-import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
+import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
-import { MenuAnchor } from '@/Menu'
+import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 
 const props = withDefaults(defineProps<DropdownMenuTriggerProps>(), {
   as: 'button',
@@ -46,7 +46,7 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
       :disabled="disabled"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       @click="
-        async (event) => {
+        async (event: MouseEvent) => {
           // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
           // but not when the control key is pressed (avoiding MacOS right click)
           if (!disabled && event.button === 0 && event.ctrlKey === false) {
@@ -59,7 +59,7 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
         }
       "
       @keydown.enter.space.arrow-down="
-        (event) => {
+        (event: KeyboardEvent) => {
           if (disabled) return;
           if (['Enter', ' '].includes(event.key)) rootContext.onOpenToggle();
           if (event.key === 'ArrowDown') rootContext.onOpenChange(true);

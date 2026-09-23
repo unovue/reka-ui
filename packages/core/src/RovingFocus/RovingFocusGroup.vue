@@ -1,11 +1,11 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection } from '@/shared'
 import type {
   Direction,
   Orientation,
 } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
+import { createContext, useDirection } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
   /**
@@ -22,8 +22,17 @@ export interface RovingFocusGroupProps extends PrimitiveProps {
    * @defaultValue false
    */
   loop?: boolean
+  /** The controlled value of the current stop item. Can be binded as `v-model`. */
   currentTabStopId?: string | null
+  /**
+   * The value of the current stop item.
+   *
+   * Use when you do not need to control the state of the stop item.
+   */
   defaultCurrentTabStopId?: string
+  /**
+   * When `true`, will prevent scrolling to the focus item when focused.
+   */
   preventScrollOnEntryFocus?: boolean
 }
 
@@ -48,11 +57,11 @@ export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
+import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst } from './utils'
-import { useCollection } from '@/Collection'
 
 const props = withDefaults(defineProps<RovingFocusGroupProps>(), {
   loop: false,
@@ -92,11 +101,12 @@ function handleFocus(event: FocusEvent) {
 
     if (!entryFocusEvent.defaultPrevented) {
       const items = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
-      const activeItem = items.find(item => item.getAttribute('data-active') === 'true')
+      const activeItem = items.find(item => item.getAttribute('data-active') === '')
+      const highlightedItem = items.find(item => item.getAttribute('data-highlighted') === '')
       const currentItem = items.find(
         item => item.id === currentTabStopId.value,
       )
-      const candidateItems = [activeItem, currentItem, ...items].filter(
+      const candidateItems = [activeItem, highlightedItem, currentItem, ...items].filter(
         Boolean,
       ) as typeof items
       focusFirst(candidateItems, props.preventScrollOnEntryFocus)

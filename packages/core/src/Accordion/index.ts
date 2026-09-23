@@ -8,14 +8,14 @@ export {
 } from './AccordionHeader.vue'
 export {
   default as AccordionItem,
-  injectAccordionItemContext,
   type AccordionItemProps,
+  injectAccordionItemContext,
 } from './AccordionItem.vue'
 export {
   default as AccordionRoot,
-  injectAccordionRootContext,
   type AccordionRootEmits,
   type AccordionRootProps,
+  injectAccordionRootContext,
 } from './AccordionRoot.vue'
 export {
   default as AccordionTrigger,

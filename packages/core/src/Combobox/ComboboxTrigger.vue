@@ -8,9 +8,9 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
-import { computed, onMounted } from 'vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxTriggerProps>(), {

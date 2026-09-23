@@ -1,11 +1,13 @@
+import type { Fn } from '@vueuse/shared'
 import {
   createSharedComposable,
   useEventListener,
 } from '@vueuse/core'
-import { type Fn, isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
-import { computed, nextTick, ref, watch } from 'vue'
+import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
+import { computed, nextTick, ref, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import { context as dismissableLayerContext } from '@/DismissableLayer/context'
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
@@ -28,8 +30,14 @@ const useBodyLockStackCount = createSharedComposable(() => {
   const resetBodyStyle = () => {
     document.body.style.paddingRight = ''
     document.body.style.marginRight = ''
-    document.body.style.pointerEvents = ''
-    document.body.style.removeProperty('--scrollbar-width')
+    // A mounted `DismissableLayer` with `disableOutsidePointerEvents` may
+    // still own the body pointer-events lock (e.g. a modal Dialog rendered
+    // without the Overlay that would hold a scroll lock). Clearing it here
+    // would make everything behind that layer clickable again (#2784); the
+    // layer restores it once its last disabling layer is gone.
+    if (dismissableLayerContext.layersWithOutsidePointerEventsDisabled.size === 0)
+      document.body.style.pointerEvents = ''
+    document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
     isIOS && stopTouchMoveListener?.()
 
@@ -55,16 +63,16 @@ const useBodyLockStackCount = createSharedComposable(() => {
     const config = context.scrollBody?.value
       ? typeof context.scrollBody.value === 'object'
         ? defu({
-          padding: context.scrollBody.value.padding === true ? verticalScrollbarWidth : context.scrollBody.value.padding,
-          margin: context.scrollBody.value.margin === true ? verticalScrollbarWidth : context.scrollBody.value.margin,
-        }, defaultConfig)
+            padding: context.scrollBody.value.padding === true ? verticalScrollbarWidth : context.scrollBody.value.padding,
+            margin: context.scrollBody.value.margin === true ? verticalScrollbarWidth : context.scrollBody.value.margin,
+          }, defaultConfig)
         : defaultConfig
       : ({ padding: 0, margin: 0 })
 
     if (verticalScrollbarWidth > 0) {
       document.body.style.paddingRight = typeof config.padding === 'number' ? `${config.padding}px` : String(config.padding)
       document.body.style.marginRight = typeof config.margin === 'number' ? `${config.margin}px` : String(config.margin)
-      document.body.style.setProperty('--scrollbar-width', `${verticalScrollbarWidth}px`)
+      document.documentElement.style.setProperty('--scrollbar-width', `${verticalScrollbarWidth}px`)
       document.body.style.overflow = 'hidden'
     }
 
@@ -79,6 +87,8 @@ const useBodyLockStackCount = createSharedComposable(() => {
 
     // let dismissibleLayer set previous pointerEvent first
     nextTick(() => {
+      if (!locked.value)
+        return
       document.body.style.pointerEvents = 'none'
       document.body.style.overflow = 'hidden'
     })

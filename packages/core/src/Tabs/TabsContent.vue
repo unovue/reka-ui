@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import type { StringOrNumber } from '@/shared/types'
+import { useForwardExpose } from '@/shared'
 
 export interface TabsContentProps extends PrimitiveProps {
   /** A unique value that associates the content with a trigger. */
@@ -15,11 +15,11 @@ export interface TabsContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { injectTabsRootContext } from './TabsRoot.vue'
-import { Primitive } from '@/Primitive'
-import { makeContentId, makeTriggerId } from './utils'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
+import { Primitive } from '@/Primitive'
+import { injectTabsRootContext } from './TabsRoot.vue'
+import { makeContentId, makeTriggerId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
@@ -33,9 +33,14 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
 const isMountAnimationPreventedRef = ref(isSelected.value)
 
 onMounted(() => {
+  rootContext.registerContent(props.value)
   requestAnimationFrame(() => {
     isMountAnimationPreventedRef.value = false
   })
+})
+
+onBeforeUnmount(() => {
+  rootContext.unregisterContent(props.value)
 })
 </script>
 

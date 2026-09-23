@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { MenuSubEmits, MenuSubProps } from '@/Menu'
 import type { Ref } from 'vue'
+import type { MenuSubEmits, MenuSubProps } from '@/Menu'
 
 export type ContextMenuSubEmits = MenuSubEmits
 export interface ContextMenuSubProps extends MenuSubProps {
@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<ContextMenuSubProps>(), {
 const emit = defineEmits<ContextMenuSubEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any

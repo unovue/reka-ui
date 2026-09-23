@@ -1,6 +1,6 @@
 import type { Component, VNode } from 'vue'
-import { computed, ref } from 'vue'
 import type { ToastRootProps } from '../ToastRoot.vue'
+import { computed, ref } from 'vue'
 
 export interface ToastProps extends ToastRootProps {
   onOpenChange?: ((value: boolean) => void) | undefined
@@ -9,10 +9,10 @@ export interface ToastProps extends ToastRootProps {
 const TOAST_LIMIT = 3
 const TOAST_REMOVE_DELAY = 1000000
 
-export type StringOrVNode =
-  | string
-  | VNode
-  | (() => VNode)
+export type StringOrVNode
+  = | string
+    | VNode
+    | (() => VNode)
 
 type ToasterToast = ToastProps & {
   id: string
@@ -37,8 +37,8 @@ function genId() {
 
 type ActionType = typeof actionTypes
 
-type Action =
-  | {
+type Action
+  = | {
     type: ActionType['ADD_TOAST']
     toast: ToasterToast
   }

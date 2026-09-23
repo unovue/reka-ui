@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { RovingFocusGroupProps } from '..'
 import { provide, ref } from 'vue'
-import { RovingFocusGroup, type RovingFocusGroupProps } from '..'
+import { RovingFocusGroup } from '..'
 
 interface Props extends RovingFocusGroupProps {
   defaultValue?: string

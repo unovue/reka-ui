@@ -5,7 +5,7 @@ export const components = {
     'AccordionItem',
     'AccordionRoot',
     'AccordionTrigger',
-  ],
+  ] as const,
 
   alertDialog: [
     'AlertDialogRoot',
@@ -17,17 +17,36 @@ export const components = {
     'AlertDialogTitle',
     'AlertDialogDescription',
     'AlertDialogAction',
-  ],
+  ] as const,
+
+  autocomplete: [
+    'AutocompleteRoot',
+    'AutocompleteInput',
+    'AutocompleteAnchor',
+    'AutocompleteEmpty',
+    'AutocompleteTrigger',
+    'AutocompleteCancel',
+    'AutocompleteGroup',
+    'AutocompleteLabel',
+    'AutocompleteContent',
+    'AutocompleteViewport',
+    'AutocompleteVirtualizer',
+    'AutocompleteItem',
+    'AutocompleteItemIndicator',
+    'AutocompleteSeparator',
+    'AutocompleteArrow',
+    'AutocompletePortal',
+  ] as const,
 
   aspectRatio: [
     'AspectRatio',
-  ],
+  ] as const,
 
   avatar: [
     'AvatarRoot',
     'AvatarFallback',
     'AvatarImage',
-  ],
+  ] as const,
 
   calendar: [
     'CalendarRoot',
@@ -42,19 +61,47 @@ export const components = {
     'CalendarGridBody',
     'CalendarGridRow',
     'CalendarCellTrigger',
-  ],
+  ] as const,
 
   checkbox: [
     'CheckboxGroupRoot',
     'CheckboxRoot',
     'CheckboxIndicator',
-  ],
+  ] as const,
 
   collapsible: [
     'CollapsibleRoot',
     'CollapsibleTrigger',
     'CollapsibleContent',
-  ],
+  ] as const,
+
+  colorArea: [
+    'ColorAreaRoot',
+    'ColorAreaArea',
+    'ColorAreaThumb',
+  ] as const,
+
+  colorField: [
+    'ColorFieldRoot',
+    'ColorFieldInput',
+  ] as const,
+
+  colorSlider: [
+    'ColorSliderRoot',
+    'ColorSliderTrack',
+    'ColorSliderThumb',
+  ] as const,
+
+  colorSwatch: [
+    'ColorSwatch',
+  ] as const,
+
+  colorSwatchPicker: [
+    'ColorSwatchPickerRoot',
+    'ColorSwatchPickerItem',
+    'ColorSwatchPickerItemSwatch',
+    'ColorSwatchPickerItemIndicator',
+  ] as const,
 
   combobox: [
     'ComboboxRoot',
@@ -73,7 +120,7 @@ export const components = {
     'ComboboxSeparator',
     'ComboboxArrow',
     'ComboboxPortal',
-  ],
+  ] as const,
 
   contextMenu: [
     'ContextMenuRoot',
@@ -92,12 +139,12 @@ export const components = {
     'ContextMenuSub',
     'ContextMenuSubContent',
     'ContextMenuSubTrigger',
-  ],
+  ] as const,
 
   dateField: [
     'DateFieldRoot',
     'DateFieldInput',
-  ],
+  ] as const,
 
   datePicker: [
     'DatePickerRoot',
@@ -120,7 +167,7 @@ export const components = {
     'DatePickerClose',
     'DatePickerTrigger',
     'DatePickerContent',
-  ],
+  ] as const,
 
   dateRangePicker: [
     'DateRangePickerRoot',
@@ -143,12 +190,12 @@ export const components = {
     'DateRangePickerClose',
     'DateRangePickerTrigger',
     'DateRangePickerContent',
-  ],
+  ] as const,
 
   dateRangeField: [
     'DateRangeFieldRoot',
     'DateRangeFieldInput',
-  ],
+  ] as const,
 
   dialog: [
     'DialogRoot',
@@ -159,7 +206,23 @@ export const components = {
     'DialogClose',
     'DialogTitle',
     'DialogDescription',
-  ],
+  ] as const,
+
+  drawer: [
+    'DrawerRoot',
+    'DrawerTrigger',
+    'DrawerPortal',
+    'DrawerOverlay',
+    'DrawerContent',
+    'DrawerClose',
+    'DrawerTitle',
+    'DrawerDescription',
+    'DrawerHandle',
+    'DrawerSwipeArea',
+    'DrawerViewport',
+    'DrawerIndent',
+    'DrawerIndentBackground',
+  ] as const,
 
   dropdownMenu: [
     'DropdownMenuRoot',
@@ -178,7 +241,8 @@ export const components = {
     'DropdownMenuSub',
     'DropdownMenuSubContent',
     'DropdownMenuSubTrigger',
-  ],
+    'DropdownMenuFilter',
+  ] as const,
   editable: [
     'EditableRoot',
     'EditableArea',
@@ -187,7 +251,7 @@ export const components = {
     'EditableSubmitTrigger',
     'EditableCancelTrigger',
     'EditableEditTrigger',
-  ],
+  ] as const,
 
   hoverCard: [
     'HoverCardRoot',
@@ -195,11 +259,11 @@ export const components = {
     'HoverCardPortal',
     'HoverCardContent',
     'HoverCardArrow',
-  ],
+  ] as const,
 
   label: [
     'Label',
-  ],
+  ] as const,
 
   listbox: [
     'ListboxRoot',
@@ -210,7 +274,7 @@ export const components = {
     'ListboxVirtualizer',
     'ListboxGroup',
     'ListboxGroupLabel',
-  ],
+  ] as const,
 
   menubar: [
     'MenubarRoot',
@@ -230,7 +294,33 @@ export const components = {
     'MenubarSubContent',
     'MenubarSubTrigger',
     'MenubarMenu',
-  ],
+  ] as const,
+
+  monthPicker: [
+    'MonthPickerRoot',
+    'MonthPickerHeader',
+    'MonthPickerHeading',
+    'MonthPickerGrid',
+    'MonthPickerCell',
+    'MonthPickerNext',
+    'MonthPickerPrev',
+    'MonthPickerGridBody',
+    'MonthPickerGridRow',
+    'MonthPickerCellTrigger',
+  ] as const,
+
+  monthRangePicker: [
+    'MonthRangePickerRoot',
+    'MonthRangePickerHeader',
+    'MonthRangePickerHeading',
+    'MonthRangePickerGrid',
+    'MonthRangePickerCell',
+    'MonthRangePickerNext',
+    'MonthRangePickerPrev',
+    'MonthRangePickerGridBody',
+    'MonthRangePickerGridRow',
+    'MonthRangePickerCellTrigger',
+  ] as const,
 
   navigationMenu: [
     'NavigationMenuRoot',
@@ -242,14 +332,14 @@ export const components = {
     'NavigationMenuSub',
     'NavigationMenuTrigger',
     'NavigationMenuViewport',
-  ],
+  ] as const,
 
   numberField: [
     'NumberFieldRoot',
     'NumberFieldInput',
     'NumberFieldIncrement',
     'NumberFieldDecrement',
-  ],
+  ] as const,
 
   pagination: [
     'PaginationRoot',
@@ -260,12 +350,12 @@ export const components = {
     'PaginationListItem',
     'PaginationNext',
     'PaginationPrev',
-  ],
+  ] as const,
 
   pinInput: [
     'PinInputRoot',
     'PinInputInput',
-  ],
+  ] as const,
 
   popover: [
     'PopoverRoot',
@@ -275,18 +365,18 @@ export const components = {
     'PopoverArrow',
     'PopoverClose',
     'PopoverAnchor',
-  ],
+  ] as const,
 
   progress: [
     'ProgressRoot',
     'ProgressIndicator',
-  ],
+  ] as const,
 
   radioGroup: [
     'RadioGroupRoot',
     'RadioGroupItem',
     'RadioGroupIndicator',
-  ],
+  ] as const,
 
   rangeCalendar: [
     'RangeCalendarRoot',
@@ -301,7 +391,13 @@ export const components = {
     'RangeCalendarGridBody',
     'RangeCalendarGridRow',
     'RangeCalendarCellTrigger',
-  ],
+  ] as const,
+
+  rating: [
+    'RatingRoot',
+    'RatingItem',
+    'RatingItemIndicator',
+  ] as const,
 
   scrollArea: [
     'ScrollAreaRoot',
@@ -309,7 +405,7 @@ export const components = {
     'ScrollAreaScrollbar',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
-  ],
+  ] as const,
 
   select: [
     'SelectRoot',
@@ -328,24 +424,24 @@ export const components = {
     'SelectScrollDownButton',
     'SelectValue',
     'SelectIcon',
-  ],
+  ] as const,
 
   separator: [
     'Separator',
-  ],
+  ] as const,
 
   slider: [
     'SliderRoot',
     'SliderThumb',
     'SliderTrack',
     'SliderRange',
-  ],
+  ] as const,
 
   splitter: [
     'SplitterGroup',
     'SplitterPanel',
     'SplitterResizeHandle',
-  ],
+  ] as const,
 
   stepper: [
     'StepperRoot',
@@ -355,12 +451,12 @@ export const components = {
     'StepperTitle',
     'StepperIndicator',
     'StepperSeparator',
-  ],
+  ] as const,
 
   switch: [
     'SwitchRoot',
     'SwitchThumb',
-  ],
+  ] as const,
 
   tabs: [
     'TabsRoot',
@@ -368,7 +464,7 @@ export const components = {
     'TabsContent',
     'TabsTrigger',
     'TabsIndicator',
-  ],
+  ] as const,
 
   tagsInput: [
     'TagsInputRoot',
@@ -377,12 +473,17 @@ export const components = {
     'TagsInputItemText',
     'TagsInputItemDelete',
     'TagsInputClear',
-  ],
+  ] as const,
 
   timeField: [
     'TimeFieldInput',
     'TimeFieldRoot',
-  ],
+  ] as const,
+
+  timeRangeField: [
+    'TimeRangeFieldRoot',
+    'TimeRangeFieldInput',
+  ] as const,
 
   toast: [
     'ToastProvider',
@@ -393,16 +494,16 @@ export const components = {
     'ToastViewport',
     'ToastTitle',
     'ToastDescription',
-  ],
+  ] as const,
 
   toggle: [
     'Toggle',
-  ],
+  ] as const,
 
   toggleGroup: [
     'ToggleGroupRoot',
     'ToggleGroupItem',
-  ],
+  ] as const,
 
   toolbar: [
     'ToolbarRoot',
@@ -411,7 +512,7 @@ export const components = {
     'ToolbarToggleGroup',
     'ToolbarToggleItem',
     'ToolbarSeparator',
-  ],
+  ] as const,
 
   tooltip: [
     'TooltipRoot',
@@ -420,44 +521,70 @@ export const components = {
     'TooltipArrow',
     'TooltipPortal',
     'TooltipProvider',
-  ],
+  ] as const,
 
   tree: [
     'TreeRoot',
     'TreeItem',
     'TreeVirtualizer',
-  ],
+  ] as const,
 
   viewport: [
     'Viewport',
-  ],
+  ] as const,
+
+  yearPicker: [
+    'YearPickerRoot',
+    'YearPickerHeader',
+    'YearPickerHeading',
+    'YearPickerGrid',
+    'YearPickerCell',
+    'YearPickerNext',
+    'YearPickerPrev',
+    'YearPickerGridBody',
+    'YearPickerGridRow',
+    'YearPickerCellTrigger',
+  ] as const,
+
+  yearRangePicker: [
+    'YearRangePickerRoot',
+    'YearRangePickerHeader',
+    'YearRangePickerHeading',
+    'YearRangePickerGrid',
+    'YearRangePickerCell',
+    'YearRangePickerNext',
+    'YearRangePickerPrev',
+    'YearRangePickerGridBody',
+    'YearRangePickerGridRow',
+    'YearRangePickerCellTrigger',
+  ] as const,
 
   // Utility component
   configProvider: [
     'ConfigProvider',
-  ],
+  ] as const,
 
   focusScope: [
     'FocusScope',
-  ],
+  ] as const,
 
   rovingFocus: [
     'RovingFocusGroup',
     'RovingFocusItem',
-  ],
+  ] as const,
 
   presence: [
     'Presence',
-  ],
+  ] as const,
 
   primitive: [
     'Primitive',
     'Slot',
-  ],
+  ] as const,
 
   visuallyHidden: [
     'VisuallyHidden',
-  ],
+  ] as const,
 }
 
 export const utilities = {
@@ -471,7 +598,11 @@ export const utilities = {
     'useStateMachine',
     'useBodyScrollLock',
     'useDateFormatter',
+    'useDirection',
+    'useLocale',
     'withDefault',
     'createContext',
-  ],
+  ] as const,
 }
+
+export type Components = typeof components

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TreeRoot } from '..'
-import { items } from './constants'
 import Tree from './_TreeNested.vue'
+import { items } from './constants'
 </script>
 
 <template>

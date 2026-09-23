@@ -11,6 +11,8 @@ export interface HoverCardRootProps {
   openDelay?: number
   /** The duration from when the mouse leaves the trigger or content until the hover card closes. */
   closeDelay?: number
+  /** When `true`, tapping the trigger on touch devices toggles the hover card open/closed. By default touch interactions are ignored to match pointer hover semantics. */
+  enableTouch?: boolean
 }
 export type HoverCardRootEmits = {
   /** Event handler called when the open state of the hover card changes. */
@@ -27,6 +29,7 @@ export interface HoverCardRootContext {
   isPointerDownOnContentRef: Ref<boolean>
   isPointerInTransitRef: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
+  enableTouch: Ref<boolean>
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
@@ -34,8 +37,8 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
@@ -43,17 +46,18 @@ const props = withDefaults(defineProps<HoverCardRootProps>(), {
   open: undefined,
   openDelay: 700,
   closeDelay: 300,
+  enableTouch: false,
 })
 const emit = defineEmits<HoverCardRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any
 }>()
 
-const { openDelay, closeDelay } = toRefs(props)
+const { openDelay, closeDelay, enableTouch } = toRefs(props)
 
 useForwardExpose()
 const open = useVModel(props, 'open', emit, {
@@ -80,6 +84,7 @@ function handleClose() {
 }
 
 function handleDismiss() {
+  clearTimeout(openTimerRef.value)
   open.value = false
 }
 
@@ -95,6 +100,7 @@ provideHoverCardRootContext({
   isPointerDownOnContentRef,
   isPointerInTransitRef,
   triggerElement,
+  enableTouch,
 })
 </script>
 

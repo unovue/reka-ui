@@ -1,11 +1,11 @@
 <script lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
-import { useId } from '@/shared'
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import type { AcceptableValue } from '@/shared/types'
-import { injectComboboxGroupContext } from './ComboboxGroup.vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useId } from '@/shared'
+import { injectComboboxGroupContext } from './ComboboxGroup.vue'
+import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 export { injectListboxItemContext as injectComboboxItemContext } from '@/Listbox'
 
@@ -39,11 +39,11 @@ if (props.value === '') {
 }
 
 const isRender = computed(() => {
-  if (rootContext.isVirtual.value || rootContext.ignoreFilter.value || !rootContext.filterState.search) {
+  if (rootContext.isVirtual.value || rootContext.ignoreFilter.value || !rootContext.filterSearch.value) {
     return true
   }
   else {
-    const filteredCurrentItem = rootContext.filterState.filtered.items.get(id)
+    const filteredCurrentItem = rootContext.filterState.value.items.get(id)
     // If the filtered items is undefined means not in the all times map yet
     // Do the first render to add into the map
     if (filteredCurrentItem === undefined) {
@@ -80,15 +80,20 @@ onUnmounted(() => {
     v-bind="props"
     :id="id"
     ref="primitiveElement"
+    v-memo="[isRender, rootContext.filterSearch.value, rootContext.disabled.value, disabled, props.value, props.as, props.asChild, ...Object.values($attrs)]"
+    :disabled="rootContext.disabled.value || disabled"
     @select="(event) => {
       emits('select', event as any)
       if (event.defaultPrevented)
         return
 
-      if (!rootContext.multiple.value) {
+      if (!rootContext.multiple.value && !disabled && !rootContext.disabled.value) {
         event.preventDefault()
         rootContext.onOpenChange(false)
         rootContext.modelValue.value = props.value
+      }
+      else if (rootContext.multiple.value) {
+        rootContext.inputElement.value?.focus()
       }
     }"
   >

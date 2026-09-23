@@ -1,12 +1,14 @@
 <script lang="ts">
+import type { PrimitiveProps } from '..'
 import { useVModel } from '@vueuse/core'
-import { Primitive, type PrimitiveProps } from '..'
-import { injectListboxRootContext } from './ListboxRoot.vue'
 import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useComposing } from '@/shared'
+import { Primitive } from '..'
+import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxFilterProps extends PrimitiveProps {
-  /** The controlled value of the filter. Can be binded with with v-model. */
+  /** The controlled value of the filter. Can be binded with v-model. */
   modelValue?: string
   /** Focus on element when mounted. */
   autoFocus?: boolean
@@ -26,7 +28,7 @@ const props = withDefaults(defineProps<ListboxFilterProps>(), {
 const emits = defineEmits<ListboxFilterEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any
@@ -58,6 +60,39 @@ onMounted(() => {
 onUnmounted(() => {
   rootContext.focusable.value = true
 })
+
+const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
+  modelValue.value = (event.target as HTMLInputElement).value
+  rootContext.onCompositionEnd()
+  rootContext.highlightFirstItem()
+})
+
+function onCompositionStart() {
+  rootContext.onCompositionStart()
+  handleCompositionStart()
+}
+
+function handleInput(event: InputEvent) {
+  if (shouldDeferInput.value)
+    return
+  modelValue.value = (event.target as HTMLInputElement).value
+  rootContext.highlightFirstItem()
+}
+
+function handleKeydownNavigation(event: KeyboardEvent) {
+  // Don't navigate mid-composition, arrow keys are used for IME candidate navigation
+  if (isComposing.value)
+    return
+  event.preventDefault()
+  rootContext.onKeydownNavigation(event)
+}
+
+function handleKeydownEnter(event: KeyboardEvent) {
+  // Don't select mid-composition, Enter commits the IME candidate
+  if (isComposing.value)
+    return
+  rootContext.onKeydownEnter(event)
+}
 </script>
 
 <template>
@@ -71,14 +106,12 @@ onUnmounted(() => {
     :aria-disabled="disabled ?? undefined"
     :aria-activedescendant="activedescendant"
     type="text"
-    @keydown.down.up.home.end.prevent="rootContext.onKeydownNavigation"
-    @keydown.enter="rootContext.onKeydownEnter"
-    @input="(event: InputEvent) => {
-      modelValue = (event.target as HTMLInputElement).value
-      rootContext.highlightFirstItem(event)
-    }"
-    @compositionstart="rootContext.onCompositionStart"
-    @compositionend="rootContext.onCompositionEnd"
+    @keydown.down.up.home.end="handleKeydownNavigation"
+    @keydown.enter="handleKeydownEnter"
+    @input="handleInput"
+    @compositionstart="onCompositionStart"
+    @compositionupdate="handleCompositionUpdate"
+    @compositionend="handleCompositionEnd"
   >
     <slot :model-value="modelValue" />
   </Primitive>

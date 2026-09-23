@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { axe } from 'vitest-axe'
-import AlertDialog from './story/_AlertDialog.vue'
 import type { VueWrapper } from '@vue/test-utils'
+import { findAllByText, findByRole, findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
-import { findAllByText, findByText, fireEvent } from '@testing-library/vue'
+import AlertDialog from './story/_AlertDialog.vue'
 
 describe('given a default Dialog', async () => {
   let wrapper: VueWrapper<InstanceType<typeof AlertDialog>>
@@ -13,6 +13,12 @@ describe('given a default Dialog', async () => {
   beforeEach(async () => {
     wrapper = mount(AlertDialog, { attachTo: document.body })
     trigger = await findByText(wrapper.element as HTMLElement, 'Open')
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+    document.body.style.cssText = ''
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -35,7 +41,14 @@ describe('given a default Dialog', async () => {
 
     it('should focus the cancel button', async () => {
       const cancelButton = await findAllByText(document.body, 'Cancel')
-      expect(cancelButton[cancelButton.length - 1]).toBe(document.activeElement)
+      expect(cancelButton.at(-1)).toBe(document.activeElement)
+    })
+
+    it('should keep content interactive while body pointer events are locked', async () => {
+      const content = await findByRole(document.body, 'alertdialog')
+
+      expect(document.body.style.pointerEvents).toBe('none')
+      expect(content.style.pointerEvents).toBe('auto')
     })
   })
 })

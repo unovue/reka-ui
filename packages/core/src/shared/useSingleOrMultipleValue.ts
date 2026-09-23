@@ -1,7 +1,8 @@
-import { useVModel } from '@vueuse/core'
-import { type Ref, computed } from 'vue'
+import type { Ref } from 'vue'
 import type { AcceptableValue, SingleOrMultipleProps } from './types'
+import { useVModel } from '@vueuse/core'
 import { isEqual } from 'ohash'
+import { computed } from 'vue'
 import { isValueEqualOrExist } from './isValueEqualOrExist'
 
 /**

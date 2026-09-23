@@ -27,7 +27,7 @@ When you are building a component, in some cases you might want to allow user to
       required: false,
       type: 'boolean',
       default: 'false',
-      description: '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.<br><br>Read our <a href=&quot;/guides/composition&quot;>Composition</a> guide for more details.</p>',
+      description: '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.<br><br>Read our <a href=&quot;/docs/guides/composition&quot;>Composition</a> guide for more details.</p>',
     }
   ]"
 />
@@ -40,7 +40,8 @@ If you want to change the default element or component being render, you can set
 
 ```vue
 <script setup lang="ts">
-import { Primitive, type PrimitiveProps } from 'reka-ui'
+import type { PrimitiveProps } from 'reka-ui'
+import { Primitive } from 'reka-ui'
 
 const props = withDefaults(defineProps<PrimitiveProps>(), {
   as: 'span'

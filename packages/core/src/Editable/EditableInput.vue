@@ -1,5 +1,6 @@
 <script lang="ts">
-import { Primitive, type PrimitiveProps, usePrimitiveElement } from '@/Primitive'
+import type { PrimitiveProps } from '@/Primitive'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 export interface EditableInputProps extends PrimitiveProps {
 }
@@ -7,8 +8,8 @@ export interface EditableInputProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, watch } from 'vue'
-import { injectEditableRootContext } from './EditableRoot.vue'
 import { useKbd } from '@/shared'
+import { injectEditableRootContext } from './EditableRoot.vue'
 
 const props = withDefaults(defineProps<EditableInputProps>(), {
   as: 'input',
@@ -44,7 +45,7 @@ watch(context.isEditing, (value) => {
 })
 
 function handleSubmitKeyDown(event: KeyboardEvent) {
-  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey)
+  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey && !event.isComposing)
     context.submit()
 }
 </script>

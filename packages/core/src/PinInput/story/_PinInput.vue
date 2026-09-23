@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { PinInputRootEmits, PinInputRootProps } from '..'
 import { ref } from 'vue'
-import { PinInputInput, PinInputRoot, type PinInputRootEmits, type PinInputRootProps } from '..'
 import { Label } from '@/Label'
 import { useEmitAsProps } from '@/shared'
+import { PinInputInput, PinInputRoot } from '..'
 
 const props = defineProps<PinInputRootProps>()
 const emits = defineEmits<PinInputRootEmits>()

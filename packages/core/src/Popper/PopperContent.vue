@@ -1,23 +1,27 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type {
   Middleware,
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useSize } from '@/shared'
+import type { Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
+import type { Direction } from '@/shared/types'
+import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
   sideOffset: 0,
+  sideFlip: true,
   align: 'center' as Align,
   alignOffset: 0,
+  alignFlip: true,
   arrowPadding: 0,
+  hideShiftedArrow: true,
   avoidCollisions: true,
   collisionBoundary: () => [],
   collisionPadding: 0,
@@ -30,11 +34,16 @@ export const PopperContentPropsDefaultValue = {
 
 export interface PopperContentProps extends PrimitiveProps {
   /**
+   * Reactive dependencies that should invalidate the memoized content subtree.
+   */
+  memoDependencies?: unknown[]
+
+  /**
    * The preferred side of the trigger to render against when open.
    * Will be reversed when collisions occur and avoidCollisions
    * is enabled.
    *
-   * @defaultValue "top"
+   * @defaultValue "bottom"
    */
   side?: Side
 
@@ -44,6 +53,13 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   sideOffset?: number
+
+  /**
+   * Flip to the opposite side when colliding with boundary.
+   *
+   * @defaultValue true
+   */
+  sideFlip?: boolean
 
   /**
    * The preferred alignment against the trigger.
@@ -59,6 +75,14 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   alignOffset?: number
+
+  /**
+   * Flip alignment when colliding with boundary.
+   * May only occur when `prioritizePosition` is true.
+   *
+   * @defaultValue true
+   */
+  alignFlip?: boolean
 
   /**
    * When `true`, overrides the side and align preferences
@@ -94,6 +118,14 @@ export interface PopperContentProps extends PrimitiveProps {
    * @defaultValue 0
    */
   arrowPadding?: number
+
+  /**
+   * When `true`, hides the arrow when it cannot be centered
+   * to the reference element.
+   *
+   * @defaultValue true
+   */
+  hideShiftedArrow?: boolean
 
   /**
    * The sticky behavior on the align axis. `partial` will keep the
@@ -147,6 +179,11 @@ export interface PopperContentProps extends PrimitiveProps {
    *  If provided, it will replace the default anchor element.
    */
   reference?: ReferenceElement
+
+  /**
+   * The reading direction of the popper content when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
+   */
+  dir?: Direction
 }
 
 export interface PopperContentContext {
@@ -162,8 +199,6 @@ export const [injectPopperContentContext, providePopperContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
-import { computedEager } from '@vueuse/core'
 import {
   autoUpdate,
   flip,
@@ -175,15 +210,16 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
+import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import {
+  Primitive,
+} from '@/Primitive'
 import { injectPopperRootContext } from './PopperRoot.vue'
 import {
   getSideAndAlignFromPlacement,
   isNotNull,
   transformOrigin,
 } from './utils'
-import {
-  Primitive,
-} from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,
@@ -198,6 +234,7 @@ const emits = defineEmits<{
 
 const rootContext = injectPopperRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const dir = useDirection(computed(() => props.dir))
 
 const floatingRef = ref<HTMLElement>()
 
@@ -231,7 +268,14 @@ const detectOverflowOptions = computed(() => {
   }
 })
 
-const computedMiddleware = computedEager(() => {
+const flipOptions = computed(() => {
+  return {
+    mainAxis: props.sideFlip,
+    crossAxis: props.alignFlip,
+  }
+})
+
+const computedMiddleware = computed(() => {
   return [
     offset({
       mainAxis: props.sideOffset + arrowHeight.value,
@@ -241,6 +285,7 @@ const computedMiddleware = computedEager(() => {
     && props.avoidCollisions
     && flip({
       ...detectOverflowOptions.value,
+      ...flipOptions.value,
     }),
     props.avoidCollisions
     && shift({
@@ -253,6 +298,7 @@ const computedMiddleware = computedEager(() => {
     && props.avoidCollisions
     && flip({
       ...detectOverflowOptions.value,
+      ...flipOptions.value,
     }),
     size({
       ...detectOverflowOptions.value,
@@ -282,6 +328,7 @@ const computedMiddleware = computedEager(() => {
     transformOrigin({
       arrowWidth: arrowWidth.value,
       arrowHeight: arrowHeight.value,
+      dir: dir.value,
     }),
     props.hideWhenDetached
     && hide({ strategy: 'referenceHidden', ...detectOverflowOptions.value }),
@@ -320,9 +367,10 @@ watchPostEffect(() => {
     emits('placed')
 })
 
-const cannotCenterArrow = computed(
-  () => middlewareData.value.arrow?.centerOffset !== 0,
-)
+const shouldHideArrow = computed(() => {
+  const cannotCenterArrow = middlewareData.value.arrow?.centerOffset !== 0
+  return props.hideShiftedArrow && cannotCenterArrow
+})
 
 const contentZIndex = ref('')
 watchEffect(() => {
@@ -338,7 +386,7 @@ providePopperContentContext({
   onArrowChange: element => arrow.value = element,
   arrowX,
   arrowY,
-  shouldHideArrow: cannotCenterArrow,
+  shouldHideArrow,
 })
 </script>
 
@@ -346,6 +394,7 @@ providePopperContentContext({
   <div
     ref="floatingRef"
     data-reka-popper-content-wrapper=""
+    :dir="dir"
     :style="{
       ...floatingStyles,
       transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
@@ -366,12 +415,40 @@ providePopperContentContext({
     }"
   >
     <Primitive
+      v-if="props.memoDependencies"
+      :ref="forwardRef"
+      v-memo="[
+        props.asChild,
+        props.as,
+        placedSide,
+        placedAlign,
+        isPositioned,
+        ...Object.values($attrs),
+        ...props.memoDependencies,
+      ]"
+      v-bind="$attrs"
+      :as-child="props.asChild"
+      :as="props.as"
+      :data-side="placedSide"
+      :data-align="placedAlign"
+      :style="{
+        // if the PopperContent hasn't been placed yet (not all measurements done)
+        // we prevent animations so that users's animation don't kick in too early referring wrong sides
+        animation: !isPositioned ? 'none' : undefined,
+      }"
+    >
+      <slot />
+    </Primitive>
+
+    <Primitive
+      v-else
       :ref="forwardRef"
       v-bind="$attrs"
       :as-child="props.asChild"
-      :as="as"
+      :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
+      :dir="dir"
       :style="{
         // if the PopperContent hasn't been placed yet (not all measurements done)
         // we prevent animations so that users's animation don't kick in too early referring wrong sides

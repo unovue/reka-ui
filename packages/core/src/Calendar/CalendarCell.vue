@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
+import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarCellProps extends PrimitiveProps {
   /** The date value for the cell */
@@ -22,8 +22,8 @@ const rootContext = injectCalendarRootContext()
     :as-child="asChild"
     role="gridcell"
     :aria-selected="rootContext.isDateSelected(date) ? true : undefined"
-    :aria-disabled="rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date)"
-    :data-disabled="rootContext.isDateDisabled(date) ? '' : undefined"
+    :aria-disabled="rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date) || rootContext.disableDaysOutsideCurrentView.value"
+    :data-disabled="rootContext.isDateDisabled(date) || rootContext.disableDaysOutsideCurrentView.value ? '' : undefined"
   >
     <slot />
   </Primitive>

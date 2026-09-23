@@ -1,9 +1,11 @@
 <script lang="ts">
-import { Primitive, type PrimitiveProps } from '@/Primitive'
+import type { DateRangeType } from './DateRangeFieldRoot.vue'
+import type { PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
-import { useDateField } from '@/shared/date/useDateField'
-import { type DateRangeType, injectDateRangeFieldRootContext } from './DateRangeFieldRoot.vue'
 import { computed, ref } from 'vue'
+import { Primitive } from '@/Primitive'
+import { useDateField } from '@/shared/date/useDateField'
+import { injectDateRangeFieldRootContext } from './DateRangeFieldRoot.vue'
 
 export interface DateRangeFieldInputProps extends PrimitiveProps {
   /** The part of the date to render */
@@ -24,12 +26,16 @@ const lastKeyZero = ref(false)
 const {
   handleSegmentClick,
   handleSegmentKeydown,
+  handleSegmentBeforeInput,
+  handleSegmentCompositionStart,
+  handleSegmentCompositionEnd,
   attributes,
 } = useDateField({
   hasLeftFocus,
   lastKeyZero,
   placeholder: rootContext.placeholder,
   hourCycle: rootContext.hourCycle,
+  step: rootContext.step,
   segmentValues: rootContext.segmentValues[props.type],
   formatter: rootContext.formatter,
   part: props.part,
@@ -60,6 +66,9 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
     v-on="part !== 'literal' ? {
       mousedown: handleSegmentClick,
       keydown: handleSegmentKeydown,
+      beforeinput: handleSegmentBeforeInput,
+      compositionstart: handleSegmentCompositionStart,
+      compositionend: handleSegmentCompositionEnd,
       focusout: () => { hasLeftFocus = true },
       focusin: (e: FocusEvent) => {
         rootContext.setFocusedElement(e.target as HTMLElement)

@@ -1,6 +1,6 @@
 import { blackA, grass, green, indigo, mauve, purple, red, slate, teal, violet } from '@radix-ui/colors'
-import plugin from 'tailwindcss/plugin'
 import animate from 'tailwindcss-animate'
+import plugin from 'tailwindcss/plugin'
 
 /** @type {import('tailwindcss').Config} */
 export default {

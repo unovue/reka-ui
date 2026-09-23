@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   NavigationMenuContent,
   NavigationMenuIndicator,
@@ -11,9 +10,10 @@ import {
   NavigationMenuTrigger,
   NavigationMenuViewport,
 } from 'reka-ui'
-import './styles.css'
-
+import { ref } from 'vue'
 import NavigationMenuListItem from './NavigationMenuListItem.vue'
+
+import './styles.css'
 
 const currentTrigger = ref('')
 </script>

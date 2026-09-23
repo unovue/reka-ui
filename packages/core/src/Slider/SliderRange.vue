@@ -31,8 +31,8 @@ const offsetEnd = computed(() => 100 - Math.max(...percentages.value, 0))
     :as-child="asChild"
     :as="as"
     :style="{
-      [orientation!.startEdge]: `${offsetStart}%`,
-      [orientation!.endEdge]: `${offsetEnd}%`,
+      [orientation!.startEdge.value]: `${offsetStart}%`,
+      [orientation!.endEdge.value]: `${offsetEnd}%`,
     }"
   >
     <slot />

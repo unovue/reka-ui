@@ -1,7 +1,7 @@
 <script lang="ts">
-import { injectStepperItemContext } from './StepperItem.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { injectStepperItemContext } from './StepperItem.vue'
 </script>
 
 <script setup lang="ts">
@@ -9,10 +9,10 @@ import { Primitive } from '@/Primitive'
 
 export interface StepperIndicatorProps extends PrimitiveProps { }
 
-const props = defineProps<StepperIndicatorProps>()
+const props = withDefaults(defineProps<StepperIndicatorProps>(), { as: 'span' })
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current step */
     step: number
   }) => any

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '..'
 import { Icon } from '@iconify/vue'
+import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '..'
 </script>
 
 <template>

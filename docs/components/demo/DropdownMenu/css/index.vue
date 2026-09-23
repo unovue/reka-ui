@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
@@ -18,6 +17,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from 'reka-ui'
+import { ref } from 'vue'
 import './styles.css'
 
 const toggleState = ref(false)
@@ -25,7 +25,7 @@ const checkboxOne = ref(false)
 const checkboxTwo = ref(false)
 const person = ref('pedro')
 
-function handleClick() {
+function handleSelect() {
   // eslint-disable-next-line no-alert
   alert('hello!')
 }
@@ -48,7 +48,7 @@ function handleClick() {
         <DropdownMenuItem
           value="New Tab"
           class="DropdownMenuItem"
-          @click="handleClick"
+          @select="handleSelect"
         >
           New Tab
           <div

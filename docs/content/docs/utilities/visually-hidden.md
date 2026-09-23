@@ -37,8 +37,8 @@ Use the visually hidden primitive.
 
 ```vue
 <script setup lang="ts">
-import { VisuallyHidden } from 'reka-ui'
 import { GearIcon } from '@radix-icons/vue'
+import { VisuallyHidden } from 'reka-ui'
 </script>
 
 <template>

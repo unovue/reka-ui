@@ -13,11 +13,11 @@ export interface HoverCardContentProps extends HoverCardContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { Presence } from '@/Presence'
+import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import HoverCardContentImpl from './HoverCardContentImpl.vue'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { excludeTouch } from './utils'
-import { Presence } from '@/Presence'
-import HoverCardContentImpl from './HoverCardContentImpl.vue'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 
 const props = defineProps<HoverCardContentProps>()
 const emits = defineEmits<HoverCardContentEmits>()

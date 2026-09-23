@@ -95,8 +95,8 @@ You can control the component to ensure a value.
 
 ```vue line=5,10-13
 <script setup>
-import { ref } from 'vue'
 import { ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const value = ref('left')
 </script>

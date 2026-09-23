@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 import { useCollection } from '@/Collection'
+import { useForwardExpose } from '@/shared'
 
 export type NavigationMenuLinkEmits = {
   /**

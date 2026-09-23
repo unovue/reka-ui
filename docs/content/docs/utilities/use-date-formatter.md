@@ -15,9 +15,11 @@ More information on the DateFormatter [here](https://react-spectrum.adobe.com/in
 
 ```vue
 <script setup lang="ts">
-import { type Ref, ref } from 'vue'
-import { CalendarDate, type DateValue, getLocalTimeZone } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { CalendarDate, getLocalTimeZone } from '@internationalized/date'
 import { toDate, useDateFormatter } from 'reka-ui'
+import { ref } from 'vue'
 
 const value = ref(new CalendarDate(1995, 8, 18)) as Ref<DateValue>
 // provide the locale

@@ -1,6 +1,7 @@
 <script lang="ts">
+import type { CalendarNextProps } from '..'
 import type { CalendarNextSlot } from '@/Calendar/CalendarNext.vue'
-import { CalendarNext, type CalendarNextProps } from '..'
+import { CalendarNext } from '..'
 
 export interface DatePickerNextProps extends CalendarNextProps {}
 </script>

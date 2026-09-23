@@ -2,8 +2,8 @@ export { default as MenuAnchor } from './MenuAnchor.vue'
 export { default as MenuArrow, type MenuArrowProps } from './MenuArrow.vue'
 export {
   default as MenuCheckboxItem,
-  type MenuCheckboxItemProps,
   type MenuCheckboxItemEmits,
+  type MenuCheckboxItemProps,
 } from './MenuCheckboxItem.vue'
 export {
   default as MenuContent,
@@ -13,8 +13,8 @@ export {
 export { default as MenuGroup, type MenuGroupProps } from './MenuGroup.vue'
 export {
   default as MenuItem,
-  type MenuItemProps,
   type MenuItemEmits,
+  type MenuItemProps,
 } from './MenuItem.vue'
 export {
   default as MenuItemIndicator,
@@ -24,20 +24,20 @@ export { default as MenuLabel, type MenuLabelProps } from './MenuLabel.vue'
 export { default as MenuPortal, type MenuPortalProps } from './MenuPortal.vue'
 export {
   default as MenuRadioGroup,
-  type MenuRadioGroupProps,
   type MenuRadioGroupEmits,
+  type MenuRadioGroupProps,
 } from './MenuRadioGroup.vue'
 export {
   default as MenuRadioItem,
-  type MenuRadioItemProps,
   type MenuRadioItemEmits,
+  type MenuRadioItemProps,
 } from './MenuRadioItem.vue'
 export {
   injectMenuContext,
   injectMenuRootContext,
-  default as MenuRoot,
-  type MenuProps,
   type MenuEmits,
+  type MenuProps,
+  default as MenuRoot,
 } from './MenuRoot.vue'
 export {
   default as MenuSeparator,
@@ -45,13 +45,13 @@ export {
 } from './MenuSeparator.vue'
 export {
   default as MenuSub,
-  type MenuSubProps,
   type MenuSubEmits,
+  type MenuSubProps,
 } from './MenuSub.vue'
 export {
   default as MenuSubContent,
-  type MenuSubContentProps,
   type MenuSubContentEmits,
+  type MenuSubContentProps,
 } from './MenuSubContent.vue'
 export {
   default as MenuSubTrigger,

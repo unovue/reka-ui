@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import type { PrimitiveProps } from '@/Primitive'
 import type { ImageLoadingStatus } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { createContext, useForwardExpose } from '@/shared'
 
 export interface AvatarRootProps extends PrimitiveProps {}
@@ -25,7 +25,7 @@ withDefaults(defineProps<AvatarRootProps>(), {
 useForwardExpose()
 
 provideAvatarRootContext({
-  imageLoadingStatus: ref<ImageLoadingStatus>('loading'),
+  imageLoadingStatus: ref<ImageLoadingStatus>('idle'),
 })
 </script>
 

@@ -41,8 +41,8 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
 import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
@@ -53,9 +53,11 @@ const props = withDefaults(defineProps<PopoverRootProps>(), {
 const emit = defineEmits<PopoverRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
+    /** Close the popover */
+    close: () => void
   }) => any
 }>()
 
@@ -87,6 +89,9 @@ providePopoverRootContext({
 
 <template>
   <PopperRoot>
-    <slot :open="open" />
+    <slot
+      :open="open"
+      :close="() => open = false"
+    />
   </PopperRoot>
 </template>

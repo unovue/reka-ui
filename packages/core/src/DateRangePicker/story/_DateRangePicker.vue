@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { DateValue } from '@internationalized/date'
 import type { DateRangePickerRootProps } from '..'
+import { Label } from '@/Label'
 import {
   DateRangePickerCalendar,
   DateRangePickerCell,
@@ -20,7 +21,6 @@ import {
   DateRangePickerRoot,
   DateRangePickerTrigger,
 } from '..'
-import { Label } from '@/Label'
 
 const props = defineProps<{ dateFieldProps?: DateRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
 </script>

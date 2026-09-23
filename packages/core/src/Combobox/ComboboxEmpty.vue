@@ -6,15 +6,15 @@ export interface ComboboxEmptyProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { Primitive } from '@/Primitive'
+import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = defineProps<ComboboxEmptyProps>()
 const rootContext = injectComboboxRootContext()
 
 const isRender = computed(() => rootContext.ignoreFilter.value
   ? rootContext.allItems.value.size === 0
-  : !!rootContext.filterState.search && rootContext.filterState.filtered.count === 0,
+  : rootContext.filterState.value.count === 0,
 )
 </script>
 

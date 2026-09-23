@@ -6,8 +6,8 @@ export interface DialogTitleProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { injectDialogRootContext } from './DialogRoot.vue'
 import { Primitive } from '@/Primitive'
+import { injectDialogRootContext } from './DialogRoot.vue'
 
 const props = withDefaults(defineProps<DialogTitleProps>(), { as: 'h2' })
 const rootContext = injectDialogRootContext()

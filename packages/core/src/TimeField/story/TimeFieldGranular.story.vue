@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { TimeFieldInput, TimeFieldRoot } from '..'
 import { Label } from '@/Label'
+import { TimeFieldInput, TimeFieldRoot } from '..'
 </script>
 
 <template>

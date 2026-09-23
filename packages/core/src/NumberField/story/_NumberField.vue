@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NumberFieldRootProps } from '..'
-import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '..'
 import { Icon } from '@iconify/vue'
+import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '..'
 
 const props = defineProps<NumberFieldRootProps>()
 </script>

@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
+import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -14,7 +14,7 @@ interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-    = createContext<SelectItemContext>('SelectItem')
+  = createContext<SelectItemContext>('SelectItem')
 
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 
@@ -47,10 +47,10 @@ import {
   ref,
   toRefs,
 } from 'vue'
-import { injectSelectRootContext } from './SelectRoot.vue'
-import { injectSelectContentContext } from './SelectContentImpl.vue'
-import { SELECTION_KEYS, valueComparator } from './utils'
 import { Primitive } from '@/Primitive'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
+import { injectSelectRootContext } from './SelectRoot.vue'
+import { SELECTION_KEYS, valueComparator } from './utils'
 
 const props = defineProps<SelectItemProps>()
 const emits = defineEmits<SelectItemEmits<T>>()
@@ -99,7 +99,7 @@ async function handlePointerMove(event: PointerEvent) {
   else {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
-    (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+    (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
   }
 }
 
@@ -169,7 +169,7 @@ provideSelectItemContext({
       @focus="isFocused = true"
       @blur="isFocused = false"
       @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event) => {
+      @pointerdown="(event: PointerEvent) => {
         (event.currentTarget as HTMLElement).focus({ preventScroll: true })
       }"
       @touchend.prevent.stop

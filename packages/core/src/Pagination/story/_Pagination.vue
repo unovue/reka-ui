@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { PaginationEllipsisProps, PaginationFirstProps, PaginationLastProps, PaginationListItemProps, PaginationListProps, PaginationNextProps, PaginationPrevProps, PaginationRootProps } from '..'
 import { computed } from 'vue'
-import { PaginationEllipsis, type PaginationEllipsisProps, PaginationFirst, type PaginationFirstProps, PaginationLast, type PaginationLastProps, PaginationList, PaginationListItem, type PaginationListItemProps, type PaginationListProps, PaginationNext, type PaginationNextProps, PaginationPrev, type PaginationPrevProps, PaginationRoot, type PaginationRootProps } from '..'
+import { PaginationEllipsis, PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot } from '..'
 
 const props = defineProps<{
   root?: PaginationRootProps

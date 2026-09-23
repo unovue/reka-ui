@@ -1,6 +1,8 @@
-import { dirname, resolve } from 'node:path'
-import { readdirSync } from 'node:fs'
 import type { MarkdownEnv, MarkdownRenderer } from 'vitepress'
+import { readdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+
+const PATH_SEPARATOR_RE = /[/\\]/
 
 export const rawPathRegexp
   = /^(.+?(?:\.([a-z0-9]+))?)(#[\w-]+)?(?: ?\{(\d+(?:[,-]\d+)*)? ?(\S+)?\})? ?(?:\[(.+)\])?$/
@@ -64,22 +66,22 @@ export default function (md: MarkdownRenderer) {
       const { realPath, path: _path } = state.env as MarkdownEnv
 
       const childFiles = readdirSync(resolve(dirname(realPath ?? _path), pathName), { withFileTypes: false, recursive: true })
-        .map(file => typeof file === 'string' ? file.split(/[/\\]/).join('/') : file)
+        .map(file => typeof file === 'string' ? file.split(PATH_SEPARATOR_RE).join('/') : file)
 
       const groupedFiles = props.type === 'example'
         ? { tailwind: childFiles }
         : childFiles.reduce((prev, curr) => {
-          if (typeof curr !== 'string')
+            if (typeof curr !== 'string')
+              return prev
+            if (!curr.includes('/')) {
+              prev[curr] = []
+            }
+            else {
+              const folder = curr.split('/')[0]
+              prev[folder].push(curr)
+            }
             return prev
-          if (!curr.includes('/')) {
-            prev[curr] = []
-          }
-          else {
-            const folder = curr.split('/')[0]
-            prev[folder].push(curr)
-          }
-          return prev
-        }, {} as { [key: string]: string[] })
+          }, {} as { [key: string]: string[] })
 
       state.tokens[index].content = `<ComponentPreview name="${props.name}" type="${props.type || 'demo'}"  files="${encodeURIComponent(JSON.stringify(groupedFiles))}" ><${props.name} />`
       const dummyToken = new state.Token('', '', 0)

@@ -5,29 +5,31 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */
-  estimateSize?: number
+  estimateSize?: number | ((index: number) => number)
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (option: T) => string
 }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { type VirtualItem, type Virtualizer, useVirtualizer } from '@tanstack/vue-virtual'
-import { Fragment, type Ref, type VNode, cloneVNode, computed, useSlots } from 'vue'
-import { injectListboxRootContext } from './ListboxRoot.vue'
-import { compare, queryCheckedElement } from './utils'
-import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
+import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
+import type { Ref, VNode } from 'vue'
+import type { AcceptableValue } from '@/shared/types'
+import { useVirtualizer } from '@tanstack/vue-virtual'
+import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
+import { cloneVNode, computed, Fragment, useSlots } from 'vue'
+import { useCollection } from '@/Collection'
+import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { findValuesBetween, getActiveElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
-import { useParentElement } from '@vueuse/core'
-import { useCollection } from '@/Collection'
-import type { AcceptableValue } from '@/shared/types'
+import { injectListboxRootContext } from './ListboxRoot.vue'
+import { compare, queryCheckedElement } from './utils'
 
 const props = defineProps<ListboxVirtualizerProps<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     option: T
     virtualizer: Virtualizer<HTMLElement, Element>
     virtualItem: VirtualItem
@@ -62,7 +64,10 @@ const virtualizer = useVirtualizer(
     get scrollPaddingEnd() { return padding.value.end },
     get count() { return props.options.length },
     get horizontal() { return rootContext.orientation.value === 'horizontal' },
-    estimateSize() {
+    estimateSize(index) {
+      if (typeof props.estimateSize === 'function')
+        return props.estimateSize(index)
+
       return props.estimateSize ?? 28
     },
     getScrollElement() { return parentEl.value },
@@ -78,7 +83,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   })[0]
 
   const targetNode = defaultNode.type === Fragment && Array.isArray(defaultNode.children)
-    ? defaultNode.children[0] as VNode
+    ? defaultNode.children.find(child => typeof (child as VNode).type !== 'symbol') as VNode
     : defaultNode
 
   return {
@@ -99,7 +104,11 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   }
 }))
 
-rootContext.virtualFocusHook.on((event) => {
+rootContext.virtualFocusHook.on(({ event, scroll }) => {
+  // `scroll` is `false` only for the initial mount highlight. There we set the
+  // roving-tabindex target without focusing or scrolling, so a virtualized
+  // Listbox below the fold doesn't pull the page to it on load. User-driven
+  // highlights (keyboard, typeahead, select) keep scrolling as before.
   const index = props.options.findIndex((option) => {
     if (Array.isArray(rootContext.modelValue.value))
       return compare(option, rootContext.modelValue.value[0], rootContext.by)
@@ -109,18 +118,29 @@ rootContext.virtualFocusHook.on((event) => {
   if (index !== -1) {
     event?.preventDefault()
 
+    // Bringing the checked item into the (internal) scroll viewport is safe — it
+    // only scrolls the listbox container, never the page.
     virtualizer.value.scrollToIndex(index, { align: 'start' })
     requestAnimationFrame(() => {
       const item = queryCheckedElement(parentEl.value)
       if (item) {
-        rootContext.changeHighlight(item)
-        if (event)
-          item?.focus()
+        const focus = event ? true : scroll ? undefined : false
+        rootContext.changeHighlight(item, scroll, focus)
       }
     })
   }
+  else if (scroll) {
+    rootContext.highlightFirstItem()
+  }
   else {
-    rootContext.highlightFirstItem(event as InputEvent)
+    // Mount highlight with no checked item: highlight the first enabled item only,
+    // mirroring the non-virtual path. `highlightFirstItem` is reserved for
+    // user-driven PageUp/Home navigation, which focuses and scrolls.
+    requestAnimationFrame(() => {
+      const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
+      if (item)
+        rootContext.changeHighlight(item, false, false)
+    })
   }
 })
 
@@ -173,7 +193,7 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
       break
     }
     case 'last': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options?.[props.options.length - 1])
+      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options.at(-1)!)
       break
     }
   }
@@ -206,7 +226,7 @@ rootContext.virtualKeydownHook.on((event) => {
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
       const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const item = intent === 'first' ? items[0] : items.at(-1)
       if (item)
         rootContext.changeHighlight(item.ref)
     })

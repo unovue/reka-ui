@@ -13,14 +13,14 @@ export interface MenuItemImplProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
-import { isMouseEvent } from './utils'
-import { injectMenuContentContext } from './MenuContentImpl.vue'
+import { computed, nextTick, ref } from 'vue'
+import { useCollection } from '@/Collection'
 import {
   Primitive,
 } from '@/Primitive'
-import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { getActiveElement, useForwardExpose } from '@/shared'
+import { injectMenuContentContext } from './MenuContentImpl.vue'
+import { isMouseEvent } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -29,25 +29,26 @@ defineOptions({
 const props = defineProps<MenuItemImplProps>()
 
 const contentContext = injectMenuContentContext()
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem } = useCollection()
 
 const isFocused = ref(false)
+const isHighlighted = computed(() => isFocused.value || (currentElement.value != null && contentContext.highlightedElement.value === currentElement.value))
 
 async function handlePointerMove(event: PointerEvent) {
-  if (event.defaultPrevented)
+  if (event.defaultPrevented || !isMouseEvent(event))
     return
-  if (!isMouseEvent(event))
-    return
-
   if (props.disabled) {
     contentContext.onItemLeave(event)
   }
   else {
     const defaultPrevented = contentContext.onItemEnter(event)
     if (!defaultPrevented) {
-      const item = event.currentTarget;
-      (item as HTMLElement)?.focus({ preventScroll: true })
+      const item = event.currentTarget as HTMLElement
+      contentContext.highlightedElement.value = item
+      const isInputFocused = ['INPUT', 'TEXTAREA'].includes(getActiveElement()?.tagName || '')
+      if (!isInputFocused)
+        item.focus({ preventScroll: true })
     }
   }
 }
@@ -59,7 +60,15 @@ async function handlePointerLeave(event: PointerEvent) {
   if (!isMouseEvent(event))
     return
 
-  contentContext.onItemLeave(event)
+  // If the highlight was already claimed by another element (e.g. the pointer moved
+  // directly onto another item, whose synchronous `pointermove` ran before this
+  // `nextTick` resolved), this leave is stale and must not reset focus/roving state.
+  if (contentContext.highlightedElement.value !== currentElement.value)
+    return
+
+  const isMovingToSubmenu = contentContext.onItemLeave(event)
+  if (!isMovingToSubmenu && contentContext.highlightedElement.value === currentElement.value)
+    contentContext.highlightedElement.value = undefined
 }
 </script>
 
@@ -74,18 +83,20 @@ async function handlePointerLeave(event: PointerEvent) {
       :as-child="asChild"
       :aria-disabled="disabled || undefined"
       :data-disabled="disabled ? '' : undefined"
-      :data-highlighted="isFocused ? '' : undefined"
+      :data-highlighted="isHighlighted ? '' : undefined"
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @focus="
-        async (event) => {
+        async (event: FocusEvent) => {
+          const item = event.currentTarget as HTMLElement;
           await nextTick();
           if (event.defaultPrevented || disabled) return;
           isFocused = true;
+          contentContext.highlightedElement.value = item
         }
       "
       @blur="
-        async (event) => {
+        async (event: FocusEvent) => {
           await nextTick();
           if (event.defaultPrevented) return;
           isFocused = false;

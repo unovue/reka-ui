@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { FocusScope } from '@/FocusScope'
 import { DismissableLayer } from '..'
 import DismissableBox from './_DismissableBox.vue'
-import { FocusScope } from '@/FocusScope'
 
 const open = ref(false)
 

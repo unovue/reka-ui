@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import { ref } from 'vue'
 import type {
   MenubarItemEmits,
 } from '..'
+import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
+import { useEmitAsProps } from '@/shared'
 import {
   MenubarCheckboxItem,
   MenubarContent,
@@ -17,7 +18,6 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from '..'
-import { useEmitAsProps } from '@/shared'
 
 const emits = defineEmits<MenubarItemEmits>()
 const currentMenu = ref('')

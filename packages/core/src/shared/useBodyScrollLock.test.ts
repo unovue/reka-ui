@@ -1,6 +1,6 @@
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { mount } from '@vue/test-utils'
 import { useBodyScrollLock } from './useBodyScrollLock'
 
 function createWrapper(initialState: boolean) {
@@ -93,6 +93,18 @@ describe('useBodyScrollLock', () => {
 
     await nextTick()
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('should not permanently lock when toggled rapidly in the same tick', async () => {
+    const locked = useBodyScrollLock()
+
+    // Lock and immediately unlock in the same synchronous tick
+    locked.value = true
+    locked.value = false
+
+    await nextTick()
+    expect(document.body.style.overflow).toBe('')
+    expect(document.body.style.pointerEvents).toBe('')
   })
 
   it('should preserve user overflow', async () => {

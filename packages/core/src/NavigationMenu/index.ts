@@ -1,13 +1,7 @@
 export {
-  injectNavigationMenuContext,
-  default as NavigationMenuRoot,
-  type NavigationMenuRootProps,
-  type NavigationMenuRootEmits,
-} from './NavigationMenuRoot.vue'
-export {
   default as NavigationMenuContent,
-  type NavigationMenuContentProps,
   type NavigationMenuContentEmits,
+  type NavigationMenuContentProps,
 } from './NavigationMenuContent.vue'
 export {
   default as NavigationMenuIndicator,
@@ -20,17 +14,23 @@ export {
 } from './NavigationMenuItem.vue'
 export {
   default as NavigationMenuLink,
-  type NavigationMenuLinkProps,
   type NavigationMenuLinkEmits,
+  type NavigationMenuLinkProps,
 } from './NavigationMenuLink.vue'
 export {
   default as NavigationMenuList,
   type NavigationMenuListProps,
 } from './NavigationMenuList.vue'
 export {
+  injectNavigationMenuContext,
+  default as NavigationMenuRoot,
+  type NavigationMenuRootEmits,
+  type NavigationMenuRootProps,
+} from './NavigationMenuRoot.vue'
+export {
   default as NavigationMenuSub,
-  type NavigationMenuSubProps,
   type NavigationMenuSubEmits,
+  type NavigationMenuSubProps,
 } from './NavigationMenuSub.vue'
 export {
   default as NavigationMenuTrigger,

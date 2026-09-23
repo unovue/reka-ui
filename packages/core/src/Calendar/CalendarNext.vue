@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DateValue } from '@internationalized/date'
+import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarNextProps extends PrimitiveProps {
   /** The function to be used for the next page. Overwrites the `nextPage` function set on the `CalendarRoot`. */
@@ -8,7 +8,7 @@ export interface CalendarNextProps extends PrimitiveProps {
 }
 
 export interface CalendarNextSlot {
-  default: (props: {
+  default?: (props: {
     /** Current disable state */
     disabled: boolean
   }) => any
@@ -26,6 +26,12 @@ defineSlots<CalendarNextSlot>()
 const disabled = computed(() => rootContext.disabled.value || rootContext.isNextButtonDisabled(props.nextPage))
 
 const rootContext = injectCalendarRootContext()
+
+function handleClick() {
+  if (disabled.value)
+    return
+  rootContext.nextPage(props.nextPage)
+}
 </script>
 
 <template>
@@ -33,11 +39,11 @@ const rootContext = injectCalendarRootContext()
     :as="props.as"
     :as-child="props.asChild"
     aria-label="Next page"
-    :type="as === 'button' ? 'button' : undefined"
+    :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
     :disabled="disabled"
-    @click="rootContext.nextPage(props.nextPage)"
+    @click="handleClick"
   >
     <slot :disabled>
       Next page

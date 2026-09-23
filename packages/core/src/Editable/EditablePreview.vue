@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { injectEditableRootContext } from './EditableRoot.vue'
 import { computed } from 'vue'
+import { injectEditableRootContext } from './EditableRoot.vue'
 
 export interface EditablePreviewProps extends PrimitiveProps {}
 </script>

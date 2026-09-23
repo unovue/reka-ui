@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { CalendarDate, PersianCalendar, toCalendar } from '@internationalized/date'
+import { ref } from 'vue'
 import RangeCalendar from './_DummyRangeCalendar.vue'
-import { CalendarDate, type DateValue, PersianCalendar, toCalendar } from '@internationalized/date'
-import { type Ref, ref } from 'vue'
 
 const defaultValue = { start: new CalendarDate(2024, 2, 20), end: new CalendarDate(2024, 2, 27) }
 const persianCalendar = ref({ start: toCalendar(defaultValue.start, new PersianCalendar()), end: toCalendar(defaultValue.end, new PersianCalendar()) }) as Ref<{ start: DateValue, end: DateValue }>

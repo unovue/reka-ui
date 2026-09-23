@@ -1,16 +1,16 @@
 export {
   injectPanelGroupContext as injectSplitterGroupContext,
   default as SplitterGroup,
-  type SplitterGroupProps,
   type SplitterGroupEmits,
+  type SplitterGroupProps,
 } from './SplitterGroup.vue'
 export {
   default as SplitterPanel,
-  type SplitterPanelProps,
   type SplitterPanelEmits,
+  type SplitterPanelProps,
 } from './SplitterPanel.vue'
 export {
   default as SplitterResizeHandle,
-  type SplitterResizeHandleProps,
   type SplitterResizeHandleEmits,
+  type SplitterResizeHandleProps,
 } from './SplitterResizeHandle.vue'

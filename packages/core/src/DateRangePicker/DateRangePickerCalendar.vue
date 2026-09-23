@@ -15,6 +15,7 @@ const rootContext = injectDateRangePickerRootContext()
       allowNonContiguousRanges: rootContext.allowNonContiguousRanges.value,
       isDateDisabled: rootContext.isDateDisabled,
       isDateUnavailable: rootContext.isDateUnavailable,
+      isDateHighlightable: rootContext.isDateHighlightable,
       locale: rootContext.locale.value,
       disabled: rootContext.disabled.value,
       pagedNavigation: rootContext.pagedNavigation.value,
@@ -27,8 +28,9 @@ const rootContext = injectDateRangePickerRootContext()
       minValue: rootContext.minValue.value,
       maxValue: rootContext.maxValue.value,
       dir: rootContext.dir.value,
+      fixedDate: rootContext.fixedDate.value,
+      maximumDays: rootContext.maximumDays?.value,
     }"
-    initial-focus
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
     @update:start-value="(date) => {

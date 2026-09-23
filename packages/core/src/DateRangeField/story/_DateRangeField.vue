@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
 import type { DateRangeFieldRootProps } from '..'
-import { DateRangeFieldInput, DateRangeFieldRoot } from '..'
 import { Label } from '@/Label'
+import { DateRangeFieldInput, DateRangeFieldRoot } from '..'
 
 const props = defineProps<{ dateFieldProps?: DateRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
 </script>

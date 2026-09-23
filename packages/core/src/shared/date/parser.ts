@@ -1,8 +1,9 @@
-import { DATE_SEGMENT_PARTS, type DateSegmentPart, EDITABLE_SEGMENT_PARTS, type Granularity, type HourCycle, type SegmentContentObj, type SegmentPart, type SegmentValueObj, TIME_SEGMENT_PARTS, type TimeSegmentPart, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart } from '@/shared/date'
-import { isZonedDateTime, toDate } from '@/date'
-import type { Formatter } from '@/shared'
 import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
+import type { Formatter } from '@/shared'
+import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
+import { isZonedDateTime, toDate } from '@/date'
+import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle, TIME_SEGMENT_PARTS } from '@/shared/date'
 
 const calendarDateTimeGranularities = ['hour', 'minute', 'second']
 
@@ -18,8 +19,10 @@ type SyncTimeSegmentValuesProps = {
 
 export function syncTimeSegmentValues(props: SyncTimeSegmentValuesProps) {
   return Object.fromEntries(TIME_SEGMENT_PARTS.map((part) => {
-    if (part === 'dayPeriod')
-      return [part, props.formatter.dayPeriod(toDate(props.value))]
+    if (part === 'dayPeriod') {
+      const timeZone = isZonedDateTime(props.value) ? props.value.timeZone : undefined
+      return [part, props.formatter.dayPeriod(toDate(props.value), timeZone)]
+    }
     return [part, props.value[part as keyof DateValue]]
   })) as SegmentValueObj
 }
@@ -102,16 +105,23 @@ function createContentObj(props: CreateContentObjProps) {
     if ('hour' in segmentValues) {
       const value = segmentValues[part]
       if (value !== null) {
-        /**
-         * Edge case for when the month field is filled and the day field snaps to the maximum value of the value of the placeholder month
-         */
-        if (part === 'day' && segmentValues.month !== null) {
-          return formatter.part(props.dateRef.set({ [part as keyof DateFields]: value, month: segmentValues.month }), part, {
-            hourCycle: props.hourCycle === 24 ? 'h23' : undefined,
-          })
+        if (part === 'day') {
+          return formatter.part(props.dateRef.set({
+            [part as keyof DateFields]: value,
+            /**
+             * Edge case for the day field:
+             *
+             * 1. If the month is filled,
+             *   we need to ensure that the day snaps to the maximum value of that month.
+             * 2. If the month is not filled,
+             *   we default to the month with the maximum number of days (here just using January, 31 days),
+             *   so that user can input any possible day.
+             */
+            month: segmentValues.month ?? 1,
+          }), part, { hourCycle: normalizeHourCycle(props.hourCycle) })
         }
         return formatter.part(props.dateRef.set({ [part]: value }), part, {
-          hourCycle: props.hourCycle === 24 ? 'h23' : undefined,
+          hourCycle: normalizeHourCycle(props.hourCycle),
         })
       }
       else {
@@ -122,11 +132,13 @@ function createContentObj(props: CreateContentObjProps) {
       if (isDateSegmentPart(part)) {
         const value = segmentValues[part]
         if (value !== null) {
-          if (part === 'day' && segmentValues.month !== null)
-          /**
-           * As described above, same function
-           */
-            return formatter.part(props.dateRef.set({ [part]: value, month: segmentValues.month }), part)
+          if (part === 'day') {
+            return formatter.part(props.dateRef.set({
+              [part]: value,
+              // Same logic as above for the day field
+              month: segmentValues.month ?? 1,
+            }), part)
+          }
 
           return formatter.part(props.dateRef.set({ [part]: value }), part)
         }
@@ -186,6 +198,16 @@ function createContentArr(props: CreateContentArrProps) {
         return false
       if (segment.part === 'timeZoneName' && (!isZonedDateTime(props.dateRef) || hideTimeZone))
         return false
+
+      // In some locales (e.g., zh-TW), the time zone is represented with square brackets.
+      // We also filter out these literals that are just brackets.
+      // @see https://github.com/unovue/reka-ui/issues/1670
+      if (
+        (!isZonedDateTime(props.dateRef) || hideTimeZone)
+        && segment.part === 'literal' && ['[', ']'].includes(segment.value.trim())
+      ) {
+        return false
+      }
 
       return true
     })

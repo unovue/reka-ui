@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useComposing, useForwardExpose } from '@/shared'
 
 export interface TagsInputInputProps extends PrimitiveProps {
   /** The placeholder character to use for empty tags input. */
@@ -13,9 +13,9 @@ export interface TagsInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
-import { injectTagsInputRootContext } from './TagsInputRoot.vue'
+import { nextTick, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
+import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 const props = withDefaults(defineProps<TagsInputInputProps>(), {
   as: 'input',
@@ -24,11 +24,22 @@ const props = withDefaults(defineProps<TagsInputInputProps>(), {
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 
-function handleBlur(event: Event) {
+function handleBlur(event: FocusEvent) {
+  context.selectedElement.value = undefined
+
   if (!context.addOnBlur.value)
     return
 
   const target = event.target as HTMLInputElement
+
+  // If the blur is caused by clicking an option within the content,
+  // we don't trigger the `addOnBlur` action,
+  // because the clicked option should be added instead of the input's current value.
+  const relatedTarget = event.relatedTarget as HTMLElement | null
+  const controlledId = target.getAttribute('aria-controls')
+  if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
+    return
+
   if (!target.value)
     return
 
@@ -37,43 +48,54 @@ function handleBlur(event: Event) {
     target.value = ''
 }
 
-function handleTab(event: Event) {
+function handleTab(event: KeyboardEvent) {
   if (!context.addOnTab.value)
     return
 
-  handleCustomKeydown(event)
+  return handleCustomKeydown(event)
 }
 
-const isComposing = ref(false)
-function onCompositionStart() {
-  isComposing.value = true
+function handleEnter(event: KeyboardEvent) {
+  return handleCustomKeydown(event, { preventImplicitSubmit: true })
 }
-function onCompositionEnd() {
-  requestAnimationFrame(() => {
-    isComposing.value = false
-  })
-}
-async function handleCustomKeydown(event: Event) {
+
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
+async function handleCustomKeydown(event: KeyboardEvent, { preventImplicitSubmit = false } = {}) {
   if (isComposing.value)
     return
-  await nextTick()
-  // if keydown 'Enter' or `Tab` was prevented, we let user handle updating the value themselves
-  if (event.defaultPrevented)
-    return
+
+  // If keydown `Enter` or `Tab` was prevented, we let user handle updating the value themselves.
+  // Listeners that run after this one (e.g. `@keydown.enter.prevent`, or a wrapping `ComboboxInput`
+  // selecting its highlighted item) can only be observed after dispatch, and by then
+  // `defaultPrevented` may already be set by us, so their `preventDefault()` calls are tracked here.
+  let isPreventedByOthers = event.defaultPrevented
+  const nativePreventDefault = event.preventDefault.bind(event)
+  event.preventDefault = () => {
+    isPreventedByOthers = true
+    nativePreventDefault()
+  }
 
   const target = event.target as HTMLInputElement
+  // A form submits implicitly as soon as the `Enter` keydown dispatch finishes,
+  // so it has to be cancelled synchronously. An empty draft keeps submitting the form.
+  if (preventImplicitSubmit && target.value && !isPreventedByOthers)
+    nativePreventDefault()
+
+  await nextTick()
+  if (isPreventedByOthers)
+    return
+
   if (!target.value)
     return
 
   const isAdded = context.onAddValue(target.value)
   if (isAdded)
     target.value = ''
-
-  // prevent reloading when using inside of form
-  event.preventDefault()
 }
 
 function handleInput(event: InputEvent) {
+  if (isComposing.value)
+    return
   context.isInvalidInput.value = false
   if (event.data === null)
     return
@@ -84,10 +106,23 @@ function handleInput(event: InputEvent) {
     const target = event.target as HTMLInputElement
     target.value = target.value.replace(delimiter, '')
 
+    if (target.value.trim() === '') {
+      target.value = ''
+      return
+    }
+
     const isAdded = context.onAddValue(target.value)
     if (isAdded)
       target.value = ''
   }
+}
+
+function handleInputKeydown(event: KeyboardEvent) {
+  // `isComposing` stays true until the tick after `compositionend`, so arrow/backspace
+  // tag navigation is skipped even when the commit keydown reports `event.isComposing === false`.
+  if (isComposing.value)
+    return
+  context.onInputKeydown(event)
 }
 
 function handlePaste(event: ClipboardEvent) {
@@ -141,12 +176,12 @@ onMounted(() => {
     :disabled="context.disabled.value"
     :data-invalid="context.isInvalidInput.value ? '' : undefined"
     @input="handleInput"
-    @keydown.enter="handleCustomKeydown"
+    @keydown.enter="handleEnter"
     @keydown.tab="handleTab"
     @blur="handleBlur"
-    @keydown="context.onInputKeydown"
-    @compositionstart="onCompositionStart"
-    @compositionend="onCompositionEnd"
+    @keydown="handleInputKeydown"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
     @paste="handlePaste"
   >
     <slot />

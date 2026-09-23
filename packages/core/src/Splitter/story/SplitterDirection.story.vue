@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { DataOrientation } from '@/shared/types'
 import { ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '../'
-import type { DataOrientation } from '@/shared/types'
 
 const direction = ref<DataOrientation>('horizontal')
 </script>

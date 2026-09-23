@@ -172,6 +172,50 @@ import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, Stepper
 </template>
 ```
 
+### With controls
+
+You can add additional controls for the stepper using buttons and access the typed component instance using `useTemplateRef`.
+
+```vue line=8
+<script setup lang="ts">
+const stepper = useTemplateRef('stepper')
+</script>
+
+<template>
+  <StepperRoot
+    ref="stepper"
+    :default-value="1"
+  >
+    <StepperItem>
+      <StepperIndicator />
+      <StepperTitle />
+      <StepperDescription />
+    </StepperItem>
+    <StepperItem>
+      <StepperIndicator />
+      <StepperTitle />
+      <StepperDescription />
+    </StepperItem>
+  </StepperRoot>
+
+  <div class="flex gap-2 justify-between mt-4">
+    <button
+      :disabled="!stepper?.hasPrev()"
+      @click="stepper?.prevStep()"
+    >
+      Prev
+    </button>
+
+    <button
+      :disabled="!stepper?.hasNext()"
+      @click="stepper?.nextStep()"
+    >
+      Next
+    </button>
+  </div>
+</template>
+```
+
 ## Accessibility
 
 ### Keyboard Interactions

@@ -25,12 +25,14 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import { injectListboxRootContext } from './ListboxRoot.vue'
-import { type Ref, computed } from 'vue'
-import { Primitive, type PrimitiveProps } from '..'
-import { valueComparator } from './utils'
-import { useCollection } from '@/Collection'
+import type { Ref } from 'vue'
+import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
+import { computed } from 'vue'
+import { useCollection } from '@/Collection'
+import { Primitive } from '..'
+import { injectListboxRootContext } from './ListboxRoot.vue'
+import { valueComparator } from './utils'
 
 const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
   as: 'div',
@@ -42,7 +44,7 @@ const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value === rootContext.highlightedElement.value)
+const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
@@ -74,7 +76,7 @@ provideListboxItemContext({
       :id="id"
       v-bind="$attrs"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected]"
+      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value, ...Object.entries($attrs).flat()]"
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"
@@ -86,14 +88,12 @@ provideListboxItemContext({
       :data-state="isSelected ? 'checked' : 'unchecked'"
       @click="handleSelectCustomEvent"
       @keydown.space.prevent="handleSelectCustomEvent"
-      @pointermove="(event) => {
+      @pointermove="() => {
         if (rootContext.highlightedElement.value === currentElement)
           return
 
         if (rootContext.highlightOnHover.value)
-          rootContext.changeHighlight(currentElement, false)
-        else
-          rootContext.focusable.value ? undefined : rootContext.changeHighlight(currentElement, false)
+          rootContext.changeHighlight(currentElement, false, false)
       }"
     >
       <slot />

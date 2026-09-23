@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ListboxContent, ListboxItem, ListboxRoot } from '..'
 import { countryList } from '@/shared/constant'
+import { ListboxContent, ListboxItem, ListboxRoot } from '..'
 
 const filterText = ref('')
 const filteredOptions = computed(() => {

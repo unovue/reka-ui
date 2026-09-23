@@ -390,7 +390,8 @@ Use the [`asChild` prop](/docs/guides/composition) to convert the trigger part i
 ```vue line=13-15
 <!-- your-tooltip.vue  -->
 <script setup lang="ts">
-import { TooltipArrow, TooltipContent, TooltipRoot, type TooltipRootEmits, type TooltipRootProps, TooltipTrigger, useForwardPropsEmits } from 'reka-ui'
+import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
+import { TooltipArrow, TooltipContent, TooltipRoot, TooltipTrigger, useForwardPropsEmits } from 'reka-ui'
 
 const props = defineProps<TooltipRootProps & { content?: string }>()
 const emits = defineEmits<TooltipRootEmits>()

@@ -1,16 +1,16 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 import { computed, onMounted, onUnmounted } from 'vue'
+import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
 }
 </script>
 
 <script setup lang="ts">
-import { injectStepperRootContext } from './StepperRoot.vue'
-import { injectStepperItemContext } from './StepperItem.vue'
 import { Primitive } from '@/Primitive'
+import { injectStepperItemContext } from './StepperItem.vue'
+import { injectStepperRootContext } from './StepperRoot.vue'
 
 withDefaults(defineProps<StepperTriggerProps>(), {
   as: 'button',
@@ -66,12 +66,19 @@ function handleKeyDown(event: KeyboardEvent) {
 
 const { forwardRef, currentElement } = useForwardExpose()
 
+let registeredElement: HTMLElement | null = null
+
 onMounted(() => {
-  rootContext.totalStepperItems.value.add(currentElement.value)
+  registeredElement = currentElement.value
+  if (registeredElement)
+    rootContext.totalStepperItems.value.add(registeredElement)
 })
 
 onUnmounted(() => {
-  rootContext.totalStepperItems.value.delete(currentElement.value)
+  if (registeredElement) {
+    rootContext.totalStepperItems.value.delete(registeredElement)
+    registeredElement = null
+  }
 })
 </script>
 

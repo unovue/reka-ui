@@ -7,14 +7,15 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 </script>
 
 <script setup lang="ts">
+import type { PopperAnchorProps } from '@/Popper'
 import { computed, onMounted } from 'vue'
+import { PopperAnchor } from '@/Popper'
+import { Primitive } from '@/Primitive'
+import { useForwardExpose, useId, useTypeahead } from '@/shared'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
-import { OPEN_KEYS } from './utils'
-import { Primitive } from '@/Primitive'
-import { PopperAnchor, type PopperAnchorProps } from '@/Popper'
-import { useForwardExpose, useId, useTypeahead } from '@/shared'
+import { OPEN_KEYS, shouldShowPlaceholder } from './utils'
 
 const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
@@ -46,6 +47,52 @@ function handlePointerOpen(event: PointerEvent) {
     y: Math.round(event.pageY),
   }
 }
+
+function isPlainLeftClick(event: MouseEvent) {
+  return event.button === 0 && event.ctrlKey === false
+}
+
+// Tracks direct mouse presses handled in `pointerdown` so the Safari label
+// `click` workaround below does not re-focus the trigger after opening.
+let openedFromPointerDown = false
+
+function onTriggerPointerDown(event: PointerEvent) {
+  // Prevent opening on touch down.
+  // https://github.com/unovue/reka-ui/issues/804
+  if (event.pointerType === 'touch')
+    return event.preventDefault()
+
+  // prevent implicit pointer capture
+  // https://www.w3.org/TR/pointerevents3/#implicit-pointer-capture
+  const target = event.target as HTMLElement
+  if (target.hasPointerCapture(event.pointerId))
+    target.releasePointerCapture(event.pointerId)
+
+  // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
+  // but not when the control key is pressed (avoiding MacOS right click)
+  if (isPlainLeftClick(event)) {
+    handlePointerOpen(event)
+    openedFromPointerDown = true
+  }
+}
+
+function onTriggerMouseDown(event: MouseEvent) {
+  // Prevent trigger from stealing focus from the active item after opening.
+  // We avoid calling `preventDefault` in `pointerdown` because that suppresses
+  // compatibility mouse events (`mousedown`, `mouseup`, `click`).
+  if (isPlainLeftClick(event))
+    event.preventDefault()
+}
+
+function onTriggerClick(event: MouseEvent) {
+  // Safari: label-associated clicks may not run `pointerdown` on the trigger.
+  // Direct mouse clicks open in `pointerdown` and must not re-focus the trigger
+  // here — `mousedown` `preventDefault` does not suppress `click`.
+  if (!openedFromPointerDown)
+    (event.currentTarget as HTMLElement)?.focus()
+
+  openedFromPointerDown = false
+}
 </script>
 
 <template>
@@ -57,7 +104,7 @@ function handlePointerOpen(event: PointerEvent) {
       :ref="forwardRef"
       role="combobox"
       :type="as === 'button' ? 'button' : undefined"
-      :aria-controls="rootContext.contentId"
+      :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
       aria-autocomplete="none"
@@ -65,44 +112,12 @@ function handlePointerOpen(event: PointerEvent) {
       :dir="rootContext?.dir.value"
       :data-state="rootContext?.open.value ? 'open' : 'closed'"
       :data-disabled="isDisabled ? '' : undefined"
-      :data-placeholder="
-        rootContext.modelValue?.value ? undefined : ''
-      "
+      :data-placeholder="shouldShowPlaceholder(rootContext.modelValue?.value) ? '' : undefined"
       :as-child="asChild"
       :as="as"
-      @click="
-        (event: MouseEvent) => {
-          // Whilst browsers generally have no issue focusing the trigger when clicking
-          // on a label, Safari seems to struggle with the fact that there's no `onClick`.
-          // We force `focus` in this case. Note: this doesn't create any other side-effect
-          // because we are preventing default in `onPointerDown` so effectively
-          // this only runs for a label 'click'
-          (event?.currentTarget as HTMLElement)?.focus();
-        }
-      "
-      @pointerdown="
-        (event: PointerEvent) => {
-          // Prevent opening on touch down.
-          // https://github.com/unovue/reka-ui/issues/804
-          if (event.pointerType === 'touch')
-            return event.preventDefault();
-
-          // prevent implicit pointer capture
-          // https://www.w3.org/TR/pointerevents3/#implicit-pointer-capture
-          const target = event.target as HTMLElement;
-          if (target.hasPointerCapture(event.pointerId)) {
-            target.releasePointerCapture(event.pointerId);
-          }
-
-          // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
-          // but not when the control key is pressed (avoiding MacOS right click)
-          if (event.button === 0 && event.ctrlKey === false) {
-            handlePointerOpen(event)
-            // prevent trigger from stealing focus from the active item after opening.
-            event.preventDefault();
-          }
-        }
-      "
+      @click="onTriggerClick"
+      @pointerdown="onTriggerPointerDown"
+      @mousedown="onTriggerMouseDown"
       @pointerup.prevent="
         (event: PointerEvent) => {
           // Only open on pointer up when using touch devices
@@ -112,7 +127,7 @@ function handlePointerOpen(event: PointerEvent) {
         }
       "
       @keydown="
-        (event) => {
+        (event: KeyboardEvent) => {
           const isTypingAhead = search !== '';
           const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
           if (!isModifierKey && event.key.length === 1)

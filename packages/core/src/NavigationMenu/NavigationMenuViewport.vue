@@ -17,14 +17,14 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
-import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, whenMouse } from './utils'
+import { computed, nextTick, ref, watch } from 'vue'
+import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { Presence } from '@/Presence'
+import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { getOpenState, whenMouse } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -51,14 +51,16 @@ watch(currentElement, () => {
 const content = ref<HTMLElement>()
 
 watch([modelValue, open], () => {
-  if (!currentElement.value)
-    return
+  nextTick(() => {
+    if (!currentElement.value)
+      return
 
-  requestAnimationFrame(() => {
-    const el = (currentElement.value as HTMLElement)?.querySelector('[data-state=open]') as HTMLElement | undefined
-    content.value = el
+    requestAnimationFrame(() => {
+      const el = (currentElement.value as HTMLElement)?.querySelector('[data-state=open]') as HTMLElement | undefined
+      content.value = el
+    })
   })
-}, { immediate: true, flush: 'post' })
+}, { immediate: true })
 
 function updatePosition() {
   if (content.value && activeTrigger.value && rootNavigationMenu.value) {
