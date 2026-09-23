@@ -2,7 +2,7 @@
 import type { MenuContentEmits, MenuContentProps } from '@/Menu'
 import { useCollection } from '@/Collection'
 
-export type MenubarContentEmits = MenuContentEmits
+export type MenubarContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface MenubarContentProps extends MenuContentProps {}
 </script>

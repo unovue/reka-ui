@@ -5,7 +5,7 @@ import type {
 } from '@/Menu'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 
-export type ContextMenuContentEmits = MenuContentEmits
+export type ContextMenuContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface ContextMenuContentProps
   extends Omit<

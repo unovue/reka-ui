@@ -4,7 +4,7 @@ import type {
   MenuContentProps,
 } from '@/Menu'
 
-export type DropdownMenuContentEmits = MenuContentEmits
+export type DropdownMenuContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface DropdownMenuContentProps extends MenuContentProps {}
 </script>
