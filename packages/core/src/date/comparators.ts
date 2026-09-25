@@ -214,6 +214,14 @@ export function isSameDateSelection(
   return isSame(left, right)
 }
 
+/**
+ * Whether two dates are the exact same value, including time, offset, and time zone.
+ * `compare()` alone treats the same instant in two zones as equal.
+ */
+export function isSameDateValue(a: DateValue, b: DateValue) {
+  return a.toString() === b.toString()
+}
+
 /** The date that should drive the visible page: the last multiple value, otherwise the value itself. */
 export function focusedDateValue(value: DateSelection) {
   if (Array.isArray(value))

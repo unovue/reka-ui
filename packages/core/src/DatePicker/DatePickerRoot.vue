@@ -6,9 +6,8 @@ import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootE
 import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
-import { getWeekStartsOn, isSameDateSelection } from '@/date'
+import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
@@ -152,12 +151,13 @@ function resetTime(date: DateValue) {
 }
 
 watch(modelValue, (value, previous) => {
-  // A new object for the same day is not a new selection. Skip placeholder
-  // reset and closeOnSelect, or paging the calendar is undone.
-  if (isSameDateSelection(previous, value, isEqualDay))
+  // A new object for the same value is not a new selection. Skip placeholder
+  // reset and closeOnSelect, or paging the calendar is undone. Compare the
+  // exact value, not the day, so a same-day time or zone change still syncs.
+  if (isSameDateSelection(previous, value, isSameDateValue))
     return
 
-  if (value && value.compare(placeholder.value) !== 0) {
+  if (value && !isSameDateValue(value, placeholder.value)) {
     placeholder.value = value.copy()
   }
   else if (!value && 'hour' in placeholder.value) {

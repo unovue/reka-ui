@@ -81,6 +81,18 @@ describe('datePicker', async () => {
     expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
   })
 
+  it('syncs a same-day time zone change from `modelValue`', async () => {
+    const { getByTestId, rerender } = setup({
+      datePickerProps: { modelValue: zonedDateTime },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
+
+    await rerender({
+      datePickerProps: { modelValue: toZoned(calendarDateTime, 'Asia/Tokyo') },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('GMT+9')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, input, label } = setup()
     await user.click(label)
