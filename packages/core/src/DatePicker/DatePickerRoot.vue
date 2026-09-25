@@ -6,6 +6,7 @@ import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootE
 import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
+import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
 import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
@@ -163,7 +164,8 @@ watch(modelValue, (value, previous) => {
   else if (!value && 'hour' in placeholder.value) {
     placeholder.value = resetTime(placeholder.value)
   }
-  if (closeOnSelect.value) {
+  // Only a new day is a pick. A same-day time or zone change leaves the popover open.
+  if (closeOnSelect.value && !isSameDateSelection(previous, value, isEqualDay)) {
     open.value = false
   }
 })

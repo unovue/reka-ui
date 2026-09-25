@@ -490,7 +490,6 @@ describe('datePicker', async () => {
       await user.click(trigger)
 
       const heading = getByTestId('heading')
-      const popover = getByTestId('popover-content')
       expect(heading).toHaveTextContent('January 1980')
       await user.click(getByTestId('next-button'))
       expect(heading).toHaveTextContent('February 1980')
@@ -500,7 +499,22 @@ describe('datePicker', async () => {
       })
 
       expect(heading).toHaveTextContent('February 1980')
-      expect(popover).toBeVisible()
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('keeps the popover open when modelValue changes time on the same day', async () => {
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: calendarDateTime, closeOnSelect: true },
+      })
+
+      await user.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+      await rerender({
+        datePickerProps: { modelValue: calendarDateTime.set({ hour: 15 }), closeOnSelect: true },
+      })
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
 
     it('moves the visible month when the selected day changes', async () => {
