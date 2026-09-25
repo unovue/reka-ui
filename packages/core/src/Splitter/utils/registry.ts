@@ -105,6 +105,13 @@ function handlePointerMove(event: ResizeEvent) {
 
   if (!isPointerDown) {
     const { target } = event
+    // While transitioning into an iframe, the browser may still dispatch a
+    // few trailing "mousemove" events in the parent document whose target
+    // resolves to the iframe itself. Ignore those so they don't trigger a
+    // bogus recalculation right before the pointer actually leaves.
+    // See https://github.com/unovue/reka-ui/issues/2968
+    if (isIframeElement(target))
+      return
 
     // Recalculate intersecting handles whenever the pointer moves, except if it has already been pressed
     // at that point, the handles may not move with the pointer (depending on constraints)
