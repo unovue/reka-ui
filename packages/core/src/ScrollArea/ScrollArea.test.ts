@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h } from 'vue'
 import { sleep } from '@/test'
@@ -9,7 +9,73 @@ import ScrollAreaRoot from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbar from './ScrollAreaScrollbar.vue'
 import ScrollAreaThumb from './ScrollAreaThumb.vue'
 import ScrollAreaViewport from './ScrollAreaViewport.vue'
+import ScrollAreaVirtualizer from './ScrollAreaVirtualizer.vue'
 import ScrollArea from './story/_ScrollArea.vue'
+
+describe('given a virtualized ScrollArea', () => {
+  const options = Array.from({ length: 100 }, (_, index) => `Item ${index}`)
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  function createVirtualScrollArea(horizontal = false) {
+    return defineComponent({
+      setup() {
+        return () => h(ScrollAreaRoot, null, {
+          default: () => h(ScrollAreaViewport, { style: 'width: 200px; height: 200px' }, {
+            default: () => h(ScrollAreaVirtualizer, {
+              options,
+              estimateSize: 25,
+              horizontal,
+            }, {
+              default: ({ option, virtualItem }: any) => h('div', { 'data-testid': 'item' }, `${virtualItem.index}:${option}`),
+            }),
+          }),
+        })
+      },
+    })
+  }
+
+  const VirtualScrollArea = createVirtualScrollArea()
+
+  async function flush() {
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await sleep(0)
+  }
+
+  it('renders only the visible subset with matching slot data', async () => {
+    const wrapper = mount(VirtualScrollArea, { attachTo: document.body })
+    await flush()
+
+    const items = wrapper.findAll('[data-testid="item"]')
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.length).toBeLessThan(options.length)
+    expect(items[0].text()).toBe('0:Item 0')
+    expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 2500px')
+
+    wrapper.unmount()
+  })
+
+  it('supports horizontal virtualization', async () => {
+    const wrapper = mount(createVirtualScrollArea(true), { attachTo: document.body })
+    await flush()
+
+    const virtualizer = wrapper.find('[data-reka-virtualizer]')
+    expect(virtualizer.attributes('style')).toContain('width: 2500px')
+    expect(virtualizer.attributes('style')).toContain('height: 100%')
+    expect(wrapper.find('[data-testid="item"]').attributes('style')).toContain('translateX(0px)')
+
+    wrapper.unmount()
+  })
+})
 
 describe('given default ScrollArea', () => {
   let wrapper: VueWrapper<InstanceType<typeof ScrollArea>>
