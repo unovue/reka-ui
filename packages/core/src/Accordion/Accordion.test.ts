@@ -86,6 +86,16 @@ describe('given a single Accordion', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
+  it('should point every trigger aria-controls at its content', () => {
+    const triggers = wrapper.findAll('button')
+    expect(triggers.length).toBeGreaterThan(0)
+    for (const trigger of triggers) {
+      const contentId = trigger.attributes('aria-controls')
+      expect(contentId).toBeTruthy()
+      expect(document.getElementById(contentId!)).not.toBeNull()
+    }
+  })
+
   describe('when navigating by keyboard', () => {
     beforeEach(() => {
       const trigger = wrapper.find('button')
