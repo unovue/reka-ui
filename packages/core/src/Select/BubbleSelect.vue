@@ -13,6 +13,7 @@ interface BubbleSelectProps {
   required?: boolean
   size?: number
   value?: any
+  id?: string
 }
 
 const props = defineProps<BubbleSelectProps>()

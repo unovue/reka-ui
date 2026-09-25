@@ -42,6 +42,7 @@ function handleChange(event: any) {
         >
           <label for="fruit">Fruit</label>
           <SelectRoot
+            id="fruit"
             name="fruit"
             default-value="Apple"
           >
