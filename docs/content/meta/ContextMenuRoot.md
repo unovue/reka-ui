@@ -16,6 +16,12 @@
     'default': 'true'
   },
   {
+    'name': 'open',
+    'description': '<p>The controlled open state of the menu. Can be used as <code>v-model:open</code>.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'pressOpenDelay',
     'description': '<p>The duration from when the trigger is pressed until the menu opens.</p>\n',
     'type': 'number',
@@ -41,6 +47,7 @@
 | --- | --- | --- | --- | --- |
 | `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `modal` | The modality of the dropdown menu. When set to true, interaction with outside elements will be disabled and only menu content will be visible to screen readers. | `boolean` | No | `true` |
+| `open` | The controlled open state of the menu. Can be used as v-model:open. | `boolean` | No | - |
 | `pressOpenDelay` | The duration from when the trigger is pressed until the menu opens. | `number` | No | `700` |
 
 **Events**
