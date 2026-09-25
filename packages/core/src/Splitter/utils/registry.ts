@@ -39,7 +39,6 @@ const isCoarsePointer = getInputType() === 'coarse'
 
 const intersectingHandles: ResizeHandlerData[] = []
 let isPointerDown = false
-let ignorePointerMove = false
 const ownerDocumentCounts: Map<Document, number> = new Map()
 const panelConstraintFlags: Map<string, number> = new Map()
 
@@ -105,9 +104,14 @@ function handlePointerMove(event: ResizeEvent) {
   const { x, y } = getResizeEventCoordinates(event)
 
   if (!isPointerDown) {
-    if (ignorePointerMove)
-      return
     const { target } = event
+    // While transitioning into an iframe, the browser may still dispatch a
+    // few trailing "mousemove" events in the parent document whose target
+    // resolves to the iframe itself. Ignore those so they don't trigger a
+    // bogus recalculation right before the pointer actually leaves.
+    // See https://github.com/unovue/reka-ui/issues/2968
+    if (isIframeElement(target))
+      return
 
     // Recalculate intersecting handles whenever the pointer moves, except if it has already been pressed
     // at that point, the handles may not move with the pointer (depending on constraints)
@@ -130,13 +134,9 @@ function handlePointerOut(event: MouseEvent) {
   // handlePointerMove. The last event we do get is the "mouseout" whose
   // relatedTarget is the iframe, so reset the hover state here.
   // See https://github.com/unovue/reka-ui/issues/2893
-  if (isPointerDown || !isIframeElement(event.relatedTarget)) {
-     if (ignorePointerMove)
-       ignorePointerMove = false
+  if (isPointerDown || !isIframeElement(event.relatedTarget))
     return
-  }
 
-  ignorePointerMove = true
   intersectingHandles.splice(0)
   updateResizeHandlerStates('move', event)
   updateCursor()
