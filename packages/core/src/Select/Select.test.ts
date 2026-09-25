@@ -5,6 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { handleSubmit } from '@/test'
+import SelectControlled from './__test__/SelectControlled.vue'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import Select from './story/_SelectTest.vue'
 
@@ -475,5 +476,131 @@ describe('given Select in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
       expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: 'Pineapple' })
     })
+  })
+})
+
+describe('placeholder flash on close (#2767)', () => {
+  async function settle() {
+    for (let i = 0; i < 6; i++)
+      await nextTick()
+  }
+
+  it('should fall back to the placeholder when the value has no matching option', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(SelectControlled, {
+      attachTo: document.body,
+      props: { modelValue: 'Banana', options: ['Apple', 'Banana', 'Blueberry'] },
+    })
+    await settle()
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+    expect(valueBox.text()).toBe('Banana')
+
+    await wrapper.setProps({ modelValue: 'Durian' })
+    await settle()
+    expect(valueBox.text()).toBe('Please select a fruit')
+  })
+
+  it('should fall back to the placeholder when the selected option is removed', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(SelectControlled, {
+      attachTo: document.body,
+      props: { modelValue: 'Banana', options: ['Apple', 'Banana', 'Blueberry'] },
+    })
+    await settle()
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+    expect(valueBox.text()).toBe('Banana')
+
+    await wrapper.setProps({ options: ['Apple', 'Blueberry'] })
+    await settle()
+    expect(valueBox.text()).toBe('Please select a fruit')
+  })
+
+  it('should fall back to the placeholder when the only option is removed', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(SelectControlled, {
+      attachTo: document.body,
+      props: { modelValue: 'Banana', options: ['Banana'] },
+    })
+    await settle()
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+    expect(valueBox.text()).toBe('Banana')
+
+    await wrapper.setProps({ options: [] })
+    await settle()
+    expect(valueBox.text()).toBe('Please select a fruit')
+  })
+
+  it('should fall back to the placeholder when the only option is removed after a close', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(SelectControlled, {
+      attachTo: document.body,
+      props: { modelValue: 'Banana', options: ['Banana'] },
+    })
+    await settle()
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+
+    // Open then close, so the close handoff has already been through.
+    await wrapper.find('[role="combobox"]').trigger('pointerdown', { button: 0, ctrlKey: false })
+    await settle()
+    await fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await settle()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await settle()
+    expect(valueBox.text()).toBe('Banana')
+
+    await wrapper.setProps({ options: [] })
+    await settle()
+    expect(valueBox.text()).toBe('Please select a fruit')
+  })
+
+  it('should fall back to the placeholder when every option is removed during the close handoff', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(Select, { attachTo: document.body })
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+
+    await wrapper.find('button').trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+    const selection = wrapper.findAll('[role=option]')[1];
+    (selection.element as HTMLElement).focus()
+    await selection.trigger('pointerup')
+    await fireEvent.pointerUp(selection.element)
+
+    // Microtasks only, so we are still inside the handoff window: the popper
+    // items are unmounted and the fallback fragment has not remounted them yet.
+    await nextTick()
+    await nextTick()
+    expect(valueBox.text()).toBe('Banana')
+
+    // With no option left, the fallback fragment registers nothing, so the
+    // lookup can never resolve again — the handoff has to give up on its own.
+    await wrapper.setProps({ options: [] })
+    await settle()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await settle()
+    expect(valueBox.text()).toBe('Please select a fruit')
+  })
+
+  it('should keep showing the selected value while the content is closing', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(Select, { attachTo: document.body })
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
+
+    // Open then select an item, which closes the content in a single-select.
+    await wrapper.find('button').trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+    const selection = wrapper.findAll('[role=option]')[1];
+    (selection.element as HTMLElement).focus()
+    await selection.trigger('pointerup')
+    // Needs 2 pointerup because SelectContentImpl prevents accidental pointerup's
+    await fireEvent.pointerUp(selection.element)
+
+    // While closing, `Presence` unmounts the popper items (clearing `optionsSet`)
+    // a few microtasks before the fallback fragment remounts them on the
+    // `renderPresence` setTimeout (macrotask). Draining only microtasks keeps us
+    // inside that handoff window, where the placeholder used to flash.
+    for (let i = 0; i < 5; i++) {
+      await nextTick()
+      expect(valueBox.text()).toBe('Banana')
+    }
   })
 })
