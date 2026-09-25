@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { hasTime, isBefore } from '@/date'
+import { hasTime, isBefore, isSameDateSelection, isSameDateValue } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -205,10 +205,12 @@ watch(locale, (value) => {
   }
 })
 
-watch(modelValue, (_modelValue) => {
-  if (!isNullish(_modelValue) && placeholder.value.compare(_modelValue) !== 0) {
-    placeholder.value = _modelValue.copy()
-  }
+watch(modelValue, (value, previous) => {
+  if (isSameDateSelection(previous, value, isSameDateValue))
+    return
+
+  if (!isNullish(value) && !isSameDateValue(placeholder.value, value))
+    placeholder.value = value.copy()
 })
 
 watch([modelValue, locale], ([_modelValue]) => {

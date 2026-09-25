@@ -86,6 +86,31 @@ describe('calendar', async () => {
     expect(heading).toHaveTextContent('January 1981')
   })
 
+  it('keeps the visible month when modelValue is a new object for the same day', async () => {
+    const selected = new CalendarDate(1980, 1, 20)
+    const { getByTestId, user, rerender } = setup({ calendarProps: { modelValue: selected } })
+    const heading = getByTestId('heading')
+
+    expect(heading).toHaveTextContent('January 1980')
+    await user.click(getByTestId('next-button'))
+    expect(heading).toHaveTextContent('February 1980')
+
+    await rerender({ calendarProps: { modelValue: selected.copy() } })
+
+    expect(heading).toHaveTextContent('February 1980')
+  })
+
+  it('moves the visible month when the selected day changes', async () => {
+    const { getByTestId, user, rerender } = setup({ calendarProps: { modelValue: new CalendarDate(1980, 1, 20) } })
+
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('February 1980')
+
+    await rerender({ calendarProps: { modelValue: new CalendarDate(1980, 9, 23) } })
+
+    expect(getByTestId('heading')).toHaveTextContent('September 1980')
+  })
+
   it('navigates 10 years into the past when setting the `prevPage` function to subtract 10 years', async () => {
     const { getByTestId, user } = setup({ calendarProps: { modelValue: calendarDate, prevPage: (date: DateValue) => date.subtract({ years: 10 }) } })
 
@@ -853,6 +878,22 @@ describe('calendar - `multiple`', () => {
     const selectedDays = getSelectedDays(calendar)
     expect(selectedDays.length).toBe(1)
     expect(heading).toHaveTextContent('May 1980')
+  })
+
+  it('keeps the visible month when multiple modelValue is a new array for the same days', async () => {
+    const dates = [new CalendarDate(1980, 1, 2), new CalendarDate(1980, 5, 5)]
+    const { getByTestId, user, rerender } = setupMulti({
+      calendarProps: { modelValue: dates } as CalendarRootProps & { multiple: true },
+    })
+    const heading = getByTestId('heading')
+
+    expect(heading).toHaveTextContent('May 1980')
+    await user.click(getByTestId('next-button'))
+    expect(heading).toHaveTextContent('June 1980')
+
+    await rerender({ calendarProps: { modelValue: dates.map(date => date.copy()), multiple: true } })
+
+    expect(heading).toHaveTextContent('June 1980')
   })
 
   it('allows deselection', async () => {

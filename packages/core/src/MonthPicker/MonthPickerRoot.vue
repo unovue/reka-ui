@@ -5,7 +5,7 @@ import type { Grid, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { isSameYearMonth } from '@/date'
+import { focusedDateValue, isSameDateSelection, isSameYearMonth } from '@/date'
 import { createContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useMonthPicker, useMonthPickerState } from './useMonthPicker'
@@ -194,15 +194,13 @@ const { isInvalid, isMonthSelected } = useMonthPickerState({
   isMonthUnavailable,
 })
 
-watch(modelValue, (_modelValue) => {
-  if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue.at(-1)
-    if (lastValue && !isSameYearMonth(placeholder.value, lastValue))
-      onPlaceholderChange(lastValue)
-  }
-  else if (!Array.isArray(_modelValue) && _modelValue && !isSameYearMonth(placeholder.value, _modelValue)) {
-    onPlaceholderChange(_modelValue)
-  }
+watch(modelValue, (value, previous) => {
+  if (isSameDateSelection(previous, value, isSameYearMonth))
+    return
+
+  const nextFocused = focusedDateValue(value)
+  if (nextFocused && !isSameYearMonth(placeholder.value, nextFocused))
+    onPlaceholderChange(nextFocused)
 })
 
 function resolveMonthValue(value: DateValue, reference?: DateValue) {
