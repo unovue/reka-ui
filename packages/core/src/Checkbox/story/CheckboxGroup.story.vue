@@ -39,7 +39,7 @@ const checkboxes = ref([items[1]])
           </CheckboxRoot>
           <label
             :for="item.name"
-            class="select-none text-white"
+            class="select-none"
           >
             {{ item.name }}
           </label>

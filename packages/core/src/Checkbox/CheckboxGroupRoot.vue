@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFormControl } from '@/shared'
 
@@ -25,6 +25,7 @@ export type CheckboxGroupRootEmits<T = AcceptableValue> = {
 
 interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
+  childValues: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
 }
@@ -53,12 +54,15 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T[]>
 
+const childValues = ref<T[]>([])
+
 const rovingFocusProps = computed(() => {
   return rovingFocus.value ? { loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
 
 provideCheckboxGroupRootContext({
   modelValue,
+  childValues,
   rovingFocus,
   disabled,
 })

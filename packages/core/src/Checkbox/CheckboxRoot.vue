@@ -14,6 +14,8 @@ export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFiel
   modelValue?: T | 'indeterminate' | null
   /** When `true`, prevents the user from interacting with the checkbox */
   disabled?: boolean
+  /** Whether the checkbox controls a group of child checkboxes. */
+  parent?: boolean
   /**
    * The value given as data when submitted with a `name`.
    *  @defaultValue "on"
@@ -51,7 +53,7 @@ import { computed, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { getState, isIndeterminate } from './utils'
+import { getParentState, getState, isIndeterminate } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -90,7 +92,10 @@ const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
 const checkboxState = computed<CheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
+    if (!props.parent) {
+      return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
+    }
+    return getParentState(checkboxGroupContext.childValues.value, checkboxGroupContext.modelValue.value)
   }
   else {
     if (modelValue.value === 'indeterminate')
@@ -101,13 +106,30 @@ const checkboxState = computed<CheckedState>(() => {
 
 function handleClick() {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    const modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
-    if (isValueEqualOrExist(modelValueArray, props.value)) {
-      const index = modelValueArray.findIndex(i => isEqual(i, props.value))
-      modelValueArray.splice(index, 1)
+    let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
+
+    if (props.parent) {
+      if (checkboxState.value === true) {
+        modelValueArray = modelValueArray.filter((value) => {
+          return !checkboxGroupContext.childValues.value.includes(value)
+        })
+      }
+      else {
+        checkboxGroupContext.childValues.value.forEach((value) => {
+          if (!modelValueArray.includes(value)) {
+            modelValueArray.push(value)
+          }
+        })
+      }
     }
     else {
-      modelValueArray.push(props.value)
+      if (isValueEqualOrExist(modelValueArray, props.value)) {
+        const index = modelValueArray.findIndex(i => isEqual(i, props.value))
+        modelValueArray.splice(index, 1)
+      }
+      else {
+        modelValueArray.push(props.value)
+      }
     }
     checkboxGroupContext.modelValue.value = modelValueArray
   }
@@ -136,6 +158,13 @@ const ariaLabel = computed(() => {
     ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
     : undefined
 })
+
+// Track child value on checkboxGroupContext
+if (checkboxGroupContext && !props.parent) {
+  if (!isValueEqualOrExist(checkboxGroupContext.childValues.value, props.value)) {
+    checkboxGroupContext.childValues.value = [...checkboxGroupContext.childValues.value, props.value]
+  }
+}
 
 provideCheckboxRootContext({
   disabled,
