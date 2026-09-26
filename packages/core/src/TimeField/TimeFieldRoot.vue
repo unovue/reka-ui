@@ -18,6 +18,7 @@ import {
   normalizeHourCycle,
   syncTimeSegmentValues,
 } from '@/shared/date'
+import { useSegmentNavigation } from '@/shared/date/useSegmentNavigation'
 
 type TimeFieldRootContext = {
   locale: Ref<string>
@@ -270,28 +271,11 @@ watch([convertedModelValue, locale], ([_modelValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() =>
-  Array.from(segmentElements.value).findIndex(el =>
-    el.getAttribute('data-reka-time-field-segment')
-    === currentFocusedElement.value?.getAttribute('data-reka-time-field-segment')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { currentSegmentIndex, nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-time-field-segment'],
 })
 
 const kbd = useKbd()
@@ -327,12 +311,7 @@ provideTimeFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    // Auto-advance follows the segments' DOM order (the locale's format
-    // order) regardless of writing direction; only arrow-key navigation is
-    // direction-aware via nextFocusableSegment/prevFocusableSegment.
-    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
