@@ -338,4 +338,38 @@ describe('given a Drawer with focus props', () => {
     await nextTick()
     expect(document.activeElement).toBe(getByTestId('outside'))
   })
+
+  describe('when the focus target belongs to another realm', () => {
+    function createIframeButton() {
+      const iframe = document.createElement('iframe')
+      document.body.appendChild(iframe)
+      const iframeDocument = iframe.contentDocument!
+      const button = iframeDocument.createElement('button')
+      iframeDocument.body.appendChild(button)
+      return { button, iframeDocument }
+    }
+
+    it('focuses the given element on open', async () => {
+      const user = userEvent.setup()
+      const { getByText, rerender } = render(DrawerWithFocusProps)
+      const { button, iframeDocument } = createIframeButton()
+      expect(button instanceof HTMLElement).toBe(false)
+      await rerender({ initialFocus: button })
+      await user.click(getByText('Open'))
+      await nextTick()
+      expect(iframeDocument.activeElement).toBe(button)
+    })
+
+    it('focuses the given element on close', async () => {
+      const user = userEvent.setup()
+      const { getByText, rerender } = render(DrawerWithFocusProps)
+      const { button, iframeDocument } = createIframeButton()
+      await rerender({ finalFocus: button })
+      await user.click(getByText('Open'))
+      await nextTick()
+      await user.click(getByText('Close'))
+      await nextTick()
+      expect(iframeDocument.activeElement).toBe(button)
+    })
+  })
 })
