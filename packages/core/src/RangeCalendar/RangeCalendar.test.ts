@@ -1419,6 +1419,34 @@ describe('numberOfMonths > 1', () => {
     expect(getByTestId('date-1-26')).toHaveAttribute('data-selection-start')
     expect(getByTestId('date-1-27')).toHaveAttribute('data-selection-end')
   })
+  it('end moves focus to the in-month day, not the outside-view copy in the previous grid', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(2025, 9, 1),
+        numberOfMonths: 2,
+        weekStartsOn: 0,
+      },
+    })
+
+    getByTestId('date-0-9-30').focus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('date-1-10-4')).toHaveFocus()
+  })
+
+  it('end moves focus to the in-month day when `disableDaysOutsideCurrentView` is set', async () => {
+    const { getByTestId, user } = setup({
+      calendarProps: {
+        placeholder: new CalendarDate(2025, 9, 1),
+        numberOfMonths: 2,
+        weekStartsOn: 0,
+        disableDaysOutsideCurrentView: true,
+      },
+    })
+
+    getByTestId('date-0-9-30').focus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('date-1-10-4')).toHaveFocus()
+  })
 })
 
 describe('handles maximumDays', () => {
