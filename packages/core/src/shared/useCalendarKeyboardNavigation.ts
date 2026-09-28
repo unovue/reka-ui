@@ -132,10 +132,11 @@ function tryFocusDate(
   if (retries >= MAX_FOCUS_RETRIES)
     return
 
-  const candidateSelector = options.allowOutsideView
-    ? `[data-value='${target.toString()}']`
-    : `[data-value='${target.toString()}']:not([data-outside-view])`
-  const candidateDay = parentElement.querySelector<HTMLElement>(candidateSelector)
+  // With multiple months, a date can render both in its own grid and as an
+  // outside-view copy in a neighbouring grid; always prefer the in-month cell.
+  const valueSelector = `[data-value='${target.toString()}']`
+  const candidateDay = parentElement.querySelector<HTMLElement>(`${valueSelector}:not([data-outside-view])`)
+    ?? (options.allowOutsideView ? parentElement.querySelector<HTMLElement>(valueSelector) : null)
 
   if (!candidateDay) {
     nextTick(() => tryFocusDate(parentElement, target, directionSign, retries + 1, options))
