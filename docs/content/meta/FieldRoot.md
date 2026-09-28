@@ -16,6 +16,12 @@
     'required': false
   },
   {
+    'name': 'dirty',
+    'description': '<p>Whether the field\'s value has changed from its initial value.\nUseful when the field state is controlled by an external library.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'disabled',
     'description': '<p>When <code>true</code>, prevents the user from interacting with the field\'s control. Takes precedence over the <code>disabled</code> of the control.</p>\n',
     'type': 'boolean',
@@ -36,6 +42,12 @@
   {
     'name': 'required',
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'touched',
+    'description': '<p>Whether the field has been touched (its control blurred).\nUseful when the field state is controlled by an external library.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -81,10 +93,12 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `dirty` | Whether the field's value has changed from its initial value. Useful when the field state is controlled by an external library. | `boolean` | No | - |
 | `disabled` | When true, prevents the user from interacting with the field's control. Takes precedence over the disabled of the control. | `boolean` | No | - |
 | `invalid` | When true, marks the field invalid regardless of its own validation. Useful when the field state is controlled by an external library. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair, and used to match server errors on a FormRoot. Takes precedence over the name of the control. | `string` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `touched` | Whether the field has been touched (its control blurred). Useful when the field state is controlled by an external library. | `boolean` | No | - |
 | `validate` | Custom validation function. Return an error message (or array of messages) when invalid, or null/undefined when valid. Receives the control's value and the values of every named field in the owning form. Can be async, but an async validate does not prevent form submission when validationMode is onSubmit. | `FieldValidateFn` | No | - |
 | `validationDebounceTime` | How long to wait (in ms) between validate calls when validating on change. | `number` | No | - |
 | `validationMode` | When the field (re-)runs validation. Takes precedence over the validationMode of an ancestor FormRoot.  onSubmit: when the form is submitted, then on every change after that. onBlur: when the control loses focus. onChange: on every change to the control's value. | `"onBlur" \| "onChange" \| "onSubmit"` | No | - |

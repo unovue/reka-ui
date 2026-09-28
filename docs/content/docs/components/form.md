@@ -45,12 +45,7 @@ import { FieldControl, FieldError, FieldLabel, FieldRoot, FormRoot } from 'reka-
     <FieldRoot name="email" required>
       <FieldLabel>Email</FieldLabel>
       <FieldControl type="email" />
-      <FieldError match="valueMissing">
-        Email is required
-      </FieldError>
-      <FieldError v-slot="{ errors }">
-        {{ errors[0] }}
-      </FieldError>
+      <FieldError />
     </FieldRoot>
   </FormRoot>
 </template>

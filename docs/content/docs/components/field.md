@@ -22,7 +22,8 @@ Accessible wiring between a label, control, description, and error message, with
     'Sync or async custom validation, with `onSubmit`/`onBlur`/`onChange` timing and optional debounce.',
     'Validates `required` on non-native controls (Checkbox, Select, DateField) too.',
     'Reads native constraint-validation state (`required`, `pattern`, `type=email`, ...) automatically.',
-    'Exposes `data-valid`/`data-invalid`/`data-dirty`/`data-touched`/`data-filled`/`data-focused` for styling.',
+    'Exposes `data-valid`/`data-invalid`/`data-dirty`/`data-touched`/`data-filled`/`data-focused` on every part for styling.',
+    'Shows the browser\'s validation message by default, or your own per failing constraint.',
     'Fully additive — every reka control behaves exactly as before when used outside a Field.',
   ]"
 />
@@ -39,20 +40,16 @@ Import all parts and piece them together.
 
 ```vue
 <script setup>
-import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot } from 'reka-ui'
+import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot, FieldValidity } from 'reka-ui'
 </script>
 
 <template>
-  <FieldRoot name="email" validation-mode="onBlur">
-    <FieldLabel>Email</FieldLabel>
-    <FieldControl type="email" required />
-    <FieldDescription>We never share it.</FieldDescription>
-    <FieldError match="valueMissing">
-      Email is required
-    </FieldError>
-    <FieldError v-slot="{ errors }">
-      {{ errors[0] }}
-    </FieldError>
+  <FieldRoot>
+    <FieldLabel />
+    <FieldControl />
+    <FieldDescription />
+    <FieldError />
+    <FieldValidity />
   </FieldRoot>
 </template>
 ```
@@ -67,6 +64,7 @@ Exposes a `validate()` method through a template ref, which validates the field 
 
 <!-- @include: @/meta/FieldRoot.md -->
 
+Every part (and a participating reka control) renders the same data attributes, so any of them can be styled by the field's state.
 <DataAttributesTable
   :data="[
     {
@@ -79,7 +77,7 @@ Exposes a `validate()` method through a template ref, which validates the field 
     },
     {
       attribute: '[data-dirty]',
-      values: 'Present once the control\'s value has changed',
+      values: 'Present while the control\'s value differs from its initial value',
     },
     {
       attribute: '[data-touched]',
@@ -102,13 +100,23 @@ Exposes a `validate()` method through a template ref, which validates the field 
 
 ### Label
 
-Renders a [Label](/docs/components/label), automatically wired to the control via `for`/`id`.
+Renders a [Label](/docs/components/label), automatically wired to the control via `for`/`id` and the control's `aria-labelledby`.
+
+For a button control like `SelectTrigger`, a native `label` forwards clicks and `:hover` to the button. Render another element with `:native-label="false"` instead: it drops `for` and focuses the control on click.
+
+```vue
+<FieldLabel as="div" :native-label="false">
+  Fruit
+</FieldLabel>
+```
 
 <!-- @include: @/meta/FieldLabel.md -->
 
 ### Control
 
-A native form control (`input` by default — pass `as="textarea"` or `as="select"` for others). Binds `id`/`name`/`disabled`/`required`/`aria-describedby`/`aria-invalid` from the Field, and reports focus/blur/input interactions back to it. The Field's `name` takes precedence over the control's; `disabled` and `required` apply when set on either.
+A native form control (`input` by default — pass `as="textarea"` or `as="select"` for others). Binds `id`/`name`/`disabled`/`required`/`aria-labelledby`/`aria-describedby`/`aria-invalid` from the Field, and reports focus/blur/input interactions back to it. The Field's `name` takes precedence over the control's; `disabled` and `required` apply when set on either.
+
+Bind its value with `v-model`, or set a starting value with `default-value`. A controlled value is validated when it changes, so a value you reject or rewrite never reaches the field.
 
 Existing reka controls (`CheckboxRoot`, `SelectRoot`/`SelectTrigger`, `DateFieldRoot`, ...) can be used directly inside a `FieldRoot` instead of `FieldControl` — they pick up the same wiring automatically by optionally reading the Field's context, and behave exactly as before when used outside a Field.
 
@@ -122,9 +130,29 @@ A description for the field, automatically added to the control's `aria-describe
 
 ### Error
 
-An error message for the field. Renders when a `match`ed native `ValidityState` key is `true`, or — without `match` — when a custom `validate` or server error exists. Renders a `p` by default.
+An error message for the field, added to the control's `aria-describedby` while shown. Renders a `div` by default.
+
+- Without `match`, it shows whenever the field is invalid. Its default content is the current message: a server error, a custom `validate` message, or the browser's validation message. Several messages render as a list.
+- With a `ValidityState` key like `match="valueMissing"`, it shows only for that constraint, typically with your own message.
+- With `match` set to `true`, it always shows, letting an external library control it.
+
+It never shows while the field is disabled. Its `data-state` is `open` or `closed`, and it waits for a closing animation before unmounting, keeping its last message meanwhile.
 
 <!-- @include: @/meta/FieldError.md -->
+
+### Validity
+
+Renders no element. Passes the field's `validity`, `errors`, `error`, `value` and `initialValue` to its slot, for displaying something custom based on the field's validity.
+
+```vue
+<FieldValidity v-slot="{ validity, error }">
+  <p v-if="validity.valid === false">
+    {{ error }}
+  </p>
+</FieldValidity>
+```
+
+<!-- @include: @/meta/FieldValidity.md -->
 
 ## Examples
 
@@ -155,7 +183,7 @@ async function checkUsername(value) {
 
 ### Validation timing
 
-Use `validation-mode` to control when validation (native constraint checks and the custom `validate` function) runs:
+Use `validation-mode` to control when validation (native constraint checks and the custom `validate` function) runs. Whatever the mode, an empty `required` field isn't reported until the user has changed its value, or the form is submitted:
 
 - `onSubmit` (default): when the owning `FormRoot` submits, then on every change after that.
 - `onBlur`: when the control loses focus.
@@ -210,4 +238,4 @@ Participating controls report focus/dirty/filled state, pass their actual value 
 
 ## Accessibility
 
-`FieldLabel` associates with the control via matching `for`/`id`. `FieldDescription` and any rendered `FieldError` are added to the control's `aria-describedby`, and `aria-invalid` is set once the field is known to be invalid.
+`FieldLabel` associates with the control via matching `for`/`id` and `aria-labelledby`. `FieldDescription` and any shown `FieldError` are added to the control's `aria-describedby`, and `aria-invalid` is set once the field is known to be invalid. Custom errors are also set on native controls with `setCustomValidity`, so the browser's own validity state agrees with the field.

@@ -7,7 +7,7 @@
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
-    'default': '\'p\''
+    'default': '\'div\''
   },
   {
     'name': 'asChild',
@@ -17,7 +17,7 @@
   },
   {
     'name': 'forceMount',
-    'description': '<p>Force mounting, ignoring <code>match</code>/validity — useful for animation frameworks.</p>\n',
+    'description': '<p>Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -29,7 +29,7 @@
   },
   {
     'name': 'match',
-    'description': '<p>Restricts when this error renders:</p>\n<ul>\n<li>a <code>ValidityState</code> key (e.g. <code>&quot;valueMissing&quot;</code>) — renders when that native constraint fails.</li>\n<li><code>true</code> — renders whenever the field is invalid, for any reason.</li>\n<li><code>false</code> — never renders (escape hatch).</li>\n<li>omitted — renders when custom <code>validate</code>/server errors exist.</li>\n</ul>\n',
+    'description': '<p>Restricts when this error renders:</p>\n<ul>\n<li>a <code>ValidityState</code> key (e.g. <code>&quot;valueMissing&quot;</code>) — renders when that constraint fails.</li>\n<li><code>true</code> — always renders, letting an external library control visibility.</li>\n<li>omitted — renders whenever the field is invalid.</li>\n</ul>\n',
     'type': 'boolean | keyof ValidityState',
     'required': false
   }
@@ -38,7 +38,7 @@
 <SlotsTable :data="[
   {
     'name': 'errors',
-    'description': '<p>All current error messages.</p>\n',
+    'description': '<p>The error messages this part displays.</p>\n',
     'type': 'string[]'
   }
 ]" />
@@ -50,16 +50,16 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"p"` |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `forceMount` | Force mounting, ignoring match/validity — useful for animation frameworks. | `boolean` | No | - |
+| `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `id` | Id of the element. Auto-generated when not provided. | `string` | No | - |
-| `match` | Restricts when this error renders:  a ValidityState key (e.g. "valueMissing") — renders when that native constraint fails. true — renders whenever the field is invalid, for any reason. false — never renders (escape hatch). omitted — renders when custom validate/server errors exist. | `boolean \| keyof ValidityState` | No | - |
+| `match` | Restricts when this error renders:  a ValidityState key (e.g. "valueMissing") — renders when that constraint fails. true — always renders, letting an external library control visibility. omitted — renders whenever the field is invalid. | `boolean \| keyof ValidityState` | No | - |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `errors` | All current error messages. | `string[]` |
+| `errors` | The error messages this part displays. | `string[]` |
 
 </llm-only>

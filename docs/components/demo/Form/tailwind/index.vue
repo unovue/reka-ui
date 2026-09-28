@@ -39,18 +39,7 @@ function onFormSubmit(values: Record<string, unknown>) {
         placeholder="Try 'taken'"
         class="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-emerald-500 data-[invalid]:border-red-500"
       />
-      <FieldError
-        match="valueMissing"
-        class="text-xs text-red-500"
-      >
-        Username is required.
-      </FieldError>
-      <FieldError
-        v-slot="{ errors }"
-        class="text-xs text-red-500"
-      >
-        {{ errors[0] }}
-      </FieldError>
+      <FieldError class="text-xs text-red-500" />
     </FieldRoot>
 
     <button

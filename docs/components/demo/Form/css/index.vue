@@ -40,18 +40,7 @@ function onFormSubmit(values: Record<string, unknown>) {
         placeholder="Try 'taken'"
         class="FieldControl"
       />
-      <FieldError
-        match="valueMissing"
-        class="FieldError"
-      >
-        Username is required.
-      </FieldError>
-      <FieldError
-        v-slot="{ errors }"
-        class="FieldError"
-      >
-        {{ errors[0] }}
-      </FieldError>
+      <FieldError class="FieldError" />
     </FieldRoot>
 
     <button
