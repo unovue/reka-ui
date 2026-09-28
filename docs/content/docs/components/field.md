@@ -20,6 +20,7 @@ Accessible wiring between a label, control, description, and error message, with
     'Generates and wires up ids/aria-describedby/aria-invalid automatically.',
     'Works with a plain native input, or with existing reka controls (Checkbox, Select, DateField, ...) placed inside it.',
     'Sync or async custom validation, with `onSubmit`/`onBlur`/`onChange` timing and optional debounce.',
+    'Validates `required` on non-native controls (Checkbox, Select, DateField) too.',
     'Reads native constraint-validation state (`required`, `pattern`, `type=email`, ...) automatically.',
     'Exposes `data-valid`/`data-invalid`/`data-dirty`/`data-touched`/`data-filled`/`data-focused` for styling.',
     'Fully additive — every reka control behaves exactly as before when used outside a Field.',
@@ -61,6 +62,8 @@ import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot } fro
 ### Root
 
 Contains all the parts of a field, provides shared ids, and runs validation. Renders a `div` by default.
+
+Exposes a `validate()` method through a template ref, which validates the field regardless of `validationMode` and returns whether it's valid. A disabled field skips validation.
 
 <!-- @include: @/meta/FieldRoot.md -->
 
@@ -105,7 +108,7 @@ Renders a [Label](/docs/components/label), automatically wired to the control vi
 
 ### Control
 
-A native form control (`input` by default — pass `as="textarea"` or `as="select"` for others). Binds `id`/`name`/`disabled`/`required`/`aria-describedby`/`aria-invalid` from the Field, and reports focus/blur/input interactions back to it.
+A native form control (`input` by default — pass `as="textarea"` or `as="select"` for others). Binds `id`/`name`/`disabled`/`required`/`aria-describedby`/`aria-invalid` from the Field, and reports focus/blur/input interactions back to it. The Field's `name` takes precedence over the control's; `disabled` and `required` apply when set on either.
 
 Existing reka controls (`CheckboxRoot`, `SelectRoot`/`SelectTrigger`, `DateFieldRoot`, ...) can be used directly inside a `FieldRoot` instead of `FieldControl` — they pick up the same wiring automatically by optionally reading the Field's context, and behave exactly as before when used outside a Field.
 
@@ -127,7 +130,7 @@ An error message for the field. Renders when a `match`ed native `ValidityState` 
 
 ### Custom validation
 
-Pass a sync or async `validate` function. Return a message (or array of messages) when invalid, or `null`/`undefined` when valid.
+Pass a sync or async `validate` function. It receives the control's value and, inside a `FormRoot`, the values of every named field. Return a message (or array of messages) when invalid, or `null`/`undefined` when valid. An async `validate` doesn't prevent form submission in `onSubmit` mode.
 
 ```vue line=8-12
 <script setup>
@@ -152,14 +155,20 @@ async function checkUsername(value) {
 
 ### Validation timing
 
-Use `validation-mode` to control when validation (native constraint checks and the custom `validate` function) runs. Defaults to `onSubmit` — nothing runs until the owning `FormRoot` submits, or `validateNow` is called manually.
+Use `validation-mode` to control when validation (native constraint checks and the custom `validate` function) runs:
 
-```vue line=4
+- `onSubmit` (default): when the owning `FormRoot` submits, then on every change after that.
+- `onBlur`: when the control loses focus.
+- `onChange`: on every change to the control's value. Use `validation-debounce-time` to wait between `validate` calls.
+
+A `FieldRoot` without its own `validation-mode` uses the `FormRoot`'s.
+
+```vue line=4-5
 <template>
   <FieldRoot
     name="email"
-    validation-mode="onBlur"
-    :validation-debounce-ms="300"
+    validation-mode="onChange"
+    :validation-debounce-time="300"
   >
     <!-- ... -->
   </FieldRoot>
@@ -197,7 +206,7 @@ import { FieldDescription, FieldLabel, FieldRoot, SelectContent, SelectItem, Sel
 </template>
 ```
 
-`Select` reports focus/dirty/filled state and, on blur (or on every change with `validation-mode="onChange"`), runs a custom `validate` against its actual selected value. Native constraint attributes like `required` on a Field-wrapped `SelectRoot` are not yet wired into Field/Form validation — use `validate` to require a selection for now.
+Participating controls report focus/dirty/filled state, pass their actual value to `validate`, and enforce `required`: an empty `Select`, an unchecked `Checkbox` or an empty `DateField` makes the field invalid (`match="valueMissing"`).
 
 ## Accessibility
 

@@ -5,10 +5,9 @@ import { ref } from 'vue'
 const serverErrors = ref<Record<string, string>>({})
 const submittedUsername = ref('')
 
-function onSubmit(event: Event) {
+function onFormSubmit(values: Record<string, unknown>) {
   submittedUsername.value = ''
-  const formData = new FormData(event.target as HTMLFormElement)
-  const username = formData.get('username')
+  const username = values.username
 
   // Pretend this came back from an API call.
   if (username === 'taken') {
@@ -25,7 +24,7 @@ function onSubmit(event: Event) {
   <FormRoot
     class="flex w-64 flex-col gap-3"
     :errors="serverErrors"
-    @submit="onSubmit"
+    @form-submit="onFormSubmit"
   >
     <FieldRoot
       class="flex flex-col gap-1.5"
