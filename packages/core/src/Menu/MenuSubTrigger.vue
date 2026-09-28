@@ -48,6 +48,7 @@ watch(menuContext.open, (open) => {
 const openTimerRef = ref<number | null>(null)
 
 subContext.triggerId ||= useId(undefined, 'reka-menu-sub-trigger')
+subContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
 
 function clearOpenTimer() {
   if (openTimerRef.value)
@@ -152,7 +153,7 @@ async function handleKeyDown(event: KeyboardEvent) {
       "
       aria-haspopup="menu"
       :aria-expanded="menuContext.open.value"
-      :aria-controls="subContext.contentId"
+      :aria-controls="menuContext.open.value ? subContext.contentId : undefined"
       :data-state="getOpenState(menuContext.open.value)"
       @click="
         async (event: MouseEvent) => {

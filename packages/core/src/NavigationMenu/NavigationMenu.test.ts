@@ -45,6 +45,18 @@ describe('given default NavigationMenu', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
+  it('should only render aria-controls while open', async () => {
+    const button = wrapper.find('button')
+    expect(button.attributes('aria-controls')).toBeUndefined()
+
+    button.element.click()
+    await nextTick()
+
+    const contentId = button.attributes('aria-controls')
+    expect(contentId).toBeTruthy()
+    expect(document.getElementById(contentId!)).not.toBeNull()
+  })
+
   describe('after clicking on button to open menu', () => {
     beforeEach(async () => {
       const button = wrapper.find('button').element

@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { getOpenState, makeTriggerId } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -35,7 +35,6 @@ const itemContext = injectNavigationMenuItemContext()
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 const triggerId = ref('')
-const contentId = ref('')
 
 const hasPointerMoveOpenedRef = refAutoReset(false, 300)
 const wasClickCloseRef = ref(false)
@@ -45,7 +44,6 @@ const open = computed(() => itemContext.value === menuContext.modelValue.value)
 onMounted(() => {
   itemContext.triggerRef = triggerElement
   triggerId.value = makeTriggerId(menuContext.baseId, itemContext.value)
-  contentId.value = makeContentId(menuContext.baseId, itemContext.value)
 })
 
 function handlePointerEnter() {
@@ -149,7 +147,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :data-state="getOpenState(open)"
       data-navigation-menu-trigger
       :aria-expanded="open"
-      :aria-controls="contentId"
+      :aria-controls="open ? itemContext.contentId : undefined"
       :as-child="props.asChild"
       :as="as"
       v-bind="$attrs"
@@ -172,7 +170,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
     />
     <span
       v-if="menuContext.viewport"
-      :aria-owns="contentId"
+      :aria-owns="itemContext.contentId"
     />
   </template>
 </template>
