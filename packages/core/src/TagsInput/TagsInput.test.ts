@@ -1,9 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import userEvent from '@testing-library/user-event'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { TagsInputInput, TagsInputItem, TagsInputItemText, TagsInputRoot } from '.'
 import TagsInput from './story/_TagsInput.vue'
 import TagsInputDisabled from './story/_TagsInputDisabled.vue'
 import TagsInputObject from './story/_TagsInputObject.vue'
@@ -386,5 +387,75 @@ describe('given TagsInput with a disabled item before a removable one', () => {
 
     const tags = wrapper.findAll('[data-reka-collection-item]')
     expect(tags.map(tag => tag.text())).toEqual(['Disabled'])
+  })
+})
+
+describe('given TagsInput inside a form', () => {
+  function mountInForm(inputAttrs: Record<string, unknown> = {}) {
+    const values = ref<string[]>([])
+    const Form = defineComponent({
+      setup() {
+        return () => h('form', [
+          h(TagsInputRoot, {
+            'modelValue': values.value,
+            'onUpdate:modelValue': (v: string[]) => { values.value = v },
+          }, {
+            default: ({ modelValue }: { modelValue: string[] }) => [
+              ...modelValue.map(item => h(TagsInputItem, { key: item, value: item }, () => h(TagsInputItemText))),
+              h(TagsInputInput, inputAttrs),
+            ],
+          }),
+        ])
+      },
+    })
+    const wrapper = mount(Form, { attachTo: document.body })
+    const input = wrapper.find('input').element as HTMLInputElement
+    return { wrapper, input, values }
+  }
+
+  function pressEnter(input: HTMLInputElement) {
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    input.dispatchEvent(event)
+    return event
+  }
+
+  it('prevents implicit submission synchronously and adds the draft', async () => {
+    const { wrapper, input, values } = mountInForm()
+    input.value = 'draft'
+
+    const event = pressEnter(input)
+    // the form submits right after dispatch, so this must be set before any tick
+    expect(event.defaultPrevented).toBe(true)
+
+    await flushPromises()
+    expect(values.value).toEqual(['draft'])
+    expect(input.value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('does not prevent submission when the draft is empty', async () => {
+    const { wrapper, input, values } = mountInForm()
+
+    const event = pressEnter(input)
+    expect(event.defaultPrevented).toBe(false)
+
+    await flushPromises()
+    expect(values.value).toEqual([])
+    wrapper.unmount()
+  })
+
+  it('lets a consumer `@keydown.enter.prevent` opt out of adding the draft', async () => {
+    const onKeydown = vi.fn((event: KeyboardEvent) => event.preventDefault())
+    const { wrapper, input, values } = mountInForm({ onKeydown })
+    input.value = 'draft'
+
+    const event = pressEnter(input)
+    expect(onKeydown).toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(true)
+
+    await flushPromises()
+    expect(values.value).toEqual([])
+    expect(input.value).toBe('draft')
+    wrapper.unmount()
   })
 })

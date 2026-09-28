@@ -33,6 +33,7 @@ type ComboboxRootContext<T> = {
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
+  unmountOnHide: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -80,6 +81,12 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
    */
   resetModelValueOnClear?: boolean
+  /**
+   * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to improve performance by not remounting the content on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 </script>
 
@@ -99,6 +106,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   openOnClick: false,
   resetModelValueOnClear: false,
   highlightOnHover: true,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -112,7 +120,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -249,6 +257,7 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear,
+  unmountOnHide,
 })
 </script>
 
