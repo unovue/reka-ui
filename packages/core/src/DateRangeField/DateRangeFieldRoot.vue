@@ -24,8 +24,8 @@ import {
   normalizeHourCycle,
 
   syncSegmentValues,
+  useSegmentNavigation,
 } from '@/shared/date'
-import { useSegmentNavigation } from '@/shared/date/useSegmentNavigation'
 
 export type DateRangeType = 'start' | 'end'
 
@@ -312,7 +312,7 @@ watch([endValue, locale], ([_endValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const { currentSegmentIndex, nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
   segmentElements,
   currentFocusedElement,
   dir,

@@ -19,8 +19,8 @@ import {
   normalizeHourCycle,
   normalizeInputValue,
   syncSegmentValues,
+  useSegmentNavigation,
 } from '@/shared/date'
-import { useSegmentNavigation } from '@/shared/date/useSegmentNavigation'
 
 type DateFieldRootContext = {
   locale: Ref<string>
@@ -226,7 +226,7 @@ watch([modelValue, locale], ([_modelValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const { currentSegmentIndex, nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
   segmentElements,
   currentFocusedElement,
   dir,
