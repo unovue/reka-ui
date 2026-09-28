@@ -342,10 +342,10 @@ describe('given a Drawer with focus props', () => {
   })
 })
 
-
 describe('drawer with DrawerVirtualKeyboardProvider', () => {
   const LAYOUT_HEIGHT = 800
   const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+  const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')!
   let listeners: Set<() => void>
 
   const KeyboardDrawer = defineComponent({
@@ -391,10 +391,18 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
       },
     })
     Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: LAYOUT_HEIGHT })
+    // jsdom has no layout; the provider measures `100svh` with a probe element.
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.style.height === '100svh' ? LAYOUT_HEIGHT : originalOffsetHeight.get!.call(this)
+      },
+    })
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalOffsetHeight)
     // @ts-expect-error - restoring the jsdom default
     delete window.visualViewport
     if (originalInnerHeight)
@@ -444,6 +452,33 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     await nextTick()
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
+  })
+
+  it('does not warn when a drawer with a DrawerViewport starts open', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const OpenOnMount = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      template: `
+        <DrawerRoot default-open>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerPortal>
+              <DrawerViewport>
+                <DrawerContent>
+                  <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                </DrawerContent>
+              </DrawerViewport>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { findByText } = render(OpenOnMount)
+    await findByText(TITLE_TEXT)
+    await nextTick()
+
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 

@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   findKeyboardScrollTarget,
-  getKeyboardViewport,
   resolveKeyboardInputTarget,
   useDrawerVirtualKeyboard,
 } from './useDrawerVirtualKeyboard'
@@ -50,6 +49,8 @@ function createVisualViewport(): VisualViewportStub {
 }
 
 let visualViewport: VisualViewportStub
+/** Height of `100svh`, which new Chrome on iOS shrinks for the keyboard. */
+let smallViewportHeight: number
 
 /** Shrinks the visual viewport as the software keyboard would. */
 function openKeyboard(height = 300) {
@@ -84,6 +85,7 @@ function stubScrollMetrics(element: HTMLElement, scrollHeight: number, clientHei
 const originalScrollTo = window.scrollTo
 const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
 const originalElementFromPoint = document.elementFromPoint
+const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')!
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -98,12 +100,21 @@ beforeEach(() => {
     writable: true,
     value: LAYOUT_HEIGHT,
   })
+  // jsdom has no layout; the provider measures `100svh` with a probe element.
+  smallViewportHeight = LAYOUT_HEIGHT
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.style.height === '100svh' ? smallViewportHeight : originalOffsetHeight.get!.call(this)
+    },
+  })
 })
 
 afterEach(() => {
   vi.useRealTimers()
   window.scrollTo = originalScrollTo
   document.elementFromPoint = originalElementFromPoint
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalOffsetHeight)
   Object.defineProperty(window, 'scrollY', { configurable: true, writable: true, value: 0 })
   // @ts-expect-error - restoring the jsdom default (no visual viewport)
   delete window.visualViewport
@@ -184,37 +195,134 @@ function mountHarness(options: HarnessOptions = {}) {
   return { wrapper, enabled, modal, nestedDrawerOpen, popup, scroller, input }
 }
 
-describe('getKeyboardViewport', () => {
-  it('returns null while the keyboard is closed', () => {
-    expect(getKeyboardViewport(window)).toBeNull()
+describe('useDrawerVirtualKeyboard keyboard detection', () => {
+  async function focusWithViewport(update: () => void) {
+    const { wrapper, popup, input } = mountHarness()
+    input.focus()
+    await nextTick()
+    update()
+    visualViewport.emit('resize')
+    flushAlignment()
+    const inset = popup.style.getPropertyValue('--drawer-keyboard-inset')
+    wrapper.unmount()
+    return inset
+  }
+
+  it('publishes no inset while the keyboard is closed', async () => {
+    expect(await focusWithViewport(() => {})).toBe('0px')
   })
 
-  it('ignores viewport changes small enough to be browser chrome', () => {
-    visualViewport.height = LAYOUT_HEIGHT - 40
-    expect(getKeyboardViewport(window)).toBeNull()
+  it('ignores viewport changes small enough to be browser chrome', async () => {
+    expect(await focusWithViewport(() => {
+      visualViewport.height = LAYOUT_HEIGHT - 40
+    })).toBe('0px')
   })
 
-  it('returns the visible band once the keyboard is up', () => {
-    visualViewport.height = LAYOUT_HEIGHT - 300
-    expect(getKeyboardViewport(window)).toEqual({ top: 0, bottom: 500 })
+  it('accounts for a panned visual viewport', async () => {
+    expect(await focusWithViewport(() => {
+      visualViewport.height = LAYOUT_HEIGHT - 300
+      visualViewport.offsetTop = 80
+    })).toBe('220px')
   })
 
-  it('accounts for a panned visual viewport', () => {
-    visualViewport.height = LAYOUT_HEIGHT - 300
-    visualViewport.offsetTop = 80
-    expect(getKeyboardViewport(window)).toEqual({ top: 80, bottom: 580 })
+  it('bails out while pinch-zoomed, where the measurement is meaningless', async () => {
+    expect(await focusWithViewport(() => {
+      visualViewport.height = LAYOUT_HEIGHT - 300
+      visualViewport.scale = 2
+    })).toBe('0px')
   })
 
-  it('bails out while pinch-zoomed, where the measurement is meaningless', () => {
-    visualViewport.height = LAYOUT_HEIGHT - 300
-    visualViewport.scale = 2
-    expect(getKeyboardViewport(window)).toBeNull()
-  })
-
-  it('returns null without a visual viewport', () => {
+  it('publishes no inset without a visual viewport', async () => {
     // @ts-expect-error - browsers without `visualViewport` support
     delete window.visualViewport
-    expect(getKeyboardViewport(window)).toBeNull()
+    const { wrapper, popup, input } = mountHarness()
+    input.focus()
+    await nextTick()
+    flushAlignment()
+    expect(popup.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px')
+    wrapper.unmount()
+  })
+})
+
+describe('useDrawerVirtualKeyboard with a layout viewport resized for the keyboard (Chrome on iOS)', () => {
+  function resizeLayoutViewport(height: number) {
+    window.innerHeight = height
+    window.dispatchEvent(new Event('resize'))
+  }
+
+  it('applies no keyboard inset or slack when the small viewport follows the keyboard', async () => {
+    const { wrapper, popup, input, scroller } = mountHarness({ scrollerRect: { top: 380, bottom: 800 } })
+
+    input.focus()
+    await nextTick()
+    smallViewportHeight = 500
+    openKeyboard(300)
+    flushAlignment()
+    expect(popup.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px')
+    expect(scroller.style.paddingBottom).toBe('')
+
+    stubRect(scroller, { top: 80, bottom: 500 })
+    resizeLayoutViewport(500)
+    flushAlignment()
+    expect(popup.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px')
+    expect(scroller.style.paddingBottom).toBe('')
+    wrapper.unmount()
+  })
+
+  it('scrolls the focused field only once the layout viewport reaches the visual viewport', async () => {
+    const { wrapper, input, scroller } = mountHarness({
+      scrollerRect: { top: 0, bottom: 500 },
+      inputRect: { top: 420, bottom: 460 },
+    })
+
+    input.focus()
+    await nextTick()
+    smallViewportHeight = 500
+    openKeyboard(300)
+    // WebKit restarts a smooth scroll re-issued while the layout viewport resizes.
+    vi.advanceTimersByTime(500)
+    expect(scroller.scrollTo).not.toHaveBeenCalled()
+
+    // The keyboard stays detected once the overlap is gone.
+    resizeLayoutViewport(500)
+    flushAlignment()
+    expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 190, behavior: 'smooth' })
+    wrapper.unmount()
+  })
+
+  it('does not treat a plain resize of both viewports as the software keyboard', async () => {
+    const { wrapper, popup, input, scroller } = mountHarness()
+
+    input.focus()
+    await nextTick()
+    smallViewportHeight = 500
+    window.innerHeight = 500
+    openKeyboard(300)
+    flushAlignment()
+
+    expect(popup.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px')
+    expect(scroller.scrollTo).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('clears the keyboard once the visual viewport grows back', async () => {
+    const { wrapper, popup, input } = mountHarness()
+
+    input.focus()
+    await nextTick()
+    smallViewportHeight = 500
+    openKeyboard(300)
+    resizeLayoutViewport(500)
+    flushAlignment()
+
+    smallViewportHeight = LAYOUT_HEIGHT
+    visualViewport.height = LAYOUT_HEIGHT
+    resizeLayoutViewport(LAYOUT_HEIGHT)
+    visualViewport.emit('resize')
+    flushAlignment()
+
+    expect(popup.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px')
+    wrapper.unmount()
   })
 })
 
@@ -280,6 +388,22 @@ describe('findKeyboardScrollTarget', () => {
     const input = document.querySelector('input')!
     stubScrollMetrics(scroller, 400, 400)
     expect(findKeyboardScrollTarget(input, root)).toBe(scroller)
+  })
+
+  it('crosses a shadow root to reach the scroller in the light DOM', () => {
+    const root = document.createElement('div')
+    const scroller = document.createElement('div')
+    scroller.style.overflowY = 'auto'
+    stubScrollMetrics(scroller, 1200, 600)
+    const host = document.createElement('div')
+    const input = document.createElement('input')
+    host.attachShadow({ mode: 'open' }).appendChild(input)
+    scroller.appendChild(host)
+    root.appendChild(scroller)
+    document.body.appendChild(root)
+
+    expect(findKeyboardScrollTarget(input, root)).toBe(scroller)
+    root.remove()
   })
 
   it('returns null when nothing inside the drawer scrolls', () => {
@@ -402,7 +526,8 @@ describe('useDrawerVirtualKeyboard', () => {
     openKeyboard(300)
     flushAlignment()
 
-    expect(scroller.style.paddingBottom).toBe('348px')
+    // The overlap, on top of a baseline of at least the visibility margin.
+    expect(scroller.style.paddingBottom).toBe('316px')
     expect(scroller.style.scrollPaddingBottom).toBe('16px')
     expect(scroller.style.overflowAnchor).toBe('none')
 
@@ -510,6 +635,38 @@ describe('useDrawerVirtualKeyboard', () => {
     expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 370, behavior: 'smooth' })
     wrapper.unmount()
   })
+  it('reapplies preventScroll on native focus moves before focusin (iOS 27)', async () => {
+    const { wrapper, input, scroller } = mountHarness()
+    const second = document.createElement('input')
+    second.type = 'text'
+    scroller.appendChild(second)
+    stubRect(second, { top: 600, bottom: 640 })
+
+    input.focus()
+    await nextTick()
+    openKeyboard(300)
+    flushAlignment()
+
+    const focus = vi.spyOn(second, 'focus')
+    const onFocus = vi.fn()
+    second.addEventListener('focus', onFocus)
+    let optionsDuringFocusIn: FocusOptions | undefined
+    second.addEventListener('focusin', () => {
+      optionsDuringFocusIn = focus.mock.lastCall?.[0]
+    })
+
+    // The keyboard's next-field arrow: focus moves with no touch events.
+    second.focus()
+
+    expect(optionsDuringFocusIn).toEqual({ preventScroll: true })
+    expect(focus).toHaveBeenCalledTimes(2)
+    expect(onFocus).toHaveBeenCalledTimes(1)
+    expect(second.style.transform).toBe('')
+    expect(second.style.opacity).toBe('')
+    expect(document.activeElement).toBe(second)
+    wrapper.unmount()
+  })
+
   it('suspends while a nested drawer owns the interaction', async () => {
     const { wrapper, popup, input, nestedDrawerOpen } = mountHarness()
     nestedDrawerOpen.value = true
@@ -647,6 +804,32 @@ describe('useDrawerVirtualKeyboard tap handling', () => {
     await nextTick()
 
     expect(event.defaultPrevented).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('reapplies preventScroll after a tapped label refocuses its control', async () => {
+    const { wrapper, input, scroller } = mountHarness()
+    const label = document.createElement('label')
+    label.textContent = 'Note'
+    scroller.appendChild(label)
+    input.id = 'note'
+    label.htmlFor = 'note'
+    document.elementFromPoint = vi.fn(() => label) as any
+    const focus = vi.spyOn(input, 'focus')
+    const onFocus = vi.fn()
+    const onBlur = vi.fn()
+    input.addEventListener('focus', onFocus)
+    input.addEventListener('blur', onBlur)
+
+    const event = tap(label, 24, 48)
+    await nextTick()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(focus).toHaveBeenCalledTimes(2)
+    expect(focus).toHaveBeenLastCalledWith({ preventScroll: true })
+    expect(onFocus).toHaveBeenCalledTimes(1)
+    expect(onBlur).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(input)
     wrapper.unmount()
   })
 
