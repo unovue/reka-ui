@@ -66,7 +66,7 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
@@ -96,11 +96,10 @@ const { multiple, dir: propDir } = toRefs(props)
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
 // is inert — and byte-for-byte identical to before — when there is no Field.
-// The focusable element lives on `SelectTrigger`, which independently
-// injects the same context for id/aria wiring; here we only need to let
-// Field's `name`/`required`/`disabled` act as fallbacks for the local props
-// (local props always win), since both are read from this root's context by
-// `SelectTrigger` and by the hidden native `<select>` below.
+// The root owns the value, so it registers the Select as the field's control;
+// `SelectTrigger` (the focusable element) owns the id/aria wiring and reports
+// focus/blur. Field's `name`/`required`/`disabled` act as fallbacks for the
+// local props (local props always win).
 const fieldContext = injectFieldRootContext(null)
 
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
@@ -163,28 +162,37 @@ const nativeSelectKey = computed(() => {
 })
 
 function handleValueChange(value: T) {
+  let nextValue: T | T[]
   if (multiple.value) {
     const array = Array.isArray(modelValue.value) ? [...modelValue.value] : []
     const index = array.findIndex(i => compare(i, value, props.by))
     index === -1 ? array.push(value) : array.splice(index, 1)
-    modelValue.value = [...array]
+    nextValue = [...array]
   }
   else {
-    modelValue.value = value
+    nextValue = value
   }
+  modelValue.value = nextValue
 
   // User-driven selection (as opposed to a programmatic/parent-driven
   // `modelValue` change, handled by the `watch` above) — this is what
-  // should mark the field dirty, and what lets a Field's custom `validate`
-  // run against the Select's actual value.
+  // should mark the field dirty and run on-change validation.
   //
-  // Report the resulting model, not the toggled `value`: in `multiple` mode
-  // `value` is the single item just added *or removed*, so a `validate` would
-  // otherwise see a deselected item as the field's value. This also matches
-  // what `SelectTrigger` reports on blur.
-  fieldContext?.reportControlState({ dirty: true })
-  fieldContext?.handleControlInput({ value: modelValue.value })
+  // Report the resulting selection explicitly: a controlled `modelValue` only
+  // updates once the parent re-renders, and in `multiple` mode `value` is the
+  // single item just added *or removed*.
+  fieldContext?.handleControlInput({ value: nextValue })
 }
+
+let unregisterControl: (() => void) | undefined
+onMounted(() => {
+  unregisterControl = fieldContext?.registerControl({
+    element: () => triggerElement.value,
+    getValue: () => modelValue.value,
+    required: () => props.required,
+  })
+})
+onBeforeUnmount(() => unregisterControl?.())
 
 function getOption(value: SelectOption['value']) {
   return Array.from(optionsSet.value)

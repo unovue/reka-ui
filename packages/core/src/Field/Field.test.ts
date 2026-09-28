@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
-import { CheckboxRoot } from '@/Checkbox'
+import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { DateFieldRoot } from '@/DateField'
 import { FormRoot } from '@/Form'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '@/Select'
@@ -481,7 +481,7 @@ describe('given a Field-wrapped Select', () => {
     const trigger = wrapper.find('[role="combobox"]')
     await trigger.trigger('blur')
 
-    expect(validate).toHaveBeenCalledWith('apple')
+    expect(validate).toHaveBeenCalledWith('apple', expect.anything())
 
     wrapper.unmount()
   })
@@ -542,14 +542,14 @@ describe('given a Field-wrapped Select', () => {
     const field = wrapper.find('[data-testid="field"]')
 
     await selectFirstOption(wrapper)
-    expect(validate).toHaveBeenLastCalledWith(['apple'])
+    expect(validate).toHaveBeenLastCalledWith(['apple'], expect.anything())
     expect(field.attributes('data-filled')).toBe('')
 
     // Deselecting must report the (now empty) selection — reporting the
     // toggled item would hand `validate` the item that was just removed and
     // leave the field looking filled.
     await toggleFirstOption()
-    expect(validate).toHaveBeenLastCalledWith([])
+    expect(validate).toHaveBeenLastCalledWith([], expect.anything())
     expect(field.attributes('data-filled')).toBeUndefined()
 
     wrapper.unmount()
@@ -618,6 +618,127 @@ describe('given a native control whose value changes without an input event', ()
     await new Promise(resolve => setTimeout(resolve, 0))
     await nextTick()
 
-    expect(validate).toHaveBeenLastCalledWith('autofilled@example.com')
+    expect(validate).toHaveBeenLastCalledWith('autofilled@example.com', { email: 'autofilled@example.com' })
+  })
+})
+
+describe('given attributes set on FieldControl itself', () => {
+  it('keeps the control\'s own name/required/disabled/aria-invalid', () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FieldRoot>
+          <FieldControl name="email" required disabled aria-invalid="true" />
+        </FieldRoot>
+      `,
+    })
+    const input = wrapper.find('input').element as HTMLInputElement
+
+    expect(input.name).toBe('email')
+    expect(input.required).toBe(true)
+    expect(input.disabled).toBe(true)
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('lets the field\'s name take precedence over the control\'s', () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FieldRoot name="field-name">
+          <FieldControl name="control-name" />
+        </FieldRoot>
+      `,
+    })
+    expect((wrapper.find('input').element as HTMLInputElement).name).toBe('field-name')
+  })
+
+  it('marks a control mounted with a value as filled', async () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FieldRoot data-testid="field">
+          <FieldControl value="prefilled" />
+        </FieldRoot>
+      `,
+    })
+    await nextTick()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-filled')).toBe('')
+  })
+})
+
+describe('given a Field-wrapped Checkbox', () => {
+  it('runs on-change validation with the new checked state', async () => {
+    const validate = vi.fn(() => null)
+    const wrapper = mount({
+      components: { ...components, CheckboxRoot },
+      props: ['validate'],
+      template: `
+        <FieldRoot name="terms" validation-mode="onChange" :validate="validate">
+          <CheckboxRoot />
+        </FieldRoot>
+      `,
+    }, { props: { validate } })
+
+    await wrapper.find('[role="checkbox"]').trigger('click')
+    expect(validate).toHaveBeenLastCalledWith(true, expect.anything())
+
+    await wrapper.find('[role="checkbox"]').trigger('click')
+    expect(validate).toHaveBeenLastCalledWith(false, expect.anything())
+  })
+
+  it('reports filled correctly when checked through v-model', async () => {
+    const wrapper = mount({
+      components: { ...components, CheckboxRoot },
+      data: () => ({ checked: false }),
+      template: `
+        <FieldRoot name="terms" data-testid="field">
+          <CheckboxRoot v-model="checked" />
+        </FieldRoot>
+      `,
+    })
+    const field = wrapper.find('[data-testid="field"]')
+
+    await wrapper.find('[role="checkbox"]').trigger('click')
+    expect(wrapper.find('[role="checkbox"]').attributes('aria-checked')).toBe('true')
+    expect(field.attributes('data-filled')).toBe('')
+
+    await wrapper.find('[role="checkbox"]').trigger('click')
+    expect(field.attributes('data-filled')).toBeUndefined()
+  })
+
+  it('does not give the field id to every checkbox in a group', () => {
+    const wrapper = mount({
+      components: { ...components, CheckboxRoot, CheckboxGroupRoot },
+      template: `
+        <FieldRoot name="fruits">
+          <CheckboxGroupRoot :default-value="[]">
+            <CheckboxRoot value="apple" />
+            <CheckboxRoot value="banana" />
+          </CheckboxGroupRoot>
+        </FieldRoot>
+      `,
+    })
+    const ids = wrapper.findAll('[role="checkbox"]').map(checkbox => checkbox.attributes('id'))
+    expect(ids).toEqual([undefined, undefined])
+  })
+})
+
+describe('given a FieldRoot ref', () => {
+  it('exposes validate(), which runs regardless of validationMode', async () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FieldRoot ref="field" required data-testid="field">
+          <FieldControl />
+          <FieldError match="valueMissing">Required</FieldError>
+        </FieldRoot>
+      `,
+    })
+
+    const field = wrapper.vm.$refs.field as { validate: () => boolean }
+    expect(field.validate()).toBe(false)
+    await nextTick()
+    expect(wrapper.text()).toContain('Required')
+    expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBe('')
   })
 })

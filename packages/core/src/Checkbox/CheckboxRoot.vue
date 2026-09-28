@@ -47,7 +47,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { isEqual } from 'ohash'
-import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
@@ -91,7 +91,10 @@ const modelValue = useVModel(props as any, 'modelValue', emits as any, {
 }) as Ref<T | 'indeterminate'>
 
 const disabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value))
-const resolvedId = computed(() => props.id ?? fieldContext?.fieldId.value)
+// Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
+// takes the field's id (it would be duplicated) or acts as its control.
+const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
+const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : undefined))
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
@@ -114,6 +117,10 @@ const checkboxState = computed<CheckedState>(() => {
 })
 
 function handleClick() {
+  // Captured before the update: a controlled `modelValue` only changes once
+  // the parent re-renders.
+  const nextState = checkboxState.value !== true
+
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
     const modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
     if (isValueEqualOrExist(modelValueArray, props.value)) {
@@ -134,8 +141,15 @@ function handleClick() {
     }
   }
 
-  fieldContext?.reportControlState({ dirty: true, filled: isChecked.value })
+  if (participatesAsControl.value)
+    fieldContext?.handleControlInput({ value: nextState })
 }
+
+// A programmatic/parent-driven change updates `filled`, but isn't dirtying.
+watch(checkboxState, (state) => {
+  if (participatesAsControl.value)
+    fieldContext?.reportControlState({ filled: state === true })
+})
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
@@ -170,18 +184,28 @@ const mergedAriaInvalid = computed(() => {
 })
 
 function handleFocus() {
-  fieldContext?.reportControlState({ focused: true })
+  fieldContext?.handleControlFocus()
 }
 function handleBlur() {
-  fieldContext?.reportControlState({ focused: false, touched: true })
+  if (participatesAsControl.value)
+    fieldContext?.handleControlBlur()
+  else
+    fieldContext?.reportControlState({ focused: false, touched: true })
 }
 
+let unregisterControl: (() => void) | undefined
 onMounted(() => {
-  fieldContext?.setControlElement(currentElement.value as HTMLElement | undefined)
+  if (!participatesAsControl.value)
+    return
+  unregisterControl = fieldContext?.registerControl({
+    element: () => currentElement.value as HTMLElement | undefined,
+    getValue: () => checkboxState.value,
+    required: () => props.required,
+    // A required checkbox must be checked.
+    isFilled: value => value === true,
+  })
 })
-onBeforeUnmount(() => {
-  fieldContext?.setControlElement(undefined)
-})
+onBeforeUnmount(() => unregisterControl?.())
 
 provideCheckboxRootContext({
   disabled,

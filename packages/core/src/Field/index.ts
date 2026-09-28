@@ -16,14 +16,16 @@ export {
 } from './FieldLabel.vue'
 export {
   type FieldControlDetail,
+  type FieldControlRegistration,
   default as FieldRoot,
   type FieldRootContext,
   type FieldRootEmits,
   type FieldRootProps,
   injectFieldRootContext,
 } from './FieldRoot.vue'
-export type {
-  FieldValidateFn,
-  FieldValidateResult,
-  FieldValidationMode,
+export {
+  createValidityState,
+  type FieldValidateFn,
+  type FieldValidateResult,
+  type FieldValidationMode,
 } from './useFieldValidation'

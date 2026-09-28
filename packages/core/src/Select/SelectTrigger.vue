@@ -8,7 +8,7 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
+import { computed, onMounted, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
@@ -56,19 +56,9 @@ function handleFieldFocus() {
   fieldContext?.handleControlFocus()
 }
 function handleFieldBlur() {
-  // The trigger is a plain button — it doesn't carry the selected value —
-  // so report it explicitly from the root's `modelValue` instead of reading
-  // an element. This is what lets validation (native constraint checks
-  // aside) run against the Select's actual value.
-  fieldContext?.handleControlBlur({ value: rootContext.modelValue.value })
+  // The value is read through the control `SelectRoot` registered.
+  fieldContext?.handleControlBlur()
 }
-
-onMounted(() => {
-  fieldContext?.setControlElement(triggerElement.value)
-})
-onBeforeUnmount(() => {
-  fieldContext?.setControlElement(undefined)
-})
 
 const { getItems } = useCollection()
 const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()

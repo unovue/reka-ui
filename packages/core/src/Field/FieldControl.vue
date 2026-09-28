@@ -28,37 +28,54 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const controlId = computed(() => props.id ?? fieldContext.fieldId.value)
 
-// Merge, don't overwrite: a consumer-provided `aria-describedby` is combined
-// with the ids accumulated from `FieldDescription`/`FieldError`.
+// A boolean attribute is present unless omitted or explicitly `false`
+// (`<FieldControl required>` passes `''`).
+function isAttrSet(value: unknown) {
+  return value !== undefined && value !== false && value !== 'false'
+}
+
+// The field's `name` takes precedence; `disabled`/`required` apply when set on
+// either the field or the control. The rest of the consumer's attributes pass
+// through untouched.
+const name = computed(() => fieldContext.name.value ?? attrs.name as string | undefined)
+const disabled = computed(() => fieldContext.disabled.value || isAttrSet(attrs.disabled))
+const required = computed(() => fieldContext.required.value || isAttrSet(attrs.required))
+
 const restAttrs = computed(() => {
-  const { 'aria-describedby': _omit, ...rest } = attrs
+  const { 'aria-describedby': _describedBy, 'aria-invalid': _invalid, 'name': _name, 'disabled': _disabled, 'required': _required, ...rest } = attrs
   return rest
 })
+
+// Merge, don't overwrite: a consumer-provided `aria-describedby` is combined
+// with the ids accumulated from `FieldDescription`/`FieldError`.
 const mergedDescribedBy = computed(() => {
   const consumerValue = attrs['aria-describedby'] as string | undefined
   return [consumerValue, fieldContext.describedBy.value].filter(Boolean).join(' ') || undefined
 })
 
+// A consumer-provided `aria-invalid` always wins.
+const ariaInvalid = computed(() => attrs['aria-invalid'] ?? (fieldContext.invalid.value || undefined))
+
+type NativeControl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+
 function getElement() {
-  return currentElement.value as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | undefined
+  const element = currentElement.value as HTMLElement | undefined
+  return element && ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName)
+    ? element as NativeControl
+    : undefined
 }
 
-function handleFocus() {
-  fieldContext.handleControlFocus()
-}
-function handleBlur() {
-  fieldContext.handleControlBlur({ element: getElement() })
-}
-function handleInput() {
-  fieldContext.handleControlInput({ element: getElement() })
-}
-
+let unregister: (() => void) | undefined
 onMounted(() => {
-  fieldContext.setControlElement(currentElement.value as HTMLElement | undefined)
+  unregister = fieldContext.registerControl({
+    element: () => currentElement.value as HTMLElement | undefined,
+    // Always read the live DOM value: programmatic writes (a direct `.value`
+    // assignment, autofill) don't fire `input`.
+    getValue: () => getElement()?.value,
+    validityElement: getElement,
+  })
 })
-onBeforeUnmount(() => {
-  fieldContext.setControlElement(undefined)
-})
+onBeforeUnmount(() => unregister?.())
 </script>
 
 <template>
@@ -68,14 +85,14 @@ onBeforeUnmount(() => {
     v-bind="restAttrs"
     :as="as"
     :as-child="asChild"
-    :name="fieldContext.name.value"
-    :disabled="fieldContext.disabled.value || undefined"
-    :required="fieldContext.required.value || undefined"
+    :name="name"
+    :disabled="disabled || undefined"
+    :required="required || undefined"
     :aria-describedby="mergedDescribedBy"
-    :aria-invalid="fieldContext.invalid.value || undefined"
-    @focus="handleFocus"
-    @blur="handleBlur"
-    @input="handleInput"
+    :aria-invalid="ariaInvalid"
+    @focus="fieldContext.handleControlFocus()"
+    @blur="fieldContext.handleControlBlur()"
+    @input="fieldContext.handleControlInput()"
   >
     <slot />
   </Primitive>

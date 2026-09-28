@@ -5,12 +5,36 @@ export type FieldValidationMode = 'onSubmit' | 'onBlur' | 'onChange'
 
 export type FieldValidateResult = string | string[] | null | undefined | void
 
-export type FieldValidateFn = (value: unknown) => FieldValidateResult | Promise<FieldValidateResult>
+export type FieldValidateFn = (value: unknown, formValues: Record<string, unknown>) => FieldValidateResult | Promise<FieldValidateResult>
 
 export interface UseFieldValidationOptions {
   validate?: Ref<FieldValidateFn | undefined>
   validationMode: Ref<FieldValidationMode>
-  validationDebounceMs: Ref<number | undefined>
+  validationDebounceTime: Ref<number | undefined>
+  getFormValues: () => Record<string, unknown>
+}
+
+const VALIDITY_KEYS = [
+  'badInput',
+  'customError',
+  'patternMismatch',
+  'rangeOverflow',
+  'rangeUnderflow',
+  'stepMismatch',
+  'tooLong',
+  'tooShort',
+  'typeMismatch',
+  'valueMissing',
+] as const
+
+/**
+ * Builds a plain `ValidityState` from the given failing constraints. Used for
+ * non-native controls (e.g. `Select`, `Checkbox`), which have no `ValidityState`
+ * of their own, and to snapshot a native element's live one.
+ */
+export function createValidityState(flags: Partial<Record<typeof VALIDITY_KEYS[number], boolean>> = {}): ValidityState {
+  const state = Object.fromEntries(VALIDITY_KEYS.map(key => [key, Boolean(flags[key])])) as Record<typeof VALIDITY_KEYS[number], boolean>
+  return { ...state, valid: VALIDITY_KEYS.every(key => !state[key]) }
 }
 
 function normalizeErrors(result: FieldValidateResult): string[] {
@@ -19,20 +43,8 @@ function normalizeErrors(result: FieldValidateResult): string[] {
   return Array.isArray(result) ? result.filter(Boolean) : [result]
 }
 
-function snapshotValidityState(validity: ValidityState): ValidityState {
-  return {
-    badInput: validity.badInput,
-    customError: validity.customError,
-    patternMismatch: validity.patternMismatch,
-    rangeOverflow: validity.rangeOverflow,
-    rangeUnderflow: validity.rangeUnderflow,
-    stepMismatch: validity.stepMismatch,
-    tooLong: validity.tooLong,
-    tooShort: validity.tooShort,
-    typeMismatch: validity.typeMismatch,
-    valid: validity.valid,
-    valueMissing: validity.valueMissing,
-  }
+function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+  return typeof value === 'object' && value !== null && typeof (value as PromiseLike<T>).then === 'function'
 }
 
 /**
@@ -45,6 +57,9 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
   const customErrors = ref<string[]>([])
   const validity = ref<ValidityState>()
   const hasValidated = ref(false)
+  // `true` while an async `validate()` is in flight. The field is neither
+  // valid nor invalid until it settles, unless an earlier custom error is kept.
+  const pending = ref(false)
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
   // Guards against out-of-order async `validate()` resolutions clobbering a
@@ -58,31 +73,54 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
     }
   }
 
-  async function runCustomValidate(value: unknown) {
+  function runCustomValidate(value: unknown) {
     const validateFn = options.validate?.value
-    if (!validateFn)
-      return
-
     const currentToken = ++token
-    let result: FieldValidateResult
+    pending.value = false
+    hasValidated.value = true
+
+    if (!validateFn) {
+      customErrors.value = []
+      return
+    }
+
+    let result: FieldValidateResult | PromiseLike<FieldValidateResult>
     try {
-      result = await validateFn(value)
+      result = validateFn(value, options.getFormValues())
     }
     catch (error) {
-      // `triggerValidation` is fire-and-forget from blur/input, so a
-      // throwing/rejecting `validate` would otherwise surface as an
-      // unhandled rejection. Swallow and warn rather than turning the
-      // exception into a field error — the two are different failure modes
-      // and conflating them would hide real bugs in `validate` behind a
-      // generic "invalid" state.
+      // A throwing `validate` is a bug in the validator, not a field error —
+      // conflating the two would hide it behind a generic "invalid" state.
       console.error(error)
       return
     }
-    // A newer validation call superseded this one; drop the stale result.
-    if (currentToken !== token)
-      return
 
-    customErrors.value = normalizeErrors(result)
+    if (!isPromiseLike<FieldValidateResult>(result)) {
+      customErrors.value = normalizeErrors(result)
+      return
+    }
+
+    // Async validators don't block an `onSubmit` submission (matching Base UI):
+    // the field goes neutral while pending. In the other modes a previous
+    // custom error is kept, so it still blocks submission until it resolves.
+    pending.value = true
+    if (options.validationMode.value === 'onSubmit')
+      customErrors.value = []
+
+    result.then(
+      (resolved) => {
+        if (currentToken !== token)
+          return
+        pending.value = false
+        customErrors.value = normalizeErrors(resolved)
+      },
+      (error) => {
+        // A rejecting validator keeps the previously published state.
+        console.error(error)
+        if (currentToken === token)
+          pending.value = false
+      },
+    )
   }
 
   /**
@@ -90,18 +128,19 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
    * @param value The current control value to validate.
    * @param immediate Skip the configured debounce (used for blur/submit).
    */
-  async function triggerValidation(value: unknown, immediate = false) {
+  function triggerValidation(value: unknown, immediate = false) {
     clearDebounce()
 
-    const debounceMs = options.validationDebounceMs.value
-    if (!immediate && debounceMs) {
-      await new Promise<void>((resolve) => {
-        debounceTimer = setTimeout(resolve, debounceMs)
-      })
+    const debounceTime = options.validationDebounceTime.value
+    if (!immediate && debounceTime && value !== '') {
+      debounceTimer = setTimeout(() => {
+        debounceTimer = undefined
+        runCustomValidate(value)
+      }, debounceTime)
+      return
     }
 
-    await runCustomValidate(value)
-    hasValidated.value = true
+    runCustomValidate(value)
   }
 
   function setNativeValidity(nextValidity: ValidityState | undefined) {
@@ -110,7 +149,7 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
     // that reference straight to a ref would make Vue's `Object.is` change
     // check see no change (and skip reactivity) even when the underlying
     // constraint state flipped. Snapshot it into a fresh plain object instead.
-    validity.value = nextValidity ? snapshotValidityState(nextValidity) : undefined
+    validity.value = nextValidity ? createValidityState(nextValidity) : undefined
     hasValidated.value = true
   }
 
@@ -120,13 +159,13 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
     customErrors.value = []
     validity.value = undefined
     hasValidated.value = false
+    pending.value = false
   }
 
   // A pending debounce timer must not outlive the component that created it —
   // otherwise an unmounted field's `validate` could still fire later,
   // touching refs whose effects have already been torn down. Bumping `token`
-  // also makes any validation promise already in flight (past its debounce
-  // wait, mid-`await validateFn`) a no-op once it resolves.
+  // also makes any validation promise already in flight a no-op once it resolves.
   onScopeDispose(() => {
     clearDebounce()
     token++
@@ -140,6 +179,7 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
     customErrors,
     validity,
     hasValidated,
+    pending,
     invalid,
     triggerValidation,
     setNativeValidity,

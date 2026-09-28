@@ -1,8 +1,11 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import { CheckboxRoot } from '@/Checkbox'
+import { DateFieldRoot } from '@/DateField'
 import { FieldControl, FieldError, FieldLabel, FieldRoot } from '@/Field'
+import { SelectRoot, SelectTrigger } from '@/Select'
 import { FormRoot } from '.'
 
 const components = { FormRoot, FieldRoot, FieldControl, FieldError, FieldLabel }
@@ -10,15 +13,6 @@ const components = { FormRoot, FieldRoot, FieldControl, FieldError, FieldLabel }
 beforeEach(() => {
   document.body.innerHTML = ''
 })
-
-// Our own submit handling (running every field's validation, some of which
-// may be async) takes more microtask turns to settle than a single
-// `nextTick()` guarantees. A zero-length macrotask wait drains the whole
-// microtask queue first, so this reliably waits for it without depending on
-// exact tick counts.
-function flushAsync() {
-  return new Promise(resolve => setTimeout(resolve, 0))
-}
 
 describe('given a Form with server errors', () => {
   it('passes axe accessibility tests', async () => {
@@ -100,7 +94,24 @@ describe('given a Form with server errors', () => {
   })
 })
 
+// Dispatches a cancelable submit event directly, so a test can tell whether
+// the native submission would have gone ahead (`defaultPrevented`). Drains
+// the task queue afterwards, so a "not submitted" assertion can't pass just
+// because an emit hadn't happened yet.
+async function submit(wrapper: ReturnType<typeof mount>) {
+  const event = new Event('submit', { cancelable: true })
+  wrapper.find('form').element.dispatchEvent(event)
+  await new Promise(resolve => setTimeout(resolve, 0))
+  await nextTick()
+  return event
+}
+
 describe('given a Form submission', () => {
+  it('turns off native validation UI, so its own submit handling always runs', () => {
+    const wrapper = mount({ components, template: '<FormRoot />' })
+    expect(wrapper.find('form').attributes('novalidate')).toBe('')
+  })
+
   it('prevents submission and focuses the first invalid control when a required field is empty', async () => {
     const onSubmit = vi.fn()
     const wrapper = mount({
@@ -108,29 +119,28 @@ describe('given a Form submission', () => {
       template: `
         <FormRoot @submit="onSubmit">
           <FieldRoot name="email" required>
-            <FieldControl type="email" required />
+            <FieldControl type="email" />
           </FieldRoot>
         </FormRoot>
       `,
       methods: { onSubmit },
     }, { attachTo: document.body })
 
-    await wrapper.find('form').trigger('submit')
-    await flushAsync()
-    await nextTick()
+    const event = await submit(wrapper)
 
+    expect(event.defaultPrevented).toBe(true)
     expect(onSubmit).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(wrapper.find('input').element)
   })
 
-  it('lets the submission through once every field is valid', async () => {
+  it('emits submit and leaves the native submission alone once every field is valid', async () => {
     const onSubmit = vi.fn()
     const wrapper = mount({
       components,
       template: `
         <FormRoot @submit="onSubmit">
           <FieldRoot name="email" required>
-            <FieldControl type="email" required />
+            <FieldControl type="email" />
           </FieldRoot>
         </FormRoot>
       `,
@@ -138,14 +148,63 @@ describe('given a Form submission', () => {
     }, { attachTo: document.body })
 
     await wrapper.find('input').setValue('jane@example.com')
-    await wrapper.find('form').trigger('submit')
-    await flushAsync()
-    await nextTick()
+    const event = await submit(wrapper)
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).toHaveBeenCalledWith(event)
+    expect(event.defaultPrevented).toBe(false)
   })
 
-  it('awaits async validate before deciding whether to block submission', async () => {
+  it('emits formSubmit with the named field values and prevents the native submission', async () => {
+    const onFormSubmit = vi.fn()
+    const wrapper = mount({
+      components,
+      template: `
+        <FormRoot @form-submit="onFormSubmit">
+          <FieldRoot name="email">
+            <FieldControl />
+          </FieldRoot>
+          <FieldRoot name="username">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onFormSubmit },
+    }, { attachTo: document.body })
+
+    const [email, username] = wrapper.findAll('input')
+    await email.setValue('jane@example.com')
+    await username.setValue('jane')
+    const event = await submit(wrapper)
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(onFormSubmit).toHaveBeenCalledWith({ email: 'jane@example.com', username: 'jane' }, event)
+  })
+
+  it('focuses the first invalid control in document order, not registration order', async () => {
+    const wrapper = mount({
+      components,
+      data: () => ({ showFirst: false }),
+      template: `
+        <FormRoot>
+          <FieldRoot v-if="showFirst" name="first" required>
+            <FieldControl data-testid="first" />
+          </FieldRoot>
+          <FieldRoot name="second" required>
+            <FieldControl data-testid="second" />
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { attachTo: document.body })
+
+    // Mounted after "second", so it registers last despite coming first.
+    await wrapper.setData({ showFirst: true })
+    await submit(wrapper)
+
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="first"]').element)
+  })
+
+  it('does not wait for an async validate in onSubmit mode, but shows its error once resolved', async () => {
     const onSubmit = vi.fn()
     const validate = (value: unknown) =>
       new Promise<string | null>(resolve => setTimeout(resolve, 10, value === 'taken' ? 'Already taken' : null))
@@ -165,26 +224,25 @@ describe('given a Form submission', () => {
     }, { props: { validate }, attachTo: document.body })
 
     await wrapper.find('input').setValue('taken')
-    await wrapper.find('form').trigger('submit')
+    await submit(wrapper)
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+
     await new Promise(resolve => setTimeout(resolve, 20))
     await nextTick()
-
-    expect(onSubmit).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Already taken')
   })
-})
 
-describe('given a Form submission race/error guard', () => {
-  it('two rapid submits on a valid form emit submit exactly once', async () => {
+  it('keeps blocking on a previous async error while revalidation is pending outside onSubmit mode', async () => {
     const onSubmit = vi.fn()
-    const validate = () => new Promise<string | null>(resolve => setTimeout(resolve, 10, null))
+    const validate = (value: unknown) =>
+      new Promise<string | null>(resolve => setTimeout(resolve, 10, value === 'taken' ? 'Already taken' : null))
 
     const wrapper = mount({
       components,
       props: ['validate'],
       template: `
         <FormRoot @submit="onSubmit">
-          <FieldRoot name="username" :validate="validate">
+          <FieldRoot name="username" :validate="validate" validation-mode="onBlur">
             <FieldControl />
           </FieldRoot>
         </FormRoot>
@@ -192,22 +250,152 @@ describe('given a Form submission race/error guard', () => {
       methods: { onSubmit },
     }, { props: { validate }, attachTo: document.body })
 
-    const form = wrapper.find('form')
-    // Fired back-to-back, before the first submit's async validation settles
-    // — the second must be ignored outright rather than running a second,
-    // overlapping validation pass.
-    await form.trigger('submit')
-    await form.trigger('submit')
+    const input = wrapper.find('input')
+    await input.setValue('taken')
+    await input.trigger('blur')
     await new Promise(resolve => setTimeout(resolve, 20))
-    await nextTick()
 
-    expect(onSubmit).toHaveBeenCalledTimes(1)
+    await submit(wrapper)
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('a rejecting validate does not produce an unhandled rejection, and leaves the field error-free', async () => {
+  it('re-validates on change after a failed submit in onSubmit mode', async () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FormRoot>
+          <FieldRoot name="email" required>
+            <FieldControl />
+            <FieldError match="valueMissing">Required</FieldError>
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { attachTo: document.body })
+
+    // Before any submit, onSubmit mode doesn't validate on change.
+    await wrapper.find('input').setValue('')
+    expect(wrapper.text()).not.toContain('Required')
+
+    await submit(wrapper)
+    expect(wrapper.text()).toContain('Required')
+
+    await wrapper.find('input').setValue('jane@example.com')
+    expect(wrapper.text()).not.toContain('Required')
+  })
+
+  it('inherits validationMode from the form', async () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FormRoot validation-mode="onBlur">
+          <FieldRoot name="email" required>
+            <FieldControl />
+            <FieldError match="valueMissing">Required</FieldError>
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { attachTo: document.body })
+
+    await wrapper.find('input').trigger('blur')
+    expect(wrapper.text()).toContain('Required')
+  })
+
+  it('an invalid prop of false does not let a failing field submit', async () => {
+    const onSubmit = vi.fn()
+    const wrapper = mount({
+      components,
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="email" required :invalid="false">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { attachTo: document.body })
+
+    await submit(wrapper)
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('skips validation for a disabled field', async () => {
+    const onSubmit = vi.fn()
+    const validate = vi.fn(() => 'Invalid')
+    const wrapper = mount({
+      components,
+      props: ['validate'],
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="email" disabled :validate="validate" data-testid="field">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { props: { validate }, attachTo: document.body })
+
+    await submit(wrapper)
+    expect(validate).not.toHaveBeenCalled()
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBeUndefined()
+  })
+
+  it('focuses the first field invalidated by server errors that arrive after a submit', async () => {
+    const wrapper = mount({
+      components,
+      props: ['errors'],
+      template: `
+        <FormRoot :errors="errors">
+          <FieldRoot name="email">
+            <FieldControl data-testid="email" />
+          </FieldRoot>
+          <FieldRoot name="username">
+            <FieldControl data-testid="username" />
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { props: { errors: {} }, attachTo: document.body })
+
+    await submit(wrapper)
+    await wrapper.setProps({ errors: { username: 'Taken' } })
+    await nextTick()
+
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="username"]').element)
+  })
+
+  it('exposes validate(), optionally for a single field', async () => {
+    const wrapper = mount({
+      components,
+      template: `
+        <FormRoot ref="form">
+          <FieldRoot name="email" required data-testid="email">
+            <FieldControl />
+          </FieldRoot>
+          <FieldRoot name="username" required data-testid="username">
+            <FieldControl />
+          </FieldRoot>
+        </FormRoot>
+      `,
+    }, { attachTo: document.body })
+
+    const form = wrapper.vm.$refs.form as { validate: (name?: string) => boolean }
+
+    expect(form.validate('email')).toBe(false)
+    await nextTick()
+    expect(wrapper.find('[data-testid="email"]').attributes('data-invalid')).toBe('')
+    expect(wrapper.find('[data-testid="username"]').attributes('data-invalid')).toBeUndefined()
+
+    expect(form.validate()).toBe(false)
+    await nextTick()
+    expect(wrapper.find('[data-testid="username"]').attributes('data-invalid')).toBe('')
+  })
+
+  it('a throwing validate is reported and leaves the field error-free', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const onSubmit = vi.fn()
-    const validate = () => Promise.reject(new Error('boom'))
+    const validate = () => {
+      throw new Error('boom')
+    }
 
     const wrapper = mount({
       components,
@@ -222,18 +410,107 @@ describe('given a Form submission race/error guard', () => {
       methods: { onSubmit },
     }, { props: { validate }, attachTo: document.body })
 
-    await wrapper.find('form').trigger('submit')
-    await flushAsync()
-    await nextTick()
+    await submit(wrapper)
 
-    // `useFieldValidation` swallows-and-warns the throw itself, so nothing
-    // propagates up to `FormRoot`'s own try/catch in this case — but the
-    // field is left with no error (a silent "no-op" outcome for `validate`),
-    // so the empty-but-optional field still submits successfully.
     expect(consoleErrorSpy).toHaveBeenCalled()
     expect(onSubmit).toHaveBeenCalledTimes(1)
 
     consoleErrorSpy.mockRestore()
+  })
+})
+
+describe('given required non-native controls in a Form', () => {
+  beforeAll(() => {
+    // SelectTrigger's Popper machinery expects this during mount.
+    globalThis.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  })
+
+  it('blocks submission while a required Select has no value', async () => {
+    const onSubmit = vi.fn()
+    const wrapper = mount({
+      components: { ...components, SelectRoot, SelectTrigger },
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="fruit" required data-testid="field">
+            <SelectRoot>
+              <SelectTrigger>Choose a fruit</SelectTrigger>
+            </SelectRoot>
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { attachTo: document.body })
+
+    await submit(wrapper)
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBe('')
+    expect(document.activeElement).toBe(wrapper.find('[role="combobox"]').element)
+  })
+
+  it('submits once a required Select has a value', async () => {
+    const onSubmit = vi.fn()
+    const wrapper = mount({
+      components: { ...components, SelectRoot, SelectTrigger },
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="fruit" required>
+            <SelectRoot default-value="apple">
+              <SelectTrigger>Choose a fruit</SelectTrigger>
+            </SelectRoot>
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { attachTo: document.body })
+
+    await submit(wrapper)
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks submission until a required Checkbox is checked', async () => {
+    const onSubmit = vi.fn()
+    const wrapper = mount({
+      components: { ...components, CheckboxRoot },
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="terms">
+            <CheckboxRoot required />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { attachTo: document.body })
+
+    await submit(wrapper)
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    await wrapper.find('[role="checkbox"]').trigger('click')
+    await submit(wrapper)
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks submission while a required DateField is empty', async () => {
+    const onSubmit = vi.fn()
+    const wrapper = mount({
+      components: { ...components, DateFieldRoot },
+      template: `
+        <FormRoot @submit="onSubmit">
+          <FieldRoot name="dob" required data-testid="field">
+            <DateFieldRoot />
+          </FieldRoot>
+        </FormRoot>
+      `,
+      methods: { onSubmit },
+    }, { attachTo: document.body })
+
+    await submit(wrapper)
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBe('')
   })
 })
 
