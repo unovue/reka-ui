@@ -32,6 +32,7 @@ onBeforeUnmount(() => unregister?.())
 
 <template>
   <Primitive
+    v-bind="fieldContext.dataAttributes.value"
     :id="descriptionId"
     :as="as"
     :as-child="asChild"

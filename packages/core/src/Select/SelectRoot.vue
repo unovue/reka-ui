@@ -66,7 +66,7 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
-import { computed, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
@@ -96,10 +96,9 @@ const { multiple, dir: propDir } = toRefs(props)
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
 // is inert — and byte-for-byte identical to before — when there is no Field.
-// The root owns the value, so it registers the Select as the field's control;
-// `SelectTrigger` (the focusable element) owns the id/aria wiring and reports
-// focus/blur. Field's `name`/`required`/`disabled` act as fallbacks for the
-// local props (local props always win).
+// `SelectTrigger` (the focusable element) registers the Select as the
+// field's control and owns the id/aria wiring. Field's `name`/`required`/
+// `disabled` act as fallbacks for the local props (local props always win).
 const fieldContext = injectFieldRootContext(null)
 
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
@@ -183,16 +182,6 @@ function handleValueChange(value: T) {
   // single item just added *or removed*.
   fieldContext?.handleControlInput({ value: nextValue })
 }
-
-let unregisterControl: (() => void) | undefined
-onMounted(() => {
-  unregisterControl = fieldContext?.registerControl({
-    element: () => triggerElement.value,
-    getValue: () => modelValue.value,
-    required: () => props.required,
-  })
-})
-onBeforeUnmount(() => unregisterControl?.())
 
 function getOption(value: SelectOption['value']) {
   return Array.from(optionsSet.value)

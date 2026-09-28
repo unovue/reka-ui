@@ -259,6 +259,7 @@ export const components = {
     'FieldControl',
     'FieldDescription',
     'FieldError',
+    'FieldValidity',
   ] as const,
 
   form: [

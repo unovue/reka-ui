@@ -167,21 +167,20 @@ const ariaLabel = computed(() => {
     : undefined
 })
 
-// Merge (never overwrite) a consumer-provided `aria-describedby` with the
-// ids accumulated by the ancestor Field's `FieldDescription`/`FieldError`.
-const mergedDescribedBy = computed(() => {
-  const consumerValue = attrs['aria-describedby'] as string | undefined
-  return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
-})
-
-// A consumer-provided `aria-invalid` always wins — read it explicitly rather
-// than relying on the `$attrs` spread order, since our own explicit binding
-// below is written after that spread and would otherwise clobber it (even
-// with an `undefined` value) once merged.
-const mergedAriaInvalid = computed(() => {
-  const consumerValue = attrs['aria-invalid'] as string | boolean | undefined
-  return consumerValue ?? (fieldContext?.invalid.value || undefined)
-})
+// Field aria wiring, merged with (never overwriting) the consumer's values.
+// `attrs` isn't reactive, so this runs during render rather than in a
+// `computed`. A consumer-provided `aria-invalid` always wins — read it
+// explicitly, since our own binding below is written after the `$attrs`
+// spread and would otherwise clobber it (even with an `undefined` value).
+function getFieldAriaAttrs() {
+  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
+    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  return {
+    'aria-labelledby': mergeIds(attrs['aria-labelledby'], participatesAsControl.value ? fieldContext?.labelId.value : undefined),
+    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
+    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
+  }
+}
 
 function handleFocus() {
   fieldContext?.handleControlFocus()
@@ -198,6 +197,7 @@ onMounted(() => {
   if (!participatesAsControl.value)
     return
   unregisterControl = fieldContext?.registerControl({
+    id: () => resolvedId.value,
     element: () => currentElement.value as HTMLElement | undefined,
     getValue: () => checkboxState.value,
     required: () => props.required,
@@ -215,7 +215,7 @@ provideCheckboxRootContext({
 
 <template>
   <component
-    v-bind="{ ...$attrs, ...scopeIdAttrs }"
+    v-bind="{ ...fieldContext?.dataAttributes.value, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
     :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
     :id="resolvedId"
     :ref="forwardRef"
@@ -226,8 +226,6 @@ provideCheckboxRootContext({
     :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState"
     :aria-required="resolvedRequired"
     :aria-label="$attrs['aria-label'] || ariaLabel"
-    :aria-describedby="mergedDescribedBy"
-    :aria-invalid="mergedAriaInvalid"
     :data-state="getState(checkboxState)"
     :data-disabled="disabled ? '' : undefined"
     :disabled="disabled"

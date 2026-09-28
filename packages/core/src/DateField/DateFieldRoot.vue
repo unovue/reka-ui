@@ -274,23 +274,22 @@ function setFocusedElement(el: HTMLElement) {
 // same as the other pilots' `aria-describedby` merge.
 const attrs = useAttrs()
 
-const mergedLabelledBy = computed(() => {
-  const consumerValue = attrs['aria-labelledby'] as string | undefined
-  return [consumerValue, fieldContext?.labelId.value].filter(Boolean).join(' ') || undefined
-})
-const mergedDescribedBy = computed(() => {
-  const consumerValue = attrs['aria-describedby'] as string | undefined
-  return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
-})
+// `attrs` isn't reactive, so this runs during render rather than in a
+// `computed`. A consumer-provided `aria-invalid` always wins — read it
+// explicitly rather than relying on the `$attrs` spread order.
+function getFieldAriaAttrs() {
+  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
+    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  return {
+    'aria-labelledby': mergeIds(attrs['aria-labelledby'], fieldContext?.labelId.value),
+    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
+    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
+  }
+}
 
-// A consumer-provided `aria-invalid` always wins — read it explicitly rather
-// than relying on the `$attrs` spread order, since our own explicit binding
-// below is written after that spread and would otherwise clobber it (even
-// with an `undefined` value) once merged.
-const mergedAriaInvalid = computed(() => {
-  const consumerValue = attrs['aria-invalid'] as string | boolean | undefined
-  return consumerValue ?? (fieldContext?.invalid.value || undefined)
-})
+// The hidden input takes the field's id, so `FieldLabel`'s `for` lands on it
+// and its focus handler moves focus into the first segment.
+const nativeInputId = computed(() => props.id ?? fieldContext?.fieldId.value)
 
 // The hidden native input mirrors the value along with `required`/`min`/`max`,
 // so its `ValidityState` drives the field's constraint validation.
@@ -299,6 +298,7 @@ const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
 let unregisterControl: (() => void) | undefined
 onMounted(() => {
   unregisterControl = fieldContext?.registerControl({
+    id: () => nativeInputId.value,
     // The first segment (not the group container, which isn't itself
     // focusable), so `FormRoot` can move focus into the field on an invalid submit.
     element: () => Array.from(segmentElements.value)[0],
@@ -360,16 +360,13 @@ defineExpose({
 
 <template>
   <Primitive
-    v-bind="$attrs"
+    v-bind="{ ...fieldContext?.dataAttributes.value, ...$attrs, ...getFieldAriaAttrs() }"
     ref="primitiveElement"
     role="group"
     :aria-disabled="disabled ? true : undefined"
-    :aria-labelledby="mergedLabelledBy"
-    :aria-describedby="mergedDescribedBy"
-    :aria-invalid="mergedAriaInvalid"
     :data-disabled="disabled ? '' : undefined"
     :data-readonly="readonly ? '' : undefined"
-    :data-invalid="isInvalid ? '' : undefined"
+    :data-invalid="isInvalid || fieldContext?.invalid.value ? '' : undefined"
     :dir="dir"
     @keydown.left.right="handleKeydown"
     @focusin="handleFocusin"
@@ -382,7 +379,7 @@ defineExpose({
     />
 
     <VisuallyHidden
-      :id="id"
+      :id="nativeInputId"
       ref="nativeInput"
       as="input"
       :type="inputType"

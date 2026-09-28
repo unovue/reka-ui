@@ -8,7 +8,7 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
@@ -39,26 +39,42 @@ onMounted(() => {
 // whatever the consumer already passed (or nothing), unchanged.
 const fieldContext = injectFieldRootContext(null)
 const attrs = useAttrs()
-const resolvedId = computed(() => (attrs.id as string | undefined) ?? fieldContext?.fieldId.value)
-const mergedDescribedBy = computed(() => {
-  const consumerValue = attrs['aria-describedby'] as string | undefined
-  return [consumerValue, fieldContext?.describedBy.value].filter(Boolean).join(' ') || undefined
-})
-// A consumer-provided `aria-invalid` always wins — read it explicitly (same
-// reasoning as `resolvedId`/`mergedDescribedBy` above) rather than relying on
-// attrs-merge order through the `PopperAnchor`/`asChild` layering.
-const mergedAriaInvalid = computed(() => {
-  const consumerValue = attrs['aria-invalid'] as string | boolean | undefined
-  return consumerValue ?? (fieldContext?.invalid.value || undefined)
-})
+// `attrs` isn't reactive, so these are read during render rather than cached
+// in a `computed`. Consumer values are merged (ids) or win (`id`,
+// `aria-invalid`) — read explicitly rather than relying on attrs-merge order
+// through the `PopperAnchor`/`asChild` layering.
+function getResolvedId() {
+  return (attrs.id as string | undefined) ?? fieldContext?.fieldId.value
+}
+function getFieldAttrs() {
+  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
+    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  return {
+    ...fieldContext?.dataAttributes.value,
+    'id': getResolvedId(),
+    'aria-labelledby': mergeIds(attrs['aria-labelledby'], fieldContext?.labelId.value),
+    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
+    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
+  }
+}
 
 function handleFieldFocus() {
   fieldContext?.handleControlFocus()
 }
 function handleFieldBlur() {
-  // The value is read through the control `SelectRoot` registered.
   fieldContext?.handleControlBlur()
 }
+
+let unregisterControl: (() => void) | undefined
+onMounted(() => {
+  unregisterControl = fieldContext?.registerControl({
+    id: getResolvedId,
+    element: () => triggerElement.value,
+    getValue: () => rootContext.modelValue.value,
+    required: () => Boolean(rootContext.required?.value),
+  })
+})
+onBeforeUnmount(() => unregisterControl?.())
 
 const { getItems } = useCollection()
 const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()
@@ -131,15 +147,13 @@ function onTriggerClick(event: MouseEvent) {
     :reference="reference"
   >
     <Primitive
-      :id="resolvedId"
+      v-bind="getFieldAttrs()"
       :ref="forwardRef"
       role="combobox"
       :type="as === 'button' ? 'button' : undefined"
       :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
-      :aria-describedby="mergedDescribedBy"
-      :aria-invalid="mergedAriaInvalid"
       aria-autocomplete="none"
       :disabled="isDisabled"
       :dir="rootContext?.dir.value"

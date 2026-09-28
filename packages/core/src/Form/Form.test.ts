@@ -296,7 +296,10 @@ describe('given a Form submission', () => {
       `,
     }, { attachTo: document.body })
 
-    await wrapper.find('input').trigger('blur')
+    const input = wrapper.find('input')
+    await input.setValue('j')
+    await input.setValue('')
+    await input.trigger('blur')
     expect(wrapper.text()).toContain('Required')
   })
 

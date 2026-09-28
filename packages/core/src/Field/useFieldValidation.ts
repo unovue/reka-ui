@@ -1,18 +1,11 @@
 import type { Ref } from 'vue'
-import { computed, onScopeDispose, ref } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 
 export type FieldValidationMode = 'onSubmit' | 'onBlur' | 'onChange'
 
 export type FieldValidateResult = string | string[] | null | undefined | void
 
 export type FieldValidateFn = (value: unknown, formValues: Record<string, unknown>) => FieldValidateResult | Promise<FieldValidateResult>
-
-export interface UseFieldValidationOptions {
-  validate?: Ref<FieldValidateFn | undefined>
-  validationMode: Ref<FieldValidationMode>
-  validationDebounceTime: Ref<number | undefined>
-  getFormValues: () => Record<string, unknown>
-}
 
 const VALIDITY_KEYS = [
   'badInput',
@@ -27,44 +20,88 @@ const VALIDITY_KEYS = [
   'valueMissing',
 ] as const
 
+type ValidityKey = typeof VALIDITY_KEYS[number]
+
 /**
- * Builds a plain `ValidityState` from the given failing constraints. Used for
- * non-native controls (e.g. `Select`, `Checkbox`), which have no `ValidityState`
- * of their own, and to snapshot a native element's live one.
+ * A field's constraint-validation state. Mirrors the native `ValidityState`,
+ * except `valid` is `null` until the field has a validity to report.
  */
-export function createValidityState(flags: Partial<Record<typeof VALIDITY_KEYS[number], boolean>> = {}): ValidityState {
-  const state = Object.fromEntries(VALIDITY_KEYS.map(key => [key, Boolean(flags[key])])) as Record<typeof VALIDITY_KEYS[number], boolean>
+export type FieldValidityState = Record<ValidityKey, boolean> & { valid: boolean | null }
+
+export const DEFAULT_VALIDITY_STATE: FieldValidityState = {
+  ...Object.fromEntries(VALIDITY_KEYS.map(key => [key, false])) as Record<ValidityKey, boolean>,
+  valid: null,
+}
+
+/**
+ * Builds a `ValidityState` from the given failing constraints. Used for
+ * non-native controls (e.g. `Select`, `Checkbox`), which have no
+ * `ValidityState` of their own, and to snapshot a native element's live one.
+ */
+export function createValidityState(flags: Partial<Record<ValidityKey, boolean>> = {}): ValidityState {
+  const state = Object.fromEntries(VALIDITY_KEYS.map(key => [key, Boolean(flags[key])])) as Record<ValidityKey, boolean>
   return { ...state, valid: VALIDITY_KEYS.every(key => !state[key]) }
+}
+
+type NativeControl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+
+/** Where the field's constraint-validation state comes from. */
+export interface FieldValiditySource {
+  /** A native element whose live `ValidityState` is read (and which receives custom errors). */
+  element?: NativeControl
+  /** Derives the state of a control that has no native element. */
+  getValidity?: (value: unknown) => ValidityState
+}
+
+export interface UseFieldValidationOptions {
+  validate: Ref<FieldValidateFn | undefined>
+  validationMode: Ref<FieldValidationMode>
+  validationDebounceTime: Ref<number | undefined>
+  getFormValues: () => Record<string, unknown>
+  /** Whether validation on change currently applies (`onChange`, or `onSubmit` after a submit). */
+  shouldValidateOnChange: () => boolean
+  /**
+   * Whether the user has changed the value (or a submit/`validate()` forced
+   * validation). Until then, a `valueMissing`-only failure is suppressed to
+   * reduce error noise.
+   */
+  markedDirty: Ref<boolean>
 }
 
 function normalizeErrors(result: FieldValidateResult): string[] {
   if (!result)
     return []
-  return Array.isArray(result) ? result.filter(Boolean) : [result]
+  return (Array.isArray(result) ? result : [result]).filter(Boolean)
 }
 
 function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
   return typeof value === 'object' && value !== null && typeof (value as PromiseLike<T>).then === 'function'
 }
 
+function getNativeErrors(element: NativeControl | undefined) {
+  return element?.validationMessage ? [element.validationMessage] : []
+}
+
 /**
- * Encapsulates the Field validation engine: custom sync/async `validate()`
- * plus native `ValidityState` tracking. Timing (when validation actually
- * runs) is controlled by the caller (`FieldRoot`) based on `validationMode` —
- * this composable only executes/debounces the check and stores the result.
+ * The Field validation engine, modeled on Base UI's: native constraint
+ * validation plus a custom sync/async `validate()`. Custom errors are
+ * installed on the native element with `setCustomValidity`, so `:invalid`
+ * and `validationMessage` agree with the field. Timing (when `commit`/
+ * `change` run) is decided by the caller based on `validationMode`.
  */
 export function useFieldValidation(options: UseFieldValidationOptions) {
-  const customErrors = ref<string[]>([])
-  const validity = ref<ValidityState>()
-  const hasValidated = ref(false)
-  // `true` while an async `validate()` is in flight. The field is neither
-  // valid nor invalid until it settles, unless an earlier custom error is kept.
-  const pending = ref(false)
+  const validity = ref<FieldValidityState>({ ...DEFAULT_VALIDITY_STATE })
+  /** Native messages or custom `validate` messages, only while invalid. */
+  const errors = ref<string[]>([])
+  /** The value validity was last computed for. */
+  const value = ref<unknown>(null)
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined
   // Guards against out-of-order async `validate()` resolutions clobbering a
   // newer result (e.g. fast typing with a slow network-backed validator).
-  let token = 0
+  let commitId = 0
+  // The custom message Base UI-style validation installed, and the one it displaced.
+  let installedCustomValidity: [element: NativeControl, message: string, displaced: string] | undefined
 
   function clearDebounce() {
     if (debounceTimer !== undefined) {
@@ -73,116 +110,187 @@ export function useFieldValidation(options: UseFieldValidationOptions) {
     }
   }
 
-  function runCustomValidate(value: unknown) {
-    const validateFn = options.validate?.value
-    const currentToken = ++token
-    pending.value = false
-    hasValidated.value = true
+  function setCustomValidity(element: NativeControl, message: string) {
+    // Never reinstall a native constraint message as custom validity.
+    const displaced = element.validity.customError ? element.validationMessage : ''
+    element.setCustomValidity(message)
+    installedCustomValidity = [element, message, displaced]
+  }
 
-    if (!validateFn) {
-      customErrors.value = []
+  function clearCustomValidity() {
+    const record = installedCustomValidity
+    installedCustomValidity = undefined
+    // Only restore when our message is still the one installed.
+    if (record && (!record[0].willValidate || record[0].validationMessage === record[1]))
+      record[0].setCustomValidity(record[2])
+  }
+
+  function readState(source: FieldValiditySource, currentValue: unknown): FieldValidityState {
+    const { element, getValidity } = source
+    let live: ValidityState | undefined
+    if (element)
+      live = element.willValidate ? element.validity : undefined
+    else if (getValidity)
+      live = getValidity(currentValue)
+
+    // Barred controls (disabled, `type="button"`, …) have no usable state.
+    if (!live)
+      return { ...createValidityState() }
+
+    const state: FieldValidityState = { ...createValidityState(live), valid: live.valid }
+
+    // Only let `valueMissing` mark the field invalid once the value has been
+    // changed (or validation was forced), to reduce error noise.
+    const onlyValueMissing = state.valueMissing
+      && VALIDITY_KEYS.every(key => key === 'valueMissing' || !state[key])
+    if (onlyValueMissing && !options.markedDirty.value) {
+      state.valueMissing = false
+      state.valid = true
+    }
+    return state
+  }
+
+  function publish(state: FieldValidityState, messages: string[], committedValue: unknown) {
+    validity.value = state
+    errors.value = state.valid === false ? messages : []
+    value.value = committedValue
+  }
+
+  /**
+   * Validates the value now: native constraints first, then the custom
+   * `validate` (which also runs despite native failures when validating on
+   * change, so its messages can replace the native ones).
+   */
+  function commit(currentValue: unknown, source: FieldValiditySource) {
+    clearDebounce()
+    const id = ++commitId
+
+    // Don't read our own previous message back as a native constraint.
+    clearCustomValidity()
+
+    let state = readState(source, currentValue)
+    const nativeErrors = state.valid === false ? getNativeErrors(source.element) : []
+    const validateFn = options.validate.value
+
+    if (!validateFn || (state.valid === false && !options.shouldValidateOnChange())) {
+      publish(state, nativeErrors, currentValue)
       return
     }
 
     let result: FieldValidateResult | PromiseLike<FieldValidateResult>
     try {
-      result = validateFn(value, options.getFormValues())
+      result = validateFn(currentValue, options.getFormValues())
     }
     catch (error) {
-      // A throwing `validate` is a bug in the validator, not a field error —
-      // conflating the two would hide it behind a generic "invalid" state.
+      // A throwing `validate` is a bug in the validator, not a field error.
       console.error(error)
+      publish(state, nativeErrors, currentValue)
       return
+    }
+
+    const finish = (resolved: FieldValidateResult) => {
+      const customErrors = normalizeErrors(resolved)
+      if (customErrors.length > 0) {
+        state = { ...state, valid: false, customError: true }
+        // Keep custom errors for barred controls in field state only.
+        if (source.element?.willValidate)
+          setCustomValidity(source.element, customErrors.join('\n'))
+        publish(state, customErrors, currentValue)
+      }
+      else {
+        publish(state, getNativeErrors(source.element), currentValue)
+      }
     }
 
     if (!isPromiseLike<FieldValidateResult>(result)) {
-      customErrors.value = normalizeErrors(result)
+      finish(result)
       return
     }
 
-    // Async validators don't block an `onSubmit` submission (matching Base UI):
-    // the field goes neutral while pending. In the other modes a previous
-    // custom error is kept, so it still blocks submission until it resolves.
-    pending.value = true
-    if (options.validationMode.value === 'onSubmit')
-      customErrors.value = []
+    // Validity is unknown while the validator runs, so go neutral — but keep
+    // what must still block submission: native failures, and a previous
+    // custom error outside `onSubmit` mode.
+    if (state.valid === false)
+      publish(state, nativeErrors, currentValue)
+    else if (options.validationMode.value === 'onSubmit' || !validity.value.customError)
+      publish({ ...state, valid: null }, [], currentValue)
 
     result.then(
       (resolved) => {
-        if (currentToken !== token)
+        if (id !== commitId)
           return
-        pending.value = false
-        customErrors.value = normalizeErrors(resolved)
+        state = readState(source, currentValue)
+        finish(resolved)
       },
       (error) => {
-        // A rejecting validator keeps the previously published state.
+        // A rejected validator keeps the previously published state, so a
+        // transient failure can't retire an error and unblock submission.
         console.error(error)
-        if (currentToken === token)
-          pending.value = false
       },
     )
   }
 
   /**
-   * Runs validation for the given value.
-   * @param value The current control value to validate.
-   * @param immediate Skip the configured debounce (used for blur/submit).
+   * Re-checks an invalid field while its value changes but on-change
+   * validation doesn't apply: clears a resolved `valueMissing` right away,
+   * leaving other errors for the next blur/submit.
    */
-  function triggerValidation(value: unknown, immediate = false) {
-    clearDebounce()
+  function revalidate(currentValue: unknown, source: FieldValiditySource) {
+    if (validity.value.valid !== false)
+      return
+    commitId++
+    clearCustomValidity()
 
-    const debounceTime = options.validationDebounceTime.value
-    if (!immediate && debounceTime && value !== '') {
-      debounceTimer = setTimeout(() => {
-        debounceTimer = undefined
-        runCustomValidate(value)
-      }, debounceTime)
+    const live = source.element
+      ? (source.element.willValidate ? source.element.validity : undefined)
+      : source.getValidity?.(currentValue)
+    if (!live || live.valueMissing)
+      return
+
+    publish({ ...createValidityState(), valid: true }, [], currentValue)
+  }
+
+  /** Runs on a value change: validates (debounced) when on-change validation applies. */
+  function change(currentValue: unknown, source: FieldValiditySource) {
+    clearDebounce()
+    if (!options.shouldValidateOnChange()) {
+      revalidate(currentValue, source)
       return
     }
 
-    runCustomValidate(value)
-  }
-
-  function setNativeValidity(nextValidity: ValidityState | undefined) {
-    // `element.validity` is a *live* object — the browser (and jsdom) mutate
-    // it in place and hand back the same reference on every access. Assigning
-    // that reference straight to a ref would make Vue's `Object.is` change
-    // check see no change (and skip reactivity) even when the underlying
-    // constraint state flipped. Snapshot it into a fresh plain object instead.
-    validity.value = nextValidity ? createValidityState(nextValidity) : undefined
-    hasValidated.value = true
+    const debounceTime = options.validationDebounceTime.value
+    if (debounceTime && currentValue !== '') {
+      commitId++
+      debounceTimer = setTimeout(() => {
+        debounceTimer = undefined
+        commit(currentValue, source)
+      }, debounceTime)
+      return
+    }
+    commit(currentValue, source)
   }
 
   function reset() {
     clearDebounce()
-    token++
-    customErrors.value = []
-    validity.value = undefined
-    hasValidated.value = false
-    pending.value = false
+    commitId++
+    clearCustomValidity()
+    validity.value = { ...DEFAULT_VALIDITY_STATE }
+    errors.value = []
+    value.value = null
   }
 
-  // A pending debounce timer must not outlive the component that created it —
-  // otherwise an unmounted field's `validate` could still fire later,
-  // touching refs whose effects have already been torn down. Bumping `token`
-  // also makes any validation promise already in flight a no-op once it resolves.
+  // A pending debounce or async `validate` must not outlive the field.
   onScopeDispose(() => {
     clearDebounce()
-    token++
+    commitId++
   })
 
-  const nativeInvalid = computed(() => (validity.value ? !validity.value.valid : false))
-  const customInvalid = computed(() => customErrors.value.length > 0)
-  const invalid = computed(() => nativeInvalid.value || customInvalid.value)
-
   return {
-    customErrors,
     validity,
-    hasValidated,
-    pending,
-    invalid,
-    triggerValidation,
-    setNativeValidity,
+    errors,
+    value,
+    commit,
+    change,
     reset,
   }
 }

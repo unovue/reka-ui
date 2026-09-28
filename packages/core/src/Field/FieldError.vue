@@ -6,60 +6,71 @@ export interface FieldErrorProps extends PrimitiveProps {
   id?: string
   /**
    * Restricts when this error renders:
-   * - a `ValidityState` key (e.g. `"valueMissing"`) — renders when that native constraint fails.
-   * - `true` — renders whenever the field is invalid, for any reason.
-   * - `false` — never renders (escape hatch).
-   * - omitted — renders when custom `validate`/server errors exist.
+   * - a `ValidityState` key (e.g. `"valueMissing"`) — renders when that constraint fails.
+   * - `true` — always renders, letting an external library control visibility.
+   * - omitted — renders whenever the field is invalid.
    */
   match?: keyof ValidityState | boolean
-  /** Force mounting, ignoring `match`/validity — useful for animation frameworks. */
+  /** Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. */
   forceMount?: boolean
 }
 </script>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldErrorProps>(), {
-  as: 'p',
+  as: 'div',
   // `match`'s type includes `boolean`, which triggers Vue's boolean-attribute
   // casting (an omitted prop is cast to `false` instead of `undefined`) unless
-  // an explicit default is set — required here to tell "omitted" apart from
+  // an explicit default is set — required to tell "omitted" apart from
   // an explicit `:match="false"`.
   match: undefined,
 })
 
 defineSlots<{
   default?: (props: {
-    /** All current error messages. */
+    /** The error messages this part displays. */
     errors: string[]
   }) => any
 }>()
 
 const fieldContext = injectFieldRootContext()
 
-useForwardExpose()
+const { forwardRef } = useForwardExpose()
 
 const errorId = ref(useId(props.id))
 
+const isSpecificMatch = computed(() => typeof props.match === 'string')
+
 const visible = computed(() => {
-  if (props.forceMount)
-    return true
-
-  if (typeof props.match === 'string')
-    return fieldContext.validity.value?.[props.match] === true
-
   if (props.match === true)
-    return fieldContext.invalid.value
-
-  if (props.match === false)
+    return true
+  if (fieldContext.disabled.value || props.match === false)
     return false
-
-  return fieldContext.errors.value.length > 0
+  if (typeof props.match === 'string')
+    return fieldContext.validity.value[props.match as keyof typeof fieldContext.validity.value] === true
+  return fieldContext.serverErrors.value.length > 0 || fieldContext.valid.value === false
 })
+
+// A specific constraint shows the validation messages; otherwise server
+// errors take over while present.
+const messages = computed(() => {
+  if (!isSpecificMatch.value && fieldContext.serverErrors.value.length > 0)
+    return fieldContext.serverErrors.value
+  return fieldContext.validationErrors.value
+})
+
+// Keep showing the last messages while the error animates out.
+const renderedMessages = ref<string[]>([])
+watch([visible, messages], () => {
+  if (visible.value)
+    renderedMessages.value = messages.value
+}, { immediate: true })
 
 // Registration tracks visibility over time (not just at mount) — a
 // `FieldError` can become visible/hidden long after it first mounts (e.g.
@@ -78,12 +89,28 @@ onBeforeUnmount(() => unregister?.())
 </script>
 
 <template>
-  <Primitive
-    v-if="visible"
-    :id="errorId"
-    :as="as"
-    :as-child="asChild"
-  >
-    <slot :errors="fieldContext.errors.value" />
-  </Primitive>
+  <Presence :present="forceMount || visible">
+    <Primitive
+      v-bind="fieldContext.dataAttributes.value"
+      :id="errorId"
+      :ref="forwardRef"
+      :as="as"
+      :as-child="asChild"
+      :data-state="visible ? 'open' : 'closed'"
+    >
+      <slot :errors="renderedMessages">
+        <ul v-if="renderedMessages.length > 1">
+          <li
+            v-for="message in renderedMessages"
+            :key="message"
+          >
+            {{ message }}
+          </li>
+        </ul>
+        <template v-else>
+          {{ renderedMessages[0] }}
+        </template>
+      </slot>
+    </Primitive>
+  </Presence>
 </template>

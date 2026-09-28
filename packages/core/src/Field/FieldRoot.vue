@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
-import type { FieldValidateFn, FieldValidationMode } from './useFieldValidation'
+import type { FieldValidateFn, FieldValidationMode, FieldValidityState } from './useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
 import { createContext, useForwardExpose, useId } from '@/shared'
 
@@ -20,6 +20,16 @@ export interface FieldRootProps extends PrimitiveProps {
    * Useful when the field state is controlled by an external library.
    */
   invalid?: boolean
+  /**
+   * Whether the field's value has changed from its initial value.
+   * Useful when the field state is controlled by an external library.
+   */
+  dirty?: boolean
+  /**
+   * Whether the field has been touched (its control blurred).
+   * Useful when the field state is controlled by an external library.
+   */
+  touched?: boolean
   /**
    * Custom validation function. Return an error message (or array of
    * messages) when invalid, or `null`/`undefined` when valid. Receives the
@@ -59,14 +69,17 @@ export interface FieldControlDetail {
  * `registerControl` by `FieldControl` and by participating Reka components.
  */
 export interface FieldControlRegistration {
-  /** The element focused when this is the first invalid field on submit. */
+  /** The control's id, which `FieldLabel` points `for` at. Defaults to the field's generated id. */
+  id?: () => string | undefined
+  /** The element focused when this is the first invalid field on submit, or its label is clicked. */
   element: () => HTMLElement | null | undefined
   /** The control's current value, passed to `validate` and collected by `FormRoot`. */
   getValue: () => unknown
   /**
-   * A native form element whose `ValidityState` drives constraint validation.
-   * Omit for non-native controls: their `valueMissing` is derived from
-   * `required` and `isFilled` instead.
+   * A native form element whose `ValidityState` drives constraint validation,
+   * and which receives custom errors through `setCustomValidity`. Omit for
+   * non-native controls: their `valueMissing` is derived from `required` and
+   * `isFilled` instead.
    */
   validityElement?: () => HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null | undefined
   /** Whether the control itself is marked required. Only used without a `validityElement`. */
@@ -75,11 +88,15 @@ export interface FieldControlRegistration {
   isFilled?: (value: unknown) => boolean
 }
 
+export type FieldDataAttributes = Record<`data-${'disabled' | 'valid' | 'invalid' | 'dirty' | 'touched' | 'filled' | 'focused'}`, '' | undefined>
+
 export interface FieldRootContext {
-  /** Id to associate the control with `FieldLabel` (`for`/`id`). */
+  /** Generated id a control uses unless it has its own. */
   fieldId: Ref<string>
-  /** Id of the `FieldLabel`. */
-  labelId: Ref<string>
+  /** The registered control's id (its own, or `fieldId`), for `FieldLabel`'s `for`. */
+  getControlId: () => string
+  /** Id of the mounted `FieldLabel`, if any. */
+  labelId: ComputedRef<string | undefined>
   name: Ref<string | undefined>
   disabled: Ref<boolean>
   required: Ref<boolean>
@@ -87,26 +104,40 @@ export interface FieldRootContext {
   valid: ComputedRef<boolean | null>
   /** Shorthand for `valid === false`. */
   invalid: ComputedRef<boolean>
-  /** All current error messages (native, custom `validate`, then server errors). */
-  errors: Ref<string[]>
-  /** The control's current `ValidityState` (native, or derived for non-native controls). */
-  validity: Ref<ValidityState | undefined>
-  touched: Ref<boolean>
-  dirty: Ref<boolean>
+  /** The field's validity, including external invalidity (`invalid` prop, server errors). */
+  validity: ComputedRef<FieldValidityState>
+  /** All current error messages: validation errors, then server errors. */
+  errors: ComputedRef<string[]>
+  /** Native or custom `validate` messages, while the field is invalid. */
+  validationErrors: Ref<string[]>
+  /** Server errors from an ancestor `FormRoot`, until the user edits the field. */
+  serverErrors: ComputedRef<string[]>
+  /** The value validity was last computed for. */
+  value: Ref<unknown>
+  /** The control's value when it registered. */
+  initialValue: Ref<unknown>
+  touched: ComputedRef<boolean>
+  dirty: ComputedRef<boolean>
   filled: Ref<boolean>
   focused: Ref<boolean>
+  /** The field's state as data attributes, for every part to render. */
+  dataAttributes: ComputedRef<FieldDataAttributes>
   /** Accumulated `aria-describedby` value from registered `FieldDescription`/`FieldError` parts. */
   describedBy: Ref<string | undefined>
   /** Registers a description/error part's id. Returns an unregister function. */
   registerDescription: (id: string) => () => void
+  /** Registers the `FieldLabel`. Returns an unregister function. */
+  registerLabel: () => () => void
   /** Registers the field's control. Returns an unregister function. */
   registerControl: (control: FieldControlRegistration) => () => void
+  /** Moves focus to the registered control. */
+  focusControl: () => void
   reportControlState: (state: { focused?: boolean, filled?: boolean, dirty?: boolean, touched?: boolean }) => void
   /** Called by the control on focus. */
   handleControlFocus: () => void
   /** Called by the control on blur. */
   handleControlBlur: (detail?: FieldControlDetail) => void
-  /** Called by the control on a user-driven value change. */
+  /** Called by the control on a value change. */
   handleControlInput: (detail?: FieldControlDetail) => void
   /** Runs validation immediately regardless of `validationMode`. Returns whether the field is valid. */
   validate: () => boolean
@@ -119,6 +150,7 @@ export const [injectFieldRootContext, provideFieldRootContext]
 </script>
 
 <script setup lang="ts">
+import { isEqual } from 'ohash'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRefs, watch } from 'vue'
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
 import { Primitive } from '@/Primitive'
@@ -126,10 +158,12 @@ import { createValidityState, useFieldValidation } from './useFieldValidation'
 
 const props = withDefaults(defineProps<FieldRootProps>(), {
   // Vue casts an omitted `Boolean`-typed prop to `false` rather than leaving
-  // it `undefined` ("boolean casting"). An explicit `undefined` default here
-  // keeps it `undefined` so `validationMode` can fall back to the form's.
+  // it `undefined` ("boolean casting"). An explicit `undefined` default keeps
+  // "not controlled" distinguishable from an explicit `false`.
   validationMode: undefined,
   invalid: undefined,
+  dirty: undefined,
+  touched: undefined,
 })
 
 defineSlots<{
@@ -144,34 +178,52 @@ defineSlots<{
 const { disabled, required, name } = toRefs(props)
 
 const fieldId = ref(useId(undefined, 'reka-field'))
-const labelId = ref(useId(undefined, 'reka-field-label'))
+const labelIdBase = useId(undefined, 'reka-field-label')
+const labelMounted = ref(false)
+const labelId = computed(() => labelMounted.value ? labelIdBase : undefined)
 
-const touched = ref(false)
-const dirty = ref(false)
+const touchedState = ref(false)
+const dirtyState = ref(false)
 const filled = ref(false)
 const focused = ref(false)
+const touched = computed(() => props.touched ?? touchedState.value)
+const dirty = computed(() => props.dirty ?? dirtyState.value)
+// Set once the value has been changed (or validation forced); until then a
+// `valueMissing`-only failure is suppressed.
+const markedDirty = ref(false)
+watch(() => props.dirty, (value) => {
+  if (value !== undefined)
+    markedDirty.value = value
+}, { immediate: true })
 
 // --- Optional participation in a `FormRoot` ancestor ---
 const formContext = injectFormRootContext(null)
 
 const validationMode = computed(() => props.validationMode ?? formContext?.validationMode.value ?? 'onSubmit')
 
+function shouldValidateOnChange() {
+  return validationMode.value === 'onChange'
+    || (validationMode.value === 'onSubmit' && (formContext?.submitCount.value ?? 0) > 0)
+}
+
 const control = shallowRef<FieldControlRegistration>()
+const initialValue = ref<unknown>(null)
+let initialValueCaptured = false
 
 const {
-  customErrors,
-  validity,
-  hasValidated,
-  pending,
-  invalid: validationInvalid,
-  triggerValidation,
-  setNativeValidity,
+  validity: validationValidity,
+  errors: validationErrors,
+  value,
+  commit,
+  change,
   reset: resetValidation,
 } = useFieldValidation({
   validate: computed(() => props.validate),
   validationMode,
   validationDebounceTime: computed(() => props.validationDebounceTime),
   getFormValues: () => formContext?.getValues() ?? {},
+  shouldValidateOnChange,
+  markedDirty,
 })
 
 const clearedServerError = ref(false)
@@ -193,28 +245,35 @@ watch([serverError, () => formContext?.serverErrors.value], () => {
   clearedServerError.value = false
 })
 
-const activeServerErrors = computed(() => {
+const serverErrors = computed(() => {
   if (clearedServerError.value || !serverError.value)
     return []
-  return Array.isArray(serverError.value) ? serverError.value : [serverError.value]
+  return (Array.isArray(serverError.value) ? serverError.value : [serverError.value]).filter(Boolean)
 })
 
-const errors = computed(() => [...customErrors.value, ...activeServerErrors.value])
-const hasServerError = computed(() => activeServerErrors.value.length > 0)
+const errors = computed(() => [...validationErrors.value, ...serverErrors.value])
 
 // App-controlled invalidity (the `invalid` prop and server errors) applies even
 // while disabled. Computed validity (native constraints and `validate`) doesn't,
 // matching how `:disabled` controls are barred from constraint validation.
+const externalInvalid = computed(() => props.invalid === true || serverErrors.value.length > 0)
 const valid = computed<boolean | null>(() => {
-  if (props.invalid === true || hasServerError.value)
+  if (externalInvalid.value)
     return false
-  if (disabled.value || !hasValidated.value)
-    return null
-  if (validationInvalid.value)
-    return false
-  return pending.value ? null : true
+  return disabled.value ? null : validationValidity.value.valid
 })
 const invalid = computed(() => valid.value === false)
+const validity = computed<FieldValidityState>(() => ({ ...validationValidity.value, valid: valid.value }))
+
+const dataAttributes = computed<FieldDataAttributes>(() => ({
+  'data-disabled': disabled.value ? '' : undefined,
+  'data-valid': valid.value === true ? '' : undefined,
+  'data-invalid': valid.value === false ? '' : undefined,
+  'data-dirty': dirty.value ? '' : undefined,
+  'data-touched': touched.value ? '' : undefined,
+  'data-filled': filled.value ? '' : undefined,
+  'data-focused': focused.value ? '' : undefined,
+}))
 
 // --- Description / error id accumulation (deterministic: registration order) ---
 const describedByIds = ref<string[]>([])
@@ -229,15 +288,37 @@ function registerDescription(id: string) {
   }
 }
 
+function registerLabel() {
+  labelMounted.value = true
+  return () => {
+    labelMounted.value = false
+  }
+}
+
+function setDirty(next: boolean) {
+  // A controlled `dirty` prop owns the state.
+  if (props.dirty !== undefined)
+    return
+  if (next)
+    markedDirty.value = true
+  dirtyState.value = next
+}
+
+function setTouched(next: boolean) {
+  if (props.touched !== undefined)
+    return
+  touchedState.value = next
+}
+
 function reportControlState(state: { focused?: boolean, filled?: boolean, dirty?: boolean, touched?: boolean }) {
   if (state.focused !== undefined)
     focused.value = state.focused
   if (state.filled !== undefined)
     filled.value = state.filled
   if (state.dirty !== undefined)
-    dirty.value = state.dirty
+    setDirty(state.dirty)
   if (state.touched !== undefined)
-    touched.value = state.touched
+    setTouched(state.touched)
 }
 
 // `filled` has to survive non-string values: non-native controls report
@@ -266,34 +347,21 @@ function resolveValue(detail?: FieldControlDetail) {
   return control.value ? control.value.getValue() : lastReportedValue.value
 }
 
-function readValidity(value: unknown): ValidityState | undefined {
+function getValiditySource() {
   const current = control.value
   if (!current)
-    return undefined
-
-  if (current.validityElement) {
-    const element = current.validityElement()
-    // A control barred from constraint validation (disabled, `type="button"`,
-    // …) reports `validity.valid === true` vacuously — don't trust it.
-    return element?.willValidate ? element.validity : undefined
+    return {}
+  if (current.validityElement)
+    return { element: current.validityElement() ?? undefined }
+  return {
+    getValidity: (value: unknown) => createValidityState({
+      valueMissing: (required.value || Boolean(current.required?.())) && !isFilled(value),
+    }),
   }
-
-  const isRequired = required.value || Boolean(current.required?.())
-  return createValidityState({ valueMissing: isRequired && !isFilled(value) })
-}
-
-function runValidation(value: unknown, immediate: boolean) {
-  setNativeValidity(readValidity(value))
-  triggerValidation(value, immediate)
-}
-
-function shouldValidateOnChange() {
-  return validationMode.value === 'onChange'
-    || (validationMode.value === 'onSubmit' && (formContext?.submitCount.value ?? 0) > 0)
 }
 
 function handleControlFocus() {
-  reportControlState({ focused: true })
+  focused.value = true
 }
 
 // Validation timing is governed by `validationMode`; plain state bookkeeping
@@ -301,42 +369,66 @@ function handleControlFocus() {
 function handleControlBlur(detail?: FieldControlDetail) {
   if (detail)
     lastReportedValue.value = detail.value
-  const value = resolveValue(detail)
+  const current = resolveValue(detail)
 
-  reportControlState({ focused: false, touched: true, filled: isFilled(value) })
+  focused.value = false
+  setTouched(true)
+  filled.value = isFilled(current)
 
   if (validationMode.value === 'onBlur' && !disabled.value)
-    runValidation(value, true)
+    commit(current, getValiditySource())
 }
 
 function handleControlInput(detail?: FieldControlDetail) {
   if (detail)
     lastReportedValue.value = detail.value
-  const value = resolveValue(detail)
+  const current = resolveValue(detail)
 
-  reportControlState({ dirty: true, filled: isFilled(value) })
+  // Dirty means "differs from the initial value", so reverting a change clears it.
+  setDirty(!isEqual(current ?? '', initialValue.value ?? ''))
+  filled.value = isFilled(current)
 
   // Editing the field dismisses a previously shown server error for it.
   clearedServerError.value = true
 
-  if (shouldValidateOnChange() && !disabled.value)
-    runValidation(value, false)
+  if (!disabled.value)
+    change(current, getValiditySource())
 }
 
 function registerControl(registration: FieldControlRegistration) {
   control.value = registration
+  const current = registration.getValue()
+  // The baseline belongs to the field, not to a control instance: a control
+  // that remounts must not turn its current value into the initial one.
+  if (!initialValueCaptured) {
+    initialValueCaptured = true
+    initialValue.value = current
+  }
   // A control mounted with a value (e.g. `<input value="…">`) is filled from the start.
-  filled.value = isFilled(registration.getValue())
+  filled.value = isFilled(current)
   return () => {
     if (control.value === registration)
       control.value = undefined
   }
 }
 
+// A function rather than a computed: a control's own `id` can be a
+// non-reactive attribute, so it's read fresh on every render.
+function getControlId() {
+  return control.value?.id?.() ?? fieldId.value
+}
+
+function focusControl() {
+  control.value?.element()?.focus()
+}
+
 function validate(): boolean {
   // Disabled controls are barred from constraint validation; skip `validate` too.
-  if (!disabled.value)
-    runValidation(resolveValue(), true)
+  if (!disabled.value) {
+    // Forced validation reports `valueMissing` even on an untouched field.
+    markedDirty.value = true
+    commit(resolveValue(), getValiditySource())
+  }
   return valid.value !== false
 }
 
@@ -347,13 +439,19 @@ defineExpose({
 useForwardExpose()
 
 function resetField() {
-  touched.value = false
-  dirty.value = false
+  touchedState.value = false
+  dirtyState.value = false
+  markedDirty.value = props.dirty ?? false
   filled.value = false
   focused.value = false
   clearedServerError.value = true
   lastReportedValue.value = undefined
   resetValidation()
+  // A native reset restores default values after the `reset` event.
+  setTimeout(() => {
+    if (control.value)
+      filled.value = isFilled(control.value.getValue())
+  })
 }
 
 let unregisterFromForm: (() => void) | undefined
@@ -371,21 +469,29 @@ onBeforeUnmount(() => unregisterFromForm?.())
 
 provideFieldRootContext({
   fieldId,
+  getControlId,
   labelId,
   name,
   disabled,
   required,
   valid,
   invalid,
-  errors,
   validity,
+  errors,
+  validationErrors,
+  serverErrors,
+  value,
+  initialValue,
   touched,
   dirty,
   filled,
   focused,
+  dataAttributes,
   describedBy,
   registerDescription,
+  registerLabel,
   registerControl,
+  focusControl,
   reportControlState,
   handleControlFocus,
   handleControlBlur,
@@ -399,13 +505,7 @@ provideFieldRootContext({
   <Primitive
     :as="as"
     :as-child="asChild"
-    :data-disabled="disabled ? '' : undefined"
-    :data-valid="valid === true ? '' : undefined"
-    :data-invalid="valid === false ? '' : undefined"
-    :data-dirty="dirty ? '' : undefined"
-    :data-touched="touched ? '' : undefined"
-    :data-filled="filled ? '' : undefined"
-    :data-focused="focused ? '' : undefined"
+    v-bind="dataAttributes"
   >
     <slot
       :invalid="invalid"
