@@ -18,7 +18,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state.</p>\n',
-    'type': 'string[]',
+    'type': 'PinInputValue&lt;Type&gt;',
     'required': false
   },
   {
@@ -48,7 +48,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled checked state of the pin input. Can be binded as <code>v-model</code>.</p>\n',
-    'type': 'string[] | null',
+    'type': 'PinInputValue&lt;Type&gt; | null',
     'required': false
   },
   {
@@ -79,7 +79,7 @@
   {
     'name': 'type',
     'description': '<p>Input type for the inputs.</p>\n',
-    'type': '\'number\' | \'text\'',
+    'type': 'Type',
     'required': false,
     'default': '\'text\' as any'
   }
@@ -89,12 +89,12 @@
   {
     'name': 'complete',
     'description': '',
-    'type': '[value: string[]]'
+    'type': '[value: PinInputValue&lt;Type&gt;]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: string[]]'
+    'type': '[value: PinInputValue&lt;Type&gt;]'
   }
 ]" />
 
@@ -102,7 +102,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string[]'
+    'type': ''
   }
 ]" />
 </llm-exclude>
@@ -115,29 +115,29 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. | `string[]` | No | - |
+| `defaultValue` | The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. | `PinInputValue<Type>` | No | - |
 | `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with the pin input | `boolean` | No | - |
 | `id` | Id of the element | `string` | No | - |
 | `mask` | When true, pin inputs will be treated as password. | `boolean` | No | - |
-| `modelValue` | The controlled checked state of the pin input. Can be binded as v-model. | `string[] \| null` | No | - |
+| `modelValue` | The controlled checked state of the pin input. Can be binded as v-model. | `PinInputValue<Type> \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `otp` | When true, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. | `boolean` | No | - |
 | `placeholder` | The placeholder character to use for empty pin-inputs. | `string` | No | `""` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `type` | Input type for the inputs. | `"number" \| "text"` | No | `"text" as any` |
+| `type` | Input type for the inputs. | `Type` | No | `"text" as any` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `complete` |  | `[value: string[]]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: string[]]` |
+| `complete` |  | `[value: PinInputValue<Type>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: PinInputValue<Type>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `string[]` |
+| `modelValue` | Current input values | `` |
 
 </llm-only>

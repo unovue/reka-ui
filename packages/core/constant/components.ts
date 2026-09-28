@@ -208,6 +208,23 @@ export const components = {
     'DialogDescription',
   ] as const,
 
+  drawer: [
+    'DrawerRoot',
+    'DrawerTrigger',
+    'DrawerPortal',
+    'DrawerOverlay',
+    'DrawerContent',
+    'DrawerClose',
+    'DrawerTitle',
+    'DrawerDescription',
+    'DrawerHandle',
+    'DrawerSwipeArea',
+    'DrawerViewport',
+    'DrawerVirtualKeyboardProvider',
+    'DrawerIndent',
+    'DrawerIndentBackground',
+  ] as const,
+
   dropdownMenu: [
     'DropdownMenuRoot',
     'DropdownMenuTrigger',
@@ -235,6 +252,19 @@ export const components = {
     'EditableSubmitTrigger',
     'EditableCancelTrigger',
     'EditableEditTrigger',
+  ] as const,
+
+  field: [
+    'FieldRoot',
+    'FieldLabel',
+    'FieldControl',
+    'FieldDescription',
+    'FieldError',
+    'FieldValidity',
+  ] as const,
+
+  form: [
+    'FormRoot',
   ] as const,
 
   hoverCard: [
@@ -375,6 +405,12 @@ export const components = {
     'RangeCalendarGridBody',
     'RangeCalendarGridRow',
     'RangeCalendarCellTrigger',
+  ] as const,
+
+  rating: [
+    'RatingRoot',
+    'RatingItem',
+    'RatingItemIndicator',
   ] as const,
 
   scrollArea: [

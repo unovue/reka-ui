@@ -160,11 +160,6 @@
 
 <MethodsTable :data="[
   {
-    'name': 'isTimeUnavailable',
-    'description': '<p>A function that returns whether or not a time is unavailable</p>\n',
-    'type': 'Matcher'
-  },
-  {
     'name': 'setFocusedElement',
     'description': '<p>Helper to set the focused element inside the TimeRangeField</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
@@ -218,7 +213,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `isTimeUnavailable` | A function that returns whether or not a time is unavailable | `Matcher` |
 | `setFocusedElement` | Helper to set the focused element inside the TimeRangeField | `(el: HTMLElement) => void` |
 
 </llm-only>

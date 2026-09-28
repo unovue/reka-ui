@@ -39,7 +39,7 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent&lt;AcceptableValue&gt;]'
+    'type': '[event: SelectEvent&lt;T&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -60,6 +60,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<AcceptableValue>]` |
+| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<T>]` |
 
 </llm-only>

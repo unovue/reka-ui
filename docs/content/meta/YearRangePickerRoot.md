@@ -190,19 +190,6 @@
     'type': 'DateRange'
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'isYearDisabled',
-    'description': '<p>A function that returns whether or not a year is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isYearUnavailable',
-    'description': '<p>A function that returns whether or not a year is unavailable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -251,12 +238,5 @@
 | `grid` | The grid of years | `Grid<DateValue>` |
 | `locale` | The calendar locale | `string` |
 | `modelValue` | The current date range | `DateRange` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `isYearDisabled` | A function that returns whether or not a year is disabled | `Matcher` |
-| `isYearUnavailable` | A function that returns whether or not a year is unavailable | `Matcher` |
 
 </llm-only>

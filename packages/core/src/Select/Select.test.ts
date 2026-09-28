@@ -38,6 +38,79 @@ describe('given default Select', () => {
     expect(selectTrigger.attributes('data-placeholder')).toBe('')
   })
 
+  it('should only render aria-controls while open', async () => {
+    const trigger = wrapper.find('[role="combobox"]')
+    expect(trigger.attributes('aria-controls')).toBeUndefined()
+
+    await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
+    await nextTick()
+
+    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
+  })
+
+  describe('trigger mouse interop', () => {
+    async function openSelectWithMouseClick() {
+      const button = wrapper.find('button')
+      // Open on pointerdown, then emit the compatibility mouse events that follow in browsers.
+      await button.trigger('pointerdown', { button: 0, ctrlKey: false })
+      fireEvent.mouseDown(button.element, { button: 0, ctrlKey: false })
+      fireEvent.mouseUp(button.element, { button: 0, ctrlKey: false })
+      fireEvent.click(button.element, { button: 0, ctrlKey: false })
+      await nextTick()
+      await nextTick()
+    }
+
+    it('should not suppress window mousedown listeners when opening (#1773)', async () => {
+      const button = wrapper.find('button').element
+      const onWindowMousedown = vi.fn()
+      window.addEventListener('mousedown', onWindowMousedown, true)
+
+      fireEvent.pointerDown(button, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+      const mousedownEvent = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ctrlKey: false,
+      })
+      button.dispatchEvent(mousedownEvent)
+
+      expect(onWindowMousedown).toHaveBeenCalled()
+      expect(mousedownEvent.defaultPrevented).toBe(true)
+
+      window.removeEventListener('mousedown', onWindowMousedown, true)
+    })
+
+    it('should focus the trigger on click without a preceding pointerdown', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+      const focusSpy = vi.spyOn(trigger, 'focus')
+
+      fireEvent.click(trigger, { button: 0, ctrlKey: false })
+
+      expect(focusSpy).toHaveBeenCalled()
+      focusSpy.mockRestore()
+    })
+
+    it('should not re-focus the trigger on click after opening via pointerdown', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+      const focusSpy = vi.spyOn(trigger, 'focus')
+
+      await wrapper.find('button').trigger('pointerdown', { button: 0, ctrlKey: false })
+      fireEvent.click(trigger, { button: 0, ctrlKey: false })
+
+      expect(focusSpy).not.toHaveBeenCalled()
+      focusSpy.mockRestore()
+    })
+
+    it('should not leave focus on the trigger after opening via mouse click', async () => {
+      const trigger = wrapper.find('[role="combobox"]').element
+
+      await openSelectWithMouseClick()
+
+      expect(wrapper.html()).toContain('Apple')
+      expect(document.activeElement).not.toBe(trigger)
+    })
+  })
+
   describe('opening the modal', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('pointerdown', {
@@ -58,6 +131,15 @@ describe('given default Select', () => {
 
     it('should show the modal content', () => {
       expect(wrapper.html()).toContain('Apple')
+    })
+
+    it('should select the focused item with Space', async () => {
+      const selection = wrapper.findAll('[role=option]')[1]
+      ;(selection.element as HTMLElement).focus()
+      await selection.trigger('keydown', { key: ' ', code: 'Space' })
+      await nextTick()
+
+      expect(valueBox.html()).toContain('Banana')
     })
 
     describe('after selecting a value', () => {
@@ -135,6 +217,16 @@ describe('given Select with multiple props', async () => {
 
     it('should show the modal content', () => {
       expect(wrapper.html()).toContain('Apple')
+    })
+
+    it('should toggle the focused item with Space', async () => {
+      const selection = wrapper.findAll('[role=option]')[1]
+      ;(selection.element as HTMLElement).focus()
+      await selection.trigger('keydown', { key: ' ', code: 'Space' })
+      await nextTick()
+
+      expect(valueBox.html()).toContain('Banana')
+      expect(selection.attributes('data-state')).toBe('checked')
     })
 
     describe('after selecting a value', () => {
@@ -252,6 +344,42 @@ describe('given Select with object type', async () => {
   })
 })
 
+describe('given Select with options containing spaces', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Select>>
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Select, { attachTo: document.body, props: { options: ['New York', 'Newark', 'New Jersey'] } })
+    await wrapper.find('button').trigger('pointerdown', {
+      button: 0,
+      ctrlKey: false,
+    })
+    await nextTick()
+  })
+
+  it('should include Space in the typeahead search once typing has started', async () => {
+    (wrapper.findAll('[role=option]')[0].element as HTMLElement).focus()
+
+    for (const [key, code] of [['n', 'KeyN'], ['e', 'KeyE'], ['w', 'KeyW'], [' ', 'Space'], ['j', 'KeyJ']]) {
+      await fireEvent.keyDown(document.activeElement!, { key, code })
+      await nextTick()
+    }
+
+    expect(document.activeElement?.textContent).toContain('New Jersey')
+  })
+
+  it('should prevent scrolling when Space extends the typeahead search', async () => {
+    (wrapper.findAll('[role=option]')[0].element as HTMLElement).focus()
+    await fireEvent.keyDown(document.activeElement!, { key: 'n', code: 'KeyN' })
+    await nextTick()
+
+    const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+})
+
 describe('given SelectContent cleanup', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -293,6 +421,18 @@ describe('given Select in a form', async () => {
 
   it('should have hidden input field', async () => {
     expect(wrapper.find('select').exists()).toBe(true)
+  })
+
+  it('should use the nullableValue for the hidden select when the value is nullish', async () => {
+    const wrapper = mount({
+      components: { Select },
+      template: '<form><Select name="test" nullable-value="null" /></form>',
+    }, {
+      attachTo: document.body,
+    })
+
+    const options = wrapper.findAll('select option')
+    expect((options[0].element as HTMLOptionElement).value).toBe('null')
   })
 
   describe('after selecting option and clicking submit button', () => {

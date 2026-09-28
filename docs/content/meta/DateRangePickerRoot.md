@@ -249,24 +249,6 @@
     'type': 'boolean'
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateHighlightable',
-    'description': '<p>A function that returns whether or not a date is hightable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -324,13 +306,5 @@
 | --- | --- | --- |
 | `modelValue` |  | `DateRange` |
 | `open` |  | `boolean` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `isDateDisabled` | A function that returns whether or not a date is disabled | `Matcher` |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` |
-| `isDateHighlightable` | A function that returns whether or not a date is hightable | `Matcher` |
 
 </llm-only>

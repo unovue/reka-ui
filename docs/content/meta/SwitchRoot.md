@@ -18,7 +18,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The state of the switch when it is initially rendered. Use when you do not need to control its state.</p>\n',
-    'type': 'unknown',
+    'type': 'T',
     'required': false
   },
   {
@@ -30,7 +30,7 @@
   {
     'name': 'falseValue',
     'description': '<p>The value used when the switch is off. Defaults to <code>false</code>.</p>\n',
-    'type': 'unknown',
+    'type': 'T',
     'required': false,
     'default': '(() => false) as unknown as undefined'
   },
@@ -43,7 +43,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled state of the switch. Can be bind as <code>v-model</code>.</p>\n',
-    'type': 'unknown',
+    'type': 'null | T',
     'required': false
   },
   {
@@ -61,7 +61,7 @@
   {
     'name': 'trueValue',
     'description': '<p>The value used when the switch is on. Defaults to <code>true</code>.</p>\n',
-    'type': 'unknown',
+    'type': 'T',
     'required': false,
     'default': '(() => true) as unknown as undefined'
   },
@@ -78,7 +78,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the switch changes.</p>\n',
-    'type': '[payload: unknown]'
+    'type': '[payload: T]'
   }
 ]" />
 
@@ -86,7 +86,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current value</p>\n',
-    'type': 'unknown'
+    'type': 'T'
   },
   {
     'name': 'checked',
@@ -104,27 +104,27 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The state of the switch when it is initially rendered. Use when you do not need to control its state. | `unknown` | No | - |
+| `defaultValue` | The state of the switch when it is initially rendered. Use when you do not need to control its state. | `T` | No | - |
 | `disabled` | When true, prevents the user from interacting with the switch. | `boolean` | No | - |
-| `falseValue` | The value used when the switch is off. Defaults to false. | `unknown` | No | `(() => false) as unknown as undefined` |
+| `falseValue` | The value used when the switch is off. Defaults to false. | `T` | No | `(() => false) as unknown as undefined` |
 | `id` |  | `string` | No | - |
-| `modelValue` | The controlled state of the switch. Can be bind as v-model. | `unknown` | No | - |
+| `modelValue` | The controlled state of the switch. Can be bind as v-model. | `null \| T` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `trueValue` | The value used when the switch is on. Defaults to true. | `unknown` | No | `(() => true) as unknown as undefined` |
+| `trueValue` | The value used when the switch is on. Defaults to true. | `T` | No | `(() => true) as unknown as undefined` |
 | `value` | The value given as data when submitted with a name. | `string` | No | `"on"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: unknown]` |
+| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: T]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current value | `unknown` |
+| `modelValue` | Current value | `T` |
 | `checked` | Whether the switch is checked | `boolean` |
 
 </llm-only>

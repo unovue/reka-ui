@@ -1,11 +1,12 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
+import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 const CLOSE_TEXT = 'Close'
 
@@ -132,6 +133,24 @@ describe('given a default Toast', () => {
     expect(wrapper.vm.actionClicks).toBe(1)
     expect(wrapper.vm.open).toBe(true)
     expect(document.body.innerHTML).toContain('Action available')
+  })
+
+  it('should remove viewport event listeners when the toast is dismissed', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // The toast registers pause/resume listeners on the shared viewport while
+    // it is mounted; dismissing it must tear them down so the detached toast
+    // (and its listeners) can be garbage collected.
+    const viewport = document.querySelector('ol')!
+    const removeEventListener = vi.spyOn(viewport, 'removeEventListener')
+
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    await fireEvent.click(closeButton)
+    await nextTick()
+
+    expect(removeEventListener).toHaveBeenCalledWith(VIEWPORT_PAUSE, expect.any(Function))
+    expect(removeEventListener).toHaveBeenCalledWith(VIEWPORT_RESUME, expect.any(Function))
   })
 
   describe('after clicking the trigger', () => {

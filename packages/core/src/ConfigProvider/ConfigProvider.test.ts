@@ -2,8 +2,10 @@ import type { VueWrapper } from '@vue/test-utils'
 import type vueuse from '@vueuse/core'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
+import { useId } from '@/shared'
 import ConfigProviderTest from './_ConfigProvider.vue'
+import ConfigProvider from './ConfigProvider.vue'
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const mod: typeof vueuse = await importOriginal()
@@ -82,5 +84,27 @@ describe('given a scrollBody ConfigProvider', async () => {
     await nextTick()
     expect(document.body.style.paddingRight).toBe('0px')
     expect(document.body.style.marginRight).toBe('20px')
+  })
+})
+
+describe('given a useId ConfigProvider', () => {
+  it('uses the provided id generator before Vue useId', () => {
+    const IdConsumer = defineComponent({
+      setup() {
+        const id = useId(undefined, 'reka-test')
+        return () => h('div', { id })
+      },
+    })
+
+    const wrapper = mount(ConfigProvider, {
+      props: {
+        useId: () => 'provided-id',
+      },
+      slots: {
+        default: () => h(IdConsumer),
+      },
+    })
+
+    expect(wrapper.find('#reka-test-provided-id').exists()).toBe(true)
   })
 })

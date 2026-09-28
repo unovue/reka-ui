@@ -16,7 +16,7 @@ type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<Event | null | undefined>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
   virtualHighlightHook: EventHook<any>
   by?: string | ((a: T, b: T) => boolean)
@@ -38,6 +38,15 @@ type ListboxRootContext<T> = {
 
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
+
+/** Controls highlight scrolling while a parent composite is being positioned. */
+type ListboxHighlightScrollContext = {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+  onHighlightScrollRequest: (scroll: (() => void) | undefined) => void
+}
+
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
@@ -99,11 +108,18 @@ defineSlots<{
 }>()
 
 const { multiple, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
-const { getItems } = useCollection<{ value: T }>({ isProvider: true })
+const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({
+  suppressHighlightScroll: ref(false),
+  onHighlightScrollRequest: () => {},
+})
 
 const isFormControl = useFormControl(currentElement)
 
@@ -150,7 +166,7 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<Event | null | undefined>()
+const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<T>()
 
@@ -163,12 +179,28 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
     return
 
   highlightedElement.value = el
-  if (focus ?? focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
-    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  const suppressHighlightScroll = highlightScrollContext?.suppressHighlightScroll.value ?? false
+  if (focus ?? focusable.value) {
+    if (suppressHighlightScroll)
+      highlightedElement.value.focus({ preventScroll: true })
+    else
+      highlightedElement.value.focus()
+  }
 
-  const highlightedItem = getItems().find(i => i.ref === el)
+  if (suppressHighlightScroll) {
+    highlightScrollContext?.onHighlightScrollRequest(scrollIntoView
+      ? () => {
+          const element = highlightedElement.value
+          if (element?.isConnected)
+            element.scrollIntoView({ block: 'nearest' })
+        }
+      : undefined)
+  }
+  else if (scrollIntoView) {
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  }
+
+  const highlightedItem = getItem(el)
   emits('highlight', highlightedItem)
 }
 
@@ -188,6 +220,11 @@ function highlightItem(value: T) {
 
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
+    // Modifier combos (e.g. Ctrl+Enter) are not handled here —
+    // let them bubble so parent listeners can react (e.g. submit a form).
+    if (event.ctrlKey || event.metaKey || event.altKey)
+      return
+
     event.preventDefault()
     event.stopPropagation()
 
@@ -333,8 +370,11 @@ async function highlightSelected(event?: Event, scroll = true) {
     return
   await nextTick()
   if (isVirtual.value) {
-    // Trigger on nextTick for Virtualizer to be mounted
-    virtualFocusHook.trigger(event)
+    // Trigger on nextTick for Virtualizer to be mounted.
+    // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
+    // its roving-tabindex target without focusing/scrolling — otherwise a
+    // virtualized Listbox below the fold would pull the page to it on load.
+    virtualFocusHook.trigger({ event, scroll })
   }
   else {
     const collection = getCollectionItem()

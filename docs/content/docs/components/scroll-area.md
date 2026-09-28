@@ -121,7 +121,7 @@ function scrollToBottom() {
   const viewport = scrollArea.value?.viewport
   if (viewport) {
     const top = scrollArea.value?.$el.scrollHeight
-    container.scrollTo({
+    viewport.scrollTo({
       top,
       behavior: 'smooth'
     })

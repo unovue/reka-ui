@@ -174,6 +174,12 @@
     'required': false
   },
   {
+    'name': 'stepSnapping',
+    'description': '<p>Whether to enforce snapping the time value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'weekdayFormat',
     'description': '<p>The format to use for the weekday strings provided via the weekdays slot prop</p>\n',
     'type': '\'narrow\' | \'short\' | \'long\'',
@@ -203,19 +209,6 @@
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
     'type': '[date: DateValue]'
-  }
-]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
   }
 ]" />
 </llm-exclude>
@@ -253,6 +246,7 @@
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
 
@@ -263,12 +257,5 @@
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue]` |
 | `update:open` | Event handler called when the open state of the submenu changes. | `[value: boolean]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `isDateDisabled` | A function that returns whether or not a date is disabled | `Matcher` |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` |
 
 </llm-only>

@@ -86,7 +86,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled selected month value of the month picker. Can be bound as <code>v-model</code>.</p>\n',
-    'type': 'DateValue | DateValue[]',
+    'type': 'DateValue | DateValue[] | null',
     'required': false
   },
   {
@@ -165,19 +165,6 @@
     'type': 'DateValue | DateValue[] | undefined'
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'isMonthDisabled',
-    'description': '<p>A function that returns whether or not a month is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isMonthUnavailable',
-    'description': '<p>A function that returns whether or not a month is unavailable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -199,7 +186,7 @@
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modelValue` | The controlled selected month value of the month picker. Can be bound as v-model. | `DateValue \| DateValue[]` | No | - |
+| `modelValue` | The controlled selected month value of the month picker. Can be bound as v-model. | `DateValue \| DateValue[] \| null` | No | - |
 | `multiple` | Whether multiple months can be selected | `boolean` | No | `false` |
 | `nextPage` | A function that returns the next page of the month picker. Receives the current placeholder as an argument. | `((placeholder: DateValue) => DateValue)` | No | - |
 | `placeholder` | The placeholder date, which is used to determine what year to display when no date is selected | `DateValue` | No | - |
@@ -222,12 +209,5 @@
 | `grid` | The grid of months | `Grid<DateValue>` |
 | `locale` | The month picker locale | `string` |
 | `modelValue` | The current selected value | `DateValue \| DateValue[] \| undefined` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `isMonthDisabled` | A function that returns whether or not a month is disabled | `Matcher` |
-| `isMonthUnavailable` | A function that returns whether or not a month is unavailable | `Matcher` |
 
 </llm-only>
