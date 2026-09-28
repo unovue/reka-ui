@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '.'
@@ -110,31 +110,6 @@ describe('given a default Toast', () => {
     expect(text).toContain('Scheduled: Catch up')
   })
 
-  it('should close the toast when action is clicked by default', async () => {
-    const wrapper = mount(ToastWithAction, { attachTo: document.body })
-
-    const action = await findByText(document.body, 'Undo')
-    await fireEvent.click(action)
-
-    expect(wrapper.vm.actionClicks).toBe(1)
-    expect(wrapper.vm.open).toBe(false)
-    expect(action.closest('li')?.getAttribute('data-state')).toBe('closed')
-  })
-
-  it('should keep the toast open when action closeOnClick is false', async () => {
-    const wrapper = mount(ToastWithAction, {
-      attachTo: document.body,
-      props: { closeOnClick: false },
-    })
-
-    const action = await findByText(document.body, 'Undo')
-    await fireEvent.click(action)
-
-    expect(wrapper.vm.actionClicks).toBe(1)
-    expect(wrapper.vm.open).toBe(true)
-    expect(document.body.innerHTML).toContain('Action available')
-  })
-
   it('should remove viewport event listeners when the toast is dismissed', async () => {
     await fireEvent.click(trigger.element)
     await findByText(document.body, 'Scheduled: Catch up')
@@ -182,5 +157,38 @@ describe('given a default Toast', () => {
         expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
       })
     })
+  })
+})
+
+describe('given a Toast with an action', () => {
+  let wrapper: VueWrapper<InstanceType<typeof ToastWithAction>>
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should close the toast when action is clicked by default', async () => {
+    wrapper = mount(ToastWithAction, { attachTo: document.body })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(false)
+    expect(action.closest('li')?.getAttribute('data-state')).toBe('closed')
+  })
+
+  it('should keep the toast open when action closeOnClick is false', async () => {
+    wrapper = mount(ToastWithAction, {
+      attachTo: document.body,
+      props: { closeOnClick: false },
+    })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(true)
+    expect(document.body.innerHTML).toContain('Action available')
   })
 })
