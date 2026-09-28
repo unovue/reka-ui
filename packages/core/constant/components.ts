@@ -253,6 +253,19 @@ export const components = {
     'EditableEditTrigger',
   ] as const,
 
+  field: [
+    'FieldRoot',
+    'FieldLabel',
+    'FieldControl',
+    'FieldDescription',
+    'FieldError',
+    'FieldValidity',
+  ] as const,
+
+  form: [
+    'FormRoot',
+  ] as const,
+
   hoverCard: [
     'HoverCardRoot',
     'HoverCardTrigger',

@@ -47,7 +47,8 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { isEqual } from 'ohash'
-import { computed, useAttrs } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
+import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -79,12 +80,28 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 
+// Optional Field participation: `injectFieldRootContext(null)` returns
+// `null` (instead of throwing) outside a `FieldRoot`, so every binding below
+// is inert — and byte-for-byte identical to before — when there is no Field.
+const fieldContext = injectFieldRootContext(null)
+
 const modelValue = useVModel(props as any, 'modelValue', emits as any, {
   defaultValue: props.defaultValue ?? props.falseValue,
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T | 'indeterminate'>
 
-const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
+const disabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value))
+// Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
+// takes the field's id (it would be duplicated) or acts as its control.
+const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
+const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : undefined))
+const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+// `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
+// it to `false` rather than `undefined` when omitted — `props.required` can
+// never actually be `undefined`. Only fall back to the Field's `required`
+// when a Field is present, so standalone output (where this cast has always
+// applied) is untouched.
+const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
 
 const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
@@ -100,6 +117,10 @@ const checkboxState = computed<CheckedState>(() => {
 })
 
 function handleClick() {
+  // Captured before the update: a controlled `modelValue` only changes once
+  // the parent re-renders.
+  const nextState = checkboxState.value !== true
+
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
     const modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
     if (isValueEqualOrExist(modelValueArray, props.value)) {
@@ -119,7 +140,16 @@ function handleClick() {
       modelValue.value = isChecked.value ? props.falseValue as T : props.trueValue as T
     }
   }
+
+  if (participatesAsControl.value)
+    fieldContext?.handleControlInput({ value: nextState })
 }
+
+// A programmatic/parent-driven change updates `filled`, but isn't dirtying.
+watch(checkboxState, (state) => {
+  if (participatesAsControl.value)
+    fieldContext?.reportControlState({ filled: state === true })
+})
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
@@ -132,10 +162,50 @@ const ariaLabel = computed(() => {
   // label lookup entirely — this matters when rendering many checkboxes at once.
   if (attrs['aria-label'])
     return undefined
-  return props.id && currentElement.value
-    ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
+  return resolvedId.value && currentElement.value
+    ? (document.querySelector(`[for="${resolvedId.value}"]`) as HTMLLabelElement)?.innerText
     : undefined
 })
+
+// Field aria wiring, merged with (never overwriting) the consumer's values.
+// `attrs` isn't reactive, so this runs during render rather than in a
+// `computed`. A consumer-provided `aria-invalid` always wins — read it
+// explicitly, since our own binding below is written after the `$attrs`
+// spread and would otherwise clobber it (even with an `undefined` value).
+function getFieldAriaAttrs() {
+  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
+    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  return {
+    'aria-labelledby': mergeIds(attrs['aria-labelledby'], participatesAsControl.value ? fieldContext?.labelId.value : undefined),
+    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
+    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
+  }
+}
+
+function handleFocus() {
+  fieldContext?.handleControlFocus()
+}
+function handleBlur() {
+  if (participatesAsControl.value)
+    fieldContext?.handleControlBlur()
+  else
+    fieldContext?.reportControlState({ focused: false, touched: true })
+}
+
+let unregisterControl: (() => void) | undefined
+onMounted(() => {
+  if (!participatesAsControl.value)
+    return
+  unregisterControl = fieldContext?.registerControl({
+    id: () => resolvedId.value,
+    element: () => currentElement.value as HTMLElement | undefined,
+    getValue: () => checkboxState.value,
+    required: () => props.required,
+    // A required checkbox must be checked.
+    isFilled: value => value === true,
+  })
+})
+onBeforeUnmount(() => unregisterControl?.())
 
 provideCheckboxRootContext({
   disabled,
@@ -145,16 +215,16 @@ provideCheckboxRootContext({
 
 <template>
   <component
-    v-bind="{ ...$attrs, ...scopeIdAttrs }"
+    v-bind="{ ...fieldContext?.dataAttributes.value, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
     :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
-    :id="id"
+    :id="resolvedId"
     :ref="forwardRef"
     role="checkbox"
     :as-child="asChild"
     :as="as"
     :type="as === 'button' ? 'button' : undefined"
     :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState"
-    :aria-required="required"
+    :aria-required="resolvedRequired"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :data-state="getState(checkboxState)"
     :data-disabled="disabled ? '' : undefined"
@@ -164,6 +234,8 @@ provideCheckboxRootContext({
       // According to WAI ARIA, Checkboxes don't activate on enter keypress
     }"
     @click="handleClick"
+    @focus="handleFocus"
+    @blur="handleBlur"
   >
     <slot
       :model-value="modelValue"
@@ -172,13 +244,13 @@ provideCheckboxRootContext({
   </component>
 
   <VisuallyHiddenInput
-    v-if="isFormControl && name && !checkboxGroupContext"
+    v-if="isFormControl && resolvedName && !checkboxGroupContext"
     type="checkbox"
     :checked="!!checkboxState"
-    :name="name"
+    :name="resolvedName"
     :value="value"
     :disabled="disabled"
-    :required="required"
+    :required="resolvedRequired"
     v-bind="scopeIdAttrs"
   />
 </template>
