@@ -12,8 +12,13 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 <script setup lang="ts">
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
@@ -43,7 +48,6 @@ rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     :id="rootContext.contentId"
     :aria-labelledby="rootContext?.triggerId"
     :style="{
@@ -57,6 +61,7 @@ rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
       '--reka-dropdown-menu-trigger-height':
         'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="handleCloseAutoFocus"
     @interact-outside="(event) => {
       if (event.defaultPrevented) return

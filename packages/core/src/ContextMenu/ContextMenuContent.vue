@@ -21,7 +21,12 @@ export interface ContextMenuContentProps
 <script setup lang="ts">
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ContextMenuContentProps>(), {
   alignOffset: 0,
@@ -41,7 +46,6 @@ const hasInteractedOutside = ref(false)
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     side="right"
     :side-offset="2"
     align="start"
@@ -57,6 +61,7 @@ const hasInteractedOutside = ref(false)
       '--reka-context-menu-trigger-height':
         'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented && hasInteractedOutside) {

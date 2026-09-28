@@ -5,7 +5,7 @@ import type { MenuContentEmits } from './MenuContent.vue'
  *
  * `MenuContent` exposes both focus events. The DropdownMenu, ContextMenu and
  * Menubar wrappers keep `openAutoFocus` public but hide `entryFocus`, which
- * they handle internally (matching Radix).
+ * they handle internally. Runtime coverage lives in `MenuContentEmits.test.ts`.
  */
 import type { ContextMenuContentEmits } from '@/ContextMenu'
 import type { DropdownMenuContentEmits } from '@/DropdownMenu'

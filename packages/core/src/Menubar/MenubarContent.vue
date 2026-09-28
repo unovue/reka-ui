@@ -10,10 +10,15 @@ export interface MenubarContentProps extends MenuContentProps {}
 <script setup lang="ts">
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<MenubarContentProps>(), {
   align: 'start',
@@ -63,7 +68,6 @@ function handleArrowNavigation(event: KeyboardEvent) {
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     :id="menuContext.contentId"
     data-reka-menubar-content=""
     :aria-labelledby="menuContext.triggerId"
@@ -77,6 +81,7 @@ function handleArrowNavigation(event: KeyboardEvent) {
       '--reka-menubar-trigger-width': 'var(--reka-popper-anchor-width)',
       '--reka-menubar-trigger-height': 'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="(event) => {
       const menubarOpen = Boolean(rootContext.modelValue.value);
       if (!menubarOpen && !hasInteractedOutsideRef) {
