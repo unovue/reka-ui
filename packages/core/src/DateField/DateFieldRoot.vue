@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { hasTime, isBefore } from '@/date'
+import { hasTime, isBefore, isSameDateSelection, isSameDateValue } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
@@ -19,6 +19,7 @@ import {
   normalizeHourCycle,
   normalizeInputValue,
   syncSegmentValues,
+  useSegmentNavigation,
 } from '@/shared/date'
 
 type DateFieldRootContext = {
@@ -205,10 +206,12 @@ watch(locale, (value) => {
   }
 })
 
-watch(modelValue, (_modelValue) => {
-  if (!isNullish(_modelValue) && placeholder.value.compare(_modelValue) !== 0) {
-    placeholder.value = _modelValue.copy()
-  }
+watch(modelValue, (value, previous) => {
+  if (isSameDateSelection(previous, value, isSameDateValue))
+    return
+
+  if (!isNullish(value) && !isSameDateValue(placeholder.value, value))
+    placeholder.value = value.copy()
 })
 
 watch([modelValue, locale], ([_modelValue]) => {
@@ -223,28 +226,11 @@ watch([modelValue, locale], ([_modelValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() =>
-  Array.from(segmentElements.value).findIndex(el =>
-    el.getAttribute('data-reka-date-field-segment')
-    === currentFocusedElement.value?.getAttribute('data-reka-date-field-segment')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-date-field-segment'],
 })
 
 const inputType = computed(() => getInputType(inferredGranularity.value))
@@ -286,12 +272,7 @@ provideDateFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    // Auto-advance follows the segments' DOM order (the locale's format
-    // order) regardless of writing direction; only arrow-key navigation is
-    // direction-aware via nextFocusableSegment/prevFocusableSegment.
-    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({

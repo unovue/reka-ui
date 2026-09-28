@@ -393,6 +393,24 @@ describe('dateField', async () => {
     expect(year).toHaveTextContent('yyyy')
   })
 
+  it('syncs a same-day time zone change from `modelValue`', async () => {
+    const emitted: DateValue[] = []
+    const { getByTestId, user, rerender } = setup({
+      dateFieldProps: { modelValue: zonedDateTime },
+      emits: { 'onUpdate:modelValue': data => emitted.push(data) },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
+
+    await rerender({
+      dateFieldProps: { modelValue: toZoned(calendarDateTime, 'Asia/Tokyo') },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('GMT+9')
+
+    await user.click(getByTestId('minute'))
+    await user.keyboard(kbd.ARROW_UP)
+    expect(emitted.at(-1)).toMatchObject({ timeZone: 'Asia/Tokyo', minute: 31 })
+  })
+
   it('prevents interaction when `disabled`', async () => {
     const { user, getByTestId, day, month, year } = setup({
       dateFieldProps: {

@@ -54,6 +54,24 @@ describe('resize handle hover state next to an iframe (issue #2893)', () => {
     expect(handle.attributes('data-state')).toBe('inactive')
   })
 
+  // https://github.com/unovue/reka-ui/issues/2968
+  it('should ignore trailing mousemove events targeting the iframe', async () => {
+    mountSplitter()
+    await nextTick()
+
+    const handle = wrapper.find('#handle')
+    const iframe = wrapper.find('#frame')
+
+    await fireEvent.mouseMove(handle.element, { clientX: 0, clientY: 0 })
+    await fireEvent.mouseOut(handle.element, { clientX: 0, clientY: 0, relatedTarget: iframe.element })
+    expect(handle.attributes('data-state')).toBe('inactive')
+
+    // The browser may still dispatch a mousemove targeting the iframe itself
+    // after the mouseout; it lands in the hit area but must not restore hover.
+    await fireEvent.mouseMove(iframe.element, { clientX: 0, clientY: 0 })
+    expect(handle.attributes('data-state')).toBe('inactive')
+  })
+
   it('should keep the hover state on mouseout to a regular element', async () => {
     mountSplitter()
     await nextTick()
