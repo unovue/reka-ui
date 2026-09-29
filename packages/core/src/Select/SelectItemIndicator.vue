@@ -16,7 +16,7 @@ import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectSelectItemContext } from './SelectItem.vue'
 
-const props = withDefaults(defineProps<SelectItemIndicatorProps>(), {
+withDefaults(defineProps<SelectItemIndicatorProps>(), {
   as: 'span',
 })
 
@@ -29,7 +29,9 @@ const itemContext = injectSelectItemContext()
     <Primitive
       :ref="forwardRef"
       aria-hidden="true"
-      v-bind="props"
+      :data-state="itemContext.isSelected.value ? 'checked' : 'unchecked'"
+      :as="as"
+      :as-child="asChild"
     >
       <slot />
     </Primitive>

@@ -3,6 +3,7 @@ import type {
   MenuCheckboxItemEmits,
   MenuCheckboxItemProps,
 } from '@/Menu'
+import type { CheckedState } from '@/Menu/utils'
 
 export type MenubarCheckboxItemEmits = MenuCheckboxItemEmits
 
@@ -15,6 +16,15 @@ import { useEmitAsProps, useForwardExpose } from '@/shared'
 
 const props = defineProps<MenubarCheckboxItemProps>()
 const emits = defineEmits<MenubarCheckboxItemEmits>()
+
+defineSlots<{
+  default?: (props: {
+    /** Current checked state */
+    checked: CheckedState
+    /** Current modelValue state */
+    modelValue: CheckedState
+  }) => any
+}>()
 
 const emitsAsProps = useEmitAsProps(emits)
 useForwardExpose()

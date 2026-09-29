@@ -16,6 +16,13 @@ import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Current checked state */
+    checked: boolean
+  }) => any
+}>()
+
 const forwarded = useForwardPropsEmits(props, emits)
 useForwardExpose()
 </script>

@@ -16,7 +16,7 @@ import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectListboxItemContext } from './ListboxItem.vue'
 
-const props = withDefaults(defineProps<ListboxItemIndicatorProps>(), {
+withDefaults(defineProps<ListboxItemIndicatorProps>(), {
   as: 'span',
 })
 
@@ -29,7 +29,9 @@ const itemContext = injectListboxItemContext()
     <Primitive
       :ref="forwardRef"
       aria-hidden="true"
-      v-bind="props"
+      :data-state="itemContext.isSelected.value ? 'checked' : 'unchecked'"
+      :as="as"
+      :as-child="asChild"
     >
       <slot />
     </Primitive>

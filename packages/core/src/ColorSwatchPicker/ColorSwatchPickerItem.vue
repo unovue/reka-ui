@@ -30,6 +30,13 @@ const props = defineProps<ColorSwatchPickerItemProps>()
 
 const emits = defineEmits<ColorSwatchPickerItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const { value } = toRefs(props)
 
 const forwarded = useForwardPropsEmits(props, emits)

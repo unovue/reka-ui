@@ -16,6 +16,13 @@ import { MenuRadioItem } from '@/Menu'
 const props = defineProps<DropdownMenuRadioItemProps>()
 const emits = defineEmits<DropdownMenuRadioItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Current checked state */
+    checked: boolean
+  }) => any
+}>()
+
 const forwarded = useForwardPropsEmits(props, emits)
 useForwardExpose()
 </script>
