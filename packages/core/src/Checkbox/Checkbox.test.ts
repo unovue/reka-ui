@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { handleSubmit } from '@/test'
-import { CheckboxRoot } from '.'
+import { CheckboxGroupRoot, CheckboxRoot } from '.'
 import Checkbox from './story/_Checkbox.vue'
 import CheckboxGroup from './story/_CheckboxGroup.vue'
 
@@ -196,6 +196,77 @@ describe('given a disabled CheckboxGroup', () => {
     it('should not render a indicator', async () => {
       expect(wrapper.find('span').exists()).toBeFalsy()
     })
+  })
+})
+
+describe('given a CheckboxGroup with max', () => {
+  let wrapper: VueWrapper<InstanceType<typeof CheckboxGroup>>
+  let checkboxes: DOMWrapper<HTMLButtonElement>[]
+
+  beforeEach(async () => {
+    wrapper = mount(CheckboxGroup, { props: { max: 2 } })
+    checkboxes = wrapper.findAll('button')
+    await checkboxes[0].trigger('click')
+    await checkboxes[1].trigger('click')
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should disable the unchecked checkboxes once the limit is reached', () => {
+    expect(checkboxes[0].attributes('disabled')).toBeUndefined()
+    expect(checkboxes[1].attributes('disabled')).toBeUndefined()
+    expect(checkboxes[2].attributes('disabled')).toBeDefined()
+    expect(checkboxes[2].attributes('data-disabled')).toBeDefined()
+  })
+
+  it('should not check another checkbox past the limit', async () => {
+    await checkboxes[2].trigger('click')
+    expect(checkboxes[2].attributes('data-state')).toBe('unchecked')
+  })
+
+  describe('when unchecking a checkbox', () => {
+    beforeEach(async () => {
+      await checkboxes[0].trigger('click')
+    })
+
+    it('should enable the remaining checkboxes again', () => {
+      expect(checkboxes[2].attributes('disabled')).toBeUndefined()
+    })
+  })
+})
+
+describe('given a CheckboxGroup with max rendered asChild', () => {
+  // A non-button element doesn't block clicks natively, so the click handler
+  // itself has to enforce the limit.
+  const wrapper = mount({
+    components: { CheckboxGroupRoot, CheckboxRoot },
+    template: `<CheckboxGroupRoot :max="1">
+      <CheckboxRoot v-for="v in ['a', 'b']" :key="v" :value="v" :aria-label="v" as-child>
+        <div />
+      </CheckboxRoot>
+    </CheckboxGroupRoot>`,
+  })
+
+  it('should not check another checkbox past the limit', async () => {
+    const checkboxes = wrapper.findAll('[role="checkbox"]')
+    await checkboxes[0].trigger('click')
+    await checkboxes[1].trigger('click')
+    expect(checkboxes[0].attributes('data-state')).toBe('checked')
+    expect(checkboxes[1].attributes('data-state')).toBe('unchecked')
+  })
+})
+
+describe('given a CheckboxGroup with max set to null', () => {
+  const wrapper = mount(CheckboxGroup, { props: { max: null as unknown as number } })
+
+  it('should not limit the selection', async () => {
+    const checkboxes = wrapper.findAll('button')
+    for (const checkbox of checkboxes)
+      await checkbox.trigger('click')
+    for (const checkbox of checkboxes)
+      expect(checkbox.attributes('data-state')).toBe('checked')
   })
 })
 

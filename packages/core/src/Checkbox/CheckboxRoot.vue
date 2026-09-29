@@ -90,11 +90,16 @@ const modelValue = useVModel(props as any, 'modelValue', emits as any, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T | 'indeterminate'>
 
-const disabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value
-  || (
-    !isNullish(checkboxGroupContext?.max.value)
-    && !isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
-    && (checkboxGroupContext.modelValue.value?.length || 0) >= checkboxGroupContext?.max.value)))
+// An unchecked checkbox can't be added once its group has reached `max`.
+const isGroupMaxReached = computed(() => {
+  const max = checkboxGroupContext?.max.value
+  if (isNullish(max))
+    return false
+  const values = checkboxGroupContext!.modelValue.value ?? []
+  return !isValueEqualOrExist(values, props.value) && values.length >= max
+})
+
+const disabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value || isGroupMaxReached.value))
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
 const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
@@ -132,9 +137,8 @@ function handleClick() {
       modelValueArray.splice(index, 1)
     }
     else {
-      if (checkboxGroupContext?.max.value !== undefined && modelValueArray.length >= checkboxGroupContext?.max.value) {
+      if (isGroupMaxReached.value)
         return
-      }
       modelValueArray.push(props.value)
     }
     checkboxGroupContext.modelValue.value = modelValueArray

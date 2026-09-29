@@ -40,6 +40,12 @@
     'required': false
   },
   {
+    'name': 'max',
+    'description': '<p>The maximum number of values that can be selected</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the checkbox. Can be binded with v-model.</p>\n',
     'type': 'T[]',
@@ -93,6 +99,7 @@
 | `dir` | The direction of navigation between items. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with the checkboxes | `boolean` | No | - |
 | `loop` | Whether keyboard navigation should loop around | `boolean` | No | - |
+| `max` | The maximum number of values that can be selected | `number` | No | - |
 | `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `T[]` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | - |
