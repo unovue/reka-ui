@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -751,5 +751,62 @@ describe('given Listbox with ListboxFilter handling IME composition', () => {
     await nextTick()
 
     expect(updates).toEqual(['かんじ'])
+  })
+})
+
+describe('given ListboxItem slot props and ListboxItemIndicator', () => {
+  function mountListbox(forceMount = false) {
+    return mount(defineComponent({
+      setup() {
+        const modelValue = ref('a')
+        return () => h(ListboxRoot, {
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (v: any) => { modelValue.value = v },
+        }, () => h(ListboxContent, () => ['a', 'b'].map(value =>
+          h(ListboxItem, { value }, {
+            default: ({ selected }: { selected: boolean }) => [
+              h('span', { 'data-testid': `label-${value}` }, `${value}:${selected}`),
+              h(ListboxItemIndicator, { 'forceMount': forceMount, 'data-testid': `indicator-${value}` }, () => '✓'),
+            ],
+          }),
+        )))
+      },
+    }), { attachTo: document.body })
+  }
+
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should expose `selected` slot prop', async () => {
+    const wrapper = mountListbox()
+    expect(wrapper.find('[data-testid=label-a]').text()).toBe('a:true')
+    expect(wrapper.find('[data-testid=label-b]').text()).toBe('b:false')
+
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    expect(wrapper.find('[data-testid=label-a]').text()).toBe('a:false')
+    expect(wrapper.find('[data-testid=label-b]').text()).toBe('b:true')
+  })
+
+  it('should only mount the indicator of the selected item', async () => {
+    const wrapper = mountListbox()
+    expect(wrapper.find('[data-testid=indicator-a]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid=indicator-b]').exists()).toBe(false)
+
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    expect(wrapper.find('[data-testid=indicator-a]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid=indicator-b]').exists()).toBe(true)
+  })
+
+  it('should keep indicators mounted with `forceMount` and reflect `data-state`', async () => {
+    const wrapper = mountListbox(true)
+    const a = wrapper.find('[data-testid=indicator-a]')
+    const b = wrapper.find('[data-testid=indicator-b]')
+    expect(a.attributes('data-state')).toBe('checked')
+    expect(b.attributes('data-state')).toBe('unchecked')
+    expect(a.attributes('forcemount')).toBeUndefined()
+    expect(a.attributes('aria-hidden')).toBe('true')
   })
 })

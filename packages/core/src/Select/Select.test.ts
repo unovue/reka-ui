@@ -3,8 +3,9 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
+import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectRoot, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import Select from './story/_SelectTest.vue'
 
@@ -475,5 +476,68 @@ describe('given Select in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(2)
       expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: 'Pineapple' })
     })
+  })
+})
+
+describe('given SelectItem slot props and SelectItemIndicator', () => {
+  function mountSelect(forceMount = false) {
+    const modelValue = ref('a')
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, {
+          'open': true,
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (v: any) => { modelValue.value = v },
+        }, () => h(SelectContent, { position: 'item-aligned' }, () => h(SelectViewport, () => ['a', 'b'].map(value =>
+          h(SelectItem, { value }, {
+            default: ({ selected }: { selected: boolean }) => [
+              h(SelectItemText, () => value),
+              h('span', { 'data-testid': `label-${value}` }, String(selected)),
+              h(SelectItemIndicator, { 'forceMount': forceMount, 'data-testid': `indicator-${value}` }, () => '✓'),
+            ],
+          }),
+        ))))
+      },
+    }), { attachTo: document.body })
+    return { wrapper, modelValue }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should expose `selected` slot prop', async () => {
+    const { modelValue } = mountSelect()
+    await nextTick()
+    expect(document.querySelector('[data-testid=label-a]')?.textContent).toBe('true')
+    expect(document.querySelector('[data-testid=label-b]')?.textContent).toBe('false')
+
+    modelValue.value = 'b'
+    await nextTick()
+    expect(document.querySelector('[data-testid=label-a]')?.textContent).toBe('false')
+    expect(document.querySelector('[data-testid=label-b]')?.textContent).toBe('true')
+  })
+
+  it('should only mount the indicator of the selected item', async () => {
+    const { modelValue } = mountSelect()
+    await nextTick()
+    expect(document.querySelector('[data-testid=indicator-a]')).not.toBeNull()
+    expect(document.querySelector('[data-testid=indicator-b]')).toBeNull()
+
+    modelValue.value = 'b'
+    // Presence unmounts after its exit state settles
+    await vi.waitFor(() => expect(document.querySelector('[data-testid=indicator-a]')).toBeNull())
+    expect(document.querySelector('[data-testid=indicator-b]')).not.toBeNull()
+  })
+
+  it('should keep indicators mounted with `forceMount` and reflect `data-state`', async () => {
+    mountSelect(true)
+    await nextTick()
+    const a = document.querySelector('[data-testid=indicator-a]')!
+    const b = document.querySelector('[data-testid=indicator-b]')!
+    expect(a.getAttribute('data-state')).toBe('checked')
+    expect(b.getAttribute('data-state')).toBe('unchecked')
+    expect(a.hasAttribute('forcemount')).toBe(false)
+    expect(a.getAttribute('aria-hidden')).toBe('true')
   })
 })
