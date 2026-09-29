@@ -180,6 +180,9 @@ function handleKeydown(ev: KeyboardEvent) {
 }
 
 function handleDismiss() {
+  if (menuContext.modelValue.value !== itemContext.value)
+    return
+
   const rootContentDismissEvent = new Event(EVENT_ROOT_CONTENT_DISMISS, {
     bubbles: true,
     cancelable: true,

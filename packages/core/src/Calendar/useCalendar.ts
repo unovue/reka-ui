@@ -158,7 +158,7 @@ export function useCalendar(props: UseCalendarProps) {
     if (props.disabled.value)
       return true
 
-    const lastPeriodInView = grid.value[grid.value.length - 1].value
+    const lastPeriodInView = grid.value.at(-1)!.value
 
     if (!nextPageFunc && !props.nextPage.value) {
       const firstPeriodOfNextPage = lastPeriodInView.add({ months: 1 }).set({ day: 1 })
@@ -336,7 +336,7 @@ export function useCalendar(props: UseCalendarProps) {
     }
 
     const startMonth = toDate(grid.value[0].value)
-    const endMonth = toDate(grid.value[grid.value.length - 1].value)
+    const endMonth = toDate(grid.value.at(-1)!.value)
 
     const startMonthName = formatter.fullMonth(startMonth, headingFormatOptions.value)
     const endMonthName = formatter.fullMonth(endMonth, headingFormatOptions.value)

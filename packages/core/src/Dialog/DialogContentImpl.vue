@@ -21,7 +21,7 @@ export type DialogContentImplEmits = DismissableLayerEmits & {
 export interface DialogContentImplProps extends DismissableLayerProps {
   /**
    * Used to force mounting when more control is needed. Useful when
-   * controlling transntion with Vue native transition or other animation libraries.
+   * controlling transition with Vue native transition or other animation libraries.
    */
   forceMount?: boolean
   /**
@@ -41,7 +41,12 @@ import { getOpenState } from '@/Menu/utils'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { useWarning } from './utils'
 
-const props = defineProps<DialogContentImplProps>()
+const props = defineProps<DialogContentImplProps & {
+  /** Whether the content is currently visible. Forwarded to `FocusScope` and
+   * `DismissableLayer` so a force-mounted dialog (`unmountOnHide: false`)
+   * auto-focuses on show and leaves the layer/scope stacks while hidden. */
+  present?: boolean
+}>()
 const emits = defineEmits<DialogContentImplEmits>()
 
 const rootContext = injectDialogRootContext()
@@ -75,6 +80,7 @@ if (process.env.NODE_ENV !== 'production') {
     as-child
     loop
     :trapped="props.trapFocus"
+    :present="props.present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
@@ -83,6 +89,7 @@ if (process.env.NODE_ENV !== 'production') {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
+      :present="props.present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       role="dialog"
       :aria-describedby="rootContext.descriptionId"

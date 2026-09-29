@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'disableSwipe',
@@ -24,7 +25,7 @@
   {
     'name': 'swipeDirection',
     'description': '<p>Direction of pointer swipe that should close the toast.</p>\n',
-    'type': '\'right\' | \'left\' | \'up\' | \'down\'',
+    'type': '\'right\' | \'left\' | \'down\' | \'up\'',
     'required': false,
     'default': '\'right\''
   },
@@ -36,3 +37,18 @@
     'default': '50'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `disableSwipe` | Whether to disable the ability to swipe to close the toast. | `boolean` | No | - |
+| `duration` | Time in milliseconds that each toast should remain visible for. | `number` | No | `5000` |
+| `label` | An author-localized label for each toast. Used to help screen reader users associate the interruption with a toast. | `string` | No | `"Notification"` |
+| `swipeDirection` | Direction of pointer swipe that should close the toast. | `"right" \| "left" \| "down" \| "up"` | No | `"right"` |
+| `swipeThreshold` | Distance in pixels that the swipe must pass before a close is triggered. | `number` | No | `50` |
+
+</llm-only>

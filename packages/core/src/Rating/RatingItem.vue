@@ -11,6 +11,7 @@ interface RatingItemContext {
 }
 
 export interface RatingItemProps extends PrimitiveProps {
+  /** The 1-based index of this item within the rating (e.g. the 3rd star). */
   item: number
 }
 

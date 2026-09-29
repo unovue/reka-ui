@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'active',
@@ -29,3 +30,22 @@
     'type': '[payload: CustomEvent&lt;{ originalEvent: Event; }&gt;]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `active` | Used to identify the link as the currently active page. | `boolean` | No | - |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"a"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `select` | Event handler called when the user selects a link (via mouse or keyboard). Calling event.preventDefault in this handler will prevent the navigation menu from closing when selecting that link. | `[payload: CustomEvent<{ originalEvent: Event; }>]` |
+
+</llm-only>

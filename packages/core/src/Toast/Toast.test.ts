@@ -1,12 +1,56 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
+import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 const CLOSE_TEXT = 'Close'
+
+const ToastWithAction = defineComponent({
+  props: {
+    closeOnClick: {
+      type: Boolean,
+      default: undefined,
+    },
+  },
+  setup() {
+    const open = ref(true)
+    const actionClicks = ref(0)
+
+    return {
+      open,
+      actionClicks,
+    }
+  },
+  render() {
+    return h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, {
+          'open': this.open,
+          'onUpdate:open': (value: boolean) => {
+            this.open = value
+          },
+        }, {
+          default: () => [
+            h(ToastDescription, null, { default: () => 'Action available' }),
+            h(ToastAction, {
+              altText: 'Perform action',
+              closeOnClick: this.closeOnClick,
+              onClick: () => {
+                this.actionClicks += 1
+              },
+            }, { default: () => 'Undo' }),
+          ],
+        }),
+        h(ToastViewport),
+      ],
+    })
+  },
+})
 
 describe('given a default Toast', () => {
   let wrapper: VueWrapper<InstanceType<typeof Toast>>
@@ -41,6 +85,49 @@ describe('given a default Toast', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
+  it('should announce title and description as plain text (not JSON)', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // ToastAnnounce renders the live region on the next animation frame
+    // (see ToastAnnounce.vue's useRafFn) — wait for two RAFs so it's
+    // guaranteed to be in the DOM.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+
+    const liveRegion = document.querySelector('[role="alert"][aria-live]')
+    expect(liveRegion).toBeTruthy()
+    const text = liveRegion!.textContent ?? ''
+
+    // Vue's `{{ array }}` would JSON-stringify the announceTextContent
+    // array — guard against that regression by asserting the live region
+    // does not contain JSON syntax characters.
+    expect(text).not.toMatch(/[[\]"]/)
+
+    // The toast title and description must both be part of the announced
+    // text so screen-reader users actually hear the toast.
+    expect(text).toContain('Scheduled: Catch up')
+  })
+
+  it('should remove viewport event listeners when the toast is dismissed', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // The toast registers pause/resume listeners on the shared viewport while
+    // it is mounted; dismissing it must tear them down so the detached toast
+    // (and its listeners) can be garbage collected.
+    const viewport = document.querySelector('ol')!
+    const removeEventListener = vi.spyOn(viewport, 'removeEventListener')
+
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    await fireEvent.click(closeButton)
+    await nextTick()
+
+    expect(removeEventListener).toHaveBeenCalledWith(VIEWPORT_PAUSE, expect.any(Function))
+    expect(removeEventListener).toHaveBeenCalledWith(VIEWPORT_RESUME, expect.any(Function))
+  })
+
   describe('after clicking the trigger', () => {
     beforeEach(async () => {
       fireEvent.click(trigger.element)
@@ -70,5 +157,38 @@ describe('given a default Toast', () => {
         expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
       })
     })
+  })
+})
+
+describe('given a Toast with an action', () => {
+  let wrapper: VueWrapper<InstanceType<typeof ToastWithAction>>
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should close the toast when action is clicked by default', async () => {
+    wrapper = mount(ToastWithAction, { attachTo: document.body })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(false)
+    expect(action.closest('li')?.getAttribute('data-state')).toBe('closed')
+  })
+
+  it('should keep the toast open when action closeOnClick is false', async () => {
+    wrapper = mount(ToastWithAction, {
+      attachTo: document.body,
+      props: { closeOnClick: false },
+    })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(true)
+    expect(document.body.innerHTML).toContain('Action available')
   })
 })

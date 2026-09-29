@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -41,3 +42,24 @@
     'type': '[value: ImageLoadingStatus]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"img"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `crossOrigin` |  | `"" \| "anonymous" \| "use-credentials"` | No | - |
+| `referrerPolicy` |  | `"" \| "no-referrer" \| "no-referrer-when-downgrade" \| "origin" \| "origin-when-cross-origin" \| "same-origin" \| "strict-origin" \| "strict-origin-when-cross-origin" \| "unsafe-url"` | No | - |
+| `src` |  | `string` | Yes | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `loadingStatusChange` | A callback providing information about the loading status of the image. <br> This is useful in case you want to control more precisely what to render as the image is loading. | `[value: ImageLoadingStatus]` |
+
+</llm-only>

@@ -78,7 +78,7 @@ export function createMonth(props: CreateMonthProps): Grid<DateValue> {
   if (fixedWeeks && totalDays < 42) {
     const extraDays = 42 - totalDays
 
-    let startFrom = nextMonthDays[nextMonthDays.length - 1]
+    let startFrom = nextMonthDays.at(-1)
 
     if (!startFrom)
       startFrom = endOfMonth(dateObj)

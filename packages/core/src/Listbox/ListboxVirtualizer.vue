@@ -83,7 +83,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   })[0]
 
   const targetNode = defaultNode.type === Fragment && Array.isArray(defaultNode.children)
-    ? defaultNode.children[0] as VNode
+    ? defaultNode.children.find(child => typeof (child as VNode).type !== 'symbol') as VNode
     : defaultNode
 
   return {
@@ -104,7 +104,11 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   }
 }))
 
-rootContext.virtualFocusHook.on((event) => {
+rootContext.virtualFocusHook.on(({ event, scroll }) => {
+  // `scroll` is `false` only for the initial mount highlight. There we set the
+  // roving-tabindex target without focusing or scrolling, so a virtualized
+  // Listbox below the fold doesn't pull the page to it on load. User-driven
+  // highlights (keyboard, typeahead, select) keep scrolling as before.
   const index = props.options.findIndex((option) => {
     if (Array.isArray(rootContext.modelValue.value))
       return compare(option, rootContext.modelValue.value[0], rootContext.by)
@@ -114,18 +118,29 @@ rootContext.virtualFocusHook.on((event) => {
   if (index !== -1) {
     event?.preventDefault()
 
+    // Bringing the checked item into the (internal) scroll viewport is safe — it
+    // only scrolls the listbox container, never the page.
     virtualizer.value.scrollToIndex(index, { align: 'start' })
     requestAnimationFrame(() => {
       const item = queryCheckedElement(parentEl.value)
       if (item) {
-        rootContext.changeHighlight(item)
-        if (event)
-          item?.focus()
+        const focus = event ? true : scroll ? undefined : false
+        rootContext.changeHighlight(item, scroll, focus)
       }
     })
   }
-  else {
+  else if (scroll) {
     rootContext.highlightFirstItem()
+  }
+  else {
+    // Mount highlight with no checked item: highlight the first enabled item only,
+    // mirroring the non-virtual path. `highlightFirstItem` is reserved for
+    // user-driven PageUp/Home navigation, which focuses and scrolls.
+    requestAnimationFrame(() => {
+      const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
+      if (item)
+        rootContext.changeHighlight(item, false, false)
+    })
   }
 })
 
@@ -178,7 +193,7 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
       break
     }
     case 'last': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options?.[props.options.length - 1])
+      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options.at(-1)!)
       break
     }
   }
@@ -211,7 +226,7 @@ rootContext.virtualKeydownHook.on((event) => {
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
       const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const item = intent === 'first' ? items[0] : items.at(-1)
       if (item)
         rootContext.changeHighlight(item.ref)
     })

@@ -5,7 +5,7 @@ import type { Grid, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { isSameYearMonth } from '@/date'
+import { focusedDateValue, isSameDateSelection, isSameYearMonth } from '@/date'
 import { createContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useMonthPicker, useMonthPickerState } from './useMonthPicker'
@@ -74,7 +74,7 @@ export interface MonthPickerRootProps extends PrimitiveProps {
   /** A function that returns the previous page of the month picker. Receives the current placeholder as an argument. */
   prevPage?: (placeholder: DateValue) => DateValue
   /** The controlled selected month value of the month picker. Can be bound as `v-model`. */
-  modelValue?: DateValue | DateValue[] | undefined
+  modelValue?: DateValue | DateValue[] | null
   /** Whether multiple months can be selected */
   multiple?: boolean
 }
@@ -194,34 +194,38 @@ const { isInvalid, isMonthSelected } = useMonthPickerState({
   isMonthUnavailable,
 })
 
-watch(modelValue, (_modelValue) => {
-  if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue[_modelValue.length - 1]
-    if (lastValue && !isSameYearMonth(placeholder.value, lastValue))
-      onPlaceholderChange(lastValue)
-  }
-  else if (!Array.isArray(_modelValue) && _modelValue && !isSameYearMonth(placeholder.value, _modelValue)) {
-    onPlaceholderChange(_modelValue)
-  }
+watch(modelValue, (value, previous) => {
+  if (isSameDateSelection(previous, value, isSameYearMonth))
+    return
+
+  const nextFocused = focusedDateValue(value)
+  if (nextFocused && !isSameYearMonth(placeholder.value, nextFocused))
+    onPlaceholderChange(nextFocused)
 })
+
+function resolveMonthValue(value: DateValue, reference?: DateValue) {
+  if (!reference)
+    return value.copy()
+  return value.copy().set({ day: reference.day })
+}
 
 function onMonthChange(value: DateValue) {
   if (!multiple.value) {
     if (!modelValue.value) {
-      modelValue.value = value.copy()
+      modelValue.value = resolveMonthValue(value, placeholder.value)
       return
     }
 
     if (!preventDeselect.value && isSameYearMonth(modelValue.value as DateValue, value)) {
-      placeholder.value = value.copy()
+      placeholder.value = resolveMonthValue(value, modelValue.value as DateValue)
       modelValue.value = undefined
     }
     else {
-      modelValue.value = value.copy()
+      modelValue.value = resolveMonthValue(value, modelValue.value as DateValue)
     }
   }
   else if (!modelValue.value) {
-    modelValue.value = [value.copy()]
+    modelValue.value = [resolveMonthValue(value, placeholder.value)]
   }
   else {
     const modelValueArray = Array.isArray(modelValue.value)
@@ -230,12 +234,12 @@ function onMonthChange(value: DateValue) {
 
     const index = modelValueArray.findIndex(date => isSameYearMonth(date, value))
     if (index === -1) {
-      modelValue.value = [...modelValueArray, value.copy()]
+      modelValue.value = [...modelValueArray, resolveMonthValue(value, placeholder.value)]
     }
     else if (!preventDeselect.value) {
       const next = modelValueArray.filter(date => !isSameYearMonth(date, value))
       if (!next.length) {
-        placeholder.value = value.copy()
+        placeholder.value = resolveMonthValue(value, modelValueArray[index])
         modelValue.value = undefined
         return
       }

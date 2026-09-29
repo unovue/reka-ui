@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -48,3 +49,25 @@
     'type': '() =&gt; void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `scrollHideDelay` | If type is set to either scroll or hover, this prop determines the length of time, in milliseconds, <br> before the scrollbars are hidden after the user stops interacting with scrollbars. | `number` | No | `600` |
+| `type` | Describes the nature of scrollbar visibility, similar to how the scrollbar preferences in MacOS control visibility of native scrollbars. auto - means that scrollbars are visible when content is overflowing on the corresponding orientation. <br> always - means that scrollbars are always visible regardless of whether the content is overflowing.<br> scroll - means that scrollbars are visible when the user is scrolling along its corresponding orientation.<br> hover - when the user is scrolling along its corresponding orientation and when the user is hovering over the scroll area.<br> glimpse - a hybrid approach that briefly shows scrollbars when the user enters the scroll area, then hides them until further interaction. | `"scroll" \| "always" \| "hover" \| "auto" \| "glimpse"` | No | `"hover"` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `scrollTop` | Scroll viewport to top | `() => void` |
+| `scrollTopLeft` | Scroll viewport to top-left | `() => void` |
+
+</llm-only>

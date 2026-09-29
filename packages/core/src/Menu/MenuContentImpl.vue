@@ -24,7 +24,7 @@ import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export interface MenuContentContext {
   onItemEnter: (event: PointerEvent) => boolean
-  onItemLeave: (event: PointerEvent) => void
+  onItemLeave: (event: PointerEvent) => boolean
   onTriggerLeave: (event: PointerEvent) => boolean
   searchRef: Ref<string>
   highlightedElement: Ref<HTMLElement | undefined>
@@ -170,6 +170,12 @@ const activeSubmenuContext = ref<{ onOpenChange: (open: boolean) => void, trigge
 
 watch(highlightedElement, (el) => {
   if (activeSubmenuContext.value && (el === undefined || el !== activeSubmenuContext.value.trigger.value)) {
+    // Don't close the submenu when the highlight disappears (pointer left
+    // all parent items, likely because the submenu opened on top of the
+    // trigger in a constrained viewport). Only close when highlight moves
+    // to a different parent item.
+    if (el === undefined)
+      return
     activeSubmenuContext.value.onOpenChange(false)
     activeSubmenuContext.value = undefined
   }
@@ -238,8 +244,7 @@ function handleKeyDown(event: KeyboardEvent) {
   const collectionItems = rovingFocusGroupRef.value?.getItems() ?? []
 
   if (isKeyDownInside) {
-    // menus should not be navigated using tab key so we prevent it
-    if (event.key === 'Tab')
+    if (event.key === 'Tab' && rootContext.modal.value)
       event.preventDefault()
     if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
       handleTypeaheadSearch(event.key, collectionItems)
@@ -303,13 +308,14 @@ provideMenuContentContext({
   },
   onItemLeave: (event) => {
     if (isPointerMovingToSubmenu(event))
-      return
+      return true
 
     const isInputFocused = ['INPUT', 'TEXTAREA'].includes(getActiveElement()?.tagName || '')
     if (!isInputFocused)
       contentElement.value?.focus()
 
     currentItemId.value = null
+    return false
   },
   onTriggerLeave: (event) => {
     // event.preventDefault() we can't prevent pointerLeave event

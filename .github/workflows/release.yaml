@@ -16,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 18.x
 
@@ -39,13 +39,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
       - name: Update npm (Trusted Publishers requires npm >= 11.5.1)
-        run: npm install -g npm@^11
+        # Workaround for npm/cli#9151: Node 22's bundled npm 10.9.7 is broken
+        # (missing promise-retry). Pin to 11.11.0 which installs successfully.
+        run: npm install -g npm@11.11.0
 
       - name: Build Packages
         run: pnpm build

@@ -190,6 +190,14 @@ function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Tab')
     event.preventDefault()
 
+  // Space selects the item when no search is in progress; otherwise it's part of the search
+  if (event.code === 'Space') {
+    if (search.value === '')
+      return
+    // SelectItem skips Space during a search, so prevent the scroll here
+    event.preventDefault()
+  }
+
   if (!isModifierKey && event.key.length === 1)
     handleTypeaheadSearch(event.key, getItems())
 
@@ -301,8 +309,9 @@ provideSelectContentContext({
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="
-            (vnode: ComponentPublicInstance) => {
-              const el = unrefElement(vnode) as HTMLElement | undefined
+            (vnode: Element | ComponentPublicInstance | null) => {
+              if (!vnode) return undefined
+              const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
               // special case for PopperContent
               if (el?.hasAttribute('data-reka-popper-content-wrapper'))
                 content = el.firstElementChild as HTMLElement

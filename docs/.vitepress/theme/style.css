@@ -253,3 +253,7 @@ mark {
 .fade-leave-to {
   opacity: 0;
 }
+
+llm-only {
+  display: none;
+}

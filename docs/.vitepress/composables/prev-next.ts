@@ -2,6 +2,8 @@ import { useData } from 'vitepress'
 import { computed } from 'vue'
 import { getFlatSideBarLinks, getSidebar, isActive } from './sidebar'
 
+const HASH_OR_QUERY_RE = /[?#].*$/
+
 export function usePrevNext() {
   const { page, theme, frontmatter } = useData()
 
@@ -10,7 +12,7 @@ export function usePrevNext() {
     const links = getFlatSideBarLinks(sidebar)
 
     // ignore inner-page links with hashes
-    const candidates = uniqBy(links, link => link.link.replace(/[?#].*$/, ''))
+    const candidates = uniqBy(links, link => link.link.replace(HASH_OR_QUERY_RE, ''))
 
     const index = candidates.findIndex((link) => {
       return isActive(page.value.relativePath, link.link)

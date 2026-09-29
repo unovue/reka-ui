@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
@@ -43,3 +44,29 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `defaultOpen` | The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
+| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `modal` | The modality of the dropdown menu. When set to true, interaction with outside elements will be disabled and only menu content will be visible to screen readers. | `boolean` | No | `true` |
+| `open` | The controlled open state of the menu. Can be used as v-model:open. | `boolean` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:open` | Event handler called when the open state of the submenu changes. | `[payload: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+
+</llm-only>

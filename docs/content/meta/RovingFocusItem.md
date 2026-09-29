@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'active',
@@ -40,3 +41,19 @@
     'required': false
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `active` | When true, item will be initially focused. | `boolean` | No | - |
+| `allowShiftKey` | When true, shift + arrow key will allow focusing on next/previous item. | `boolean` | No | - |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `focusable` | When false, item will not be focusable. | `boolean` | No | `true` |
+| `tabStopId` |  | `string` | No | - |
+
+</llm-only>

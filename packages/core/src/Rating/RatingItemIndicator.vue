@@ -7,13 +7,14 @@ import { useForwardExpose } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
-export interface RatingItemProps extends PrimitiveProps {
+export interface RatingItemIndicatorProps extends PrimitiveProps {
+  /** The step value this indicator represents. */
   step: number
 }
 </script>
 
 <script setup lang="ts">
-const props = defineProps<RatingItemProps>()
+const props = defineProps<RatingItemIndicatorProps>()
 
 const rootContext = injectRatingRootContext()
 const { currentElement, forwardRef } = useForwardExpose()
@@ -25,7 +26,9 @@ const isActive = computed(() => {
 })
 
 const isVisible = computed(() => {
-  return activeElement.value === currentElement.value || rootContext.step.value === 1 || props.step % 1 === 0 || props.step === rootContext.hoveredRating.value || props.step === rootContext.modelValue.value
+  // `currentElement` is unset on the server and before mount, where `activeElement` can also be `undefined`
+  const isFocused = !!currentElement.value && activeElement.value === currentElement.value
+  return isFocused || rootContext.step.value === 1 || props.step % 1 === 0 || props.step === rootContext.hoveredRating.value || props.step === rootContext.modelValue.value
 })
 
 function handleMouseEnter() {

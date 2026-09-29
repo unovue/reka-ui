@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -109,3 +110,35 @@
     'type': '[value: string | Color]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `channel` | The color channel that this slider manipulates. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | Yes | - |
+| `colorSpace` | The color space to operate in. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
+| `defaultValue` | The default color value (uncontrolled). | `string \| Color` | No | `"#000000"` |
+| `dir` | The reading direction of the slider. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with the slider. | `boolean` | No | `false` |
+| `inverted` | Whether the slider is visually inverted. | `boolean` | No | `false` |
+| `modelValue` | The color value (controlled). Can be a hex string or Color object. | `string \| Color` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `orientation` | The orientation of the slider. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `step` | Custom step value for increment/decrement. Defaults to the channel's natural step. | `number` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `change` |  | `[value: string]` |
+| `changeEnd` |  | `[value: string]` |
+| `update:color` |  | `[value: Color]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string \| Color]` |
+
+</llm-only>

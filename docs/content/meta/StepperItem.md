@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -43,3 +44,24 @@
     'type': '\'active\' | \'completed\' | \'inactive\''
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `completed` | Shows whether the step is completed. | `boolean` | No | `false` |
+| `disabled` | When true, prevents the user from interacting with the step. | `boolean` | No | `false` |
+| `step` | A unique value that associates the stepper item with an index | `number` | Yes | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `state` | The current state of the stepper item | `"active" \| "completed" \| "inactive"` |
+
+</llm-only>

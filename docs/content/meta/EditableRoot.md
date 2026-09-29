@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'activationMode',
@@ -181,3 +182,57 @@
     'type': '() =&gt; void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `activationMode` | The activation event of the editable field | `"dblclick" \| "focus" \| "none"` | No | `"focus"` |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `autoResize` | Whether the editable field should auto resize | `boolean` | No | `false` |
+| `defaultValue` | The default value of the editable field | `string` | No | - |
+| `dir` | The reading direction of the calendar when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | Whether the editable field is disabled | `boolean` | No | `false` |
+| `id` | The id of the field | `string` | No | - |
+| `maxLength` | The maximum number of characters allowed | `number` | No | - |
+| `modelValue` | The value of the editable field | `string \| null` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `placeholder` | The placeholder for the editable field | `string \| { edit: string; preview: string; }` | No | `"Enter text..."` |
+| `readonly` | Whether the editable field is read-only | `boolean` | No | - |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | `false` |
+| `selectOnFocus` | Whether to select the text in the input when it is focused. | `boolean` | No | `false` |
+| `startWithEditMode` | Whether to start with the edit mode active | `boolean` | No | - |
+| `submitMode` | The submit event of the editable field | `"blur" \| "none" \| "enter" \| "both"` | No | `"blur"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `submit` | Event handler called when a value is submitted | `[value: string \| null]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[value: string]` |
+| `update:state` | Event handler called when the editable field changes state | `[state: "cancel" \| "submit" \| "edit"]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `isEditing` | Whether the editable field is in edit mode | `boolean` |
+| `modelValue` | The value of the editable field | `string \| null \| undefined` |
+| `isEmpty` | Whether the editable field is empty | `boolean` |
+| `submit` | Function to submit the value of the editable | `(): void` |
+| `cancel` | Function to cancel the value of the editable | `(): void` |
+| `edit` | Function to set the editable in edit mode | `(): void` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `submit` | Function to submit the value of the editable | `() => void` |
+| `cancel` | Function to cancel the value of the editable | `() => void` |
+| `edit` | Function to set the editable in edit mode | `() => void` |
+
+</llm-only>

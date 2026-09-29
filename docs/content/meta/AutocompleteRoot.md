@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -128,3 +129,43 @@
     'type': 'string'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultOpen` | The open state of the autocomplete when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
+| `defaultValue` | The value of the autocomplete when initially rendered. Use when you do not need to control the state. | `string` | No | - |
+| `dir` | The reading direction of the autocomplete when applicable. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with autocomplete | `boolean` | No | - |
+| `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
+| `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `modelValue` | The controlled value of the Autocomplete (the input text). Can be bound with v-model. | `string` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `open` | The controlled open state of the Autocomplete. Can be bound with v-model:open. | `boolean` | No | - |
+| `openOnClick` | Whether to open the autocomplete when the input is clicked | `boolean` | No | `false` |
+| `openOnFocus` | Whether to open the autocomplete when the input is focused | `boolean` | No | `false` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Autocomplete input blurred | `boolean` | No | `false` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; }]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: string]` |
+| `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+| `modelValue` | Current active value | `string` |
+
+</llm-only>

@@ -35,8 +35,10 @@ export type {
   SegmentContentObj,
   SegmentPart,
   SegmentValueObj,
+  TimeRange,
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
 export { useDateField } from './useDateField'
+export { useSegmentNavigation } from './useSegmentNavigation'
 export * from './utils'

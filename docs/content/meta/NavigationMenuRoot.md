@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -97,3 +98,37 @@
     'type': 'string'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"nav"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultValue` | The value of the menu item that should be active when initially rendered. Use when you do not need to control the value state. | `string` | No | - |
+| `delayDuration` | The duration from when the pointer enters the trigger until the tooltip gets opened. | `number` | No | `200` |
+| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disableClickTrigger` | If true, menu cannot be open by click on trigger | `boolean` | No | `false` |
+| `disableHoverTrigger` | If true, menu cannot be open by hover on trigger | `boolean` | No | `false` |
+| `disablePointerLeaveClose` | If true, menu will not close during pointer leave event | `boolean` | No | - |
+| `modelValue` | The controlled value of the menu item to activate. Can be used as v-model. | `string` | No | - |
+| `orientation` | The orientation of the menu. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `skipDelayDuration` | How much time a user has to enter another trigger without incurring a delay again. | `number` | No | `300` |
+| `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value changes. | `[value: string]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current input values | `string` |
+
+</llm-only>

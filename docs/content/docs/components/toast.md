@@ -139,6 +139,20 @@ An action that is safe to ignore to ensure users are not expected to complete ta
 
 When obtaining a user response is necessary, portal an ["AlertDialog"](/docs/components/alert-dialog) styled as a toast into the viewport instead.
 
+By default, clicking `ToastAction` dismisses the toast. Set `closeOnClick` to `false` when the action should run while keeping the toast visible.
+
+```vue
+<template>
+  <ToastAction
+    alt-text="Retry sending the message"
+    :close-on-click="false"
+    @click="retry"
+  >
+    Retry
+  </ToastAction>
+</template>
+```
+
 <!-- @include: @/meta/ToastAction.md -->
 
 ### Close
@@ -325,16 +339,14 @@ When providing an icon (or font icon), remember to label it correctly for screen
       keys: ['Space'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          When focus is on a <Code>ToastAction</Code>, closes the toast when <Code>closeOnClick</Code> is <Code>true</Code>. When focus is on <Code>ToastClose</Code>, closes the toast.
         </span>`
     },
     {
       keys: ['Enter'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          When focus is on a <Code>ToastAction</Code>, closes the toast when <Code>closeOnClick</Code> is <Code>true</Code>. When focus is on <Code>ToastClose</Code>, closes the toast.
         </span>`
     },
     {

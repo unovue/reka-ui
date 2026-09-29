@@ -73,10 +73,6 @@ import {
 } from '@/shared/color'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
-defineOptions({
-  inheritAttrs: false,
-})
-
 const props = withDefaults(defineProps<ColorFieldRootProps>(), {
   colorSpace: 'hsl',
   disabled: false,

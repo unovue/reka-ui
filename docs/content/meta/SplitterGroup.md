@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -64,3 +65,32 @@
     'type': 'number[]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `autoSaveId` | Unique id used to auto-save group arrangement via localStorage. | `string \| null` | No | `null` |
+| `direction` | The group orientation of splitter. | `"vertical" \| "horizontal"` | Yes | - |
+| `id` | Group id; falls back to useId when not provided. | `string \| null` | No | - |
+| `keyboardResizeBy` | Step size when arrow key was pressed. | `number \| null` | No | `10` |
+| `storage` | Custom storage API; defaults to localStorage | `PanelGroupStorage` | No | `defaultStorage` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `layout` | Event handler called when group layout changes | `[val: number[]]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `layout` | Current size of layout | `number[]` |
+
+</llm-only>
