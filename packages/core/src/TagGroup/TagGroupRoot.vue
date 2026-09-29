@@ -48,6 +48,7 @@ export type TagGroupRootEmits<T = AcceptableValue> = {
 }
 
 export interface TagGroupItemRegistration {
+  value: () => AcceptableValue
   element: () => HTMLElement | undefined
   disabled: () => boolean
   textValue: () => string
@@ -148,8 +149,11 @@ function removeTags(value: AcceptableValue, withSelection: boolean) {
   if (!allowsRemoving() || disabled.value)
     return
 
-  // Removing a selected tag with the keyboard removes the whole selection.
-  const values = withSelection && isSelected(value) ? [...selectedValues.value] : [value as T]
+  // Removing a selected tag with the keyboard removes the whole selection,
+  // except for disabled tags, which the user cannot interact with.
+  const values = withSelection && isSelected(value)
+    ? selectedValues.value.filter(selected => !isDisabledValue(selected))
+    : [value as T]
   if (values.some(item => isSelected(item))) {
     const next = selectedValues.value.filter(item => !valueComparator(values, item, props.by))
     setSelection(next)
@@ -163,6 +167,10 @@ function getOrderedItems() {
   return Array.from(items, item => ({ ...item, el: item.element() }))
     .filter((item): item is TagGroupItemRegistration & { el: HTMLElement } => !!item.el)
     .sort((a, b) => a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+}
+
+function isDisabledValue(value: T) {
+  return [...items].some(item => item.disabled() && compare(item.value() as T, value, props.by))
 }
 
 function registerItem(item: TagGroupItemRegistration) {

@@ -91,6 +91,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 // Registered during setup so the group knows it has tags on its first render.
 const unregister = rootContext.registerItem({
+  value: () => props.value,
   element: () => currentElement.value,
   disabled: () => disabled.value,
   textValue: getTextValue,

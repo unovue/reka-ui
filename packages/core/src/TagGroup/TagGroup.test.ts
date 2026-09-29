@@ -182,6 +182,17 @@ describe('tagGroup', () => {
       expect(rowNames(rows)).toEqual(['Reka UI', 'Accessibility'])
     })
 
+    it('keeps disabled tags when removing the selection with the keyboard', async () => {
+      const user = userEvent.setup()
+      const { wrapper, rows } = mountTagGroup({ selectionMode: 'multiple', defaultValue: ['Vue', 'Reka UI', 'Nuxt'], disabledTags: ['Reka UI'] })
+
+      await user.tab()
+      await user.keyboard('{Backspace}')
+      expect(wrapper.vm.removed).toEqual([['Vue', 'Nuxt']])
+      expect(wrapper.vm.selected).toEqual(['Reka UI'])
+      expect(rowNames(rows)).toEqual(['Reka UI', 'Accessibility'])
+    })
+
     it('moves focus to the next tag after removing the focused tag', async () => {
       const user = userEvent.setup()
       const { row } = mountTagGroup()
