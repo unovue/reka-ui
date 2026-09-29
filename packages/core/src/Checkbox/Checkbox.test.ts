@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
-import { handleSubmit } from '@/test'
+import { handleSubmit, sleep } from '@/test'
 import { CheckboxGroupRoot, CheckboxRoot } from '.'
 import Checkbox from './story/_Checkbox.vue'
 import CheckboxGroup from './story/_CheckboxGroup.vue'
@@ -218,11 +218,24 @@ describe('given a CheckboxGroup with max', () => {
     expect(checkboxes[0].attributes('aria-disabled')).toBeUndefined()
     expect(checkboxes[1].attributes('aria-disabled')).toBeUndefined()
     expect(checkboxes[2].attributes('aria-disabled')).toBe('true')
-    expect(checkboxes[2].attributes('data-disabled')).toBeDefined()
   })
 
   it('should keep the limited checkboxes focusable', () => {
     expect(checkboxes[2].attributes('disabled')).toBeUndefined()
+    // `RovingFocusGroup` skips items with `data-disabled`
+    expect(checkboxes[2].attributes('data-disabled')).toBeUndefined()
+  })
+
+  it('should reach the limited checkboxes with arrow keys', async () => {
+    wrapper.unmount()
+    // The story forwards its own props, so the omitted boolean would be cast to `false`
+    wrapper = mount(CheckboxGroup, { props: { max: 1, rovingFocus: true }, attachTo: document.body })
+    checkboxes = wrapper.findAll('button')
+    await checkboxes[0].trigger('click')
+    checkboxes[0].element.focus()
+    await checkboxes[0].trigger('keydown', { key: 'ArrowDown' })
+    await sleep(0)
+    expect(document.activeElement).toBe(checkboxes[1].element)
   })
 
   it('should have no accessibility violations', async () => {
@@ -245,7 +258,6 @@ describe('given a CheckboxGroup with max', () => {
 
     it('should enable the remaining checkboxes again', () => {
       expect(checkboxes[2].attributes('aria-disabled')).toBeUndefined()
-      expect(checkboxes[2].attributes('data-disabled')).toBeUndefined()
     })
   })
 })

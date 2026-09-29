@@ -18,8 +18,8 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
   disabled?: boolean
   /**
    * The maximum number of values that can be selected. Once reached, the unchecked
-   * checkboxes get `aria-disabled` and `data-disabled` but stay focusable, so
-   * consider telling users about the limit.
+   * checkboxes get `aria-disabled` but stay focusable, so consider telling users
+   * about the limit. Style them with `[aria-disabled="true"]`.
    */
   max?: number | null
 }

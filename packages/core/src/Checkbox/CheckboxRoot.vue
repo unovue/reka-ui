@@ -102,7 +102,8 @@ const isGroupMaxReached = computed(() => {
 // Explicitly disabled (prop, group or Field): natively disabled and unfocusable.
 const nativeDisabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value))
 // A checkbox blocked only by the group's `max` stays focusable and is exposed via
-// `aria-disabled`, so keyboard and screen reader users can still discover it.
+// `aria-disabled` alone, so keyboard and screen reader users can still discover it.
+// `data-disabled` stays tied to native `disabled`, as `RovingFocusGroup` skips items with it.
 const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
@@ -226,7 +227,7 @@ onMounted(() => {
 onBeforeUnmount(() => unregisterControl?.())
 
 provideCheckboxRootContext({
-  disabled,
+  disabled: nativeDisabled,
   state: checkboxState,
 })
 </script>
@@ -246,7 +247,7 @@ provideCheckboxRootContext({
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :data-state="getState(checkboxState)"
     :aria-disabled="disabled ? 'true' : undefined"
-    :data-disabled="disabled ? '' : undefined"
+    :data-disabled="nativeDisabled ? '' : undefined"
     :disabled="nativeDisabled"
     :focusable="checkboxGroupContext?.rovingFocus.value ? !nativeDisabled : undefined"
     @keydown.enter.prevent="() => {
