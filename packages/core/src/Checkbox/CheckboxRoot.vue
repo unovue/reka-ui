@@ -99,7 +99,11 @@ const isGroupMaxReached = computed(() => {
   return !isValueEqualOrExist(values, props.value) && values.length >= max
 })
 
-const disabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value || isGroupMaxReached.value))
+// Explicitly disabled (prop, group or Field): natively disabled and unfocusable.
+const nativeDisabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value))
+// A checkbox blocked only by the group's `max` stays focusable and is exposed via
+// `aria-disabled`, so keyboard and screen reader users can still discover it.
+const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
 const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
@@ -126,6 +130,11 @@ const checkboxState = computed<CheckedState>(() => {
 })
 
 function handleClick() {
+  // Native `disabled` doesn't block clicks on a non-button (`asChild`), nor when
+  // the checkbox is only blocked by the group's `max`.
+  if (disabled.value)
+    return
+
   // Captured before the update: a controlled `modelValue` only changes once
   // the parent re-renders.
   const nextState = checkboxState.value !== true
@@ -137,8 +146,6 @@ function handleClick() {
       modelValueArray.splice(index, 1)
     }
     else {
-      if (isGroupMaxReached.value)
-        return
       modelValueArray.push(props.value)
     }
     checkboxGroupContext.modelValue.value = modelValueArray
@@ -238,9 +245,10 @@ provideCheckboxRootContext({
     :aria-required="resolvedRequired"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :data-state="getState(checkboxState)"
+    :aria-disabled="disabled ? 'true' : undefined"
     :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
-    :focusable="checkboxGroupContext?.rovingFocus.value ? !disabled : undefined"
+    :disabled="nativeDisabled"
+    :focusable="checkboxGroupContext?.rovingFocus.value ? !nativeDisabled : undefined"
     @keydown.enter.prevent="() => {
       // According to WAI ARIA, Checkboxes don't activate on enter keypress
     }"
@@ -260,7 +268,7 @@ provideCheckboxRootContext({
     :checked="!!checkboxState"
     :name="resolvedName"
     :value="value"
-    :disabled="disabled"
+    :disabled="nativeDisabled"
     :required="resolvedRequired"
     v-bind="scopeIdAttrs"
   />

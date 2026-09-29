@@ -214,11 +214,23 @@ describe('given a CheckboxGroup with max', () => {
     wrapper.unmount()
   })
 
-  it('should disable the unchecked checkboxes once the limit is reached', () => {
-    expect(checkboxes[0].attributes('disabled')).toBeUndefined()
-    expect(checkboxes[1].attributes('disabled')).toBeUndefined()
-    expect(checkboxes[2].attributes('disabled')).toBeDefined()
+  it('should mark the unchecked checkboxes disabled once the limit is reached', () => {
+    expect(checkboxes[0].attributes('aria-disabled')).toBeUndefined()
+    expect(checkboxes[1].attributes('aria-disabled')).toBeUndefined()
+    expect(checkboxes[2].attributes('aria-disabled')).toBe('true')
     expect(checkboxes[2].attributes('data-disabled')).toBeDefined()
+  })
+
+  it('should keep the limited checkboxes focusable', () => {
+    expect(checkboxes[2].attributes('disabled')).toBeUndefined()
+  })
+
+  it('should have no accessibility violations', async () => {
+    expect(await axe(wrapper.element, {
+      rules: {
+        label: { enabled: false },
+      },
+    })).toHaveNoViolations()
   })
 
   it('should not check another checkbox past the limit', async () => {
@@ -232,7 +244,8 @@ describe('given a CheckboxGroup with max', () => {
     })
 
     it('should enable the remaining checkboxes again', () => {
-      expect(checkboxes[2].attributes('disabled')).toBeUndefined()
+      expect(checkboxes[2].attributes('aria-disabled')).toBeUndefined()
+      expect(checkboxes[2].attributes('data-disabled')).toBeUndefined()
     })
   })
 })
@@ -258,8 +271,22 @@ describe('given a CheckboxGroup with max rendered asChild', () => {
   })
 })
 
+describe('given a disabled Checkbox rendered asChild', () => {
+  const wrapper = mount({
+    components: { CheckboxRoot },
+    template: `<CheckboxRoot aria-label="a" disabled as-child><div /></CheckboxRoot>`,
+  })
+
+  it('should not toggle when clicked', async () => {
+    const checkbox = wrapper.find('[role="checkbox"]')
+    await checkbox.trigger('click')
+    expect(checkbox.attributes('data-state')).toBe('unchecked')
+    expect(checkbox.attributes('aria-disabled')).toBe('true')
+  })
+})
+
 describe('given a CheckboxGroup with max set to null', () => {
-  const wrapper = mount(CheckboxGroup, { props: { max: null as unknown as number } })
+  const wrapper = mount(CheckboxGroup, { props: { max: null } })
 
   it('should not limit the selection', async () => {
     const checkboxes = wrapper.findAll('button')

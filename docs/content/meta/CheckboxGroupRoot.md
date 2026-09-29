@@ -41,8 +41,8 @@
   },
   {
     'name': 'max',
-    'description': '<p>The maximum number of values that can be selected</p>\n',
-    'type': 'number',
+    'description': '<p>The maximum number of values that can be selected. Once reached, the unchecked\ncheckboxes get <code>aria-disabled</code> and <code>data-disabled</code> but stay focusable, so\nconsider telling users about the limit.</p>\n',
+    'type': 'number | null',
     'required': false
   },
   {
@@ -99,7 +99,7 @@
 | `dir` | The direction of navigation between items. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with the checkboxes | `boolean` | No | - |
 | `loop` | Whether keyboard navigation should loop around | `boolean` | No | - |
-| `max` | The maximum number of values that can be selected | `number` | No | - |
+| `max` | The maximum number of values that can be selected. Once reached, the unchecked checkboxes get aria-disabled and data-disabled but stay focusable, so consider telling users about the limit. | `number \| null` | No | - |
 | `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `T[]` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | - |

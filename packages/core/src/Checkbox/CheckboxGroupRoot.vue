@@ -16,8 +16,12 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
   rovingFocus?: boolean
   /** When `true`, prevents the user from interacting with the checkboxes */
   disabled?: boolean
-  /** The maximum number of values that can be selected */
-  max?: number
+  /**
+   * The maximum number of values that can be selected. Once reached, the unchecked
+   * checkboxes get `aria-disabled` and `data-disabled` but stay focusable, so
+   * consider telling users about the limit.
+   */
+  max?: number | null
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -29,7 +33,7 @@ interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
-  max: Ref<number | undefined>
+  max: Ref<number | null | undefined>
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
