@@ -69,6 +69,7 @@ export interface DrawerRootContext {
   isSwiping: Ref<boolean>
   nestedSwipeProgressStore: NestedSwipeProgressStore
   onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason) => void
+  onOpenToggle: () => void
   notifyOpenComplete: (value: boolean) => void
   setActiveSnapPoint: (point: DrawerSnapPoint | null) => void
   onPopupHeightChange: (height: number) => void
@@ -83,6 +84,7 @@ export interface DrawerRootContext {
   notifyParentHasNestedDrawer?: (present: boolean) => void
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
+  viewportElement: Ref<HTMLElement | undefined>
   contentId: string
   titleId: string
   descriptionId: string
@@ -131,6 +133,7 @@ const { modal, swipeDirection, snapPoints, snapToSequentialPoints } = toRefs(pro
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
+const viewportElement = ref<HTMLElement>()
 const popupHeight = ref(0)
 const frontmostHeight = ref(0)
 const hasNestedDrawer = ref(false)
@@ -163,13 +166,8 @@ provideDrawerRootContext({
   nestedSwiping,
   isSwiping,
   nestedSwipeProgressStore,
-  onOpenChange(value, reason) {
-    if (open.value === value)
-      return
-    const details: DrawerOpenChangeDetails | undefined = reason ? { reason } : undefined
-    uncontrolledOpen.value = value
-    emit('update:open', value, details)
-  },
+  onOpenChange: handleOpenChange,
+  onOpenToggle: handleOpenToggle,
   notifyOpenComplete(value) {
     emit('update:openComplete', value)
   },
@@ -205,16 +203,26 @@ provideDrawerRootContext({
   notifyParentHasNestedDrawer: parentContext?.onNestedDrawerPresenceChange,
   triggerElement,
   contentElement,
+  viewportElement,
   contentId,
   titleId,
   descriptionId,
 })
 
 function handleClose() {
-  if (!open.value)
+  handleOpenChange(false, 'close-press')
+}
+
+function handleOpenChange(value: boolean, reason?: DrawerOpenChangeReason) {
+  if (open.value === value)
     return
-  uncontrolledOpen.value = false
-  emit('update:open', false, { reason: 'close-press' })
+  const details: DrawerOpenChangeDetails | undefined = reason ? { reason } : undefined
+  uncontrolledOpen.value = value
+  emit('update:open', value, details)
+}
+
+function handleOpenToggle() {
+  handleOpenChange(!open.value, 'trigger-press')
 }
 
 // Sync open state with DrawerProvider
