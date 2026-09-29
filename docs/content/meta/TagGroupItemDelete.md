@@ -19,8 +19,7 @@
     'name': 'disabled',
     'description': '<p>When <code>true</code>, prevents the user from interacting with the delete button.</p>\n',
     'type': 'boolean',
-    'required': false,
-    'default': 'false'
+    'required': false
   }
 ]" />
 </llm-exclude>
@@ -33,6 +32,6 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with the delete button. | `boolean` | No | `false` |
+| `disabled` | When true, prevents the user from interacting with the delete button. | `boolean` | No | - |
 
 </llm-only>

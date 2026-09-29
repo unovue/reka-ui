@@ -6,13 +6,20 @@ export interface TagGroupItemTextProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
+import { injectTagGroupItemContext } from './TagGroupItem.vue'
 
 const props = withDefaults(defineProps<TagGroupItemTextProps>(), {
   as: 'span',
 })
 
-const { forwardRef } = useForwardExpose()
+const itemContext = injectTagGroupItemContext()
+const { forwardRef, currentElement } = useForwardExpose()
+
+watchEffect(() => {
+  itemContext.textElement.value = currentElement.value
+})
 </script>
 
 <template>

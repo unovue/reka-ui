@@ -16,4 +16,5 @@ export {
   default as TagGroupRoot,
   type TagGroupRootEmits,
   type TagGroupRootProps,
+  type TagGroupSelectionMode,
 } from './TagGroupRoot.vue'

@@ -1,6 +1,6 @@
 ---
 title: Tag Group
-description: A tag group organizes a list of removable tags.
+description: A focusable list of tags that can be navigated, selected and removed with the keyboard.
 name: tag-group
 ---
 
@@ -9,7 +9,7 @@ name: tag-group
 <Badge>Alpha</Badge>
 
 <Description>
-A tag group organizes a list of removable tags. It is useful for selected filters, labels, or values from a multi-select control.
+A focusable list of tags that can be navigated, selected and removed with the keyboard. Useful for categories, applied filters, or values picked from another control.
 </Description>
 
 <ComponentPreview name="TagGroup" />
@@ -18,10 +18,12 @@ A tag group organizes a list of removable tags. It is useful for selected filter
 
 <Highlights
   :features="[
+    'Full keyboard navigation, including typeahead.',
+    'Supports no, single or multiple selection.',
+    'Removable with the keyboard or a delete button.',
+    'Keeps focus on a neighbouring tag after removal.',
     'Can be controlled or uncontrolled.',
-    'Supports removing tags with pointer or keyboard interactions.',
-    'Supports disabled group and disabled item states.',
-    'Form integration with hidden inputs.',
+    'Labelled and described by an ancestor Field.',
   ]"
 />
 
@@ -54,7 +56,7 @@ import { TagGroupItem, TagGroupItemDelete, TagGroupItemText, TagGroupRoot } from
 
 ### Root
 
-Contains all the tag group component parts.
+Contains all the tags. Renders a `grid`, or a `group` when there are no tags.
 
 <!-- @include: @/meta/TagGroupRoot.md -->
 
@@ -64,12 +66,16 @@ Contains all the tag group component parts.
       attribute: '[data-disabled]',
       values: 'Present when disabled',
     },
+    {
+      attribute: '[data-empty]',
+      values: 'Present when there are no tags',
+    },
   ]"
 />
 
 ### Item
 
-The component that contains the tag.
+A tag. Pressing <kbd>Delete</kbd> or <kbd>Backspace</kbd> on it removes it.
 
 <!-- @include: @/meta/TagGroupItem.md -->
 
@@ -88,13 +94,13 @@ The component that contains the tag.
 
 ### ItemText
 
-The textual part of the tag. Important for accessibility.
+The text of the tag. Used for typeahead unless the item has a `textValue`.
 
 <!-- @include: @/meta/TagGroupItemText.md -->
 
 ### ItemDelete
 
-The button that deletes the associated tag.
+The button that removes its tag. It is labelled "Remove" followed by the tag's name; pass an `aria-label` to translate it.
 
 <!-- @include: @/meta/TagGroupItemDelete.md -->
 
@@ -107,19 +113,114 @@ The button that deletes the associated tag.
   ]"
 />
 
+## Examples
+
+### Removing tags
+
+Tags are removable when you listen to the `remove` event. It receives the values to remove, which you remove from your own list. Removing a selected tag with the keyboard removes every selected tag.
+
+```vue line=5-7,11
+<script setup>
+import { ref } from 'vue'
+
+const tags = ref(['News', 'Travel', 'Gaming'])
+function onRemove(values) {
+  tags.value = tags.value.filter(tag => !values.includes(tag))
+}
+</script>
+
+<template>
+  <TagGroupRoot aria-label="Categories" @remove="onRemove">
+    <TagGroupItem v-for="tag in tags" :key="tag" :value="tag">
+      <TagGroupItemText>{{ tag }}</TagGroupItemText>
+      <TagGroupItemDelete>×</TagGroupItemDelete>
+    </TagGroupItem>
+  </TagGroupRoot>
+</template>
+```
+
+### Selection
+
+Set `selectionMode` to `single` or `multiple` to make tags selectable with a click, <kbd>Space</kbd> or <kbd>Enter</kbd>. `v-model` holds the selected value, or an array of values when `multiple`.
+
+```vue line=2,5
+<template>
+  <TagGroupRoot v-model="selected" selection-mode="multiple" aria-label="Amenities">
+    <TagGroupItem v-for="amenity in amenities" :key="amenity" :value="amenity">
+      <TagGroupItemText>{{ amenity }}</TagGroupItemText>
+    </TagGroupItem>
+  </TagGroupRoot>
+</template>
+```
+
+### Empty state
+
+When there are no tags, the root renders as a focusable `group` with a `data-empty` attribute. Render any empty content inside it.
+
+```vue line=6
+<template>
+  <TagGroupRoot aria-label="Categories" @remove="onRemove">
+    <TagGroupItem v-for="tag in tags" :key="tag" :value="tag">
+      <TagGroupItemText>{{ tag }}</TagGroupItemText>
+    </TagGroupItem>
+    <span v-if="!tags.length">No categories</span>
+  </TagGroupRoot>
+</template>
+```
+
+### With a label and description
+
+Place the root in a `FieldRoot` to label and describe it.
+
+```vue line=2-3,7
+<template>
+  <FieldRoot>
+    <FieldLabel :native-label="false">
+      Categories
+    </FieldLabel>
+    <TagGroupRoot @remove="onRemove">
+      <!-- ... -->
+    </TagGroupRoot>
+    <FieldDescription>Your selected categories.</FieldDescription>
+  </FieldRoot>
+</template>
+```
+
 ## Accessibility
+
+Adheres to the [Grid WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/), with each tag a `row`. When using `asChild` on `TagGroupItem`, wrap the tag's content in an element with `role="gridcell"`.
 
 ### Keyboard Interactions
 
 <KeyboardTable
   :data="[
     {
-      keys: ['Delete'],
-      description: '<span>When focus is on a tag item, removes it.</span>',
+      keys: ['Tab'],
+      description: '<span>Moves focus into the tag group, to the focused tag\'s delete button, then out of the tag group.</span>',
     },
     {
-      keys: ['Backspace'],
-      description: '<span>When focus is on a tag item, removes it.</span>',
+      keys: ['ArrowRight', 'ArrowDown'],
+      description: '<span>Moves focus to the next tag.</span>',
+    },
+    {
+      keys: ['ArrowLeft', 'ArrowUp'],
+      description: '<span>Moves focus to the previous tag.</span>',
+    },
+    {
+      keys: ['Home', 'End'],
+      description: '<span>Moves focus to the first or last tag.</span>',
+    },
+    {
+      keys: ['Space', 'Enter'],
+      description: '<span>When selectable, toggles the focused tag\'s selection.</span>',
+    },
+    {
+      keys: ['Delete', 'Backspace'],
+      description: '<span>Removes the focused tag, or every selected tag when the focused tag is selected.</span>',
+    },
+    {
+      keys: ['Escape'],
+      description: '<span>Clears the selection.</span>',
     },
   ]"
 />

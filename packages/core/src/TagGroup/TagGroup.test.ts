@@ -1,183 +1,341 @@
-import type { VueWrapper } from '@vue/test-utils'
+import type { TagGroupSelectionMode } from '.'
 import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, ref } from 'vue'
-import { TagGroupItem, TagGroupItemDelete, TagGroupItemText, TagGroupRoot } from '..'
+import { defineComponent, nextTick, ref } from 'vue'
+import { FieldDescription, FieldLabel, FieldRoot } from '@/Field'
+import { TagGroupItem, TagGroupItemDelete, TagGroupItemText, TagGroupRoot } from '.'
 
-const TagGroupDemo = defineComponent({
-  components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
-  setup() {
-    const tags = ref(['Vue', 'Reka UI', 'Accessibility'])
-    return { tags }
-  },
-  template: `
-    <TagGroupRoot v-model="tags" aria-label="Selected frameworks">
-      <TagGroupItem v-for="tag in tags" :key="tag" :value="tag">
-        <TagGroupItemText>{{ tag }}</TagGroupItemText>
-        <TagGroupItemDelete :aria-label="'Remove ' + tag" />
-      </TagGroupItem>
-    </TagGroupRoot>
-  `,
-})
+interface DemoOptions {
+  selectionMode?: TagGroupSelectionMode
+  defaultValue?: string | string[]
+  disallowEmptySelection?: boolean
+  removable?: boolean
+  disabled?: boolean
+  disabledTags?: string[]
+  tags?: string[]
+}
 
-describe('given default TagGroup', () => {
-  let wrapper: VueWrapper<InstanceType<typeof TagGroupDemo>>
-
-  beforeEach(() => {
-    document.body.innerHTML = ''
-    wrapper = mount(TagGroupDemo, { attachTo: document.body })
+function mountTagGroup(options: DemoOptions = {}) {
+  const Demo = defineComponent({
+    components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
+    setup() {
+      const tags = ref(options.tags ?? ['Vue', 'Reka UI', 'Accessibility', 'Nuxt'])
+      const selected = ref<string | string[] | undefined>(options.defaultValue)
+      const removed = ref<string[][]>([])
+      function onRemove(values: string[]) {
+        removed.value.push(values)
+        tags.value = tags.value.filter(tag => !values.includes(tag))
+      }
+      return { tags, selected, removed, onRemove, options }
+    },
+    template: `
+      <TagGroupRoot
+        v-model="selected"
+        aria-label="Frameworks"
+        :selection-mode="options.selectionMode"
+        :disallow-empty-selection="options.disallowEmptySelection"
+        :disabled="options.disabled"
+        v-on="options.removable === false ? {} : { remove: onRemove }"
+      >
+        <TagGroupItem
+          v-for="tag in tags"
+          :key="tag"
+          :value="tag"
+          :disabled="options.disabledTags?.includes(tag)"
+        >
+          <TagGroupItemText>{{ tag }}</TagGroupItemText>
+          <TagGroupItemDelete>x</TagGroupItemDelete>
+        </TagGroupItem>
+        <span v-if="!tags.length">No tags</span>
+      </TagGroupRoot>
+    `,
   })
 
-  it('should pass axe accessibility tests', async () => {
+  const wrapper = mount(Demo, { attachTo: document.body })
+  const root = () => wrapper.get('[aria-label="Frameworks"]')
+  const rows = () => wrapper.findAll('[role="row"]')
+  const row = (name: string) => rows().find(r => r.text().startsWith(name))!
+  const deleteButton = (name: string) => row(name).get('button')
+  return { wrapper, root, rows, row, deleteButton }
+}
+
+function rowNames(rows: ReturnType<typeof mountTagGroup>['rows']) {
+  return rows().map(r => r.get('span').text())
+}
+
+afterEach(() => {
+  document.body.innerHTML = ''
+})
+
+describe('tagGroup', () => {
+  it('passes axe accessibility tests', async () => {
+    const { wrapper } = mountTagGroup({ selectionMode: 'multiple', defaultValue: ['Vue'] })
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
-  it('should render tags as a list', () => {
-    expect(wrapper.get('[role="list"]').attributes('aria-label')).toBe('Selected frameworks')
-    expect(wrapper.findAll('[role="listitem"]').map(item => item.text())).toEqual([
-      'Vue',
-      'Reka UI',
-      'Accessibility',
-    ])
+  it('renders a grid of rows with gridcells', () => {
+    const { root, rows } = mountTagGroup()
+    expect(root().attributes('role')).toBe('grid')
+    expect(rows()).toHaveLength(4)
+    expect(rows()[0].get('[role="gridcell"]').text()).toContain('Vue')
   })
 
-  it('should remove a tag from model value when delete button is clicked', async () => {
-    const rootComponent = wrapper.findComponent(TagGroupRoot)
-
-    await wrapper.findAll('button[aria-label^="Remove"]')[1].trigger('click')
-
-    expect(wrapper.vm.tags).toEqual(['Vue', 'Accessibility'])
-    expect(wrapper.findAll('[role="listitem"]').map(item => item.text())).toEqual(['Vue', 'Accessibility'])
-    expect(rootComponent.emitted('removeTag')?.[0]?.[0]).toEqual('Reka UI')
+  it('labels each delete button with its tag', () => {
+    const { row, deleteButton } = mountTagGroup()
+    const button = deleteButton('Vue')
+    expect(button.attributes('aria-label')).toBe('Remove')
+    expect(button.attributes('aria-labelledby')).toBe(`${button.attributes('id')} ${row('Vue').attributes('id')}`)
   })
 
-  it('should remove the focused tag with Delete', async () => {
-    const items = wrapper.findAll('[role="listitem"]')
-    items[0].element.focus()
+  describe('keyboard navigation', () => {
+    it('moves focus with arrow keys in both axes and wraps around', async () => {
+      const user = userEvent.setup()
+      const { rows } = mountTagGroup()
 
-    await items[0].trigger('keydown', { key: 'Delete' })
-
-    expect(wrapper.vm.tags).toEqual(['Reka UI', 'Accessibility'])
-  })
-
-  it('should remove the focused tag with Backspace', async () => {
-    const items = wrapper.findAll('[role="listitem"]')
-    items[2].element.focus()
-
-    await items[2].trigger('keydown', { key: 'Backspace' })
-
-    expect(wrapper.vm.tags).toEqual(['Vue', 'Reka UI'])
-  })
-
-  it('should not remove a disabled tag from keyboard or delete button', async () => {
-    const DisabledTagGroupDemo = defineComponent({
-      components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
-      setup() {
-        const tags = ref(['Vue', 'Reka UI'])
-        return { tags }
-      },
-      template: `
-        <TagGroupRoot v-model="tags" aria-label="Selected frameworks">
-          <TagGroupItem v-for="tag in tags" :key="tag" :value="tag" :disabled="tag === 'Vue'">
-            <TagGroupItemText>{{ tag }}</TagGroupItemText>
-            <TagGroupItemDelete :aria-label="'Remove ' + tag" />
-          </TagGroupItem>
-        </TagGroupRoot>
-      `,
+      await user.tab()
+      expect(document.activeElement).toBe(rows()[0].element)
+      await user.keyboard('{ArrowRight}')
+      expect(document.activeElement).toBe(rows()[1].element)
+      await user.keyboard('{ArrowDown}')
+      expect(document.activeElement).toBe(rows()[2].element)
+      await user.keyboard('{ArrowUp}')
+      expect(document.activeElement).toBe(rows()[1].element)
+      await user.keyboard('{End}')
+      expect(document.activeElement).toBe(rows()[3].element)
+      await user.keyboard('{ArrowRight}')
+      expect(document.activeElement).toBe(rows()[0].element)
     })
 
-    const disabledWrapper = mount(DisabledTagGroupDemo, { attachTo: document.body })
-    const disabledItem = disabledWrapper.findAll('[role="listitem"]')[0]
+    it('tabs from a tag to its delete button, then out of the group', async () => {
+      const user = userEvent.setup()
+      const { rows, deleteButton, wrapper } = mountTagGroup()
+      const after = document.createElement('button')
+      wrapper.element.after(after)
 
-    expect(disabledItem.attributes('tabindex')).toBe('-1')
-    expect(disabledItem.attributes('data-disabled')).toBe('')
-
-    await disabledItem.trigger('keydown', { key: 'Delete' })
-    await disabledWrapper.find('button[aria-label="Remove Vue"]').trigger('click')
-
-    expect(disabledWrapper.vm.tags).toEqual(['Vue', 'Reka UI'])
-  })
-
-  it('should not remove a tag when a disabled delete control is rendered as a non-button element', async () => {
-    const DisabledDeleteAsDivDemo = defineComponent({
-      components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
-      setup() {
-        const tags = ref(['Vue', 'Reka UI'])
-        return { tags }
-      },
-      template: `
-        <TagGroupRoot v-model="tags" aria-label="Selected frameworks">
-          <TagGroupItem v-for="tag in tags" :key="tag" :value="tag">
-            <TagGroupItemText>{{ tag }}</TagGroupItemText>
-            <TagGroupItemDelete
-              as="div"
-              :disabled="tag === 'Vue'"
-              :aria-label="'Remove ' + tag"
-            />
-          </TagGroupItem>
-        </TagGroupRoot>
-      `,
+      await user.tab()
+      await user.keyboard('{ArrowRight}')
+      expect(document.activeElement).toBe(rows()[1].element)
+      await user.tab()
+      expect(document.activeElement).toBe(deleteButton('Reka UI').element)
+      await user.tab()
+      expect(document.activeElement).toBe(after)
     })
 
-    const disabledWrapper = mount(DisabledDeleteAsDivDemo, { attachTo: document.body })
-    const disabledDelete = disabledWrapper.find('[aria-label="Remove Vue"]')
+    it('focuses the matching tag on typeahead', async () => {
+      const user = userEvent.setup()
+      const { row } = mountTagGroup()
 
-    expect(disabledDelete.attributes('data-disabled')).toBe('')
-    expect(disabledDelete.attributes('disabled')).toBeUndefined()
-
-    await disabledDelete.trigger('click')
-
-    expect(disabledWrapper.vm.tags).toEqual(['Vue', 'Reka UI'])
-  })
-
-  it('should reflect item selection state from the model value', () => {
-    const items = wrapper.findAll('[role="listitem"]')
-
-    expect(items.every(item => item.attributes('data-state') === 'checked')).toBe(true)
-  })
-
-  it('should move focus between enabled tags with arrow keys', async () => {
-    const KeyboardTagGroupDemo = defineComponent({
-      components: { TagGroupRoot, TagGroupItem, TagGroupItemText, TagGroupItemDelete },
-      setup() {
-        const tags = ref(['Vue', 'Reka UI', 'Accessibility', 'Radix'])
-        return { tags }
-      },
-      template: `
-        <TagGroupRoot v-model="tags" aria-label="Selected frameworks" loop>
-          <TagGroupItem v-for="tag in tags" :key="tag" :value="tag" :disabled="tag === 'Accessibility'">
-            <TagGroupItemText>{{ tag }}</TagGroupItemText>
-            <TagGroupItemDelete :aria-label="'Remove ' + tag" />
-          </TagGroupItem>
-        </TagGroupRoot>
-      `,
+      await user.tab()
+      await user.keyboard('n')
+      expect(document.activeElement).toBe(row('Nuxt').element)
     })
 
-    wrapper.unmount()
-    document.body.innerHTML = ''
+    it('skips disabled tags', async () => {
+      const user = userEvent.setup()
+      const { row } = mountTagGroup({ disabledTags: ['Reka UI'] })
 
-    const keyboardWrapper = mount(KeyboardTagGroupDemo, { attachTo: document.body })
-    const items = () => keyboardWrapper.findAll('[role="listitem"]')
+      await user.tab()
+      await user.keyboard('{ArrowRight}')
+      expect(document.activeElement).toBe(row('Accessibility').element)
+    })
+  })
 
-    await userEvent.tab()
-    expect(document.activeElement).toBe(items()[0].element)
+  describe('removal', () => {
+    it('emits `remove` once when pressing Backspace on a tag', async () => {
+      const user = userEvent.setup()
+      const { wrapper, rows } = mountTagGroup()
 
-    await userEvent.keyboard('[ArrowRight]')
-    expect(document.activeElement).toBe(items()[1].element)
+      await user.tab()
+      await user.keyboard('{ArrowRight}{Backspace}')
+      expect(wrapper.vm.removed).toEqual([['Reka UI']])
+      expect(rowNames(rows)).toEqual(['Vue', 'Accessibility', 'Nuxt'])
+    })
 
-    await userEvent.keyboard('[ArrowRight]')
-    expect(document.activeElement).not.toBe(items()[2].element)
-    expect(document.activeElement).toBe(items()[3].element)
+    it('emits `remove` when pressing Delete on a tag', async () => {
+      const user = userEvent.setup()
+      const { wrapper } = mountTagGroup()
 
-    await userEvent.keyboard('[ArrowRight]')
-    expect(document.activeElement).toBe(items()[0].element)
+      await user.tab()
+      await user.keyboard('{Delete}')
+      expect(wrapper.vm.removed).toEqual([['Vue']])
+    })
 
-    await userEvent.keyboard('[End]')
-    expect(document.activeElement).toBe(items()[3].element)
+    it('removes only its tag from the delete button', async () => {
+      const user = userEvent.setup()
+      const { wrapper, deleteButton } = mountTagGroup({ selectionMode: 'multiple', defaultValue: ['Vue', 'Nuxt'] })
 
-    await userEvent.keyboard('[Home]')
-    expect(document.activeElement).toBe(items()[0].element)
+      await user.click(deleteButton('Vue').element)
+      expect(wrapper.vm.removed).toEqual([['Vue']])
+      expect(wrapper.vm.selected).toEqual(['Nuxt'])
+    })
+
+    it('removes all selected tags when removing a selected tag with the keyboard', async () => {
+      const user = userEvent.setup()
+      const { wrapper, rows } = mountTagGroup({ selectionMode: 'multiple', defaultValue: ['Vue', 'Nuxt'] })
+
+      await user.tab()
+      await user.keyboard('{Backspace}')
+      expect(wrapper.vm.removed).toEqual([['Vue', 'Nuxt']])
+      expect(wrapper.vm.selected).toEqual([])
+      expect(rowNames(rows)).toEqual(['Reka UI', 'Accessibility'])
+    })
+
+    it('moves focus to the next tag after removing the focused tag', async () => {
+      const user = userEvent.setup()
+      const { row } = mountTagGroup()
+
+      await user.tab()
+      await user.keyboard('{ArrowRight}{Delete}')
+      await nextTick()
+      expect(document.activeElement).toBe(row('Accessibility').element)
+    })
+
+    it('moves focus to the previous tag after removing the last tag', async () => {
+      const user = userEvent.setup()
+      const { row } = mountTagGroup()
+
+      await user.tab()
+      await user.keyboard('{End}{Delete}')
+      await nextTick()
+      expect(document.activeElement).toBe(row('Accessibility').element)
+    })
+
+    it('moves focus to the next tag after removing with the delete button', async () => {
+      const user = userEvent.setup()
+      const { row, deleteButton } = mountTagGroup()
+
+      await user.click(deleteButton('Reka UI').element)
+      await nextTick()
+      expect(document.activeElement).toBe(row('Accessibility').element)
+    })
+
+    it('focuses the group once the last tag is removed', async () => {
+      const user = userEvent.setup()
+      const { root } = mountTagGroup({ tags: ['Vue'] })
+
+      await user.tab()
+      await user.keyboard('{Delete}')
+      await nextTick()
+      expect(document.activeElement).toBe(root().element)
+      expect(root().attributes('role')).toBe('group')
+      expect(root().attributes('data-empty')).toBe('')
+      expect(root().attributes('tabindex')).toBe('0')
+    })
+
+    it('does not remove tags without a `remove` listener', async () => {
+      const user = userEvent.setup()
+      const { rows, deleteButton } = mountTagGroup({ removable: false })
+
+      await user.tab()
+      await user.keyboard('{Delete}')
+      await user.click(deleteButton('Nuxt').element)
+      expect(rows()).toHaveLength(4)
+    })
+
+    it('does not remove disabled tags', async () => {
+      const user = userEvent.setup()
+      const { wrapper, deleteButton } = mountTagGroup({ disabledTags: ['Vue'] })
+
+      expect(deleteButton('Vue').attributes('disabled')).toBeDefined()
+      await user.click(deleteButton('Vue').element)
+      expect(wrapper.vm.removed).toEqual([])
+    })
+
+    it('does not remove anything when the group is disabled', async () => {
+      const user = userEvent.setup()
+      const { wrapper, root, deleteButton } = mountTagGroup({ disabled: true })
+
+      expect(root().attributes('data-disabled')).toBe('')
+      await user.click(deleteButton('Vue').element)
+      expect(wrapper.vm.removed).toEqual([])
+    })
+  })
+
+  describe('selection', () => {
+    it('is not selectable by default', async () => {
+      const user = userEvent.setup()
+      const { wrapper, row } = mountTagGroup()
+
+      await user.click(row('Vue').element)
+      expect(wrapper.vm.selected).toBeUndefined()
+      expect(row('Vue').attributes('aria-selected')).toBeUndefined()
+      expect(row('Vue').attributes('data-state')).toBeUndefined()
+    })
+
+    it('toggles a single tag on click, Space and Enter', async () => {
+      const user = userEvent.setup()
+      const { wrapper, root, row } = mountTagGroup({ selectionMode: 'single' })
+
+      expect(root().attributes('aria-multiselectable')).toBeUndefined()
+      await user.click(row('Vue').element)
+      expect(wrapper.vm.selected).toBe('Vue')
+      expect(row('Vue').attributes('aria-selected')).toBe('true')
+      expect(row('Vue').attributes('data-state')).toBe('checked')
+
+      await user.keyboard('{ArrowRight}{ }')
+      expect(wrapper.vm.selected).toBe('Reka UI')
+      await user.keyboard('{Enter}')
+      expect(wrapper.vm.selected).toBeUndefined()
+    })
+
+    it('toggles multiple tags', async () => {
+      const user = userEvent.setup()
+      const { wrapper, root, row } = mountTagGroup({ selectionMode: 'multiple' })
+
+      expect(root().attributes('aria-multiselectable')).toBe('true')
+      await user.click(row('Vue').element)
+      await user.click(row('Nuxt').element)
+      expect(wrapper.vm.selected).toEqual(['Vue', 'Nuxt'])
+      await user.click(row('Vue').element)
+      expect(wrapper.vm.selected).toEqual(['Nuxt'])
+    })
+
+    it('does not select from the delete button', async () => {
+      const user = userEvent.setup()
+      const { wrapper, deleteButton } = mountTagGroup({ selectionMode: 'multiple', removable: false })
+
+      await user.click(deleteButton('Vue').element)
+      expect(wrapper.vm.selected).toBeUndefined()
+    })
+
+    it('clears the selection on Escape', async () => {
+      const user = userEvent.setup()
+      const { wrapper } = mountTagGroup({ selectionMode: 'multiple', defaultValue: ['Vue', 'Nuxt'] })
+
+      await user.tab()
+      await user.keyboard('{Escape}')
+      expect(wrapper.vm.selected).toEqual([])
+    })
+
+    it('keeps the last selected tag with `disallowEmptySelection`', async () => {
+      const user = userEvent.setup()
+      const { wrapper, row } = mountTagGroup({ selectionMode: 'multiple', defaultValue: ['Vue'], disallowEmptySelection: true })
+
+      await user.click(row('Vue').element)
+      await user.keyboard('{Escape}')
+      expect(wrapper.vm.selected).toEqual(['Vue'])
+    })
+  })
+
+  it('is labelled and described by an ancestor Field', async () => {
+    const wrapper = mount(defineComponent({
+      components: { FieldRoot, FieldLabel, FieldDescription, TagGroupRoot, TagGroupItem },
+      template: `
+        <FieldRoot>
+          <FieldLabel :native-label="false">Frameworks</FieldLabel>
+          <TagGroupRoot>
+            <TagGroupItem value="Vue">Vue</TagGroupItem>
+          </TagGroupRoot>
+          <FieldDescription>Your stack</FieldDescription>
+        </FieldRoot>
+      `,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const grid = wrapper.get('[role="grid"]')
+    expect(document.getElementById(grid.attributes('aria-labelledby')!)?.textContent).toBe('Frameworks')
+    expect(document.getElementById(grid.attributes('aria-describedby')!)?.textContent).toBe('Your stack')
   })
 })
