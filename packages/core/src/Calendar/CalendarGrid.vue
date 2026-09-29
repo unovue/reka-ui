@@ -20,7 +20,7 @@ const readonly = computed(() => rootContext.readonly.value ? true : undefined)
   <Primitive
     v-bind="props"
     tabindex="-1"
-    role="grid"
+    role="application"
     :aria-readonly="readonly"
     :aria-disabled="disabled"
     :data-readonly="readonly && ''"

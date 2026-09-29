@@ -60,7 +60,7 @@ onMounted(() => {
           :data-disabled="disabled ? '' : undefined"
           :disabled="disabled"
           :data-value="menuContext.value"
-          @pointerdown="(event) => {
+          @pointerdown="(event: PointerEvent) => {
             // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
             // but not when the control key is pressed (avoiding MacOS right click)
             if (!disabled && event.button === 0 && event.ctrlKey === false) {
@@ -77,7 +77,7 @@ onMounted(() => {
               triggerElement?.focus()
             }
           }"
-          @keydown.enter.space.arrow-down="(event) => {
+          @keydown.enter.space.arrow-down="(event: KeyboardEvent) => {
             if (disabled) return;
             if (['Enter', ' '].includes(event.key)) rootContext.onMenuToggle(menuContext.value);
             if (event.key === 'ArrowDown') rootContext.onMenuOpen(menuContext.value);

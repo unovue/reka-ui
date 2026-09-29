@@ -1,5 +1,7 @@
 import type MarkdownIt from 'markdown-it'
 
+const JSDOC_LINK_RE = /\{@link\s+(.*?)\}/
+
 // Define a custom plugin to transform JSDoc @link tags
 export function transformJSDocLinks(md: MarkdownIt) {
   md.core.ruler.push('transform-jsdoc-links', (state) => {
@@ -8,7 +10,7 @@ export function transformJSDocLinks(md: MarkdownIt) {
         for (let i = 0; i < token.children.length; i++) {
           const child = token.children[i]
           if (child.type === 'text' && child.content.startsWith('{@link')) {
-            const matches = child.content.match(/\{@link\s+(.*?)\}/)
+            const matches = child.content.match(JSDOC_LINK_RE)
             if (matches) {
               const linkText = matches[1]
               const linkNode = new state.Token('link_open', 'a', 1)

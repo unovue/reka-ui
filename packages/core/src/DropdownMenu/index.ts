@@ -13,6 +13,11 @@ export {
   type DropdownMenuContentProps,
 } from './DropdownMenuContent.vue'
 export {
+  default as DropdownMenuFilter,
+  type DropdownMenuFilterEmits,
+  type DropdownMenuFilterProps,
+} from './DropdownMenuFilter.vue'
+export {
   default as DropdownMenuGroup,
   type DropdownMenuGroupProps,
 } from './DropdownMenuGroup.vue'

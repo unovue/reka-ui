@@ -1,17 +1,32 @@
+import type { MaybeElement } from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
 import { unrefElement } from '@vueuse/core'
-import { computed, getCurrentInstance, ref } from 'vue'
+import { computed, getCurrentInstance, onUpdated, ref, triggerRef } from 'vue'
 
 export function useForwardExpose<T extends ComponentPublicInstance>() {
   const instance = getCurrentInstance()!
 
   const currentRef = ref<Element | T | null>()
-  const currentElement = computed<HTMLElement>(() => {
-    // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
-    // @ts-expect-error ignore ts error
-    return ['#text', '#comment'].includes(currentRef.value?.$el.nodeName) ? currentRef.value?.$el.nextElementSibling : unrefElement(currentRef)
+  const currentElement = computed(() => resolveCurrentElement())
+
+  // When using as-child with conditional rendering (v-if/v-else), the underlying
+  // DOM element ($el) changes but currentRef (component instance) stays the same.
+  // Since $el is not reactive, we sync currentElement after DOM updates.
+  onUpdated(() => {
+    if (currentElement.value !== resolveCurrentElement()) {
+      triggerRef(currentRef)
+    }
   })
+
+  function resolveCurrentElement() {
+    // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
+    return currentRef.value
+      && '$el' in currentRef.value
+      && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
+      ? currentRef.value.$el.nextElementSibling as HTMLElement
+      : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
+  }
 
   // Do give us credit if you reference our code :D
   // localExpose should only be assigned once else will create infinite loop
@@ -59,7 +74,23 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
       get: () => (ref instanceof Element ? ref : ref.$el),
     })
 
-    instance.exposed = ret
+    // ref not is Element
+    // and `useForwardExpose.test.ts > useForwardRef > should forward plain DOM element ref - 2` Passing in `$el`
+    if (!(ref instanceof Element) && !Object.hasOwn(ref, '$el')) {
+      // Retrieves the `exposed` data that has not been unwrapped by `vue` from `$.exposed`.
+      const childExposed = ref.$.exposed
+      const merged = Object.assign({}, ret)
+
+      for (const key in childExposed) {
+        Object.defineProperty(merged, key, {
+          enumerable: true,
+          configurable: true,
+          get: () => childExposed[key],
+        })
+      }
+
+      instance.exposed = merged
+    }
   }
 
   return { forwardRef, currentRef, currentElement }

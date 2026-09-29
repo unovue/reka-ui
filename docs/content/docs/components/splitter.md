@@ -22,7 +22,8 @@ A component that divides your layout into resizable sections.
     'Supports nested layout.',
     'Supports Right to Left direction.',
     'Can resize across another panel.',
-    'Can be mounted conditionally.'
+    'Can be mounted conditionally.',
+    'Supports percent and pixel sizing.'
   ]"
 />
 
@@ -195,6 +196,31 @@ const panelRef = ref<InstanceType<typeof SplitterPanel>>()
   </SplitterGroup>
 </template>
 ```
+
+### Pixel sizing
+
+Use `sizeUnit="px"` when you need a panel to stay a fixed pixel width (great for sidebars) even if the parent container resizes. All sizing props (`defaultSize`, `minSize`, `maxSize`, `collapsedSize`) are interpreted using the chosen unit.
+
+```vue line=4-10
+<template>
+  <SplitterGroup direction="horizontal">
+    <SplitterPanel
+      size-unit="px"
+      :default-size="240"
+      :min-size="160"
+      :max-size="320"
+    >
+      Fixed-width sidebar
+    </SplitterPanel>
+    <SplitterResizeHandle />
+    <SplitterPanel>
+      Flexible content
+    </SplitterPanel>
+  </SplitterGroup>
+</template>
+```
+
+Pixel-sized panels also work with persistence (`autoSaveId`) and collapse/expand APIs; sizes are restored using the correct unit.
 
 ### Custom handle
 

@@ -28,14 +28,23 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     context = inject(injectionKey) as CollectionContext<ItemData>
   }
 
+  const getItem = (element: HTMLElement, includeDisabledItem = false) => {
+    if (!context.collectionRef.value)
+      return undefined
+
+    const item = context.itemMap.value.get(element)
+    return item && (includeDisabledItem || item.ref.dataset.disabled !== '') ? item : undefined
+  }
+
   const getItems = (includeDisabledItem = false) => {
     const collectionNode = context.collectionRef.value
     if (!collectionNode)
       return []
     const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`))
+    const orderMap = new Map(orderedNodes.map((node, index) => [node, index]))
     const items = Array.from(context.itemMap.value.values())
     const orderedItems = items.sort(
-      (a, b) => orderedNodes.indexOf(a.ref) - orderedNodes.indexOf(b.ref),
+      (a, b) => (orderMap.get(a.ref) ?? -1) - (orderMap.get(b.ref) ?? -1),
     )
 
     if (includeDisabledItem)
@@ -46,12 +55,13 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
 
   const CollectionSlot = defineComponent({
     name: 'CollectionSlot',
-    setup(_, { slots }) {
+    inheritAttrs: false,
+    setup(_, { slots, attrs }) {
       const { primitiveElement, currentElement } = usePrimitiveElement()
       watch(currentElement, () => {
         context.collectionRef.value = currentElement.value
       })
-      return () => h(Slot, { ref: primitiveElement }, slots)
+      return () => h(Slot, { ref: primitiveElement, ...attrs }, slots)
     },
   })
 
@@ -83,5 +93,5 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
   const reactiveItems = computed(() => Array.from(context.itemMap.value.values()))
   const itemMapSize = computed(() => context.itemMap.value.size)
 
-  return { getItems, reactiveItems, itemMapSize, CollectionSlot, CollectionItem }
+  return { getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem }
 }

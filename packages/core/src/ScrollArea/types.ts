@@ -9,4 +9,4 @@ export interface Sizes {
   }
 }
 
-export type ScrollType = 'auto' | 'always' | 'scroll' | 'hover'
+export type ScrollType = 'auto' | 'always' | 'scroll' | 'hover' | 'glimpse'

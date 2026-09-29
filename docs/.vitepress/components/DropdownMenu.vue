@@ -26,7 +26,7 @@ defineProps<{
         position="popper"
         align="end"
         :side-offset="2"
-        class="z-10 bg-card border border-muted rounded-lg p-2 shadow-sm"
+        class="z-20 bg-card border border-muted rounded-lg p-2 shadow-sm"
       >
         <DropdownMenuItem
           v-for="item in items"

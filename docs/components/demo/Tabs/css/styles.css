@@ -37,6 +37,12 @@ input {
   transition-duration: 300ms;
 }
 
+.TabsIndicatorContent {
+  background-color: var(--grass-8);
+  height: 100%;
+  width: 100%;
+}
+
 .TabsTrigger {
   font-family: inherit;
   background-color: white;

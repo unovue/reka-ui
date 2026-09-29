@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { DismissableLayer } from '..'
-
-// eslint-disable-next-line import/no-self-import
 import DismissableBox from './_DismissableBox.vue'
 
 const open = ref(false)

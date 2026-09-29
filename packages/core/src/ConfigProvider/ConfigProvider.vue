@@ -8,6 +8,7 @@ interface ConfigProviderContextValue {
   locale?: Ref<string>
   scrollBody?: Ref<boolean | ScrollBodyOption>
   nonce?: Ref<string | undefined>
+  teleportTo?: Ref<string | HTMLElement | undefined>
   useId?: () => string
 }
 
@@ -36,6 +37,13 @@ export interface ConfigProviderProps {
    */
   nonce?: string
   /**
+   * The global default teleport target for all portalled primitives (e.g. `Dialog`, `Popover`, `Tooltip`).
+   * Individual `*Portal` components can still override this via their own `to` prop.
+   * Useful when rendering inside a custom element / shadow DOM.
+   * @type string | HTMLElement
+   */
+  teleportTo?: string | HTMLElement
+  /**
    * The global `useId` injection as a workaround for preventing hydration issue.
    */
   useId?: () => string
@@ -54,16 +62,18 @@ const props = withDefaults(defineProps<ConfigProviderProps>(), {
   locale: 'en',
   scrollBody: true,
   nonce: undefined,
+  teleportTo: undefined,
   useId: undefined,
 })
 
-const { dir, locale, scrollBody, nonce } = toRefs(props)
+const { dir, locale, scrollBody, nonce, teleportTo } = toRefs(props)
 
 provideConfigProviderContext({
   dir,
   locale,
   scrollBody,
   nonce,
+  teleportTo,
   useId: props.useId,
 })
 </script>

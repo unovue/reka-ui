@@ -11,13 +11,16 @@ on:
     paths:
       - 'packages/**'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
@@ -25,14 +28,12 @@ jobs:
       - name: Build
         run: pnpm --filter reka-ui build
 
-      - name: Check for errors
-        run: |
-          if [ $? -eq 0 ]; then
-            echo "Build succeeded"
-          else
-            echo "Build failed"
-            exit 1
-          fi
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+          retention-days: 1
 
   test:
     needs: build
@@ -40,10 +41,38 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
-      - name: Test
-        run: pnpm test
+      - name: Test (with coverage)
+        run: pnpm --filter reka-ui test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: packages/core/coverage
+          retention-days: 7
+
+  size:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
+      - name: Check bundle size
+        run: pnpm --filter reka-ui size

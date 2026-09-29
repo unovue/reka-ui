@@ -99,7 +99,7 @@ exports[`given prop:type="scroll" ScrollArea > on scroll > should render scrollb
       display: none;
     }
   </style>
-  <div style="position: absolute; top: 0px; right: 0px; bottom: var(--reka-scroll-area-corner-height); --reka-scroll-area-thumb-height: 18px;" data-scrollbarimpl="" data-orientation="vertical">
+  <div style="position: absolute; top: 0px; right: 0px; bottom: var(--reka-scroll-area-corner-height); --reka-scroll-area-thumb-height: 18px;" data-scrollbarimpl="" data-orientation="vertical" data-state="visible">
     <div data-state="visible" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
   </div>
   <!--v-if-->

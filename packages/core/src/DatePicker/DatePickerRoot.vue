@@ -3,11 +3,13 @@ import type { DateValue } from '@internationalized/date'
 
 import type { Ref } from 'vue'
 import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootEmits, PopoverRootProps } from '..'
-import type { Matcher, WeekDayFormat } from '@/date'
-import type { Granularity, HourCycle } from '@/shared/date'
+import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
+import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
-import { createContext, useDirection } from '@/shared'
+import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
+import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -26,7 +28,7 @@ type DatePickerRootContext = {
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
-  weekStartsOn: Ref<0 | 1 | 2 | 3 | 4 | 5 | 6>
+  weekStartsOn: Ref<WeekStartsOn>
   weekdayFormat: Ref<WeekDayFormat>
   fixedWeeks: Ref<boolean>
   numberOfMonths: Ref<number>
@@ -40,11 +42,16 @@ type DatePickerRootContext = {
   onDateChange: (date: DateValue | undefined) => void
   onPlaceholderChange: (date: DateValue) => void
   dir: Ref<Direction>
+  step: Ref<DateStep | undefined>
+  closeOnSelect: Ref<boolean>
 }
 
-export type DatePickerRootProps = DateFieldRootProps & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'>
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
+  /** Whether or not to close the popover on date select */
+  closeOnSelect?: boolean
+}
 
-export type DatePickerRootEmits = {
+export type DatePickerRootEmits = PopoverRootEmits & {
   /** Event handler called whenever the model value changes */
   'update:modelValue': [date: DateValue | undefined]
   /** Event handler called whenever the placeholder value changes */
@@ -68,25 +75,22 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   modal: false,
   pagedNavigation: false,
   preventDeselect: false,
-  weekStartsOn: 0,
   weekdayFormat: 'narrow',
   fixedWeeks: false,
   numberOfMonths: 1,
   disabled: false,
   readonly: false,
-  initialFocus: false,
   placeholder: undefined,
-  locale: 'en',
   isDateDisabled: undefined,
   isDateUnavailable: undefined,
+  closeOnSelect: false,
 })
-const emits = defineEmits<DatePickerRootEmits & PopoverRootEmits>()
+const emits = defineEmits<DatePickerRootEmits>()
 const {
-  locale,
+  locale: propLocale,
   disabled,
   readonly,
   pagedNavigation,
-  weekStartsOn,
   weekdayFormat,
   fixedWeeks,
   numberOfMonths,
@@ -105,9 +109,13 @@ const {
   hourCycle,
   defaultValue,
   dir: propDir,
+  step,
+  closeOnSelect,
 } = toRefs(props)
 
 const dir = useDirection(propDir)
+const locale = useLocale(propLocale)
+const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: defaultValue.value,
@@ -118,7 +126,7 @@ const defaultDate = computed(() => getDefaultDate({
   defaultPlaceholder: props.placeholder,
   granularity: props.granularity,
   defaultValue: modelValue.value,
-  locale: props.locale,
+  locale: locale.value,
 }))
 
 const placeholder = useVModel(props, 'placeholder', emits, {
@@ -133,9 +141,32 @@ const open = useVModel(props, 'open', emits, {
 
 const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()
 
-watch(modelValue, (value) => {
-  if (value && value.compare(placeholder.value) !== 0) {
+/**
+ * Reset time fields on DateValue instances that support time granularity.
+ */
+function resetTime(date: DateValue) {
+  if (!('hour' in date))
+    return date
+
+  return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+}
+
+watch(modelValue, (value, previous) => {
+  // A new object for the same value is not a new selection. Skip placeholder
+  // reset and closeOnSelect, or paging the calendar is undone. Compare the
+  // exact value, not the day, so a same-day time or zone change still syncs.
+  if (isSameDateSelection(previous, value, isSameDateValue))
+    return
+
+  if (value && !isSameDateValue(value, placeholder.value)) {
     placeholder.value = value.copy()
+  }
+  else if (!value && 'hour' in placeholder.value) {
+    placeholder.value = resetTime(placeholder.value)
+  }
+  // Only a new day is a pick. A same-day time or zone change leaves the popover open.
+  if (closeOnSelect.value && !isSameDateSelection(previous, value, isEqualDay)) {
+    open.value = false
   }
 })
 
@@ -166,9 +197,13 @@ provideDatePickerRootContext({
   hourCycle,
   dateFieldRef,
   dir,
+  step,
   onDateChange(date: DateValue | undefined) {
-    if (!date || !modelValue.value) {
-      modelValue.value = date?.copy() ?? undefined
+    if (!date) {
+      modelValue.value = undefined
+    }
+    else if (!modelValue.value) {
+      modelValue.value = date.copy()
     }
     else if (!preventDeselect.value && date && modelValue.value.compare(date) === 0) {
       modelValue.value = undefined
@@ -180,6 +215,7 @@ provideDatePickerRootContext({
   onPlaceholderChange(date: DateValue) {
     placeholder.value = date.copy()
   },
+  closeOnSelect,
 })
 </script>
 

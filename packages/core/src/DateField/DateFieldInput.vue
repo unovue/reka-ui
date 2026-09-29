@@ -23,6 +23,10 @@ const lastKeyZero = ref(false)
 const {
   handleSegmentClick,
   handleSegmentKeydown,
+  handleSegmentFocusOut,
+  handleSegmentBeforeInput,
+  handleSegmentCompositionStart,
+  handleSegmentCompositionEnd,
   attributes,
 } = useDateField({
   hasLeftFocus,
@@ -30,6 +34,7 @@ const {
   placeholder: rootContext.placeholder,
   hourCycle: rootContext.hourCycle,
   step: rootContext.step,
+  stepSnapping: rootContext.stepSnapping,
   segmentValues: rootContext.segmentValues,
   formatter: rootContext.formatter,
   part: props.part,
@@ -59,7 +64,13 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
     v-on="part !== 'literal' ? {
       mousedown: handleSegmentClick,
       keydown: handleSegmentKeydown,
-      focusout: () => { hasLeftFocus = true },
+      beforeinput: handleSegmentBeforeInput,
+      compositionstart: handleSegmentCompositionStart,
+      compositionend: handleSegmentCompositionEnd,
+      focusout: () => {
+        hasLeftFocus = true
+        handleSegmentFocusOut()
+      },
       focusin: (e: FocusEvent) => {
         rootContext.setFocusedElement(e.target as HTMLElement)
       },

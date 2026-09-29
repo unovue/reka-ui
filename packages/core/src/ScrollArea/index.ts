@@ -13,6 +13,10 @@ export {
   type ScrollAreaScrollbarProps,
 } from './ScrollAreaScrollbar.vue'
 export {
+  default as ScrollAreaScrollbarGlimpse,
+  type ScrollAreaScrollbarGlimpseProps,
+} from './ScrollAreaScrollbarGlimpse.vue'
+export {
   default as ScrollAreaThumb,
   type ScrollAreaThumbProps,
 } from './ScrollAreaThumb.vue'

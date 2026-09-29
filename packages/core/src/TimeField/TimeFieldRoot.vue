@@ -12,14 +12,12 @@ import {
   createContent,
   getDefaultTime,
   getTimeFieldSegmentElements,
-
   initializeTimeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
   normalizeHourCycle,
-
   syncTimeSegmentValues,
-
+  useSegmentNavigation,
 } from '@/shared/date'
 
 type TimeFieldRootContext = {
@@ -32,6 +30,7 @@ type TimeFieldRootContext = {
   formatter: Formatter
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Ref<SegmentValueObj>
   segmentContents: Ref<{ part: SegmentPart, value: string }[]>
   elements: Ref<Set<HTMLElement>>
@@ -52,6 +51,8 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
+  /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to minute if a Time is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
@@ -107,6 +108,7 @@ const props = withDefaults(defineProps<TimeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isDateUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<TimeFieldRootEmits>()
 defineSlots<{
@@ -120,7 +122,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled, readonly, granularity, defaultValue, minValue, maxValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
@@ -218,7 +220,25 @@ const allSegmentContent = computed(() => createContent({
   isTimeValue: true,
 }))
 
-const segmentContents = computed(() => allSegmentContent.value.arr)
+const segmentContents = computed(() => {
+  const contents = allSegmentContent.value.arr
+
+  // Convert hour values for 12-hour display
+  if (props.hourCycle === 12) {
+    return contents.map((segment) => {
+      if (segment.part === 'hour' && 'hour' in segmentValues.value) {
+        const hour = segmentValues.value.hour
+        if (hour !== null) {
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+          return { ...segment, value: displayHour.toString() }
+        }
+      }
+      return segment
+    })
+  }
+
+  return contents
+})
 
 const editableSegmentContents = computed(() => segmentContents.value.filter(({ part }) => part !== 'literal'))
 
@@ -251,33 +271,19 @@ watch([convertedModelValue, locale], ([_modelValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() =>
-  Array.from(segmentElements.value).findIndex(el =>
-    el.getAttribute('data-reka-time-field-segment')
-    === currentFocusedElement.value?.getAttribute('data-reka-time-field-segment')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-time-field-segment'],
 })
 
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -298,15 +304,14 @@ provideTimeFieldRootContext({
   formatter,
   hourCycle: props.hourCycle,
   step,
+  stepSnapping,
   readonly,
   segmentValues,
   isInvalid,
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    nextFocusableSegment.value?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({

@@ -30,7 +30,6 @@ const rootContext = injectDatePickerRootContext()
     }"
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
-    initial-focus
     :multiple="false"
     @update:model-value="(date: DateValue | undefined) => {
       if (date && rootContext.modelValue.value && isEqualDay(date, rootContext.modelValue.value)) return

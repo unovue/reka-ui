@@ -9,19 +9,20 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 18.x
 
@@ -31,15 +32,26 @@ jobs:
 
   npm:
     runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
-      - name: Build Packages & Publish to npm
-        run: pnpm build && pnpm pub:release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Update npm (Trusted Publishers requires npm >= 11.5.1)
+        # Workaround for npm/cli#9151: Node 22's bundled npm 10.9.7 is broken
+        # (missing promise-retry). Pin to 11.11.0 which installs successfully.
+        run: npm install -g npm@11.11.0
+
+      - name: Build Packages
+        run: pnpm build
+
+      # Must publish from repo root for provenance to work with OIDC
+      - name: Publish to npm
+        run: npm publish ./packages/core --access public --provenance

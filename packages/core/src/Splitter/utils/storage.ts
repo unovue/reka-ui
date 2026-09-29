@@ -33,6 +33,9 @@ export type PanelConfigurationState = {
     [panelId: string]: number
   }
   layout: number[]
+  sizeUnits?: {
+    [panelIndex: number]: 'px' | '%'
+  }
 }
 
 export type SerializedPanelGroupState = {
@@ -102,9 +105,20 @@ export function savePanelGroupState(
   const panelGroupKey = getPanelGroupKey(autoSaveId)
   const panelKey = getPanelKey(panels)
   const state = loadSerializedPanelGroupState(autoSaveId, storage) ?? {}
+
+  // Store the size units for each panel so we can restore them correctly
+  const sizeUnits: { [panelIndex: number]: 'px' | '%' } = {}
+  panels.forEach((panel, index) => {
+    const unit = panel.constraints.sizeUnit ?? '%'
+    if (unit === 'px') {
+      sizeUnits[index] = 'px'
+    }
+  })
+
   state[panelKey] = {
     expandToSizes: Object.fromEntries(panelSizesBeforeCollapse.entries()),
     layout: sizes,
+    ...(Object.keys(sizeUnits).length > 0 && { sizeUnits }),
   }
 
   try {

@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -15,6 +16,12 @@
     'required': false
   },
   {
+    'name': 'disabled',
+    'description': '<p>When <code>true</code>, prevents the user from interacting with the item.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'level',
     'description': '<p>Level of depth</p>\n',
     'type': 'number',
@@ -23,7 +30,7 @@
   {
     'name': 'value',
     'description': '<p>Value given to this item</p>\n',
-    'type': 'Record<string, any>',
+    'type': 'T',
     'required': true
   }
 ]" />
@@ -32,12 +39,12 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent<Record<string, any>>]'
+    'type': '[event: SelectEvent&lt;T&gt;]'
   },
   {
     'name': 'toggle',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: ToggleEvent<Record<string, any>>]'
+    'type': '[event: ToggleEvent&lt;T&gt;]'
   }
 ]" />
 
@@ -58,6 +65,11 @@
     'type': 'boolean | undefined'
   },
   {
+    'name': 'isDisabled',
+    'description': '',
+    'type': 'boolean'
+  },
+  {
     'name': 'handleToggle',
     'description': '',
     'type': '(): void'
@@ -68,3 +80,36 @@
     'type': '(): void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"li"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `level` | Level of depth | `number` | Yes | - |
+| `value` | Value given to this item | `T` | Yes | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<T>]` |
+| `toggle` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: ToggleEvent<T>]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `isExpanded` |  | `boolean` |
+| `isSelected` |  | `boolean` |
+| `isIndeterminate` |  | `boolean \| undefined` |
+| `isDisabled` |  | `boolean` |
+| `handleToggle` |  | `(): void` |
+| `handleSelect` |  | `(): void` |
+
+</llm-only>

@@ -16,7 +16,7 @@ export interface RovingFocusItemProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useId } from '@/shared'
@@ -44,6 +44,17 @@ onMounted(() => {
 onUnmounted(() => {
   if (props.focusable)
     context.onFocusableItemRemove()
+})
+
+watch(() => props.focusable, (newVal, oldVal) => {
+  if (newVal === oldVal)
+    return
+  if (newVal) {
+    context.onFocusableItemAdd()
+  }
+  else {
+    context.onFocusableItemRemove()
+  }
 })
 
 function handleKeydown(event: KeyboardEvent) {
@@ -97,7 +108,7 @@ function handleKeydown(event: KeyboardEvent) {
       :as="as"
       :as-child="asChild"
       @mousedown="
-        (event) => {
+        (event: MouseEvent) => {
           // We prevent focusing non-focusable items on `mousedown`.
           // Even though the item has tabIndex={-1}, that only means take it out of the tab order.
           if (!focusable) event.preventDefault();

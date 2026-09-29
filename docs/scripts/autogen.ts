@@ -3,6 +3,8 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import _traverse from '@babel/traverse'
+
+const STARTS_WITH_UPPERCASE_RE = /^[A-Z]/
 import fg from 'fast-glob'
 import MarkdownIt from 'markdown-it'
 import { components } from 'reka-ui/constant'
@@ -10,8 +12,7 @@ import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
 import { transformJSDocLinks } from './utils'
 
-// @ts-expect-error ignore
-const traverse = _traverse.default as typeof _traverse
+const traverse = ((_traverse as any).default ?? _traverse) as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const md = new MarkdownIt()
@@ -20,6 +21,19 @@ md.use(transformJSDocLinks)
 const checkerOptions: MetaCheckerOptions = {
   forceUseTs: true,
   printer: { newLine: 1 },
+  // vue-component-meta v3 defaults `schema` to `false`, which stops it from
+  // expanding type aliases/unions into nested enum schemas (props collapse to
+  // alias names like `Direction`, and slot tables are dropped). v2 expanded by
+  // default; restore that so `parseTypeFromSchema` sees the enum members again.
+  schema: true,
+  // KNOWN v3 LIMITATION: generic SFC params (`<script setup generic="T ...">`)
+  // are no longer instantiated to their default/constraint type. v2 resolved
+  // them (e.g. `T` -> `string | string[]`, `T[]` -> `AcceptableValue[]`); v3
+  // emits the bare `T` / `Type` / conditional type. Affects the value props of
+  // generic components (Accordion, Combobox, Listbox, Select, Tree, Checkbox,
+  // PinInput, Tabs, TagsInput, Switch). No clean fix via the public API yet
+  // (getBaseConstraintOfType / manual constraint substitution diverge from v2),
+  // so a full regen will regress those few files until upstream resolves it.
 }
 
 const tsconfigChecker = createChecker(
@@ -30,6 +44,12 @@ const tsconfigChecker = createChecker(
 const eventDescriptionMap = new Map<string, string>()
 const depTree = new Map<string, string[]>()
 let prevDeps: string[] = []
+
+function toSingleQuotedJson(obj: unknown): string {
+  return JSON.stringify(obj, null, 2)
+    .replace(/'/g, '\\\'')
+    .replace(/"/g, '\'')
+}
 
 const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
   cwd: resolve(__dirname, '../../packages/core'),
@@ -62,33 +82,65 @@ primitiveComponents.forEach((componentPath) => {
   const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath))
 
   const metaDirPath = resolve(__dirname, '../content/meta')
-  // if meta dir doesn't exist create
   mkdirSync(metaDirPath, { recursive: true })
 
   const metaMdFilePath = join(metaDirPath, `${componentName}.md`)
 
-  let parsedString = '<!-- This file was automatic generated. Do not edit it manually -->\n\n'
+  let parsedString = '<!-- This file was automatically generated. Do not edit it manually -->\n\n'
+
+  let vitePressParts = ''
   if (meta.props.length)
-    parsedString += `<PropsTable :data="${JSON.stringify(meta.props, null, 2).replace(/"/g, '\'')}" />\n`
-
+    vitePressParts += `<PropsTable :data="${toSingleQuotedJson(meta.props)}" />\n`
   if (meta.events.length)
-    parsedString += `\n<EmitsTable :data="${JSON.stringify(meta.events, null, 2).replace(/"/g, '\'')}" />\n`
-
+    vitePressParts += `\n<EmitsTable :data="${toSingleQuotedJson(meta.events)}" />\n`
   if (meta.slots.length)
-    parsedString += `\n<SlotsTable :data="${JSON.stringify(meta.slots, null, 2).replace(/"/g, '\'')}" />\n`
-
+    vitePressParts += `\n<SlotsTable :data="${toSingleQuotedJson(meta.slots)}" />\n`
   if (meta.methods.length)
-    parsedString += `\n<MethodsTable :data="${JSON.stringify(meta.methods, null, 2).replace(/"/g, '\'')}" />\n`
+    vitePressParts += `\n<MethodsTable :data="${toSingleQuotedJson(meta.methods)}" />\n`
+
+  if (vitePressParts)
+    parsedString += `<llm-exclude>\n${vitePressParts}</llm-exclude>\n`
+
+  const llmParts = generateMarkdownTables(meta)
+  if (llmParts)
+    parsedString += `\n<llm-only>\n\n${llmParts}</llm-only>\n`
 
   writeFileSync(metaMdFilePath, parsedString)
 })
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&#39;/g, '\'').replace(/&quot;/g, '"').trim()
+}
+
+function generateMarkdownTables(meta: ReturnType<typeof parseMeta>): string {
+  const clean = (s: string) => stripHtml(s).replace(/\|/g, '\\|').replace(/\n/g, ' ')
+
+  function toMdTable(title: string, headers: string[], rows: string[][]): string {
+    if (!rows.length)
+      return ''
+    return `**${title}**\n\n| ${headers.join(' | ')} |\n| ${headers.map(() => '---').join(' | ')} |\n${rows.map(r => `| ${r.join(' | ')} |`).join('\n')}\n\n`
+  }
+
+  return [
+    toMdTable('Props', ['Name', 'Description', 'Type', 'Required', 'Default'], meta.props.map(p => [
+      `\`${p.name}\``,
+      clean(p.description),
+      `\`${clean(p.type)}\``,
+      p.required ? 'Yes' : 'No',
+      p.default != null ? `\`${clean(String(p.default))}\`` : '-',
+    ])),
+    toMdTable('Events', ['Name', 'Description', 'Type'], meta.events.map(e => [`\`${e.name}\``, clean(e.description), `\`${clean(e.type)}\``])),
+    toMdTable('Slots', ['Name', 'Description', 'Type'], meta.slots.map(s => [`\`${s.name}\``, clean(s.description), `\`${clean(s.type)}\``])),
+    toMdTable('Methods', ['Name', 'Description', 'Type'], meta.methods.map(m => [`\`${m.name}\``, clean(m.description), `\`${clean(m.type)}\``])),
+  ].join('')
+}
 
 function parseTypeFromSchema(schema: PropertyMetaSchema): string {
   if (typeof schema === 'object' && (schema.kind === 'enum' || schema.kind === 'array')) {
     const isFlatEnum = schema.schema?.every(val => typeof val === 'string')
     const enumValue = schema?.schema?.filter(i => i !== 'undefined') ?? []
 
-    if (isFlatEnum && /^[A-Z]/.test(schema.type))
+    if (isFlatEnum && STARTS_WITH_UPPERCASE_RE.test(schema.type))
       return enumValue.join(' | ')
     else if (typeof schema.schema?.[0] === 'object' && schema.schema?.[0].kind === 'enum')
       return schema.schema.map((s: PropertyMetaSchema) => parseTypeFromSchema(s)).join(' | ')
@@ -128,7 +180,7 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render(description),
-        type: type.replace(/\s*\|\s*undefined/g, ''),
+        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         required,
         default: defaultValue ?? undefined,
       })
@@ -141,7 +193,7 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render((eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
-        type: type.replace(/\s*\|\s*undefined/g, ''),
+        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
     })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -156,7 +208,7 @@ function parseMeta(meta: ComponentMeta) {
         slots.push({
           name: childMeta.name,
           description: md.render(childMeta.description),
-          type: parseTypeFromSchema(childMeta.schema),
+          type: parseTypeFromSchema(childMeta.schema).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         })
       })
     }
@@ -168,7 +220,7 @@ function parseMeta(meta: ComponentMeta) {
     .map(expose => ({
       name: expose.name,
       description: md.render(expose.description),
-      type: expose.type,
+      type: expose.type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
     }))
 
   return {
@@ -256,7 +308,7 @@ function generateDependencies(componentPath: string) {
     traverse(result, {
       ImportDeclaration: (path) => {
         const value = path.node.source.value.split('/').at(-1)
-        if (value && value.match(/^[A-Z]/) && !value.includes('vue')) {
+        if (value && STARTS_WITH_UPPERCASE_RE.test(value) && !value.includes('vue')) {
           const prev = depTree.get(dir) ?? []
           depTree.set(dir, [...new Set([...prev, value])])
         }

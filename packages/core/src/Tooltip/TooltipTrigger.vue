@@ -1,17 +1,17 @@
 <script lang="ts">
 import { useForwardExpose, useId } from '@/shared'
 
-export type TooltipTriggerDataState =
-  | 'closed'
-  | 'delayed-open'
-  | 'instant-open'
+export type TooltipTriggerDataState
+  = | 'closed'
+    | 'delayed-open'
+    | 'instant-open'
 
 export interface TooltipTriggerProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
@@ -46,9 +46,9 @@ const tooltipListeners = computed(() => {
   }
 })
 
-onMounted(() => {
-  rootContext.onTriggerChange(triggerElement.value)
-})
+watch(triggerElement, (el) => {
+  rootContext.onTriggerChange(el)
+}, { immediate: true })
 
 function handlePointerUp() {
   setTimeout(() => {
@@ -103,7 +103,7 @@ function handleClick() {
 <template>
   <PopperAnchor
     as-child
-    :reference="reference"
+    :reference="reference ?? triggerElement"
   >
     <Primitive
       :ref="forwardRef"

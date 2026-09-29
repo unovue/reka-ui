@@ -13,7 +13,20 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+  if (!(targetElement instanceof Element))
+    return false
+
+  // Anything inside the layer's own root element is inside the layer. The root
+  // can differ from the `[data-dismissable-layer]` element when the layer is
+  // rendered `asChild` into a component whose root is not the element that
+  // receives its attrs (e.g. `PopperContent`'s wrapper `div`). `FocusScope`
+  // resolves the same root as its container and may focus it as a fallback
+  // when the content has no tabbable children; that focus must not read as
+  // focus-outside and dismiss the layer it belongs to (#2803).
+  if (layerElement.contains(targetElement))
+    return true
+
   const targetLayer = targetElement.closest(
     '[data-dismissable-layer]',
   )
@@ -28,8 +41,7 @@ function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
     layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
   )
 
-  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))
-  ) {
+  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))) {
     return true
   }
   else {
@@ -63,6 +75,11 @@ export function usePointerDownOutside(
         return
 
       if (isLayerExist(element.value, target)) {
+        // A touch `pointerdown` outside arms a one-shot `click` listener that
+        // never fires when the tap becomes a scroll/drag. Drop it here so the
+        // next tap inside a layer cannot trigger the stale dismissal (mirrors
+        // Radix's inside-tree branch, radix-ui/primitives#2171).
+        ownerDocument.removeEventListener('click', handleClickRef.value)
         isPointerInsideDOMTree.value = false
         return
       }

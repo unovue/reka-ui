@@ -95,6 +95,18 @@ describe('useBodyScrollLock', () => {
     expect(document.body.style.overflow).toBe('')
   })
 
+  it('should not permanently lock when toggled rapidly in the same tick', async () => {
+    const locked = useBodyScrollLock()
+
+    // Lock and immediately unlock in the same synchronous tick
+    locked.value = true
+    locked.value = false
+
+    await nextTick()
+    expect(document.body.style.overflow).toBe('')
+    expect(document.body.style.pointerEvents).toBe('')
+  })
+
   it('should preserve user overflow', async () => {
     document.body.style.overflow = 'scroll'
 

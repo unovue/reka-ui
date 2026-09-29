@@ -21,7 +21,7 @@ useForwardExpose()
 <template>
   <Primitive
     v-bind="props"
-    @mousedown="(event) => {
+    @mousedown="(event: MouseEvent) => {
       // prevent text selection when double clicking label
       if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
     }"

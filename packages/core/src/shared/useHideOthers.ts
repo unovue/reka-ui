@@ -16,7 +16,14 @@ export function useHideOthers(target: MaybeElementRef) {
     // disable hideOthers on test mode
     if (import.meta.env.MODE === 'test')
       return
-    if (el)
+    // Skip if inside a closed native popover
+    // Use try/catch as `:popover-open` pseudo-class is not supported in all browsers (e.g. Safari 18)
+    let isInsideClosedPopover = false
+    try {
+      isInsideClosedPopover = !!el?.closest('[popover]:not(:popover-open)')
+    }
+    catch {}
+    if (el && !isInsideClosedPopover)
       undo = hideOthers(el)
     else if (undo)
       undo()

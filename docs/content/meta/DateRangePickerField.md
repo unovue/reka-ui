@@ -1,4 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
+
+<llm-exclude>
 
 <SlotsTable :data="[
   {
@@ -12,3 +14,15 @@
     'type': 'DateRange | null'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `segments` |  | `{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }` |
+| `modelValue` |  | `DateRange \| null` |
+
+</llm-only>

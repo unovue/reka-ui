@@ -29,7 +29,7 @@ const rootContext = injectSliderRootContext()
   <Primitive
     data-slider-impl
     v-bind="props"
-    @keydown="(event) => {
+    @keydown="(event: KeyboardEvent) => {
       if (event.key === 'Home') {
         emits('homeKeyDown', event)
         // Prevent scrolling to page start
@@ -46,7 +46,7 @@ const rootContext = injectSliderRootContext()
         event.preventDefault();
       }
     }"
-    @pointerdown="(event) => {
+    @pointerdown="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
       target.setPointerCapture(event.pointerId);
       // Prevent browser focus behaviour because we focus a thumb manually when values change.
@@ -60,11 +60,11 @@ const rootContext = injectSliderRootContext()
         emits('slideStart', event)
       }
     }"
-    @pointermove="(event) => {
+    @pointermove="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
       if (target.hasPointerCapture(event.pointerId)) emits('slideMove', event);
     }"
-    @pointerup="(event) => {
+    @pointerup="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
       if (target.hasPointerCapture(event.pointerId)) {
         target.releasePointerCapture(event.pointerId);

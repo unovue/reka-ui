@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -38,6 +39,27 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent<AcceptableValue>]'
+    'type': '[event: SelectEvent&lt;T&gt;]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `textValue` | Optional text used for typeahead purposes. By default the typeahead behavior will use the .textContent of the SelectItemText part. Use this when the content is complex, or you have non-textual content inside. | `string` | No | - |
+| `value` | The value given as data when submitted with a name. | `AcceptableValue` | Yes | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<T>]` |
+
+</llm-only>

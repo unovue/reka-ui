@@ -42,7 +42,7 @@ Here's a few important note to make sure virtualization works!
 
 1. A fixed height/max-height wrapping `<Virtualizer />`.
 2. Consistent item height, and set the `estimateSize` props appropriately.
-3. Set `textContent` props to make sure type-ahead acceessibility.
+3. Set `textContent` props to make sure type-ahead accessibility.
 
 ## Example
 

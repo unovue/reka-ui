@@ -11,6 +11,9 @@ type ComboboxRootContext<T> = {
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
+  onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
+  onContentPlaced: (content: symbol) => void
+  onContentUnmount: (content: symbol) => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
   contentId: string
@@ -29,6 +32,8 @@ type ComboboxRootContext<T> = {
   ignoreFilter: Ref<boolean>
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
+  resetModelValueOnClear: Ref<boolean>
+  unmountOnHide: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -44,7 +49,7 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
 }
 
 export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
-  /** The controlled open state of the Combobox. Can be binded with with `v-model:open`. */
+  /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
   defaultOpen?: boolean
@@ -72,6 +77,16 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * When `true`, disable the default filters
    */
   ignoreFilter?: boolean
+  /**
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   */
+  resetModelValueOnClear?: boolean
+  /**
+   * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to improve performance by not remounting the content on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 </script>
 
@@ -81,6 +96,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,
@@ -88,6 +104,9 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   resetSearchTermOnSelect: true,
   openOnFocus: false,
   openOnClick: false,
+  resetModelValueOnClear: false,
+  highlightOnHover: true,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -101,7 +120,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -125,16 +144,15 @@ async function onOpenChange(val: boolean) {
     await nextTick()
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
+    inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
+    setTimeout(() => {
+      if (!val && props.resetSearchTermOnBlur)
+        resetSearchTerm.trigger()
+    }, 1)
   }
-
-  inputElement.value?.focus()
-  setTimeout(() => {
-    if (!val && props.resetSearchTermOnBlur)
-      resetSearchTerm.trigger()
-  }, 1)
 }
 
 const resetSearchTerm = createEventHook()
@@ -144,6 +162,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
@@ -218,6 +237,7 @@ provideComboboxRootContext({
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,
@@ -236,6 +256,8 @@ provideComboboxRootContext({
   ignoreFilter,
   openOnFocus,
   openOnClick,
+  resetModelValueOnClear,
+  unmountOnHide,
 })
 </script>
 
@@ -255,7 +277,7 @@ provideComboboxRootContext({
       :name="name"
       :required="required"
       :disabled="disabled"
-      :highlight-on-hover="true"
+      :highlight-on-hover="highlightOnHover"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >

@@ -12,21 +12,19 @@ import {
   hasTime,
   isBefore,
   isBeforeOrSame,
-
 } from '@/date'
 import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
-
   getDefaultDate,
   getSegmentElements,
-
   initializeSegmentValues,
   isSegmentNavigationKey,
   normalizeDateStep,
   normalizeHourCycle,
 
   syncSegmentValues,
+  useSegmentNavigation,
 } from '@/shared/date'
 
 export type DateRangeType = 'start' | 'end'
@@ -57,7 +55,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   defaultPlaceholder?: DateValue
   /** The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view */
   placeholder?: DateValue
-  /** The controlled checked state of the calendar. Can be bound as `v-model`. */
+  /** The controlled value of the field. Can be bound as `v-model`. */
   modelValue?: DateRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
@@ -87,7 +85,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
 
 export type DateRangeFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [DateRange]
+  'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
@@ -114,6 +112,16 @@ const props = withDefaults(defineProps<DateRangeFieldRootProps>(), {
   isDateUnavailable: undefined,
 })
 const emits = defineEmits<DateRangeFieldRootEmits>()
+defineSlots<{
+  default?: (props: {
+    /** The current date range of the field */
+    modelValue: DateRange | null
+    /** The date field segment contents */
+    segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
+    /** Value if the input is invalid */
+    isInvalid: boolean
+  }) => any
+}>()
 const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
@@ -304,32 +312,19 @@ watch([endValue, locale], ([_endValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() => Array.from(segmentElements.value).findIndex(el =>
-  el.getAttribute('data-reka-date-field-segment') === currentFocusedElement.value?.getAttribute('data-reka-date-field-segment')
-  && el.getAttribute('data-reka-date-range-field-segment-type') === currentFocusedElement.value?.getAttribute('data-reka-date-range-field-segment-type')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-date-field-segment', 'data-reka-date-range-field-segment-type'],
 })
 
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -358,9 +353,7 @@ provideDateRangeFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    nextFocusableSegment.value?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
@@ -383,6 +376,7 @@ defineExpose({
     <slot
       :model-value="modelValue"
       :segments="segmentContents"
+      :is-invalid="isInvalid"
     />
 
     <VisuallyHidden
