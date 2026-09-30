@@ -7,6 +7,10 @@ import {
   ContextMenuTrigger,
 } from '..'
 
+withDefaults(defineProps<{ forceMount?: boolean }>(), {
+  forceMount: false,
+})
+
 const open = ref(false)
 const rejectOpen = ref(false)
 
@@ -39,7 +43,7 @@ function handleOpenChange(value: boolean) {
       Right click for contextmenu
     </ContextMenuTrigger>
 
-    <ContextMenuContent>
+    <ContextMenuContent :force-mount="forceMount">
       <ContextMenuItem>Item 1</ContextMenuItem>
       <ContextMenuItem>Item 2</ContextMenuItem>
       <button

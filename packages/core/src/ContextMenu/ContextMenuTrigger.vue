@@ -34,6 +34,8 @@ const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectContextMenuRootContext()
 const point = ref<Point>({ x: 0, y: 0 })
 const isPointerOpen = ref(false)
+// Set while a pointer open request waits for the (possibly controlled) open state.
+let pendingPointerOpen = false
 const virtualEl = computed(() => ({
   getBoundingClientRect: () =>
     ({
@@ -53,11 +55,15 @@ const reference = computed(() =>
     : rootContext.triggerElement.value,
 )
 
+// Pick the anchor when the menu opens, and keep it while closing so the
+// content doesn't jump to the trigger during its exit animation.
 watch(
   () => rootContext.open.value,
   (open) => {
-    if (!open)
-      isPointerOpen.value = false
+    if (open) {
+      isPointerOpen.value = pendingPointerOpen
+      pendingPointerOpen = false
+    }
   },
 )
 
@@ -67,15 +73,21 @@ function clearLongPress() {
 }
 
 async function handleOpen(event: MouseEvent | PointerEvent) {
-  isPointerOpen.value = true
   point.value = { x: event.clientX, y: event.clientY }
+
+  // Already open: move the menu to the new pointer position.
+  if (rootContext.open.value) {
+    isPointerOpen.value = true
+    return
+  }
+
+  pendingPointerOpen = true
   rootContext.onOpenChange(true)
 
   await nextTick()
 
   // A controlled parent may have refused the request.
-  if (!rootContext.open.value)
-    isPointerOpen.value = false
+  pendingPointerOpen = false
 }
 
 async function handleContextMenu(event: PointerEvent) {
