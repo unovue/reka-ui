@@ -220,6 +220,7 @@ export const components = {
     'DrawerHandle',
     'DrawerSwipeArea',
     'DrawerViewport',
+    'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
   ] as const,
@@ -477,6 +478,13 @@ export const components = {
     'TabsContent',
     'TabsTrigger',
     'TabsIndicator',
+  ] as const,
+
+  tagGroup: [
+    'TagGroupRoot',
+    'TagGroupItem',
+    'TagGroupItemText',
+    'TagGroupItemDelete',
   ] as const,
 
   tagsInput: [
