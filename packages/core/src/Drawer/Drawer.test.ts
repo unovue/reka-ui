@@ -1,7 +1,7 @@
 import type { Mock, MockInstance } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
 import {
@@ -13,6 +13,8 @@ import {
   DrawerRoot,
   DrawerTitle,
   DrawerTrigger,
+  DrawerViewport,
+  DrawerVirtualKeyboardProvider,
 } from '.'
 
 const OPEN_TEXT = 'Open Drawer'
@@ -184,7 +186,7 @@ describe('update:open change event details', () => {
     const { getByText } = render(DrawerWithReason, { props: { onOpenChange } })
     await fireEvent.click(getByText('Open'))
     await nextTick()
-    expect(onOpenChange).toHaveBeenCalledWith(true, { reason: 'trigger-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
   it('emits close-press reason on close click', async () => {
@@ -195,7 +197,7 @@ describe('update:open change event details', () => {
     onOpenChange.mockClear()
     await fireEvent.click(getByText('Close'))
     await nextTick()
-    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'close-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'close-press' }))
   })
 
   it('closes on a second trigger click (toggle)', async () => {
@@ -206,7 +208,7 @@ describe('update:open change event details', () => {
     onOpenChange.mockClear()
     await fireEvent.click(getByText('Open'))
     await nextTick()
-    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
   it('closes on a second trigger click in non-modal mode', async () => {
@@ -219,7 +221,7 @@ describe('update:open change event details', () => {
     await user.click(getByText('Open'))
     await nextTick()
     expect(onOpenChange).toHaveBeenCalledTimes(1)
-    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 })
 
@@ -337,5 +339,224 @@ describe('given a Drawer with focus props', () => {
     await user.click(getByText('Close'))
     await nextTick()
     expect(document.activeElement).toBe(getByTestId('outside'))
+  })
+
+  describe('when the focus target belongs to another realm', () => {
+    function createIframeButton() {
+      const iframe = document.createElement('iframe')
+      document.body.appendChild(iframe)
+      onTestFinished(() => iframe.remove())
+      const iframeDocument = iframe.contentDocument!
+      const button = iframeDocument.createElement('button')
+      iframeDocument.body.appendChild(button)
+      return { button, iframeDocument }
+    }
+
+    it('focuses the given element on open', async () => {
+      const user = userEvent.setup()
+      const { getByText, rerender } = render(DrawerWithFocusProps)
+      const { button, iframeDocument } = createIframeButton()
+      expect(button instanceof HTMLElement).toBe(false)
+      await rerender({ initialFocus: button })
+      await user.click(getByText('Open'))
+      await nextTick()
+      expect(iframeDocument.activeElement).toBe(button)
+    })
+
+    it('focuses the given element on close', async () => {
+      const user = userEvent.setup()
+      const { getByText, rerender } = render(DrawerWithFocusProps)
+      const { button, iframeDocument } = createIframeButton()
+      await rerender({ finalFocus: button })
+      await user.click(getByText('Open'))
+      await nextTick()
+      await user.click(getByText('Close'))
+      await nextTick()
+      expect(iframeDocument.activeElement).toBe(button)
+    })
+  })
+})
+
+describe('drawer with DrawerVirtualKeyboardProvider', () => {
+  const LAYOUT_HEIGHT = 800
+  const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+  const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')!
+  let listeners: Set<() => void>
+
+  const KeyboardDrawer = defineComponent({
+    components: {
+      DrawerRoot,
+      DrawerVirtualKeyboardProvider,
+      DrawerTrigger,
+      DrawerPortal,
+      DrawerContent,
+      DrawerViewport,
+      DrawerTitle,
+    },
+    template: `
+      <DrawerRoot>
+        <DrawerVirtualKeyboardProvider>
+          <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+          <DrawerPortal>
+            <DrawerViewport data-testid="viewport">
+              <DrawerContent>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                <div data-testid="scroll" style="overflow-y: auto">
+                  <input data-testid="field" type="text">
+                </div>
+              </DrawerContent>
+            </DrawerViewport>
+          </DrawerPortal>
+        </DrawerVirtualKeyboardProvider>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    listeners = new Set()
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      writable: true,
+      value: {
+        height: LAYOUT_HEIGHT,
+        offsetTop: 0,
+        scale: 1,
+        addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      },
+    })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: LAYOUT_HEIGHT })
+    // jsdom has no layout; the provider measures `100svh` with a probe element.
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.style.height === '100svh' ? LAYOUT_HEIGHT : originalOffsetHeight.get!.call(this)
+      },
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalOffsetHeight)
+    // @ts-expect-error - restoring the jsdom default
+    delete window.visualViewport
+    if (originalInnerHeight)
+      Object.defineProperty(window, 'innerHeight', originalInnerHeight)
+    else
+      // @ts-expect-error - restoring the jsdom default
+      delete window.innerHeight
+  })
+
+  it('publishes the keyboard inset on the viewport', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { getByText, getByTestId } = render(KeyboardDrawer)
+
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+
+    getByTestId('field').focus()
+    await nextTick()
+    ;(window.visualViewport as any).height = LAYOUT_HEIGHT - 300
+    listeners.forEach(listener => listener())
+    vi.advanceTimersByTime(100)
+
+    expect(getByTestId('viewport').style.getPropertyValue('--drawer-keyboard-inset')).toBe('300px')
+  })
+
+  it('warns when the drawer has no DrawerViewport to measure against', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const NoViewport = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle },
+      template: `
+        <DrawerRoot>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+            <DrawerPortal>
+              <DrawerContent>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+              </DrawerContent>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { getByText } = render(NoViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
+  })
+
+  it('does not warn when a drawer with a DrawerViewport starts open', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const OpenOnMount = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      template: `
+        <DrawerRoot default-open>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerPortal>
+              <DrawerViewport>
+                <DrawerContent>
+                  <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                </DrawerContent>
+              </DrawerViewport>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { findByText } = render(OpenOnMount)
+    await findByText(TITLE_TEXT)
+    await nextTick()
+
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('forgets the viewport once it unmounts', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ToggleableViewport = defineComponent({
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      props: { withViewport: { type: Boolean, default: true } },
+      template: `
+        <DrawerRoot>
+          <DrawerVirtualKeyboardProvider>
+            <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
+            <DrawerPortal>
+              <DrawerViewport v-if="withViewport">
+                <DrawerContent>
+                  <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+                </DrawerContent>
+              </DrawerViewport>
+              <DrawerContent v-else>
+                <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
+              </DrawerContent>
+            </DrawerPortal>
+          </DrawerVirtualKeyboardProvider>
+        </DrawerRoot>
+      `,
+    })
+
+    const { getByText, rerender } = render(ToggleableViewport)
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
+
+    await rerender({ withViewport: false })
+    await nextTick()
+    // Reopen so the provider re-checks for a viewport.
+    await fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await nextTick()
+    await fireEvent.click(getByText(OPEN_TEXT))
+    await nextTick()
+    await nextTick()
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
+    warn.mockRestore()
   })
 })

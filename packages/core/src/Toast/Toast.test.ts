@@ -1,13 +1,56 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 const CLOSE_TEXT = 'Close'
+
+const ToastWithAction = defineComponent({
+  props: {
+    closeOnClick: {
+      type: Boolean,
+      default: undefined,
+    },
+  },
+  setup() {
+    const open = ref(true)
+    const actionClicks = ref(0)
+
+    return {
+      open,
+      actionClicks,
+    }
+  },
+  render() {
+    return h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, {
+          'open': this.open,
+          'onUpdate:open': (value: boolean) => {
+            this.open = value
+          },
+        }, {
+          default: () => [
+            h(ToastDescription, null, { default: () => 'Action available' }),
+            h(ToastAction, {
+              altText: 'Perform action',
+              closeOnClick: this.closeOnClick,
+              onClick: () => {
+                this.actionClicks += 1
+              },
+            }, { default: () => 'Undo' }),
+          ],
+        }),
+        h(ToastViewport),
+      ],
+    })
+  },
+})
 
 describe('given a default Toast', () => {
   let wrapper: VueWrapper<InstanceType<typeof Toast>>
@@ -31,6 +74,40 @@ describe('given a default Toast', () => {
     const toastElement = toastText.closest('li')
     expect(toastElement).toBeTruthy()
     expect(toastElement?.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('should have focus proxies that are focusable but not aria-hidden', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // The viewport renders head/tail focus proxies: tabbable sentinels
+    // (tabindex="0") that catch focus entering or leaving the viewport and
+    // redirect it onto a toast. A tabbable element must not be aria-hidden,
+    // otherwise axe reports an `aria-hidden-focus` violation.
+    const proxies = Array.from(
+      document.querySelectorAll<HTMLElement>('[tabindex="0"]'),
+    ).filter(el => el.style.position === 'fixed')
+
+    expect(proxies).toHaveLength(2)
+    for (const proxy of proxies)
+      expect(proxy.getAttribute('aria-hidden')).toBeNull()
+  })
+
+  it('should proxy focus out of the viewport on shift+Tab', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // Shift+Tab on the focused viewport hands focus to the head proxy (through
+    // its template ref) so the browser can move it on to the preceding
+    // document. Focus arrives from inside the viewport, so the proxy must not
+    // bounce it back onto a toast.
+    const viewport = document.querySelector<HTMLElement>('ol[tabindex="-1"]')
+    expect(viewport).toBeTruthy()
+    const headProxy = viewport!.previousElementSibling
+    viewport!.focus()
+    await fireEvent.keyDown(viewport!, { key: 'Tab', shiftKey: true })
+
+    expect(document.activeElement).toBe(headProxy)
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -114,5 +191,38 @@ describe('given a default Toast', () => {
         expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
       })
     })
+  })
+})
+
+describe('given a Toast with an action', () => {
+  let wrapper: VueWrapper<InstanceType<typeof ToastWithAction>>
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should close the toast when action is clicked by default', async () => {
+    wrapper = mount(ToastWithAction, { attachTo: document.body })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(false)
+    expect(action.closest('li')?.getAttribute('data-state')).toBe('closed')
+  })
+
+  it('should keep the toast open when action closeOnClick is false', async () => {
+    wrapper = mount(ToastWithAction, {
+      attachTo: document.body,
+      props: { closeOnClick: false },
+    })
+
+    const action = await findByText(document.body, 'Undo')
+    await fireEvent.click(action)
+
+    expect(wrapper.vm.actionClicks).toBe(1)
+    expect(wrapper.vm.open).toBe(true)
+    expect(document.body.innerHTML).toContain('Action available')
   })
 })
