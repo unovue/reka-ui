@@ -1,7 +1,7 @@
 import type { Mock, MockInstance } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
 import {
@@ -345,6 +345,7 @@ describe('given a Drawer with focus props', () => {
     function createIframeButton() {
       const iframe = document.createElement('iframe')
       document.body.appendChild(iframe)
+      onTestFinished(() => iframe.remove())
       const iframeDocument = iframe.contentDocument!
       const button = iframeDocument.createElement('button')
       iframeDocument.body.appendChild(button)
