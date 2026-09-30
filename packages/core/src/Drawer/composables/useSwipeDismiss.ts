@@ -17,6 +17,12 @@ export interface UseSwipeDismissOptions {
   movementCssVars: { x: string, y: string }
   swipeThreshold?: number | ((opts: { element: HTMLElement, direction: SwipeDirection }) => number)
   ignoreScrollableAncestors?: boolean
+  /**
+   * When `false`, touch swipes may start on the interactive elements
+   * (buttons, links, labels, fields) that mouse and pen swipes skip.
+   * @default true
+   */
+  ignoreSelectorWhenTouch?: boolean
   canStart?: () => boolean
   onDismiss?: () => void
   onProgress?: (progress: number, details?: SwipeProgressDetails) => void
@@ -42,6 +48,13 @@ const AXIS_LOCK_BIAS = 2
 const MIN_RELEASE_VELOCITY_DURATION_MS = 16
 const MAX_RELEASE_VELOCITY_AGE_MS = 80
 const DEFAULT_IGNORE_SELECTOR = 'button,a,input,select,textarea,label,[role="button"]'
+// Opts an element out of swipe dismissal for every input type. Ported from
+// Base UI's `data-base-ui-swipe-ignore`.
+const SWIPE_IGNORE_SELECTOR = '[data-reka-swipe-ignore]'
+
+function isRangeInput(target: EventTarget): boolean {
+  return (target as Element).tagName === 'INPUT' && (target as HTMLInputElement).type === 'range'
+}
 
 function findScrollableAncestor(
   el: Element | null,
@@ -120,6 +133,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     movementCssVars,
     swipeThreshold: swipeThresholdProp,
     canStart,
+    ignoreSelectorWhenTouch = true,
     onDismiss,
     onProgress,
     onCancel,
@@ -482,7 +496,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const target = e.target as HTMLElement
-    if (target?.closest(DEFAULT_IGNORE_SELECTOR))
+    if (target?.closest(`${DEFAULT_IGNORE_SELECTOR},${SWIPE_IGNORE_SELECTOR}`))
       return
 
     const el = elementRef.value
@@ -554,8 +568,16 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const target = e.target as HTMLElement
-    if (target?.closest(DEFAULT_IGNORE_SELECTOR))
+    if (target?.closest(SWIPE_IGNORE_SELECTOR))
       return
+    // A tap that stays under the drag threshold still clicks, so touch can
+    // start a swipe on buttons and links; a range input's thumb drag cannot
+    // be told apart from a swipe, so it keeps the gesture.
+    if (ignoreSelectorWhenTouch
+      ? target?.closest(DEFAULT_IGNORE_SELECTOR)
+      : e.composedPath().some(isRangeInput)) {
+      return
+    }
 
     const el = elementRef.value
     if (!el)

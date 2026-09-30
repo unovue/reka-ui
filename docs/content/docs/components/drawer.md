@@ -452,6 +452,27 @@ the edge the drawer attaches to and the direction users swipe to dismiss it.
 @keyframes slideOutRight { to { translate: 100% 0; } }
 ```
 
+### Where a swipe can start
+
+A touch swipe can start anywhere on the drawer, including on buttons, links and
+labels. A tap that doesn't move past the drag threshold still registers as a
+click. Mouse and pen swipes skip interactive elements so that clicks and text
+selection keep working.
+
+Add `data-reka-swipe-ignore` to an element to stop swipes from starting on it
+with any input type. Use it for controls that handle their own drag gestures.
+
+```vue line=4
+<template>
+  <DrawerContent>
+    <nav>...</nav>
+    <div data-reka-swipe-ignore>
+      <!-- A carousel, map, or signature pad -->
+    </div>
+  </DrawerContent>
+</template>
+```
+
 ### Snap points
 
 Provide `snapPoints` to give the drawer intermediate resting positions. Each point
