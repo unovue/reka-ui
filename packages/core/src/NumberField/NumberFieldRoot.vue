@@ -158,7 +158,12 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
     return
   }
 
-  modelValue.value = getNextValue(type, currentInputValue, multiplier)
+  const nextValue = getNextValue(type, currentInputValue, multiplier)
+  // An out-of-range value (e.g. typed with `allowInvalid`) would be clamped against the requested
+  // direction — ArrowUp above `max` would lower it. Do nothing instead, like HTML stepUp/stepDown.
+  if (type === 'increase' ? nextValue < currentInputValue : nextValue > currentInputValue)
+    return
+  modelValue.value = nextValue
 }
 
 function handleIncrease(multiplier = 1) {

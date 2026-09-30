@@ -567,6 +567,27 @@ describe('numberField', () => {
       expect(input.value).toBe('10')
     })
 
+    it('should not step against the requested direction when the value is out of range', async () => {
+      const { input } = setup({ min: 0, max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+      expect(input.value).toBe('50')
+      input.focus()
+      await fireEvent.wheel(input, { deltaY: 10 })
+      expect(input.value).toBe('50')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+      expect(input.value).toBe('10')
+
+      input.value = '-5'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+      expect(input.value).toBe('-5')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+      expect(input.value).toBe('0')
+    })
+
     // The tests above assign `input.value` directly, which bypasses the `beforeinput` guard.
     // These type key by key so the guard is actually exercised.
     describe('when typing key by key', () => {
