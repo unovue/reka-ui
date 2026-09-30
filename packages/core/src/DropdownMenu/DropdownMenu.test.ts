@@ -208,3 +208,44 @@ describe('given DropdownMenu checkbox and radio item slot props', () => {
     wrapper.unmount()
   })
 })
+
+describe('given DropdownMenuTrigger with consumer event listeners', () => {
+  function mountDropdownMenu(triggerListeners: Record<string, (event: Event) => void> = {}) {
+    document.body.innerHTML = ''
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, {
+        'open': open.value,
+        'onUpdate:open': (value: boolean) => { open.value = value },
+      }, () => [
+        h(DropdownMenuTrigger, triggerListeners, () => 'Open'),
+        h(DropdownMenuPortal, () => h(DropdownMenuContent, () => h(DropdownMenuItem, () => 'Item'))),
+      ]),
+    }), { attachTo: document.body })
+    return { open, trigger: wrapper.find('button') }
+  }
+
+  it.each(['Enter', ' ', 'ArrowDown'])('should open on %j keydown', async (key) => {
+    const { open, trigger } = mountDropdownMenu()
+    await trigger.trigger('keydown', { key })
+    expect(open.value).toBe(true)
+  })
+
+  it.each(['Enter', ' ', 'ArrowDown'])('should not open on %j keydown when the consumer prevents default', async (key) => {
+    const { open, trigger } = mountDropdownMenu({ onKeydown: event => event.preventDefault() })
+    await trigger.trigger('keydown', { key })
+    expect(open.value).toBe(false)
+  })
+
+  it('should open on click', async () => {
+    const { open, trigger } = mountDropdownMenu()
+    await trigger.trigger('click', { button: 0, ctrlKey: false })
+    expect(open.value).toBe(true)
+  })
+
+  it('should not open on click when the consumer prevents default', async () => {
+    const { open, trigger } = mountDropdownMenu({ onClick: event => event.preventDefault() })
+    await trigger.trigger('click', { button: 0, ctrlKey: false })
+    expect(open.value).toBe(false)
+  })
+})
