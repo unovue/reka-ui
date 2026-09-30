@@ -632,3 +632,127 @@ describe('useSwipeDismiss — cross-axis scroll arbitration', () => {
     wrapper.unmount()
   })
 })
+
+describe('useSwipeDismiss — interactive start targets', () => {
+  function mountTargetHarness(opts: { ignoreSelectorWhenTouch?: boolean } = {}) {
+    const elementRef = ref<HTMLElement | null>(null)
+    const onDismiss = vi.fn()
+
+    const Harness = defineComponent({
+      setup() {
+        useSwipeDismiss({
+          enabled: true,
+          elementRef,
+          directions: ['down'],
+          movementCssVars: {
+            x: '--drawer-swipe-movement-x',
+            y: '--drawer-swipe-movement-y',
+          },
+          ignoreSelectorWhenTouch: opts.ignoreSelectorWhenTouch,
+          onDismiss,
+        })
+        return {}
+      },
+      render() {
+        return h('div', {
+          ref: (el) => {
+            elementRef.value = el as HTMLElement | null
+          },
+        }, [
+          h('a', { 'href': '#', 'data-testid': 'link' }, 'Link'),
+          h('button', { 'data-testid': 'button' }, 'Button'),
+          h('label', { 'data-testid': 'label' }, [h('input', { type: 'checkbox' })]),
+          h('input', { 'type': 'range', 'data-testid': 'range' }),
+          h('div', { 'data-reka-swipe-ignore': '', 'data-testid': 'ignored' }, [h('span', 'Ignored')]),
+          h('p', { 'data-testid': 'text' }, 'Text'),
+        ])
+      },
+    })
+
+    const wrapper = mount(Harness, { attachTo: document.body })
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+    return { wrapper, elementRef, onDismiss, get }
+  }
+
+  function dispatchTouch(target: HTMLElement, type: 'touchstart' | 'touchmove' | 'touchend', x: number, y: number) {
+    const event = new Event(type, { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [{ clientX: x, clientY: y }],
+      configurable: true,
+    })
+    Object.defineProperty(event, 'timeStamp', { value: 0, configurable: true })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  function touchSwipe(target: HTMLElement) {
+    dispatchTouch(target, 'touchstart', 100, 100)
+    dispatchTouch(target, 'touchmove', 100, 120)
+    const move = dispatchTouch(target, 'touchmove', 100, 200)
+    dispatchTouch(target, 'touchend', 100, 200)
+    return move
+  }
+
+  it.each(['link', 'button', 'label'])('starts a touch swipe on a %s', async (id) => {
+    const { wrapper, onDismiss, get } = mountTargetHarness({ ignoreSelectorWhenTouch: false })
+    await nextTick()
+
+    expect(touchSwipe(get(id)).defaultPrevented).toBe(true)
+    await nextTick()
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+  })
+
+  it('does not start a touch swipe on a button when the selector applies to touch', async () => {
+    const { wrapper, onDismiss, get } = mountTargetHarness()
+    await nextTick()
+
+    expect(touchSwipe(get('button')).defaultPrevented).toBe(false)
+    await nextTick()
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it.each(['range', 'ignored'])('leaves a touch on the %s target to the element', async (id) => {
+    const { wrapper, onDismiss, get } = mountTargetHarness({ ignoreSelectorWhenTouch: false })
+    await nextTick()
+
+    const target = id === 'ignored' ? get(id).querySelector('span')! : get(id)
+    expect(touchSwipe(target).defaultPrevented).toBe(false)
+    await nextTick()
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it.each(['button', 'ignored'])('does not start a mouse swipe on the %s target', async (id) => {
+    const { wrapper, elementRef, onDismiss, get } = mountTargetHarness({ ignoreSelectorWhenTouch: false })
+    await nextTick()
+
+    dispatchPointer(get(id), 'pointerdown', 100, 100)
+    dispatchPointer(get(id), 'pointermove', 100, 200)
+    dispatchPointer(get(id), 'pointerup', 100, 200)
+    await nextTick()
+
+    expect(elementRef.value!.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('')
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('still starts a mouse swipe on plain content', async () => {
+    const { wrapper, onDismiss, get } = mountTargetHarness({ ignoreSelectorWhenTouch: false })
+    await nextTick()
+
+    dispatchPointer(get('text'), 'pointerdown', 100, 100)
+    dispatchPointer(get('text'), 'pointermove', 100, 200)
+    dispatchPointer(get('text'), 'pointerup', 100, 200)
+    await nextTick()
+
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+
+    wrapper.unmount()
+  })
+})

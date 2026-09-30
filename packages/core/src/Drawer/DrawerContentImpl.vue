@@ -136,6 +136,7 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
   },
+  ignoreSelectorWhenTouch: false,
   canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
     if (!hasSnapPoints.value) {
