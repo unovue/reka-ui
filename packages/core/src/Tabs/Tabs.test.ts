@@ -3,7 +3,7 @@ import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, h, nextTick } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 import Tabs from './story/_Tabs.vue'
@@ -138,5 +138,49 @@ describe('given Tabs without TabsContent', () => {
     const triggers = wrapper.findAll('[role="tab"]')
     expect(triggers[0].attributes('aria-controls')).toBeDefined()
     expect(triggers[1].attributes('aria-controls')).toBeUndefined()
+  })
+})
+
+describe('given TabsTrigger with consumer event listeners', () => {
+  function mountTabs(triggerListeners: Record<string, (event: Event) => void> = {}) {
+    document.body.innerHTML = ''
+    const value = ref('one')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, {
+        'modelValue': value.value,
+        'onUpdate:modelValue': (next: string) => { value.value = next },
+        'activationMode': 'manual',
+      }, () => [
+        h(TabsList, () => [
+          h(TabsTrigger, { value: 'one' }, () => 'One'),
+          h(TabsTrigger, { value: 'two', ...triggerListeners }, () => 'Two'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    return { value, trigger: wrapper.findAll('[role="tab"]')[1] }
+  }
+
+  it.each(['Enter', ' '])('should activate on %j keydown', async (key) => {
+    const { value, trigger } = mountTabs()
+    await trigger.trigger('keydown', { key })
+    expect(value.value).toBe('two')
+  })
+
+  it.each(['Enter', ' '])('should not activate on %j keydown when the consumer prevents default', async (key) => {
+    const { value, trigger } = mountTabs({ onKeydown: event => event.preventDefault() })
+    await trigger.trigger('keydown', { key })
+    expect(value.value).toBe('one')
+  })
+
+  it('should activate on mousedown', async () => {
+    const { value, trigger } = mountTabs()
+    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('two')
+  })
+
+  it('should not activate on mousedown when the consumer prevents default', async () => {
+    const { value, trigger } = mountTabs({ onMousedown: event => event.preventDefault() })
+    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('one')
   })
 })
