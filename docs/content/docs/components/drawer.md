@@ -152,6 +152,66 @@ left:
 @keyframes slideIn { from { translate: calc(-100% + var(--bleed)) 0; } }
 ```
 
+## Soft keyboard
+
+On mobile the software keyboard slides over the bottom of the viewport without
+resizing it, so a bottom-anchored drawer — and the field the user just tapped —
+end up underneath it.
+
+Wrap the drawer in `DrawerVirtualKeyboardProvider` to make it react. It requires
+a `DrawerViewport` around `DrawerContent`: the viewport is the measurement root
+and hosts the keyboard variable, which inherits into the popup and everything in
+it.
+
+```vue
+<template>
+  <DrawerRoot>
+    <DrawerVirtualKeyboardProvider>
+      <DrawerTrigger />
+      <DrawerPortal>
+        <DrawerOverlay />
+        <DrawerViewport>
+          <DrawerContent>
+            <input>
+          </DrawerContent>
+        </DrawerViewport>
+      </DrawerPortal>
+    </DrawerVirtualKeyboardProvider>
+  </DrawerRoot>
+</template>
+```
+
+While a field inside the drawer is focused, the provider scrolls it into the band
+left visible above the keyboard and publishes the keyboard's height as
+`--drawer-keyboard-inset` on the viewport.
+
+- **Keep the popup frame stable** — put header and footer content outside a plain
+  scrollable body so only the body moves.
+- **Lift a pinned footer** — offset it by `var(--drawer-keyboard-inset, 0px)`,
+  either as padding or as part of its height.
+- **Always include the `0px` fallback** — the variable is only set while the
+  keyboard is aligned, so a bare `var(--drawer-keyboard-inset)` is invalid before
+  the first alignment and after cleanup.
+
+```css
+.DrawerFooter {
+  padding-bottom: calc(1rem + var(--drawer-keyboard-inset, 0px));
+}
+```
+
+To lift the whole sheet instead, give up the keyboard's height so its top stays
+on screen:
+
+```css
+.DrawerContent {
+  height: calc(90dvh - var(--drawer-keyboard-inset, 0px));
+  max-height: calc(90dvh - var(--drawer-keyboard-inset, 0px));
+}
+```
+
+Alignment is suspended while the viewport is pinch-zoomed, and viewport changes
+under 60px are treated as browser chrome rather than the keyboard.
+
 ## API Reference
 
 ### Root
@@ -299,11 +359,19 @@ listens on the opposite side of the Root's `swipeDirection`.
 
 ### Viewport
 
-An optional scrollable wrapper for the drawer content. Mirrors Base UI's
-`Drawer.Viewport` and carries a `data-drawer-viewport` attribute for downstream
-selectors.
+An optional wrapper around `DrawerContent`. Mirrors Base UI's `Drawer.Viewport`
+and carries a `data-drawer-viewport` attribute for downstream selectors.
+Required when using `VirtualKeyboardProvider`, which measures the keyboard
+against it.
 
 <!-- @include: @/meta/DrawerViewport.md -->
+
+### VirtualKeyboardProvider
+
+Makes the drawer react to the software keyboard: it keeps the focused field
+visible and exposes `--drawer-keyboard-inset` on `DrawerViewport`, which it
+requires (see [Soft keyboard](#soft-keyboard)). Takes no props and renders no
+markup of its own.
 
 ### Indent
 

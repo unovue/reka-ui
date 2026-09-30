@@ -19,6 +19,7 @@ import {
   normalizeHourCycle,
   normalizeInputValue,
   syncSegmentValues,
+  useSegmentNavigation,
 } from '@/shared/date'
 
 type DateFieldRootContext = {
@@ -90,7 +91,8 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { injectFieldRootContext } from '@/Field'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 
@@ -118,9 +120,18 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, readonly, isDateUnavailable: propsIsDateUnavailable, granularity, defaultValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
+const { disabled: propDisabled, readonly, isDateUnavailable: propsIsDateUnavailable, granularity, defaultValue, stepSnapping, dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
+
+// Optional Field participation: `injectFieldRootContext(null)` returns
+// `null` (instead of throwing) outside a `FieldRoot`, so every Field binding
+// is inert — and byte-for-byte identical to before — when there is no Field.
+// Field's `name`/`required`/`disabled` act as fallbacks for the local props.
+const fieldContext = injectFieldRootContext(null)
+const disabled = computed(() => Boolean(propDisabled.value || fieldContext?.disabled.value))
+const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
 
 const formatter = useDateFormatter(locale.value, {
   hourCycle: normalizeHourCycle(props.hourCycle),
@@ -225,28 +236,11 @@ watch([modelValue, locale], ([_modelValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() =>
-  Array.from(segmentElements.value).findIndex(el =>
-    el.getAttribute('data-reka-date-field-segment')
-    === currentFocusedElement.value?.getAttribute('data-reka-date-field-segment')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-date-field-segment'],
 })
 
 const inputType = computed(() => getInputType(inferredGranularity.value))
@@ -272,6 +266,73 @@ function setFocusedElement(el: HTMLElement) {
   currentFocusedElement.value = el
 }
 
+// The root is a segmented `role="group"` of several focusable spans/inputs,
+// not a single form control: a native `<label for>` association (the
+// mechanism the other pilots use) doesn't apply to a group the same way, so
+// this wires `aria-labelledby`/`aria-describedby` on the group instead —
+// both merged with (never overwriting) whatever the consumer already passed,
+// same as the other pilots' `aria-describedby` merge.
+const attrs = useAttrs()
+
+// `attrs` isn't reactive, so this runs during render rather than in a
+// `computed`. A consumer-provided `aria-invalid` always wins — read it
+// explicitly rather than relying on the `$attrs` spread order.
+function getFieldAriaAttrs() {
+  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
+    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  return {
+    'aria-labelledby': mergeIds(attrs['aria-labelledby'], fieldContext?.labelId.value),
+    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
+    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
+  }
+}
+
+// The hidden input takes the field's id, so `FieldLabel`'s `for` lands on it
+// and its focus handler moves focus into the first segment.
+const nativeInputId = computed(() => props.id ?? fieldContext?.fieldId.value)
+
+// The hidden native input mirrors the value along with `required`/`min`/`max`,
+// so its `ValidityState` drives the field's constraint validation.
+const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
+
+let unregisterControl: (() => void) | undefined
+onMounted(() => {
+  unregisterControl = fieldContext?.registerControl({
+    id: () => nativeInputId.value,
+    // The first segment (not the group container, which isn't itself
+    // focusable), so `FormRoot` can move focus into the field on an invalid submit.
+    element: () => Array.from(segmentElements.value)[0],
+    getValue: () => modelValue.value,
+    validityElement: () => nativeInput.value?.$el as HTMLInputElement | undefined,
+  })
+})
+onBeforeUnmount(() => unregisterControl?.())
+
+const isFocusWithin = ref(false)
+
+// A value change while focus is inside the segments is the user editing it;
+// anything else is programmatic, which updates `filled` but isn't dirtying.
+// Flushed after render so the hidden input's validity reflects the new value.
+watch(modelValue, (value) => {
+  if (isFocusWithin.value)
+    fieldContext?.handleControlInput({ value })
+  else
+    fieldContext?.reportControlState({ filled: !isNullish(value) })
+}, { flush: 'post' })
+
+function handleFocusin() {
+  if (!isFocusWithin.value)
+    fieldContext?.handleControlFocus()
+  isFocusWithin.value = true
+}
+
+function handleFocusout(event: FocusEvent) {
+  if (parentElement.value?.contains(event.relatedTarget as Node | null))
+    return
+  isFocusWithin.value = false
+  fieldContext?.handleControlBlur()
+}
+
 provideDateFieldRootContext({
   isDateUnavailable: propsIsDateUnavailable.value,
   locale,
@@ -288,12 +349,7 @@ provideDateFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    // Auto-advance follows the segments' DOM order (the locale's format
-    // order) regardless of writing direction; only arrow-key navigation is
-    // direction-aware via nextFocusableSegment/prevFocusableSegment.
-    Array.from(segmentElements.value)[currentSegmentIndex.value + 1]?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
@@ -304,15 +360,17 @@ defineExpose({
 
 <template>
   <Primitive
-    v-bind="$attrs"
+    v-bind="{ ...fieldContext?.dataAttributes.value, ...$attrs, ...getFieldAriaAttrs() }"
     ref="primitiveElement"
     role="group"
     :aria-disabled="disabled ? true : undefined"
     :data-disabled="disabled ? '' : undefined"
     :data-readonly="readonly ? '' : undefined"
-    :data-invalid="isInvalid ? '' : undefined"
+    :data-invalid="isInvalid || fieldContext?.invalid.value ? '' : undefined"
     :dir="dir"
     @keydown.left.right="handleKeydown"
+    @focusin="handleFocusin"
+    @focusout="handleFocusout"
   >
     <slot
       :model-value="modelValue"
@@ -321,15 +379,16 @@ defineExpose({
     />
 
     <VisuallyHidden
-      :id="id"
+      :id="nativeInputId"
+      ref="nativeInput"
       as="input"
       :type="inputType"
       feature="focusable"
       tabindex="-1"
       :value="inputValue"
-      :name="name"
+      :name="resolvedName"
       :disabled="disabled"
-      :required="required"
+      :required="resolvedRequired"
       :max="inputMaxValue"
       :min="inputMinValue"
       @focus="Array.from(segmentElements)?.[0]?.focus()"
