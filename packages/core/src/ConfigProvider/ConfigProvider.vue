@@ -38,10 +38,11 @@ export interface ConfigProviderProps {
    */
   nonce?: string
   /**
-   * When `true`, floating/popper components (e.g. `Popover`, `Tooltip`, `Select`) apply their
-   * positioning styles on the client after mount instead of emitting inline `style` attributes
+   * When `true`, floating components (e.g. `Popover`, `Tooltip`, `Select`, `Combobox`) apply their
+   * inline styles on the client after mount instead of emitting inline `style` attributes
    * during SSR. This avoids `style-src` CSP violations on the server-rendered markup for apps
-   * running a strict Content Security Policy without `'unsafe-inline'`.
+   * running a strict Content Security Policy without `'unsafe-inline'`. A `style` you pass to
+   * the floating content is deferred the same way.
    *
    * Inline `style` attributes serialized during SSR cannot be allowed by a `nonce` (nonces only
    * apply to `<style>`/`<link>` elements), so this is the way to keep SSR output CSP-clean.

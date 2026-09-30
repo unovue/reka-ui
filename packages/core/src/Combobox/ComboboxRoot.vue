@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, useCspSafePositioning, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
@@ -93,7 +93,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, useAttrs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
@@ -259,17 +259,20 @@ provideComboboxRootContext({
   resetModelValueOnClear,
   unmountOnHide,
 })
+
+const { bindStyle } = useCspSafePositioning()
+const attrs = useAttrs()
+const rootProps = computed(() => bindStyle(attrs, {
+  pointerEvents: open.value ? 'auto' : undefined,
+}))
 </script>
 
 <template>
   <PopperRoot>
     <ListboxRoot
       ref="primitiveElement"
-      v-bind="$attrs"
+      v-bind="rootProps"
       v-model="modelValue"
-      :style="{
-        pointerEvents: open ? 'auto' : undefined,
-      }"
       :as="as"
       :as-child="asChild"
       :dir="dir"

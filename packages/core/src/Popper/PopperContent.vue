@@ -210,7 +210,7 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computed, mergeProps, ref, useAttrs, watchEffect, watchPostEffect } from 'vue'
+import { computed, ref, useAttrs, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -239,7 +239,7 @@ const dir = useDirection(computed(() => props.dir))
 // When CSP-safe positioning is enabled, positioning styles are withheld until after
 // mount so SSR emits no inline `style` attribute (which a strict `style-src` would block
 // on parse); the client then applies them via the CSP-exempt CSSOM. See issue #2732.
-const { shouldApplyPositioningStyle } = useCspSafePositioning()
+const { shouldApplyPositioningStyle, bindStyle } = useCspSafePositioning()
 
 const floatingRef = ref<HTMLElement>()
 
@@ -386,10 +386,7 @@ watchEffect(() => {
 const arrowX = computed(() => middlewareData.value.arrow?.x ?? 0)
 const arrowY = computed(() => middlewareData.value.arrow?.y ?? 0)
 
-const wrapperStyle = computed<CSSProperties | undefined>(() => {
-  if (!shouldApplyPositioningStyle.value)
-    return undefined
-
+const wrapperStyle = computed<CSSProperties>(() => {
   return {
     ...floatingStyles.value,
     // keep off the page when measuring
@@ -413,20 +410,15 @@ const wrapperStyle = computed<CSSProperties | undefined>(() => {
 
 // if the PopperContent hasn't been placed yet (not all measurements done)
 // we prevent animations so that users's animation don't kick in too early referring wrong sides
-const primitiveStyle = computed<CSSProperties | undefined>(() => {
-  if (!shouldApplyPositioningStyle.value)
-    return undefined
-  return { animation: !isPositioned.value ? 'none' : undefined }
-})
+const primitiveStyle = computed<CSSProperties>(() => ({
+  animation: !isPositioned.value ? 'none' : undefined,
+}))
 
-// Bind `style` only when there is something to apply. An empty `style=""` attribute
-// still triggers a `style-src-attr` CSP violation, so it must be omitted entirely (not
-// emitted empty) from the SSR markup when positioning styles are withheld.
-const wrapperProps = computed(() => (wrapperStyle.value ? { style: wrapperStyle.value } : {}))
-const primitiveProps = computed(() => (primitiveStyle.value ? { style: primitiveStyle.value } : {}))
-// merge our (optional) style with fallthrough attrs so a consumer-provided `style` is preserved
+// While styles are withheld, the fallthrough `style` is dropped too: consumers (Popover,
+// Tooltip, Select, …) and `DismissableLayer` pass their own inline styles through here.
 const attrs = useAttrs()
-const mergedPrimitiveProps = computed(() => mergeProps(attrs, primitiveProps.value))
+const wrapperProps = computed(() => bindStyle({}, wrapperStyle.value))
+const mergedPrimitiveProps = computed(() => bindStyle(attrs, primitiveStyle.value))
 
 providePopperContentContext({
   placedSide,
@@ -453,6 +445,7 @@ providePopperContentContext({
         placedSide,
         placedAlign,
         isPositioned,
+        shouldApplyPositioningStyle,
         ...Object.values($attrs),
         ...props.memoDependencies,
       ]"

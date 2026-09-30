@@ -49,7 +49,7 @@ const { viewport, selectedItem, selectedItemText, focusSelectedItem }
 // Withhold the wrapper/content positioning styles during SSR when CSP-safe positioning is on,
 // so the server emits no inline `style` attribute the browser would block. The imperative
 // `position()` writes below are client-only (CSSOM) and are unaffected. See issue #2732.
-const { shouldApplyPositioningStyle } = useCspSafePositioning()
+const { bindStyle } = useCspSafePositioning()
 const attrs = useAttrs()
 
 function position() {
@@ -203,35 +203,25 @@ function position() {
 // copy z-index from content to wrapper
 const contentZIndex = ref('')
 
-const wrapperStyle = computed<CSSProperties | undefined>(() => {
-  if (!shouldApplyPositioningStyle.value)
-    return undefined
-  return {
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'fixed',
-    zIndex: contentZIndex.value,
-  }
-})
-// Bind `style` only when there is something to apply — an empty `style=""` attribute
-// still triggers a `style-src-attr` CSP violation, so it must be omitted from SSR markup.
-const wrapperProps = computed(() => (wrapperStyle.value ? { style: wrapperStyle.value } : {}))
+const wrapperStyle = computed<CSSProperties>(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'fixed',
+  zIndex: contentZIndex.value,
+}))
+const wrapperProps = computed(() => bindStyle({}, wrapperStyle.value))
 
-const primitiveStyle = computed<CSSProperties | undefined>(() => {
-  if (!shouldApplyPositioningStyle.value)
-    return undefined
-  return {
+// Our style goes first so a consumer `style` still overrides it. While styles are
+// withheld, the fallthrough `style` from `SelectContentImpl` is dropped too.
+const mergedPrimitiveProps = computed(() => bindStyle(mergeProps({
+  style: {
     // When we get the height of the content, it includes borders. If we were to set
     // the height without having `boxSizing: 'border-box'` it would be too big.
     boxSizing: 'border-box',
     // We need to ensure the content doesn't get taller than the wrapper
     maxHeight: '100%',
-  }
-})
-// merge our (optional) style with fallthrough attrs + own props, carried by a single `v-bind`
-const mergedPrimitiveProps = computed(() =>
-  mergeProps({ ...attrs, ...props }, primitiveStyle.value ? { style: primitiveStyle.value } : {}),
-)
+  },
+}, { ...attrs, ...props })))
 
 onMounted(async () => {
   await nextTick()

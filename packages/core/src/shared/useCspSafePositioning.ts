@@ -1,4 +1,5 @@
-import { computed, onMounted, ref } from 'vue'
+import type { StyleValue } from 'vue'
+import { computed, mergeProps, onMounted, ref } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 
 /**
@@ -6,9 +7,9 @@ import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue
  * pairs it with a client-mounted signal.
  *
  * When CSP-safe positioning is enabled, floating components should withhold their
- * positioning `:style` until after mount: the server (and the first hydration render)
+ * inline styles until after mount: the server (and the first hydration render)
  * emit no inline `style` attribute — which a strict `style-src` CSP would otherwise
- * block on parse — and the client applies positioning via the (CSP-exempt) CSSOM
+ * block on parse — and the client applies them via the (CSP-exempt) CSSOM
  * afterwards. Server and the initial client render agree, so hydration does not mismatch.
  *
  * `shouldApplyPositioningStyle` is therefore `true` in the default (flag off) case and,
@@ -29,5 +30,19 @@ export function useCspSafePositioning() {
     () => !cspSafePositioning.value || isMounted.value,
   )
 
-  return { cspSafePositioning, isMounted, shouldApplyPositioningStyle }
+  /**
+   * Merges `style` into `props` for a single `v-bind`. While styles are withheld, the
+   * `style` key is dropped entirely — including one already in `props` (e.g. a
+   * fallthrough `style`) — because SSR serializes even an empty value as `style=""`,
+   * which still triggers a `style-src-attr` violation.
+   */
+  function bindStyle(props: Record<string, any>, style?: StyleValue | Record<string, unknown>) {
+    if (!shouldApplyPositioningStyle.value) {
+      const { style: _style, ...rest } = props
+      return rest
+    }
+    return style ? mergeProps(props, { style }) : props
+  }
+
+  return { cspSafePositioning, isMounted, shouldApplyPositioningStyle, bindStyle }
 }

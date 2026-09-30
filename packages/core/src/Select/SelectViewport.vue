@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useCspSafePositioning, useForwardExpose } from '@/shared'
 import { useNonce } from '@/shared/useNonce'
 
 export interface SelectViewportProps extends PrimitiveProps {
@@ -12,7 +12,7 @@ export interface SelectViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, ref, toRefs } from 'vue'
+import { computed, onMounted, ref, toRefs, useAttrs } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -31,6 +31,17 @@ const alignedPositionContext
     : undefined
 
 const { forwardRef, currentElement } = useForwardExpose()
+
+const { bindStyle } = useCspSafePositioning()
+const attrs = useAttrs()
+const viewportProps = computed(() => bindStyle({ ...attrs, ...props }, {
+  // we use position: 'relative' here on the `viewport` so that when we call
+  // `selectedItem.offsetTop` in calculations, the offset is relative to the viewport
+  // (independent of the scrollUpButton).
+  position: 'relative',
+  flex: 1,
+  overflow: 'hidden auto',
+}))
 
 onMounted(() => {
   contentContext?.onViewportChange(currentElement.value)
@@ -74,15 +85,7 @@ function handleScroll(event: WheelEvent) {
     :ref="forwardRef"
     data-reka-select-viewport
     role="presentation"
-    v-bind="{ ...$attrs, ...props }"
-    :style="{
-      // we use position: 'relative' here on the `viewport` so that when we call
-      // `selectedItem.offsetTop` in calculations, the offset is relative to the viewport
-      // (independent of the scrollUpButton).
-      position: 'relative',
-      flex: 1,
-      overflow: 'hidden auto',
-    }"
+    v-bind="viewportProps"
     @scroll="handleScroll"
   >
     <slot />

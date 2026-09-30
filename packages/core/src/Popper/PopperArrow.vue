@@ -15,7 +15,7 @@ export interface PopperArrowProps extends ArrowProps, PrimitiveProps {}
 
 <script setup lang="ts">
 import type { ComponentPublicInstance, CSSProperties } from 'vue'
-import { computed, mergeProps, useAttrs } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { useCspSafePositioning, useForwardExpose } from '@/shared'
 import Arrow from '@/shared/component/Arrow.vue'
 import { injectPopperContentContext } from './PopperContent.vue'
@@ -36,12 +36,9 @@ const baseSide = computed(() => OPPOSITE_SIDE[contentContext.placedSide.value])
 
 // Withhold the arrow's positioning style during SSR when CSP-safe positioning is on,
 // so the server emits no inline `style` attribute the browser would block. See issue #2732.
-const { shouldApplyPositioningStyle } = useCspSafePositioning()
+const { bindStyle } = useCspSafePositioning()
 
-const arrowStyle = computed<CSSProperties | undefined>(() => {
-  if (!shouldApplyPositioningStyle.value)
-    return undefined
-
+const arrowStyle = computed<CSSProperties>(() => {
   return {
     position: 'absolute',
     left: contentContext.arrowX?.value ? `${contentContext.arrowX?.value}px` : undefined,
@@ -63,13 +60,10 @@ const arrowStyle = computed<CSSProperties | undefined>(() => {
   }
 })
 
-// Bind `style` only when there is something to apply — an empty `style=""` attribute
-// still triggers a `style-src-attr` CSP violation, so it must be omitted from SSR markup.
-const arrowProps = computed(() => (arrowStyle.value ? { style: arrowStyle.value } : {}))
-const arrowInnerProps = computed(() => (shouldApplyPositioningStyle.value ? { style: { display: 'block' } } : {}))
-// merge the inner svg style with fallthrough attrs so a single `v-bind` carries both
 const attrs = useAttrs()
-const mergedArrowInnerProps = computed(() => mergeProps(attrs, arrowInnerProps.value))
+const arrowProps = computed(() => bindStyle({}, arrowStyle.value))
+// merge the inner svg style with fallthrough attrs so a single `v-bind` carries both
+const mergedArrowInnerProps = computed(() => bindStyle(attrs, { display: 'block' }))
 </script>
 
 <template>
