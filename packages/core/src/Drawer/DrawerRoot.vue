@@ -20,6 +20,10 @@ export type DrawerOpenChangeReason
 
 export interface DrawerOpenChangeDetails {
   reason?: DrawerOpenChangeReason
+  /** Keeps the drawer in its current state. Call it while handling `update:open`. */
+  cancel: () => void
+  /** Whether `cancel()` was called. */
+  readonly isCanceled: boolean
 }
 
 export interface DrawerRootProps {
@@ -49,7 +53,7 @@ export interface DrawerRootProps {
 }
 
 export type DrawerRootEmits = {
-  'update:open': [value: boolean, details?: DrawerOpenChangeDetails]
+  'update:open': [value: boolean, details: DrawerOpenChangeDetails]
   'update:openComplete': [value: boolean]
   'update:snapPoint': [value: DrawerSnapPoint | null]
 }
@@ -68,7 +72,8 @@ export interface DrawerRootContext {
   nestedSwiping: Ref<boolean>
   isSwiping: Ref<boolean>
   nestedSwipeProgressStore: NestedSwipeProgressStore
-  onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason) => void
+  /** Returns `false` when a listener canceled the change. */
+  onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason) => boolean
   onOpenToggle: () => void
   notifyOpenComplete: (value: boolean) => void
   setActiveSnapPoint: (point: DrawerSnapPoint | null) => void
@@ -215,10 +220,18 @@ function handleClose() {
 
 function handleOpenChange(value: boolean, reason?: DrawerOpenChangeReason) {
   if (open.value === value)
-    return
-  const details: DrawerOpenChangeDetails | undefined = reason ? { reason } : undefined
-  uncontrolledOpen.value = value
+    return true
+  let isCanceled = false
+  const details: DrawerOpenChangeDetails = {
+    reason,
+    cancel() { isCanceled = true },
+    get isCanceled() { return isCanceled },
+  }
   emit('update:open', value, details)
+  if (isCanceled)
+    return false
+  uncontrolledOpen.value = value
+  return true
 }
 
 function handleOpenToggle() {

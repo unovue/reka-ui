@@ -31,7 +31,7 @@ export interface DrawerContentImplProps extends DismissableLayerProps {
 <script setup lang="ts">
 import type { SwipeDirection } from './utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focus } from '@/FocusScope/utils'
@@ -60,7 +60,7 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   viewportRef: currentElement,
   onSnapPointChange: (point) => {
     if (point === null)
-      rootContext.onOpenChange(false)
+      rootContext.onOpenChange(false, 'swipe')
     else
       rootContext.setActiveSnapPoint(point)
   },
@@ -128,7 +128,7 @@ const swipeDirections = computed<SwipeDirection[]>(() => {
 let lastRawDelta = { x: 0, y: 0 }
 
 // Swipe dismiss
-const { isSwiping, dragOffset } = useSwipeDismiss({
+const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
   directions: swipeDirections,
@@ -139,10 +139,17 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
   ignoreSelectorWhenTouch: false,
   canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
-    if (!hasSnapPoints.value) {
-      rootContext.onOpenChange(false, 'swipe')
-    }
     // With snap points, onRelease handles snapping
+    if (hasSnapPoints.value)
+      return
+    if (!rootContext.onOpenChange(false, 'swipe'))
+      return false
+    // BaseUI parity: a controlled parent may ignore `update:open`. Its `open`
+    // prop settles by the next tick; if it is still open, undo the dismissal.
+    nextTick(() => {
+      if (rootContext.open.value)
+        restoreSwipe()
+    })
   },
   onRelease(velocity) {
     // Write the `--drawer-swipe-strength` CSS var so consumer transitions can

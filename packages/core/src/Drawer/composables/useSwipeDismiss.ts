@@ -24,7 +24,8 @@ export interface UseSwipeDismissOptions {
    */
   ignoreSelectorWhenTouch?: boolean
   canStart?: () => boolean
-  onDismiss?: () => void
+  /** Return `false` when the dismissal was rejected, so the element settles back. */
+  onDismiss?: () => boolean | void
   onProgress?: (progress: number, details?: SwipeProgressDetails) => void
   onCancel?: () => void
   onSwipeStart?: () => void
@@ -455,6 +456,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     // would otherwise set a stray `data-swipe-dismissed` on a drawer that
     // actually snapped to a point, or clear CSS vars onRelease already wrote.
     const releaseHandled = onRelease?.(velocity) === true
+    let dismissed = false
 
     if (!releaseHandled) {
       const velInDirection = getDisplacement(
@@ -465,13 +467,13 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       const shouldDismiss = !cancelledSwipe
         && (displacement >= threshold || velInDirection > 0.3)
 
-      if (shouldDismiss) {
+      if (shouldDismiss && onDismiss?.() !== false) {
         // BaseUI parity: on dismiss, keep the drag transform in place so the
         // close animation runs smoothly from the dragged position. Clearing the
         // CSS vars here would cause a one-frame snap-back to resting before the
         // closing transition begins (visible as a flicker).
         el.setAttribute('data-swipe-dismissed', '')
-        onDismiss?.()
+        dismissed = true
       }
       else {
         // On cancel, reset the drag transform so the drawer animates back to rest.
@@ -479,6 +481,11 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         onCancel?.()
       }
     }
+
+    // BaseUI parity (`settleInPlace`): a drawer that stays open settles back to
+    // rest, so drop the published progress along with the drag transform.
+    if (!dismissed)
+      onProgress?.(0)
 
     reset()
   }
@@ -724,9 +731,24 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     reset()
   })
 
+  /**
+   * Undoes a dismissal that did not take effect, e.g. a controlled `open` the
+   * parent never updated. The element animates back to rest.
+   */
+  function restore() {
+    const el = elementRef.value
+    if (!el?.hasAttribute('data-swipe-dismissed'))
+      return
+    el.removeAttribute('data-swipe-dismissed')
+    clearCssVars(el)
+    onProgress?.(0)
+    onCancel?.()
+  }
+
   return {
     isSwiping,
     swipeDirection,
     dragOffset,
+    restore,
   }
 }
