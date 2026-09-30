@@ -210,7 +210,7 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computed, ref, useAttrs, watchEffect, watchPostEffect } from 'vue'
+import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -416,9 +416,7 @@ const primitiveStyle = computed<CSSProperties>(() => ({
 
 // While styles are withheld, the fallthrough `style` is dropped too: consumers (Popover,
 // Tooltip, Select, …) and `DismissableLayer` pass their own inline styles through here.
-const attrs = useAttrs()
 const wrapperProps = computed(() => bindStyle({}, wrapperStyle.value))
-const mergedPrimitiveProps = computed(() => bindStyle(attrs, primitiveStyle.value))
 
 providePopperContentContext({
   placedSide,
@@ -449,7 +447,7 @@ providePopperContentContext({
         ...Object.values($attrs),
         ...props.memoDependencies,
       ]"
-      v-bind="mergedPrimitiveProps"
+      v-bind="bindStyle($attrs, primitiveStyle)"
       :as-child="props.asChild"
       :as="props.as"
       :data-side="placedSide"
@@ -461,7 +459,7 @@ providePopperContentContext({
     <Primitive
       v-else
       :ref="forwardRef"
-      v-bind="mergedPrimitiveProps"
+      v-bind="bindStyle($attrs, primitiveStyle)"
       :as-child="props.asChild"
       :as="props.as"
       :data-side="placedSide"

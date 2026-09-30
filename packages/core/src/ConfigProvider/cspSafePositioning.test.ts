@@ -1,6 +1,7 @@
+import { fireEvent } from '@testing-library/vue'
 import { renderToString } from '@vue/server-renderer'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp, createSSRApp, h, nextTick } from 'vue'
+import { createApp, createSSRApp, h, nextTick, ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot } from '@/Combobox'
 import { ConfigProvider } from '@/ConfigProvider'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
@@ -129,5 +130,42 @@ describe('configProvider cspSafePositioning', () => {
     const content = container.querySelector<HTMLElement>('[role="listbox"]')!
     expect(content.style.maxHeight).toBe('50px')
     app.unmount()
+  })
+
+  // The style merges are evaluated at render time; a computed over `useAttrs()` misses
+  // attributes first added after mount.
+  describe.each([
+    ['popoverArrow', (attrs: Record<string, unknown>) => h(PopoverRoot, { open: true }, () => [
+      h(PopoverTrigger, null, () => 'trigger'),
+      h(PopoverContent, null, () => h(PopoverArrow, attrs)),
+    ]), 'svg'],
+    ['selectViewport', (attrs: Record<string, unknown>) => h(SelectRoot, { open: true, modelValue: 'a' }, () => [
+      h(SelectTrigger, null, () => 'trigger'),
+      h(SelectContent, null, () =>
+        h(SelectViewport, attrs, () =>
+          h(SelectItem, { value: 'a' }, () => h(SelectItemText, null, () => 'a')))),
+    ]), '[data-reka-select-viewport]'],
+    ['comboboxRoot', (attrs: Record<string, unknown>) => h(ComboboxRoot, attrs, () =>
+      h(ComboboxAnchor, null, () => h(ComboboxInput))), '[role="combobox"]'],
+  ] as const)('%s', (_, render, selector) => {
+    it('forwards attributes first added after mount', async () => {
+      const attrs = ref<Record<string, unknown>>({})
+      const container = document.createElement('div')
+      document.body.appendChild(container)
+      const app = createApp({ render: () => render(attrs.value) })
+      app.mount(container)
+      await nextTick()
+
+      const onClick = vi.fn()
+      attrs.value = { class: 'added', style: { color: 'red' }, onClick }
+      await nextTick()
+
+      const el = container.querySelector<HTMLElement>(selector)!.closest<HTMLElement>('.added')!
+      expect(el).not.toBeNull()
+      expect(el.style.color).toBe('red')
+      await fireEvent.click(el)
+      expect(onClick).toHaveBeenCalled()
+      app.unmount()
+    })
   })
 })

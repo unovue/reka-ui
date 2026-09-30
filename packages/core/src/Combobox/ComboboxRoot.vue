@@ -93,7 +93,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, useAttrs } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
@@ -261,17 +261,20 @@ provideComboboxRootContext({
 })
 
 const { bindStyle } = useCspSafePositioning()
-const attrs = useAttrs()
-const rootProps = computed(() => bindStyle(attrs, {
-  pointerEvents: open.value ? 'auto' : undefined,
-}))
+// `$attrs` is read at render time: a computed over `useAttrs()` would not track
+// attributes first added after mount.
+function rootProps(attrs: Record<string, unknown>) {
+  return bindStyle(attrs, {
+    pointerEvents: open.value ? 'auto' : undefined,
+  })
+}
 </script>
 
 <template>
   <PopperRoot>
     <ListboxRoot
       ref="primitiveElement"
-      v-bind="rootProps"
+      v-bind="rootProps($attrs)"
       v-model="modelValue"
       :as="as"
       :as-child="asChild"

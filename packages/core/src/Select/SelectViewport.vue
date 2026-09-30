@@ -12,7 +12,7 @@ export interface SelectViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRefs, useAttrs } from 'vue'
+import { onMounted, ref, toRefs } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -33,15 +33,18 @@ const alignedPositionContext
 const { forwardRef, currentElement } = useForwardExpose()
 
 const { bindStyle } = useCspSafePositioning()
-const attrs = useAttrs()
-const viewportProps = computed(() => bindStyle({ ...attrs, ...props }, {
+// `$attrs` is read at render time: a computed over `useAttrs()` would not track
+// attributes first added after mount.
+function viewportProps(attrs: Record<string, unknown>) {
+  return bindStyle({ ...attrs, ...props }, {
   // we use position: 'relative' here on the `viewport` so that when we call
   // `selectedItem.offsetTop` in calculations, the offset is relative to the viewport
   // (independent of the scrollUpButton).
-  position: 'relative',
-  flex: 1,
-  overflow: 'hidden auto',
-}))
+    position: 'relative',
+    flex: 1,
+    overflow: 'hidden auto',
+  })
+}
 
 onMounted(() => {
   contentContext?.onViewportChange(currentElement.value)
@@ -85,7 +88,7 @@ function handleScroll(event: WheelEvent) {
     :ref="forwardRef"
     data-reka-select-viewport
     role="presentation"
-    v-bind="viewportProps"
+    v-bind="viewportProps($attrs)"
     @scroll="handleScroll"
   >
     <slot />

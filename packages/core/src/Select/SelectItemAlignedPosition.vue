@@ -18,7 +18,7 @@ export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPo
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, nextTick, onMounted, ref, useAttrs } from 'vue'
+import { computed, mergeProps, nextTick, onMounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -50,7 +50,6 @@ const { viewport, selectedItem, selectedItemText, focusSelectedItem }
 // so the server emits no inline `style` attribute the browser would block. The imperative
 // `position()` writes below are client-only (CSSOM) and are unaffected. See issue #2732.
 const { bindStyle } = useCspSafePositioning()
-const attrs = useAttrs()
 
 function position() {
   if (
@@ -213,15 +212,17 @@ const wrapperProps = computed(() => bindStyle({}, wrapperStyle.value))
 
 // Our style goes first so a consumer `style` still overrides it. While styles are
 // withheld, the fallthrough `style` from `SelectContentImpl` is dropped too.
-const mergedPrimitiveProps = computed(() => bindStyle(mergeProps({
-  style: {
+function primitiveProps(attrs: Record<string, unknown>) {
+  return bindStyle(mergeProps({
+    style: {
     // When we get the height of the content, it includes borders. If we were to set
     // the height without having `boxSizing: 'border-box'` it would be too big.
-    boxSizing: 'border-box',
-    // We need to ensure the content doesn't get taller than the wrapper
-    maxHeight: '100%',
-  },
-}, { ...attrs, ...props })))
+      boxSizing: 'border-box',
+      // We need to ensure the content doesn't get taller than the wrapper
+      maxHeight: '100%',
+    },
+  }, { ...attrs, ...props }))
+}
 
 onMounted(async () => {
   await nextTick()
@@ -261,7 +262,7 @@ provideSelectItemAlignedPositionContext({
   >
     <Primitive
       :ref="forwardRef"
-      v-bind="mergedPrimitiveProps"
+      v-bind="primitiveProps($attrs)"
     >
       <slot />
     </Primitive>

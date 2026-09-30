@@ -15,7 +15,7 @@ export interface PopperArrowProps extends ArrowProps, PrimitiveProps {}
 
 <script setup lang="ts">
 import type { ComponentPublicInstance, CSSProperties } from 'vue'
-import { computed, useAttrs } from 'vue'
+import { computed } from 'vue'
 import { useCspSafePositioning, useForwardExpose } from '@/shared'
 import Arrow from '@/shared/component/Arrow.vue'
 import { injectPopperContentContext } from './PopperContent.vue'
@@ -60,10 +60,7 @@ const arrowStyle = computed<CSSProperties>(() => {
   }
 })
 
-const attrs = useAttrs()
 const arrowProps = computed(() => bindStyle({}, arrowStyle.value))
-// merge the inner svg style with fallthrough attrs so a single `v-bind` carries both
-const mergedArrowInnerProps = computed(() => bindStyle(attrs, { display: 'block' }))
 </script>
 
 <template>
@@ -76,7 +73,7 @@ const mergedArrowInnerProps = computed(() => bindStyle(attrs, { display: 'block'
   >
     <Arrow
       :ref="forwardRef"
-      v-bind="mergedArrowInnerProps"
+      v-bind="bindStyle($attrs, { display: 'block' })"
       :as="as"
       :as-child="asChild"
       :rounded="rounded"

@@ -31,7 +31,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
@@ -135,16 +135,19 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
 }
 
 const { bindStyle } = useCspSafePositioning()
-const attrs = useAttrs()
-const contentProps = computed(() => bindStyle({ ...attrs, ...forwardedProps.value }, {
+// `$attrs` is read at render time: a computed over `useAttrs()` would not track
+// attributes first added after mount.
+function contentProps(attrs: Record<string, unknown>) {
+  return bindStyle({ ...attrs, ...forwardedProps.value }, {
   // flex layout so we can place the scroll buttons properly
   // When hideWhenEmpty is true, hide the content when no items match
-  display: (props.hideWhenEmpty && isEmpty.value) ? 'none' : 'flex',
-  flexDirection: 'column',
-  // reset the outline by default as the content MAY get focused
-  outline: 'none',
-  ...(position.value === 'popper' ? popperStyle : {}),
-}))
+    display: (props.hideWhenEmpty && isEmpty.value) ? 'none' : 'flex',
+    flexDirection: 'column',
+    // reset the outline by default as the content MAY get focused
+    outline: 'none',
+    ...(position.value === 'popper' ? popperStyle : {}),
+  })
+}
 
 const popperContentEvents = {
   placed: () => rootContext.onContentPlaced(contentId),
@@ -179,7 +182,7 @@ const popperContentEvents = {
       >
         <component
           :is="position === 'popper' ? PopperContent : Primitive"
-          v-bind="contentProps"
+          v-bind="contentProps($attrs)"
           :id="rootContext.contentId"
           :ref="forwardRef"
           :memo-dependencies="position === 'popper'
