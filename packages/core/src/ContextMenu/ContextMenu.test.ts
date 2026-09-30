@@ -141,6 +141,94 @@ describe('given controlled ContextMenu', () => {
       })
     })
 
+    it('should keep the pointer position while closing', async () => {
+      // Force mount keeps the content in place after closing, like an exit animation does.
+      wrapper.unmount()
+      document.body.innerHTML = ''
+      wrapper = mount(ControlledContextMenu, {
+        attachTo: document.body,
+        props: { forceMount: true },
+      })
+
+      const trigger = wrapper.find('#context-menu-trigger')
+
+      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+        x: 100,
+        y: 100,
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 140,
+        width: 100,
+        height: 40,
+        toJSON: () => {},
+      } as DOMRect)
+
+      const menuWrapper = document.querySelector('[role="menu"]')?.parentElement as HTMLElement
+
+      // Let the initial (closed) position settle before opening.
+      await waitFor(() => {
+        expect(menuWrapper.style.transform)
+          .toContain('translate(98px, 100px)')
+      })
+
+      await trigger.trigger('contextmenu', {
+        clientX: 300,
+        clientY: 400,
+      })
+
+      await waitFor(() => {
+        expect(menuWrapper.style.transform)
+          .toContain('translate(298px, 400px)')
+      })
+
+      await wrapper.find('#close-button').trigger('click')
+
+      expect(trigger.attributes('data-state')).toBe('closed')
+
+      // Give floating-ui a chance to reposition against a changed anchor.
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      expect(menuWrapper.style.transform)
+        .toContain('translate(298px, 400px)')
+    })
+
+    it('should move to the pointer when right-clicked while opened programmatically', async () => {
+      const trigger = wrapper.find('#context-menu-trigger')
+
+      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+        x: 100,
+        y: 100,
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 140,
+        width: 100,
+        height: 40,
+        toJSON: () => {},
+      } as DOMRect)
+
+      await wrapper.find('#open-button').trigger('click')
+
+      const menu = await findByRole(document.body, 'menu')
+      const menuWrapper = menu.parentElement
+
+      await waitFor(() => {
+        expect(menuWrapper?.style.transform)
+          .toContain('translate(98px, 100px)')
+      })
+
+      await trigger.trigger('contextmenu', {
+        clientX: 300,
+        clientY: 400,
+      })
+
+      await waitFor(() => {
+        expect(menuWrapper?.style.transform)
+          .toContain('translate(298px, 400px)')
+      })
+    })
+
     it('should reset pointer position when a controlled open request is rejected', async () => {
       const trigger = wrapper.find('#context-menu-trigger')
 
