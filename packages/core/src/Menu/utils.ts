@@ -36,6 +36,15 @@ export function getCheckedState(checked: CheckedState) {
       : 'unchecked'
 }
 
+/**
+ * `entryFocus` is internal to the menu content wrappers (DropdownMenu, ContextMenu, Menubar),
+ * so drop a consumer's `@entry-focus` listener instead of letting it fall through to `MenuContent`.
+ */
+export function omitEntryFocusListener(attrs: Record<string, unknown>) {
+  const { onEntryFocus: _, onEntryFocusOnce: __, ...rest } = attrs
+  return rest
+}
+
 export function focusFirst(candidates: HTMLElement[]) {
   const PREVIOUSLY_FOCUSED_ELEMENT = getActiveElement()
   for (const candidate of candidates) {

@@ -220,6 +220,7 @@ export const components = {
     'DrawerHandle',
     'DrawerSwipeArea',
     'DrawerViewport',
+    'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
   ] as const,
@@ -251,6 +252,19 @@ export const components = {
     'EditableSubmitTrigger',
     'EditableCancelTrigger',
     'EditableEditTrigger',
+  ] as const,
+
+  field: [
+    'FieldRoot',
+    'FieldLabel',
+    'FieldControl',
+    'FieldDescription',
+    'FieldError',
+    'FieldValidity',
+  ] as const,
+
+  form: [
+    'FormRoot',
   ] as const,
 
   hoverCard: [
@@ -464,6 +478,13 @@ export const components = {
     'TabsContent',
     'TabsTrigger',
     'TabsIndicator',
+  ] as const,
+
+  tagGroup: [
+    'TagGroupRoot',
+    'TagGroupItem',
+    'TagGroupItemText',
+    'TagGroupItemDelete',
   ] as const,
 
   tagsInput: [

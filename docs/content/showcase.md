@@ -7,17 +7,12 @@ packages:
   - title: Shadcn Vue
     description: An unofficial, community-led Vue port of shadcn/ui.
     url: https://www.shadcn-vue.com/
-    image: https://www.shadcn-vue.com/__og-image__/static/og.png
+    image: /showcase/shadcn-vue.png
 
   - title: Nuxt UI
     description: A UI Library for Modern Web Apps, powered by Vue & Tailwind CSS.
     url: https://ui3.nuxt.dev/
     image: https://ui3.nuxt.dev/og-image.png
-
-  - title: UI Thing
-    description: Reusable Nuxt 3 components.
-    url: https://ui-thing.behonbaker.com/getting-started/introduction
-    image: https://ui-thing.behonbaker.com/cover.png
 
   - title: Origin UI Vue
     description: Beautiful UI components built with Tailwind CSS and Radix Vue
@@ -68,7 +63,7 @@ projects:
   - title: Crypto Map
     description: Explore the world and find places to spend your crypto.
     url: https://map.nimiq.com/
-    image: https://mycbdmurjytbdahjljoh.supabase.co/storage/v1/object/public/og-image/og-image.jpg
+    image: /showcase/crypto-map.jpg
 
   - title: Sink
     description: A Simple / Speedy / Secure Link Shortener with Analytics, 100% run on Cloudflare.
@@ -84,6 +79,11 @@ projects:
     description: Your guide to movies and TV shows. Find movies and shows, create lists, share your thoughts.
     url: https://movie-tracker.app/en
     image: https://raw.githubusercontent.com/dapzer/movie-tracker/refs/heads/master/apps/frontend/public/ogImageEn.webp
+
+  - title: zeal.tools
+    description: Free, open-source tools that actually work. No sign-ups, no watermarks. UI · REST API · MCP.
+    url: https://zeal.tools/
+    image: /showcase/zeal.png
 
 starters:
   - title: shadcn-docs

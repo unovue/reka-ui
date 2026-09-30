@@ -1,9 +1,64 @@
 import type { VueWrapper } from '@vue/test-utils'
-import { findByRole } from '@testing-library/vue'
+import { findAllByRole, findByRole, fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import {
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '.'
 import DropdownMenu from './story/_DropdownMenu.vue'
+
+const DropdownMenuTabTest = defineComponent({
+  components: {
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuPortal,
+    DropdownMenuRoot,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+  },
+  props: {
+    modal: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  template: `
+    <div>
+      <button>Before</button>
+      <DropdownMenuRoot :open="true" :modal="modal">
+        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+        <DropdownMenuPortal disabled>
+          <DropdownMenuContent @close-auto-focus.prevent>
+            <DropdownMenuItem>Item</DropdownMenuItem>
+            <DropdownMenuSub :open="true">
+              <DropdownMenuSubTrigger>Sub Trigger</DropdownMenuSubTrigger>
+              <DropdownMenuPortal disabled>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem>Sub Item</DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
+      <button>After</button>
+    </div>
+  `,
+})
 
 describe('given default DropdownMenu', () => {
   let wrapper: VueWrapper<InstanceType<typeof DropdownMenu>>
@@ -53,5 +108,103 @@ describe('given default DropdownMenu', () => {
         expect(wrapper.emitted('select')?.length).toBe(1)
       })
     })
+  })
+})
+
+describe('given DropdownMenu tab navigation', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should allow Tab to move focus out of non-modal menu', async () => {
+    const { container } = render(DropdownMenuTabTest, {
+      props: { modal: false },
+    })
+
+    const menu = (await findAllByRole(container, 'menu'))[0]
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    })
+    fireEvent(menu, event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should prevent Tab in modal menu', async () => {
+    const { container } = render(DropdownMenuTabTest, {
+      props: { modal: true },
+    })
+
+    const menu = (await findAllByRole(container, 'menu'))[0]
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    })
+    fireEvent(menu, event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should prevent Tab in modal submenu', async () => {
+    const { container } = render(DropdownMenuTabTest, {
+      props: { modal: true },
+    })
+
+    const submenu = (await findAllByRole(container, 'menu'))[1]
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+    })
+    fireEvent(submenu, event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+})
+
+describe('given DropdownMenu checkbox and radio item slot props', () => {
+  it('should expose `checked` on both checkbox and radio items', async () => {
+    const checkbox = ref(false)
+    const radio = ref('a')
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(DropdownMenuRoot, { open: true }, () => [
+          h(DropdownMenuTrigger, () => 'open'),
+          h(DropdownMenuContent, () => [
+            h(DropdownMenuCheckboxItem, {
+              'modelValue': checkbox.value,
+              'onUpdate:modelValue': (v: boolean) => { checkbox.value = v },
+            }, {
+              default: ({ checked, modelValue }: { checked: boolean, modelValue: boolean }) =>
+                h('span', { 'data-testid': 'checkbox' }, `${checked}:${modelValue}`),
+            }),
+            h(DropdownMenuRadioGroup, { modelValue: radio.value }, () => ['a', 'b'].map(value =>
+              h(DropdownMenuRadioItem, { value }, {
+                default: ({ checked }: { checked: boolean }) =>
+                  h('span', { 'data-testid': `radio-${value}` }, String(checked)),
+              }),
+            )),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const text = (id: string) => document.querySelector(`[data-testid=${id}]`)?.textContent
+    expect(text('checkbox')).toBe('false:false')
+    expect(text('radio-a')).toBe('true')
+    expect(text('radio-b')).toBe('false')
+
+    checkbox.value = true
+    radio.value = 'b'
+    await nextTick()
+    expect(text('checkbox')).toBe('true:true')
+    expect(text('radio-a')).toBe('false')
+    expect(text('radio-b')).toBe('true')
+
+    wrapper.unmount()
   })
 })

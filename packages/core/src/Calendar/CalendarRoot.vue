@@ -8,7 +8,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { isEqualDay, isSameDay } from '@internationalized/date'
-import { getWeekStartsOn } from '@/date'
+import { focusedDateValue, getWeekStartsOn, isSameDateSelection } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useCalendar, useCalendarState } from './useCalendar'
@@ -251,15 +251,14 @@ const {
   isDateUnavailable,
 })
 
-watch(modelValue, (_modelValue) => {
-  if (Array.isArray(_modelValue) && _modelValue.length) {
-    const lastValue = _modelValue.at(-1)
-    if (lastValue && !isEqualDay(placeholder.value, lastValue))
-      onPlaceholderChange(lastValue)
-  }
-  else if (!Array.isArray(_modelValue) && _modelValue && !isEqualDay(placeholder.value, _modelValue)) {
-    onPlaceholderChange(_modelValue)
-  }
+// A new DateValue for the same day must not undo month paging.
+watch(modelValue, (value, previous) => {
+  if (isSameDateSelection(previous, value, isEqualDay))
+    return
+
+  const nextFocused = focusedDateValue(value)
+  if (nextFocused && !isEqualDay(placeholder.value, nextFocused))
+    onPlaceholderChange(nextFocused)
 })
 
 function onDateChange(value: DateValue) {
