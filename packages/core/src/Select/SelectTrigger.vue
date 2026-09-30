@@ -102,7 +102,13 @@ function isPlainLeftClick(event: MouseEvent) {
 // `click` workaround below does not re-focus the trigger after opening.
 let openedFromPointerDown = false
 
+// Consumer listeners run before these handlers (attrs are merged first), so a
+// consumer can opt out of the default behavior with `event.preventDefault()`,
+// matching Radix's `composeEventHandlers`.
 function onTriggerPointerDown(event: PointerEvent) {
+  if (event.defaultPrevented)
+    return
+
   // Prevent opening on touch down.
   // https://github.com/unovue/reka-ui/issues/804
   if (event.pointerType === 'touch')
@@ -123,6 +129,9 @@ function onTriggerPointerDown(event: PointerEvent) {
 }
 
 function onTriggerMouseDown(event: MouseEvent) {
+  if (event.defaultPrevented)
+    return
+
   // Prevent trigger from stealing focus from the active item after opening.
   // We avoid calling `preventDefault` in `pointerdown` because that suppresses
   // compatibility mouse events (`mousedown`, `mouseup`, `click`).
@@ -131,6 +140,11 @@ function onTriggerMouseDown(event: MouseEvent) {
 }
 
 function onTriggerClick(event: MouseEvent) {
+  if (event.defaultPrevented) {
+    openedFromPointerDown = false
+    return
+  }
+
   // Safari: label-associated clicks may not run `pointerdown` on the trigger.
   // Direct mouse clicks open in `pointerdown` and must not re-focus the trigger
   // here — `mousedown` `preventDefault` does not suppress `click`.
@@ -138,6 +152,36 @@ function onTriggerClick(event: MouseEvent) {
     (event.currentTarget as HTMLElement)?.focus()
 
   openedFromPointerDown = false
+}
+
+function onTriggerPointerUp(event: PointerEvent) {
+  if (event.defaultPrevented)
+    return
+  event.preventDefault()
+
+  // Only open on pointer up when using touch devices
+  // https://github.com/unovue/reka-ui/issues/804
+  if (event.pointerType === 'touch')
+    handlePointerOpen(event)
+}
+
+function onTriggerKeyDown(event: KeyboardEvent) {
+  if (event.defaultPrevented)
+    return
+
+  const isTypingAhead = search.value !== ''
+  const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
+  // Only printable characters extend the search; otherwise keys like `Shift`
+  // or `ArrowLeft` would be appended and swallow the next `Space`.
+  if (!isModifierKey && event.key.length === 1)
+    handleTypeaheadSearch(event.key, getItems())
+  if (isTypingAhead && event.key === ' ')
+    return
+
+  if (OPEN_KEYS.includes(event.key)) {
+    handleOpen()
+    event.preventDefault()
+  }
 }
 </script>
 
@@ -167,28 +211,8 @@ function onTriggerClick(event: MouseEvent) {
       @mousedown="onTriggerMouseDown"
       @focus="handleFieldFocus"
       @blur="handleFieldBlur"
-      @pointerup.prevent="
-        (event: PointerEvent) => {
-          // Only open on pointer up when using touch devices
-          // https://github.com/unovue/reka-ui/issues/804
-          if (event.pointerType === 'touch')
-            handlePointerOpen(event)
-        }
-      "
-      @keydown="
-        (event: KeyboardEvent) => {
-          const isTypingAhead = search !== '';
-          const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
-          if (!isModifierKey && event.key.length === 1)
-            if (isTypingAhead && event.key === ' ') return;
-
-          handleTypeaheadSearch(event.key, getItems());
-          if (OPEN_KEYS.includes(event.key)) {
-            handleOpen();
-            event.preventDefault();
-          }
-        }
-      "
+      @pointerup="onTriggerPointerUp"
+      @keydown="onTriggerKeyDown"
     >
       <slot />
     </Primitive>
