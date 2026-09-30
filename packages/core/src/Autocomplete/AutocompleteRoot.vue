@@ -45,6 +45,8 @@ export interface AutocompleteRootProps extends PrimitiveProps {
   ignoreFilter?: boolean
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type AutocompleteRootEmits = {
@@ -89,7 +91,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover } = toRefs(props)
+const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover, loop } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -265,6 +267,7 @@ provideAutocompleteRootContext({
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       @highlight="emits('highlight', $event as any)"
     >
       <slot

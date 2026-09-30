@@ -15,6 +15,7 @@ import {
   useTypeahead,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
+import { wrapArray } from '@/shared/useTypeahead'
 import { valueComparator } from './utils'
 
 export interface SelectContentContext {
@@ -74,6 +75,11 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
    * @defaultValue true
    */
   bodyLock?: boolean
+  /**
+   * When `true`, keyboard navigation will loop from last item to first, and vice versa.
+   * @defaultValue false
+   */
+  loop?: boolean
 }
 
 export const [injectSelectContentContext, provideSelectContentContext]
@@ -81,7 +87,7 @@ export const [injectSelectContentContext, provideSelectContentContext]
 </script>
 
 <script setup lang="ts">
-import { unrefElement } from '@vueuse/core'
+import { reactiveOmit, unrefElement } from '@vueuse/core'
 import {
   computed,
   ref,
@@ -211,16 +217,20 @@ function handleKeyDown(event: KeyboardEvent) {
     if (['ArrowUp', 'ArrowDown'].includes(event.key)) {
       const currentElement = event.target as HTMLElement
       const currentIndex = candidateNodes.indexOf(currentElement)
-      candidateNodes = candidateNodes.slice(currentIndex + 1)
+      candidateNodes = props.loop
+        ? wrapArray(candidateNodes, currentIndex + 1)
+        : candidateNodes.slice(currentIndex + 1)
     }
     setTimeout(() => focusFirst(candidateNodes))
     event.preventDefault()
   }
 }
 
+// `loop` drives keyboard navigation here and is not a positioning prop
+const positionProps = reactiveOmit(props, 'loop')
 const pickedProps = computed(() => {
   if (props.position === 'popper')
-    return props
+    return positionProps
   else return {}
 })
 

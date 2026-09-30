@@ -120,7 +120,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, unmountOnHide } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, loop, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -278,6 +278,7 @@ provideComboboxRootContext({
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >

@@ -1,10 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick } from 'vue'
 import { useKbd } from '@/shared'
-import { TreeItem, TreeRoot } from '.'
+import { TreeItem, TreeRoot, TreeVirtualizer } from '.'
 import Tree from './story/_Tree.vue'
 
 const kbd = useKbd()
@@ -503,5 +503,126 @@ describe('given a Tree with a text field inside an item', () => {
 
     // "components" was expanded, so ArrowLeft on the row collapses it.
     expect(wrapper.findAll('[role=treeitem]').length).toBeLessThan(items.length)
+  })
+})
+
+describe('given a Tree with `loop`', () => {
+  const treeItems = [
+    { title: 'apple' },
+    { title: 'banana' },
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+  ]
+
+  async function mountTree(loop: boolean) {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          defaultExpanded: ['fruits'],
+          loop,
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, { key: item._id, ...item.bind }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body })
+    // items register with the collection after mount
+    await nextTick()
+    return wrapper.findAll('[role=treeitem]')
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should wrap around the boundary items', async () => {
+    const items = await mountTree(true)
+    ;(items[0].element as HTMLElement).focus()
+
+    await items[0].trigger('keydown', { key: kbd.ARROW_UP })
+    await nextTick()
+    expect(document.activeElement).toBe(items.at(-1)!.element)
+
+    await items.at(-1)!.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await nextTick()
+    expect(document.activeElement).toBe(items[0].element)
+  })
+
+  it('should stay on the boundary items without `loop`', async () => {
+    const items = await mountTree(false)
+    ;(items[0].element as HTMLElement).focus()
+
+    await items[0].trigger('keydown', { key: kbd.ARROW_UP })
+    await nextTick()
+    expect(document.activeElement).toBe(items[0].element)
+  })
+
+  describe('when virtualized', () => {
+    // jsdom reports zero-sized rects, so give the virtualizer a viewport to render into.
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+    beforeAll(() => {
+      window.HTMLElement.prototype.scrollTo = vi.fn()
+      globalThis.ResizeObserver ??= class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+      window.HTMLElement.prototype.getBoundingClientRect = function () {
+        return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+      }
+    })
+    afterAll(() => {
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+    })
+
+    async function press(key: string) {
+      const target = document.activeElement as HTMLElement
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      await nextTick()
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+      await nextTick()
+    }
+
+    function mountVirtualTree(count: number) {
+      const items = Array.from({ length: count }, (_, i) => ({ title: `item ${i}` }))
+      const wrapper = mount(defineComponent({
+        setup() {
+          return () => h('div', { style: 'height: 200px; overflow: auto' }, h(TreeRoot as any, {
+            items,
+            getKey: (item: any) => item.title,
+            loop: true,
+          }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.value.title }, {
+            default: ({ item }: any) => h(TreeItem as any, { ...item.bind }, { default: () => item.value.title }),
+          })))
+        },
+      }), { attachTo: document.body })
+      return wrapper
+    }
+
+    it('should wrap around the boundary items', async () => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press(kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('4')
+
+      await press(kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should not wrap at the end of the rendered window', async () => {
+      // jsdom never scrolls, so only the first window of the 100 items is rendered.
+      const wrapper = mountVirtualTree(100)
+      await nextTick()
+      const lastRendered = wrapper.findAll('[role=treeitem]').at(-1)!
+      expect(Number(lastRendered.attributes('data-index'))).toBeLessThan(99)
+      ;(lastRendered.element as HTMLElement).focus()
+
+      await press(kbd.ARROW_DOWN)
+      expect(document.activeElement).toBe(lastRendered.element)
+    })
   })
 })

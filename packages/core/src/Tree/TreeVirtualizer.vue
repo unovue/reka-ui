@@ -125,7 +125,17 @@ rootContext.virtualKeydownHook.on((event) => {
   if (isTabKey)
     return
 
-  const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+  let intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+
+  // Only a window of items is rendered, so wrapping is resolved against the
+  // full list of expanded items rather than by the roving focus group.
+  if (rootContext.loop.value && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
+    if (event.key === 'ArrowDown' && currentIndex === rootContext.expandedItems.value.length - 1)
+      intent = 'first'
+    else if (event.key === 'ArrowUp' && currentIndex === 0)
+      intent = 'last'
+  }
 
   if (['first', 'last'].includes(intent)) {
     event.preventDefault()
