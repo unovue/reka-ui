@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
@@ -40,6 +40,23 @@ describe('isLayerExist', () => {
 
     root.remove()
     outside.remove()
+  })
+
+  it('should recognize a nested layer from another realm as inside (#2949)', () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    onTestFinished(() => iframe.remove())
+    const iframeDocument = iframe.contentDocument!
+    const parentLayer = iframeDocument.createElement('div')
+    parentLayer.setAttribute('data-dismissable-layer', '')
+    const childLayer = iframeDocument.createElement('div')
+    childLayer.setAttribute('data-dismissable-layer', '')
+    const item = iframeDocument.createElement('button')
+    childLayer.appendChild(item)
+    iframeDocument.body.append(parentLayer, childLayer)
+
+    expect(item instanceof Element).toBe(false)
+    expect(isLayerExist(parentLayer, item)).toBe(true)
   })
 })
 
@@ -604,6 +621,78 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
     await nextTick()
 
     await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+})
+
+describe('given a DismissableLayer rendered inside an iframe (#2949)', () => {
+  function mountInIframe() {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const iframeDocument = iframe.contentDocument!
+    const outside = iframeDocument.createElement('button')
+    iframeDocument.body.appendChild(outside)
+    const container = iframeDocument.createElement('div')
+    iframeDocument.body.appendChild(container)
+
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: container,
+      slots: { default: () => h('button', { id: 'inside' }, 'Inside') },
+    })
+    onTestFinished(() => {
+      wrapper.unmount()
+      iframe.remove()
+    })
+    const inside = iframeDocument.getElementById('inside')!
+    return { wrapper, iframeDocument, inside, outside }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should dismiss on pointerdown outside within the iframe', async () => {
+    const { wrapper, outside } = mountInIframe()
+    await sleep(1)
+
+    await fireEvent.pointerDown(outside)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+
+  it('should not dismiss on pointerdown inside the layer', async () => {
+    const { wrapper, inside } = mountInIframe()
+    await sleep(1)
+
+    await fireEvent.pointerDown(inside)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+  })
+
+  it('should dismiss when focus moves outside within the iframe', async () => {
+    const { wrapper, inside, outside } = mountInIframe()
+    inside.focus()
+    await sleep(1)
+
+    outside.focus()
+    await sleep(1)
+
+    expect(wrapper.emitted('focusOutside')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+
+  it('should dismiss on Escape pressed within the iframe', async () => {
+    const { wrapper, iframeDocument } = mountInIframe()
+    await nextTick()
+
+    await fireEvent.keyDown(iframeDocument.body, { key: 'Escape' })
     await nextTick()
 
     expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)

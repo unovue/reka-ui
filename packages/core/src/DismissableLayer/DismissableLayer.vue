@@ -154,6 +154,10 @@ onKeyStroke('Escape', (event) => {
   emits('escapeKeyDown', event)
   if (!event.defaultPrevented)
     emits('dismiss')
+}, {
+  // Listen on the layer's own window so Escape works for a layer rendered
+  // inside an iframe, whose key events never reach the top-level window.
+  target: () => ownerDocument.value.defaultView ?? globalThis.window,
 })
 
 // Use `watch` with explicit sources (instead of `watchEffect`) so this effect
