@@ -311,11 +311,16 @@ function onEnter(event: Event) {
   }
 }
 
-function isAtVirtualBoundary(el: HTMLElement, intent: 'prev' | 'next') {
-  // A virtualized list only renders a window of items, so check the item's
-  // position within the full options list rather than the rendered collection.
-  const position = Number(el.getAttribute('aria-posinset'))
-  const size = Number(el.getAttribute('aria-setsize'))
+function isAtVirtualBoundary(intent: 'prev' | 'next') {
+  // A virtualized list only renders a window of items. Only wrap when that
+  // window reaches the end of the full options list; any rendered items past
+  // the highlighted one are disabled.
+  const rendered = getItems(true).map(i => i.ref)
+  const edge = intent === 'next' ? rendered.at(-1) : rendered[0]
+  if (!edge)
+    return false
+  const position = Number(edge.getAttribute('aria-posinset'))
+  const size = Number(edge.getAttribute('aria-setsize'))
   return intent === 'next' ? position === size : position === 1
 }
 
@@ -336,7 +341,7 @@ function onKeydownNavigation(event: KeyboardEvent) {
       const currentIndex = collection.indexOf(highlightedElement.value)
       const shouldLoop = loop.value && currentIndex === collection.length - 1
       if (shouldLoop && isVirtual.value) {
-        if (isAtVirtualBoundary(highlightedElement.value, intent)) {
+        if (isAtVirtualBoundary(intent)) {
           // Let the virtualizer scroll to and highlight the opposite end.
           const key = intent === 'next' ? kbd.HOME : kbd.END
           return virtualKeydownHook.trigger(new KeyboardEvent('keydown', { key, shiftKey: event.shiftKey }))

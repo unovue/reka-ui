@@ -129,12 +129,16 @@ rootContext.virtualKeydownHook.on((event) => {
 
   // Only a window of items is rendered, so wrapping is resolved against the
   // full list of expanded items rather than by the roving focus group.
-  if (rootContext.loop.value && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
-    const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
-    if (event.key === 'ArrowDown' && currentIndex === rootContext.expandedItems.value.length - 1)
-      intent = 'first'
-    else if (event.key === 'ArrowUp' && currentIndex === 0)
-      intent = 'last'
+  if (rootContext.loop.value && !isMetaKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    const isDown = event.key === 'ArrowDown'
+    const rendered = getItems(true).map(i => i.ref)
+    const enabled = rendered.filter(i => i.dataset.disabled !== '')
+    const edgeEnabled = isDown ? enabled.at(-1) : enabled[0]
+    const edgeIndex = Number((isDown ? rendered.at(-1) : rendered[0])?.getAttribute('data-index'))
+    const boundaryIndex = isDown ? rootContext.expandedItems.value.length - 1 : 0
+    // Wrap from the outermost enabled item once the window reaches the end of the list.
+    if (edgeEnabled && edgeEnabled === getActiveElement() && edgeIndex === boundaryIndex)
+      intent = isDown ? 'first' : 'last'
   }
 
   if (['first', 'last'].includes(intent)) {

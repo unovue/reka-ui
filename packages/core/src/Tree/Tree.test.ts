@@ -577,15 +577,15 @@ describe('given a Tree with `loop`', () => {
       window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
     })
 
-    async function press(key: string) {
+    async function press(key: string, init: KeyboardEventInit = {}) {
       const target = document.activeElement as HTMLElement
-      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
       await nextTick()
       await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
       await nextTick()
     }
 
-    function mountVirtualTree(count: number) {
+    function mountVirtualTree(count: number, disabled: number[] = []) {
       const items = Array.from({ length: count }, (_, i) => ({ title: `item ${i}` }))
       const wrapper = mount(defineComponent({
         setup() {
@@ -594,7 +594,7 @@ describe('given a Tree with `loop`', () => {
             getKey: (item: any) => item.title,
             loop: true,
           }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.value.title }, {
-            default: ({ item }: any) => h(TreeItem as any, { ...item.bind }, { default: () => item.value.title }),
+            default: ({ item }: any) => h(TreeItem as any, { ...item.bind, disabled: disabled.includes(item.index) }, { default: () => item.value.title }),
           })))
         },
       }), { attachTo: document.body })
@@ -610,6 +610,27 @@ describe('given a Tree with `loop`', () => {
       expect(document.activeElement?.getAttribute('data-index')).toBe('4')
 
       await press(kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should wrap past disabled boundary items', async () => {
+      const wrapper = mountVirtualTree(5, [0, 4])
+      await nextTick()
+      ;(wrapper.find('[data-index="1"]').element as HTMLElement).focus()
+
+      await press(kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('3')
+
+      await press(kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+    })
+
+    it.each(['ctrlKey', 'altKey', 'metaKey'] as const)('should not wrap with %s held', async (modifier) => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press(kbd.ARROW_UP, { [modifier]: true })
       expect(document.activeElement?.getAttribute('data-index')).toBe('0')
     })
 

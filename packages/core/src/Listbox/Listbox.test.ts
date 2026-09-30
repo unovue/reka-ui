@@ -233,13 +233,13 @@ describe('given a virtualized Listbox on initial mount', () => {
   })
 
   const VirtualListbox = defineComponent({
-    props: { multiple: Boolean, loop: Boolean, count: { type: Number, default: 100 }, modelValue: { type: null, default: undefined } },
+    props: { multiple: Boolean, loop: Boolean, count: { type: Number, default: 100 }, disabled: { type: Array, default: () => [] }, modelValue: { type: null, default: undefined } },
     setup(props) {
       const options = Array.from({ length: props.count }, (_, i) => ({ label: `Item ${i}`, value: i }))
       return () => h(ListboxRoot, { multiple: props.multiple, loop: props.loop, modelValue: props.modelValue }, () =>
         h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
           h(ListboxVirtualizer, { options, textContent: (o: any) => o.label }, {
-            default: ({ option }: any) => h(ListboxItem, { value: option }, () => option.label),
+            default: ({ option }: any) => h(ListboxItem, { value: option, disabled: props.disabled.includes(option.value) }, () => option.label),
           })))
     },
   })
@@ -334,6 +334,19 @@ describe('given a virtualized Listbox on initial mount', () => {
       expect(document.activeElement?.getAttribute('data-index')).toBe('4')
       await press(content, kbd.ARROW_DOWN)
       expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should wrap past disabled boundary options', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5, disabled: [0, 4] }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+
+      await press(content, kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('3')
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
     })
 
     it('should not wrap at the end of the rendered window', async () => {
