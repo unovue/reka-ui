@@ -579,8 +579,35 @@ function onOpenChange(open, details) {
 </template>
 ```
 
-A controlled drawer (`:open` without `v-model`) that doesn't update `open` also
-settles back after a swipe.
+`v-model:open` always writes the new value, even after `details.cancel()`. To
+guard a controlled drawer, bind `:open` and update your state only when the
+change wasn't canceled:
+
+```vue line=5-12
+<script setup>
+import { ref } from 'vue'
+
+const open = ref(false)
+
+function onOpenChange(value, details) {
+  if (!value && hasUnsavedChanges()) {
+    details.cancel()
+    showDiscardConfirmation()
+    return
+  }
+  open.value = value
+}
+</script>
+
+<template>
+  <DrawerRoot :open="open" @update:open="onOpenChange">
+    ...
+  </DrawerRoot>
+</template>
+```
+
+A controlled drawer that leaves `open` unchanged also settles back after a
+swipe.
 
 ### Close using slot props
 

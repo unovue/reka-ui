@@ -456,6 +456,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     // would otherwise set a stray `data-swipe-dismissed` on a drawer that
     // actually snapped to a point, or clear CSS vars onRelease already wrote.
     const releaseHandled = onRelease?.(velocity) === true
+    let dismissed = false
 
     if (!releaseHandled) {
       const velInDirection = getDisplacement(
@@ -472,6 +473,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         // CSS vars here would cause a one-frame snap-back to resting before the
         // closing transition begins (visible as a flicker).
         el.setAttribute('data-swipe-dismissed', '')
+        dismissed = true
       }
       else {
         // On cancel, reset the drag transform so the drawer animates back to rest.
@@ -479,6 +481,11 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         onCancel?.()
       }
     }
+
+    // BaseUI parity (`settleInPlace`): a drawer that stays open settles back to
+    // rest, so drop the published progress along with the drag transform.
+    if (!dismissed)
+      onProgress?.(0)
 
     reset()
   }
@@ -734,6 +741,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
     el.removeAttribute('data-swipe-dismissed')
     clearCssVars(el)
+    onProgress?.(0)
     onCancel?.()
   }
 

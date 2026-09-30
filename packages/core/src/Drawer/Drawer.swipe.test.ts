@@ -98,6 +98,7 @@ function expectSettledOpen(el: HTMLElement) {
   expect(el.getAttribute('data-state')).toBe('open')
   expect(el.hasAttribute('data-swipe-dismissed')).toBe(false)
   expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('0px')
+  expect(el.style.getPropertyValue('--drawer-swipe-progress')).toBe('0')
 }
 
 function renderDrawer(options: {
@@ -162,6 +163,22 @@ describe('drawer swipe dismissal', () => {
 
     expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'swipe' }))
     expect(findContent()).toBe(content)
+    expectSettledOpen(content)
+  })
+
+  it('settles back open after a swipe short of the threshold', async () => {
+    const { onOpenChange } = renderDrawer({})
+    await nextTick()
+    const content = findContent()!
+
+    dispatchPointer(content, 'pointerdown', 100)
+    dispatchPointer(content, 'pointermove', 105)
+    dispatchPointer(content, 'pointermove', 115)
+    expect(content.style.getPropertyValue('--drawer-swipe-progress')).not.toBe('0')
+    dispatchPointer(content, 'pointerup', 115, 0)
+    await nextTick()
+
+    expect(onOpenChange).not.toHaveBeenCalled()
     expectSettledOpen(content)
   })
 
