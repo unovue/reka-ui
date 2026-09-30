@@ -186,7 +186,7 @@ describe('update:open change event details', () => {
     const { getByText } = render(DrawerWithReason, { props: { onOpenChange } })
     await fireEvent.click(getByText('Open'))
     await nextTick()
-    expect(onOpenChange).toHaveBeenCalledWith(true, { reason: 'trigger-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
   it('emits close-press reason on close click', async () => {
@@ -197,7 +197,7 @@ describe('update:open change event details', () => {
     onOpenChange.mockClear()
     await fireEvent.click(getByText('Close'))
     await nextTick()
-    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'close-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'close-press' }))
   })
 
   it('closes on a second trigger click (toggle)', async () => {
@@ -208,7 +208,7 @@ describe('update:open change event details', () => {
     onOpenChange.mockClear()
     await fireEvent.click(getByText('Open'))
     await nextTick()
-    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
   it('closes on a second trigger click in non-modal mode', async () => {
@@ -221,7 +221,7 @@ describe('update:open change event details', () => {
     await user.click(getByText('Open'))
     await nextTick()
     expect(onOpenChange).toHaveBeenCalledTimes(1)
-    expect(onOpenChange).toHaveBeenCalledWith(false, { reason: 'trigger-press' })
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 })
 

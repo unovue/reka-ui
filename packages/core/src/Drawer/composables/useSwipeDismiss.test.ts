@@ -42,7 +42,7 @@ beforeAll(() => {
  */
 
 interface HarnessOptions {
-  onDismiss?: () => void
+  onDismiss?: () => boolean | void
   onCancel?: () => void
   onRelease?: (velocity: { x: number, y: number }) => void
   directions?: Array<'up' | 'down' | 'left' | 'right'>
@@ -172,6 +172,28 @@ describe('useSwipeDismiss — dismiss vs cancel CSS var clearing', () => {
     expect(el.style.getPropertyValue('--drawer-swipe-movement-x')).toBe('0px')
 
     // Not a dismiss, so the marker attribute is NOT set.
+    expect(el.hasAttribute('data-swipe-dismissed')).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('settles back to rest when onDismiss rejects the dismissal', async () => {
+    const onDismiss = vi.fn(() => false)
+    const onCancel = vi.fn()
+    const { wrapper, elementRef } = mountHarness({ onDismiss, onCancel })
+    await nextTick()
+
+    const el = elementRef.value!
+
+    dispatchPointer(el, 'pointerdown', 100, 100)
+    dispatchPointer(el, 'pointermove', 100, 120)
+    dispatchPointer(el, 'pointermove', 100, 400)
+    dispatchPointer(el, 'pointerup', 100, 400)
+    await nextTick()
+
+    expect(onDismiss).toHaveBeenCalledTimes(1)
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(el.style.getPropertyValue('--drawer-swipe-movement-y')).toBe('0px')
     expect(el.hasAttribute('data-swipe-dismissed')).toBe(false)
 
     wrapper.unmount()

@@ -530,7 +530,7 @@ triggered the change — useful for distinguishing a deliberate close from a swi
 import { DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTrigger } from 'reka-ui'
 
 function onOpenChange(open, details) {
-  if (!open && details?.reason === 'swipe') {
+  if (!open && details.reason === 'swipe') {
     // user flicked the drawer away
   }
 }
@@ -549,6 +549,38 @@ function onOpenChange(open, details) {
 
 Possible reasons are `swipe`, `escape-key`, `outside-press`, `click`, `cancel`,
 `trigger-press` and `close-press`.
+
+### Preventing the drawer from closing
+
+Call `details.cancel()` in `update:open` to keep the drawer in its current
+state. This works for every reason, including a swipe: the drawer settles back
+open, or back to its snap point.
+
+```vue line=5-8
+<script setup>
+import { DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTrigger } from 'reka-ui'
+
+function onOpenChange(open, details) {
+  if (!open && hasUnsavedChanges()) {
+    details.cancel()
+    showDiscardConfirmation()
+  }
+}
+</script>
+
+<template>
+  <DrawerRoot @update:open="onOpenChange">
+    <DrawerTrigger>Open</DrawerTrigger>
+    <DrawerPortal>
+      <DrawerOverlay />
+      <DrawerContent>...</DrawerContent>
+    </DrawerPortal>
+  </DrawerRoot>
+</template>
+```
+
+A controlled drawer (`:open` without `v-model`) that doesn't update `open` also
+settles back after a swipe.
 
 ### Close using slot props
 
