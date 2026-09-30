@@ -35,7 +35,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focus } from '@/FocusScope/utils'
-import { useForwardExpose } from '@/shared'
+import { isHTMLElement, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
@@ -266,7 +266,7 @@ function onMountAutoFocus(event: Event) {
   if (props.initialFocus === false) {
     event.preventDefault()
   }
-  else if (props.initialFocus instanceof HTMLElement) {
+  else if (isHTMLElement(props.initialFocus)) {
     event.preventDefault()
     focus(props.initialFocus, { select: true })
   }
