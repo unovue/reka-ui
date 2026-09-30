@@ -661,6 +661,28 @@ describe('given SelectTrigger with consumer event listeners', () => {
     expect(open.value).toBe(true)
   })
 
+  it('should keep the trigger from taking focus on mousedown', async () => {
+    const { trigger } = mountSelect()
+    const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 })
+    trigger.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should run consumer mousedown listeners before its own', async () => {
+    let preventedWhenConsumerRan: boolean | undefined
+    const { trigger } = mountSelect({ onMousedown: (event) => { preventedWhenConsumerRan = event.defaultPrevented } })
+    trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 }))
+    expect(preventedWhenConsumerRan).toBe(false)
+  })
+
+  it('should not focus the trigger on click when the consumer prevents default', async () => {
+    const { trigger } = mountSelect({ onClick: event => event.preventDefault() })
+    const focusSpy = vi.spyOn(trigger, 'focus')
+    trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))
+    expect(focusSpy).not.toHaveBeenCalled()
+    focusSpy.mockRestore()
+  })
+
   it('should open on Space after a non-printable key', async () => {
     const { open, trigger } = mountSelect()
     await fireEvent.keyDown(trigger, { key: 'ArrowLeft' })

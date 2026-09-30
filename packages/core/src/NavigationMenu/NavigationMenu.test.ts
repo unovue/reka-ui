@@ -325,4 +325,21 @@ describe('given NavigationMenuTrigger with consumer event listeners', () => {
     await trigger.trigger('pointermove', { pointerType: 'mouse' })
     expect(value.value).toBe('')
   })
+
+  it('should hand the entry key to the content', async () => {
+    const { value, trigger } = mountNavigationMenu()
+    await trigger.trigger('click')
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    trigger.element.dispatchEvent(event)
+    expect([value.value, event.defaultPrevented]).toEqual(['learn', true])
+  })
+
+  it('should not handle the entry key when the consumer prevents default', async () => {
+    const { trigger } = mountNavigationMenu({ onKeydown: event => event.preventDefault() })
+    await trigger.trigger('click')
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    const stopPropagation = vi.spyOn(event, 'stopPropagation')
+    trigger.element.dispatchEvent(event)
+    expect(stopPropagation).not.toHaveBeenCalled()
+  })
 })
