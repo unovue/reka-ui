@@ -13,7 +13,7 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
@@ -33,6 +33,7 @@ const { disabled } = toRefs(props)
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectContextMenuRootContext()
 const point = ref<Point>({ x: 0, y: 0 })
+const isPointerOpen = ref(false)
 const virtualEl = computed(() => ({
   getBoundingClientRect: () =>
     ({
@@ -46,14 +47,35 @@ const virtualEl = computed(() => ({
     } as DOMRect),
 }))
 
+const reference = computed(() =>
+  isPointerOpen.value
+    ? virtualEl.value
+    : rootContext.triggerElement.value,
+)
+
+watch(
+  () => rootContext.open.value,
+  (open) => {
+    if (!open)
+      isPointerOpen.value = false
+  },
+)
+
 const longPressTimer = ref(0)
 function clearLongPress() {
   window.clearTimeout(longPressTimer.value)
 }
 
-function handleOpen(event: MouseEvent | PointerEvent) {
+async function handleOpen(event: MouseEvent | PointerEvent) {
+  isPointerOpen.value = true
   point.value = { x: event.clientX, y: event.clientY }
   rootContext.onOpenChange(true)
+
+  await nextTick()
+
+  // A controlled parent may have refused the request.
+  if (!rootContext.open.value)
+    isPointerOpen.value = false
 }
 
 async function handleContextMenu(event: PointerEvent) {
@@ -97,7 +119,7 @@ onMounted(() => {
 <template>
   <MenuAnchor
     as="template"
-    :reference="virtualEl"
+    :reference="reference"
   />
 
   <Primitive
