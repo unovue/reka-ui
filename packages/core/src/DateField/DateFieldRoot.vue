@@ -384,6 +384,7 @@ defineExpose({
       as="input"
       :type="inputType"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
       :value="inputValue"
       :name="resolvedName"

@@ -76,6 +76,40 @@ describe('given a default Toast', () => {
     expect(toastElement?.getAttribute('tabindex')).toBe('0')
   })
 
+  it('should have focus proxies that are focusable but not aria-hidden', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // The viewport renders head/tail focus proxies: tabbable sentinels
+    // (tabindex="0") that catch focus entering or leaving the viewport and
+    // redirect it onto a toast. A tabbable element must not be aria-hidden,
+    // otherwise axe reports an `aria-hidden-focus` violation.
+    const proxies = Array.from(
+      document.querySelectorAll<HTMLElement>('[tabindex="0"]'),
+    ).filter(el => el.style.position === 'fixed')
+
+    expect(proxies).toHaveLength(2)
+    for (const proxy of proxies)
+      expect(proxy.getAttribute('aria-hidden')).toBeNull()
+  })
+
+  it('should proxy focus out of the viewport on shift+Tab', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    // Shift+Tab on the focused viewport hands focus to the head proxy (through
+    // its template ref) so the browser can move it on to the preceding
+    // document. Focus arrives from inside the viewport, so the proxy must not
+    // bounce it back onto a toast.
+    const viewport = document.querySelector<HTMLElement>('ol[tabindex="-1"]')
+    expect(viewport).toBeTruthy()
+    const headProxy = viewport!.previousElementSibling
+    viewport!.focus()
+    await fireEvent.keyDown(viewport!, { key: 'Tab', shiftKey: true })
+
+    expect(document.activeElement).toBe(headProxy)
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(document.body)).toHaveNoViolations()
 
