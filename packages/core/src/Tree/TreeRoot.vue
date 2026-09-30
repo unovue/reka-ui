@@ -30,6 +30,8 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   propagateSelect?: boolean
   /** When `true`, selecting children will update the parent state. Requires `multiple` to be `true`. */
   bubbleSelect?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = {
@@ -52,6 +54,7 @@ interface TreeRootContext<T = Record<string, any>> {
   dir: Ref<Direction>
   propagateSelect: Ref<boolean>
   bubbleSelect: Ref<boolean>
+  loop: Ref<boolean>
   isVirtual: Ref<boolean>
   virtualKeydownHook: EventHook<KeyboardEvent>
 
@@ -100,7 +103,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props)
+const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect, loop } = toRefs(props)
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
@@ -286,6 +289,7 @@ provideTreeRootContext({
   dir,
   propagateSelect,
   bubbleSelect,
+  loop,
 
   isVirtual,
   virtualKeydownHook,
@@ -299,6 +303,7 @@ provideTreeRootContext({
     as-child
     orientation="vertical"
     :dir="dir"
+    :loop="loop && !isVirtual"
   >
     <Primitive
       role="tree"

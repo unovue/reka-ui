@@ -541,3 +541,59 @@ describe('given SelectItem slot props and SelectItemIndicator', () => {
     expect(a.getAttribute('aria-hidden')).toBe('true')
   })
 })
+
+describe('given Select with `loop`', () => {
+  function setup(props: { loop?: boolean, position?: 'item-aligned' | 'popper' }) {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, { open: true }, () =>
+          h(SelectContent, props, () => h(SelectViewport, () => ['a', 'b', 'c'].map(value =>
+            h(SelectItem, { value }, () => h(SelectItemText, () => value)),
+          ))))
+      },
+    }), { attachTo: document.body })
+    return { wrapper, items: () => [...document.querySelectorAll<HTMLElement>('[role=option]')] }
+  }
+
+  async function press(key: string) {
+    fireEvent.keyDown(document.activeElement!, { key })
+    await new Promise(resolve => setTimeout(resolve))
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each(['item-aligned', 'popper'] as const)('should wrap around the boundary items (%s)', async (position) => {
+    const { items } = setup({ loop: true, position })
+    await nextTick()
+    const [first, , last] = items()
+
+    first.focus()
+    await press('ArrowUp')
+    expect(document.activeElement).toBe(last)
+
+    await press('ArrowDown')
+    expect(document.activeElement).toBe(first)
+  })
+
+  it('should stay on the boundary items without `loop`', async () => {
+    const { items } = setup({})
+    await nextTick()
+    const [first, , last] = items()
+
+    first.focus()
+    await press('ArrowUp')
+    expect(document.activeElement).toBe(first)
+
+    last.focus()
+    await press('ArrowDown')
+    expect(document.activeElement).toBe(last)
+  })
+
+  it('should not forward `loop` to the popper content element', async () => {
+    setup({ loop: true, position: 'popper' })
+    await nextTick()
+    expect(document.querySelector('[loop]')).toBeNull()
+  })
+})

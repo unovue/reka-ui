@@ -233,13 +233,13 @@ describe('given a virtualized Listbox on initial mount', () => {
   })
 
   const VirtualListbox = defineComponent({
-    props: { multiple: Boolean, modelValue: { type: null, default: undefined } },
+    props: { multiple: Boolean, loop: Boolean, count: { type: Number, default: 100 }, disabled: { type: Array, default: () => [] }, modelValue: { type: null, default: undefined } },
     setup(props) {
-      const options = Array.from({ length: 100 }, (_, i) => ({ label: `Item ${i}`, value: i }))
-      return () => h(ListboxRoot, { multiple: props.multiple, modelValue: props.modelValue }, () =>
+      const options = Array.from({ length: props.count }, (_, i) => ({ label: `Item ${i}`, value: i }))
+      return () => h(ListboxRoot, { multiple: props.multiple, loop: props.loop, modelValue: props.modelValue }, () =>
         h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
           h(ListboxVirtualizer, { options, textContent: (o: any) => o.label }, {
-            default: ({ option }: any) => h(ListboxItem, { value: option }, () => option.label),
+            default: ({ option }: any) => h(ListboxItem, { value: option, disabled: props.disabled.includes(option.value) }, () => option.label),
           })))
     },
   })
@@ -303,6 +303,68 @@ describe('given a virtualized Listbox on initial mount', () => {
     const items = wrapper.findAll('[role=option]')
     expect(document.activeElement).toBe(items[0].element)
     expect(scrollSpy).toHaveBeenCalled()
+  })
+
+  describe('with `loop`', () => {
+    const kbd = useKbd()
+
+    async function press(content: DOMWrapper<Element>, key: string) {
+      await content.trigger('keydown', { key })
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+      await nextTick()
+    }
+
+    it('should wrap from the first option to the last on `ArrowUp`', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5 }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+
+      await press(content, kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('4')
+    })
+
+    it('should wrap from the last option to the first on `ArrowDown`', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5 }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+
+      await press(content, kbd.END)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('4')
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should wrap past disabled boundary options', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5, disabled: [0, 4] }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+
+      await press(content, kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('3')
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+    })
+
+    it('should not wrap at the end of the rendered window', async () => {
+      // jsdom never scrolls, so only the first window of the 100 options is rendered.
+      const wrapper = mount(VirtualListbox, { props: { loop: true }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+
+      const rendered = wrapper.findAll('[role=option]')
+      const lastRendered = rendered.at(-1)!.attributes('data-index')
+      expect(Number(lastRendered)).toBeLessThan(99)
+
+      await press(content, kbd.END)
+      expect(document.activeElement?.getAttribute('data-index')).toBe(lastRendered)
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe(lastRendered)
+    })
   })
 })
 
@@ -402,6 +464,50 @@ describe('given multiple `true` Listbox', () => {
           expect(items[i].attributes('aria-selected')).toBe('true')
       })
     })
+  })
+})
+
+describe('given a Listbox with `loop`', () => {
+  const kbd = useKbd()
+
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  function setup(loop: boolean) {
+    document.body.innerHTML = ''
+    const wrapper = mount(Listbox, { props: { loop }, attachTo: document.body })
+    return { wrapper, content: wrapper.find('[role=listbox]'), items: wrapper.findAll('[role=option]') }
+  }
+
+  it('should wrap from the last item to the first on `ArrowDown`', async () => {
+    const { content, items } = setup(true)
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: kbd.END })
+    expect(items.at(-1)!.attributes('data-highlighted')).toBe('')
+
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    expect(document.activeElement).toBe(items[0].element)
+  })
+
+  it('should wrap from the first item to the last on `ArrowUp`', async () => {
+    const { content, items } = setup(true)
+    await content.trigger('focus')
+    expect(items[0].attributes('data-highlighted')).toBe('')
+
+    await content.trigger('keydown', { key: kbd.ARROW_UP })
+    expect(items.at(-1)!.attributes('data-highlighted')).toBe('')
+    expect(document.activeElement).toBe(items.at(-1)!.element)
+  })
+
+  it('should stay on the boundary items without `loop`', async () => {
+    const { content, items } = setup(false)
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: kbd.ARROW_UP })
+    expect(items[0].attributes('data-highlighted')).toBe('')
+
+    await content.trigger('keydown', { key: kbd.END })
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    expect(items.at(-1)!.attributes('data-highlighted')).toBe('')
   })
 })
 
