@@ -41,6 +41,23 @@ describe('isLayerExist', () => {
     root.remove()
     outside.remove()
   })
+
+  it('should recognize a nested layer from another realm as inside (#2949)', () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    onTestFinished(() => iframe.remove())
+    const iframeDocument = iframe.contentDocument!
+    const parentLayer = iframeDocument.createElement('div')
+    parentLayer.setAttribute('data-dismissable-layer', '')
+    const childLayer = iframeDocument.createElement('div')
+    childLayer.setAttribute('data-dismissable-layer', '')
+    const item = iframeDocument.createElement('button')
+    childLayer.appendChild(item)
+    iframeDocument.body.append(parentLayer, childLayer)
+
+    expect(item instanceof Element).toBe(false)
+    expect(isLayerExist(parentLayer, item)).toBe(true)
+  })
 })
 
 describe('given a DismissableLayerBranch', () => {
