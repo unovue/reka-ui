@@ -24,3 +24,7 @@ export {
   default as ScrollAreaViewport,
   type ScrollAreaViewportProps,
 } from './ScrollAreaViewport.vue'
+export {
+  default as ScrollAreaVirtualizer,
+  type ScrollAreaVirtualizerProps,
+} from './ScrollAreaVirtualizer.vue'
