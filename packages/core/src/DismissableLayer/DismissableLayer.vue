@@ -11,7 +11,7 @@ import {
   watch,
   watchEffect,
 } from 'vue'
-import { isNullish, useForwardExpose } from '@/shared'
+import { isNullish, useCspSafePositioning, useForwardExpose } from '@/shared'
 import { context } from './context'
 
 export interface DismissableLayerProps extends PrimitiveProps {
@@ -108,6 +108,15 @@ const isPointerEventsEnabled = computed(() => {
 
   return index.value >= highestLayerWithOutsidePointerEventsDisabledIndex
 })
+
+const { bindStyle } = useCspSafePositioning()
+const layerProps = computed(() => bindStyle({}, {
+  pointerEvents: isBodyPointerEventsDisabled.value
+    ? isPointerEventsEnabled.value
+      ? 'auto'
+      : 'none'
+    : undefined,
+}))
 
 // A layer that stays mounted while hidden (e.g. a Dialog with `unmountOnHide: false`)
 // must not listen while it is not present, hence the `present` guard passed as `enabled`.
@@ -233,13 +242,7 @@ watchEffect((cleanupFn) => {
     :as-child="asChild"
     :as="as"
     data-dismissable-layer
-    :style="{
-      pointerEvents: isBodyPointerEventsDisabled
-        ? isPointerEventsEnabled
-          ? 'auto'
-          : 'none'
-        : undefined,
-    }"
+    v-bind="layerProps"
     @focus.capture="focusOutside.onFocusCapture"
     @blur.capture="focusOutside.onBlurCapture"
     @pointerdown.capture="pointerDownOutside.onPointerDownCapture"

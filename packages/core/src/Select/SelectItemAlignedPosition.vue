@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useResizeObserver } from '@vueuse/core'
 import { useCollection } from '@/Collection'
-import { clamp, createContext, useForwardExpose } from '@/shared'
+import { clamp, createContext, useCspSafePositioning, useForwardExpose } from '@/shared'
 
 interface SelectItemAlignedPositionContext {
   contentWrapper?: Ref<HTMLElement | undefined>
@@ -18,7 +18,7 @@ export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPo
 </script>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, mergeProps, nextTick, onMounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -45,6 +45,11 @@ const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
 const { viewport, selectedItem, selectedItemText, focusSelectedItem }
   = contentContext!
+
+// Withhold the wrapper/content positioning styles during SSR when CSP-safe positioning is on,
+// so the server emits no inline `style` attribute the browser would block. The imperative
+// `position()` writes below are client-only (CSSOM) and are unaffected. See issue #2732.
+const { bindStyle } = useCspSafePositioning()
 
 function position() {
   if (
@@ -197,6 +202,28 @@ function position() {
 // copy z-index from content to wrapper
 const contentZIndex = ref('')
 
+const wrapperStyle = computed<CSSProperties>(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'fixed',
+  zIndex: contentZIndex.value,
+}))
+const wrapperProps = computed(() => bindStyle({}, wrapperStyle.value))
+
+// Our style goes first so a consumer `style` still overrides it. While styles are
+// withheld, the fallthrough `style` from `SelectContentImpl` is dropped too.
+function primitiveProps(attrs: Record<string, unknown>) {
+  return bindStyle(mergeProps({
+    style: {
+    // When we get the height of the content, it includes borders. If we were to set
+    // the height without having `boxSizing: 'border-box'` it would be too big.
+      boxSizing: 'border-box',
+      // We need to ensure the content doesn't get taller than the wrapper
+      maxHeight: '100%',
+    },
+  }, { ...attrs, ...props }))
+}
+
 onMounted(async () => {
   await nextTick()
   position()
@@ -231,23 +258,11 @@ provideSelectItemAlignedPositionContext({
 <template>
   <div
     ref="contentWrapperElement"
-    :style="{
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'fixed',
-      zIndex: contentZIndex,
-    }"
+    v-bind="wrapperProps"
   >
     <Primitive
       :ref="forwardRef"
-      :style="{
-        // When we get the height of the content, it includes borders. If we were to set
-        // the height without having `boxSizing: 'border-box'` it would be too big.
-        boxSizing: 'border-box',
-        // We need to ensure the content doesn't get taller than the wrapper
-        maxHeight: '100%',
-      }"
-      v-bind="{ ...$attrs, ...props }"
+      v-bind="primitiveProps($attrs)"
     >
       <slot />
     </Primitive>

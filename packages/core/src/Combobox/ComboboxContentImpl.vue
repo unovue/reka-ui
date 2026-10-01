@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, useCspSafePositioning, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -134,6 +134,21 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
   return !!control && !!rootContext.parentElement.value?.contains(control)
 }
 
+const { bindStyle } = useCspSafePositioning()
+// `$attrs` is read at render time: a computed over `useAttrs()` would not track
+// attributes first added after mount.
+function contentProps(attrs: Record<string, unknown>) {
+  return bindStyle({ ...attrs, ...forwardedProps.value }, {
+  // flex layout so we can place the scroll buttons properly
+  // When hideWhenEmpty is true, hide the content when no items match
+    display: (props.hideWhenEmpty && isEmpty.value) ? 'none' : 'flex',
+    flexDirection: 'column',
+    // reset the outline by default as the content MAY get focused
+    outline: 'none',
+    ...(position.value === 'popper' ? popperStyle : {}),
+  })
+}
+
 const popperContentEvents = {
   placed: () => rootContext.onContentPlaced(contentId),
 }
@@ -167,7 +182,7 @@ const popperContentEvents = {
       >
         <component
           :is="position === 'popper' ? PopperContent : Primitive"
-          v-bind="{ ...$attrs, ...forwardedProps }"
+          v-bind="contentProps($attrs)"
           :id="rootContext.contentId"
           :ref="forwardRef"
           :memo-dependencies="position === 'popper'
@@ -175,15 +190,6 @@ const popperContentEvents = {
             : undefined"
           :data-state="rootContext.open.value ? 'open' : 'closed'"
           :data-empty="isEmpty ? '' : undefined"
-          :style="{
-            // flex layout so we can place the scroll buttons properly
-            // When hideWhenEmpty is true, hide the content when no items match
-            display: (props.hideWhenEmpty && isEmpty) ? 'none' : 'flex',
-            flexDirection: 'column',
-            // reset the outline by default as the content MAY get focused
-            outline: 'none',
-            ...(position === 'popper' ? popperStyle : {}),
-          }"
           v-on="position === 'popper' ? popperContentEvents : {}"
         >
           <slot />

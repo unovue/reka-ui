@@ -4,14 +4,14 @@ import type {
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { Ref } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
+import { createContext, useCspSafePositioning, useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -236,6 +236,11 @@ const rootContext = injectPopperRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 const dir = useDirection(computed(() => props.dir))
 
+// When CSP-safe positioning is enabled, positioning styles are withheld until after
+// mount so SSR emits no inline `style` attribute (which a strict `style-src` would block
+// on parse); the client then applies them via the CSP-exempt CSSOM. See issue #2732.
+const { shouldApplyPositioningStyle, bindStyle } = useCspSafePositioning()
+
 const floatingRef = ref<HTMLElement>()
 
 const arrow = ref<HTMLElement>()
@@ -381,6 +386,38 @@ watchEffect(() => {
 const arrowX = computed(() => middlewareData.value.arrow?.x ?? 0)
 const arrowY = computed(() => middlewareData.value.arrow?.y ?? 0)
 
+const wrapperStyle = computed<CSSProperties>(() => {
+  return {
+    ...floatingStyles.value,
+    // keep off the page when measuring
+    transform: isPositioned.value ? floatingStyles.value.transform : 'translate(0, -200%)',
+    minWidth: 'max-content',
+    zIndex: contentZIndex.value,
+    ['--reka-popper-transform-origin' as any]: [
+      middlewareData.value.transformOrigin?.x,
+      middlewareData.value.transformOrigin?.y,
+    ].join(' '),
+
+    // hide the content if using the hide middleware and should be hidden
+    // set visibility to hidden and disable pointer events so the UI behaves
+    // as if the PopperContent isn't there at all
+    ...(middlewareData.value.hide?.referenceHidden && {
+      visibility: 'hidden' as const,
+      pointerEvents: 'none' as const,
+    }),
+  }
+})
+
+// if the PopperContent hasn't been placed yet (not all measurements done)
+// we prevent animations so that users's animation don't kick in too early referring wrong sides
+const primitiveStyle = computed<CSSProperties>(() => ({
+  animation: !isPositioned.value ? 'none' : undefined,
+}))
+
+// While styles are withheld, the fallthrough `style` is dropped too: consumers (Popover,
+// Tooltip, Select, …) and `DismissableLayer` pass their own inline styles through here.
+const wrapperProps = computed(() => bindStyle({}, wrapperStyle.value))
+
 providePopperContentContext({
   placedSide,
   onArrowChange: element => arrow.value = element,
@@ -395,24 +432,7 @@ providePopperContentContext({
     ref="floatingRef"
     data-reka-popper-content-wrapper=""
     :dir="dir"
-    :style="{
-      ...floatingStyles,
-      transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
-      minWidth: 'max-content',
-      zIndex: contentZIndex,
-      ['--reka-popper-transform-origin' as any]: [
-        middlewareData.transformOrigin?.x,
-        middlewareData.transformOrigin?.y,
-      ].join(' '),
-
-      // hide the content if using the hide middleware and should be hidden
-      // set visibility to hidden and disable pointer events so the UI behaves
-      // as if the PopperContent isn't there at all
-      ...(middlewareData.hide?.referenceHidden && {
-        visibility: 'hidden',
-        pointerEvents: 'none',
-      }),
-    }"
+    v-bind="wrapperProps"
   >
     <Primitive
       v-if="props.memoDependencies"
@@ -423,19 +443,15 @@ providePopperContentContext({
         placedSide,
         placedAlign,
         isPositioned,
+        shouldApplyPositioningStyle,
         ...Object.values($attrs),
         ...props.memoDependencies,
       ]"
-      v-bind="$attrs"
+      v-bind="bindStyle($attrs, primitiveStyle)"
       :as-child="props.asChild"
       :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
-      :style="{
-        // if the PopperContent hasn't been placed yet (not all measurements done)
-        // we prevent animations so that users's animation don't kick in too early referring wrong sides
-        animation: !isPositioned ? 'none' : undefined,
-      }"
     >
       <slot />
     </Primitive>
@@ -443,17 +459,12 @@ providePopperContentContext({
     <Primitive
       v-else
       :ref="forwardRef"
-      v-bind="$attrs"
+      v-bind="bindStyle($attrs, primitiveStyle)"
       :as-child="props.asChild"
       :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
       :dir="dir"
-      :style="{
-        // if the PopperContent hasn't been placed yet (not all measurements done)
-        // we prevent animations so that users's animation don't kick in too early referring wrong sides
-        animation: !isPositioned ? 'none' : undefined,
-      }"
     >
       <slot />
     </Primitive>

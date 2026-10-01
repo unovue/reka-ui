@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, useCspSafePositioning, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
@@ -259,17 +259,23 @@ provideComboboxRootContext({
   resetModelValueOnClear,
   unmountOnHide,
 })
+
+const { bindStyle } = useCspSafePositioning()
+// `$attrs` is read at render time: a computed over `useAttrs()` would not track
+// attributes first added after mount.
+function rootProps(attrs: Record<string, unknown>) {
+  return bindStyle(attrs, {
+    pointerEvents: open.value ? 'auto' : undefined,
+  })
+}
 </script>
 
 <template>
   <PopperRoot>
     <ListboxRoot
       ref="primitiveElement"
-      v-bind="$attrs"
+      v-bind="rootProps($attrs)"
       v-model="modelValue"
-      :style="{
-        pointerEvents: open ? 'auto' : undefined,
-      }"
       :as="as"
       :as-child="asChild"
       :dir="dir"
