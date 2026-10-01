@@ -4,9 +4,9 @@
 <PropsTable :data="[
   {
     'name': 'altText',
-    'description': '<p>A short description for an alternate way to carry out the action. For screen reader users\nwho will not be able to navigate to the button easily/quickly.</p>\n',
+    'description': '<p>A short description for an alternate way to carry out the action. For screen reader users\nwho will not be able to navigate to the button easily/quickly.</p>\n<p>A rendered action requires <code>altText</code>, unless the toast passed to <code>ToastRoot</code> has <code>actionProps.altText</code>.</p>\n',
     'type': 'string',
-    'required': true
+    'required': false
   },
   {
     'name': 'as',
@@ -37,7 +37,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `altText` | A short description for an alternate way to carry out the action. For screen reader users who will not be able to navigate to the button easily/quickly. | `string` | Yes | - |
+| `altText` | A short description for an alternate way to carry out the action. For screen reader users who will not be able to navigate to the button easily/quickly. A rendered action requires altText, unless the toast passed to ToastRoot has actionProps.altText. | `string` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `closeOnClick` | Whether the action should close the toast when clicked. | `boolean` | No | `true` |
