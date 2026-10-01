@@ -35,7 +35,7 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   invertWheelChange?: boolean
   /** Id of the element */
   id?: string
-  /** The value at which increment/decrement starts at when no value is given. */
+  /** The value the first increment or decrement sets when the field is empty. It is clamped to `min`/`max` but not snapped to `step`. Defaults to `min`, or `0` when `min` is not set. */
   startingValue?: number
 }
 
@@ -156,7 +156,11 @@ function handleChangingValue(type: 'increase' | 'decrease', multiplier = 1) {
   if (isNaN(currentInputValue)) {
     // Route the fallback through clampInputValue so the min/max contract still holds
     // (e.g. a negative max would otherwise be violated by the bare 0 fallback).
-    modelValue.value = clampInputValue(startingValue.value ?? min.value ?? 0)
+    // `startingValue` is used as given: kept within min/max, but not snapped to the step grid
+    // (a starting price of 40 with step 3 stays 40). The next tick aligns it via getNextValue.
+    modelValue.value = startingValue.value === undefined
+      ? clampInputValue(min.value ?? 0)
+      : numberParser.parse(numberFormatter.format(clamp(startingValue.value, min.value, max.value)))
     return
   }
 

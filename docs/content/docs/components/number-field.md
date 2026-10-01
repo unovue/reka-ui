@@ -186,6 +186,22 @@ If you need to allow the user to change the currency, you should include a separ
 </template>
 ```
 
+### Starting value
+
+By default, the first increment or decrement on an empty field sets it to `min`, or `0` when `min` is not set. Use `startingValue` to start from a more useful number instead, such as the current price of a stock.
+
+The starting value is clamped to `min` and `max`, but it is not snapped to `step`.
+
+```vue line=3
+<template>
+  <NumberFieldRoot
+    :starting-value="600"
+  >
+    …
+  </NumberFieldRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton).

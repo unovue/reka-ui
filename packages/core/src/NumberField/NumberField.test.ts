@@ -118,20 +118,59 @@ describe('numberField', () => {
     expect(input.value).toBe('0')
   })
 
-  it('should start at starting value on increment/decrement, when no value present', async () => {
-    const { input, increment, decrement } = setup({ step: 3, startingValue: 40 })
-    expect(input.value).toBe('')
+  describe('with startingValue', () => {
+    it('should start at starting value on increment/decrement, when no value present', async () => {
+      const { input, increment, decrement } = setup({ startingValue: 40, stepSnapping: true })
+      expect(input.value).toBe('')
 
-    await userEvent.click(increment)
-    expect(input.value).toBe('40')
-    await userEvent.click(increment)
-    expect(input.value).toBe('43')
+      await userEvent.click(increment)
+      expect(input.value).toBe('40')
+      await userEvent.click(increment)
+      expect(input.value).toBe('41')
 
-    await userEvent.clear(input)
-    await userEvent.click(decrement)
-    expect(input.value).toBe('40')
-    await userEvent.click(decrement)
-    expect(input.value).toBe('37')
+      await userEvent.clear(input)
+      await userEvent.click(decrement)
+      expect(input.value).toBe('40')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('39')
+    })
+
+    it('should not snap the starting value to the step grid', async () => {
+      const { input, increment, decrement } = setup({ step: 3, startingValue: 40, stepSnapping: true })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('40')
+      // the next tick aligns to the grid in the requested direction
+      await userEvent.click(increment)
+      expect(input.value).toBe('42')
+
+      await userEvent.clear(input)
+      await userEvent.click(decrement)
+      expect(input.value).toBe('40')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('39')
+    })
+
+    it('should clamp the starting value to max', async () => {
+      const { input, increment } = setup({ min: 0, max: 20, startingValue: 40, stepSnapping: true })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('20')
+    })
+
+    it('should clamp the starting value to min', async () => {
+      const { input, decrement } = setup({ min: 10, max: 20, startingValue: 4, stepSnapping: true })
+
+      await userEvent.click(decrement)
+      expect(input.value).toBe('10')
+    })
+
+    it('should fall back to min when no starting value is given', async () => {
+      const { input, increment } = setup({ min: 5, stepSnapping: true })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('5')
+    })
   })
 
   describe('with pointer hold controls', () => {
