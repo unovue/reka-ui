@@ -86,8 +86,12 @@ onMounted(() => {
 })
 
 useEventListener(currentElement, 'beforematch', (ev) => {
+  // Each hidden ancestor receives its own event; ignore descendant discovery.
+  if (ev.target !== ev.currentTarget)
+    return
+
   requestAnimationFrame(() => {
-    rootContext.onOpenToggle()
+    rootContext.onOpen()
     emits('contentFound')
   })
 })
