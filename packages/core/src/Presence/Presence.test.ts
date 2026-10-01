@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, onMounted, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, onMounted, ref } from 'vue'
 import { Presence } from '.'
 
 const CONTENT = 'Content'
@@ -141,5 +141,44 @@ describe('given a Presence with animated content', () => {
         expect(wrapper.html()).not.toContain(CONTENT)
       })
     })
+  })
+})
+
+describe('given a Presence with an animated descendant', () => {
+  it('should ignore bubbled animation events before reading styles', async () => {
+    const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle')
+    const createAnimationEndEvent = () => {
+      const event = new Event('animationend', { bubbles: true })
+      Object.defineProperty(event, 'animationName', { value: 'child-animation' })
+      return event
+    }
+    let wrapper: ReturnType<typeof mount> | undefined
+
+    try {
+      wrapper = mount(defineComponent({
+        components: { Presence },
+        template: `<Presence :present="true">
+          <div data-testid="presence">
+            <span data-testid="animated-child">Child</span>
+          </div>
+        </Presence>`,
+      }))
+
+      await nextTick()
+      const presenceElement = wrapper.find('[data-testid="presence"]').element
+      const animatedChild = wrapper.find('[data-testid="animated-child"]').element
+      getComputedStyleSpy.mockClear()
+
+      presenceElement.dispatchEvent(createAnimationEndEvent())
+      expect(getComputedStyleSpy).toHaveBeenCalledWith(presenceElement)
+      getComputedStyleSpy.mockClear()
+
+      animatedChild.dispatchEvent(createAnimationEndEvent())
+      expect(getComputedStyleSpy).not.toHaveBeenCalledWith(presenceElement)
+    }
+    finally {
+      wrapper?.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
   })
 })

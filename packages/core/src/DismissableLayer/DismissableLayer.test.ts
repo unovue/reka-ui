@@ -1,10 +1,12 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
-import { DismissableLayer as DismissableLayerPrimitive } from '.'
+import { DismissableLayerBranch, DismissableLayer as DismissableLayerPrimitive } from '.'
+import { context } from './context'
 import DismissableLayer from './story/_DismissableLayer.vue'
 import { isLayerExist } from './utils'
 
@@ -19,6 +21,62 @@ describe('isLayerExist', () => {
 
     expect(isLayerExist(layer, document as any)).toBe(false)
     expect(isLayerExist(layer, document.createTextNode('x') as any)).toBe(false)
+  })
+
+  it('should treat the layer root and its unmarked descendants as inside (#2803)', () => {
+    // Mirrors `FocusScope > DismissableLayer > PopperContent` rendered `asChild`:
+    // the layer root is the popper wrapper, `[data-dismissable-layer]` lands on
+    // the content element inside it.
+    const root = document.createElement('div')
+    const layer = document.createElement('div')
+    layer.setAttribute('data-dismissable-layer', '')
+    root.appendChild(layer)
+    const outside = document.createElement('button')
+    document.body.append(root, outside)
+
+    expect(isLayerExist(root, root)).toBe(true)
+    expect(isLayerExist(root, layer)).toBe(true)
+    expect(isLayerExist(root, outside)).toBe(false)
+
+    root.remove()
+    outside.remove()
+  })
+
+  it('should recognize a nested layer from another realm as inside (#2949)', () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    onTestFinished(() => iframe.remove())
+    const iframeDocument = iframe.contentDocument!
+    const parentLayer = iframeDocument.createElement('div')
+    parentLayer.setAttribute('data-dismissable-layer', '')
+    const childLayer = iframeDocument.createElement('div')
+    childLayer.setAttribute('data-dismissable-layer', '')
+    const item = iframeDocument.createElement('button')
+    childLayer.appendChild(item)
+    iframeDocument.body.append(parentLayer, childLayer)
+
+    expect(item instanceof Element).toBe(false)
+    expect(isLayerExist(parentLayer, item)).toBe(true)
+  })
+})
+
+describe('given a DismissableLayerBranch', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    context.branches.clear()
+  })
+
+  it('should leave the branch registry empty after unmounting', async () => {
+    const wrapper = mount(DismissableLayerBranch, { attachTo: document.body })
+    await nextTick()
+    const branch = wrapper.element
+    expect(context.branches.has(branch)).toBe(true)
+    expect(context.branches.size).toBe(1)
+
+    wrapper.unmount()
+    await nextTick()
+    expect(context.branches.has(branch)).toBe(false)
+    expect(context.branches.size).toBe(0)
   })
 })
 
@@ -132,6 +190,177 @@ describe('nested layers with disableOutsidePointerEvents (#2674)', () => {
   })
 })
 
+describe('sibling layers with disableOutsidePointerEvents', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    // Module-level layer registry: make this suite order-independent even if
+    // a failing test skipped its unmounts.
+    context.layersRoot.clear()
+    context.layersWithOutsidePointerEventsDisabled.clear()
+  })
+
+  // The mirrored direction of the #2674 tests above: the OLDER disabling
+  // layer leaves the set while a NEWER sibling is still present. This is the
+  // layer-registry half of the #2784 scenario (a closing animated Popover
+  // whose layer unmounts after a Dialog has already opened).
+  function mountSiblings() {
+    const popoverOpen = ref(true)
+    const dialogOpen = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          popoverOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'popover' }, () => 'Popover')
+            : null,
+          dialogOpen.value
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'dialog' }, () => 'Dialog')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { wrapper, popoverOpen, dialogOpen }
+  }
+
+  it('should keep body pointer-events none after the older layer unmounts while a newer one is open', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountSiblings()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Dialog mounts while the popover is still animating out (still mounted)
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Popover's exit animation ends -> its layer unmounts; dialog still open
+    popoverOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Closing the dialog restores the body
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should keep body pointer-events none when the handoff happens in the same tick', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountSiblings()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // "Pick" action: close the popover and open the dialog in the same tick
+    popoverOpen.value = false
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+})
+
+describe('scroll-lock handoff to a modal layer without its own scroll lock (#2784)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    // Module-level layer registry: make this suite order-independent even if
+    // a failing test skipped its unmounts.
+    context.layersRoot.clear()
+    context.layersWithOutsidePointerEventsDisabled.clear()
+  })
+
+  // Mimics `PopoverContentModal`: a modal layer that also holds a body scroll
+  // lock, released when the content unmounts (for an animated popover that is
+  // the end of the exit animation).
+  const ModalLayerWithScrollLock = defineComponent({
+    setup() {
+      useBodyScrollLock(true)
+      return () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'popover')
+    },
+  })
+
+  // Mimics an overlay-less modal `DialogContent`: disables outside pointer
+  // events but registers no scroll lock (that lives on `DialogOverlayImpl`).
+  function mountHandoff() {
+    const popoverOpen = ref(false)
+    const dialogOpen = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          popoverOpen.value ? h(ModalLayerWithScrollLock) : null,
+          dialogOpen.value
+            ? h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'dialog')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { wrapper, popoverOpen, dialogOpen }
+  }
+
+  it('should keep body pointer-events none when the scroll-lock holder unmounts while a modal layer remains open', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountHandoff()
+
+    // Modal popover opens: dismissable layer + scroll lock
+    popoverOpen.value = true
+    await nextTick() // scroll lock applies its own pointer-events on next tick
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Modal dialog (no overlay -> no scroll lock) opens while the popover
+    // is still mounted (e.g. animating out)
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Popover unmounts: the last scroll lock releases and must not clear the
+    // body pointer-events still owned by the dialog's dismissable layer
+    popoverOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // Closing the dialog restores the body
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should keep body pointer-events none when a scroll-locking layer opens and closes over a modal layer', async () => {
+    const { wrapper, popoverOpen, dialogOpen } = mountHandoff()
+
+    // Overlay-less modal dialog open first
+    dialogOpen.value = true
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    // A modal popover (scroll-lock holder) opens on top, then closes
+    popoverOpen.value = true
+    await nextTick()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    popoverOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    dialogOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+})
+
 describe('given a default DismissableLayer', () => {
   let wrapper: VueWrapper<InstanceType<typeof DismissableLayer>>
   let trigger: DOMWrapper<HTMLElement>
@@ -191,6 +420,86 @@ describe('given a default DismissableLayer', () => {
         expect(document.body.innerHTML).toContain(CLOSE_LABEL)
       })
     })
+  })
+})
+
+describe('given a DismissableLayer after a cancelled touch tap outside', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // jsdom has no `PointerEvent`, so `fireEvent.pointerDown` loses `pointerType`
+  // and would take the mouse path instead of the deferred touch one.
+  function touchPointerDown(target: EventTarget) {
+    const event = new MouseEvent('pointerdown', { bubbles: true })
+    Object.defineProperty(event, 'pointerType', { value: 'touch' })
+    target.dispatchEvent(event)
+  }
+
+  // Regression: on touch, `pointerDownOutside` is deferred to the next `click`.
+  // When the outside tap turns into a scroll or drag no `click` follows, so the
+  // deferred listener stays armed. The next tap INSIDE the layer (or a nested
+  // layer above it) must drop that stale listener instead of letting its own
+  // `click` dismiss the layer. Mirrors radix-ui/primitives#2171.
+  it('should not dismiss on the next tap inside a nested layer', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          h(DismissableLayerPrimitive, { 'data-testid': 'outer' }, () => 'Outer'),
+          h(DismissableLayerPrimitive, { 'data-testid': 'inner' }, () => [
+            h('button', { 'data-testid': 'inner-button' }, 'Inner'),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const outer = wrapper.findComponent('[data-testid="outer"]') as VueWrapper
+    const innerButton = wrapper.find('[data-testid="inner-button"]').element
+
+    // Outside touch that is cancelled: no `click` follows the `pointerdown`.
+    touchPointerDown(document.body)
+    await sleep(1)
+
+    // Next tap lands inside the nested layer.
+    touchPointerDown(innerButton)
+    await fireEvent.click(innerButton)
+    await sleep(1)
+
+    expect(outer.emitted('pointerDownOutside')).toBeUndefined()
+    expect(outer.emitted('dismiss')).toBeUndefined()
+
+    // A completed tap outside still dismisses the outer layer.
+    touchPointerDown(document.body)
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(outer.emitted('pointerDownOutside')?.length).toBe(1)
+    expect(outer.emitted('dismiss')?.length).toBe(1)
+
+    wrapper.unmount()
+  })
+
+  it('should not dismiss on the next tap inside the layer itself', async () => {
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: document.body,
+      slots: { default: () => h('button', { 'data-testid': 'inside' }, 'Inside') },
+    })
+    await sleep(1)
+
+    const inside = wrapper.find('[data-testid="inside"]').element
+
+    touchPointerDown(document.body)
+    await sleep(1)
+
+    touchPointerDown(inside)
+    await fireEvent.click(inside)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+
+    wrapper.unmount()
   })
 })
 
@@ -268,6 +577,42 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
     expect(wrapper.emitted('dismiss')).toBeUndefined()
   })
 
+  // Regression: on touch, `pointerDownOutside` is deferred to the `click` event.
+  // A layer listening while not present captures the `pointerdown` of the tap that
+  // opens it, and dismisses itself when that tap's `click` arrives.
+  it('should not dismiss on the tap that made it present', async () => {
+    // jsdom has no `PointerEvent`, so `fireEvent.pointerDown` loses `pointerType`
+    // and would take the mouse path instead of the deferred touch one.
+    function touchPointerDown() {
+      const event = new MouseEvent('pointerdown', { bubbles: true })
+      Object.defineProperty(event, 'pointerType', { value: 'touch' })
+      document.body.dispatchEvent(event)
+    }
+
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: document.body,
+      props: { present: false },
+    })
+    await sleep(1)
+
+    touchPointerDown()
+    await wrapper.setProps({ present: true })
+    await sleep(1)
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+
+    // a later tap outside still dismisses it
+    touchPointerDown()
+    await fireEvent.click(document.body)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+
   it('should emit escapeKeyDown and dismiss on Escape once present', async () => {
     const wrapper = mount(DismissableLayerPrimitive, {
       attachTo: document.body,
@@ -276,6 +621,78 @@ describe('given a not-present DismissableLayer (e.g. unmountOnHide hidden)', () 
     await nextTick()
 
     await fireEvent.keyDown(document, { key: 'Escape' })
+    await nextTick()
+
+    expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+})
+
+describe('given a DismissableLayer rendered inside an iframe (#2949)', () => {
+  function mountInIframe() {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const iframeDocument = iframe.contentDocument!
+    const outside = iframeDocument.createElement('button')
+    iframeDocument.body.appendChild(outside)
+    const container = iframeDocument.createElement('div')
+    iframeDocument.body.appendChild(container)
+
+    const wrapper = mount(DismissableLayerPrimitive, {
+      attachTo: container,
+      slots: { default: () => h('button', { id: 'inside' }, 'Inside') },
+    })
+    onTestFinished(() => {
+      wrapper.unmount()
+      iframe.remove()
+    })
+    const inside = iframeDocument.getElementById('inside')!
+    return { wrapper, iframeDocument, inside, outside }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should dismiss on pointerdown outside within the iframe', async () => {
+    const { wrapper, outside } = mountInIframe()
+    await sleep(1)
+
+    await fireEvent.pointerDown(outside)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+
+  it('should not dismiss on pointerdown inside the layer', async () => {
+    const { wrapper, inside } = mountInIframe()
+    await sleep(1)
+
+    await fireEvent.pointerDown(inside)
+    await sleep(1)
+
+    expect(wrapper.emitted('pointerDownOutside')).toBeUndefined()
+    expect(wrapper.emitted('dismiss')).toBeUndefined()
+  })
+
+  it('should dismiss when focus moves outside within the iframe', async () => {
+    const { wrapper, inside, outside } = mountInIframe()
+    inside.focus()
+    await sleep(1)
+
+    outside.focus()
+    await sleep(1)
+
+    expect(wrapper.emitted('focusOutside')?.length).toBe(1)
+    expect(wrapper.emitted('dismiss')?.length).toBe(1)
+  })
+
+  it('should dismiss on Escape pressed within the iframe', async () => {
+    const { wrapper, iframeDocument } = mountInIframe()
+    await nextTick()
+
+    await fireEvent.keyDown(iframeDocument.body, { key: 'Escape' })
     await nextTick()
 
     expect(wrapper.emitted('escapeKeyDown')?.length).toBe(1)

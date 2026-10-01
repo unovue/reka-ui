@@ -6,6 +6,17 @@ export const EVENT_OPTIONS = { bubbles: false, cancelable: true }
 
 type FocusableTarget = HTMLElement | { focus: () => void }
 
+/** Like `Node.contains`, but crosses shadow boundaries by walking up through host elements. */
+export function containsComposed(container: Node, node: Node | null): boolean {
+  let current: Node | null = node
+  while (current) {
+    if (container.contains(current))
+      return true
+    current = (current.getRootNode() as ShadowRoot).host ?? null
+  }
+  return false
+}
+
 /**
  * Attempts focusing the first element in a list of candidates.
  * Stops when focus has actually moved.
@@ -55,9 +66,15 @@ export function getTabbableCandidates(container: HTMLElement) {
     },
   })
   while (walker.nextNode()) nodes.push(walker.currentNode as HTMLElement)
-  // we do not take into account the order of nodes with positive `tabIndex` as it
-  // hinders accessibility to have tab order different from visual order.
-  return nodes
+  return nodes.sort((a, b) => {
+    if (a.tabIndex === b.tabIndex)
+      return 0
+    if (a.tabIndex === 0)
+      return 1
+    if (b.tabIndex === 0)
+      return -1
+    return a.tabIndex - b.tabIndex
+  })
 }
 
 /**

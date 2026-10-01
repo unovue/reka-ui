@@ -51,6 +51,7 @@ import { createFocusScopesStack } from './stack'
 import {
   AUTOFOCUS_ON_MOUNT,
   AUTOFOCUS_ON_UNMOUNT,
+  containsComposed,
   EVENT_OPTIONS,
   focus,
   focusFirst,
@@ -91,6 +92,14 @@ watchEffect((cleanupFn) => {
   const container = currentElement.value
   if (!props.trapped)
     return
+
+  // Attach focus listeners to the scope's root node (a shadow root when
+  // teleported into one, otherwise the document). On `document`, focus events
+  // originating inside a shadow root are retargeted to the host, so
+  // `container.contains(target)` never matches and focus escapes the trap.
+  // -- related: https://github.com/unovue/reka-ui/issues/1667
+  const ownerDocument = container?.ownerDocument ?? document
+  const root = container ? (container.getRootNode() as Document | ShadowRoot) : ownerDocument
 
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
@@ -148,20 +157,48 @@ watchEffect((cleanupFn) => {
       return
     }
 
+    // Confirm focus was actually orphaned before pulling it back. `lastFocusedElement`
+    // is only tracked while the scope is not paused, so an open popper (which pauses
+    // this trap and only resumes it in a `setTimeout`) leaves it pointing at a stale
+    // element. Without this check, an element focused inside the container during that
+    // window — e.g. a view swapped in by the popper's `select` handler focusing its own
+    // input on mount — would be robbed of focus.
+    // -- related: https://github.com/unovue/reka-ui/issues/2886
+    const activeElement = getActiveElement()
+    if (activeElement && container.contains(activeElement))
+      return
+
     const isLastFocusedElementExist = container.contains(lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  // A shadow root never sees a light-DOM `focusin`: when focus escapes to an
+  // element outside the shadow tree, the event fires on the owner document, not
+  // the root. So when the scope lives in a shadow root we also listen on the
+  // document and use a composed (deep) containment check, since `event.target`
+  // is retargeted to the shadow host at the document level.
+  function handleDocumentFocusIn(event: FocusEvent) {
+    if (focusScope.paused || !container)
+      return
+    const target = event.composedPath()[0] as HTMLElement | null
+    if (!containsComposed(container, target))
+      focus(lastFocusedElementRef.value, { select: true })
+  }
+
+  root.addEventListener('focusin', handleFocusIn as EventListener)
+  root.addEventListener('focusout', handleFocusOut as EventListener)
+  if (root !== ownerDocument)
+    ownerDocument.addEventListener('focusin', handleDocumentFocusIn as EventListener)
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    root.removeEventListener('focusin', handleFocusIn as EventListener)
+    root.removeEventListener('focusout', handleFocusOut as EventListener)
+    if (root !== ownerDocument)
+      ownerDocument.removeEventListener('focusin', handleDocumentFocusIn as EventListener)
     mutationObserver.disconnect()
   })
 })

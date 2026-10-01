@@ -12,8 +12,7 @@ import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
 import { transformJSDocLinks } from './utils'
 
-// @ts-expect-error ignore
-const traverse = _traverse.default as typeof _traverse
+const traverse = ((_traverse as any).default ?? _traverse) as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const md = new MarkdownIt()

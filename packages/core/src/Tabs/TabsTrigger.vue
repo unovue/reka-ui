@@ -52,6 +52,7 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
       :data-disabled="disabled ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
       @mousedown.left="(event: MouseEvent) => {
+        if (event.defaultPrevented) return;
         // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
         // but not when the control key is pressed (avoiding MacOS right click)
         if (!disabled && event.ctrlKey === false) {
@@ -62,7 +63,9 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
           event.preventDefault();
         }
       }"
-      @keydown.enter.space="rootContext.changeModelValue(value)"
+      @keydown.enter.space="(event: KeyboardEvent) => {
+        if (!event.defaultPrevented) rootContext.changeModelValue(value);
+      }"
       @focus="() => {
         // handle 'automatic' activation if necessary
         // ie. activate tab following focus

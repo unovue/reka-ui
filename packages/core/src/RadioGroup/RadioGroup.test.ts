@@ -3,8 +3,9 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { RadioGroupItem } from '..'
+import { RadioGroupItem, RadioGroupRoot } from '..'
 import Radio from './story/_Radio.vue'
 import RadioGroup from './story/_RadioGroup.vue'
 
@@ -93,6 +94,19 @@ describe('given disabled RadioGroup', () => {
   })
 })
 
+describe('given a RadioGroupItem whose label is not found', () => {
+  it('should not fall back to the value as the accessible name', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount({
+      components: { RadioGroupItem, RadioGroupRoot },
+      template: '<RadioGroupRoot><RadioGroupItem id="r1" value="event_type" /></RadioGroupRoot>',
+    }, { attachTo: document.body })
+    await nextTick()
+
+    expect(wrapper.find('[role=radio]').attributes('aria-label')).toBeUndefined()
+  })
+})
+
 describe('given radio in a form', async () => {
   const wrapper = mount({
     props: ['handleSubmit'],
@@ -133,8 +147,8 @@ describe('given radio in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: 'true' })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: 'true' })
     })
   })
 })
