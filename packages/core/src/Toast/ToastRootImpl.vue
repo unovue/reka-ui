@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { Ref } from 'vue'
+import type { ToastObject } from './createToastManager'
 import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
@@ -39,17 +41,23 @@ export interface ToastRootImplProps extends PrimitiveProps {
    * given to `ToastProvider`.
    */
   duration?: number
+  /**
+   * A toast from `useToastManager()`. Its `open`, `duration`, `type` and `status` drive the toast,
+   * and `ToastTitle`, `ToastDescription` and `ToastAction` render its content.
+   */
+  toast?: ToastObject
 }
 
 export const [injectToastRootContext, provideToastRootContext]
-  = createContext<{ onClose: () => void }>('ToastRoot')
+  = createContext<{ onClose: () => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, useRafFn } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import { onKeyStroke, useRafFn, useResizeObserver } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, reactive, ref, shallowRef, toRef, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import ToastAnnounce from './ToastAnnounce.vue'
+import { injectToastPositionerContext } from './ToastPositioner.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection, TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
@@ -117,7 +125,37 @@ function handleClose(event?: PointerEvent) {
   emits('close')
 }
 
-const announceTextContent = computed(() => currentElement.value ? getAnnounceTextContent(currentElement.value) : null)
+const positionerContext = injectToastPositionerContext(null)
+
+// Read after the DOM updates, and again when a managed toast changes, so that an
+// updated toast (e.g. a promise going from loading to success) is announced again.
+const announceTextContent = shallowRef<string[] | null>(null)
+watch([currentElement, () => props.toast?.updateKey], ([element]) => {
+  announceTextContent.value = element ? getAnnounceTextContent(element) : null
+}, { flush: 'post', immediate: true })
+
+const stackEntry = reactive({ seq: 0, height: 0, open: props.open })
+const stack = computed(() => providerContext.getToastStack(stackEntry))
+
+function measureHeight() {
+  const element = currentElement.value
+  if (!element)
+    return
+  // Measure the natural height, even when styles collapse the toast to the frontmost height.
+  const previousHeight = element.style.height
+  element.style.height = 'auto'
+  stackEntry.height = element.offsetHeight
+  element.style.height = previousHeight
+}
+
+useResizeObserver(currentElement, measureHeight)
+watch(() => props.toast?.updateKey, measureHeight, { flush: 'post' })
+
+watch(() => props.open, (open, wasOpen) => {
+  stackEntry.open = open
+  if (open && !wasOpen)
+    providerContext.reopenToast(stackEntry)
+})
 
 if (props.type && !['foreground', 'background'].includes(props.type)) {
   const error = 'Invalid prop `type` supplied to `Toast`. Expected `foreground | background`.'
@@ -151,7 +189,8 @@ watchEffect((cleanupFn) => {
 // start timer when toast opens or duration changes.
 // we include `open` in deps because closed !== unmounted when animating
 // so it could reopen before being completely unmounted
-watch(() => [props.open, duration.value], () => {
+const restartKey = computed(() => props.toast ? providerContext.toastStore.getRestartKey(props.toast.id) : 0)
+watch([() => props.open, duration, restartKey], () => {
   // Reset the timer when the toast is rerendered with the new duration
   closeTimerRemainingTimeRef.value = duration.value
 
@@ -167,19 +206,24 @@ onKeyStroke('Escape', (event) => {
   }
 })
 
+let unregisterToast: (() => void) | undefined
 onMounted(() => {
   providerContext.onToastAdd()
+  unregisterToast = providerContext.registerToast(stackEntry)
+  measureHeight()
 })
 onUnmounted(() => {
   providerContext.onToastRemove()
+  unregisterToast?.()
 })
 
-provideToastRootContext({ onClose: handleClose })
+provideToastRootContext({ onClose: handleClose, toast: toRef(props, 'toast') })
 </script>
 
 <template>
   <ToastAnnounce
     v-if="announceTextContent"
+    :key="toast?.updateKey ?? 0"
     role="alert"
     :aria-live="type === 'foreground' ? 'assertive' : 'polite'"
   >
@@ -200,8 +244,9 @@ provideToastRootContext({ onClose: handleClose })
   </ToastAnnounce>
 
   <Teleport
-    v-if="providerContext.viewport.value"
-    :to="providerContext.viewport.value"
+    v-if="providerContext.viewport.value || positionerContext"
+    :to="providerContext.viewport.value ?? 'body'"
+    :disabled="!!positionerContext"
   >
     <CollectionItem>
       <Primitive
@@ -212,9 +257,16 @@ provideToastRootContext({ onClose: handleClose })
         :as-child="asChild"
         :data-state="open ? 'open' : 'closed'"
         :data-swipe-direction="providerContext.swipeDirection.value"
-        :style="providerContext.disableSwipe.value
-          ? undefined
-          : { userSelect: 'none', touchAction: 'none' }"
+        :data-status="toast?.status"
+        :data-expanded="providerContext.expanded.value ? '' : undefined"
+        :data-limited="stack.limited ? '' : undefined"
+        :inert="stack.limited || undefined"
+        :style="{
+          ...(providerContext.disableSwipe.value ? undefined : { userSelect: 'none', touchAction: 'none' }),
+          '--reka-toast-index': stack.index,
+          '--reka-toast-offset-y': `${stack.offsetY}px`,
+          '--reka-toast-height': stackEntry.height ? `${stackEntry.height}px` : undefined,
+        }"
         @pointerdown.left="(event: PointerEvent) => {
           if (providerContext.disableSwipe.value) return;
 

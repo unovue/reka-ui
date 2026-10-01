@@ -515,6 +515,8 @@ export const components = {
     'ToastViewport',
     'ToastTitle',
     'ToastDescription',
+    'ToastPositioner',
+    'ToastArrow',
   ] as const,
 
   toggle: [
@@ -623,6 +625,8 @@ export const utilities = {
     'useLocale',
     'withDefault',
     'createContext',
+    'createToastManager',
+    'useToastManager',
   ] as const,
 }
 

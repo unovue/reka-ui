@@ -3,17 +3,11 @@
 <llm-exclude>
 <PropsTable :data="[
   {
-    'name': 'altText',
-    'description': '<p>A short description for an alternate way to carry out the action. For screen reader users\nwho will not be able to navigate to the button easily/quickly.</p>\n',
-    'type': 'string',
-    'required': false
-  },
-  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
-    'default': '\'button\''
+    'default': '\'svg\''
   },
   {
     'name': 'asChild',
@@ -22,11 +16,18 @@
     'required': false
   },
   {
-    'name': 'closeOnClick',
-    'description': '<p>Whether the action should close the toast when clicked.</p>\n',
-    'type': 'boolean',
+    'name': 'height',
+    'description': '<p>The height of the arrow in pixels.</p>\n',
+    'type': 'number',
     'required': false,
-    'default': 'true'
+    'default': '5'
+  },
+  {
+    'name': 'width',
+    'description': '<p>The width of the arrow in pixels.</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '10'
   }
 ]" />
 </llm-exclude>
@@ -37,9 +38,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `altText` | A short description for an alternate way to carry out the action. For screen reader users who will not be able to navigate to the button easily/quickly. | `string` | No | - |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"svg"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `closeOnClick` | Whether the action should close the toast when clicked. | `boolean` | No | `true` |
+| `height` | The height of the arrow in pixels. | `number` | No | `5` |
+| `width` | The width of the arrow in pixels. | `number` | No | `10` |
 
 </llm-only>
