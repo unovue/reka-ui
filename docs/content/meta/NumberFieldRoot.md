@@ -107,6 +107,12 @@
     'required': false
   },
   {
+    'name': 'startingValue',
+    'description': '<p>The value the first increment or decrement sets when the field is empty. It is clamped to <code>min</code>/<code>max</code> but not snapped to <code>step</code>. Defaults to <code>min</code>, or <code>0</code> when <code>min</code> is not set.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'step',
     'description': '<p>The amount that the input value changes with each increment or decrement &quot;tick&quot;.</p>\n',
     'type': 'number',
@@ -172,6 +178,7 @@
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `readonly` | When true, the Number Field is read-only. | `boolean` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `startingValue` | The value the first increment or decrement sets when the field is empty. It is clamped to min/max but not snapped to step. Defaults to min, or 0 when min is not set. | `number` | No | - |
 | `step` | The amount that the input value changes with each increment or decrement "tick". | `number` | No | `1` |
 | `stepSnapping` | When false, prevents the value from snapping to the nearest increment of the step value | `boolean` | No | `true` |
 
