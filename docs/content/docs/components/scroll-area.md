@@ -36,7 +36,7 @@ Import all parts and piece them together.
 
 ```vue
 <script setup>
-import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui'
 </script>
 
 <template>
@@ -147,6 +147,10 @@ const items = Array.from({ length: 10_000 }, (_, index) => `Item ${index + 1}`)
   </ScrollAreaRoot>
 </template>
 ```
+
+To virtualize along the horizontal axis, set the `horizontal` prop and render `<ScrollAreaScrollbar orientation="horizontal">`. The viewport only scrolls on an axis that has a scrollbar.
+
+The underlying [TanStack Virtual](https://tanstack.com/virtual/latest/docs/api/virtualizer) instance is available as the `virtualizer` slot prop, and on the component's template ref, for example to call `virtualizerRef.value?.virtualizer.scrollToIndex(500)`.
 
 ### Custom Scroll
 Use the exposed `viewport` to modify / or set the scroll position outside default methods
