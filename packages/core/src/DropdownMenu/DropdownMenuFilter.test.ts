@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import DropdownMenuWithFilter from './story/_DropdownMenuWithFilter.vue'
 
@@ -16,6 +16,10 @@ describe('given DropdownMenu with Filter', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     wrapper = mount(DropdownMenuWithFilter, { attachTo: document.body })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
   })
 
   it('should render trigger button', () => {
@@ -138,6 +142,134 @@ describe('given DropdownMenu with Filter', () => {
       const filterInput = document.querySelector('[role="searchbox"]')
       expect(filterInput?.hasAttribute('disabled')).toBe(true)
       expect(filterInput?.getAttribute('data-disabled')).toBe('')
+    })
+  })
+
+  describe('handle IME composition', () => {
+    beforeEach(async () => {
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+    })
+
+    it('should not update search during IME composition', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      expect(filterInput).toBeTruthy()
+
+      const baseline = document.querySelectorAll('[role="menuitem"]').length
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.value = 'xiang'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      const items = document.querySelectorAll('[role="menuitem"]')
+      expect(items.length).toBe(baseline)
+    })
+
+    it('should update search after composition ends', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      expect(filterInput).toBeTruthy()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.value = 'zzzzz'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: 'zzzzz', bubbles: true }))
+      await nextTick()
+      await nextTick()
+
+      const items = document.querySelectorAll('[role="menuitem"]')
+      expect(items.length).toBe(0)
+    })
+
+    it('should not update search during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      const baseline = document.querySelectorAll('[role="menuitem"]').length
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      filterInput.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+      filterInput.value = 'xiang'
+      filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+
+      expect(wrapper.vm.filterText).toBe('')
+      expect(document.querySelectorAll('[role="menuitem"]').length).toBe(baseline)
+    })
+
+    describe('on Android soft keyboard', () => {
+      beforeEach(() => {
+        Object.defineProperty(window.navigator, 'userAgent', {
+          value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+          configurable: true,
+        })
+      })
+
+      afterEach(() => {
+        delete (window.navigator as { userAgent?: string }).userAgent
+      })
+
+      it('should update search live during plain-text (autocorrect) composition', async () => {
+        const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+
+        filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+        filterInput.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'New', bubbles: true }))
+        filterInput.value = 'New'
+        filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+        await nextTick()
+
+        expect(wrapper.vm.filterText).toBe('New')
+        const items = document.querySelectorAll('[role="menuitem"]')
+        expect(items.length).toBe(2)
+      })
+
+      it('should not update search during CJK IME composition until compositionend', async () => {
+        const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+        const baseline = document.querySelectorAll('[role="menuitem"]').length
+
+        filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+        filterInput.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+        filterInput.value = 'かんじ'
+        filterInput.dispatchEvent(new Event('input', { bubbles: true }))
+        await nextTick()
+
+        expect(wrapper.vm.filterText).toBe('')
+        expect(document.querySelectorAll('[role="menuitem"]').length).toBe(baseline)
+
+        filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: 'かんじ', bubbles: true }))
+        await nextTick()
+        await nextTick()
+
+        expect(wrapper.vm.filterText).toBe('かんじ')
+        expect(document.querySelectorAll('[role="menuitem"]').length).toBe(0)
+      })
+    })
+
+    it('should not navigate items during IME composition (arrow keys are IME candidate navigation)', async () => {
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      filterInput.focus()
+
+      filterInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+      await nextTick()
+
+      // Arrow keys mid-composition navigate IME candidates: the menu must not
+      // highlight an item nor steal focus away from the filter input.
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+      Object.defineProperty(event, 'isComposing', { value: true })
+      filterInput.dispatchEvent(event)
+      await nextTick()
+
+      expect(document.querySelector('[role="menuitem"][data-highlighted]')).toBeNull()
+      expect(document.activeElement).toBe(filterInput)
+
+      // Once composition ends, navigation works again
+      filterInput.dispatchEvent(new CompositionEvent('compositionend', { data: '', bubbles: true }))
+      await nextTick()
+      await nextTick()
+      filterInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await nextTick()
+
+      expect(document.querySelector('[role="menuitem"][data-highlighted]')).not.toBeNull()
     })
   })
 })

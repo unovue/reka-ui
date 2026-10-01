@@ -1,0 +1,42 @@
+.RatingRoot {
+  display: flex;
+  gap: 4px;
+}
+
+.RatingItem {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: transform 150ms ease-out;
+}
+
+.RatingItem:hover {
+  transform: scale(1.1);
+}
+
+.RatingItemIndicator {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 4px;
+  color: #e7e5e4;
+  transition: color 150ms;
+  width: var(--reka-rating-item-step-width);
+  opacity: var(--reka-rating-item-step-opacity);
+  z-index: var(--reka-rating-item-step-z-index);
+}
+
+.RatingItemIndicator[data-state="active"] {
+  color: hsl(142.1 70.6% 45.3%);
+  filter: drop-shadow(0 1px 4px hsl(142.1 70.6% 45.3% / 0.5));
+}
+
+.RatingItemIndicator:focus-visible {
+  outline: 2px solid hsl(142.1 70.6% 45.3%);
+  outline-offset: 2px;
+}
+
+.RatingStar {
+  width: 32px;
+  height: 32px;
+}

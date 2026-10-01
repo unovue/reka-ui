@@ -33,7 +33,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem } = useCollection()
 
 const isFocused = ref(false)
-const isHighlighted = computed(() => isFocused.value || (contentContext.highlightedElement.value === currentElement.value))
+const isHighlighted = computed(() => isFocused.value || (currentElement.value != null && contentContext.highlightedElement.value === currentElement.value))
 
 async function handlePointerMove(event: PointerEvent) {
   if (event.defaultPrevented || !isMouseEvent(event))
@@ -88,10 +88,11 @@ async function handlePointerLeave(event: PointerEvent) {
       @pointerleave="handlePointerLeave"
       @focus="
         async (event: FocusEvent) => {
+          const item = event.currentTarget as HTMLElement;
           await nextTick();
           if (event.defaultPrevented || disabled) return;
           isFocused = true;
-          contentContext.highlightedElement.value = event.currentTarget as HTMLElement
+          contentContext.highlightedElement.value = item
         }
       "
       @blur="

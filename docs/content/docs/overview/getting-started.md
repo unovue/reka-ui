@@ -92,7 +92,7 @@ Here's a complete demo.
 
 ## Summary
 
-The steps above outline briefly what's involved in using a Reka UI in your application.
+The steps above outline briefly what's involved in using Reka UI in your application.
 
 These components are low-level enough to give you control over how you want to wrap them. You're free to introduce your own high-level API to better suit the needs of your team and product.
 

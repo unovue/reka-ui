@@ -124,6 +124,13 @@
     'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
     'type': 'DateStep',
     'required': false
+  },
+  {
+    'name': 'stepSnapping',
+    'description': '<p>Whether to enforce snapping the time value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 
@@ -160,11 +167,6 @@
 
 <MethodsTable :data="[
   {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  },
-  {
     'name': 'setFocusedElement',
     'description': '<p>Helper to set the focused element inside the DateField</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
@@ -198,6 +200,7 @@
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | `false` |
 
 **Events**
 
@@ -218,7 +221,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` |
 | `setFocusedElement` | Helper to set the focused element inside the DateField | `(el: HTMLElement) => void` |
 
 </llm-only>

@@ -97,6 +97,20 @@ describe('month picker', async () => {
     expect(getByTestId('heading')).toHaveTextContent('1980')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { picker, rerender } = setup({ pickerProps: { modelValue: null } })
+
+    expect(getSelectedMonths(picker)).toHaveLength(0)
+
+    await rerender({
+      pickerProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(getSelectedMonth(picker)).toHaveTextContent('Jan')
+  })
+
   it('navigates to next year using next button', async () => {
     const { getByTestId, user } = setup({ pickerProps: { modelValue: calendarDate } })
 
@@ -108,6 +122,30 @@ describe('month picker', async () => {
     expect(heading).toHaveTextContent('1981')
     await user.click(nextBtn)
     expect(heading).toHaveTextContent('1982')
+  })
+
+  it('keeps the visible year when modelValue is a new object for the same month', async () => {
+    const selected = new CalendarDate(1980, 1, 20)
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: selected } })
+    const heading = getByTestId('heading')
+
+    await user.click(getByTestId('next-button'))
+    expect(heading).toHaveTextContent('1981')
+
+    await rerender({ pickerProps: { modelValue: selected.copy() } })
+
+    expect(heading).toHaveTextContent('1981')
+  })
+
+  it('moves the visible year when the selected month changes', async () => {
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: new CalendarDate(1980, 1, 20) } })
+
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+
+    await rerender({ pickerProps: { modelValue: new CalendarDate(1975, 6, 1) } })
+
+    expect(getByTestId('heading')).toHaveTextContent('1975')
   })
 
   it('navigates to prev year using prev button', async () => {

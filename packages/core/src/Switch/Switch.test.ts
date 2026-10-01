@@ -63,6 +63,14 @@ describe('given switch in a form', async () => {
     expect(wrapper.find('[type="checkbox"]').exists()).toBe(true)
   })
 
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('should not nest the hidden input inside the interactive control', () => {
+    expect(wrapper.find('button input').exists()).toBe(false)
+  })
+
   describe('after clicking submit button', () => {
     beforeEach(async () => {
       await wrapper.find('button').trigger('click')
@@ -82,8 +90,8 @@ describe('given switch in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ })
     })
   })
 })

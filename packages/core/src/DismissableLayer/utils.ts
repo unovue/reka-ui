@@ -13,9 +13,29 @@ export const CONTEXT_UPDATE = 'dismissableLayer.update'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
 
-export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
-  if (!(targetElement instanceof Element))
+function isElement(node: unknown): node is Element {
+  if (typeof node !== 'object' || node === null)
     return false
+  // Compare against the node's own window too, so elements from another
+  // realm (e.g. a layer rendered inside an iframe) are recognized
+  const ownerWindow = (node as Node).ownerDocument?.defaultView
+  return (typeof Element !== 'undefined' && node instanceof Element)
+    || (!!ownerWindow && node instanceof ownerWindow.Element)
+}
+
+export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLElement) {
+  if (!isElement(targetElement))
+    return false
+
+  // Anything inside the layer's own root element is inside the layer. The root
+  // can differ from the `[data-dismissable-layer]` element when the layer is
+  // rendered `asChild` into a component whose root is not the element that
+  // receives its attrs (e.g. `PopperContent`'s wrapper `div`). `FocusScope`
+  // resolves the same root as its container and may focus it as a fallback
+  // when the content has no tabbable children; that focus must not read as
+  // focus-outside and dismiss the layer it belongs to (#2803).
+  if (layerElement.contains(targetElement))
+    return true
 
   const targetLayer = targetElement.closest(
     '[data-dismissable-layer]',
@@ -49,15 +69,16 @@ export function usePointerDownOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
-
   const isPointerInsideDOMTree = ref(false)
   const handleClickRef = ref(() => {})
 
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
+    // Resolved inside the effect so it tracks `element`: the layer is usually
+    // not mounted yet when this composable runs, and listening on the global
+    // `document` would miss events from a layer rendered inside an iframe.
+    const ownerDocument = element?.value?.ownerDocument ?? globalThis.document
     const handlePointerDown = async (event: PointerEvent) => {
       const target = event.target as HTMLElement | undefined
 
@@ -65,6 +86,11 @@ export function usePointerDownOutside(
         return
 
       if (isLayerExist(element.value, target)) {
+        // A touch `pointerdown` outside arms a one-shot `click` listener that
+        // never fires when the tap becomes a scroll/drag. Drop it here so the
+        // next tap inside a layer cannot trigger the stale dismissal (mirrors
+        // Radix's inside-tree branch, radix-ui/primitives#2171).
+        ownerDocument.removeEventListener('click', handleClickRef.value)
         isPointerInsideDOMTree.value = false
         return
       }
@@ -152,13 +178,12 @@ export function useFocusOutside(
   element?: Ref<HTMLElement | undefined>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
-  const ownerDocument: Document
-    = element?.value?.ownerDocument ?? globalThis?.document
-
   const isFocusInsideDOMTree = ref(false)
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
+    // See `usePointerDownOutside`: resolved inside the effect to track `element`.
+    const ownerDocument = element?.value?.ownerDocument ?? globalThis.document
     const handleFocus = async (event: FocusEvent) => {
       if (!element?.value)
         return

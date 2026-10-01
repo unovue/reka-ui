@@ -7,3 +7,7 @@ extend-ignore-re = [
 [default.extend-words]
 # Don't correct the german locale "January"
 Januar = "Januar"
+# "ba" is a typeahead search fixture (typing to match "banana") in useTypeahead.test.ts
+ba = "ba"
+# "CAF" is a case-insensitive prefix fixture (matching "Café") in useFilter.test.ts
+caf = "caf"

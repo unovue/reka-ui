@@ -14,29 +14,29 @@ describe('given default Toggle', () => {
   })
 
   it('should pass axe accessibility tests', async () => {
-    expect(await axe(wrapper.element)).toHaveNoViolations()
+    expect(await axe(wrapper.get('button').element)).toHaveNoViolations()
   })
 
   it('should not be toggled yet', () => {
-    expect(wrapper.attributes('data-state')).toBe('off')
+    expect(wrapper.get('button').attributes('data-state')).toBe('off')
   })
 
   describe('after toggling', () => {
-    beforeEach(() => {
-      wrapper.trigger('click')
+    beforeEach(async () => {
+      await wrapper.get('button').trigger('click')
     })
 
     it('should be toggled on', () => {
-      expect(wrapper.attributes('data-state')).toBe('on')
+      expect(wrapper.get('button').attributes('data-state')).toBe('on')
     })
 
     describe('after toggling again', () => {
-      beforeEach(() => {
-        wrapper.trigger('click')
+      beforeEach(async () => {
+        await wrapper.get('button').trigger('click')
       })
 
       it('should be toggled off', () => {
-        expect(wrapper.attributes('data-state')).toBe('off')
+        expect(wrapper.get('button').attributes('data-state')).toBe('off')
       })
     })
   })
@@ -53,25 +53,44 @@ describe('given disabled Toggle', () => {
   })
 
   it('should pass axe accessibility tests', async () => {
-    expect(await axe(wrapper.element)).toHaveNoViolations()
+    expect(await axe(wrapper.get('button').element)).toHaveNoViolations()
   })
 
   it('should not be toggled yet', () => {
-    expect(wrapper.attributes('data-state')).toBe('off')
+    expect(wrapper.get('button').attributes('data-state')).toBe('off')
   })
 
   describe('try toggling', () => {
-    beforeEach(() => {
-      wrapper.trigger('click')
+    beforeEach(async () => {
+      await wrapper.get('button').trigger('click')
     })
 
     it('should be toggled off', () => {
-      expect(wrapper.attributes('data-state')).toBe('off')
+      expect(wrapper.get('button').attributes('data-state')).toBe('off')
     })
 
     it('should render disable attributes', () => {
-      expect(wrapper.attributes('data-disabled')).toBe('')
-      expect(wrapper.attributes('disabled')).toBe('')
+      expect(wrapper.get('button').attributes('data-disabled')).toBe('')
+      expect(wrapper.get('button').attributes('disabled')).toBe('')
     })
+  })
+})
+
+describe('given Toggle in a form', () => {
+  const wrapper = mount({
+    components: { Toggle },
+    template: '<form><Toggle name="test" aria-label="Toggle italic" /></form>',
+  })
+
+  it('should have hidden input field', () => {
+    expect(wrapper.find('[type="checkbox"]').exists()).toBe(true)
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('should not nest the hidden input inside the interactive control', () => {
+    expect(wrapper.find('button input').exists()).toBe(false)
   })
 })

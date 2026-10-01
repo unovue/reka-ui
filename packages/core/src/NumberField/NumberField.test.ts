@@ -2,8 +2,9 @@ import type { NumberFieldRootProps } from './NumberFieldRoot.vue'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
 import NumberField from './story/_NumberField.vue'
@@ -21,6 +22,28 @@ function setup(props?: NumberFieldRootProps) {
 }
 
 const kbd = useKbd()
+
+async function dispatchPointerEvent(
+  target: EventTarget,
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
+  init: MouseEventInit & { pointerId?: number, pointerType?: string } = {},
+) {
+  await nextTick()
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    ...init,
+  })
+  Object.defineProperties(event, {
+    pointerId: { value: init.pointerId ?? 1 },
+    pointerType: { value: init.pointerType ?? 'touch' },
+  })
+  target.dispatchEvent(event)
+  await nextTick()
+  return event
+}
+
 describe('numberField', () => {
   beforeEach(() => {
     // @ts-expect-error aXe throwing error complaining getComputedStyle
@@ -28,6 +51,10 @@ describe('numberField', () => {
       display: '',
     })
     document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -105,6 +132,119 @@ describe('numberField', () => {
     expect(input.value).toBe('40')
     await userEvent.click(decrement)
     expect(input.value).toBe('37')
+  })
+
+  describe('with pointer hold controls', () => {
+    it('should preserve immediate mouse activation', async () => {
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      const pointerDown = await dispatchPointerEvent(increment, 'pointerdown', { pointerType: 'mouse' })
+      expect(pointerDown.defaultPrevented).toBe(true)
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointerup', { pointerType: 'mouse' })
+      expect(input.value).toBe('1')
+    })
+
+    it('should activate a touch tap on release', async () => {
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      const pointerDown = await dispatchPointerEvent(increment, 'pointerdown')
+      expect(pointerDown.defaultPrevented).toBe(true)
+      expect(input.value).toBe('0')
+
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('1')
+    })
+
+    it('should ignore a touch press while disabled', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0, disabled: true })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      expect(increment).not.toHaveAttribute('data-pressed')
+
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('0')
+    })
+
+    it('should cancel a touch press when movement exceeds the tolerance', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 21, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 21, clientY: 10 })
+
+      expect(input.value).toBe('0')
+    })
+
+    it('should repeat a stationary touch press after the hold delay', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      await vi.advanceTimersByTimeAsync(399)
+      expect(input.value).toBe('0')
+
+      await vi.advanceTimersByTimeAsync(1)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup')
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
+    it('should stop an active touch hold when movement exceeds the tolerance', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 21, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(120)
+      expect(input.value).toBe('1')
+    })
+
+    it('should tolerate minor movement after a touch hold starts', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
+    it('should cancel a touch press on pointercancel', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      await dispatchPointerEvent(window, 'pointercancel')
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(input.value).toBe('0')
+    })
   })
 
   it('should increase and decrease based on keyboard navigation on input', async () => {
@@ -253,6 +393,26 @@ describe('numberField', () => {
       expect(input.value).toBe('5 inches')
     })
 
+    it('should allow backspacing through the unit suffix', async () => {
+      const { input, user } = setup({
+        defaultValue: 13,
+        formatOptions: {
+          style: 'unit',
+          unit: 'minute',
+          unitDisplay: 'short',
+        },
+      })
+      expect(input.value).toBe('13 min')
+
+      input.focus()
+      await user.keyboard('{Backspace}')
+      expect(input.value).toBe('13 mi')
+
+      await user.keyboard('{Backspace}')
+      await user.keyboard('{Backspace}')
+      expect(input.value).toBe('13 ')
+    })
+
     it('should change format based on reactive options', async () => {
       const { input, rerender } = setup({
         defaultValue: 5,
@@ -315,6 +475,171 @@ describe('numberField', () => {
       expect(input.value).toBe('20')
       await fireEvent.keyDown(input, { key: kbd.ARROW_UP }) // 21 (max not snapped to step)
       expect(input.value).toBe('21')
+    })
+
+    it('should snap an off-grid value to the next grid line when incrementing', async () => {
+      // Seed the off-grid value via defaultValue: typing it would snap on commit.
+      const { input, increment } = setup({ step: 1, stepSnapping: true, defaultValue: 18.98 })
+
+      await userEvent.click(increment) // snap up to the nearest grid line, not 18.98 + 1 -> 20
+      expect(input.value).toBe('19')
+    })
+
+    it('should snap an off-grid value to the previous grid line when decrementing', async () => {
+      const { input, decrement } = setup({ step: 1, stepSnapping: true, defaultValue: 18.11 })
+
+      await userEvent.click(decrement) // snap down to the nearest grid line, not 18.11 - 1 -> 17
+      expect(input.value).toBe('18')
+    })
+
+    it('should add a full step when the value is already on the grid', async () => {
+      const { input, increment, decrement } = setup({ step: 1, stepSnapping: true, defaultValue: 5 })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('6')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('5')
+    })
+  })
+
+  describe('given step alignment near min/max boundaries', () => {
+    it('should keep increment enabled when an off-grid value can still align below max', async () => {
+      const { input, increment } = setup({ max: 10, step: 3, stepSnapping: true, defaultValue: 8 })
+
+      expect(increment).not.toHaveAttribute('disabled')
+      await userEvent.click(increment) // aligns to 9, not 8 + 3
+      expect(input.value).toBe('9')
+    })
+
+    it('should keep decrement enabled when an off-grid value can still align above min', async () => {
+      const { input, decrement } = setup({ min: 2, step: 3, stepSnapping: true, defaultValue: 4 })
+
+      expect(decrement).not.toHaveAttribute('disabled')
+      await userEvent.click(decrement) // aligns to 2, not 4 - 3
+      expect(input.value).toBe('2')
+    })
+
+    it('should disable increment once the next aligned value cannot exceed max', async () => {
+      const { increment } = setup({ max: 10, step: 3, stepSnapping: true, defaultValue: 9 })
+
+      expect(increment).toHaveAttribute('disabled')
+    })
+
+    it('should disable decrement once the next aligned value cannot go below min', async () => {
+      const { decrement } = setup({ min: 2, step: 3, stepSnapping: true, defaultValue: 2 })
+
+      expect(decrement).toHaveAttribute('disabled')
+    })
+
+    it('should clamp the empty/NaN fallback to the range', async () => {
+      const { input, increment } = setup({ max: -5 })
+
+      // Empty input: the bare fallback would be 0, which is above max; it must be clamped.
+      await userEvent.click(increment)
+      expect(input.value).toBe('-5')
+    })
+  })
+
+  describe('given allowInvalid prop', async () => {
+    it('should keep a typed value above max without clamping', async () => {
+      const { input } = setup({ max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('50')
+    })
+
+    it('should keep a typed value below min without clamping', async () => {
+      const { input } = setup({ min: 5, allowInvalid: true })
+
+      input.value = '1'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('1')
+    })
+
+    it('should keep an off-grid typed value without snapping', async () => {
+      const { input } = setup({ step: 1, stepSnapping: true, allowInvalid: true })
+
+      input.value = '2.5'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('2.5')
+    })
+
+    it('should still clamp and snap a typed value when allowInvalid is false', async () => {
+      const { input } = setup({ max: 10 })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('10')
+    })
+
+    it('should still clamp step interactions even when allowInvalid is true', async () => {
+      const { input, decrement } = setup({ max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('50')
+      await userEvent.click(decrement) // stepping clamps back into range
+      expect(input.value).toBe('10')
+    })
+
+    it('should not step against the requested direction when the value is out of range', async () => {
+      const { input } = setup({ min: 0, max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+      expect(input.value).toBe('50')
+      input.focus()
+      await fireEvent.wheel(input, { deltaY: 10 })
+      expect(input.value).toBe('50')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+      expect(input.value).toBe('10')
+
+      input.value = '-5'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+      expect(input.value).toBe('-5')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+      expect(input.value).toBe('0')
+    })
+
+    // The tests above assign `input.value` directly, which bypasses the `beforeinput` guard.
+    // These type key by key so the guard is actually exercised.
+    describe('when typing key by key', () => {
+      it('should allow typing a negative value below a non-negative min', async () => {
+        const { user, input } = setup({ min: 0, allowInvalid: true })
+
+        await user.type(input, '-5')
+        expect(input.value).toBe('-5')
+
+        await user.tab()
+        expect(input.value).toBe('-5')
+      })
+
+      it('should allow typing a value above max', async () => {
+        const { user, input } = setup({ max: 10, allowInvalid: true })
+
+        await user.type(input, '50')
+        expect(input.value).toBe('50')
+
+        await user.tab()
+        expect(input.value).toBe('50')
+      })
+
+      it('should still reject non-numeric characters', async () => {
+        const { user, input } = setup({ allowInvalid: true })
+
+        await user.type(input, '1a2')
+        expect(input.value).toBe('12')
+      })
+
+      it('should block the minus sign when allowInvalid is false and min is non-negative', async () => {
+        const { user, input } = setup({ min: 0 })
+
+        await user.type(input, '-5')
+        expect(input.value).toBe('5')
+      })
     })
   })
 
@@ -406,8 +731,50 @@ describe('given checkbox in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: '6' })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: '6' })
     })
+  })
+})
+
+describe('handle IME composition', () => {
+  it('should not block beforeinput during IME composition', () => {
+    const { input } = setup()
+    input.focus()
+
+    const event = new InputEvent('beforeinput', {
+      data: 'あ',
+      cancelable: true,
+    })
+    Object.defineProperty(event, 'isComposing', { value: true })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should block invalid beforeinput when NOT composing', () => {
+    const { input } = setup()
+    input.focus()
+
+    const event = new InputEvent('beforeinput', {
+      data: 'abc',
+      cancelable: true,
+    })
+    Object.defineProperty(event, 'isComposing', { value: false })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('should not step the value during composition (arrow keys are IME candidate navigation)', async () => {
+    const { input } = setup({ defaultValue: 0, min: 0, max: 10 })
+
+    // Arrow keys mid-composition navigate IME candidates, they must not step the value
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP, isComposing: true })
+    expect(input.value).toBe('0')
+    await fireEvent.keyDown(input, { key: kbd.END, isComposing: true })
+    expect(input.value).toBe('0')
+
+    // Once composition ends, stepping works again
+    await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+    expect(input.value).toBe('1')
   })
 })

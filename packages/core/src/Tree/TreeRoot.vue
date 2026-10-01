@@ -26,10 +26,12 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   dir?: Direction
   /** When `true`, prevents the user from interacting with tree  */
   disabled?: boolean
-  /** When `true`, selecting parent will select the descendants. */
+  /** When `true`, selecting parent will select the descendants. Requires `multiple` to be `true`. */
   propagateSelect?: boolean
-  /** When `true`, selecting children will update the parent state. */
+  /** When `true`, selecting children will update the parent state. Requires `multiple` to be `true`. */
   bubbleSelect?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = {
@@ -52,6 +54,7 @@ interface TreeRootContext<T = Record<string, any>> {
   dir: Ref<Direction>
   propagateSelect: Ref<boolean>
   bubbleSelect: Ref<boolean>
+  loop: Ref<boolean>
   isVirtual: Ref<boolean>
   virtualKeydownHook: EventHook<KeyboardEvent>
 
@@ -100,7 +103,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props)
+const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect, loop } = toRefs(props)
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
@@ -167,7 +170,28 @@ const expandedItems = computed(() => {
   return flattenItems(items ?? [])
 })
 
+/**
+ * A form control rendered inside a tree item — an inline rename, a per-row
+ * filter or picker — owns its own keys. Without this, typing into it drives
+ * tree typeahead and selection, moving focus to another row mid-edit. `select`
+ * counts too: it consumes character keys for its own option typeahead and
+ * Shift+Arrow to extend a multiple selection.
+ *
+ * Same idea as the guard in `MenuContentImpl`, widened past `input`/`textarea`.
+ */
+const KEY_OWNING_TAGS = ['input', 'textarea', 'select']
+
+function isKeyDownInFormField(event: KeyboardEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target)
+    return false
+  return KEY_OWNING_TAGS.includes(target.tagName.toLowerCase()) || target.isContentEditable
+}
+
 function handleKeydown(event: KeyboardEvent) {
+  if (isKeyDownInFormField(event))
+    return
+
   if (isVirtual.value) {
     virtualKeydownHook.trigger(event)
   }
@@ -178,7 +202,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function handleKeydownNavigation(event: KeyboardEvent) {
-  if (isVirtual.value)
+  if (isVirtual.value || isKeyDownInFormField(event))
     return
 
   const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
@@ -265,6 +289,7 @@ provideTreeRootContext({
   dir,
   propagateSelect,
   bubbleSelect,
+  loop,
 
   isVirtual,
   virtualKeydownHook,
@@ -278,6 +303,7 @@ provideTreeRootContext({
     as-child
     orientation="vertical"
     :dir="dir"
+    :loop="loop && !isVirtual"
   >
     <Primitive
       role="tree"

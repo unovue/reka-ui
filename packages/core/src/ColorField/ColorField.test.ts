@@ -338,4 +338,43 @@ describe('keyboard interactions', () => {
     await input.trigger('keydown', { key: 'ArrowUp' })
     expect(input.element.value).toBe('0')
   })
+
+  it('should not block beforeinput during IME composition', async () => {
+    const wrapper = mount(ColorField, {
+      props: {
+        defaultValue: '#ff0000',
+        channel: 'hue',
+        colorSpace: 'hsl',
+      },
+    })
+    const input = wrapper.find('input')
+    const event = new InputEvent('beforeinput', {
+      data: 'あ',
+      cancelable: true,
+      // @ts-expect-error InputEvent doesn't expose isComposing in constructor but it's set on the event
+    })
+    Object.defineProperty(event, 'isComposing', { value: true })
+    input.element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('should not step the value during composition (arrow keys are IME candidate navigation)', async () => {
+    const wrapper = mount(ColorField, {
+      props: {
+        defaultValue: '#ff0000',
+        channel: 'hue',
+        colorSpace: 'hsl',
+      },
+    })
+    const input = wrapper.find('input')
+    expect(input.element.value).toBe('0')
+
+    // Arrow keys mid-composition navigate IME candidates, they must not step the value
+    await input.trigger('keydown', { key: 'ArrowUp', isComposing: true })
+    expect(input.element.value).toBe('0')
+
+    // Once composition ends, stepping works again
+    await input.trigger('keydown', { key: 'ArrowUp' })
+    expect(input.element.value).toBe('1')
+  })
 })

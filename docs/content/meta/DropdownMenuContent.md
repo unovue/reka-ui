@@ -88,6 +88,12 @@
     'required': false
   },
   {
+    'name': 'memoDependencies',
+    'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
+    'type': 'unknown[]',
+    'required': false
+  },
+  {
     'name': 'positionStrategy',
     'description': '<p>The type of CSS position property to use.</p>\n',
     'type': '\'fixed\' | \'absolute\'',
@@ -159,6 +165,11 @@
     'type': '[event: PointerDownOutsideEvent | FocusOutsideEvent]'
   },
   {
+    'name': 'openAutoFocus',
+    'description': '<p>Event handler called when auto-focusing on open.\nCan be prevented.</p>\n',
+    'type': '[event: Event]'
+  },
+  {
     'name': 'pointerDownOutside',
     'description': '<p>Event handler called when a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
     'type': '[event: PointerDownOutsideEvent]'
@@ -186,6 +197,7 @@
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |
 | `reference` | The custom element or virtual element that will be set as the reference to position the floating element. If provided, it will replace the default anchor element. | `ReferenceElement` | No | - |
@@ -203,6 +215,7 @@
 | `escapeKeyDown` | Event handler called when the escape key is down. Can be prevented. | `[event: KeyboardEvent]` |
 | `focusOutside` | Event handler called when the focus moves outside of the DismissableLayer. Can be prevented. | `[event: FocusOutsideEvent]` |
 | `interactOutside` | Event handler called when an interaction happens outside the DismissableLayer. Specifically, when a pointerdown event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
+| `openAutoFocus` | Event handler called when auto-focusing on open. Can be prevented. | `[event: Event]` |
 | `pointerDownOutside` | Event handler called when a pointerdown event happens outside of the DismissableLayer. Can be prevented. | `[event: PointerDownOutsideEvent]` |
 
 </llm-only>

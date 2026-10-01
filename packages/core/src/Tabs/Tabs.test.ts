@@ -1,9 +1,68 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 import Tabs from './story/_Tabs.vue'
+
+const TabsHydrationFixture = defineComponent({
+  setup() {
+    let count = 0
+    const useId = () => `nuxt-${++count}`
+
+    return () =>
+      h(ConfigProvider, { useId }, () =>
+        h(TabsRoot, { defaultValue: 'account' }, () => [
+          h(TabsList, () => [
+            h(TabsTrigger, { value: 'account' }, () => 'Account'),
+            h(TabsTrigger, { value: 'password' }, () => 'Password'),
+          ]),
+          h(TabsContent, { value: 'account' }, () => 'Account content'),
+          h(TabsContent, { value: 'password' }, () => 'Password content'),
+        ]))
+  },
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('ssr hydration', () => {
+  it('uses ConfigProvider ids when Vue app id prefixes differ', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Tabs derives trigger/content IDs from one base ID, so this catches the
+    // shared source-order bug for components that build related IDs.
+    const serverApp = createSSRApp(TabsHydrationFixture)
+    serverApp.config.idPrefix = 'v-1'
+
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(serverApp)
+    document.body.innerHTML = ''
+    document.body.append(container)
+
+    expect(container.innerHTML).toContain('id="reka-tabs-nuxt-1-trigger-account"')
+    expect(container.innerHTML).toContain('id="reka-tabs-nuxt-1-content-account"')
+    const triggerId = container.querySelector('[role="tab"]')?.id
+    const contentId = container.querySelector('[role="tabpanel"]')?.id
+
+    const clientApp = createSSRApp(TabsHydrationFixture)
+    clientApp.config.idPrefix = 'v-0'
+    clientApp.mount(container)
+    await nextTick()
+
+    expect(container.querySelector('[role="tab"]')?.id).toBe(triggerId)
+    expect(container.querySelector('[role="tabpanel"]')?.id).toBe(contentId)
+
+    const warnings = warn.mock.calls.flat().join('\n')
+    expect(warnings).not.toContain('Hydration attribute mismatch')
+    expect(error.mock.calls.flat().join('\n')).not.toContain('Hydration completed but contains mismatches')
+  })
+})
 
 describe('given default Tabs', () => {
   let wrapper: VueWrapper<InstanceType<typeof Tabs>>
@@ -79,5 +138,49 @@ describe('given Tabs without TabsContent', () => {
     const triggers = wrapper.findAll('[role="tab"]')
     expect(triggers[0].attributes('aria-controls')).toBeDefined()
     expect(triggers[1].attributes('aria-controls')).toBeUndefined()
+  })
+})
+
+describe('given TabsTrigger with consumer event listeners', () => {
+  function mountTabs(triggerListeners: Record<string, (event: Event) => void> = {}) {
+    document.body.innerHTML = ''
+    const value = ref('one')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, {
+        'modelValue': value.value,
+        'onUpdate:modelValue': (next: string) => { value.value = next },
+        'activationMode': 'manual',
+      }, () => [
+        h(TabsList, () => [
+          h(TabsTrigger, { value: 'one' }, () => 'One'),
+          h(TabsTrigger, { value: 'two', ...triggerListeners }, () => 'Two'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    return { value, trigger: wrapper.findAll('[role="tab"]')[1] }
+  }
+
+  it.each(['Enter', ' '])('should activate on %j keydown', async (key) => {
+    const { value, trigger } = mountTabs()
+    await trigger.trigger('keydown', { key })
+    expect(value.value).toBe('two')
+  })
+
+  it.each(['Enter', ' '])('should not activate on %j keydown when the consumer prevents default', async (key) => {
+    const { value, trigger } = mountTabs({ onKeydown: event => event.preventDefault() })
+    await trigger.trigger('keydown', { key })
+    expect(value.value).toBe('one')
+  })
+
+  it('should activate on mousedown', async () => {
+    const { value, trigger } = mountTabs()
+    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('two')
+  })
+
+  it('should not activate on mousedown when the consumer prevents default', async () => {
+    const { value, trigger } = mountTabs({ onMousedown: event => event.preventDefault() })
+    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('one')
   })
 })

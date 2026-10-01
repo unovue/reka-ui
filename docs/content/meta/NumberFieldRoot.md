@@ -3,6 +3,12 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allowInvalid',
+    'description': '<p>When <code>true</code>, a typed value is kept as-is even if invalid (out of <code>min</code>/<code>max</code> range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no <code>aria-invalid</code>/<code>data-invalid</code>), so validating and surfacing the error is up to the consumer.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -43,7 +49,7 @@
   {
     'name': 'formatOptions',
     'description': '<p>Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user.</p>\n',
-    'type': 'NumberFormatOptions',
+    'type': 'Intl.NumberFormatOptions',
     'required': false
   },
   {
@@ -149,13 +155,14 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allowInvalid` | When true, a typed value is kept as-is even if invalid (out of min/max range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no aria-invalid/data-invalid), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` |  | `number` | No | - |
 | `disabled` | When true, prevents the user from interacting with the Number Field. | `boolean` | No | - |
 | `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | - |
 | `focusOnChange` | When true, the input will be focused when the value changes. | `boolean` | No | `true` |
-| `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `NumberFormatOptions` | No | - |
+| `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `Intl.NumberFormatOptions` | No | - |
 | `id` | Id of the element | `string` | No | - |
 | `invertWheelChange` | When true, inverts the direction of the wheel change. | `boolean` | No | - |
 | `locale` | The locale to use for formatting and currencies | `string` | No | - |

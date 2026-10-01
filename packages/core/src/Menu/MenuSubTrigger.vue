@@ -2,7 +2,15 @@
 import type { MenuItemImplProps } from './MenuItemImpl.vue'
 import type { Side } from './utils'
 
-export interface MenuSubTriggerProps extends MenuItemImplProps {}
+export interface MenuSubTriggerProps extends MenuItemImplProps {
+  /**
+   * How long (in milliseconds) the pointer is given to reach the submenu after leaving the trigger.
+   * While it moves towards the submenu within this time, hovering other items won't close the submenu.
+   * Increase it for users who move the pointer slowly or on devices under heavy load.
+   * @defaultValue 300
+   */
+  graceDuration?: number
+}
 </script>
 
 <script setup lang="ts">
@@ -16,7 +24,9 @@ import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
 import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
 
-const props = defineProps<MenuSubTriggerProps>()
+const props = withDefaults(defineProps<MenuSubTriggerProps>(), {
+  graceDuration: 300,
+})
 
 const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
@@ -97,7 +107,7 @@ async function handlePointerLeave(event: PointerEvent) {
     window.clearTimeout(contentContext.pointerGraceTimerRef.value)
     contentContext.pointerGraceTimerRef.value = window.setTimeout(
       () => contentContext.onPointerGraceIntentChange(null),
-      300,
+      props.graceDuration,
     )
   }
   else {

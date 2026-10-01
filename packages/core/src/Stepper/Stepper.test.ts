@@ -3,8 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
 import Stepper from './story/_Stepper.vue'
+import StepperDynamic from './story/_StepperDynamic.vue'
 
 const steps = [{
   step: 1,
@@ -167,5 +169,31 @@ describe('stepper', async () => {
     await user.click(thirdItem)
     expect(getByTestId('stepper-item-3')).toHaveAttribute('aria-current', 'true')
     expect(getByTestId('stepper-item-4')).not.toHaveAttribute('data-disabled', '')
+  })
+
+  it('keeps the total step count in sync when triggers unmount and remount', async () => {
+    const { getByTestId, rerender } = render(StepperDynamic, { props: { visibleSteps: 5 } })
+    const totalSteps = getByTestId('total-steps')
+    await nextTick()
+    expect(totalSteps).toHaveTextContent('5')
+
+    // unmount two triggers
+    await rerender({ visibleSteps: 3 })
+    await nextTick()
+    expect(totalSteps).toHaveTextContent('3')
+
+    // remount them: count must not drift upwards
+    await rerender({ visibleSteps: 5 })
+    await nextTick()
+    expect(totalSteps).toHaveTextContent('5')
+
+    // repeated toggling must stay stable (regression: Set leaked stale elements)
+    await rerender({ visibleSteps: 1 })
+    await nextTick()
+    expect(totalSteps).toHaveTextContent('1')
+
+    await rerender({ visibleSteps: 5 })
+    await nextTick()
+    expect(totalSteps).toHaveTextContent('5')
   })
 })

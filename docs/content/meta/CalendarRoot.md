@@ -100,7 +100,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled selected date value of the calendar. Can be bound as <code>v-model</code>.</p>\n',
-    'type': 'DateValue | DateValue[]',
+    'type': 'DateValue | DateValue[] | null',
     'required': false
   },
   {
@@ -221,19 +221,6 @@
     'type': 'DateValue | DateValue[] | undefined'
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -257,7 +244,7 @@
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modelValue` | The controlled selected date value of the calendar. Can be bound as v-model. | `DateValue \| DateValue[]` | No | - |
+| `modelValue` | The controlled selected date value of the calendar. Can be bound as v-model. | `DateValue \| DateValue[] \| null` | No | - |
 | `multiple` | Whether multiple dates can be selected | `boolean` | No | `false` |
 | `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder as an argument inside the component. | `((placeholder: DateValue) => DateValue)` | No | - |
 | `numberOfMonths` | The number of months to display at once | `number` | No | `1` |
@@ -287,12 +274,5 @@
 | `locale` | The calendar locale | `string` |
 | `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` |
 | `modelValue` | The current date of the calendar | `DateValue \| DateValue[] \| undefined` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `isDateDisabled` | A function that returns whether or not a date is disabled | `Matcher` |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` |
 
 </llm-only>
