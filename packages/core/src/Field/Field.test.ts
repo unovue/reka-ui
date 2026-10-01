@@ -46,7 +46,7 @@ beforeEach(() => {
 // rather than through `wrapper.find`.
 async function selectFirstOption(wrapper: ReturnType<typeof mount>) {
   const trigger = wrapper.find('[role="combobox"]')
-  await trigger.trigger('pointerdown', { button: 0, ctrlKey: false })
+  await fireEvent.pointerDown(trigger.element, { button: 0, ctrlKey: false })
   await nextTick()
   await nextTick()
   const option = document.querySelector('[role="option"]') as HTMLElement
