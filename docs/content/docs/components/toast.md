@@ -334,7 +334,7 @@ Each toast in `toasts` also has `open` and an `updateKey` that increments whenev
 
 Creates a manager that adds toasts from anywhere, including outside components, such as in API clients or stores. Pass it to the `toastManager` prop of `ToastProvider`. It has the same `add`, `update`, `close` and `promise` methods as `useToastManager`, but not the `toasts` list.
 
-Toasts added before a `ToastProvider` has mounted are shown once it mounts.
+Toasts added on the client before a `ToastProvider` has mounted are shown once it mounts. Toasts added during server-side rendering are dropped.
 
 ## Examples
 

@@ -5,10 +5,10 @@ export interface ToastActionProps extends ToastCloseProps {
   /**
    * A short description for an alternate way to carry out the action. For screen reader users
    * who will not be able to navigate to the button easily/quickly.
+   *
+   * A rendered action requires `altText`, unless the toast passed to `ToastRoot` has `actionProps.altText`.
    * @example <ToastAction altText="Goto account settings to upgrade">Upgrade</ToastAction>
    * @example <ToastAction altText="Undo (Alt+U)">Undo</ToastAction>
-   *
-   * Required, unless the toast passed to `ToastRoot` has `actionProps.altText`.
    */
   altText?: string
   /**
