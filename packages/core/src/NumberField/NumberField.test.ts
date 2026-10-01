@@ -715,8 +715,8 @@ describe('given checkbox in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: '6' })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: '6' })
     })
   })
 })

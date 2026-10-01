@@ -779,8 +779,8 @@ describe('given Listbox in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: items[4].text() })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: items[4].text() })
     })
   })
 })
