@@ -93,36 +93,39 @@ useResizeObserver(rootContext.content, updateScrollMargin)
 // the estimated sizes are cached, so they need to be measured again
 watch(() => typeof props.estimateSize === 'number' ? props.estimateSize : undefined, () => virtualizer.value.measure())
 
-const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().flatMap((item) => {
-  const targetNode = renderSlotFragments(slots.default?.({
-    option: props.options[item.index],
-    virtualizer: virtualizer.value,
-    virtualItem: item,
-  })).find(child => typeof child.type !== 'symbol')
+// not a computed: slots aren't reactive, so a replaced slot would keep rendering the cached nodes
+function getVirtualizedItems() {
+  return virtualizer.value.getVirtualItems().flatMap((item) => {
+    const targetNode = renderSlotFragments(slots.default?.({
+      option: props.options[item.index],
+      virtualizer: virtualizer.value,
+      virtualItem: item,
+    })).find(child => typeof child.type !== 'symbol')
 
-  if (!targetNode)
-    return []
+    if (!targetNode)
+      return []
 
-  const start = item.start - scrollMargin.value
+    const start = item.start - scrollMargin.value
 
-  return [{
-    item,
-    is: cloneVNode(targetNode, {
-      'data-index': item.index,
-      'style': {
-        position: 'absolute',
-        top: 0,
-        ...(props.horizontal
-          ? { [isRtl.value ? 'right' : 'left']: 0 }
-          : { left: 0, right: 0 }),
-        transform: props.horizontal
-          ? `translateX(${isRtl.value ? -start : start}px)`
-          : `translateY(${start}px)`,
-        overflowAnchor: 'none',
-      },
-    }),
-  }]
-}))
+    return [{
+      item,
+      is: cloneVNode(targetNode, {
+        'data-index': item.index,
+        'style': {
+          position: 'absolute',
+          top: 0,
+          ...(props.horizontal
+            ? { [isRtl.value ? 'right' : 'left']: 0 }
+            : { left: 0, right: 0 }),
+          transform: props.horizontal
+            ? `translateX(${isRtl.value ? -start : start}px)`
+            : `translateY(${start}px)`,
+          overflowAnchor: 'none',
+        },
+      }),
+    }]
+  })
+}
 </script>
 
 <template>
@@ -137,7 +140,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().flat
   >
     <component
       :is="is"
-      v-for="{ is, item } in virtualizedItems"
+      v-for="{ is, item } in getVirtualizedItems()"
       :key="item.key"
     />
   </div>

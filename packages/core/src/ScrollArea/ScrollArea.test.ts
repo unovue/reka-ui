@@ -162,13 +162,16 @@ describe('given a virtualized ScrollArea', () => {
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 500px')
   })
 
-  it('renders nothing without a default slot', async () => {
+  it('renders nothing until a default slot is provided', async () => {
     const wrapper = mount(VirtualScrollArea, { attachTo: document.body, props: { withSlot: false } })
     await flush()
 
     const virtualizer = wrapper.find('[data-reka-virtualizer]')
     expect(virtualizer.element.children.length).toBe(0)
     expect(virtualizer.attributes('style')).toContain('height: 2500px')
+
+    await wrapper.setProps({ withSlot: true })
+    expect(wrapper.findAll('[data-testid="item"]').length).toBe(20)
   })
 
   it('exposes the virtualizer instance', async () => {
