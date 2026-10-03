@@ -11,7 +11,8 @@ import {
   watch,
   watchEffect,
 } from 'vue'
-import { isNullish, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from '@/shared/bodyPointerEvents'
 import { context } from './context'
 
 export interface DismissableLayerProps extends PrimitiveProps {
@@ -172,27 +173,20 @@ watch(
     if (!element || !present)
       return
     if (disableOutsidePointerEvents) {
-      if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-        context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
-        ownerDocument.value.body.style.pointerEvents = 'none'
-      }
+      const doc = ownerDocument.value
+      acquireBodyPointerEvents(doc, element)
       context.layersWithOutsidePointerEventsDisabled.add(element)
 
-      // Remove this layer from the set on cleanup (re-run via prop toggle, or
-      // unmount) and restore the body's `pointer-events` only once the last
-      // disabling layer is gone. Removing here — rather than relying solely on
-      // the unmount-only effect below — keeps the set accurate when
-      // `disableOutsidePointerEvents` toggles `true -> false` while still
-      // mounted (e.g. a modal Menu closing). Checking `size === 0` *after*
-      // deletion makes the restore independent of cleanup ordering (#2674).
+      // Remove this layer from the set and release its share of the body's
+      // `pointer-events` on cleanup (re-run via prop toggle, or unmount).
+      // Removing here — rather than relying solely on the unmount-only effect
+      // below — keeps the set accurate when `disableOutsidePointerEvents`
+      // toggles `true -> false` while still mounted (e.g. a modal Menu
+      // closing). The shared owner restores the body only once the last
+      // layer or scroll lock lets go, whatever the cleanup order (#2674, #2867).
       onCleanup(() => {
         context.layersWithOutsidePointerEventsDisabled.delete(element)
-        if (
-          context.layersWithOutsidePointerEventsDisabled.size === 0
-          && !isNullish(context.originalBodyPointerEvents)
-        ) {
-          ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
-        }
+        releaseBodyPointerEvents(doc, element)
       })
     }
   },
