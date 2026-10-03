@@ -17,6 +17,7 @@ vi.mock('@/shared/useBodyScrollLock', async (importOriginal) => {
   }
 })
 
+/** A modal Dialog (overlay + content) whose `open` state the test controls. */
 function createDialogFixture(open = ref(true)) {
   return defineComponent({
     setup() {

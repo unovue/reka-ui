@@ -377,6 +377,7 @@ describe('body pointer-events shared by scroll locks and modal layers (#2867)', 
     },
   })
 
+  /** Mounts a scroll-lock holder and a modal layer, each toggled by its own ref. */
   function mountLockAndLayer() {
     const lockOpen = ref(false)
     const layerOpen = ref(false)
@@ -392,8 +393,10 @@ describe('body pointer-events shared by scroll locks and modal layers (#2867)', 
       },
     }), { attachTo: document.body })
 
-    // Engage the scroll lock (its `nextTick` included) before the layer mounts,
-    // as happens when an open modal Dialog hydrates outside a scheduler flush.
+    /**
+     * Engages the scroll lock (its `nextTick` included) before the layer mounts,
+     * as happens when an open modal Dialog hydrates outside a scheduler flush.
+     */
     async function openLockThenLayer() {
       lockOpen.value = true
       await nextTick()
