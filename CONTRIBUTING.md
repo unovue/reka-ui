@@ -73,6 +73,7 @@ All commands run from the repo root.
 | Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
 | Docs API regen | `pnpm docs:gen` (regenerates `docs/content/meta/*.md`) |
 | Bundle size | `pnpm --filter reka-ui size` |
+| Subpath exports regen | `pnpm --filter reka-ui gen:exports` (after adding or removing a family in `src/index.ts`) |
 
 > - `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
 >   `pnpm --filter reka-ui exec vitest run`.
@@ -92,6 +93,11 @@ complete example to read alongside this section.
   `DialogRoot.vue`, `DialogContent.vue`, and so on. Each family has an
   `index.ts` re-exporting its parts and prop types, and every family is
   re-exported from `packages/core/src/index.ts` (the public surface).
+  Every family the barrel exports is also built as its own entry point
+  (`reka-ui/checkbox`), derived from the barrel by
+  `packages/core/scripts/families.ts`; `pnpm --filter reka-ui gen:exports`
+  writes the matching `exports` into `packages/core/package.json`, and
+  `src/subpaths.test.ts` fails when the two drift apart.
 - **Context.** State flows from a root to its descendants via
   `createContext('<ComponentName>')` (see
   `packages/core/src/shared/createContext.ts`). It returns
