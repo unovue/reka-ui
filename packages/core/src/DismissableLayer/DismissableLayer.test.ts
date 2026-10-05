@@ -406,10 +406,7 @@ describe('body pointer-events shared by scroll locks and modal layers (#2867)', 
     return { wrapper, lockOpen, layerOpen, openLockThenLayer }
   }
 
-  // Known gap on v3 until the scroll-lock overhaul (#2822) stops writing body
-  // `pointer-events`: v2 fixed this with a shared owner (#2987), which v3 does
-  // not carry. `it.fails` flags the test the moment the behaviour is fixed.
-  it.fails('should restore body pointer-events when the lock releases before a layer that mounted under it', async () => {
+  it('should restore body pointer-events when the lock releases before a layer that mounted under it', async () => {
     const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
     await openLockThenLayer()
 
@@ -460,10 +457,7 @@ describe('body pointer-events shared by scroll locks and modal layers (#2867)', 
     wrapper.unmount()
   })
 
-  // Known gap on v3 until the scroll-lock overhaul (#2822) stops writing body
-  // `pointer-events`: v2 fixed this with a shared owner (#2987), which v3 does
-  // not carry. `it.fails` flags the test the moment the behaviour is fixed.
-  it.fails('should preserve a page-defined body pointer-events value through the whole cycle', async () => {
+  it('should preserve a page-defined body pointer-events value through the whole cycle', async () => {
     document.body.style.pointerEvents = 'auto'
     const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
     await openLockThenLayer()

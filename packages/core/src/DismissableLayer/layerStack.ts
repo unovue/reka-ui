@@ -1,5 +1,8 @@
 import { isClient } from '@vueuse/shared'
 import { shallowReactive } from 'vue'
+// Imported from the plain module (not the `@/shared` barrel) so this file stays
+// free of an import cycle with the components that use it.
+import { resetBodyPointerEvents } from '@/shared/bodyPointerEvents'
 
 /**
  * Centralized DismissableLayer stack manager (transport only).
@@ -57,13 +60,6 @@ export interface OutsideSubscriber {
 export const layers = shallowReactive<StackLayer[]>([])
 export const outsideSubscribers = shallowReactive<OutsideSubscriber[]>([])
 export const branches = shallowReactive<HTMLElement[]>([])
-
-/**
- * Saved `document.body.style.pointerEvents` from before the first disabling
- * layer. Shared (not component-local) so layer B's cleanup can restore the
- * value layer A saved after A unmounts (#2674).
- */
-export const bodyPointerEvents = { original: undefined as string | undefined }
 
 // --- shared listener bookkeeping ---
 let outsideListenersInstalled = false
@@ -278,35 +274,6 @@ export function attachDocument(doc: Document): () => void {
   }
 }
 
-// --- body pointer-events lock (#2674) ---
-// Reference-counted: the first disabling layer saves the original body
-// `pointer-events` and sets `none`; the last one to leave restores it. Counting
-// (rather than a per-component copy) is what lets layer B restore the value
-// layer A saved after A unmounts.
-let bodyLockCount = 0
-export function acquireBodyPointerEventsLock(doc: Document): void {
-  if (bodyLockCount === 0) {
-    bodyPointerEvents.original = doc.body.style.pointerEvents
-    doc.body.style.pointerEvents = 'none'
-  }
-  bodyLockCount++
-}
-export function releaseBodyPointerEventsLock(doc: Document): void {
-  bodyLockCount = Math.max(0, bodyLockCount - 1)
-  // Restore only once the last disabling layer is gone. `!== undefined` mirrors
-  // the previous `!isNullish` check ('' is a valid saved value → still restored).
-  if (bodyLockCount === 0 && bodyPointerEvents.original !== undefined)
-    doc.body.style.pointerEvents = bodyPointerEvents.original
-}
-/**
- * Whether the manager currently owns body `pointer-events` (at least one present
- * `disableOutsidePointerEvents` layer holds the lock). Consulted by
- * `useBodyScrollLock` before it clears the style both share (#2784).
- */
-export function hasBodyPointerEventsLock(): boolean {
-  return bodyLockCount > 0
-}
-
 // --- queries ---
 export function indexOfLayer(layer: StackLayer): number {
   return layers.indexOf(layer)
@@ -345,7 +312,6 @@ export function resetLayerStack(): void {
   for (const timer of armingTimers)
     window.clearTimeout(timer)
   armingTimers.clear()
-  bodyLockCount = 0
   layers.splice(0)
   outsideSubscribers.splice(0)
   branches.splice(0)
@@ -355,7 +321,6 @@ export function resetLayerStack(): void {
   for (const doc of foreignDocuments.keys())
     removeForeignListeners(doc)
   foreignDocuments.clear()
-  if (isClient && bodyPointerEvents.original !== undefined)
-    document.body.style.pointerEvents = bodyPointerEvents.original
-  bodyPointerEvents.original = undefined
+  if (isClient)
+    resetBodyPointerEvents(document)
 }

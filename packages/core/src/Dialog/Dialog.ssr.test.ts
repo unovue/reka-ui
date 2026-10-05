@@ -42,10 +42,7 @@ afterEach(() => {
 // Hydration runs outside a scheduler flush, so the overlay's scroll lock locks
 // the body before the content's `DismissableLayer` registers (#2867).
 describe('given a modal Dialog that is open in the SSR render', () => {
-  // Known gap on v3 until the scroll-lock overhaul (#2822) stops writing body
-  // `pointer-events`: v2 fixed this with a shared owner (#2987), which v3 does
-  // not carry. `it.fails` flags the test the moment the behaviour is fixed.
-  it.fails('should restore body pointer-events after the hydrated dialog closes', async () => {
+  it('should restore body pointer-events after the hydrated dialog closes', async () => {
     isServer = true
     const container = document.createElement('div')
     container.innerHTML = await renderToString(createSSRApp(createDialogFixture()))
