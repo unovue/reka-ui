@@ -123,6 +123,14 @@ describe('given a Menu with submenu', () => {
     expect(wrapper.find('[role="menu"][aria-labelledby]').exists()).toBe(true)
   })
 
+  it.each([undefined, 1000])('should not render `graceDuration` (%s) as an attribute on the sub trigger', async (graceDuration) => {
+    await wrapper.setProps({ graceDuration })
+
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+    expect(subTrigger).not.toHaveAttribute('graceduration')
+    expect(subTrigger).not.toHaveAttribute('grace-duration')
+  })
+
   it.each([
     [undefined, 300],
     [1000, 1000],
