@@ -241,7 +241,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue | undefined]'
   },
   {
     'name': 'update:open',
@@ -309,7 +309,7 @@
 | --- | --- | --- |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
 | `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
 | `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
