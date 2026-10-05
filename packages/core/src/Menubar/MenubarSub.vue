@@ -1,6 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
-import type { MenuSubEmits, MenuSubProps } from '@/Menu'
+import type { MenuOpenChangeReason, MenuSubEmits, MenuSubProps } from '@/Menu'
 
 export type MenubarSubEmits = MenuSubEmits
 export interface MenubarSubProps extends MenuSubProps {
@@ -10,9 +9,8 @@ export interface MenubarSubProps extends MenuSubProps {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { MenuSub } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useControllableState, useForwardExpose } from '@/shared'
 
 const props = withDefaults(defineProps<MenubarSubProps>(), {
   open: undefined,
@@ -27,14 +25,21 @@ defineSlots<{
 }>()
 
 useForwardExpose()
-const open = useVModel(props, 'open', emit, {
+// Owns the model so `beforeUpdate:open` can cancel: the inner `MenuSub` is
+// controlled and reports each change with its reason.
+const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
+  prop: () => props.open,
   defaultValue: props.defaultOpen ?? false,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
+  name: 'open',
+  emit,
+})
 </script>
 
 <template>
-  <MenuSub v-model:open="open">
+  <MenuSub
+    :open="open"
+    @update:open="(value, details) => setState(value, details.reason, details.event)"
+  >
     <slot :open="open" />
   </MenuSub>
 </template>
