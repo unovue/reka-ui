@@ -17,19 +17,18 @@ useForwardExpose()
 const rootContext = injectComboboxRootContext()
 
 function handleClick() {
-  // Reset the search to show all options.
-  rootContext.filterSearch.value = ''
-
-  // Reset the model value before focusing: focus can re-open the popup (`openOnFocus`),
-  // and the open handler may read `modelValue` to restore the filter.
-  if (rootContext.resetModelValueOnClear?.value) {
-    rootContext.modelValue.value = rootContext.multiple.value ? [] : null
-  }
-
   if (rootContext.inputElement.value) {
     rootContext.inputElement.value.value = ''
     rootContext.inputElement.value.focus()
   }
+
+  if (rootContext.resetModelValueOnClear?.value) {
+    rootContext.modelValue.value = rootContext.multiple.value ? [] : null
+  }
+
+  // Reset the search to show all options.
+  // Done last: focusing can re-open the popup (`openOnFocus`), which may restore the filter from the previous value.
+  rootContext.filterSearch.value = ''
 }
 </script>
 

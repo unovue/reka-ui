@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import { AutocompleteAnchor, AutocompleteCancel, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompleteRoot, AutocompleteViewport } from '.'
 import Autocomplete from './story/_Autocomplete.vue'
@@ -299,18 +299,22 @@ describe('given autocomplete in a form', () => {
 })
 
 describe('given autocomplete with cancel button and openOnFocus', () => {
-  let wrapper: VueWrapper<InstanceType<any>>
-  let input: DOMWrapper<HTMLInputElement>
+  const components = { AutocompleteRoot, AutocompleteAnchor, AutocompleteInput, AutocompleteCancel, AutocompleteContent, AutocompleteViewport, AutocompleteItem }
+  const options = ['Apple', 'Banana', 'Cherry']
 
-  beforeEach(() => {
+  // https://github.com/unovue/reka-ui/issues/2988
+  it.each([
+    ['uncontrolled', '<AutocompleteRoot open-on-focus open-on-click>'],
+    ['controlled', '<AutocompleteRoot v-model="model" open-on-focus open-on-click>'],
+  ])('should show all items after clearing a closed, blurred input (%s)', async (_, root) => {
     document.body.innerHTML = ''
-    wrapper = mount({
-      components: { AutocompleteRoot, AutocompleteAnchor, AutocompleteInput, AutocompleteCancel, AutocompleteContent, AutocompleteViewport, AutocompleteItem },
+    const wrapper = mount({
+      components,
       setup() {
-        return { options: ['Apple', 'Banana', 'Cherry'] }
+        return { options, model: ref('') }
       },
       template: `
-        <AutocompleteRoot open-on-focus open-on-click>
+        ${root}
           <AutocompleteAnchor>
             <AutocompleteInput />
             <AutocompleteCancel>X</AutocompleteCancel>
@@ -325,12 +329,8 @@ describe('given autocomplete with cancel button and openOnFocus', () => {
         </AutocompleteRoot>
       `,
     }, { attachTo: document.body })
+    const input = wrapper.find('input')
 
-    input = wrapper.find('input')
-  })
-
-  // https://github.com/unovue/reka-ui/issues/2988
-  it('should show all items after clearing a closed, blurred input', async () => {
     input.element.focus()
     await nextTick()
     await wrapper.findAll('[role=option]')[1].trigger('click')
@@ -345,6 +345,6 @@ describe('given autocomplete with cancel button and openOnFocus', () => {
 
     expect(input.element.value).toBe('')
     expect(document.activeElement).toBe(input.element)
-    expect(wrapper.findAll('[role=option]').map(i => i.text())).toEqual(['Apple', 'Banana', 'Cherry'])
+    expect(wrapper.findAll('[role=option]').map(i => i.text())).toEqual(options)
   })
 })
