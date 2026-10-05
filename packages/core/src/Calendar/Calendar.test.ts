@@ -997,6 +997,25 @@ describe('calendar', async () => {
       expect(getByTestId('date-1-5')).toHaveFocus()
     })
 
+    it.each([
+      ['has no time', new CalendarDate(2024, 2, 25)],
+      ['has a different time', new CalendarDateTime(2024, 2, 25, 0, 0)],
+    ])('page up keeps focus and the time when minValue %s', async (_, minValue) => {
+      const { getByTestId, user } = setup({
+        calendarProps: {
+          placeholder: new CalendarDateTime(2024, 3, 20, 10, 30),
+          minValue,
+        },
+      })
+
+      getByTestId('date-3-20').focus()
+      await user.keyboard(kbd.PAGE_UP)
+
+      expect(getByTestId('heading')).toHaveTextContent('February 2024')
+      expect(getByTestId('date-2-25')).toHaveFocus()
+      expect(getByTestId('date-2-25')).toHaveAttribute('data-value', '2024-02-25T10:30:00')
+    })
+
     it('page down respects maxValue boundary', async () => {
       const { getByTestId, user } = setup({
         calendarProps: {

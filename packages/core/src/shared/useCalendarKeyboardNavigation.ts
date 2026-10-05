@@ -1,5 +1,6 @@
 import type { DateValue } from '@internationalized/date'
 import type { WeekStartsOn } from '@/date'
+import { toCalendar, toCalendarDate } from '@internationalized/date'
 import { nextTick } from 'vue'
 import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from '@/date'
 
@@ -81,14 +82,29 @@ export function getTargetMonthDay(date: DateValue, unit: 'month' | 'year', amoun
   return targetBase.set({ day: targetDay })
 }
 
+/** Compares the calendar days of two dates, ignoring their time and type. */
+function compareDay(date: DateValue, reference: DateValue) {
+  return toCalendarDate(date).compare(toCalendarDate(reference))
+}
+
+/**
+ * Moves `date` to the day of `bound`. The result keeps the type, time and
+ * calendar of `date`, because the grid cells it has to match are built from
+ * the placeholder and not from `minValue` / `maxValue`.
+ */
+function setDay(date: DateValue, bound: DateValue): DateValue {
+  const day = toCalendar(toCalendarDate(bound), date.calendar)
+  return date.set({ era: day.era, year: day.year, month: day.month, day: day.day })
+}
+
 export function clampTargetDate(date: DateValue, minValue?: DateValue, maxValue?: DateValue): DateValue {
   let candidateDay = date
 
-  if (minValue && candidateDay.compare(minValue) < 0)
-    candidateDay = minValue.copy()
+  if (minValue && compareDay(candidateDay, minValue) < 0)
+    candidateDay = setDay(candidateDay, minValue)
 
-  if (maxValue && candidateDay.compare(maxValue) > 0)
-    candidateDay = maxValue.copy()
+  if (maxValue && compareDay(candidateDay, maxValue) > 0)
+    candidateDay = setDay(candidateDay, maxValue)
 
   return candidateDay
 }
@@ -104,8 +120,8 @@ function focusDate(options: FocusDateOptions) {
   // - unclamped pagination -> keep travelling in the navigation direction
   // - otherwise -> 0 (no search)
   let safeDirection = 0
-  const isClampedToMin = options.minValue && clampedTarget.compare(options.minValue) === 0
-  const isClampedToMax = options.maxValue && clampedTarget.compare(options.maxValue) === 0
+  const isClampedToMin = options.minValue && compareDay(clampedTarget, options.minValue) === 0
+  const isClampedToMax = options.maxValue && compareDay(clampedTarget, options.maxValue) === 0
   const wasClamped = isClampedToMin || isClampedToMax
 
   if (!wasClamped) {

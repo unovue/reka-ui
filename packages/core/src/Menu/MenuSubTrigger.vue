@@ -15,6 +15,7 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
+import { reactiveOmit } from '@vueuse/shared'
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useId } from '@/shared'
 import MenuAnchor from './MenuAnchor.vue'
@@ -27,6 +28,8 @@ import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
 const props = withDefaults(defineProps<MenuSubTriggerProps>(), {
   graceDuration: 300,
 })
+// `graceDuration` is not a `MenuItemImpl` prop, so it would land on the DOM element.
+const itemProps = reactiveOmit(props, 'graceDuration')
 
 const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
@@ -140,7 +143,7 @@ async function handleKeyDown(event: KeyboardEvent) {
 <template>
   <MenuAnchor as-child>
     <MenuItemImpl
-      v-bind="props"
+      v-bind="itemProps"
       :id="subContext.triggerId"
       :ref="
         (vnode: Element | ComponentPublicInstance | null) => {
