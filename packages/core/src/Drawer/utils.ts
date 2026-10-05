@@ -11,6 +11,7 @@ export const DRAWER_CSS_VARS = {
   frontmostHeight: '--drawer-frontmost-height',
   swipeProgress: '--drawer-swipe-progress',
   swipeStrength: '--drawer-swipe-strength',
+  keyboardInset: '--drawer-keyboard-inset',
   nestedDrawers: '--nested-drawers',
 } as const
 

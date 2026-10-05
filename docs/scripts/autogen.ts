@@ -12,13 +12,7 @@ import { createChecker } from 'vue-component-meta'
 import { babelParse, parse as sfcParse } from 'vue/compiler-sfc'
 import { transformJSDocLinks } from './utils'
 
-// `@babel/traverse` is CJS. Depending on the ESM interop in play (tsx, Node's
-// CJS namespace wrapping) the default import is either the function itself or
-// `{ default: fn }`; accept both so `pnpm docs:gen` runs on a clean checkout.
-const traverse: typeof _traverse = typeof _traverse === 'function'
-  ? _traverse
-  // @ts-expect-error CJS interop: the namespace object carries the function on `default`
-  : _traverse.default
+const traverse = ((_traverse as any).default ?? _traverse) as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const md = new MarkdownIt()
@@ -199,8 +193,7 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render((eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
-        // Unlike optional props, undefined in an event payload is a value consumers can receive.
-        type: type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
     })
     .sort((a, b) => a.name.localeCompare(b.name))

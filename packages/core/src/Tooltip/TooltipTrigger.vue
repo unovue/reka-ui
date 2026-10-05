@@ -9,7 +9,7 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { onMounted } from 'vue'
+import { watch } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
@@ -34,15 +34,15 @@ const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 // before the surface's `onClick`.
 const trigger = createTooltipTriggerSurface(rootContext)
 
-onMounted(() => {
-  rootContext.onTriggerChange(triggerElement.value)
-})
+watch(triggerElement, (el) => {
+  rootContext.onTriggerChange(el)
+}, { immediate: true })
 </script>
 
 <template>
   <PopperAnchor
     as-child
-    :reference="reference"
+    :reference="reference ?? triggerElement"
   >
     <Primitive
       :ref="forwardRef"

@@ -67,14 +67,19 @@ All commands run from the repo root.
 | Tests (watch) | `pnpm test` |
 | Tests (one-shot) | `pnpm --filter reka-ui exec vitest run [path]` |
 | Test coverage | `pnpm --filter reka-ui test:coverage` |
+| Browser tests | `pnpm test:browser` |
 | Lint / auto-fix | `pnpm lint` / `pnpm lint:fix` |
 | Stories | `pnpm story:dev` |
-| Docs dev | `pnpm docs:install && pnpm docs:dev` |
+| Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
 | Docs API regen | `pnpm docs:gen` (regenerates `docs/content/meta/*.md`) |
 | Bundle size | `pnpm --filter reka-ui size` |
 
-> `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
-> `pnpm --filter reka-ui exec vitest run`.
+> - `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
+>   `pnpm --filter reka-ui exec vitest run`.
+> - The docs site needs `packages/core/dist` to exist — `docs/.vitepress/config.ts`
+>   imports `reka-ui/dist/constant.js` through the workspace link. On a fresh
+>   checkout run `pnpm --filter reka-ui build` first, or `pnpm docs:dev` fails
+>   with `Cannot find module … /dist/constant.js`.
 
 ## Component architecture
 
@@ -153,6 +158,13 @@ a trigger/content ref, …):
   don't need to repeat that per test.
 - New components and composables should ship with colocated tests, including an
   axe check for anything that renders.
+- **Browser tests** (`<Name>.browser.test.ts`, also colocated) run in headless
+  Chromium through Vitest browser mode and Playwright. Use them for behaviour
+  jsdom cannot represent: native focus order (`Tab`), form submission, the
+  default action of a key press, and layout or positioning. Drive them with
+  `userEvent` from `vitest/browser`, which sends trusted events. Run
+  `pnpm test:browser`; the first time, install the browser with
+  `pnpm --filter reka-ui exec playwright install chromium`.
 
 ## Documentation
 

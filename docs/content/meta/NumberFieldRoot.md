@@ -3,6 +3,12 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allowInvalid',
+    'description': '<p>When <code>true</code>, a typed value is kept as-is even if invalid (out of <code>min</code>/<code>max</code> range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no <code>aria-invalid</code>/<code>data-invalid</code>), so validating and surfacing the error is up to the consumer.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -101,6 +107,12 @@
     'required': false
   },
   {
+    'name': 'startingValue',
+    'description': '<p>The value the first increment or decrement sets when the field is empty. It is clamped to <code>min</code>/<code>max</code> but not snapped to <code>step</code>. Defaults to <code>min</code>, or <code>0</code> when <code>min</code> is not set.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'step',
     'description': '<p>The amount that the input value changes with each increment or decrement &quot;tick&quot;.</p>\n',
     'type': 'number',
@@ -149,6 +161,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allowInvalid` | When true, a typed value is kept as-is even if invalid (out of min/max range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no aria-invalid/data-invalid), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` |  | `number` | No | - |
@@ -165,6 +178,7 @@
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `readonly` | When true, the Number Field is read-only. | `boolean` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `startingValue` | The value the first increment or decrement sets when the field is empty. It is clamped to min/max but not snapped to step. Defaults to min, or 0 when min is not set. | `number` | No | - |
 | `step` | The amount that the input value changes with each increment or decrement "tick". | `number` | No | `1` |
 | `stepSnapping` | When false, prevents the value from snapping to the nearest increment of the step value | `boolean` | No | `true` |
 

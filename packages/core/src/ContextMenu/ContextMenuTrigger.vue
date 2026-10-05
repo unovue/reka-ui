@@ -13,7 +13,7 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import { Primitive } from '@/Primitive'
 import { disclosureState, useForwardExpose } from '@/shared'
@@ -33,6 +33,9 @@ const { disabled } = toRefs(props)
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectContextMenuRootContext()
 const point = ref<Point>({ x: 0, y: 0 })
+const isPointerOpen = ref(false)
+// Set while a pointer open request waits for the (possibly controlled) open state.
+let pendingPointerOpen = false
 const virtualEl = computed(() => ({
   getBoundingClientRect: () =>
     ({
@@ -46,14 +49,45 @@ const virtualEl = computed(() => ({
     } as DOMRect),
 }))
 
+const reference = computed(() =>
+  isPointerOpen.value
+    ? virtualEl.value
+    : rootContext.triggerElement.value,
+)
+
+// Pick the anchor when the menu opens, and keep it while closing so the
+// content doesn't jump to the trigger during its exit animation.
+watch(
+  () => rootContext.open.value,
+  (open) => {
+    if (open) {
+      isPointerOpen.value = pendingPointerOpen
+      pendingPointerOpen = false
+    }
+  },
+)
+
 const longPressTimer = ref(0)
 function clearLongPress() {
   window.clearTimeout(longPressTimer.value)
 }
 
-function handleOpen(event: MouseEvent | PointerEvent) {
+async function handleOpen(event: MouseEvent | PointerEvent) {
   point.value = { x: event.clientX, y: event.clientY }
+
+  // Already open: move the menu to the new pointer position.
+  if (rootContext.open.value) {
+    isPointerOpen.value = true
+    return
+  }
+
+  pendingPointerOpen = true
   rootContext.onOpenChange(true)
+
+  await nextTick()
+
+  // A controlled parent may have refused the request.
+  pendingPointerOpen = false
 }
 
 async function handleContextMenu(event: PointerEvent) {
@@ -97,7 +131,7 @@ onMounted(() => {
 <template>
   <MenuAnchor
     as="template"
-    :reference="virtualEl"
+    :reference="reference"
   />
 
   <Primitive

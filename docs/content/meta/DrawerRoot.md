@@ -60,7 +60,7 @@
   {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the dialog changes.</p>\n',
-    'type': '[value: boolean, details?: DrawerOpenChangeDetails | undefined]'
+    'type': '[value: boolean, details: DrawerOpenChangeDetails]'
   },
   {
     'name': 'update:openComplete',
@@ -107,7 +107,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details?: DrawerOpenChangeDetails \| undefined]` |
+| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: DrawerOpenChangeDetails]` |
 | `update:openComplete` |  | `[value: boolean]` |
 | `update:snapPoint` |  | `[value: DrawerSnapPoint \| null]` |
 

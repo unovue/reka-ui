@@ -37,7 +37,7 @@ onUnmounted(() => {
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
     :data-state="disclosureState(rootContext.open.value)"
-    @click="rootContext.onOpenChange(true, 'trigger-press')"
+    @click="rootContext.onOpenToggle"
   >
     <slot />
   </Primitive>

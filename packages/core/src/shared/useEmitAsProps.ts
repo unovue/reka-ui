@@ -86,9 +86,49 @@ export type Camelize<S extends string>
 
 type HandlerKey<Name extends string> = Camelize<`on-${Name}`>
 
-// Package-private overload types from @vue/shared
+// Overload-walking types, adapted from the package-private helpers in @vue/shared
 
 type OverloadProps<TOverload> = Pick<TOverload, keyof TOverload>
+
+type Signature<TArgs extends any[], TReturn> = (...args: TArgs) => TReturn
+
+type IsEqual<A, B>
+  = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false
+
+/**
+ * `Required<T>` strips `void` together with `undefined` from formerly-optional elements,
+ * leaving `never`; those elements originated from `void` parameters, so restore them.
+ */
+type RequiredVoidArgs<TArgs extends any[]> = {
+  [K in keyof TArgs]: [TArgs[K]] extends [never] ? void : TArgs[K]
+}
+
+/**
+ * Whether intersecting `TSignature` in front of `TOverload` removes the last signature of `TOverload`.
+ * TypeScript de-duplicates identical call signatures in an intersection, so when the last signature
+ * is still the one described by `TArgs`/`TReturn` the reconstruction was not identical to it.
+ */
+type RemovesLastSignature<TOverload, TSignature extends AnyFn, TArgs extends any[], TReturn>
+  = (TSignature & TOverload) extends (...args: infer TNextArgs) => infer TNextReturn
+    ? IsEqual<[TNextArgs, TNextReturn], [TArgs, TReturn]> extends true ? false : true
+    : false
+
+/**
+ * Rebuilds the last signature of `TOverload` (inferred as `TArgs`/`TReturn`) so that TypeScript
+ * recognises it as identical to the original and drops it from `TPartialOverload & TOverload`.
+ *
+ * Trailing `void` parameters are inferred as optional (`args_0?: void | undefined`), which is no
+ * longer identical to the declared `(event: 'foo', args_0: void)` signature produced by
+ * `defineEmits<{ foo: [void] }>()`. Without special handling the same signature would be inferred
+ * forever and TypeScript reports "Type instantiation is excessively deep and possibly infinite".
+ * Resolves to `never` when no reconstruction matches.
+ */
+type LastSignature<TOverload, TArgs extends any[], TReturn>
+  = RemovesLastSignature<TOverload, Signature<TArgs, TReturn>, TArgs, TReturn> extends true
+    ? Signature<TArgs, TReturn>
+    : RemovesLastSignature<TOverload, Signature<RequiredVoidArgs<Required<TArgs>>, TReturn>, TArgs, TReturn> extends true
+      ? Signature<RequiredVoidArgs<Required<TArgs>>, TReturn>
+      : never
 
 type OverloadUnionRecursive<
   TOverload,
@@ -96,13 +136,16 @@ type OverloadUnionRecursive<
 > = TOverload extends (...args: infer TArgs) => infer TReturn
   ? TPartialOverload extends TOverload
     ? never
-    : | OverloadUnionRecursive<
-            TPartialOverload & TOverload,
-            TPartialOverload
-            & ((...args: TArgs) => TReturn)
-            & OverloadProps<TOverload>
-    >
-    | ((...args: TArgs) => TReturn)
+    : LastSignature<TOverload, TArgs, TReturn> extends infer TSignature extends AnyFn
+      ? [TSignature] extends [never]
+          // The last signature cannot be removed: stop instead of recursing forever and fall back to a loose signature.
+          ? (name: string, ...args: any[]) => void
+          : | OverloadUnionRecursive<
+              TPartialOverload & TOverload,
+              TPartialOverload & TSignature & OverloadProps<TOverload>
+          >
+          | TSignature
+      : never
   : never
 
 type OverloadUnion<TOverload extends (...args: any[]) => any> = Exclude<

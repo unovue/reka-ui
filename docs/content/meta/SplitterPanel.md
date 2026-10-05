@@ -79,7 +79,7 @@
   {
     'name': 'resize',
     'description': '<p>Event handler called when panel is resized; size parameter is a numeric value between 1-100.</p>\n',
-    'type': '[size: number, prevSize: number | undefined]'
+    'type': '[size: number, prevSize: number]'
   }
 ]" />
 
@@ -158,7 +158,7 @@
 | --- | --- | --- |
 | `collapse` | Event handler called when panel is collapsed. | `[]` |
 | `expand` | Event handler called when panel is expanded. | `[]` |
-| `resize` | Event handler called when panel is resized; size parameter is a numeric value between 1-100. | `[size: number, prevSize: number \| undefined]` |
+| `resize` | Event handler called when panel is resized; size parameter is a numeric value between 1-100. | `[size: number, prevSize: number]` |
 
 **Slots**
 

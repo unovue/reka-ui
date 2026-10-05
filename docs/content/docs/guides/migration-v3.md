@@ -94,8 +94,10 @@ What to check in your code:
 - Wrappers that re-declare the emit types need the new tuple shape:
 
   ```ts
-  'update:open': [value: boolean] // [!code --]
-  'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>] // [!code ++]
+  type Emits = {
+    'update:open': [value: boolean] // [!code --]
+    'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>] // [!code ++]
+  }
   ```
 
 - Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick. Code that relied on the old timing may observe the difference.

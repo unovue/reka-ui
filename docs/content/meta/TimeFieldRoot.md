@@ -132,7 +132,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: TimeValue | undefined]'
+    'type': '[date: TimeValue]'
   },
   {
     'name': 'update:placeholder',
@@ -199,7 +199,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeValue \| undefined]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeValue]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue]` |
 
 **Slots**

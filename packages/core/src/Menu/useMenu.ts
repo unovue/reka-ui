@@ -210,11 +210,13 @@ export function createMenuItemSurface(
   }
 
   async function handleFocus(event: FocusEvent) {
+    // `currentTarget` is only set during dispatch; read it before awaiting.
+    const item = event.currentTarget as HTMLElement
     await nextTick()
     if (event.defaultPrevented || isDisabled.value)
       return
     isFocused.value = true
-    contentContext.highlightedElement.value = event.currentTarget as HTMLElement
+    contentContext.highlightedElement.value = item
   }
 
   async function handleBlur(event: FocusEvent) {

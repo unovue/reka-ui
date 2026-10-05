@@ -71,14 +71,9 @@
 
 <EmitsTable :data="[
   {
-    'name': 'beforeUpdate:modelValue',
-    'description': '<p>Event handler called before a change; call details.cancel() to keep the current value.</p>\n',
-    'type': '[value: (ExplicitType extends \'single\' ? string : string[]) | undefined, details: ChangeEventDetails&lt;AccordionChangeReason, Event&gt;]'
-  },
-  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the expanded state of an item changes</p>\n',
-    'type': '[value: (ExplicitType extends \'single\' ? string : string[]) | undefined, details: ChangeEventDetails&lt;AccordionChangeReason, Event&gt;]'
+    'type': '[value: (ExplicitType extends \'single\' ? string : string[])]'
   }
 ]" />
 
@@ -112,8 +107,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before a change; call details.cancel() to keep the current value. | `[value: (ExplicitType extends "single" ? string : string[]) \| undefined, details: ChangeEventDetails<AccordionChangeReason, Event>]` |
-| `update:modelValue` | Event handler called when the expanded state of an item changes | `[value: (ExplicitType extends "single" ? string : string[]) \| undefined, details: ChangeEventDetails<AccordionChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the expanded state of an item changes | `[value: (ExplicitType extends "single" ? string : string[])]` |
 
 **Slots**
 

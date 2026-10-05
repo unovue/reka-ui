@@ -46,6 +46,12 @@
     'required': false
   },
   {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
@@ -94,7 +100,7 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; } | undefined]'
+    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; }]'
   },
   {
     'name': 'leave',
@@ -130,6 +136,7 @@
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -142,7 +149,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
 

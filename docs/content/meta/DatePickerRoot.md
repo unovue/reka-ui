@@ -203,7 +203,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateValue | undefined]'
+    'type': '[date: DateValue]'
   },
   {
     'name': 'update:open',
@@ -260,7 +260,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
 
