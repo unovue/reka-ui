@@ -1,8 +1,9 @@
 import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, Ref } from 'vue'
-import type { CalendarLayout, CalendarPageFunction, CalendarUnitAdapter } from '@/date'
+import type { CalendarLayout, CalendarPageFunction, CalendarUnitAdapter, WeekStartsOn } from '@/date'
 import type { Direction } from '@/shared/types'
 import { nextTick } from 'vue'
+import { focusPagination, focusWeekBoundary } from '@/shared/useCalendarKeyboardNavigation'
 import { useKbd } from '@/shared/useKbd'
 
 /** What the keyboard loop needs from a calendar root context (Calendar and RangeCalendar both satisfy it). */
@@ -11,6 +12,9 @@ export interface CellNavigationHost {
   minValue: ComputedRef<DateValue | undefined>
   maxValue: ComputedRef<DateValue | undefined>
   dir: ComputedRef<Direction>
+  locale: ComputedRef<string>
+  weekStartsOn: ComputedRef<WeekStartsOn>
+  isOutsideVisibleView: (date: DateValue) => boolean
   /** Up/down stride of the active view. */
   rowLength: ComputedRef<number>
   layout: ComputedRef<CalendarLayout>
@@ -29,13 +33,18 @@ export interface CellKeydownOptions {
 }
 
 /** Keys the cell handles; everything else bubbles untouched. */
-const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'PageUp', 'PageDown'])
+const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'PageUp', 'PageDown', 'Home', 'End'])
 
 /**
  * The one keyboard/focus implementation for calendar cells in every view (D8):
- * arrows move one unit or one row, PageUp / PageDown move one page, pages
- * flip when the target is not rendered, disabled cells are skipped, and the
- * recursion is depth-guarded (#2781).
+ * arrows move one unit or one row, pages flip when the target is not rendered,
+ * disabled cells are skipped, and the recursion is depth-guarded (#2781).
+ *
+ * The day view keeps the v2 shortcuts (#2530): Home / End move to the start /
+ * end of the week, PageUp / PageDown to the same day one month away and
+ * Shift+PageUp / Shift+PageDown one year away, clamped to `minValue` /
+ * `maxValue`. The month and year views have no week, so Home / End bubble
+ * there, and PageUp / PageDown move to the same cell one page away.
  *
  * @lifecycle pure — DOM access happens only inside the handlers.
  */
@@ -116,10 +125,48 @@ export function createCellFocusNavigation(
     })
   }
 
+  /** Day view: Home / End / PageUp / PageDown, shared with v2 (`useCalendarKeyboardNavigation`). */
+  function handleDayShortcut(event: KeyboardEvent) {
+    const parentElement = host.parentElement.value
+    if (!parentElement)
+      return
+    const shared = {
+      parentElement,
+      baseDate: date.value,
+      minValue: host.minValue.value,
+      maxValue: host.maxValue.value,
+      onPlaceholderChange: (value: DateValue) => { host.onPlaceholderChange(value, 'focus-navigation', event) },
+    }
+    if (event.code === kbd.HOME || event.code === kbd.END) {
+      focusWeekBoundary({
+        ...shared,
+        boundary: event.code === kbd.HOME ? 'start' : 'end',
+        locale: host.locale.value,
+        weekStartsOn: host.weekStartsOn.value,
+      })
+      return
+    }
+    focusPagination({
+      ...shared,
+      isNext: event.code === kbd.PAGE_DOWN,
+      isYear: event.shiftKey,
+      isOutsideVisibleView: host.isOutsideVisibleView,
+      isNextButtonDisabled: host.isNextButtonDisabled,
+      isPrevButtonDisabled: host.isPrevButtonDisabled,
+      nextPage: host.nextPage,
+      prevPage: host.prevPage,
+    })
+  }
+
   function handleKeydown(event: KeyboardEvent, options: CellKeydownOptions) {
     if (!CELL_TRIGGER_KEYS.has(event.code))
       return
     if (options.disabled)
+      return
+    const isDayView = adapter.value.unit === 'day'
+    const isWeekKey = event.code === kbd.HOME || event.code === kbd.END
+    // Only the day view has a week to jump within.
+    if (isWeekKey && !isDayView)
       return
     // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
     // let them bubble so parent listeners can react (e.g. submit a form).
@@ -143,11 +190,21 @@ export function createCellFocusNavigation(
       case kbd.ARROW_DOWN:
         shiftFocus(date.value, stride, event)
         break
+      case kbd.HOME:
+      case kbd.END:
+        handleDayShortcut(event)
+        break
       case kbd.PAGE_UP:
-        shiftFocusPage(-1, event)
+        if (isDayView)
+          handleDayShortcut(event)
+        else
+          shiftFocusPage(-1, event)
         break
       case kbd.PAGE_DOWN:
-        shiftFocusPage(1, event)
+        if (isDayView)
+          handleDayShortcut(event)
+        else
+          shiftFocusPage(1, event)
         break
       case kbd.ENTER:
       case kbd.SPACE_CODE:

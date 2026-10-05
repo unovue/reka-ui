@@ -119,6 +119,39 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(getByTestId('cell-2026-09-01')).toHaveFocus()
   })
 
+  it('keeps the visible year when modelValue is a new object for the same month (#2961)', async () => {
+    const value = new CalendarDate(1980, 1, 20)
+    const { user, getByTestId, rerender } = setupUnit({ granularity: 'month', modelValue: value })
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+
+    await rerender({ modelValue: value.copy() })
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+    // Another day of the same month is still the same selection at this granularity.
+    await rerender({ modelValue: new CalendarDate(1980, 1, 3) })
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+  })
+
+  it('moves the visible year when the selected month changes', async () => {
+    const { user, getByTestId, rerender } = setupUnit({ granularity: 'month', modelValue: new CalendarDate(1980, 1, 20) })
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+
+    await rerender({ modelValue: new CalendarDate(1975, 6, 1) })
+    expect(getByTestId('heading')).toHaveTextContent('1975')
+  })
+
+  it('lets Home and End bubble: only the day view has a week', async () => {
+    const onKeydown = vi.fn()
+    const { user, getByTestId, calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
+    calendar.addEventListener('keydown', onKeydown)
+    getByTestId('cell-2026-09-01').focus()
+    await user.keyboard(kbd.HOME)
+    await user.keyboard(kbd.END)
+    expect(onKeydown).toHaveBeenCalledTimes(2)
+    expect(getByTestId('cell-2026-09-01')).toHaveFocus()
+  })
+
   it('passes the unit to matchers', () => {
     const units = new Set<CalendarUnit | undefined>()
     setupUnit({ granularity: 'month', defaultPlaceholder: sep5, isDateDisabled: (_d, unit) => {
@@ -142,6 +175,26 @@ describe('calendar — granularity="year" (replaces YearPicker)', () => {
     const { user, getByTestId } = setupUnit({ granularity: 'year', defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
     await user.click(getByTestId('cell-2030-01-01'))
     expect((onUpdate.mock.calls[0][0] as DateValue).toString()).toBe('2030-09-05')
+  })
+
+  it('keeps the visible page when modelValue is a new object for the same year (#2961)', async () => {
+    const value = new CalendarDate(1980, 1, 20)
+    const { user, getByTestId, rerender } = setupUnit({ granularity: 'year', modelValue: value })
+    expect(getByTestId('heading')).toHaveTextContent('1980 - 1991')
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
+
+    await rerender({ modelValue: value.copy() })
+    expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
+  })
+
+  it('moves the visible page when the selected year changes', async () => {
+    const { user, getByTestId, rerender } = setupUnit({ granularity: 'year', modelValue: new CalendarDate(1980, 1, 20) })
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
+
+    await rerender({ modelValue: new CalendarDate(1975, 6, 1) })
+    expect(getByTestId('heading')).toHaveTextContent('1970 - 1981')
   })
 
   it('pages by yearsPerPage', async () => {

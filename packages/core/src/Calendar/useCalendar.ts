@@ -5,7 +5,7 @@ import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnit
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
+import { clampCalendarView, coarserUnit, finerUnit, focusedDateValue, getUnitAdapter, isAfter, isBefore, isCoarserUnit, isSameDateSelection } from '@/date'
 import { createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
 
@@ -463,17 +463,16 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     return check(current)
   })
 
-  // An external model change moves the page to the (last) selected value.
-  watch(modelValue, (current) => {
+  // An external model change moves the page to the (last) selected value. A new
+  // object for the same day / month / year is not a new selection, so it must
+  // not undo paging (#2961).
+  watch(modelValue, (current, previous) => {
     const a = granularityAdapter.value
-    if (Array.isArray(current) && current.length) {
-      const last = current.at(-1)
-      if (last && !a.isSame(placeholder.value, last))
-        setPlaceholder(last)
-    }
-    else if (!Array.isArray(current) && current && !a.isSame(placeholder.value, current)) {
-      setPlaceholder(current)
-    }
+    if (isSameDateSelection(previous, current, a.isSame))
+      return
+    const focused = focusedDateValue(current)
+    if (focused && !a.isSame(placeholder.value, focused))
+      setPlaceholder(focused)
   })
 
   function select(value: DateValue, reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
