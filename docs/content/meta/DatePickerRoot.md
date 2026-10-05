@@ -234,6 +234,11 @@
     'type': '[value: boolean, details: ChangeEventDetails&lt;DatePickerOpenChangeReason, Event&gt;]'
   },
   {
+    'name': 'beforeUpdate:view',
+    'description': '<p>Called before the calendar view changes; <code>details.cancel()</code> keeps the current view.</p>\n',
+    'type': '[view: CalendarUnit, details: ChangeEventDetails&lt;CalendarChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
     'type': '[date: DateValue]'
@@ -251,7 +256,7 @@
   {
     'name': 'update:view',
     'description': '<p>Event handler called whenever the calendar view changes</p>\n',
-    'type': '[view: CalendarUnit]'
+    'type': '[view: CalendarUnit, details: ChangeEventDetails&lt;CalendarChangeReason, Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -303,9 +308,10 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
+| `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit]` |
+| `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
 
 </llm-only>

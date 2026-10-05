@@ -46,7 +46,7 @@ const rootContext = injectDatePickerRootContext()
       if (isEqualDay(date, rootContext.placeholder.value)) return
       rootContext.onPlaceholderChange(date)
     }"
-    @update:view="(next) => rootContext.onViewChange(next)"
+    @update:view="(next, details) => rootContext.onViewChange(next, details)"
   >
     <slot
       :date="date"

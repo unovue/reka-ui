@@ -24,7 +24,7 @@ describe('datePicker — calendar views', () => {
 
     await user.click(getByTestId('view-trigger'))
     expect(getByTestId('view-month')).toBeInTheDocument()
-    expect(onView).toHaveBeenLastCalledWith('month')
+    expect(onView).toHaveBeenLastCalledWith('month', expect.objectContaining({ reason: 'view-trigger' }))
     expect(popover).toBeVisible()
 
     await user.click(getByTestId('view-trigger'))
@@ -56,5 +56,21 @@ describe('datePicker — calendar views', () => {
     expect(getByTestId('view-trigger')).toHaveAttribute('disabled')
     await user.click(getByTestId('view-trigger'))
     expect(queryByTestId('view-year')).toBeNull()
+  })
+
+  it('emits beforeUpdate:view and honours cancel()', async () => {
+    const user = userEvent.setup()
+    const onView = vi.fn()
+    const cancel = vi.fn((_view: unknown, details: { cancel: () => void }) => details.cancel())
+    const { getByTestId, findByTestId, queryByTestId } = render(DatePickerViews, {
+      props: { 'defaultValue': jan20, 'defaultOpen': true, 'onBeforeUpdate:view': cancel, 'onUpdate:view': onView } as any,
+    })
+    expect(await findByTestId('view-day')).toBeInTheDocument()
+
+    await user.click(getByTestId('view-trigger'))
+    expect(cancel).toHaveBeenCalledWith('month', expect.objectContaining({ reason: 'view-trigger' }))
+    expect(onView).not.toHaveBeenCalled()
+    expect(getByTestId('view-day')).toBeInTheDocument()
+    expect(queryByTestId('view-month')).toBeNull()
   })
 })

@@ -2,7 +2,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { ComputedRef, Ref } from 'vue'
-import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverOpenChangeReason, PopoverRootProps } from '..'
+import type { CalendarChangeReason, CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverOpenChangeReason, PopoverRootProps } from '..'
 import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
@@ -45,12 +45,12 @@ type DatePickerRootContext = {
   dir: Ref<Direction>
   step: Ref<DateStep | undefined>
   closeOnSelect: Ref<boolean>
-  /** The calendar view (`day` | `month` | `year`); `undefined` while uncontrolled and untouched. */
-  view: Ref<CalendarUnit | undefined>
+  /** The calendar view (`day` | `month` | `year`). */
+  view: ComputedRef<CalendarUnit>
   maxView: Ref<CalendarUnit>
   yearsPerPage: Ref<number>
   columns: Ref<number>
-  onViewChange: (view: CalendarUnit) => void
+  onViewChange: (view: CalendarUnit, details?: ChangeEventDetails<CalendarChangeReason>) => void
 }
 
 /**
@@ -85,8 +85,10 @@ export type DatePickerRootEmits = {
   'update:modelValue': [date: DateValue | undefined]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
+  /** Called before the calendar view changes; `details.cancel()` keeps the current view. */
+  'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>]
   /** Event handler called whenever the calendar view changes */
-  'update:view': [view: CalendarUnit]
+  'update:view': [view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>]
 }
 
 export const [injectDatePickerRootContext, provideDatePickerRootContext]
@@ -182,10 +184,15 @@ const { state: open, setState: setOpen } = useControllableState<boolean, DatePic
   emit: emits,
 })
 
-const view = useVModel(props, 'view', emits, {
-  defaultValue: props.defaultView,
-  passive: (props.view === undefined) as false,
-}) as Ref<CalendarUnit | undefined>
+// Same contract as `open`: the inner calendar is controlled by this model, so a
+// `beforeUpdate:view` cancel here keeps both in sync; the calendar's reason and
+// event are forwarded.
+const { state: view, setState: setView } = useControllableState<CalendarUnit, CalendarChangeReason>({
+  prop: () => props.view,
+  defaultValue: props.defaultView ?? 'day',
+  name: 'view',
+  emit: emits,
+})
 
 const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()
 
@@ -268,8 +275,8 @@ provideDatePickerRootContext({
   maxView,
   yearsPerPage,
   columns,
-  onViewChange(next: CalendarUnit) {
-    view.value = next
+  onViewChange(next: CalendarUnit, details?: ChangeEventDetails<CalendarChangeReason>) {
+    setView(next, details?.reason, details?.event)
   },
 })
 </script>
