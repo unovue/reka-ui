@@ -11,6 +11,7 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 - Lint: `pnpm lint` (fix: `pnpm lint:fix`)
 - Build: `pnpm --filter reka-ui build` (vue-tsc + tsdown)
 - Regenerate API docs after changing public props/emits/slots: `pnpm docs:gen`
+- Regenerate per-family subpath exports after adding/removing a family in `packages/core/src/index.ts`: `pnpm --filter reka-ui gen:exports`
 
 ## Layout
 - `packages/core/src/<Family>/` — one dir per component family; parts named `<Family><Part>.vue`; each family has `index.ts`; public surface = `packages/core/src/index.ts`.

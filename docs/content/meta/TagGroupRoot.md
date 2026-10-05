@@ -83,7 +83,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the selection changes.</p>\n',
-    'type': '[value: T | T[]]'
+    'type': '[value: T | T[] | undefined]'
   }
 ]" />
 
@@ -119,7 +119,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `remove` | Event handler called when the user removes tags, with the values to remove. Tags are only removable when this event has a listener; remove the values from your own list to remove the tags. | `[values: T[]]` |
-| `update:modelValue` | Event handler called when the selection changes. | `[value: T \| T[]]` |
+| `update:modelValue` | Event handler called when the selection changes. | `[value: T \| T[] \| undefined]` |
 
 **Slots**
 

@@ -29,7 +29,7 @@ Reka UI v3 is still in progress, so this page grows as breaking changes land on 
 
 ## Instructions for the agent
 
-You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 5, component names, props, slots and `v-model` bindings are unchanged in v3.
+You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 6, component names, props, slots and `v-model` bindings are unchanged in v3.
 
 ### Before you start
 
@@ -123,7 +123,17 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Rewrite rules.** Never depend on the shape of a generated id. In tests, select by role, label or text (`getByRole('dialog')`, `getByRole('tooltip')`) or compare the attribute to the id read from the other element. In CSS, style by data attribute or class, not by generated id. Code that passes its own `id` to a part is unaffected.
 
-### 5. Calendar views replace the month and year pickers
+### 5. Disabled triggers rendered `asChild`
+
+**What changed.** A disabled `Toggle`, `ToggleGroupItem` or `CheckboxRoot` ignores a user click even when it renders `asChild` onto an element without native `disabled` behaviour (a `div`, a link, a custom component). In v2 only the native `disabled` attribute blocked the click, so those elements still toggled.
+
+**How to find it.** Search for `Toggle`, `ToggleGroupItem` and `CheckboxRoot` used with both `as-child` (or `asChild`) and `disabled` (or `:disabled`), where the child is not a `<button>`.
+
+**Rewrite rules.** Nothing to rewrite in most projects: the new behaviour is what a disabled control should do. If a test or handler expects the disabled control to toggle on click, *ask* before changing it; do not remove `disabled` on your own.
+
+**Verify.** Tests that click a disabled `asChild` control assert that the value did not change.
+
+### 6. Calendar views replace the month and year pickers
 
 **What changed.** The `MonthPicker`, `MonthRangePicker`, `YearPicker` and `YearRangePicker` families no longer exist. `CalendarRoot` and `RangeCalendarRoot` take a `granularity` (`day` | `month` | `year`) that sets what a selection commits, so a month picker is a `Calendar` with `granularity="month"`. The cell parts of `Calendar`, `RangeCalendar`, `DatePicker` and `DateRangePicker` take one `value` prop instead of `date` / `day` + `month`, and the grid part takes the page it renders.
 
