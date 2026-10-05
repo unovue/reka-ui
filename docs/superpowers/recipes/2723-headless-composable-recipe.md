@@ -198,11 +198,12 @@ one stateful factory boundary:
 - **Functional selectors still live in `props`.** The trigger's
   `data-reka-collection-item` is queried by arrow navigation, so it is the same
   functional-data exemption established by Menu, not semantic state.
-- **Per-trigger SSR ids stay in the Trigger shell.** Existing Accordion ids are
-  allocation-order-based rather than `(baseId, value)`-derived. `AccordionTrigger`
-  therefore keeps `useId` and writes the id into the existing item context before
-  building trigger/content surfaces; the item context backs `triggerId` with a
-  reactive ref so content rendered before its trigger still observes it.
+- **Per-trigger SSR ids are allocated by the Item shell.** Existing Accordion ids
+  are allocation-order-based rather than `(baseId, value)`-derived, so they stay
+  in a shell and come from `useId`. `AccordionItem` allocates the trigger id
+  during its own setup and provides it on the item context: content may render
+  before its trigger, and SSR serializes `aria-labelledby` once, so an id a later
+  sibling assigns would arrive after the markup is written.
   Standalone `getItemSurface` calls derive reactive trigger and content ids from
   `(baseId, encodeURIComponent(value))`, so values with spaces stay valid id
   references, and link them with `aria-labelledby`/`aria-controls`. The default

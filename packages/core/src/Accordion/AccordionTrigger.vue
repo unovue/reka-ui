@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useId } from '@/shared'
 
 export interface AccordionTriggerProps extends PrimitiveProps {}
 </script>
@@ -17,7 +16,6 @@ const props = defineProps<AccordionTriggerProps>()
 const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
 
-itemContext.triggerId ||= useId(undefined, 'reka-accordion-trigger')
 const surface = getAccordionTriggerSurface(rootContext, itemContext)
 </script>
 

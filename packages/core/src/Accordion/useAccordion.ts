@@ -118,7 +118,12 @@ export function getAccordionContentSurface(
         --reka-accordion-content-width: var(--reka-collapsible-content-width);
         --reka-accordion-content-height: var(--reka-collapsible-content-height);
       `,
-      'onContentFound': (event?: Event) => rootContext.changeModelValue(itemContext.value.value, 'content-found', event),
+      // `beforematch` can only reveal content: it never opens a disabled item and never toggles an open one closed.
+      'onContentFound': (event?: Event) => {
+        if (itemContext.disabled.value || itemContext.open.value)
+          return
+        rootContext.changeModelValue(itemContext.value.value, 'content-found', event)
+      },
     }),
     getAccordionPartState(rootContext, itemContext),
   )

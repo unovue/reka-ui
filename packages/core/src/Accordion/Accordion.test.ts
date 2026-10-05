@@ -341,8 +341,8 @@ describe('accordion characterization contract', () => {
     wrapper.unmount()
   })
 
-  it('labels content rendered before its trigger once the trigger allocates an id', async () => {
-    const wrapper = mount({
+  it('labels content rendered before its trigger, on the client and in server-rendered markup', async () => {
+    const contentFirstFixture = {
       components: {
         AccordionContent,
         AccordionHeader,
@@ -358,7 +358,16 @@ describe('accordion characterization contract', () => {
           </AccordionItem>
         </AccordionRoot>
       `,
-    }, { attachTo: document.body })
+    }
+
+    // SSR serializes once: the id has to exist before the content renders.
+    const server = document.createElement('div')
+    server.innerHTML = await renderToString(createSSRApp(contentFirstFixture))
+    const serverTriggerId = server.querySelector('button')?.id
+    expect(serverTriggerId).toMatch(/^reka-accordion-trigger-/)
+    expect(server.querySelector('[role="region"]')?.getAttribute('aria-labelledby')).toBe(serverTriggerId)
+
+    const wrapper = mount(contentFirstFixture, { attachTo: document.body })
     await nextTick()
 
     const trigger = wrapper.find('button')
@@ -624,6 +633,37 @@ describe('accordion change details through the shell', () => {
     expect(before).toHaveBeenCalledWith('one', expect.objectContaining({ reason: 'content-found', event }))
     expect(wrapper.find('button').attributes('aria-expanded')).toBe(String(!cancel))
     expect(Boolean(root.emitted('update:modelValue'))).toBe(!cancel)
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['root', '<AccordionRoot type="single" disabled :unmount-on-hide="false" @before-update:model-value="before"><AccordionItem value="one">'],
+    ['item', '<AccordionRoot type="single" :unmount-on-hide="false" @before-update:model-value="before"><AccordionItem value="one" disabled>'],
+  ])('keeps a disabled (%s) item closed when the browser finds its hidden content', async (_, open) => {
+    const before = vi.fn()
+    const wrapper = mount({
+      ...fixture,
+      template: `${open}
+          <AccordionHeader><AccordionTrigger>One</AccordionTrigger></AccordionHeader>
+          <AccordionContent>Content one</AccordionContent>
+        </AccordionItem>
+      </AccordionRoot>`,
+      setup: () => ({ before }),
+    }, { attachTo: document.body })
+    const root = wrapper.findComponent(AccordionRoot)
+    const content = wrapper.find('[role="region"]')
+    // jsdom reflects `hidden="until-found"` as a bare boolean attribute.
+    expect(content.attributes('hidden')).toBeDefined()
+
+    content.element.dispatchEvent(new Event('beforematch'))
+    // The shell handles `beforematch` in an animation frame; frames run in request order.
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await nextTick()
+
+    expect(before).not.toHaveBeenCalled()
+    expect(root.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.find('button').attributes('aria-expanded')).toBe('false')
+    expect(content.attributes('hidden')).toBeDefined()
     wrapper.unmount()
   })
 })

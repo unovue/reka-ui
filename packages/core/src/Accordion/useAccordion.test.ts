@@ -273,6 +273,26 @@ describe('useAccordion — item surface', () => {
     expect(accordion.modelValue.value).toBe('one')
     expect(accordion.lastChangeDetails.value).toMatchObject({ reason: 'content-found', event })
   })
+
+  it('ignores found content on a disabled item and on an item that is already open', () => {
+    const onBeforeUpdate = vi.fn()
+    const disabled = ref(true)
+    const accordion = useAccordion({ type: 'multiple', defaultValue: ['two'], onBeforeUpdate })
+    const itemDisabled = accordion.getItemSurface('one', { disabled: true })
+    const rootDisabled = useAccordion({ disabled, onBeforeUpdate }).getItemSurface('one')
+    const alreadyOpen = accordion.getItemSurface('two')
+
+    itemDisabled.content.attrs.value.onContentFound(new Event('beforematch'))
+    rootDisabled.content.attrs.value.onContentFound(new Event('beforematch'))
+    alreadyOpen.content.attrs.value.onContentFound(new Event('beforematch'))
+
+    expect(onBeforeUpdate).not.toHaveBeenCalled()
+    expect(accordion.modelValue.value).toEqual(['two'])
+
+    disabled.value = false
+    rootDisabled.content.attrs.value.onContentFound(new Event('beforematch'))
+    expect(rootDisabled.open.value).toBe(true)
+  })
 })
 
 describe('useAccordion — attrs', () => {

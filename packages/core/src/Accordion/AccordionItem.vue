@@ -2,7 +2,7 @@
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
 import type { DisclosureState } from '@/shared'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, useForwardExpose, useId } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 export interface AccordionItemProps
@@ -36,7 +36,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
 import { getAccordionItemSurface } from './useAccordion'
 
@@ -68,16 +68,15 @@ const dataState = computed<DisclosureState>(() => surface.item.state.value.state
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
 
-// AccordionTrigger assigns the id during setup; a reactive backing ref lets
-// content surfaces built before that assignment still observe it.
-const triggerId = ref('')
+// Allocated here rather than in AccordionTrigger: content may render before its
+// trigger, and SSR serializes `aria-labelledby` once, without a second pass.
+const triggerId = useId(undefined, 'reka-accordion-trigger')
 provideAccordionItemContext({
   open,
   dataState,
   disabled,
   dataDisabled,
-  get triggerId() { return triggerId.value },
-  set triggerId(value) { triggerId.value = value },
+  triggerId,
   currentRef,
   currentElement,
   value: computed(() => props.value),
