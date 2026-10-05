@@ -12,3 +12,7 @@ export {
   default as ColorAreaThumb,
   type ColorAreaThumbProps,
 } from './ColorAreaThumb.vue'
+
+export { useColorArea } from './useColorArea'
+export type { ColorAreaChangeReason, ColorAreaRootState, UseColorAreaProps, UseColorAreaReturn } from './useColorArea'
+export type { ColorAreaAreaState, ColorAreaThumbState } from './useColorArea'

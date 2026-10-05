@@ -8,3 +8,7 @@ export {
   type ColorFieldRootProps,
   injectColorFieldRootContext,
 } from './ColorFieldRoot.vue'
+
+export { useColorField } from './useColorField'
+export type { ColorFieldChangeReason, ColorFieldRootState, UseColorFieldProps, UseColorFieldReturn } from './useColorField'
+export type { ColorFieldInputState } from './useColorField'

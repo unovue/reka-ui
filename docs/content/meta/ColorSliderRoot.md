@@ -90,6 +90,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: string | Color, details: ChangeEventDetails&lt;\'slider\', Event&gt;]'
+  },
+  {
     'name': 'change',
     'description': '',
     'type': '[value: string]'
@@ -106,8 +111,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: string | Color]'
+    'description': '<p>Event handler called when the color value changes.</p>\n',
+    'type': '[value: string | Color, details: ChangeEventDetails&lt;\'slider\', Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -136,9 +141,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string \| Color, details: ChangeEventDetails<"slider", Event>]` |
 | `change` |  | `[value: string]` |
 | `changeEnd` |  | `[value: string]` |
 | `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string \| Color]` |
+| `update:modelValue` | Event handler called when the color value changes. | `[value: string \| Color, details: ChangeEventDetails<"slider", Event>]` |
 
 </llm-only>
