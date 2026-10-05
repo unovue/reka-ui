@@ -38,3 +38,13 @@ export {
   default as ListboxVirtualizer,
   type ListboxVirtualizerProps,
 } from './ListboxVirtualizer.vue'
+export {
+  type ListboxChangeReason,
+  type ListboxContentState,
+  type ListboxItemState,
+  type ListboxNavigationIntent,
+  type ListboxState,
+  useListboxRoot,
+  type UseListboxRootProps,
+  type UseListboxRootReturn,
+} from './useListbox'
