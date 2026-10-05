@@ -41,6 +41,13 @@ const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
 })
 const emits = defineEmits<ListboxItemEmits<T>>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const id = useId(undefined, 'reka-listbox-item')
 const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
@@ -98,7 +105,7 @@ provideListboxItemContext({
           rootContext.changeHighlight(currentElement, false, false)
       }"
     >
-      <slot />
+      <slot :selected="isSelected" />
     </Primitive>
   </CollectionItem>
 </template>

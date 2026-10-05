@@ -71,6 +71,8 @@ let keydownListenerInstalled = false
 let touchClickInstalled = false
 const pendingTouch = new Map<OutsideSubscriber, () => void>()
 const armingTimers = new Set<number>()
+/** Documents other than the top-level one (iframes), with their attach count. */
+const foreignDocuments = new Map<Document, number>()
 
 function installOutsideListeners() {
   if (outsideListenersInstalled || !isClient)
@@ -106,12 +108,16 @@ function ensureTouchClick() {
     return
   touchClickInstalled = true
   document.addEventListener('click', handleTouchClick)
+  for (const doc of foreignDocuments.keys())
+    doc.addEventListener('click', handleTouchClick)
 }
 function removeTouchClick() {
   if (!touchClickInstalled)
     return
   touchClickInstalled = false
   document.removeEventListener('click', handleTouchClick)
+  for (const doc of foreignDocuments.keys())
+    doc.removeEventListener('click', handleTouchClick)
 }
 function handleTouchClick() {
   const entries = [...pendingTouch.entries()]
@@ -229,6 +235,49 @@ export function registerBranch(el: HTMLElement): () => void {
   }
 }
 
+// --- foreign documents (iframes) ---
+// The shared listeners above live on the top-level `document` / `window`. Events
+// never cross a frame boundary, so a layer rendered inside an iframe attaches
+// its own document here for as long as it listens. Reference-counted per
+// document: one listener of each kind, however many layers share the frame.
+
+function addForeignListeners(doc: Document) {
+  doc.addEventListener('pointerdown', handlePointerDown)
+  doc.addEventListener('focusin', handleFocusIn)
+  doc.defaultView?.addEventListener('keydown', handleKeyDown)
+  if (touchClickInstalled)
+    doc.addEventListener('click', handleTouchClick)
+}
+function removeForeignListeners(doc: Document) {
+  doc.removeEventListener('pointerdown', handlePointerDown)
+  doc.removeEventListener('focusin', handleFocusIn)
+  doc.defaultView?.removeEventListener('keydown', handleKeyDown)
+  doc.removeEventListener('click', handleTouchClick)
+}
+
+/** Attach the shared listeners to `doc` when it is not the top-level document; returns the detach. */
+export function attachDocument(doc: Document): () => void {
+  if (!isClient || doc === document)
+    return () => {}
+  const count = foreignDocuments.get(doc) ?? 0
+  foreignDocuments.set(doc, count + 1)
+  if (count === 0)
+    addForeignListeners(doc)
+  let detached = false
+  return () => {
+    if (detached)
+      return
+    detached = true
+    const remaining = (foreignDocuments.get(doc) ?? 1) - 1
+    if (remaining > 0) {
+      foreignDocuments.set(doc, remaining)
+      return
+    }
+    foreignDocuments.delete(doc)
+    removeForeignListeners(doc)
+  }
+}
+
 // --- body pointer-events lock (#2674) ---
 // Reference-counted: the first disabling layer saves the original body
 // `pointer-events` and sets `none`; the last one to leave restores it. Counting
@@ -303,6 +352,9 @@ export function resetLayerStack(): void {
   pendingTouch.clear()
   teardownOutsideListeners() // also removes the touch-click listener
   teardownKeydownListener()
+  for (const doc of foreignDocuments.keys())
+    removeForeignListeners(doc)
+  foreignDocuments.clear()
   if (isClient && bodyPointerEvents.original !== undefined)
     document.body.style.pointerEvents = bodyPointerEvents.original
   bodyPointerEvents.original = undefined

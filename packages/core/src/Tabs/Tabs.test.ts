@@ -386,3 +386,47 @@ describe('v-model (foundation contract)', () => {
     wrapper.unmount()
   })
 })
+
+describe('given TabsTrigger with consumer event listeners', () => {
+  function mountTabs(triggerListeners: Record<string, (event: Event) => void> = {}) {
+    document.body.innerHTML = ''
+    const value = ref('one')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, {
+        'modelValue': value.value,
+        'onUpdate:modelValue': (next: string) => { value.value = next },
+        'activationMode': 'manual',
+      }, () => [
+        h(TabsList, () => [
+          h(TabsTrigger, { value: 'one' }, () => 'One'),
+          h(TabsTrigger, { value: 'two', ...triggerListeners }, () => 'Two'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    return { value, trigger: wrapper.findAll('[role="tab"]')[1] }
+  }
+
+  it.each(['Enter', ' '])('should activate on %j keydown', async (key) => {
+    const { value, trigger } = mountTabs()
+    await trigger.trigger('keydown', { key })
+    expect(value.value).toBe('two')
+  })
+
+  it.each(['Enter', ' '])('should not activate on %j keydown when the consumer prevents default', async (key) => {
+    const { value, trigger } = mountTabs({ onKeydown: event => event.preventDefault() })
+    await trigger.trigger('keydown', { key })
+    expect(value.value).toBe('one')
+  })
+
+  it('should activate on mousedown', async () => {
+    const { value, trigger } = mountTabs()
+    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('two')
+  })
+
+  it('should not activate on mousedown when the consumer prevents default', async () => {
+    const { value, trigger } = mountTabs({ onMousedown: event => event.preventDefault() })
+    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('one')
+  })
+})

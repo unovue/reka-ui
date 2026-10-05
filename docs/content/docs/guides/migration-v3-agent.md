@@ -91,8 +91,10 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - A wrapper component that re-declares the emit type needs the new tuple shape, importing the details type and the family's reason union from `reka-ui`:
 
   ```ts
-  'update:open': [value: boolean] // [!code --]
-  'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>] // [!code ++]
+  type Emits = {
+    'update:open': [value: boolean] // [!code --]
+    'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>] // [!code ++]
+  }
   ```
 
   The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason`, `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `DatePickerOpenChangeReason` and `DateRangePickerOpenChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.

@@ -23,7 +23,10 @@ export interface UseCheckboxProps<T = boolean> {
   modelValue?: MaybeRefOrGetter<T | 'indeterminate' | null | undefined>
   /** Initial value when uncontrolled, default `falseValue`. */
   defaultValue?: T | 'indeterminate'
-  /** When `true`, the checkbox is disabled (a disabled `group` also disables it). */
+  /**
+   * When `true`, the checkbox is disabled (a disabled `group` also disables it).
+   * A checkbox blocked only by its group's `max` is not `disabled`; see `isMaxReached`.
+   */
   disabled?: MaybeRefOrGetter<boolean | undefined>
   required?: MaybeRefOrGetter<boolean | undefined>
   /** Form submission value and group membership token, default `'on'`. */
@@ -55,6 +58,12 @@ export interface UseCheckboxReturn<T = boolean> {
   /** Group membership when grouped, else `'indeterminate'` or `checked`. */
   checkedState: ComputedRef<CheckedState>
   disabled: ComputedRef<boolean>
+  /**
+   * `true` while this unchecked checkbox cannot be added because its group has
+   * reached `max`. It stays focusable and is exposed through `aria-disabled`
+   * alone (no native `disabled`, no `data-disabled`), so it remains discoverable.
+   */
+  isMaxReached: ComputedRef<boolean>
   /** Press semantics: indeterminate → checked, otherwise flip; returns `false` when unchanged or cancelled. */
   toggle: (reason?: CheckboxChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Set the checked state explicitly; returns `false` when unchanged or cancelled. */
@@ -119,6 +128,14 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
   })
   const disabled = computed(() => (group?.disabled.value || toValue(props.disabled)) ?? false)
   const checked = computed(() => isEqual(modelValue.value, trueValue()))
+  // An unchecked checkbox can't be added once its group has reached `max`.
+  const isMaxReached = computed(() => {
+    const max = group?.max.value
+    if (isNullish(max))
+      return false
+    const values = group!.modelValue.value ?? []
+    return !isValueEqualOrExist(values, value()) && values.length >= max
+  })
 
   const checkedState = computed<CheckedState>(() => {
     if (!isNullish(group?.modelValue.value)) {
@@ -172,12 +189,14 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
       // Pass-through (not `|| undefined`) to match CheckboxRoot's `:aria-required`
       // exactly: undefined omits, `false` renders "false".
       'aria-required': toValue(props.required),
+      'aria-disabled': disabled.value || isMaxReached.value ? 'true' : undefined,
       // Boolean pass-through, like CheckboxRoot's `:disabled="disabled"`.
       'disabled': disabled.value,
       // Guarded here (not in `toggle`): a native `disabled` button never fires
-      // the click, but an `asChild` non-native element does.
+      // the click, but an `asChild` non-native element does, and so does a
+      // checkbox that is only blocked by the group's `max`.
       'onClick': (event: MouseEvent) => {
-        if (disabled.value)
+        if (disabled.value || isMaxReached.value)
           return
         toggle('trigger-press', event)
       },
@@ -187,5 +206,5 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
   )
   const indicator = getCheckboxIndicatorSurface(context)
 
-  return { modelValue, checked, checkedState, disabled, toggle, setChecked, lastChangeDetails, isControlled, root, indicator, context }
+  return { modelValue, checked, checkedState, disabled, isMaxReached, toggle, setChecked, lastChangeDetails, isControlled, root, indicator, context }
 }
