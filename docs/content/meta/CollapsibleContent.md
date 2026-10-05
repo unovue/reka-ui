@@ -27,7 +27,7 @@
   {
     'name': 'contentFound',
     'description': '',
-    'type': '[(void)?]'
+    'type': '[(void | undefined)?]'
   }
 ]" />
 </llm-exclude>
@@ -46,6 +46,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `contentFound` |  | `[(void)?]` |
+| `contentFound` |  | `[(void \| undefined)?]` |
 
 </llm-only>
