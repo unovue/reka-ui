@@ -1,8 +1,9 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
-import type { MenuEmits, MenuProps } from '@/Menu'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
+import type { BaseChangeReason } from '@/shared'
+import { createContext, useControllableState, useDirection, useForwardExpose } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
@@ -12,8 +13,8 @@ export type DropdownMenuRootEmits = MenuEmits
 
 export interface DropdownMenuRootContext {
   open: Readonly<Ref<boolean>>
-  onOpenChange: (open: boolean) => void
-  onOpenToggle: () => void
+  onOpenChange: (open: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
+  onOpenToggle: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
   triggerId: string
   triggerElement: Ref<HTMLElement | undefined>
   contentId: string
@@ -26,7 +27,6 @@ export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { MenuRoot } from '@/Menu'
 
@@ -44,10 +44,15 @@ defineSlots<{
 }>()
 
 useForwardExpose()
-const open = useVModel(props, 'open', emit, {
-  defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
+// Owns the model so `beforeUpdate:open` can cancel: the trigger opens it and
+// the controlled `MenuRoot` below reports closes with their reason; both paths
+// go through one `setState`.
+const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
+  prop: () => props.open,
+  defaultValue: props.defaultOpen ?? false,
+  name: 'open',
+  emit,
+})
 
 const triggerElement = ref<HTMLElement>()
 
@@ -55,11 +60,11 @@ const { modal, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 provideDropdownMenuRootContext({
   open,
-  onOpenChange: (value) => {
-    open.value = value
+  onOpenChange: (value, reason = 'trigger-press', event) => {
+    setState(value, reason, event)
   },
-  onOpenToggle: () => {
-    open.value = !open.value
+  onOpenToggle: (reason = 'trigger-press', event) => {
+    setState(!open.value, reason, event)
   },
   triggerId: '',
   triggerElement,
@@ -71,9 +76,10 @@ provideDropdownMenuRootContext({
 
 <template>
   <MenuRoot
-    v-model:open="open"
+    :open="open"
     :dir="dir"
     :modal="modal"
+    @update:open="(value, details) => setState(value, details.reason, details.event)"
   >
     <slot :open="open" />
   </MenuRoot>

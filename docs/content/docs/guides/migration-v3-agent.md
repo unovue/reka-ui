@@ -123,6 +123,16 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Rewrite rules.** Never depend on the shape of a generated id. In tests, select by role, label or text (`getByRole('dialog')`, `getByRole('tooltip')`) or compare the attribute to the id read from the other element. In CSS, style by data attribute or class, not by generated id. Code that passes its own `id` to a part is unaffected.
 
+### 5. Disabled triggers rendered `asChild`
+
+**What changed.** A disabled `Toggle`, `ToggleGroupItem` or `CheckboxRoot` ignores a user click even when it renders `asChild` onto an element without native `disabled` behaviour (a `div`, a link, a custom component). In v2 only the native `disabled` attribute blocked the click, so those elements still toggled.
+
+**How to find it.** Search for `Toggle`, `ToggleGroupItem` and `CheckboxRoot` used with both `as-child` (or `asChild`) and `disabled` (or `:disabled`), where the child is not a `<button>`.
+
+**Rewrite rules.** Nothing to rewrite in most projects: the new behaviour is what a disabled control should do. If a test or handler expects the disabled control to toggle on click, *ask* before changing it; do not remove `disabled` on your own.
+
+**Verify.** Tests that click a disabled `asChild` control assert that the value did not change.
+
 ### Report
 
 When you are done, give the developer:
