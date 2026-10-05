@@ -8,7 +8,7 @@ import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
 import { createContext, useDirection, useId, useLocale } from '@/shared'
-import { handleCalendarInitialFocus } from '@/shared/date'
+import { handleCalendarInitialFocus, useCalendarViewFocus } from '@/shared/date'
 
 export interface CalendarRootContext {
   locale: ComputedRef<string>
@@ -251,6 +251,9 @@ const { root, context, placeholder, grid, weekDays, modelValue, view, granularit
 })
 
 provideCalendarRootContext(context)
+
+// DOM-bound: drilling down unmounts the focused cell; keep the focus in the calendar.
+useCalendarViewFocus(parentElement, view)
 
 onMounted(() => {
   if (props.initialFocus)

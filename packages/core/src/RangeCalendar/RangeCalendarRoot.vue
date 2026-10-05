@@ -9,7 +9,7 @@ import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
 import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
-import { handleCalendarInitialFocus } from '@/shared/date'
+import { handleCalendarInitialFocus, useCalendarViewFocus } from '@/shared/date'
 
 export interface RangeCalendarRootContext {
   locale: ComputedRef<string>
@@ -285,6 +285,9 @@ const { root, context, placeholder, grid, weekDays, modelValue, view, granularit
 })
 
 provideRangeCalendarRootContext(context)
+
+// DOM-bound: drilling down unmounts the focused cell; keep the focus in the calendar.
+useCalendarViewFocus(parentElement, view)
 
 // DOM-bound: Escape while editing restores the last valid range.
 const kbd = useKbd()

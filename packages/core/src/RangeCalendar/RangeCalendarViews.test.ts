@@ -132,6 +132,14 @@ describe('range calendar — views and drill-down', () => {
     expect(range(onUpdate.mock.calls.at(-1)![0])).toBe('2027-03-10..2027-03-14')
   })
 
+  it('keeps focus in the calendar when a cell drills down from the keyboard', async () => {
+    const { user, getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month' })
+    getByTestId('month-2026-03-01').focus()
+    await user.keyboard(kbd.ENTER)
+    expect(getByTestId('view-day')).toBeInTheDocument()
+    expect(getByTestId('day-2026-03-05')).toHaveFocus()
+  })
+
   it('shows no range state in views coarser than the granularity', async () => {
     const { user, getByTestId, calendar } = setupViews({ defaultPlaceholder: sep5, modelValue: { start: new CalendarDate(2026, 9, 3), end: new CalendarDate(2026, 9, 8) } })
     expect(selected(calendar)).toHaveLength(6)

@@ -252,6 +252,28 @@ describe('calendar — views and drill-down', () => {
     expect(getByTestId('day-2028-02-14')).toHaveAttribute('data-selected')
   })
 
+  it('keeps focus in the calendar when a cell drills down from the keyboard', async () => {
+    const { user, getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'year' })
+    getByTestId('year-2028-01-01').focus()
+
+    await user.keyboard(kbd.ENTER)
+    expect(getByTestId('month-2028-09-01')).toHaveFocus()
+
+    await user.keyboard(kbd.ARROW_LEFT)
+    await user.keyboard(kbd.ENTER)
+    expect(getByTestId('view-day')).toBeInTheDocument()
+    // Arrow keys move the placeholder to the cell's own value, the first of the month.
+    expect(getByTestId('day-2028-08-01')).toHaveFocus()
+  })
+
+  it('leaves focus on the view trigger when it drills up', async () => {
+    const { user, getByTestId } = setupViews({ defaultPlaceholder: sep5 })
+    getByTestId('view-trigger').focus()
+    await user.keyboard(kbd.ENTER)
+    expect(getByTestId('view-month')).toBeInTheDocument()
+    expect(getByTestId('view-trigger')).toHaveFocus()
+  })
+
   it('respects maxView', async () => {
     const { user, getByTestId, queryByTestId } = setupViews({ defaultPlaceholder: sep5, maxView: 'month' })
     await user.click(getByTestId('view-trigger'))
