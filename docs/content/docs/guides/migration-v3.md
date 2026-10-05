@@ -82,7 +82,7 @@ Because both values are now always emitted, any styles that relied on the attrib
 
 `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. The details tell you *why* the state changed (`details.reason`) and which native event caused it (`details.event`), and `details.cancel()` inside `beforeUpdate:*` keeps the current state.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`). The remaining families follow as they move to their headless composables.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`). The remaining families follow as they move to their headless composables.
 
 A change to a value that is already current no longer emits: `update:modelValue` fires only when the value actually changes, so re-pressing the checked radio or the selected single-mode toggle emits nothing (the `select` event on `RadioGroupItem` still fires).
 
@@ -135,3 +135,50 @@ Only code that hard-coded the shape of a generated id is affected. In tests, sel
 A disabled `Toggle`, `ToggleGroupItem` or `CheckboxRoot` now ignores a user click even when it renders `asChild` onto an element that has no native `disabled` behaviour, such as a `div` or a link. In v2 only the native `disabled` attribute blocked the click, so those elements still toggled.
 
 If you relied on a disabled `asChild` control still reacting to clicks, drop `disabled` and express the state another way. Programmatic changes through the composables (`toggle()`, `setChecked()`) are not guarded by `disabled`.
+
+## Calendar views
+
+`MonthPicker`, `MonthRangePicker`, `YearPicker` and `YearRangePicker` are gone. `Calendar` and `RangeCalendar` now carry a `view` (`day` | `month` | `year`, bindable as `v-model:view`) and a `granularity` that fixes what a selection means. A month picker is `<CalendarRoot granularity="month">`, a year range picker is `<RangeCalendarRoot granularity="year">`, and a day calendar can drill up to its month and year grids through the new `CalendarView` / `CalendarViewTrigger` parts (and their `RangeCalendar*`, `DatePicker*`, `DateRangePicker*` equivalents). Selecting a cell in a view coarser than the granularity moves the placeholder and drills down; selecting at the granularity commits.
+
+| v2 | v3 |
+| --- | --- |
+| `MonthPickerRoot` | `CalendarRoot granularity="month"` |
+| `YearPickerRoot` | `CalendarRoot granularity="year"` |
+| `MonthRangePickerRoot`, `YearRangePickerRoot` | `RangeCalendarRoot granularity="month"` / `"year"` |
+| `MonthPicker<Part>`, `YearPicker<Part>` | `Calendar<Part>` |
+| `MonthRangePicker<Part>`, `YearRangePicker<Part>` | `RangeCalendar<Part>` |
+| `isMonthDisabled`, `isYearDisabled` | `isDateDisabled` (receives the cell's unit as its second argument) |
+| `isMonthUnavailable`, `isYearUnavailable` | `isDateUnavailable` |
+| `maximumMonths`, `maximumYears` | `maximumLength` (counted in units of `granularity`; `maximumDays` remains as a deprecated alias) |
+| `CalendarCell :date`, `RangeCalendarCell :date` | `:value` |
+| `CalendarCellTrigger :day :month`, `RangeCalendarCellTrigger :day :month` | `CalendarCellTrigger :value` + `CalendarGrid :value="page.value"` |
+| `MonthPickerCellTrigger :month`, `YearPickerCellTrigger :year` | `CalendarCellTrigger :value` |
+| cell trigger slot `dayValue` / `monthValue` / `yearValue` | `cellValue` |
+| `grid` slot prop as a single object (month and year pickers) | `grid` is always an array of pages; iterate it |
+| `nextPage` / `prevPage` `(placeholder) => DateValue` | unchanged signature; the active view arrives as an additive second argument |
+| `data-selected="true"`, `data-selection-start="true"` … | emitted as empty strings; presence selectors (`[data-selected]`, `data-[selected]:`) are unaffected |
+
+The `DatePicker` and `DateRangePicker` roots forward `view`, `defaultView`, `maxView`, `yearsPerPage` and `columns` and emit `beforeUpdate:view` / `update:view` with the calendar's change details; they do not expose the calendar `granularity` (that name already belongs to the field's time granularity, and a field edits full dates), so month or year pickers use `Calendar` / `RangeCalendar` directly.
+
+Every `CalendarGrid` (and `RangeCalendarGrid`, `DatePickerGrid`, `DateRangePickerGrid`) in the day view needs the page it renders as `:value="page.value"`. The cell triggers no longer receive the month themselves, so a grid without `value` cannot mark the leading and trailing days of the neighbouring months as `data-outside-view`.
+
+Type and import names follow the same mapping as the parts: `MonthPickerRootProps` becomes `CalendarRootProps`, `YearRangePickerRootEmits` becomes `RangeCalendarRootEmits`, and so on. The namespaced `MonthPicker.*`, `MonthRangePicker.*`, `YearPicker.*` and `YearRangePicker.*` objects from `reka-ui/namespaced` are gone too; use `Calendar.*` and `RangeCalendar.*`.
+
+The keyboard shortcuts are unchanged: in the day view Home / End move within the week, PageUp / PageDown by a month and Shift+PageUp / Shift+PageDown by a year; in the month and year views PageUp / PageDown move by a page, as they did in the month and year pickers.
+
+Change events on these roots now follow the [details contract](#change-events-carry-details): `update:modelValue`, `update:placeholder` and `update:view` receive a `ChangeEventDetails<CalendarChangeReason>` second argument (reasons: `cell-press`, `cell-keydown`, `view-drill`, `view-trigger`, `page-navigation`, `focus-navigation`; `escape-key` on ranges) and are preceded by a cancellable `beforeUpdate:*` emit.
+
+```vue
+<MonthPickerRoot v-slot="{ grid }"> <!-- [!code --] -->
+  <MonthPickerGrid> <!-- [!code --] -->
+    <MonthPickerGridBody> <!-- [!code --] -->
+      <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i"> <!-- [!code --] -->
+        <MonthPickerCell v-for="month in row" :key="month.toString()" :date="month"> <!-- [!code --] -->
+          <MonthPickerCellTrigger :month="month" /> <!-- [!code --] -->
+<CalendarRoot v-slot="{ grid }" granularity="month"> <!-- [!code ++] -->
+  <CalendarGrid v-for="page in grid" :key="page.value.toString()" :value="page.value"> <!-- [!code ++] -->
+    <CalendarGridBody> <!-- [!code ++] -->
+      <CalendarGridRow v-for="(row, i) in page.rows" :key="i"> <!-- [!code ++] -->
+        <CalendarCell v-for="month in row" :key="month.toString()" :value="month"> <!-- [!code ++] -->
+          <CalendarCellTrigger :value="month" /> <!-- [!code ++] -->
+```

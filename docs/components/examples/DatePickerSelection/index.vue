@@ -199,6 +199,7 @@ const quickOptions = [
           </div>
           <div class="flex flex-col space-y-4 pt-4 sm:flex-row sm:space-x-4 sm:space-y-0">
             <RangeCalendarGrid
+              :value="month.value"
               class="w-full border-collapse select-none space-y-1"
             >
               <RangeCalendarGridHead>
@@ -221,15 +222,14 @@ const quickOptions = [
                   <RangeCalendarCell
                     v-for="weekDate in weekDates"
                     :key="weekDate.toString()"
-                    :date="weekDate"
+                    :value="weekDate"
                     class="aspect-square lg:w-[34px] my-0.5 p-0 first:[&:has([data-selected])]:rounded-l-full last:[&:has([data-selected])]:rounded-r-full [&:has([data-selected][data-selection-end])]:rounded-r-full [&:not(:has([data-highlighted])):has([data-selected][data-selection-start])]:rounded-l-full
                 first:[&:has([data-highlighted])]:rounded-l-full last:[&:has([data-highlighted])]:rounded-r-full [&:has([data-highlighted-end])]:rounded-r-full [&:has([data-highlighted-start])]:rounded-l-full
                   [&:has([data-selected])]:bg-green3  [&:has([data-highlighted])]:bg-green3
                 "
                   >
                     <RangeCalendarCellTrigger
-                      :day="weekDate"
-                      :month="month.value"
+                      :value="weekDate"
                       class="relative flex items-center  rounded-full justify-center whitespace-nowrap text-sm font-normal w-full h-full text-black outline-none focus:shadow-[0_0_0_2px] transition duration-100 focus:shadow-black hover:bg-green10 hover:text-white data-[selection-start]:bg-green10 data-[selection-end]:bg-green10 data-[selection-start]:text-white data-[selection-end]:text-white data-[highlighted-start]:bg-green10 data-[highlighted-start]:text-white data-[highlighted-end]:bg-green10 data-[highlighted-end]:text-white data-[unavailable]:pointer-events-none data-[unavailable]:text-black/30 data-[unavailable]:line-through before:absolute before:bottom-[3px] before:hidden before:rounded-full before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-green9 data-[outside-month]:opacity-25"
                     />
                   </RangeCalendarCell>

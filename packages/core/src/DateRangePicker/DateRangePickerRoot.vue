@@ -2,8 +2,8 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { ComputedRef, Ref } from 'vue'
-import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverOpenChangeReason, PopoverRootProps, RangeCalendarRootProps } from '..'
-import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverOpenChangeReason, PopoverRootProps, RangeCalendarChangeReason, RangeCalendarRootProps } from '..'
+import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 
@@ -47,11 +47,31 @@ type DateRangePickerRootContext = {
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays?: Ref<number | undefined>
+  maximumLength?: Ref<number | undefined>
   step: Ref<DateStep | undefined>
   closeOnSelect?: Ref<boolean>
+  /** The calendar view (`day` | `month` | `year`). */
+  view: ComputedRef<CalendarUnit>
+  maxView: Ref<CalendarUnit>
+  yearsPerPage: Ref<number>
+  columns: Ref<number>
+  onViewChange: (view: CalendarUnit, details?: ChangeEventDetails<RangeCalendarChangeReason>) => void
 }
 
-export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
+/**
+ * The calendar inside a DateRangePicker always commits days (the field edits
+ * full dates), so the calendar's `granularity` is not exposed here; the
+ * drill-down views are.
+ */
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays' | 'yearsPerPage' | 'columns'> & {
+  /** The maximum length of the range in days (inclusive). */
+  maximumLength?: number
+  /** The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. */
+  view?: CalendarUnit
+  /** The calendar view shown when the picker opens. Defaults to `day`. */
+  defaultView?: CalendarUnit
+  /** The coarsest view `DateRangePickerViewTrigger` can switch to. */
+  maxView?: CalendarUnit
   /** Whether or not to close the popover on range select */
   closeOnSelect?: boolean
 }
@@ -74,6 +94,10 @@ export type DateRangePickerRootEmits = {
   'update:placeholder': [date: DateValue]
   /** Event handler called whenever the start value changes */
   'update:startValue': [date: DateValue | undefined]
+  /** Called before the calendar view changes; `details.cancel()` keeps the current view. */
+  'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>]
+  /** Event handler called whenever the calendar view changes */
+  'update:view': [view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>]
 }
 
 export const [injectDateRangePickerRootContext, provideDateRangePickerRootContext]
@@ -105,11 +129,21 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   isDateHighlightable: undefined,
   allowNonContiguousRanges: false,
   maximumDays: undefined,
+  maximumLength: undefined,
   closeOnSelect: false,
+  view: undefined,
+  defaultView: undefined,
+  maxView: 'year',
+  yearsPerPage: 12,
+  columns: 4,
 })
 const emits = defineEmits<DateRangePickerRootEmits>()
 const {
   locale: propLocale,
+  maximumLength,
+  maxView,
+  yearsPerPage,
+  columns,
   disabled,
   readonly,
   pagedNavigation,
@@ -168,6 +202,23 @@ const { state: open, setState: setOpen } = useControllableState<boolean, DateRan
   emit: emits,
 })
 
+// Same contract as `open`: the inner calendar is controlled by this model, so a
+// `beforeUpdate:view` cancel here keeps both in sync; the calendar's reason and
+// event are forwarded.
+const { state: view, setState: setView, isControlled: isViewControlled } = useControllableState<CalendarUnit, RangeCalendarChangeReason>({
+  prop: () => props.view,
+  defaultValue: props.defaultView ?? 'day',
+  name: 'view',
+  emit: emits,
+})
+
+// `defaultView` is the view each time the picker opens: an uncontrolled view
+// left on month / year when the popover closed goes back to it on reopen.
+watch(open, (isOpen) => {
+  if (isOpen && !isViewControlled.value)
+    setView(props.defaultView ?? 'day')
+})
+
 const dateFieldRef = ref<InstanceType<typeof DateRangeFieldRoot> | undefined>()
 
 watch(modelValue, (value) => {
@@ -213,7 +264,15 @@ provideDateRangePickerRootContext({
   dir,
   fixedDate,
   maximumDays,
+  maximumLength,
   step,
+  view,
+  maxView,
+  yearsPerPage,
+  columns,
+  onViewChange(next: CalendarUnit, details?: ChangeEventDetails<RangeCalendarChangeReason>) {
+    setView(next, details?.reason, details?.event)
+  },
   onStartValueChange(date: DateValue | undefined) {
     emits('update:startValue', date)
   },

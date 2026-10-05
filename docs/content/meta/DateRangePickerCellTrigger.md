@@ -16,14 +16,8 @@
     'required': false
   },
   {
-    'name': 'day',
-    'description': '',
-    'type': 'DateValue',
-    'required': true
-  },
-  {
-    'name': 'month',
-    'description': '',
+    'name': 'value',
+    'description': '<p>The date value of the cell: a day, the first day of a month, or the first day of a year</p>\n',
     'type': 'DateValue',
     'required': true
   }
@@ -31,8 +25,8 @@
 
 <SlotsTable :data="[
   {
-    'name': 'dayValue',
-    'description': '<p>Current day</p>\n',
+    'name': 'cellValue',
+    'description': '<p>Formatted cell text: <code>5</code>, <code>Sep</code>, <code>2026</code></p>\n',
     'type': 'string'
   },
   {
@@ -47,17 +41,17 @@
   },
   {
     'name': 'today',
-    'description': '<p>Current today state</p>\n',
+    'description': '<p>Whether the cell is today / the current month / the current year</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'outsideView',
-    'description': '<p>Current outside view state</p>\n',
+    'description': '<p>Whether the cell belongs to a neighbouring page (a leading/trailing day)</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'outsideVisibleView',
-    'description': '<p>Current outside visible view state</p>\n',
+    'description': '<p>Whether the cell\'s unit is outside the rendered page(s)</p>\n',
     'type': 'boolean'
   },
   {
@@ -89,6 +83,11 @@
     'name': 'selectionEnd',
     'description': '<p>Current selection end state</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'view',
+    'description': '<p>The unit the cell renders</p>\n',
+    'type': '\'day\' | \'month\' | \'year\''
   }
 ]" />
 </llm-exclude>
@@ -101,24 +100,24 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `day` |  | `DateValue` | Yes | - |
-| `month` |  | `DateValue` | Yes | - |
+| `value` | The date value of the cell: a day, the first day of a month, or the first day of a year | `DateValue` | Yes | - |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `dayValue` | Current day | `string` |
+| `cellValue` | Formatted cell text: 5, Sep, 2026 | `string` |
 | `disabled` | Current disable state | `boolean` |
 | `selected` | Current selected state | `boolean` |
-| `today` | Current today state | `boolean` |
-| `outsideView` | Current outside view state | `boolean` |
-| `outsideVisibleView` | Current outside visible view state | `boolean` |
+| `today` | Whether the cell is today / the current month / the current year | `boolean` |
+| `outsideView` | Whether the cell belongs to a neighbouring page (a leading/trailing day) | `boolean` |
+| `outsideVisibleView` | Whether the cell's unit is outside the rendered page(s) | `boolean` |
 | `unavailable` | Current unavailable state | `boolean` |
 | `highlighted` | Current highlighted state | `boolean` |
 | `highlightedStart` | Current highlighted start state | `boolean` |
 | `highlightedEnd` | Current highlighted end state | `boolean` |
 | `selectionStart` | Current selection start state | `boolean` |
 | `selectionEnd` | Current selection end state | `boolean` |
+| `view` | The unit the cell renders | `"day" \| "month" \| "year"` |
 
 </llm-only>

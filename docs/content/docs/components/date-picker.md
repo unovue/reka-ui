@@ -363,6 +363,18 @@ Interactable container for displaying the cell dates. Clicking it selects the da
   ]"
 />
 
+### View
+
+Renders its content only while the calendar's `view` matches. Wrap each of the day, month and year grids in one to let users drill between them; a picker that only shows the day grid can omit it.
+
+<!-- @include: @/meta/DatePickerView.md -->
+
+### View Trigger
+
+The calendar heading as a button that switches to the next coarser view (day → month → year) up to `maxView`. Selecting a cell in a coarser view drills back down without changing the value or closing the popover.
+
+<!-- @include: @/meta/DatePickerViewTrigger.md -->
+
 ## Accessibility
 
 ### Keyboard Interactions
