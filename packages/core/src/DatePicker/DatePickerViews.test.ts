@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useTestKbd } from '@/shared'
 import DatePickerViews from './story/_DatePickerViews.vue'
 
+const kbd = useTestKbd()
 const jan20 = new CalendarDate(1980, 1, 20)
 
 describe('datePicker — calendar views', () => {
@@ -43,6 +45,26 @@ describe('datePicker — calendar views', () => {
     await user.click(getByTestId('day-1985-06-10'))
     expect((onModel.mock.calls.at(-1)![0] as DateValue).toString()).toBe('1985-06-10')
     expect(popover).not.toBeVisible()
+  })
+
+  it('reopens on defaultView after the popover closed in another view', async () => {
+    const user = userEvent.setup()
+    const onView = vi.fn()
+    const { getByTestId, findByTestId, queryByTestId } = render(DatePickerViews, {
+      props: { 'defaultValue': jan20, 'onUpdate:view': onView } as any,
+    })
+
+    await user.click(getByTestId('trigger'))
+    const popover = getByTestId('popover-content')
+    await user.click(getByTestId('view-trigger'))
+    expect(getByTestId('view-month')).toBeInTheDocument()
+    await user.keyboard(kbd.ESCAPE)
+    expect(popover).not.toBeVisible()
+
+    await user.click(getByTestId('trigger'))
+    expect(await findByTestId('view-day')).toBeInTheDocument()
+    expect(queryByTestId('view-month')).toBeNull()
+    expect(onView).toHaveBeenLastCalledWith('day', expect.objectContaining({ reason: 'imperative-action' }))
   })
 
   it('accepts a controlled view and maxView', async () => {

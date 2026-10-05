@@ -187,11 +187,18 @@ const { state: open, setState: setOpen } = useControllableState<boolean, DatePic
 // Same contract as `open`: the inner calendar is controlled by this model, so a
 // `beforeUpdate:view` cancel here keeps both in sync; the calendar's reason and
 // event are forwarded.
-const { state: view, setState: setView } = useControllableState<CalendarUnit, CalendarChangeReason>({
+const { state: view, setState: setView, isControlled: isViewControlled } = useControllableState<CalendarUnit, CalendarChangeReason>({
   prop: () => props.view,
   defaultValue: props.defaultView ?? 'day',
   name: 'view',
   emit: emits,
+})
+
+// `defaultView` is the view each time the picker opens: an uncontrolled view
+// left on month / year when the popover closed goes back to it on reopen.
+watch(open, (isOpen) => {
+  if (isOpen && !isViewControlled.value)
+    setView(props.defaultView ?? 'day')
 })
 
 const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()

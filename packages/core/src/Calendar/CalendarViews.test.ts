@@ -119,6 +119,20 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(getByTestId('cell-2026-09-01')).toHaveFocus()
   })
 
+  it('keeps focus in the calendar when PageDown lands on a disabled month', async () => {
+    const { user, getByTestId, calendar } = setupUnit({
+      granularity: 'month',
+      defaultPlaceholder: sep5,
+      isDateDisabled: (date, unit) => unit === 'month' && date.year === 2027 && date.month === 9,
+    })
+    getByTestId('cell-2026-09-01').focus()
+    await user.keyboard(kbd.PAGE_DOWN)
+    expect(getByTestId('heading')).toHaveTextContent('2027')
+    expect(getByTestId('cell-2027-09-01')).toHaveAttribute('data-disabled')
+    expect(document.activeElement).toHaveAttribute('data-reka-calendar-cell-trigger')
+    expect(calendar).toContainElement(document.activeElement as HTMLElement)
+  })
+
   it('keeps the visible year when modelValue is a new object for the same month (#2961)', async () => {
     const value = new CalendarDate(1980, 1, 20)
     const { user, getByTestId, rerender } = setupUnit({ granularity: 'month', modelValue: value })

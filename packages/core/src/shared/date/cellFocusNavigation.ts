@@ -120,8 +120,17 @@ export function createCellFocusNavigation(
       return
     nextTick(() => {
       const el = queryCell(candidate)
-      if (el && !el.hasAttribute('data-disabled'))
+      if (el && !el.hasAttribute('data-disabled')) {
         focusCell(candidate, el, event)
+        return
+      }
+      // The flip unmounted the focused cell and the target cannot take focus
+      // (disabled, or not rendered): stay inside the calendar on the new page's
+      // tabbable cell (else its first enabled cell) rather than falling back to <body>.
+      const root = host.parentElement.value
+      const fallback = root?.querySelector<HTMLElement>('[data-reka-calendar-cell-trigger][tabindex="0"]')
+        ?? root?.querySelector<HTMLElement>('[data-reka-calendar-cell-trigger]:not([data-disabled]):not([data-outside-view])')
+      fallback?.focus()
     })
   }
 
