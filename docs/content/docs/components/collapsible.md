@@ -225,8 +225,12 @@ const disclosure = useCollapsible({ baseId: 'details', unmountOnHide: false })
 
 <template>
   <div v-bind="disclosure.root.attrs.value">
-    <button type="button" v-bind="disclosure.trigger.attrs.value">Details</button>
-    <div v-bind="disclosure.content.attrs.value">Additional information</div>
+    <button type="button" v-bind="disclosure.trigger.attrs.value">
+      Details
+    </button>
+    <div v-bind="disclosure.content.attrs.value">
+      Additional information
+    </div>
   </div>
 </template>
 ```
