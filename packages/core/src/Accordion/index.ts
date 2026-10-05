@@ -21,3 +21,10 @@ export {
   default as AccordionTrigger,
   type AccordionTriggerProps,
 } from './AccordionTrigger.vue'
+export {
+  type AccordionChangeReason,
+  type AccordionPartState,
+  useAccordion,
+  type UseAccordionProps,
+  type UseAccordionReturn,
+} from './useAccordion'

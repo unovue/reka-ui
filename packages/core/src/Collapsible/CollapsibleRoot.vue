@@ -1,8 +1,10 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { CollapsibleChangeReason } from './useCollapsible'
 import type { PrimitiveProps } from '@/Primitive'
-import { toRefs } from 'vue'
-import { createContext, disclosureState, useForwardExpose } from '@/shared'
+import type { ChangeEventDetails } from '@/shared'
+import { computed, toRefs } from 'vue'
+import { createContext, useForwardExpose } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -17,15 +19,18 @@ export interface CollapsibleRootProps extends PrimitiveProps {
 
 export type CollapsibleRootEmits = {
   /** Event handler called when the open state of the collapsible changes. */
-  'update:open': [value: boolean]
+  'update:open': [value: boolean, details: ChangeEventDetails<CollapsibleChangeReason>]
+  /** Called before a change; call details.cancel() to keep the current state. */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<CollapsibleChangeReason>]
 }
 
-interface CollapsibleRootContext {
+export interface CollapsibleRootContext {
   contentId: string
   disabled?: Ref<boolean>
   open: Ref<boolean>
   unmountOnHide: Ref<boolean>
-  onOpenToggle: () => void
+  onOpenToggle: (event?: Event) => void
+  onContentFound?: (event: Event) => void
 }
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
@@ -33,8 +38,8 @@ export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
+import { useCollapsible } from './useCollapsible'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
   open: undefined,
@@ -51,27 +56,27 @@ defineSlots<{
   }) => any
 }>()
 
-const open = useVModel(props, 'open', emit, {
-  defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
-
 const { disabled, unmountOnHide } = toRefs(props)
-
-provideCollapsibleRootContext({
-  contentId: '',
+const { open, setOpen, root, context } = useCollapsible({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
   disabled,
-  open,
   unmountOnHide,
-  onOpenToggle: () => {
-    if (disabled.value)
-      return
-
-    open.value = !open.value
-  },
+  emit,
+  baseId: '',
 })
 
-defineExpose({ open })
+// Preserve the existing Content-shell id allocation order for SSR.
+context.contentId = ''
+provideCollapsibleRootContext(context)
+
+// Writable like the previous `useVModel` ref: assigning requests a change through the model.
+defineExpose({
+  open: computed({
+    get: () => open.value,
+    set: value => setOpen(value, 'imperative-action'),
+  }),
+})
 useForwardExpose()
 </script>
 
@@ -79,8 +84,7 @@ useForwardExpose()
   <Primitive
     :as="as"
     :as-child="props.asChild"
-    :data-state="disclosureState(open)"
-    :data-disabled="disabled ? '' : undefined"
+    v-bind="root.attrs.value"
   >
     <slot :open="open" />
   </Primitive>
