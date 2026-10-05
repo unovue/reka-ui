@@ -42,4 +42,5 @@ export type {
 } from './types'
 export { useCalendarGrid, type UseCalendarGridProps, type UseCalendarGridReturn } from './useCalendarGrid'
 export { useDateField } from './useDateField'
+export { useSegmentNavigation } from './useSegmentNavigation'
 export * from './utils'

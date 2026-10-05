@@ -1,5 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type SliderImpl from './SliderImpl.vue'
+import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -290,7 +291,7 @@ describe('given default Slider', () => {
     let sliderImpl: VueWrapper<InstanceType<typeof SliderImpl>>
     beforeEach(async () => {
       sliderImpl = wrapper.findComponent('[data-slider-impl]') as any
-      await sliderImpl.trigger('pointerdown', { clientX: 10, pointerId: 1 })
+      await fireEvent.pointerDown(sliderImpl.element, { clientX: 10, pointerId: 1 })
     })
 
     // Temporary hide emitted
@@ -300,7 +301,7 @@ describe('given default Slider', () => {
 
     describe('after pointermove', () => {
       beforeEach(async () => {
-        await sliderImpl.trigger('pointermove', { clientX: 50, pointerId: 1 })
+        await fireEvent.pointerMove(sliderImpl.element, { clientX: 50, pointerId: 1 })
       })
 
       // it('should emit slideMove', async () => {
@@ -309,7 +310,7 @@ describe('given default Slider', () => {
 
       describe('after pointerup', () => {
         beforeEach(async () => {
-          await sliderImpl.trigger('pointerup', { pointerId: 1 })
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
         })
 
         // it('should emit slideEnd', async () => {
@@ -429,8 +430,8 @@ describe('given slider in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ 'slider[0]': '51' })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ 'slider[0]': '51' })
     })
   })
 })

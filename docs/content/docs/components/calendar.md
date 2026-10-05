@@ -373,10 +373,45 @@ This example showcases usage of the CalendarWeek component used to display the n
       `
     },
     {
-      keys: ['PageUp', 'PageDown'],
+      keys: ['Home'],
       description:
       `
-        When the focus is on <Code>CalendarCellTrigger</Code>, it moves to the same cell on the previous / next page.
+        When the focus is on <Code>CalendarCellTrigger</Code>, in the day view, it moves focus to the first day of the current week.
+      `
+    },
+    {
+      keys: ['End'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, in the day view, it moves focus to the last day of the current week.
+      `
+    },
+    {
+      keys: ['PageUp'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, in the day view, it moves to the previous month while preserving the day of the month when possible, or clamps to the last day of the month. In the month and year views, it moves to the same cell on the previous page.
+      `
+    },
+    {
+      keys: ['PageDown'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, in the day view, it moves to the next month while preserving the day of the month when possible, or clamps to the last day of the month. In the month and year views, it moves to the same cell on the next page.
+      `
+    },
+    {
+      keys: ['Shift+PageUp'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, in the day view, it moves to the previous year while preserving the month and day when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['Shift+PageDown'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, in the day view, it moves to the next year while preserving the month and day when possible, or clamps to the last day of the month.
       `
     }
   ]"

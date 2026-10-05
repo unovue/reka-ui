@@ -1,9 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
+import { AutocompleteAnchor, AutocompleteCancel, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompleteRoot, AutocompleteViewport } from '.'
 import Autocomplete from './story/_Autocomplete.vue'
 
 describe('given default Autocomplete', () => {
@@ -174,6 +175,60 @@ describe('given default Autocomplete', () => {
         const lastEmit = emitted.at(-1)?.[0]
         expect(lastEmit).toBe('香')
       })
+
+      it('should not filter during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+        await input.trigger('compositionstart')
+        input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+        input.element.value = 'xiang'
+        await input.trigger('input')
+        await nextTick()
+        const content = wrapper.find('[role=listbox]')
+        expect(content.attributes('data-empty')).toBeUndefined()
+      })
+
+      describe('on Android soft keyboard', () => {
+        beforeEach(() => {
+          Object.defineProperty(window.navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+            configurable: true,
+          })
+        })
+
+        afterEach(() => {
+          delete (window.navigator as { userAgent?: string }).userAgent
+        })
+
+        it('should filter and update modelValue live during plain-text (autocorrect) composition', async () => {
+          await input.trigger('compositionstart')
+          input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'zzzzz', bubbles: true }))
+          input.element.value = 'zzzzz'
+          await input.trigger('input')
+          await nextTick()
+
+          const content = wrapper.find('[role=listbox]')
+          expect(content.attributes('data-empty')).toBeDefined()
+          expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBe('zzzzz')
+        })
+
+        it('should not filter during CJK IME composition until compositionend', async () => {
+          const emittedBefore = wrapper.emitted('update:modelValue')?.length ?? 0
+          await input.trigger('compositionstart')
+          input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+          input.element.value = 'かんじ'
+          await input.trigger('input')
+          await nextTick()
+
+          expect(wrapper.find('[role=listbox]').attributes('data-empty')).toBeUndefined()
+          expect(wrapper.emitted('update:modelValue')?.length ?? 0).toBe(emittedBefore)
+
+          await input.trigger('compositionend')
+          await nextTick()
+          await nextTick()
+
+          expect(wrapper.find('[role=listbox]').attributes('data-empty')).toBeDefined()
+          expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBe('かんじ')
+        })
+      })
     })
 
     describe('data-empty attribute on content', () => {
@@ -240,5 +295,56 @@ describe('given autocomplete in a form', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: 'Banana' })
     })
+  })
+})
+
+describe('given autocomplete with cancel button and openOnFocus', () => {
+  const components = { AutocompleteRoot, AutocompleteAnchor, AutocompleteInput, AutocompleteCancel, AutocompleteContent, AutocompleteViewport, AutocompleteItem }
+  const options = ['Apple', 'Banana', 'Cherry']
+
+  // https://github.com/unovue/reka-ui/issues/2988
+  it.each([
+    ['uncontrolled', '<AutocompleteRoot open-on-focus open-on-click>'],
+    ['controlled', '<AutocompleteRoot v-model="model" open-on-focus open-on-click>'],
+  ])('should show all items after clearing a closed, blurred input (%s)', async (_, root) => {
+    document.body.innerHTML = ''
+    const wrapper = mount({
+      components,
+      setup() {
+        return { options, model: ref('') }
+      },
+      template: `
+        ${root}
+          <AutocompleteAnchor>
+            <AutocompleteInput />
+            <AutocompleteCancel>X</AutocompleteCancel>
+          </AutocompleteAnchor>
+          <AutocompleteContent>
+            <AutocompleteViewport>
+              <AutocompleteItem v-for="option in options" :key="option" :value="option">
+                {{ option }}
+              </AutocompleteItem>
+            </AutocompleteViewport>
+          </AutocompleteContent>
+        </AutocompleteRoot>
+      `,
+    }, { attachTo: document.body })
+    const input = wrapper.find('input')
+
+    input.element.focus()
+    await nextTick()
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    await nextTick()
+    expect(input.element.value).toBe('Banana')
+    expect(wrapper.find('[role=listbox]').exists()).toBe(false)
+
+    input.element.blur()
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    await nextTick()
+
+    expect(input.element.value).toBe('')
+    expect(document.activeElement).toBe(input.element)
+    expect(wrapper.findAll('[role=option]').map(i => i.text())).toEqual(options)
   })
 })

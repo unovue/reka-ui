@@ -13,7 +13,7 @@ type ContextMenuRootContext = {
   pressOpenDelay: Ref<number>
 }
 
-export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {
+export interface ContextMenuRootProps extends MenuProps {
   /**
    * The duration from when the trigger is pressed until the menu opens.
    *
@@ -38,16 +38,18 @@ defineOptions({
 const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
   pressOpenDelay: 700,
+  open: undefined,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
 useForwardExpose()
 const dir = useDirection(propDir)
 
-// ContextMenu owns the model (there is no `open` prop): the trigger opens it,
-// the controlled `MenuRoot` below reports closes with their reason, and both
-// paths go through one `setState` so `beforeUpdate:open` can cancel either.
+// The trigger opens the menu and the controlled `MenuRoot` below reports closes
+// with their reason; both paths go through one `setState` so `beforeUpdate:open`
+// can cancel either. `open` is optional: without it ContextMenu owns the model.
 const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
+  prop: () => props.open,
   defaultValue: props.defaultOpen ?? false,
   name: 'open',
   emit: emits,

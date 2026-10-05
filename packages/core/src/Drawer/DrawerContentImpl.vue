@@ -31,16 +31,20 @@ export interface DrawerContentImplProps extends DismissableLayerProps {
 <script setup lang="ts">
 import type { SwipeDirection } from './utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
-import { disclosureState, getElementByIdFrom, useForwardExpose } from '@/shared'
+import { focus } from '@/FocusScope/utils'
+import { disclosureState, getElementByIdFrom, isHTMLElement, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
 
-const props = defineProps<DrawerContentImplProps>()
+const props = withDefaults(defineProps<DrawerContentImplProps>(), {
+  initialFocus: true,
+  finalFocus: true,
+})
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
@@ -56,7 +60,7 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   viewportRef: currentElement,
   onSnapPointChange: (point) => {
     if (point === null)
-      rootContext.onOpenChange(false)
+      rootContext.onOpenChange(false, 'swipe')
     else
       rootContext.setActiveSnapPoint(point)
   },
@@ -124,7 +128,7 @@ const swipeDirections = computed<SwipeDirection[]>(() => {
 let lastRawDelta = { x: 0, y: 0 }
 
 // Swipe dismiss
-const { isSwiping, dragOffset } = useSwipeDismiss({
+const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
   directions: swipeDirections,
@@ -132,12 +136,20 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
   },
+  ignoreSelectorWhenTouch: false,
   canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
-    if (!hasSnapPoints.value) {
-      rootContext.onOpenChange(false, 'swipe')
-    }
     // With snap points, onRelease handles snapping
+    if (hasSnapPoints.value)
+      return
+    if (!rootContext.onOpenChange(false, 'swipe'))
+      return false
+    // BaseUI parity: a controlled parent may ignore `update:open`. Its `open`
+    // prop settles by the next tick; if it is still open, undo the dismissal.
+    nextTick(() => {
+      if (rootContext.open.value)
+        restoreSwipe()
+    })
   },
   onRelease(velocity) {
     // Write the `--drawer-swipe-strength` CSS var so consumer transitions can
@@ -255,6 +267,19 @@ function onInteractOutside(event: any) {
   emits('interactOutside', event)
 }
 
+function onMountAutoFocus(event: Event) {
+  emits('openAutoFocus', event)
+  if (event.defaultPrevented)
+    return
+  if (props.initialFocus === false) {
+    event.preventDefault()
+  }
+  else if (isHTMLElement(props.initialFocus)) {
+    event.preventDefault()
+    focus(props.initialFocus, { select: true })
+  }
+}
+
 // --- update:openComplete wiring ---
 // Fire `update:openComplete` on the popup's own transitionend/animationend,
 // not on a microtask — consumers rely on this marker to know the enter/exit
@@ -361,7 +386,7 @@ if (process.env.NODE_ENV !== 'production') {
     as-child
     loop
     :trapped="props.trapFocus"
-    @mount-auto-focus="emits('openAutoFocus', $event)"
+    @mount-auto-focus="onMountAutoFocus"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer

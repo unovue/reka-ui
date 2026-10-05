@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { acquireBodyPointerEventsLock, releaseBodyPointerEventsLock } from '@/DismissableLayer/layerStack'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from './bodyPointerEvents'
 import { useBodyScrollLock } from './useBodyScrollLock'
 
 function createWrapper(initialState: boolean) {
@@ -13,18 +13,18 @@ function createWrapper(initialState: boolean) {
   }, { attachTo: document.body })
 }
 
-describe('useBodyScrollLock', () => {
-  vi.mock('@/ConfigProvider/ConfigProvider.vue', async () => {
-    return {
-      injectConfigProviderContext: () => {
-        return {
-          dir: ref('ltr'),
-          scrollBody: ref(true),
-        }
-      },
-    }
-  })
+vi.mock('@/ConfigProvider/ConfigProvider.vue', async () => {
+  return {
+    injectConfigProviderContext: () => {
+      return {
+        dir: ref('ltr'),
+        scrollBody: ref(true),
+      }
+    },
+  }
+})
 
+describe('useBodyScrollLock', () => {
   Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 200 })
   Object.defineProperty(document, 'clientWidth', { writable: true, configurable: true, value: 190 })
   Object.defineProperty(document.documentElement, 'clientWidth', { writable: true, configurable: true, value: 190 })
@@ -111,7 +111,8 @@ describe('useBodyScrollLock', () => {
   // #2784: body `pointer-events` is shared with `DismissableLayer`. The last
   // scroll lock releasing must not clear it while a layer still holds the lock.
   it('should keep body pointer-events none while a DismissableLayer still owns the lock', async () => {
-    acquireBodyPointerEventsLock(document)
+    const layer = Symbol('layer')
+    acquireBodyPointerEvents(document, layer)
     expect(document.body.style.pointerEvents).toBe('none')
 
     const locked = useBodyScrollLock(true)
@@ -122,7 +123,7 @@ describe('useBodyScrollLock', () => {
     await nextTick()
     expect(document.body.style.pointerEvents).toBe('none')
 
-    releaseBodyPointerEventsLock(document)
+    releaseBodyPointerEvents(document, layer)
     expect(document.body.style.pointerEvents).toBe('')
   })
 

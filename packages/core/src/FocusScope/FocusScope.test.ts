@@ -2,7 +2,7 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { getActiveElement } from '@/shared'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
@@ -150,6 +150,64 @@ describe('focusScope', () => {
   })
 
   // https://github.com/unovue/reka-ui/issues/2550
+  // https://github.com/unovue/reka-ui/issues/1667
+  // A trapped FocusScope teleported into a shadow root must keep focus inside
+  // even when focus escapes to a light-DOM element outside the shadow tree.
+  // Listening only on `document` misses intra-shadow moves (retargeted to the
+  // host); listening only on the shadow root misses the light-DOM escape (which
+  // never propagates into the root). We assert the behaviour, not the wiring.
+  describe('given a trapped FocusScope rendered inside a shadow root (#1667)', () => {
+    const ShadowScope = defineComponent({
+      components: { FocusScope },
+      template: `<FocusScope asChild loop trapped>
+        <form>
+          <input data-testid="inner-first" />
+          <input data-testid="inner-second" />
+        </form>
+      </FocusScope>`,
+    })
+
+    // document.activeElement stops at the shadow host; drill down to the real one.
+    function deepActiveElement(): Element | null {
+      let active = document.activeElement
+      while (active?.shadowRoot?.activeElement)
+        active = active.shadowRoot.activeElement
+      return active
+    }
+
+    it('recalls focus into the scope when it escapes to a light-DOM element', async () => {
+      const host = document.createElement('div')
+      const outsideButton = document.createElement('button')
+      outsideButton.textContent = 'outside'
+      document.body.append(host, outsideButton)
+
+      try {
+        const shadowRoot = host.attachShadow({ mode: 'open' })
+        const container = document.createElement('div')
+        shadowRoot.appendChild(container)
+
+        render(ShadowScope, { container })
+        await nextTick()
+
+        const innerFirst = shadowRoot.querySelector<HTMLInputElement>('[data-testid="inner-first"]')!
+        innerFirst.focus()
+        await nextTick()
+        expect(container.contains(deepActiveElement())).toBe(true)
+
+        // Focus escapes to a light-DOM button outside the shadow tree.
+        outsideButton.focus()
+        await nextTick()
+
+        // The trap must pull focus back inside the scope.
+        expect(container.contains(deepActiveElement())).toBe(true)
+      }
+      finally {
+        host.remove()
+        outsideButton.remove()
+      }
+    })
+  })
+
   describe('given a FocusScope with SelectTrigger inside Dialog (#2550)', () => {
     const DialogWithSelect = defineComponent({
       components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, SelectRoot, SelectTrigger, SelectValue, SelectContent, SelectItem },
@@ -292,6 +350,64 @@ describe('focusScope', () => {
       // The Select content traps focus; its FocusScope must pause the Dialog's
       // trap so focus lands inside the Select rather than being yanked back.
       expect(content.contains(document.activeElement)).toBe(true)
+    })
+  })
+
+  describe('given a Dialog view swapped by a Combobox item select (#2886)', () => {
+    // The swapped-in view focuses its own input on mount. The Combobox content's
+    // FocusScope is still pausing the Dialog's trap at that moment (it only
+    // resumes in a `setTimeout`), so the Dialog's `lastFocusedElementRef` keeps
+    // pointing at the now-removed Combobox trigger. The mutation handler must not
+    // conclude from that stale reference that focus was orphaned.
+    const FormView = defineComponent({
+      setup() {
+        const nameInput = useTemplateRef<HTMLInputElement>('name-input')
+        onMounted(() => nameInput.value?.focus())
+      },
+      template: `<input ref="name-input" data-testid="form-input">`,
+    })
+
+    const DialogWithComboboxSwap = defineComponent({
+      components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, ComboboxRoot, ComboboxAnchor, ComboboxTrigger, ComboboxPortal, ComboboxContent, ComboboxViewport, ComboboxInput, ComboboxItem, FormView },
+      setup() {
+        const view = ref<'combobox' | 'form'>('combobox')
+        return { view }
+      },
+      template: `
+        <DialogRoot>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Test Dialog</DialogTitle>
+            <ComboboxRoot v-if="view === 'combobox'">
+              <ComboboxAnchor as-child>
+                <ComboboxTrigger>Open combobox</ComboboxTrigger>
+              </ComboboxAnchor>
+              <ComboboxPortal>
+                <ComboboxContent position="popper">
+                  <ComboboxViewport>
+                    <ComboboxInput data-testid="combobox-input" />
+                    <ComboboxItem value="custom" @select="view = 'form'">Add custom product</ComboboxItem>
+                  </ComboboxViewport>
+                </ComboboxContent>
+              </ComboboxPortal>
+            </ComboboxRoot>
+            <FormView v-else />
+          </DialogContent>
+        </DialogRoot>
+      `,
+    })
+
+    it('should keep focus on the input the swapped-in view focused on mount', async () => {
+      const rendered = render(DialogWithComboboxSwap)
+
+      await userEvent.click(rendered.getByRole('button', { name: 'Open' }))
+      await userEvent.click(rendered.getByText('Open combobox'))
+      await nextTick()
+
+      await userEvent.click(rendered.getByText('Add custom product'))
+      await nextTick()
+
+      expect(rendered.getByTestId('form-input')).toHaveFocus()
     })
   })
 })

@@ -50,6 +50,9 @@ export function getTabsTriggerSurface(
       'onMousedown': (event: MouseEvent) => {
         if (event.button !== 0)
           return
+        // A consumer listener that prevented the event opts out of activation.
+        if (event.defaultPrevented)
+          return
         if (isDisabled.value || event.ctrlKey !== false) {
           event.preventDefault()
           return
@@ -64,6 +67,8 @@ export function getTabsTriggerSurface(
       },
       // `@keydown.enter.space` — no preventDefault today; keep it that way.
       'onKeydown': (event: KeyboardEvent) => {
+        if (event.defaultPrevented)
+          return
         if (event.key === 'Enter' || event.key === ' ')
           context.changeModelValue(toValue(value), 'trigger-keydown', event)
       },

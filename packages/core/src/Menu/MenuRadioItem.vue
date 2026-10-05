@@ -24,6 +24,12 @@ import { injectMenuRadioGroupContext } from './MenuRadioGroup.vue'
 const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Current checked state */
+    checked: boolean
+  }) => any
+}>()
 const delegatedProps = reactiveOmit(props, ['value'])
 const forwarded = useForwardProps(delegatedProps)
 
@@ -49,6 +55,6 @@ provideMenuItemIndicatorContext({ modelValue })
       }
     "
   >
-    <slot />
+    <slot :checked="modelValue" />
   </MenuItem>
 </template>

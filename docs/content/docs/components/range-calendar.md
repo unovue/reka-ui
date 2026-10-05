@@ -25,7 +25,7 @@ Presents a calendar view tailored for selecting date ranges.
     'Localization support',
     'Highly composable'
   ]"
-/>
+ />
 
 ## Preface
 
@@ -345,7 +345,7 @@ Set `granularity="year"` to select a range of years.
       keys: ['Space'],
       description:`
       <span>
-          When the focus is on either <Code>CalendarNext</Code> or <Code>CalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
+          When the focus is on either <Code>RangeCalendarNext</Code> or <Code>RangeCalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
       </span>
     ` ,
     },
@@ -353,7 +353,7 @@ Set `granularity="year"` to select a range of years.
       keys: ['Enter'],
       description:`
       <span>
-          When the focus is on either <Code>CalendarNext</Code> or <Code>CalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
+          When the focus is on either <Code>RangeCalendarNext</Code> or <Code>RangeCalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
       </span>
     ` ,
     },
@@ -365,10 +365,45 @@ Set `granularity="year"` to select a range of years.
       `
     },
     {
-      keys: ['PageUp', 'PageDown'],
+      keys: ['Home'],
       description:
       `
-        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves to the same cell on the previous / next page.
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves focus to the first day of the current week.
+      `
+    },
+    {
+      keys: ['End'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves focus to the last day of the current week.
+      `
+    },
+    {
+      keys: ['PageUp'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves to the previous month while preserving the day of the month when possible, or clamps to the last day of the month. In the month and year views, it moves to the same cell on the previous page.
+      `
+    },
+    {
+      keys: ['PageDown'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves to the next month while preserving the day of the month when possible, or clamps to the last day of the month. In the month and year views, it moves to the same cell on the next page.
+      `
+    },
+    {
+      keys: ['Shift+PageUp'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves to the previous year while preserving the month and day when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['Shift+PageDown'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves to the next year while preserving the month and day when possible, or clamps to the last day of the month.
       `
     }
   ]"

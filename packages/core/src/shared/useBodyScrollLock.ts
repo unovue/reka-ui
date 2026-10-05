@@ -7,9 +7,10 @@ import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
 import { computed, nextTick, ref, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
-// Imported from the plain module (not the `@/DismissableLayer` barrel) so the
-// component's own `@/shared` import cannot form a cycle.
-import { hasBodyPointerEventsLock } from '@/DismissableLayer/layerStack'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from './bodyPointerEvents'
+
+// The whole lock stack holds a single share of the body pointer-events owner.
+const pointerEventsOwner = Symbol('useBodyScrollLock')
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
@@ -32,11 +33,8 @@ const useBodyLockStackCount = createSharedComposable(() => {
   const resetBodyStyle = () => {
     document.body.style.paddingRight = ''
     document.body.style.marginRight = ''
-    // Body `pointer-events` is shared with `DismissableLayer`: a modal layer
-    // without its own scroll lock (e.g. a Dialog rendered without an Overlay)
-    // may still own it when the last scroll lock releases (#2784).
-    if (!hasBodyPointerEventsLock())
-      document.body.style.pointerEvents = ''
+    // Only restored once no `DismissableLayer` still holds it either (#2784)
+    releaseBodyPointerEvents(document, pointerEventsOwner)
     document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
     isIOS && stopTouchMoveListener?.()
@@ -85,11 +83,10 @@ const useBodyLockStackCount = createSharedComposable(() => {
       )
     }
 
-    // let dismissibleLayer set previous pointerEvent first
     nextTick(() => {
       if (!locked.value)
         return
-      document.body.style.pointerEvents = 'none'
+      acquireBodyPointerEvents(document, pointerEventsOwner)
       document.body.style.overflow = 'hidden'
     })
   }, { immediate: true, flush: 'sync' })

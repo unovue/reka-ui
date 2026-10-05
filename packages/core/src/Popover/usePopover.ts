@@ -35,7 +35,7 @@ export function getPopoverTriggerSurface(context: PopoverRootContext): PartSurfa
       'id': context.triggerId,
       'aria-haspopup': 'dialog',
       'aria-expanded': context.open.value,
-      'aria-controls': context.contentId,
+      'aria-controls': context.open.value ? context.contentId : undefined,
       'onClick': (event: MouseEvent) => context.onOpenToggle('trigger-press', event),
     }),
     () => ({ state: disclosureState(context.open.value) }),

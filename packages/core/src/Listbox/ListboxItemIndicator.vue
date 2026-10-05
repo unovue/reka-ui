@@ -1,28 +1,39 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { selectionState, useForwardExpose } from '@/shared'
 
-export interface ListboxItemIndicatorProps extends PrimitiveProps {}
+export interface ListboxItemIndicatorProps extends PrimitiveProps {
+  /**
+   * Used to force mounting when more control is needed. Useful when
+   * controlling animation with Vue animation libraries.
+   */
+  forceMount?: boolean
+}
 </script>
 
 <script setup lang="ts">
+import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectListboxItemContext } from './ListboxItem.vue'
 
-const props = withDefaults(defineProps<ListboxItemIndicatorProps>(), {
+withDefaults(defineProps<ListboxItemIndicatorProps>(), {
   as: 'span',
 })
 
-useForwardExpose()
+const { forwardRef } = useForwardExpose()
 const itemContext = injectListboxItemContext()
 </script>
 
 <template>
-  <Primitive
-    v-if="itemContext.isSelected.value"
-    aria-hidden="true"
-    v-bind="props"
-  >
-    <slot />
-  </Primitive>
+  <Presence :present="forceMount || itemContext.isSelected.value">
+    <Primitive
+      :ref="forwardRef"
+      aria-hidden="true"
+      :data-state="selectionState(itemContext.isSelected.value)"
+      :as="as"
+      :as-child="asChild"
+    >
+      <slot />
+    </Primitive>
+  </Presence>
 </template>

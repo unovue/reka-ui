@@ -17,6 +17,12 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
   rovingFocus?: boolean
   /** When `true`, prevents the user from interacting with the checkboxes */
   disabled?: boolean
+  /**
+   * The maximum number of values that can be selected. Once reached, the unchecked
+   * checkboxes get `aria-disabled` but stay focusable, so consider telling users
+   * about the limit. Style them with `[aria-disabled="true"]`.
+   */
+  max?: number | null
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -30,6 +36,7 @@ export interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
+  max: Ref<number | null | undefined>
   /**
    * Route every write through the group's model (`beforeUpdate` + `update`);
    * returns `false` when unchanged or cancelled. Descendants never assign
@@ -52,7 +59,7 @@ const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
 })
 const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 
-const { disabled, rovingFocus, dir: propDir } = toRefs(props)
+const { disabled, max, rovingFocus, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -66,6 +73,7 @@ const { modelValue, context } = useCheckboxGroup<T>({
   emit: emits,
   disabled,
   rovingFocus,
+  max,
 })
 
 const rovingFocusProps = computed(() => {
