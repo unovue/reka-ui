@@ -3,7 +3,7 @@ import type { OutsideSubscriber } from './layerStack'
 import { isClient } from '@vueuse/shared'
 import { nextTick, toValue, watchEffect } from 'vue'
 import { containsComposed, handleAndDispatchCustomEvent } from '@/shared'
-import { layerElements, registerOutsideSubscriber } from './layerStack'
+import { attachDocument, layerElements, registerOutsideSubscriber } from './layerStack'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -13,6 +13,32 @@ export type FocusOutsideEvent = CustomEvent<{ originalEvent: FocusEvent }>
 export const DISMISSABLE_LAYER_NAME = 'DismissableLayer'
 export const POINTER_DOWN_OUTSIDE = 'dismissableLayer.pointerDownOutside'
 export const FOCUS_OUTSIDE = 'dismissableLayer.focusOutside'
+
+function isElement(node: unknown): node is Element {
+  if (typeof node !== 'object' || node === null)
+    return false
+  // Compare against the node's own window too, so elements from another
+  // realm (e.g. a layer rendered inside an iframe) are recognized
+  const ownerWindow = (node as Node).ownerDocument?.defaultView
+  return (typeof Element !== 'undefined' && node instanceof Element)
+    || (!!ownerWindow && node instanceof ownerWindow.Element)
+}
+
+/**
+ * The manager's shared listeners live on the top-level document. A layer
+ * rendered inside an iframe attaches its own document for as long as it
+ * listens; a no-op for the top-level document. Tracks `element`, since the
+ * layer is usually not mounted yet when the composable runs.
+ */
+function useOwnerDocumentListeners(element: Ref<HTMLElement | undefined> | undefined, enabled: MaybeRefOrGetter<boolean>) {
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled))
+      return
+    const ownerDocument = element?.value?.ownerDocument
+    if (ownerDocument)
+      cleanupFn(attachDocument(ownerDocument))
+  })
+}
 
 /**
  * Whether `targetElement` counts as "inside" `layerElement`: within its own
@@ -30,8 +56,18 @@ export function isLayerExist(
   // callers) → the live registry is read.
   snapshot?: Element[],
 ) {
-  if (!(targetElement instanceof Element))
+  if (!isElement(targetElement))
     return false
+
+  // Anything inside the layer's own root element is inside the layer. The root
+  // can differ from the `[data-dismissable-layer]` element when the layer is
+  // rendered `asChild` into a component whose root is not the element that
+  // receives its attrs (e.g. `PopperContent`'s wrapper `div`). `FocusScope`
+  // resolves the same root as its container and may focus it as a fallback
+  // when the content has no tabbable children; that focus must not read as
+  // focus-outside and dismiss the layer it belongs to (#2803).
+  if (containsComposed(layerElement, targetElement))
+    return true
 
   const mainLayer = (layerElement.dataset.dismissableLayer === ''
     ? layerElement
@@ -153,6 +189,7 @@ export function usePointerDownOutside(
       return
     cleanupFn(registerOutsideSubscriber(subscriber))
   })
+  useOwnerDocumentListeners(element, enabled)
 
   return {
     onPointerDownCapture: () => {
@@ -210,6 +247,7 @@ export function useFocusOutside(
       return
     cleanupFn(registerOutsideSubscriber(subscriber))
   })
+  useOwnerDocumentListeners(element, enabled)
 
   return {
     onFocusCapture: () => {

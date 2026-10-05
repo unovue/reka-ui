@@ -5,10 +5,11 @@ import { mount } from '@vue/test-utils'
 import { useDebounceFn } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
-import NavigationMenuUnmountOnHideFalse from './__test__/NavigationMenuUnmountOnHideFalse.vue'
+import { NavigationMenuContent, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger } from '.'
 
+import NavigationMenuUnmountOnHideFalse from './__test__/NavigationMenuUnmountOnHideFalse.vue'
 import NavigationMenuItem from './NavigationMenuItem.vue'
 import NavigationMenu from './story/_NavigationMenu.vue'
 
@@ -56,6 +57,15 @@ describe('given default NavigationMenu', () => {
 
     it('should pass axe accessibility tests', async () => {
       expect(await axe(document.body)).toHaveNoViolations()
+    })
+
+    it('should render a focus proxy that is tabbable but not aria-hidden', () => {
+      // The trigger renders a tabbable sentinel (tabindex="0") that catches
+      // focus leaving the trigger and redirects it into the content. A tabbable
+      // element must not be aria-hidden (axe `aria-hidden-focus`).
+      const proxies = document.querySelectorAll('span[tabindex="0"]')
+      expect(proxies).toHaveLength(1)
+      expect(proxies[0].getAttribute('aria-hidden')).toBeNull()
     })
 
     describe('after pressing tab', async () => {
@@ -268,5 +278,68 @@ describe('given default NavigationMenu', () => {
       localWrapper.unmount()
       vi.useRealTimers()
     })
+  })
+})
+
+describe('given NavigationMenuTrigger with consumer event listeners', () => {
+  beforeEach(() => {
+    // @ts-expect-error simple mock
+    vi.mocked(useDebounceFn).mockImplementation((cb: (val: string) => void) => (arg: string) => cb(arg))
+  })
+
+  function mountNavigationMenu(triggerListeners: Record<string, (event: Event) => void> = {}) {
+    document.body.innerHTML = ''
+    const value = ref('')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(NavigationMenuRoot, {
+        'modelValue': value.value,
+        'onUpdate:modelValue': (next: string) => { value.value = next },
+      }, () => h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'learn' }, () => [
+        h(NavigationMenuTrigger, triggerListeners, () => 'Learn'),
+        h(NavigationMenuContent, () => h(NavigationMenuLink, { href: '#' }, () => 'Docs')),
+      ]))),
+    }), { attachTo: document.body })
+    return { value, trigger: wrapper.find('[data-navigation-menu-trigger]') }
+  }
+
+  it('should open on click', async () => {
+    const { value, trigger } = mountNavigationMenu()
+    await trigger.trigger('click')
+    expect(value.value).toBe('learn')
+  })
+
+  it('should not open on click when the consumer prevents default', async () => {
+    const { value, trigger } = mountNavigationMenu({ onClick: event => event.preventDefault() })
+    await trigger.trigger('click')
+    expect(value.value).toBe('')
+  })
+
+  it('should open on mouse pointermove', async () => {
+    const { value, trigger } = mountNavigationMenu()
+    await trigger.trigger('pointermove', { pointerType: 'mouse' })
+    expect(value.value).toBe('learn')
+  })
+
+  it('should not open on mouse pointermove when the consumer prevents default', async () => {
+    const { value, trigger } = mountNavigationMenu({ onPointermove: event => event.preventDefault() })
+    await trigger.trigger('pointermove', { pointerType: 'mouse' })
+    expect(value.value).toBe('')
+  })
+
+  it('should hand the entry key to the content', async () => {
+    const { value, trigger } = mountNavigationMenu()
+    await trigger.trigger('click')
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    trigger.element.dispatchEvent(event)
+    expect([value.value, event.defaultPrevented]).toEqual(['learn', true])
+  })
+
+  it('should not handle the entry key when the consumer prevents default', async () => {
+    const { trigger } = mountNavigationMenu({ onKeydown: event => event.preventDefault() })
+    await trigger.trigger('click')
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    const stopPropagation = vi.spyOn(event, 'stopPropagation')
+    trigger.element.dispatchEvent(event)
+    expect(stopPropagation).not.toHaveBeenCalled()
   })
 })

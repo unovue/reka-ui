@@ -68,13 +68,12 @@ import {
   useRender,
 } from '@/Primitive'
 import { containsComposed } from '@/shared'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from '@/shared/bodyPointerEvents'
 import {
-  acquireBodyPointerEventsLock,
   branches,
   highestDisabledIndex,
   indexOfLayer,
   registerStackLayer,
-  releaseBodyPointerEventsLock,
 } from './layerStack'
 import {
   useFocusOutside,
@@ -104,10 +103,6 @@ const { tag, currentElement: layerElement, elementRef } = useRender({
   as: () => props.as,
   asChild: () => props.asChild,
 })
-const ownerDocument = computed(
-  () => layerElement.value?.ownerDocument ?? globalThis.document,
-)
-
 // Participation in the shared stack manager. The manager routes Escape to the
 // top *present* layer only (replacing the per-layer `window` keydown listener),
 // so `onEscapeKeyDown` here just carries the emit + dismiss. Membership is driven
@@ -167,17 +162,18 @@ const focusOutside = useFocusOutside((event) => {
 // Body pointer-events lock (#2674). `watch` with explicit sources (not
 // `watchEffect`) so it re-runs only when this layer's `element` /
 // `disableOutsidePointerEvents` / `present` change — never on other layers'
-// membership churn. The manager reference-counts across layers (first disabling
-// layer sets `none`, last restores), so the cleanup here (prop toggle or
-// unmount) is order-independent (#2674).
+// membership churn. The shared owner (also held by `useBodyScrollLock`) restores
+// the body only once the last layer or scroll lock lets go, so the cleanup here
+// (prop toggle or unmount) is order-independent (#2674, #2867).
 watch(
   [layerElement, () => props.disableOutsidePointerEvents, () => props.present],
   ([element, disableOutsidePointerEvents, present], _, onCleanup) => {
     if (!element || !present)
       return
     if (disableOutsidePointerEvents) {
-      acquireBodyPointerEventsLock(ownerDocument.value)
-      onCleanup(() => releaseBodyPointerEventsLock(ownerDocument.value))
+      const doc = element.ownerDocument
+      acquireBodyPointerEvents(doc, element)
+      onCleanup(() => releaseBodyPointerEvents(doc, element))
     }
   },
   { immediate: true },

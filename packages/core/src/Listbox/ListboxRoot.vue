@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref } from 'vue'
-import type { ListboxChangeReason, ListboxLabelRegistry, ListboxNavigationIntent } from './useListbox'
+import type { ListboxChangeReason, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent } from './useListbox'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
@@ -18,6 +18,7 @@ export type ListboxRootContext<T> = {
   dir: Ref<Direction>
   disabled: Ref<boolean>
   highlightOnHover: Ref<boolean>
+  loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
@@ -51,6 +52,9 @@ export type ListboxRootContext<T> = {
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createContext<ListboxHighlightScroll>('ListboxHighlightScroll')
+
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
@@ -71,6 +75,8 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   selectionBehavior?: 'toggle' | 'replace'
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. */
   by?: string | ((a: T, b: T) => boolean)
   /**
@@ -96,7 +102,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { toRefs } from 'vue'
+import { ref, toRefs } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -115,12 +121,19 @@ defineSlots<{
 }>()
 
 const { dir: propDir } = toRefs(props)
-const { getItems } = useCollection<{ value: T }>({ isProvider: true })
+const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { primitiveElement, currentElement } = usePrimitiveElement()
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the model (`useControllableState` via `useListSelection`), the emits,
 // the highlight/keyboard brain and the context.
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({
+  suppressHighlightScroll: ref(false),
+  onHighlightScrollRequest: () => {},
+})
 
 const isFormControl = useFormControl(currentElement)
 
@@ -133,10 +146,13 @@ const listbox = useListboxRoot<AcceptableValue>({
   disabled: () => props.disabled,
   selectionBehavior: () => props.selectionBehavior,
   highlightOnHover: () => props.highlightOnHover,
+  loop: () => props.loop,
   by: props.by,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   // `useCollection` (the item registry) stays in the shell — injected as the collection seam.
   getItems,
+  getItem,
+  highlightScroll: highlightScrollContext,
   element: currentElement,
   emit: emits,
   onHighlight: payload => emits('highlight', payload),

@@ -1,5 +1,8 @@
 import { isClient } from '@vueuse/shared'
 import { shallowReactive } from 'vue'
+// Imported from the plain module (not the `@/shared` barrel) so this file stays
+// free of an import cycle with the components that use it.
+import { resetBodyPointerEvents } from '@/shared/bodyPointerEvents'
 
 /**
  * Centralized DismissableLayer stack manager (transport only).
@@ -58,19 +61,14 @@ export const layers = shallowReactive<StackLayer[]>([])
 export const outsideSubscribers = shallowReactive<OutsideSubscriber[]>([])
 export const branches = shallowReactive<HTMLElement[]>([])
 
-/**
- * Saved `document.body.style.pointerEvents` from before the first disabling
- * layer. Shared (not component-local) so layer B's cleanup can restore the
- * value layer A saved after A unmounts (#2674).
- */
-export const bodyPointerEvents = { original: undefined as string | undefined }
-
 // --- shared listener bookkeeping ---
 let outsideListenersInstalled = false
 let keydownListenerInstalled = false
 let touchClickInstalled = false
 const pendingTouch = new Map<OutsideSubscriber, () => void>()
 const armingTimers = new Set<number>()
+/** Documents other than the top-level one (iframes), with their attach count. */
+const foreignDocuments = new Map<Document, number>()
 
 function installOutsideListeners() {
   if (outsideListenersInstalled || !isClient)
@@ -106,12 +104,16 @@ function ensureTouchClick() {
     return
   touchClickInstalled = true
   document.addEventListener('click', handleTouchClick)
+  for (const doc of foreignDocuments.keys())
+    doc.addEventListener('click', handleTouchClick)
 }
 function removeTouchClick() {
   if (!touchClickInstalled)
     return
   touchClickInstalled = false
   document.removeEventListener('click', handleTouchClick)
+  for (const doc of foreignDocuments.keys())
+    doc.removeEventListener('click', handleTouchClick)
 }
 function handleTouchClick() {
   const entries = [...pendingTouch.entries()]
@@ -229,33 +231,47 @@ export function registerBranch(el: HTMLElement): () => void {
   }
 }
 
-// --- body pointer-events lock (#2674) ---
-// Reference-counted: the first disabling layer saves the original body
-// `pointer-events` and sets `none`; the last one to leave restores it. Counting
-// (rather than a per-component copy) is what lets layer B restore the value
-// layer A saved after A unmounts.
-let bodyLockCount = 0
-export function acquireBodyPointerEventsLock(doc: Document): void {
-  if (bodyLockCount === 0) {
-    bodyPointerEvents.original = doc.body.style.pointerEvents
-    doc.body.style.pointerEvents = 'none'
+// --- foreign documents (iframes) ---
+// The shared listeners above live on the top-level `document` / `window`. Events
+// never cross a frame boundary, so a layer rendered inside an iframe attaches
+// its own document here for as long as it listens. Reference-counted per
+// document: one listener of each kind, however many layers share the frame.
+
+function addForeignListeners(doc: Document) {
+  doc.addEventListener('pointerdown', handlePointerDown)
+  doc.addEventListener('focusin', handleFocusIn)
+  doc.defaultView?.addEventListener('keydown', handleKeyDown)
+  if (touchClickInstalled)
+    doc.addEventListener('click', handleTouchClick)
+}
+function removeForeignListeners(doc: Document) {
+  doc.removeEventListener('pointerdown', handlePointerDown)
+  doc.removeEventListener('focusin', handleFocusIn)
+  doc.defaultView?.removeEventListener('keydown', handleKeyDown)
+  doc.removeEventListener('click', handleTouchClick)
+}
+
+/** Attach the shared listeners to `doc` when it is not the top-level document; returns the detach. */
+export function attachDocument(doc: Document): () => void {
+  if (!isClient || doc === document)
+    return () => {}
+  const count = foreignDocuments.get(doc) ?? 0
+  foreignDocuments.set(doc, count + 1)
+  if (count === 0)
+    addForeignListeners(doc)
+  let detached = false
+  return () => {
+    if (detached)
+      return
+    detached = true
+    const remaining = (foreignDocuments.get(doc) ?? 1) - 1
+    if (remaining > 0) {
+      foreignDocuments.set(doc, remaining)
+      return
+    }
+    foreignDocuments.delete(doc)
+    removeForeignListeners(doc)
   }
-  bodyLockCount++
-}
-export function releaseBodyPointerEventsLock(doc: Document): void {
-  bodyLockCount = Math.max(0, bodyLockCount - 1)
-  // Restore only once the last disabling layer is gone. `!== undefined` mirrors
-  // the previous `!isNullish` check ('' is a valid saved value → still restored).
-  if (bodyLockCount === 0 && bodyPointerEvents.original !== undefined)
-    doc.body.style.pointerEvents = bodyPointerEvents.original
-}
-/**
- * Whether the manager currently owns body `pointer-events` (at least one present
- * `disableOutsidePointerEvents` layer holds the lock). Consulted by
- * `useBodyScrollLock` before it clears the style both share (#2784).
- */
-export function hasBodyPointerEventsLock(): boolean {
-  return bodyLockCount > 0
 }
 
 // --- queries ---
@@ -296,14 +312,15 @@ export function resetLayerStack(): void {
   for (const timer of armingTimers)
     window.clearTimeout(timer)
   armingTimers.clear()
-  bodyLockCount = 0
   layers.splice(0)
   outsideSubscribers.splice(0)
   branches.splice(0)
   pendingTouch.clear()
   teardownOutsideListeners() // also removes the touch-click listener
   teardownKeydownListener()
-  if (isClient && bodyPointerEvents.original !== undefined)
-    document.body.style.pointerEvents = bodyPointerEvents.original
-  bodyPointerEvents.original = undefined
+  for (const doc of foreignDocuments.keys())
+    removeForeignListeners(doc)
+  foreignDocuments.clear()
+  if (isClient)
+    resetBodyPointerEvents(document)
 }

@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { bench, describe } from 'vitest'
+import { describe, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { DismissableLayer as DismissableLayerPrimitive } from '.'
 import { resetLayerStack } from './layerStack'
@@ -35,46 +35,52 @@ function mountLayers(n: number) {
 }
 
 describe('dismissableLayer', () => {
-  bench('mount + unmount 50 stacked layers', () => {
-    resetLayerStack()
-    const wrapper = mountLayers(50)
-    wrapper.unmount()
+  it('mount + unmount 50 stacked layers', async ({ bench }) => {
+    await bench('mount + unmount 50 stacked layers', () => {
+      resetLayerStack()
+      const wrapper = mountLayers(50)
+      wrapper.unmount()
+    }).run()
   })
 
   let wrapper: ReturnType<typeof mountLayers>
   let outside: HTMLElement
   let topLayer: Element
 
-  bench('one outside pointerdown against 20 armed layers', () => {
-    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-  }, {
-    async setup() {
-      resetLayerStack()
-      wrapper = mountLayers(20)
-      outside = document.createElement('div')
-      document.body.appendChild(outside)
-      await new Promise(r => setTimeout(r, 0)) // let the subscribers arm
-    },
-    teardown() {
-      outside.remove()
-      wrapper.unmount()
-      resetLayerStack()
-    },
+  it('one outside pointerdown against 20 armed layers', async ({ bench }) => {
+    await bench('one outside pointerdown against 20 armed layers', {
+      async beforeAll() {
+        resetLayerStack()
+        wrapper = mountLayers(20)
+        outside = document.createElement('div')
+        document.body.appendChild(outside)
+        await new Promise(r => setTimeout(r, 0)) // let the subscribers arm
+      },
+      afterAll() {
+        outside.remove()
+        wrapper.unmount()
+        resetLayerStack()
+      },
+    }, () => {
+      outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    }).run()
   })
 
-  bench('one escape keydown against 20 open layers', () => {
-    // Bubbles element → document → window, where the shared listener lives.
-    // Dispatching a non-bubbling event on `document` never reaches it.
-    topLayer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-  }, {
-    setup() {
-      resetLayerStack()
-      wrapper = mountLayers(20)
-      topLayer = wrapper.element.lastElementChild as Element
-    },
-    teardown() {
-      wrapper.unmount()
-      resetLayerStack()
-    },
+  it('one escape keydown against 20 open layers', async ({ bench }) => {
+    await bench('one escape keydown against 20 open layers', {
+      beforeAll() {
+        resetLayerStack()
+        wrapper = mountLayers(20)
+        topLayer = wrapper.element.lastElementChild as Element
+      },
+      afterAll() {
+        wrapper.unmount()
+        resetLayerStack()
+      },
+    }, () => {
+      // Bubbles element → document → window, where the shared listener lives.
+      // Dispatching a non-bubbling event on `document` never reaches it.
+      topLayer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    }).run()
   })
 })

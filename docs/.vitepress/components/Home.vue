@@ -13,6 +13,7 @@ import TimeRangeFieldDemo from '../../components/demo/TimeRangeField/tailwind/in
 import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
 import TreeDemo from '../../components/demo/Tree/tailwind/index.vue'
 import Chip from './Chip.vue'
+import Sponsors from './Sponsors.vue'
 </script>
 
 <template>
@@ -20,11 +21,11 @@ import Chip from './Chip.vue'
     <div class="grid justify-items-center gap-8 p-5 px-3 sm:px-4 md:gap-10 md:px-8">
       <div class="mt-2 grid w-full max-w-4xl justify-items-center gap-[inherit] sm:mt-10 md:mt-20">
         <div class="flex flex-col items-center gap-4">
-          <Chip href="/docs/overview/releases">
+          <Chip href="/docs/overview/releases#v2-11">
             <div class="group-hover:scale-150 group-focus:scale-150 transition origin-bottom-left">
               ✨
             </div>
-            <span class="group-hover:ml-3 group-focus:ml-3 ml-1 transition-[margin]">12 New Components</span>
+            <span class="group-hover:ml-3 group-focus:ml-3 ml-1 transition-[margin]">New in v2.11: Form, Field & Toast Manager</span>
           </Chip>
           <h1 class="text-pretty text-center text-4xl font-bold sm:text-6xl sm:font-extrabold md:text-7xl text-foreground">
             Craft accessible web apps with Vue
@@ -285,6 +286,18 @@ import Chip from './Chip.vue'
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="px-4 py-12 md:py-24 max-w-screen-xl mx-auto md:px-6">
+    <h2 class="text-pretty text-center text-3xl font-bold sm:text-5xl sm:font-extrabold md:text-6xl text-foreground">
+      Our Sponsors
+    </h2>
+
+    <p class="mt-4 md:mt-6 text-center text-muted-foreground text-pretty">
+      Reka UI is free and open source. It is made possible by the generous support of our sponsors.
+    </p>
+
+    <Sponsors class="mt-8 md:mt-12" />
   </section>
 
   <section class="px-4 py-12 md:py-32 max-w-screen-xl mx-auto md:px-6">

@@ -40,6 +40,12 @@ export interface ListboxCollectionItem<T = AcceptableValue> {
   value: T
 }
 
+/** Controls highlight scrolling while a parent composite is being positioned. */
+export interface ListboxHighlightScroll {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+  onHighlightScrollRequest: (scroll: (() => void) | undefined) => void
+}
+
 /**
  * The sticky label registry on the root context (#2824): items register the
  * text they render so a value can be displayed after its item unmounted
@@ -230,6 +236,8 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   selectionBehavior?: MaybeRefOrGetter<'toggle' | 'replace' | undefined>
   /** When `true`, hovering an item highlights it. @defaultValue `false` */
   highlightOnHover?: MaybeRefOrGetter<boolean | undefined>
+  /** When `true`, keyboard navigation loops from the last item to the first, and vice versa. @defaultValue `false` */
+  loop?: MaybeRefOrGetter<boolean | undefined>
   /**
    * Identity strategy (a key or an equality function; a function runs for
    * every value, strings included). A plain value read once at setup, NOT a
@@ -246,9 +254,23 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   /**
    * The rendered items in DOM order (the SFC injects `useCollection({
    * isProvider: true }).getItems`) — the seam a composable cannot own itself.
-   * Defaults to an empty collection.
+   * Defaults to an empty collection. Disabled items are left out unless
+   * `includeDisabledItem` is `true`.
    */
-  getItems?: () => ListboxCollectionItem<T>[]
+  getItems?: (includeDisabledItem?: boolean) => ListboxCollectionItem<T>[]
+  /**
+   * Direct lookup of one rendered item by its element (the SFC injects
+   * `useCollection().getItem`), so a highlight change does not scan the whole
+   * collection. Defaults to a search through `getItems()`.
+   */
+  getItem?: (element: HTMLElement) => ListboxCollectionItem<T> | undefined
+  /**
+   * Highlight-scroll coordination with a parent composite that is still being
+   * positioned (the SFC injects it; Combobox provides it): while suppressed, a
+   * highlight neither scrolls on focus nor calls `scrollIntoView`, and hands
+   * the deferred scroll to the parent instead.
+   */
+  highlightScroll?: ListboxHighlightScroll | null
   /**
    * The root element (the SFC hands its `usePrimitiveElement` `currentElement`);
    * the root `onFocusout` leaves the highlight only when focus moved outside it.
@@ -314,7 +336,8 @@ export interface UseListboxRootReturn<T = AcceptableValue> {
  * @lifecycle setup
  */
 export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(props: UseListboxRootProps<T> = {}): UseListboxRootReturn<T> {
-  const getItems: () => ListboxCollectionItem<T>[] = props.getItems ?? (() => [])
+  const getItems: (includeDisabledItem?: boolean) => ListboxCollectionItem<T>[] = props.getItems ?? (() => [])
+  const getItem = props.getItem ?? ((element: HTMLElement) => getItems().find(i => i.ref === element))
   const { handleTypeaheadSearch } = useTypeahead()
   const kbd = useKbd()
 
@@ -324,6 +347,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const selectionBehavior = computed<'toggle' | 'replace'>(() => toValue(props.selectionBehavior) ?? 'toggle')
   const highlightOnHover = computed(() => toValue(props.highlightOnHover) ?? false)
+  const loop = computed(() => toValue(props.loop) ?? false)
 
   const isUserAction = ref(false)
   const focusable = ref(true)
@@ -397,13 +421,41 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       return
 
     highlightedElement.value = el
-    if (focus ?? focusable.value)
-      highlightedElement.value.focus()
-    if (scrollIntoView)
-      highlightedElement.value.scrollIntoView({ block: 'nearest' })
+    const suppressHighlightScroll = props.highlightScroll?.suppressHighlightScroll.value ?? false
+    if (focus ?? focusable.value) {
+      if (suppressHighlightScroll)
+        highlightedElement.value.focus({ preventScroll: true })
+      else
+        highlightedElement.value.focus()
+    }
 
-    const highlightedItem = getItems().find(i => i.ref === el)
-    props.onHighlight?.(highlightedItem)
+    if (suppressHighlightScroll) {
+      props.highlightScroll?.onHighlightScrollRequest(scrollIntoView
+        ? () => {
+            const element = highlightedElement.value
+            if (element?.isConnected)
+              element.scrollIntoView({ block: 'nearest' })
+          }
+        : undefined)
+    }
+    else if (scrollIntoView) {
+      highlightedElement.value.scrollIntoView({ block: 'nearest' })
+    }
+
+    props.onHighlight?.(getItem(el))
+  }
+
+  function isAtVirtualBoundary(intent: 'prev' | 'next') {
+    // A virtualized list only renders a window of items. Only wrap when that
+    // window reaches the end of the full options list; any rendered items past
+    // the highlighted one are disabled.
+    const rendered = getItems(true).map(i => i.ref)
+    const edge = intent === 'next' ? rendered.at(-1) : rendered[0]
+    if (!edge)
+      return false
+    const position = Number(edge.getAttribute('aria-posinset'))
+    const size = Number(edge.getAttribute('aria-setsize'))
+    return intent === 'next' ? position === size : position === 1
   }
 
   function highlightItem(value: T) {
@@ -546,7 +598,19 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
           collection.reverse()
 
         const currentIndex = collection.indexOf(highlightedElement.value)
-        collection = collection.slice(currentIndex + 1)
+        const shouldLoop = loop.value && currentIndex === collection.length - 1
+        if (shouldLoop && isVirtual.value) {
+          if (isAtVirtualBoundary(intent)) {
+            // Let the virtualizer scroll to and highlight the opposite end.
+            const key = intent === 'next' ? kbd.HOME : kbd.END
+            virtualKeydownHook.trigger(new KeyboardEvent('keydown', { key, shiftKey: event.shiftKey }))
+            return true
+          }
+          collection = []
+        }
+        else {
+          collection = shouldLoop ? collection.slice(0, 1) : collection.slice(currentIndex + 1)
+        }
       }
       handleMultipleReplace(event, collection[0])
     }
@@ -690,6 +754,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     dir: dir as Ref<Direction>,
     disabled: disabled as Ref<boolean>,
     highlightOnHover: highlightOnHover as Ref<boolean>,
+    loop: loop as Ref<boolean>,
     highlightedElement,
     isVirtual,
     virtualFocusHook,

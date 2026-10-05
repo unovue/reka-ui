@@ -88,6 +88,9 @@ describe('usePopover — ids', () => {
     expect(p.context.triggerId).toBe('x-trigger')
     expect(p.context.contentId).toBe('x-content')
     expect(p.trigger.props.value.id).toBe('x-trigger')
+    // `aria-controls` only points at the content while it is rendered (open).
+    expect(p.trigger.props.value['aria-controls']).toBeUndefined()
+    p.onOpenChange(true)
     expect(p.trigger.props.value['aria-controls']).toBe('x-content')
     expect(p.content.props.value.id).toBe('x-content')
     expect(p.content.props.value['aria-labelledby']).toBe('x-trigger')
@@ -110,7 +113,7 @@ describe('usePopover — trigger surface', () => {
       'id': 'x-trigger',
       'aria-haspopup': 'dialog',
       'aria-expanded': false,
-      'aria-controls': 'x-content',
+      'aria-controls': undefined,
     })
     expect(p.trigger.props.value.type).toBeUndefined()
     expect(noDataAttrs(p.trigger.props.value)).toBe(true)
@@ -219,7 +222,7 @@ describe('usePopover — rendered surfaces', () => {
     expect(trigger.id).toBe('fixture-trigger')
     expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
-    expect(trigger.getAttribute('aria-controls')).toBe('fixture-content')
+    expect(trigger.getAttribute('aria-controls')).toBeNull()
     expect(trigger.getAttribute('data-state')).toBe('closed')
     expect(queryByRole('dialog')).toBeNull()
     expect(await axe(container)).toHaveNoViolations()
@@ -229,6 +232,7 @@ describe('usePopover — rendered surfaces', () => {
     expect(dialog.id).toBe('fixture-content')
     expect(dialog.getAttribute('aria-labelledby')).toBe(trigger.id)
     expect(dialog.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('aria-controls')).toBe('fixture-content')
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     expect(trigger.getAttribute('data-state')).toBe('open')
     expect(await axe(container)).toHaveNoViolations()
