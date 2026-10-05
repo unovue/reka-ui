@@ -1,7 +1,7 @@
 {
   "name": "reka-ui",
   "type": "module",
-  "version": "2.10.1",
+  "version": "2.11.0",
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
@@ -51,6 +51,408 @@
     "./resolver": {
       "import": "./dist/resolver/index.mjs"
     },
+    "./accordion": {
+      "import": {
+        "types": "./dist/accordion.d.ts",
+        "default": "./dist/accordion.js"
+      }
+    },
+    "./alert-dialog": {
+      "import": {
+        "types": "./dist/alert-dialog.d.ts",
+        "default": "./dist/alert-dialog.js"
+      }
+    },
+    "./aspect-ratio": {
+      "import": {
+        "types": "./dist/aspect-ratio.d.ts",
+        "default": "./dist/aspect-ratio.js"
+      }
+    },
+    "./autocomplete": {
+      "import": {
+        "types": "./dist/autocomplete.d.ts",
+        "default": "./dist/autocomplete.js"
+      }
+    },
+    "./avatar": {
+      "import": {
+        "types": "./dist/avatar.d.ts",
+        "default": "./dist/avatar.js"
+      }
+    },
+    "./calendar": {
+      "import": {
+        "types": "./dist/calendar.d.ts",
+        "default": "./dist/calendar.js"
+      }
+    },
+    "./checkbox": {
+      "import": {
+        "types": "./dist/checkbox.d.ts",
+        "default": "./dist/checkbox.js"
+      }
+    },
+    "./collapsible": {
+      "import": {
+        "types": "./dist/collapsible.d.ts",
+        "default": "./dist/collapsible.js"
+      }
+    },
+    "./color-area": {
+      "import": {
+        "types": "./dist/color-area.d.ts",
+        "default": "./dist/color-area.js"
+      }
+    },
+    "./color-field": {
+      "import": {
+        "types": "./dist/color-field.d.ts",
+        "default": "./dist/color-field.js"
+      }
+    },
+    "./color-slider": {
+      "import": {
+        "types": "./dist/color-slider.d.ts",
+        "default": "./dist/color-slider.js"
+      }
+    },
+    "./color-swatch": {
+      "import": {
+        "types": "./dist/color-swatch.d.ts",
+        "default": "./dist/color-swatch.js"
+      }
+    },
+    "./color-swatch-picker": {
+      "import": {
+        "types": "./dist/color-swatch-picker.d.ts",
+        "default": "./dist/color-swatch-picker.js"
+      }
+    },
+    "./combobox": {
+      "import": {
+        "types": "./dist/combobox.d.ts",
+        "default": "./dist/combobox.js"
+      }
+    },
+    "./config-provider": {
+      "import": {
+        "types": "./dist/config-provider.d.ts",
+        "default": "./dist/config-provider.js"
+      }
+    },
+    "./context-menu": {
+      "import": {
+        "types": "./dist/context-menu.d.ts",
+        "default": "./dist/context-menu.js"
+      }
+    },
+    "./date-field": {
+      "import": {
+        "types": "./dist/date-field.d.ts",
+        "default": "./dist/date-field.js"
+      }
+    },
+    "./date-picker": {
+      "import": {
+        "types": "./dist/date-picker.d.ts",
+        "default": "./dist/date-picker.js"
+      }
+    },
+    "./date-range-field": {
+      "import": {
+        "types": "./dist/date-range-field.d.ts",
+        "default": "./dist/date-range-field.js"
+      }
+    },
+    "./date-range-picker": {
+      "import": {
+        "types": "./dist/date-range-picker.d.ts",
+        "default": "./dist/date-range-picker.js"
+      }
+    },
+    "./dialog": {
+      "import": {
+        "types": "./dist/dialog.d.ts",
+        "default": "./dist/dialog.js"
+      }
+    },
+    "./drawer": {
+      "import": {
+        "types": "./dist/drawer.d.ts",
+        "default": "./dist/drawer.js"
+      }
+    },
+    "./dropdown-menu": {
+      "import": {
+        "types": "./dist/dropdown-menu.d.ts",
+        "default": "./dist/dropdown-menu.js"
+      }
+    },
+    "./editable": {
+      "import": {
+        "types": "./dist/editable.d.ts",
+        "default": "./dist/editable.js"
+      }
+    },
+    "./field": {
+      "import": {
+        "types": "./dist/field.d.ts",
+        "default": "./dist/field.js"
+      }
+    },
+    "./focus-scope": {
+      "import": {
+        "types": "./dist/focus-scope.d.ts",
+        "default": "./dist/focus-scope.js"
+      }
+    },
+    "./form": {
+      "import": {
+        "types": "./dist/form.d.ts",
+        "default": "./dist/form.js"
+      }
+    },
+    "./hover-card": {
+      "import": {
+        "types": "./dist/hover-card.d.ts",
+        "default": "./dist/hover-card.js"
+      }
+    },
+    "./label": {
+      "import": {
+        "types": "./dist/label.d.ts",
+        "default": "./dist/label.js"
+      }
+    },
+    "./listbox": {
+      "import": {
+        "types": "./dist/listbox.d.ts",
+        "default": "./dist/listbox.js"
+      }
+    },
+    "./menubar": {
+      "import": {
+        "types": "./dist/menubar.d.ts",
+        "default": "./dist/menubar.js"
+      }
+    },
+    "./month-picker": {
+      "import": {
+        "types": "./dist/month-picker.d.ts",
+        "default": "./dist/month-picker.js"
+      }
+    },
+    "./month-range-picker": {
+      "import": {
+        "types": "./dist/month-range-picker.d.ts",
+        "default": "./dist/month-range-picker.js"
+      }
+    },
+    "./navigation-menu": {
+      "import": {
+        "types": "./dist/navigation-menu.d.ts",
+        "default": "./dist/navigation-menu.js"
+      }
+    },
+    "./number-field": {
+      "import": {
+        "types": "./dist/number-field.d.ts",
+        "default": "./dist/number-field.js"
+      }
+    },
+    "./pagination": {
+      "import": {
+        "types": "./dist/pagination.d.ts",
+        "default": "./dist/pagination.js"
+      }
+    },
+    "./pin-input": {
+      "import": {
+        "types": "./dist/pin-input.d.ts",
+        "default": "./dist/pin-input.js"
+      }
+    },
+    "./popover": {
+      "import": {
+        "types": "./dist/popover.d.ts",
+        "default": "./dist/popover.js"
+      }
+    },
+    "./presence": {
+      "import": {
+        "types": "./dist/presence.d.ts",
+        "default": "./dist/presence.js"
+      }
+    },
+    "./primitive": {
+      "import": {
+        "types": "./dist/primitive.d.ts",
+        "default": "./dist/primitive.js"
+      }
+    },
+    "./progress": {
+      "import": {
+        "types": "./dist/progress.d.ts",
+        "default": "./dist/progress.js"
+      }
+    },
+    "./radio-group": {
+      "import": {
+        "types": "./dist/radio-group.d.ts",
+        "default": "./dist/radio-group.js"
+      }
+    },
+    "./range-calendar": {
+      "import": {
+        "types": "./dist/range-calendar.d.ts",
+        "default": "./dist/range-calendar.js"
+      }
+    },
+    "./rating": {
+      "import": {
+        "types": "./dist/rating.d.ts",
+        "default": "./dist/rating.js"
+      }
+    },
+    "./roving-focus": {
+      "import": {
+        "types": "./dist/roving-focus.d.ts",
+        "default": "./dist/roving-focus.js"
+      }
+    },
+    "./scroll-area": {
+      "import": {
+        "types": "./dist/scroll-area.d.ts",
+        "default": "./dist/scroll-area.js"
+      }
+    },
+    "./select": {
+      "import": {
+        "types": "./dist/select.d.ts",
+        "default": "./dist/select.js"
+      }
+    },
+    "./separator": {
+      "import": {
+        "types": "./dist/separator.d.ts",
+        "default": "./dist/separator.js"
+      }
+    },
+    "./slider": {
+      "import": {
+        "types": "./dist/slider.d.ts",
+        "default": "./dist/slider.js"
+      }
+    },
+    "./splitter": {
+      "import": {
+        "types": "./dist/splitter.d.ts",
+        "default": "./dist/splitter.js"
+      }
+    },
+    "./stepper": {
+      "import": {
+        "types": "./dist/stepper.d.ts",
+        "default": "./dist/stepper.js"
+      }
+    },
+    "./switch": {
+      "import": {
+        "types": "./dist/switch.d.ts",
+        "default": "./dist/switch.js"
+      }
+    },
+    "./tabs": {
+      "import": {
+        "types": "./dist/tabs.d.ts",
+        "default": "./dist/tabs.js"
+      }
+    },
+    "./tag-group": {
+      "import": {
+        "types": "./dist/tag-group.d.ts",
+        "default": "./dist/tag-group.js"
+      }
+    },
+    "./tags-input": {
+      "import": {
+        "types": "./dist/tags-input.d.ts",
+        "default": "./dist/tags-input.js"
+      }
+    },
+    "./time-field": {
+      "import": {
+        "types": "./dist/time-field.d.ts",
+        "default": "./dist/time-field.js"
+      }
+    },
+    "./time-range-field": {
+      "import": {
+        "types": "./dist/time-range-field.d.ts",
+        "default": "./dist/time-range-field.js"
+      }
+    },
+    "./toast": {
+      "import": {
+        "types": "./dist/toast.d.ts",
+        "default": "./dist/toast.js"
+      }
+    },
+    "./toggle": {
+      "import": {
+        "types": "./dist/toggle.d.ts",
+        "default": "./dist/toggle.js"
+      }
+    },
+    "./toggle-group": {
+      "import": {
+        "types": "./dist/toggle-group.d.ts",
+        "default": "./dist/toggle-group.js"
+      }
+    },
+    "./toolbar": {
+      "import": {
+        "types": "./dist/toolbar.d.ts",
+        "default": "./dist/toolbar.js"
+      }
+    },
+    "./tooltip": {
+      "import": {
+        "types": "./dist/tooltip.d.ts",
+        "default": "./dist/tooltip.js"
+      }
+    },
+    "./tree": {
+      "import": {
+        "types": "./dist/tree.d.ts",
+        "default": "./dist/tree.js"
+      }
+    },
+    "./viewport": {
+      "import": {
+        "types": "./dist/viewport.d.ts",
+        "default": "./dist/viewport.js"
+      }
+    },
+    "./visually-hidden": {
+      "import": {
+        "types": "./dist/visually-hidden.d.ts",
+        "default": "./dist/visually-hidden.js"
+      }
+    },
+    "./year-picker": {
+      "import": {
+        "types": "./dist/year-picker.d.ts",
+        "default": "./dist/year-picker.js"
+      }
+    },
+    "./year-range-picker": {
+      "import": {
+        "types": "./dist/year-range-picker.d.ts",
+        "default": "./dist/year-range-picker.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
@@ -70,9 +472,12 @@
     "build": "pnpm type-check && pnpm build-only",
     "build-only": "tsdown && tsx scripts/postbuild.ts",
     "watch": "tsdown --watch",
+    "gen:exports": "tsx scripts/sync-exports.ts",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
+    "test:run": "vitest run",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
     "test-update": "vitest -u",
     "bench": "vitest bench --run",
     "pub:release": "npm publish --access public --provenance",
@@ -82,8 +487,7 @@
     "vue": ">= 3.4.0"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.6.13",
-    "@floating-ui/vue": "^1.1.6",
+    "@floating-ui/vue": "^2.0.1",
     "@internationalized/date": "^3.5.0",
     "@internationalized/number": "^3.5.0",
     "@tanstack/vue-virtual": "^3.12.0",
@@ -99,27 +503,29 @@
     "@internationalized/number": "^3.6.0",
     "@size-limit/esbuild": "^12.0.1",
     "@size-limit/file": "^12.0.1",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/user-event": "^14.6.7",
     "@testing-library/vue": "^8.1.0",
     "@tsconfig/node24": "^24.0.0",
-    "@types/jsdom": "^28.0.0",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^24.0.13",
-    "@vitejs/plugin-vue": "^6.0.7",
-    "@vitest/coverage-istanbul": "^3.2.6",
-    "@vue/server-renderer": "^3.5.17",
-    "@vue/test-utils": "^2.4.11",
-    "@vue/tsconfig": "^0.7.0",
-    "jsdom": "^26.1.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitest/browser-playwright": "^5.0.3",
+    "@vitest/coverage-istanbul": "^5.0.3",
+    "@vue/server-renderer": "^3.5.43",
+    "@vue/test-utils": "^2.5.1",
+    "@vue/tsconfig": "^0.9.1",
+    "jsdom": "^30.1.1",
+    "playwright": "^1.63.0",
     "size-limit": "^12.0.1",
     "tsdown": "^0.12.9",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.8",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.3",
     "vitest-axe": "0.1.0",
-    "vitest-canvas-mock": "^0.3.3",
-    "vue": "3.5.17",
-    "vue-component-type-helpers": "^3.0.3",
-    "vue-tsc": "3.2.6"
+    "vitest-canvas-mock": "^1.2.0",
+    "vue": "3.5.43",
+    "vue-component-type-helpers": "^3.3.11",
+    "vue-tsc": "3.3.11"
   }
 }

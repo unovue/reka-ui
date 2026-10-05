@@ -1,5 +1,12 @@
 import type { OutputPlugin } from 'rolldown'
 import { defineConfig } from 'tsdown'
+import { GENERATED_ENTRIES_DIR, getComponentFamilies, writeGeneratedEntries } from './scripts/families.ts'
+
+// One entry per public component family (`reka-ui/dialog`, …), derived from the root barrel.
+const families = getComponentFamilies()
+writeGeneratedEntries(families)
+const familyEntries = Object.fromEntries(families.map(family => [family.key, family.entry]))
+const familyKeys = new Set(Object.keys(familyEntries))
 
 // Match `defineComponent(`, `createContext(`, `reactive(` at word boundaries,
 // skipping calls already preceded by a PURE annotation or prefixed with a
@@ -8,6 +15,9 @@ import { defineConfig } from 'tsdown'
 const PURE_PATTERN = /(?<!function\s)(?<=^|[^.\w$])(defineComponent|createContext|reactive)\s*\(/g
 const ALREADY_PURE = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
 const PATH_SEP = /[\\/]/g
+const SIDE_EFFECT_IMPORT = /^import\s*"\.[^"]*";?\r?\n/gm
+const GENERATED_ENTRY = new RegExp(`[\\\\/]\\${GENERATED_ENTRIES_DIR}[\\\\/]`)
+const DTS_FILE = /\.d\.c?ts$/
 
 /**
  * Rolldown output plugin that inserts `/*#__PURE__* /` annotations before
@@ -32,6 +42,26 @@ function pureAnnotationPlugin(): OutputPlugin {
   }
 }
 
+/**
+ * A family entry (`dist/dialog.js`) only re-exports from the per-file chunks, each of
+ * which already imports exactly what it needs. Rolldown additionally keeps a bare
+ * `import "./x.js"` for every module reachable through the source barrels (`@/shared`, …)
+ * to preserve execution order. The package is `sideEffects: false`, so those imports do
+ * nothing but make unbundled consumers (Node, SSR externals) load modules the family
+ * never uses. Drop them so a subpath loads only its own module graph.
+ */
+function stripFamilySideEffectImportsPlugin(): OutputPlugin {
+  return {
+    name: 'strip-family-side-effect-imports',
+    renderChunk(code, chunk) {
+      if (!chunk.isEntry || !familyKeys.has(chunk.name) || DTS_FILE.test(chunk.fileName))
+        return null
+      const result = code.replace(SIDE_EFFECT_IMPORT, '')
+      return result === code ? null : result
+    },
+  }
+}
+
 export default defineConfig({
   entry: {
     index: './src/index.ts',
@@ -39,6 +69,7 @@ export default defineConfig({
     date: './src/date/index.ts',
     constant: './constant/index.ts',
     shared: './src/shared/index.ts',
+    ...familyEntries,
   },
   fromVite: true,
   platform: 'neutral',
@@ -71,16 +102,27 @@ export default defineConfig({
   },
   outputOptions: {
     minifyInternalExports: false,
-    plugins: [pureAnnotationPlugin()],
+    plugins: [pureAnnotationPlugin(), stripFamilySideEffectImportsPlugin()],
 
     // Don't rely on unbundle: it creates a lot of unwanted files because of the multiple sections of SFC files
     advancedChunks: {
       groups: [
         {
-          // Exclude d.ts files so they get bundled up
+          // All declarations live in one shared chunk that every entry `.d.ts` re-exports from.
+          // Left to itself rolldown names shared declaration chunks after their first module
+          // (`Primitive.d.ts`, …), which collides with the kebab-case family entries
+          // (`primitive.d.ts`) on case-insensitive file systems.
+          test: DTS_FILE,
+          name: 'types.d',
+        },
+        {
+          // d.ts files are handled by the group above.
           // Also not possible when using unbundle mode...
           test: /(?<!\.d\.c?ts)$/,
           name: (id) => {
+            // Generated family entries stay inside their own entry chunk
+            if (GENERATED_ENTRY.test(id))
+              return null
             const [namespace, file] = id.split('?')[0].split(PATH_SEP).slice(-2)
             return (
               file

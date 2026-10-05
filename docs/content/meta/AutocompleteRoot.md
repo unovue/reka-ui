@@ -53,6 +53,12 @@
     'required': false
   },
   {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the Autocomplete (the input text). Can be bound with <code>v-model</code>.</p>\n',
     'type': 'string',
@@ -103,7 +109,7 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: string; }]'
+    'type': '[payload: { ref: HTMLElement; value: string; } | undefined]'
   },
   {
     'name': 'update:modelValue',
@@ -145,6 +151,7 @@
 | `disabled` | When true, prevents the user from interacting with autocomplete | `boolean` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the Autocomplete (the input text). Can be bound with v-model. | `string` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `open` | The controlled open state of the Autocomplete. Can be bound with v-model:open. | `boolean` | No | - |
@@ -157,7 +164,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; }]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; } \| undefined]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: string]` |
 | `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean]` |
 

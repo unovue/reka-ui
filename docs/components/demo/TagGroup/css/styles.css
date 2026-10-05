@@ -1,0 +1,8 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/mauve.css';
+@import '@radix-ui/colors/grass.css';
+
+/* reset */
+button {
+  all: unset;
+}

@@ -14,6 +14,7 @@ type ListboxRootContext<T> = {
   dir: Ref<Direction>
   disabled: Ref<boolean>
   highlightOnHover: Ref<boolean>
+  loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
@@ -39,6 +40,15 @@ type ListboxRootContext<T> = {
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
+/** Controls highlight scrolling while a parent composite is being positioned. */
+type ListboxHighlightScrollContext = {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+  onHighlightScrollRequest: (scroll: (() => void) | undefined) => void
+}
+
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
@@ -59,6 +69,8 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   selectionBehavior?: 'toggle' | 'replace'
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
   by?: string | ((a: T, b: T) => boolean)
 }
@@ -98,12 +110,19 @@ defineSlots<{
   }) => any
 }>()
 
-const { multiple, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
-const { getItems } = useCollection<{ value: T }>({ isProvider: true })
+const { multiple, highlightOnHover, loop, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
+const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({
+  suppressHighlightScroll: ref(false),
+  onHighlightScrollRequest: () => {},
+})
 
 const isFormControl = useFormControl(currentElement)
 
@@ -163,12 +182,28 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
     return
 
   highlightedElement.value = el
-  if (focus ?? focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
-    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  const suppressHighlightScroll = highlightScrollContext?.suppressHighlightScroll.value ?? false
+  if (focus ?? focusable.value) {
+    if (suppressHighlightScroll)
+      highlightedElement.value.focus({ preventScroll: true })
+    else
+      highlightedElement.value.focus()
+  }
 
-  const highlightedItem = getItems().find(i => i.ref === el)
+  if (suppressHighlightScroll) {
+    highlightScrollContext?.onHighlightScrollRequest(scrollIntoView
+      ? () => {
+          const element = highlightedElement.value
+          if (element?.isConnected)
+            element.scrollIntoView({ block: 'nearest' })
+        }
+      : undefined)
+  }
+  else if (scrollIntoView) {
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  }
+
+  const highlightedItem = getItem(el)
   emits('highlight', highlightedItem)
 }
 
@@ -276,6 +311,19 @@ function onEnter(event: Event) {
   }
 }
 
+function isAtVirtualBoundary(intent: 'prev' | 'next') {
+  // A virtualized list only renders a window of items. Only wrap when that
+  // window reaches the end of the full options list; any rendered items past
+  // the highlighted one are disabled.
+  const rendered = getItems(true).map(i => i.ref)
+  const edge = intent === 'next' ? rendered.at(-1) : rendered[0]
+  if (!edge)
+    return false
+  const position = Number(edge.getAttribute('aria-posinset'))
+  const size = Number(edge.getAttribute('aria-setsize'))
+  return intent === 'next' ? position === size : position === 1
+}
+
 function onKeydownNavigation(event: KeyboardEvent) {
   const intent = getFocusIntent(event, orientation.value, dir.value)
   if (!intent)
@@ -291,7 +339,18 @@ function onKeydownNavigation(event: KeyboardEvent) {
         collection.reverse()
 
       const currentIndex = collection.indexOf(highlightedElement.value)
-      collection = collection.slice(currentIndex + 1)
+      const shouldLoop = loop.value && currentIndex === collection.length - 1
+      if (shouldLoop && isVirtual.value) {
+        if (isAtVirtualBoundary(intent)) {
+          // Let the virtualizer scroll to and highlight the opposite end.
+          const key = intent === 'next' ? kbd.HOME : kbd.END
+          return virtualKeydownHook.trigger(new KeyboardEvent('keydown', { key, shiftKey: event.shiftKey }))
+        }
+        collection = []
+      }
+      else {
+        collection = shouldLoop ? collection.slice(0, 1) : collection.slice(currentIndex + 1)
+      }
     }
     handleMultipleReplace(event, collection[0])
   }
@@ -393,6 +452,7 @@ provideListboxRootContext({
   dir,
   disabled,
   highlightOnHover,
+  loop,
   highlightedElement,
   isVirtual,
   virtualFocusHook,

@@ -47,10 +47,11 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
       :data-state="disclosureState(rootContext.open.value)"
       @click="
         async (event: MouseEvent) => {
+          if (event.defaultPrevented) return;
           // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
           // but not when the control key is pressed (avoiding MacOS right click)
           if (!disabled && event.button === 0 && event.ctrlKey === false) {
-            rootContext?.onOpenToggle();
+            rootContext?.onOpenToggle('trigger-press', event);
             await nextTick()
             // prevent trigger focusing when opening
             // this allows the content to be given focus without competition
@@ -60,9 +61,9 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
       "
       @keydown.enter.space.arrow-down="
         (event: KeyboardEvent) => {
-          if (disabled) return;
-          if (['Enter', ' '].includes(event.key)) rootContext.onOpenToggle();
-          if (event.key === 'ArrowDown') rootContext.onOpenChange(true);
+          if (disabled || event.defaultPrevented) return;
+          if (['Enter', ' '].includes(event.key)) rootContext.onOpenToggle('trigger-press', event);
+          if (event.key === 'ArrowDown') rootContext.onOpenChange(true, 'trigger-press', event);
           // prevent keydown from scrolling window / first focused item to execute
           // that keydown (inadvertently closing the menu)
           if (['Enter', ' ', 'ArrowDown'].includes(event.key))

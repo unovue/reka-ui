@@ -24,6 +24,11 @@ export interface UseCheckboxGroupProps<T extends AcceptableValue = AcceptableVal
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** When `false`, arrow-key navigation between the items is disabled, default `true`. */
   rovingFocus?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * The maximum number of values that can be selected. Once reached, the
+   * unchecked checkboxes are blocked (`aria-disabled`) but stay focusable.
+   */
+  max?: MaybeRefOrGetter<number | null | undefined>
   /** Component `emit`; receives `beforeUpdate:modelValue` then `update:modelValue`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -36,6 +41,7 @@ export interface UseCheckboxGroupReturn<T extends AcceptableValue = AcceptableVa
   modelValue: ComputedRef<T[]>
   disabled: ComputedRef<boolean>
   rovingFocus: ComputedRef<boolean>
+  max: ComputedRef<number | null | undefined>
   /** Replace the whole value; returns `false` when unchanged or cancelled. */
   changeModelValue: (value: T[], reason?: CheckboxGroupChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Add `value` when absent, remove it when present (ohash `isEqual`); returns `false` when cancelled. */
@@ -69,6 +75,7 @@ export function useCheckboxGroup<T extends AcceptableValue = AcceptableValue>(pr
   })
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const rovingFocus = computed(() => toValue(props.rovingFocus) ?? true)
+  const max = computed(() => toValue(props.max))
 
   function changeModelValue(value: T[], reason: CheckboxGroupChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)
@@ -82,8 +89,9 @@ export function useCheckboxGroup<T extends AcceptableValue = AcceptableValue>(pr
     modelValue: modelValue as Ref<AcceptableValue[]>,
     rovingFocus: rovingFocus as Ref<boolean>,
     disabled: disabled as Ref<boolean>,
+    max,
     changeModelValue: changeModelValue as CheckboxGroupRootContext['changeModelValue'],
   }
 
-  return { modelValue, disabled, rovingFocus, changeModelValue, toggleValue, lastChangeDetails, isControlled, context }
+  return { modelValue, disabled, rovingFocus, max, changeModelValue, toggleValue, lastChangeDetails, isControlled, context }
 }

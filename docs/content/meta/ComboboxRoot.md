@@ -59,6 +59,12 @@
     'required': false
   },
   {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'T | T[]',
@@ -122,6 +128,13 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the Combobox content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to improve performance by not remounting the content on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -129,7 +142,7 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: T; }]'
+    'type': '[payload: { ref: HTMLElement; value: T; } | undefined]'
   },
   {
     'name': 'update:modelValue',
@@ -172,6 +185,7 @@
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -182,12 +196,13 @@
 | `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple) | `boolean` | No | `false` |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
 | `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
+| `unmountOnHide` | When set to false, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; }]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; } \| undefined]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: T]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean]` |
 

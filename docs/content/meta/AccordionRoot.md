@@ -73,7 +73,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the expanded state of an item changes</p>\n',
-    'type': '[value: (ExplicitType extends \'single\' ? string : string[])]'
+    'type': '[value: (ExplicitType extends \'single\' ? string : string[]) | undefined]'
   }
 ]" />
 
@@ -107,7 +107,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the expanded state of an item changes | `[value: (ExplicitType extends "single" ? string : string[])]` |
+| `update:modelValue` | Event handler called when the expanded state of an item changes | `[value: (ExplicitType extends "single" ? string : string[]) \| undefined]` |
 
 **Slots**
 

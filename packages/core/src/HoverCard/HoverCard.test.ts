@@ -133,7 +133,9 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
   // Leave `element` at (0, 0), then move outside the grace area. Both rects are
   // empty in jsdom, so any point away from the origin exits the polygon.
   async function leaveAndExitGraceArea(element: DOMWrapper<Element>) {
-    await element.trigger('pointerleave', { pointerType: 'mouse', clientX: 0, clientY: 0 })
+    // Dispatched directly: `trigger()` assigns the init onto the event, and `clientX` is getter-only.
+    element.element.dispatchEvent(new MouseEvent('pointerleave', { clientX: 0, clientY: 0 }))
+    await nextTick()
     document.body.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 100, clientY: 100 }))
     await nextTick()
   }
@@ -203,7 +205,9 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     await hoverOpen(trigger)
 
     // Trigger -> content (inside the grace area), then content -> away.
-    await trigger().trigger('pointerleave', { pointerType: 'mouse', clientX: 0, clientY: 0 })
+    // Dispatched directly: `trigger()` assigns the init onto the event, and `clientX` is getter-only.
+    trigger().element.dispatchEvent(new MouseEvent('pointerleave', { clientX: 0, clientY: 0 }))
+    await nextTick()
     await content().trigger('pointerenter', { pointerType: 'mouse' })
     await leaveAndExitGraceArea(content())
     vi.advanceTimersByTime(300)
