@@ -11,8 +11,12 @@ export interface UseCalendarGridProps {
   unit: MaybeRefOrGetter<CalendarUnit>
   /** The date that decides which page is shown. Read-only here; paging goes through `setPlaceholder`. */
   placeholder: Ref<DateValue>
-  /** Called when Prev / Next (or a custom paging function) lands on a new page. */
-  setPlaceholder: (date: DateValue) => void
+  /**
+   * Called when Prev / Next (or a custom paging function) lands on a new page.
+   * Returning `false` for a changed value (a cancelled `beforeUpdate:placeholder`)
+   * keeps the previous page.
+   */
+  setPlaceholder: (date: DateValue) => boolean | void
   locale: MaybeRefOrGetter<string>
   weekStartsOn: MaybeRefOrGetter<WeekStartsOn>
   /** @default 'narrow' */
@@ -163,11 +167,19 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
 
   function page(direction: 1 | -1, explicit?: CalendarPageFunction) {
     const { fn, mode } = resolvePageFn(explicit, direction > 0 ? props.nextPage : props.prevPage)
-    const previousFirst = grid.value[0].value
+    const previousGrid = grid.value
+    const previousFirst = previousGrid[0].value
     const target = adapter.value.pageTarget(grid.value, layout.value, direction, fn)
     const newGrid = adapter.value.createGrid(target, layout.value, { aligned: false })
+    // The grid goes first so the sync placeholder watcher finds the new
+    // placeholder on the page already rendered (and keeps its alignment).
     grid.value = newGrid
-    props.setPlaceholder(adapter.value.placeholderAfterPaging(newGrid, previousFirst, props.placeholder.value, mode))
+    const next = adapter.value.placeholderAfterPaging(newGrid, previousFirst, props.placeholder.value, mode)
+    const accepted = props.setPlaceholder(next)
+    // A cancelled `beforeUpdate:placeholder` keeps the page too. `false` for an
+    // unchanged placeholder is a no-op write, not a cancel: the page still flips.
+    if (accepted === false && next.compare(props.placeholder.value) !== 0)
+      grid.value = previousGrid
   }
 
   const nextPage = (fn?: CalendarPageFunction) => page(1, fn)

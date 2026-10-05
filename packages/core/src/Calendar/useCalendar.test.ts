@@ -93,6 +93,23 @@ describe('useCalendar', () => {
     })
   })
 
+  it('keeps the page when the paging placeholder update is cancelled', () => {
+    withScope(() => {
+      const api = useCalendar({
+        locale: 'en-US',
+        weekStartsOn: 0,
+        defaultPlaceholder: sep5,
+        emit: (event: string, _value: unknown, details: { cancel: () => void }) => {
+          if (event === 'beforeUpdate:placeholder')
+            details.cancel()
+        },
+      })
+      api.nextPage()
+      expect(api.placeholder.value.toString()).toBe('2026-09-05')
+      expect(api.headingValue.value).toBe('September 2026')
+    })
+  })
+
   it('supports multiple selection at the granularity', () => {
     withScope(() => {
       const api = useCalendar({ locale: 'en-US', weekStartsOn: 0, defaultPlaceholder: sep5, multiple: true, granularity: 'year' })

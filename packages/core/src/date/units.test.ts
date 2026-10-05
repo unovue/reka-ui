@@ -1,6 +1,6 @@
 import type { Matcher } from './types'
 import type { CalendarLayout } from './units'
-import { CalendarDate } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 import { clampLayoutCount, createMonthGrid, createYearGrid } from './calendar'
@@ -51,6 +51,13 @@ describe('day adapter', () => {
     const two = day.createGrid(sep5, { ...layout, numberOfMonths: 2 })
     expect(strings(two.map(p => p.value))).toEqual(['2026-09-05', '2026-10-05'])
     expect(day.createGrid(sep5, { ...layout, fixedWeeks: true })[0].cells).toHaveLength(42)
+  })
+
+  it('counts distance in whole days, inclusive, for date-time values too', () => {
+    expect(day.distance(sep5, new CalendarDate(2026, 9, 7))).toBe(3)
+    // `compare()` on date-times counts milliseconds; the same day is still one day.
+    expect(day.distance(new CalendarDateTime(2026, 9, 5, 9), new CalendarDateTime(2026, 9, 5, 17))).toBe(1)
+    expect(day.distance(new CalendarDateTime(2026, 9, 5, 23), new CalendarDateTime(2026, 9, 7, 1))).toBe(3)
   })
 
   it('marks leading and trailing days as outside the page', () => {

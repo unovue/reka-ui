@@ -2,7 +2,7 @@ import type { DateDuration, DateFields, DateValue } from '@internationalized/dat
 import type { WeekStartsOn } from './calendar'
 import type { CalendarGridData, CalendarUnit, Matcher } from './types'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
-import { endOfMonth, endOfYear, getLocalTimeZone, isEqualMonth, isSameDay, isSameMonth, isToday, startOfMonth, startOfYear, toCalendar, today } from '@internationalized/date'
+import { endOfMonth, endOfYear, getLocalTimeZone, isEqualMonth, isSameDay, isSameMonth, isToday, startOfMonth, startOfYear, toCalendar, toCalendarDate, today } from '@internationalized/date'
 import { createMonthGrid, createMonths, createYearGrid } from './calendar'
 import {
   areAllDaysBetweenValid,
@@ -113,7 +113,9 @@ const dayAdapter: CalendarUnitAdapter = {
   add: (d, n) => d.add({ days: n }),
   resolve: value => value.copy(),
   isCurrent: d => isToday(d, getLocalTimeZone()),
-  distance: (start, end) => end.compare(start) + 1,
+  // Whole days, inclusive: `compare()` on a date-time or zoned value counts
+  // milliseconds, so compare the calendar-date parts.
+  distance: (start, end) => toCalendarDate(end).compare(toCalendarDate(start)) + 1,
   areAllBetweenValid: areAllDaysBetweenValid,
   createGrid: (placeholder, layout) => createMonths({
     dateObj: placeholder,
