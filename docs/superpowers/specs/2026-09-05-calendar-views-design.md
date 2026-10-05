@@ -47,7 +47,7 @@ Base UI's Calendar (mui/base-ui#1709) goes further and owns no view state at all
 
 `CalendarRoot` (and `RangeCalendarRoot`) gains:
 
-```ts
+```txt
 view?: CalendarView // 'day' | 'month' | 'year' — controlled
 defaultView?: CalendarView // default: granularity
 ```
@@ -56,7 +56,7 @@ with `beforeUpdate:view` / `update:view` emits carrying `ChangeEventDetails<Cale
 
 ### D2. `granularity` fixes the selection unit (and the finest reachable view)
 
-```ts
+```txt
 granularity?: CalendarUnit // 'day' | 'month' | 'year', default 'day'
 ```
 
@@ -68,7 +68,7 @@ A standalone month picker is therefore `<CalendarRoot granularity="month">` — 
 
 ### D3. `maxView` bounds how far the heading can drill up
 
-```ts
+```txt
 maxView?: CalendarView // default 'year'
 ```
 

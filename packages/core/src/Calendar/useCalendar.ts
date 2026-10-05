@@ -140,7 +140,7 @@ let calendarCount = 0
 export type CalendarChromeContext = Pick<CalendarRootContext, 'disabled' | 'readonly' | 'view' | 'maxView' | 'headingId' | 'drillUp' | 'nextPage' | 'prevPage' | 'isNextButtonDisabled' | 'isPrevButtonDisabled'>
 
 /** Disabled for the purpose of the root `data-invalid` / focus fallbacks: evaluated at the granularity, not the active view. */
-function isDisabledAtUnit(context: CalendarRootContext, adapter: CalendarUnitAdapter, date: DateValue) {
+function isDisabledAtUnit(context: Pick<CalendarRootContext, 'disabledMatcher' | 'disabled' | 'minValue' | 'maxValue'>, adapter: CalendarUnitAdapter, date: DateValue) {
   if (context.disabledMatcher.value?.(date, adapter.unit) || context.disabled.value)
     return true
   if (context.maxValue.value && isAfter(adapter.startOf(date), context.maxValue.value))
@@ -441,21 +441,24 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     return a.isSame(current, date)
   }
 
+  // What `isDisabledAtUnit` reads; the full context is assembled further down.
+  const limits = { disabledMatcher, disabled, minValue, maxValue }
+
   const hasSelectedDate = computed(() => Array.isArray(modelValue.value) ? modelValue.value.length > 0 : !!modelValue.value)
 
   const isSelectedDateDisabled = computed(() => {
     const current = modelValue.value
     if (Array.isArray(current))
-      return current.length > 0 && current.some(d => isDisabledAtUnit(context, granularityAdapter.value, d))
+      return current.length > 0 && current.some(d => isDisabledAtUnit(limits, granularityAdapter.value, d))
     if (!current)
       return false
-    return isDisabledAtUnit(context, granularityAdapter.value, current)
+    return isDisabledAtUnit(limits, granularityAdapter.value, current)
   })
 
   const isInvalid = computed(() => {
     const current = modelValue.value
     const unavailable = unavailableMatcher.value
-    const check = (d: DateValue) => isDisabledAtUnit(context, granularityAdapter.value, d) || !!unavailable?.(d, granularity.value)
+    const check = (d: DateValue) => isDisabledAtUnit(limits, granularityAdapter.value, d) || !!unavailable?.(d, granularity.value)
     if (Array.isArray(current))
       return current.length > 0 && current.some(check)
     if (!current)
