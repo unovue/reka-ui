@@ -25,6 +25,7 @@ interface CollapsibleRootContext {
   disabled?: Ref<boolean>
   open: Ref<boolean>
   unmountOnHide: Ref<boolean>
+  onOpen: () => void
   onOpenToggle: () => void
 }
 
@@ -63,6 +64,12 @@ provideCollapsibleRootContext({
   disabled,
   open,
   unmountOnHide,
+  onOpen: () => {
+    if (disabled.value || open.value)
+      return
+
+    open.value = true
+  },
   onOpenToggle: () => {
     if (disabled.value)
       return
