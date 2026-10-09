@@ -4,6 +4,7 @@ export {
 } from './HoverCardArrow.vue'
 export {
   default as HoverCardContent,
+  type HoverCardContentEmits,
   type HoverCardContentProps,
 } from './HoverCardContent.vue'
 export {
