@@ -5,7 +5,7 @@ import { useForwardPropsEmits } from '@/shared'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
-const props = defineProps<PopoverContentImplProps>()
+const props = withDefaults(defineProps<PopoverContentImplProps & { present?: boolean }>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 const rootContext = injectPopoverRootContext()
 const hasInteractedOutsideRef = ref(false)

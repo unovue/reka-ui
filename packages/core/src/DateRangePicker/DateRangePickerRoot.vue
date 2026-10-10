@@ -50,7 +50,7 @@ type DateRangePickerRootContext = {
   closeOnSelect?: Ref<boolean>
 }
 
-export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & Omit<PopoverRootProps, 'unmountOnHide'> & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateUnavailable' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays'> & {
   /** Whether or not to close the popover on range select */
   closeOnSelect?: boolean
 }

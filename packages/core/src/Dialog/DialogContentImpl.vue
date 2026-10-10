@@ -63,6 +63,16 @@ onMounted(() => {
     rootContext.triggerElement.value = getActiveElement() as HTMLElement
 })
 
+// Kept-mounted content (`unmountOnHide: false`) already restored focus when it
+// was hidden, so removing it later (e.g. `v-if`) must not move focus again.
+function handleUnmountAutoFocus(event: Event) {
+  if (!props.present) {
+    event.preventDefault()
+    return
+  }
+  emits('closeAutoFocus', event)
+}
+
 if (process.env.NODE_ENV !== 'production') {
   useWarning({
     titleName: 'DialogTitle',
@@ -82,7 +92,7 @@ if (process.env.NODE_ENV !== 'production') {
     :trapped="props.trapFocus"
     :present="props.present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
-    @unmount-auto-focus="emits('closeAutoFocus', $event)"
+    @unmount-auto-focus="handleUnmountAutoFocus"
   >
     <DismissableLayer
       :id="rootContext.contentId"
