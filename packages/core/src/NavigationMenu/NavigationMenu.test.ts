@@ -343,3 +343,32 @@ describe('given NavigationMenuTrigger with consumer event listeners', () => {
     expect(stopPropagation).not.toHaveBeenCalled()
   })
 })
+
+describe('given NavigationMenuTrigger inside a form', () => {
+  function mountInForm(triggerProps: Record<string, unknown> = {}) {
+    document.body.innerHTML = ''
+    const onSubmit = vi.fn((event: Event) => event.preventDefault())
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('form', { onSubmit }, h(NavigationMenuRoot, () => h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'learn' }, () => [
+        h(NavigationMenuTrigger, triggerProps, () => 'Learn'),
+        h(NavigationMenuContent, () => h(NavigationMenuLink, { href: '#' }, () => 'Docs')),
+      ])))),
+    }), { attachTo: document.body })
+    return { onSubmit, trigger: wrapper.get('[data-navigation-menu-trigger]') }
+  }
+
+  it('should not submit the form when the trigger is clicked', async () => {
+    const { trigger, onSubmit } = mountInForm()
+
+    expect(trigger.attributes('type')).toBe('button')
+    await trigger.trigger('click')
+
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('should keep an explicit type', () => {
+    const { trigger } = mountInForm({ type: 'submit' })
+
+    expect(trigger.attributes('type')).toBe('submit')
+  })
+})

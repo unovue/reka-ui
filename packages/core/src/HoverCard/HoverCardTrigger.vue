@@ -46,6 +46,7 @@ function handleTouch(event: PointerEvent) {
       :ref="forwardRef"
       :as-child="asChild"
       :as="as"
+      :type="$attrs.type ?? (as === 'button' ? 'button' : undefined)"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       data-grace-area-trigger
       @pointerenter="excludeTouch(rootContext.onOpen)($event)"
