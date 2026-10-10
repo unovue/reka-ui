@@ -16,7 +16,7 @@ A succinct message that is displayed temporarily.
 <Highlights
   :features="[
     'Automatically closes.',
-    'Pauses closing on hover, focus and window blur.',
+    'Pauses closing on hover, focus and window blur by default.',
     'Supports hotkey to jump to toast viewport.',
     'Supports closing via swipe gesture.',
     'Exposes CSS variables for swipe gesture animations.',
@@ -553,6 +553,18 @@ Customise the duration of a toast to override the provider value.
   <ToastRoot :duration="3000">
     <ToastDescription>Saved!</ToastDescription>
   </ToastRoot>
+</template>
+```
+
+### Pause on interaction
+
+By default, the timeout pauses while the toast viewport is hovered or focused, or while the window is blurred. Set `pauseOnInteraction` to `false` to keep the timeout running during these interactions.
+
+```vue
+<template>
+  <ToastProvider :pause-on-interaction="false">
+    <Toaster />
+  </ToastProvider>
 </template>
 ```
 

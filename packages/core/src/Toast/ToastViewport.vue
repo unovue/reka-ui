@@ -47,6 +47,7 @@ const providerContext = injectToastProviderContext()
 const hasToasts = computed(() => providerContext.toastCount.value > 0)
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
+const windowBlurred = ref(false)
 
 const KEY_RE = /Key/g
 const DIGIT_RE = /Digit/g
@@ -81,7 +82,12 @@ watch(hasToasts, (value) => {
 watchEffect((cleanupFn) => {
   const viewport = currentElement.value
   if (hasToasts.value && viewport) {
+    const pauseOnInteraction = providerContext.pauseOnInteraction.value
+
     const handlePause = () => {
+      if (!providerContext.pauseOnInteraction.value)
+        return
+
       if (!providerContext.isClosePausedRef.value) {
         const pauseEvent = new CustomEvent(VIEWPORT_PAUSE)
         viewport.dispatchEvent(pauseEvent)
@@ -95,6 +101,24 @@ watchEffect((cleanupFn) => {
         viewport.dispatchEvent(resumeEvent)
         providerContext.isClosePausedRef.value = false
       }
+    }
+
+    if (pauseOnInteraction && (providerContext.hovering.value || providerContext.focused.value || windowBlurred.value))
+      handlePause()
+    else if (!pauseOnInteraction)
+      handleResume()
+
+    const handleWindowBlur = () => {
+      windowBlurred.value = true
+      handlePause()
+    }
+
+    const handleWindowFocus = () => {
+      windowBlurred.value = false
+      if (providerContext.hovering.value || providerContext.focused.value)
+        handlePause()
+      else
+        handleResume()
     }
 
     const handleFocusOutResume = (event: FocusEvent) => {
@@ -164,8 +188,8 @@ watchEffect((cleanupFn) => {
     viewport.addEventListener('pointermove', handlePointerMoveExpand)
     viewport.addEventListener('pointerleave', handlePointerLeaveResume)
     viewport.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('blur', handlePause)
-    window.addEventListener('focus', handleResume)
+    window.addEventListener('blur', handleWindowBlur)
+    window.addEventListener('focus', handleWindowFocus)
 
     cleanupFn(() => {
       viewport.removeEventListener('focusin', handlePause)
@@ -175,8 +199,8 @@ watchEffect((cleanupFn) => {
       viewport.removeEventListener('pointermove', handlePointerMoveExpand)
       viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
       viewport.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('blur', handlePause)
-      window.removeEventListener('focus', handleResume)
+      window.removeEventListener('blur', handleWindowBlur)
+      window.removeEventListener('focus', handleWindowFocus)
     })
   }
 })
