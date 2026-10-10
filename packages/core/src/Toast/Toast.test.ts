@@ -245,6 +245,50 @@ describe('ToastProvider pauseOnInteraction', () => {
       wrapper.unmount()
     }
   })
+
+  it.each(['pointermove', 'focusin', 'window blur'])('should pause when enabled during a %s interaction', async (interaction) => {
+    vi.useFakeTimers()
+
+    const open = ref(true)
+    const pauseOnInteraction = ref(false)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000, pauseOnInteraction: pauseOnInteraction.value }, () => [
+          h(ToastRoot, {
+            open: open.value,
+            'onUpdate:open': (value: boolean) => {
+              open.value = value
+            }
+          }, () => h(ToastDescription, null, () => 'Timeout toast')),
+          h(ToastViewport)
+        ])
+      }
+    }), { attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const viewport = document.querySelector<HTMLElement>('ol')!
+      if (interaction === 'pointermove')
+        await fireEvent.pointerMove(viewport)
+      else if (interaction === 'focusin')
+        await fireEvent.focusIn(viewport)
+      else
+        await fireEvent.blur(window)
+
+      vi.advanceTimersByTime(500)
+      pauseOnInteraction.value = true
+      await nextTick()
+
+      vi.advanceTimersByTime(500)
+      await nextTick()
+
+      expect(open.value).toBe(true)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
 })
 
 describe('given a Toast with an action', () => {
