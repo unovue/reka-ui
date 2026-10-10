@@ -194,6 +194,59 @@ describe('given a default Toast', () => {
   })
 })
 
+describe('ToastProvider pauseOnInteraction', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it.each([
+    { pauseOnInteraction: undefined, interaction: 'pointermove', shouldPause: true },
+    { pauseOnInteraction: false, interaction: 'pointermove', shouldPause: false },
+    { pauseOnInteraction: undefined, interaction: 'focusin', shouldPause: true },
+    { pauseOnInteraction: false, interaction: 'focusin', shouldPause: false },
+    { pauseOnInteraction: undefined, interaction: 'window blur', shouldPause: true },
+    { pauseOnInteraction: false, interaction: 'window blur', shouldPause: false }
+  ])('should apply pauseOnInteraction to $interaction', async ({ pauseOnInteraction, interaction, shouldPause }) => {
+    vi.useFakeTimers()
+
+    const open = ref(true)
+    const providerProps = pauseOnInteraction === undefined ? {} : { pauseOnInteraction }
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000, ...providerProps }, () => [
+          h(ToastRoot, {
+            open: open.value,
+            'onUpdate:open': (value: boolean) => {
+              open.value = value
+            }
+          }, () => h(ToastDescription, null, () => 'Timeout toast')),
+          h(ToastViewport)
+        ])
+      }
+    }), { attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const viewport = document.querySelector<HTMLElement>('ol')!
+      if (interaction === 'pointermove')
+        await fireEvent.pointerMove(viewport)
+      else if (interaction === 'focusin')
+        await fireEvent.focusIn(viewport)
+      else
+        await fireEvent.blur(window)
+
+      vi.advanceTimersByTime(1000)
+      await nextTick()
+
+      expect(open.value).toBe(shouldPause)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
+
 describe('given a Toast with an action', () => {
   let wrapper: VueWrapper<InstanceType<typeof ToastWithAction>>
 
