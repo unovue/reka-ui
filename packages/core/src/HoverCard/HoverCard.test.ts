@@ -2,7 +2,10 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { h } from 'vue'
 import { sleep } from '@/test'
+import HoverCardRoot from './HoverCardRoot.vue'
+import HoverCardTrigger from './HoverCardTrigger.vue'
 import HoverCard from './story/_HoverCard.vue'
 
 describe('given a default HoverCard', () => {
@@ -85,5 +88,20 @@ describe('given a HoverCard with enableTouch', () => {
     await trigger.trigger('pointerup', { pointerType: 'touch' })
     await sleep(150)
     expect(trigger.attributes('data-state')).toBe('closed')
+  })
+})
+
+describe('given a HoverCardTrigger rendered as a button', () => {
+  function mountTrigger(triggerProps: Record<string, unknown> = {}) {
+    const wrapper = mount(() => h(HoverCardRoot, () => h(HoverCardTrigger, { as: 'button', ...triggerProps }, () => 'trigger')))
+    return wrapper.get('button')
+  }
+
+  it('should set type="button" so it does not submit a surrounding form', () => {
+    expect(mountTrigger().attributes('type')).toBe('button')
+  })
+
+  it('should keep an explicit type', () => {
+    expect(mountTrigger({ type: 'submit' }).attributes('type')).toBe('submit')
   })
 })
