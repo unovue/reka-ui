@@ -29,6 +29,13 @@
     'required': false
   },
   {
+    'name': 'pauseOnInteraction',
+    'description': '<p>Whether to pause the toast duration while the viewport is hovered, focused, or the window is blurred.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
+  },
+  {
     'name': 'swipeDirection',
     'description': '<p>Direction of pointer swipe that should close the toast.</p>\n',
     'type': '\'right\' | \'left\' | \'down\' | \'up\'',
@@ -61,6 +68,7 @@
 | `duration` | Time in milliseconds that each toast should remain visible for. | `number` | No | `5000` |
 | `label` | An author-localized label for each toast. Used to help screen reader users associate the interruption with a toast. | `string` | No | `"Notification"` |
 | `limit` | The maximum number of toasts shown at once. Older toasts beyond the limit get data-limited and inert rather than being removed, so they can be hidden or animated. No limit is applied when unset. | `number` | No | - |
+| `pauseOnInteraction` | Whether to pause the toast duration while the viewport is hovered, focused, or the window is blurred. | `boolean` | No | `true` |
 | `swipeDirection` | Direction of pointer swipe that should close the toast. | `"right" \| "left" \| "down" \| "up"` | No | `"right"` |
 | `swipeThreshold` | Distance in pixels that the swipe must pass before a close is triggered. | `number` | No | `50` |
 | `toastManager` | A manager created with createToastManager(), to add toasts from outside components. Its toasts are listed by useToastManager(). | `GlobalToastManager<any>` | No | - |
