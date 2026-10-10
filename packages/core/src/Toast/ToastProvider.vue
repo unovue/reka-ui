@@ -12,6 +12,7 @@ type ToastProviderContext = {
   disableSwipe: Ref<boolean>
   swipeDirection: Ref<SwipeDirection>
   swipeThreshold: Ref<number>
+  pauseOnInteraction: Ref<boolean>
   toastCount: Ref<number>
   viewport: Ref<HTMLElement | undefined>
   onViewportChange: (viewport: HTMLElement) => void
@@ -75,6 +76,11 @@ export interface ToastProviderProps {
    */
   swipeThreshold?: number
   /**
+   * Whether to pause the toast duration while the viewport is hovered, focused, or the window is blurred.
+   * @defaultValue true
+   */
+  pauseOnInteraction?: boolean
+  /**
    * The maximum number of toasts shown at once. Older toasts beyond the limit get
    * `data-limited` and `inert` rather than being removed, so they can be hidden or animated.
    * No limit is applied when unset.
@@ -105,8 +111,9 @@ const props = withDefaults(defineProps<ToastProviderProps>(), {
   duration: 5000,
   swipeDirection: 'right',
   swipeThreshold: 50,
+  pauseOnInteraction: true,
 })
-const { label, duration, disableSwipe, swipeDirection, swipeThreshold } = toRefs(props)
+const { label, duration, disableSwipe, swipeDirection, swipeThreshold, pauseOnInteraction } = toRefs(props)
 useCollection({ isProvider: true })
 
 const viewport = ref<HTMLElement>()
@@ -170,6 +177,7 @@ provideToastProviderContext({
   disableSwipe,
   swipeDirection,
   swipeThreshold,
+  pauseOnInteraction,
   toastCount,
   viewport,
   onViewportChange(el) {

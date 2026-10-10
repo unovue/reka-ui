@@ -81,7 +81,12 @@ watch(hasToasts, (value) => {
 watchEffect((cleanupFn) => {
   const viewport = currentElement.value
   if (hasToasts.value && viewport) {
+    const pauseOnInteraction = providerContext.pauseOnInteraction.value
+
     const handlePause = () => {
+      if (!providerContext.pauseOnInteraction.value)
+        return
+
       if (!providerContext.isClosePausedRef.value) {
         const pauseEvent = new CustomEvent(VIEWPORT_PAUSE)
         viewport.dispatchEvent(pauseEvent)
@@ -96,6 +101,9 @@ watchEffect((cleanupFn) => {
         providerContext.isClosePausedRef.value = false
       }
     }
+
+    if (!pauseOnInteraction)
+      handleResume()
 
     const handleFocusOutResume = (event: FocusEvent) => {
       const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
