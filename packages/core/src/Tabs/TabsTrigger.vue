@@ -16,7 +16,7 @@ import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId } from './utils'
+import { makeTriggerId } from './utils'
 
 const props = withDefaults(defineProps<TabsTriggerProps>(), {
   disabled: false,
@@ -27,7 +27,7 @@ const { forwardRef } = useForwardExpose()
 const rootContext = injectTabsRootContext()
 
 const triggerId = computed(() => makeTriggerId(rootContext.baseId, props.value))
-const contentId = computed(() => rootContext.contentIds.value.has(props.value) ? makeContentId(rootContext.baseId, props.value) : undefined)
+const contentId = computed(() => rootContext.contentIds.value.get(props.value))
 
 const isSelected = computed(() => props.value === rootContext.modelValue.value)
 </script>

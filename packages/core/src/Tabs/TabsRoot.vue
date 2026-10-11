@@ -14,8 +14,8 @@ export interface TabsRootContext {
   activationMode: 'automatic' | 'manual'
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
-  contentIds: Ref<Set<StringOrNumber>>
-  registerContent: (value: StringOrNumber) => void
+  contentIds: Ref<Map<StringOrNumber, string>>
+  registerContent: (value: StringOrNumber, id: string) => void
   unregisterContent: (value: StringOrNumber) => void
 }
 
@@ -85,7 +85,7 @@ const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'
 })
 
 const tabsList = ref<HTMLElement>()
-const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
+const contentIds = shallowRef<Map<StringOrNumber, string>>(new Map())
 
 provideTabsRootContext({
   modelValue,
@@ -99,13 +99,13 @@ provideTabsRootContext({
   baseId: useId(undefined, 'reka-tabs'),
   tabsList,
   contentIds,
-  registerContent: (value: StringOrNumber) => {
-    contentIds.value = new Set([...contentIds.value, value])
+  registerContent: (value: StringOrNumber, id: string) => {
+    contentIds.value = new Map(contentIds.value).set(value, id)
   },
   unregisterContent: (value: StringOrNumber) => {
-    const newSet = new Set(contentIds.value)
-    newSet.delete(value)
-    contentIds.value = newSet
+    const newMap = new Map(contentIds.value)
+    newMap.delete(value)
+    contentIds.value = newMap
   },
 })
 </script>
