@@ -17,6 +17,12 @@ export interface PopoverRootProps {
    * @defaultValue false
    */
   modal?: boolean
+  /**
+   * When `true`, the element will be unmounted on closed state.
+   *
+   * @defaultValue `true`
+   */
+  unmountOnHide?: boolean
 }
 export type PopoverRootEmits = {
   /**
@@ -31,6 +37,7 @@ export interface PopoverRootContext {
   contentId: string
   open: Ref<boolean>
   modal: Ref<boolean>
+  unmountOnHide: Ref<boolean>
   onOpenChange: (value: boolean) => void
   onOpenToggle: () => void
   hasCustomAnchor: Ref<boolean>
@@ -49,6 +56,7 @@ const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
   open: undefined,
   modal: false,
+  unmountOnHide: true,
 })
 const emit = defineEmits<PopoverRootEmits>()
 
@@ -61,7 +69,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { modal } = toRefs(props)
+const { modal, unmountOnHide } = toRefs(props)
 
 const open = useVModel(props, 'open', emit, {
   defaultValue: props.defaultOpen,
@@ -76,6 +84,7 @@ providePopoverRootContext({
   triggerId: '',
   modal,
   open,
+  unmountOnHide,
   onOpenChange: (value) => {
     open.value = value
   },
