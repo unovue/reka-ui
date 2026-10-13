@@ -63,6 +63,10 @@ describe('given a default Toast', () => {
     trigger = wrapper.find('button')
   })
 
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
   it('should have visible toast that is focusable', async () => {
     // Open toast
     await fireEvent.click(trigger.element)
@@ -228,7 +232,7 @@ describe('ToastProvider pauseOnInteraction', () => {
     try {
       await nextTick()
 
-      const viewport = document.querySelector<HTMLElement>('ol')!
+      const viewport = wrapper.find<HTMLElement>('ol').element
       if (interaction === 'pointermove')
         await fireEvent.pointerMove(viewport)
       else if (interaction === 'focusin')
@@ -240,6 +244,52 @@ describe('ToastProvider pauseOnInteraction', () => {
       await nextTick()
 
       expect(open.value).toBe(shouldPause)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should resume when the pointer leaves while another toast is closing', async () => {
+    vi.useFakeTimers()
+
+    const openA = ref(true)
+    const openB = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000 }, () => [
+          h(ToastRoot, {
+            'open': openA.value,
+            'forceMount': true,
+            'duration': 100000,
+            'onUpdate:open': (value: boolean) => {
+              openA.value = value
+            }
+          }, () => h(ToastDescription, null, () => 'Closing toast')),
+          h(ToastRoot, {
+            'open': openB.value,
+            'onUpdate:open': (value: boolean) => {
+              openB.value = value
+            }
+          }, () => h(ToastDescription, null, () => 'Remaining toast')),
+          h(ToastViewport)
+        ])
+      }
+    }), { attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const viewport = wrapper.find<HTMLElement>('ol').element
+      await fireEvent.pointerMove(viewport)
+      openA.value = false
+      await nextTick()
+      await fireEvent.pointerLeave(viewport)
+
+      vi.advanceTimersByTime(1500)
+      await nextTick()
+
+      expect(openB.value).toBe(false)
     }
     finally {
       wrapper.unmount()
@@ -268,7 +318,7 @@ describe('ToastProvider pauseOnInteraction', () => {
     try {
       await nextTick()
 
-      const viewport = document.querySelector<HTMLElement>('ol')!
+      const viewport = wrapper.find<HTMLElement>('ol').element
       if (interaction === 'pointermove')
         await fireEvent.pointerMove(viewport)
       else if (interaction === 'focusin')
