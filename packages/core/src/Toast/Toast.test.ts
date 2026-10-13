@@ -198,7 +198,7 @@ describe('given a default Toast', () => {
   })
 })
 
-describe('ToastProvider pauseOnInteraction', () => {
+describe('toastProvider pauseOnInteraction', () => {
   afterEach(() => {
     vi.useRealTimers()
   })
@@ -209,7 +209,7 @@ describe('ToastProvider pauseOnInteraction', () => {
     { pauseOnInteraction: undefined, interaction: 'focusin', shouldPause: true },
     { pauseOnInteraction: false, interaction: 'focusin', shouldPause: false },
     { pauseOnInteraction: undefined, interaction: 'window blur', shouldPause: true },
-    { pauseOnInteraction: false, interaction: 'window blur', shouldPause: false }
+    { pauseOnInteraction: false, interaction: 'window blur', shouldPause: false },
   ])('should apply pauseOnInteraction to $interaction', async ({ pauseOnInteraction, interaction, shouldPause }) => {
     vi.useFakeTimers()
 
@@ -219,14 +219,14 @@ describe('ToastProvider pauseOnInteraction', () => {
       setup() {
         return () => h(ToastProvider, { duration: 1000, ...providerProps }, () => [
           h(ToastRoot, {
-            open: open.value,
+            'open': open.value,
             'onUpdate:open': (value: boolean) => {
               open.value = value
-            }
+            },
           }, () => h(ToastDescription, null, () => 'Timeout toast')),
-          h(ToastViewport)
+          h(ToastViewport),
         ])
-      }
+      },
     }), { attachTo: document.body })
 
     try {
@@ -264,17 +264,17 @@ describe('ToastProvider pauseOnInteraction', () => {
             'duration': 100000,
             'onUpdate:open': (value: boolean) => {
               openA.value = value
-            }
+            },
           }, () => h(ToastDescription, null, () => 'Closing toast')),
           h(ToastRoot, {
             'open': openB.value,
             'onUpdate:open': (value: boolean) => {
               openB.value = value
-            }
+            },
           }, () => h(ToastDescription, null, () => 'Remaining toast')),
-          h(ToastViewport)
+          h(ToastViewport),
         ])
-      }
+      },
     }), { attachTo: document.body })
 
     try {
@@ -305,14 +305,14 @@ describe('ToastProvider pauseOnInteraction', () => {
       setup() {
         return () => h(ToastProvider, { duration: 1000, pauseOnInteraction: pauseOnInteraction.value }, () => [
           h(ToastRoot, {
-            open: open.value,
+            'open': open.value,
             'onUpdate:open': (value: boolean) => {
               open.value = value
-            }
+            },
           }, () => h(ToastDescription, null, () => 'Timeout toast')),
-          h(ToastViewport)
+          h(ToastViewport),
         ])
-      }
+      },
     }), { attachTo: document.body })
 
     try {
