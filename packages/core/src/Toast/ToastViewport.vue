@@ -79,46 +79,47 @@ watch(hasToasts, (value) => {
   }
 })
 
+function handlePause() {
+  const viewport = currentElement.value
+  if (!viewport || providerContext.isClosePausedRef.value)
+    return
+
+  viewport.dispatchEvent(new CustomEvent(VIEWPORT_PAUSE))
+  providerContext.isClosePausedRef.value = true
+}
+
+function handleResume() {
+  const viewport = currentElement.value
+  if (!viewport || !providerContext.isClosePausedRef.value)
+    return
+
+  viewport.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
+  providerContext.isClosePausedRef.value = false
+}
+
+watch(providerContext.pauseOnInteraction, (pauseOnInteraction) => {
+  if (pauseOnInteraction && (providerContext.hovering.value || providerContext.focused.value || windowBlurred.value))
+    handlePause()
+  else if (!pauseOnInteraction)
+    handleResume()
+})
+
 watchEffect((cleanupFn) => {
   const viewport = currentElement.value
   if (hasToasts.value && viewport) {
-    const pauseOnInteraction = providerContext.pauseOnInteraction.value
-
-    const handlePause = () => {
-      if (!providerContext.pauseOnInteraction.value)
-        return
-
-      if (!providerContext.isClosePausedRef.value) {
-        const pauseEvent = new CustomEvent(VIEWPORT_PAUSE)
-        viewport.dispatchEvent(pauseEvent)
-        providerContext.isClosePausedRef.value = true
-      }
+    const handlePauseIfEnabled = () => {
+      if (providerContext.pauseOnInteraction.value)
+        handlePause()
     }
-
-    const handleResume = () => {
-      if (providerContext.isClosePausedRef.value) {
-        const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-        viewport.dispatchEvent(resumeEvent)
-        providerContext.isClosePausedRef.value = false
-      }
-    }
-
-    if (pauseOnInteraction && (providerContext.hovering.value || providerContext.focused.value || windowBlurred.value))
-      handlePause()
-    else if (!pauseOnInteraction)
-      handleResume()
 
     const handleWindowBlur = () => {
       windowBlurred.value = true
-      handlePause()
+      handlePauseIfEnabled()
     }
 
     const handleWindowFocus = () => {
       windowBlurred.value = false
-      if (providerContext.hovering.value || providerContext.focused.value)
-        handlePause()
-      else
-        handleResume()
+      handleResume()
     }
 
     const handleFocusOutResume = (event: FocusEvent) => {
@@ -181,10 +182,10 @@ watchEffect((cleanupFn) => {
       }
     }
 
-    viewport.addEventListener('focusin', handlePause)
+    viewport.addEventListener('focusin', handlePauseIfEnabled)
     viewport.addEventListener('focusin', handleFocusInExpand)
     viewport.addEventListener('focusout', handleFocusOutResume)
-    viewport.addEventListener('pointermove', handlePause)
+    viewport.addEventListener('pointermove', handlePauseIfEnabled)
     viewport.addEventListener('pointermove', handlePointerMoveExpand)
     viewport.addEventListener('pointerleave', handlePointerLeaveResume)
     viewport.addEventListener('keydown', handleKeyDown)
@@ -192,10 +193,10 @@ watchEffect((cleanupFn) => {
     window.addEventListener('focus', handleWindowFocus)
 
     cleanupFn(() => {
-      viewport.removeEventListener('focusin', handlePause)
+      viewport.removeEventListener('focusin', handlePauseIfEnabled)
       viewport.removeEventListener('focusin', handleFocusInExpand)
       viewport.removeEventListener('focusout', handleFocusOutResume)
-      viewport.removeEventListener('pointermove', handlePause)
+      viewport.removeEventListener('pointermove', handlePauseIfEnabled)
       viewport.removeEventListener('pointermove', handlePointerMoveExpand)
       viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
       viewport.removeEventListener('keydown', handleKeyDown)
