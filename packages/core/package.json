@@ -5,10 +5,10 @@
   "description": "Vue port for Radix UI Primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/zernonia"
-  },
+  "funding": [
+    "https://opencollective.com/unovue",
+    "https://github.com/sponsors/zernonia"
+  ],
   "homepage": "https://github.com/unovue/reka-ui",
   "repository": {
     "type": "git",
