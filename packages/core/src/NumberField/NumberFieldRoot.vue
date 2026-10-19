@@ -231,21 +231,22 @@ function clampInputValue(val: number) {
 }
 
 function applyInputValue(val: string) {
-  const parsedValue = numberParser.parse(val)
-  if (isNaN(parsedValue))
+  // Set to empty state if input value is empty
+  if (!val.length) {
     modelValue.value = undefined
-  else if (allowInvalid.value)
+    return setInputValue(val)
+  }
+
+  const parsedValue = numberParser.parse(val)
+  // if it failed to parse (e.g. a lone "." or "-"), keep the current number and reset input to its formatted version
+  if (isNaN(parsedValue))
+    return setInputValue(textValue.value)
+
+  if (allowInvalid.value)
     // Keep the typed value as-is, only normalize formatting precision
     modelValue.value = numberParser.parse(numberFormatter.format(parsedValue))
   else
     modelValue.value = clampInputValue(parsedValue)
-  // Set to empty state if input value is empty
-  if (!val.length)
-    return setInputValue(val)
-
-  // if it failed to parse, then reset input to formatted version of current number
-  if (isNaN(parsedValue))
-    return setInputValue(textValue.value)
 
   return setInputValue(textValue.value)
 }
