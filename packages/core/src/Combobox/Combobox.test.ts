@@ -273,6 +273,13 @@ describe('given default Combobox', () => {
       expect(input.element.value).toBe('Testing')
     })
 
+    it('should remove aria-activedescendant when close', async () => {
+      await valueBox.trigger('keydown', { key: 'ArrowDown' })
+      expect(valueBox.attributes('aria-activedescendant')).toBeTruthy()
+      await valueBox.trigger('keydown', { key: 'Escape' })
+      expect(valueBox.attributes('aria-activedescendant')).toBeUndefined()
+    })
+
     describe('after selecting a value', () => {
       beforeEach(async () => {
         const selection = items[1]

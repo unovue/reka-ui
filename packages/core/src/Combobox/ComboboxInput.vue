@@ -142,6 +142,11 @@ watch(rootContext.modelValue, async () => {
     resetSearchTerm()
 }, { immediate: true, deep: true })
 
+watch(rootContext.open, (open) => {
+  if (!open)
+    listboxContext.highlightedElement.value = null
+})
+
 watch(rootContext.filterState, (_newValue, oldValue) => {
   // we exclude virtualized list as the state would be constantly updated,
   // and only change highlight when previously there were no items displayed
