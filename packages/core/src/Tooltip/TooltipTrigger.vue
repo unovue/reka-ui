@@ -113,6 +113,7 @@ function handleClick() {
       :data-state="rootContext.stateAttribute.value"
       :as="as"
       :as-child="props.asChild"
+      :type="$attrs.type ?? (as === 'button' ? 'button' : undefined)"
       data-grace-area-trigger
       v-on="tooltipListeners"
     >
