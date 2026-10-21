@@ -21,7 +21,9 @@ export interface ToastRootProps extends ToastRootImplProps {
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
+import { injectToastProviderContext } from './ToastProvider.vue'
 import ToastRootImpl from './ToastRootImpl.vue'
 
 const props = withDefaults(defineProps<ToastRootProps>(), {
@@ -36,7 +38,7 @@ const emits = defineEmits<ToastRootEmits>()
 defineSlots<{
   default?: (props: {
     /** Current open state */
-    open: typeof open.value
+    open: boolean
     /** Remaining time (in ms) */
     remaining: number
     /** Total time the toast will remain visible for (in ms) */
@@ -49,20 +51,49 @@ const open = useVModel(props, 'open', emits, {
   defaultValue: props.defaultOpen,
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
+
+const providerContext = injectToastProviderContext()
+
+const isOpen = computed(() => props.toast ? props.toast.open : open.value)
+const resolvedType = computed(() => props.toast?.type ?? props.type)
+const resolvedDuration = computed(() => props.toast?.status === 'loading'
+  ? Number.POSITIVE_INFINITY
+  : props.toast?.duration ?? props.duration)
+
+function close() {
+  if (props.toast) {
+    providerContext.toastStore.close(props.toast.id)
+    emits('update:open', false)
+  }
+  else {
+    open.value = false
+  }
+}
+
+// A managed toast leaves the list once it is closed and its exit animation has
+// unmounted the content (or it closed before the content ever mounted).
+const isContentMounted = ref(false)
+watch([() => props.toast, isContentMounted], ([toast, mounted]) => {
+  if (toast && !toast.open && !mounted)
+    providerContext.toastStore.remove(toast.id)
+}, { immediate: true })
 </script>
 
 <template>
-  <Presence :present="forceMount || open">
+  <Presence :present="forceMount || isOpen">
     <ToastRootImpl
       :ref="forwardRef"
       v-slot="{ remaining, duration: _duration }"
-      :open="open"
-      :type="type"
+      :open="isOpen"
+      :type="resolvedType"
       :as="as"
       :as-child="asChild"
-      :duration="duration"
+      :duration="resolvedDuration"
+      :toast="toast"
       v-bind="$attrs"
-      @close="open = false"
+      @vue:mounted="isContentMounted = true"
+      @vue:unmounted="isContentMounted = false"
+      @close="close"
       @pause="emits('pause')"
       @resume="emits('resume')"
       @escape-key-down="emits('escapeKeyDown', $event)"
@@ -103,14 +134,14 @@ const open = useVModel(props, 'open', emits, {
           target.style.removeProperty('--reka-toast-swipe-move-y');
           target.style.setProperty('--reka-toast-swipe-end-x', `${x}px`);
           target.style.setProperty('--reka-toast-swipe-end-y', `${y}px`);
-          open = false;
+          close();
         }
       }"
     >
       <slot
         :remaining="remaining"
         :duration="_duration"
-        :open="open"
+        :open="isOpen"
       />
     </ToastRootImpl>
   </Presence>

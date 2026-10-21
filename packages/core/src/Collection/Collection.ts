@@ -28,6 +28,14 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     context = inject(injectionKey) as CollectionContext<ItemData>
   }
 
+  const getItem = (element: HTMLElement, includeDisabledItem = false) => {
+    if (!context.collectionRef.value)
+      return undefined
+
+    const item = context.itemMap.value.get(element)
+    return item && (includeDisabledItem || item.ref.dataset.disabled !== '') ? item : undefined
+  }
+
   const getItems = (includeDisabledItem = false) => {
     const collectionNode = context.collectionRef.value
     if (!collectionNode)
@@ -85,5 +93,5 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
   const reactiveItems = computed(() => Array.from(context.itemMap.value.values()))
   const itemMapSize = computed(() => context.itemMap.value.size)
 
-  return { getItems, reactiveItems, itemMapSize, CollectionSlot, CollectionItem }
+  return { getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem }
 }

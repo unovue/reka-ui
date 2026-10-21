@@ -100,6 +100,12 @@
     'required': false
   },
   {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'memoDependencies',
     'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
     'type': 'unknown[]',
@@ -202,6 +208,7 @@
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `position` | The positioning mode to use item-aligned (default) - behaves similarly to a native MacOS menu by positioning content relative to the active item. <br> popper - positions content in the same way as our other primitives, for example Popover or DropdownMenu. | `"popper" \| "item-aligned"` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |

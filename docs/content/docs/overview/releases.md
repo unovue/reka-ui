@@ -13,6 +13,57 @@ Discover the latest release of Reka UI.
 
 ---
 
+## v2.11
+
+### ✨ New Features
+
+#### Components
+
+- **Field**: New primitive that wires a control to its label, description and validation errors <Badge>Alpha</Badge>
+- **Form**: New primitive that extends the native form with submit-time validation and server error display <Badge>Alpha</Badge>
+- **TagGroup**: New component for a list of selectable, removable tags with keyboard navigation <Badge>Alpha</Badge>
+- **Toast**: New toast manager for creating toasts from anywhere
+  - `createToastManager` and `useToastManager` to add, update and close toasts imperatively
+  - `ToastPositioner` and `ToastArrow` to anchor a toast to an element
+- **Drawer**: New `DrawerVirtualKeyboardProvider` to keep the drawer clear of the software keyboard
+
+#### Functionality
+
+- **Listbox/Combobox/Autocomplete/Select/Tree**: Added `loop` prop so arrow-key navigation wraps around
+- **Select/Listbox/Combobox/Menu/ColorSwatchPicker**: Added slot props (e.g. `selected`, `checked`) to `*Item`, and `forceMount` to `*ItemIndicator`
+- **Combobox**: Added `unmountOnHide` prop to control whether content is unmounted when closed
+- **Calendar/RangeCalendar**: Added `Home`, `End`, `PageUp`, `PageDown` and `Shift` + `PageUp`/`PageDown` keyboard shortcuts
+- **NumberField**: Added `startingValue` prop for the first increment or decrement of an empty field
+- **NumberField**: Added `allowInvalid` prop to keep a typed value that is out of range or off the step
+- **Checkbox**: Added `max` prop to `CheckboxGroupRoot` to limit the number of checked values
+- **Toast**: Added `closeOnClick` prop to `ToastAction` to keep the toast open after the action
+- **Menu**: Added `graceDuration` prop to sub triggers to customize the pointer grace period
+- **ContextMenu**: Added controlled `open` state support
+- **Drawer**: Swipe dismissal can be canceled with `details.cancel()` in `update:open`
+- **DismissableLayer/FocusScope**: Added support for content rendered inside an iframe or a shadow root
+
+#### Developer Experience
+
+- **Types**: `openAutoFocus` is now typed on `DropdownMenuContent`, `ContextMenuContent` and `MenubarContent`
+- **Dependencies**: Updated `@floating-ui/vue` to v2
+
+### ⚠️ Behavior Changes
+
+These are fixes, but they change behavior you may rely on.
+
+- **VisuallyHidden**: No longer sets `aria-hidden` by default, so its content is exposed to assistive technology. Use `feature="fully-hidden"` to hide it completely.
+- **Select/DropdownMenu/Menubar/NavigationMenu/Tabs**: Triggers now respect `event.preventDefault()`. A listener such as `@click.prevent` on a trigger stops it from opening.
+- **FocusScope**: Auto focus and the `Tab` loop now follow `tabindex` order instead of DOM order.
+- **NumberField**: `update:modelValue` is now typed `number | undefined`, matching what was already emitted when the field is cleared.
+- **NumberField**: Stepping further out of range no longer clamps the value. For example, `ArrowUp` on a value above `max` does nothing.
+- **Menu**: `@entry-focus` on `DropdownMenuContent`, `ContextMenuContent` and `MenubarContent` is no longer forwarded.
+- **Calendar/RangeCalendar**: `Home`, `End`, `PageUp` and `PageDown` on a cell no longer scroll the page.
+- **DatePicker**: `closeOnSelect` now closes only when the day changes.
+- **Checkbox**: A disabled `CheckboxRoot` now also sets `aria-disabled="true"`.
+- **Toast**: Toasts now render `--reka-toast-*` CSS variables and a `data-expanded` attribute.
+
+---
+
 ## v2.10
 
 ### ✨ New Features

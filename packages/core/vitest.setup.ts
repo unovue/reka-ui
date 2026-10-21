@@ -17,6 +17,10 @@ configureAxe({
 })
 
 beforeAll(() => {
+  // Tests opting into the `node` environment (plain SSR) have no DOM to patch.
+  if (typeof window === 'undefined')
+    return
+
   window.HTMLElement.prototype.scrollIntoView = vi.fn()
 
   // jsdom throws "Not implemented" when getComputedStyle receives a

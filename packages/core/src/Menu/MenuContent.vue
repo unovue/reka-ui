@@ -4,7 +4,7 @@ import type {
   MenuRootContentTypeProps,
 } from './MenuContentImpl.vue'
 
-export type MenuContentEmits = Omit<MenuContentImplEmits, 'entryFocus' | 'openAutoFocus'>
+export type MenuContentEmits = MenuContentImplEmits
 
 export interface MenuContentProps extends MenuRootContentTypeProps {
   /**
