@@ -91,7 +91,7 @@ watch([rootContext.viewport, currentElement, () => props.horizontal, isRtl], upd
 useResizeObserver(rootContext.content, updateScrollMargin)
 
 // the estimated sizes are cached, so they need to be measured again
-watch(() => typeof props.estimateSize === 'number' ? props.estimateSize : undefined, () => virtualizer.value.measure())
+watch(() => props.estimateSize, () => virtualizer.value.measure())
 
 // not a computed: slots aren't reactive, so a replaced slot would keep rendering the cached nodes
 function getVirtualizedItems() {
@@ -112,7 +112,9 @@ function getVirtualizedItems() {
       is: cloneVNode(targetNode, {
         'data-index': item.index,
         'style': {
-          position: 'absolute',
+          position: props.horizontal ? 'relative' : 'absolute',
+          gridArea: props.horizontal ? '1 / 1' : undefined,
+          justifySelf: props.horizontal ? 'start' : undefined,
           top: 0,
           ...(props.horizontal
             ? { [isRtl.value ? 'right' : 'left']: 0 }
@@ -134,6 +136,7 @@ function getVirtualizedItems() {
     data-reka-virtualizer
     :style="{
       position: 'relative',
+      display: horizontal ? 'grid' : undefined,
       width: horizontal ? `${virtualizer.getTotalSize()}px` : '100%',
       height: horizontal ? undefined : `${virtualizer.getTotalSize()}px`,
     }"

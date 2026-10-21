@@ -38,7 +38,7 @@ describe('given a virtualized ScrollArea', () => {
   const VirtualScrollArea = defineComponent({
     props: {
       options: { type: Array, default: () => options },
-      estimateSize: { type: Number, default: 25 },
+      estimateSize: { type: [Number, Function] as PropType<number | ((index: number) => number)>, default: 25 },
       overscan: { type: Number, default: undefined },
       horizontal: { type: Boolean, default: false },
       dir: { type: String as PropType<'ltr' | 'rtl'>, default: undefined },
@@ -162,7 +162,17 @@ describe('given a virtualized ScrollArea', () => {
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 500px')
   })
 
-  it('renders nothing until a default slot is provided', async () => {
+  it('remeasures when the estimateSize callback changes', async () => {
+    const wrapper = mount(VirtualScrollArea, { attachTo: document.body, props: { estimateSize: () => 25 } })
+    await flush()
+    expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 2500px')
+
+    await wrapper.setProps({ estimateSize: () => 50 })
+    await flush()
+    expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 5000px')
+  })
+
+  it('updates when the default slot is added or removed', async () => {
     const wrapper = mount(VirtualScrollArea, { attachTo: document.body, props: { withSlot: false } })
     await flush()
 
@@ -172,6 +182,9 @@ describe('given a virtualized ScrollArea', () => {
 
     await wrapper.setProps({ withSlot: true })
     expect(wrapper.findAll('[data-testid="item"]').length).toBe(20)
+
+    await wrapper.setProps({ withSlot: false })
+    expect(virtualizer.element.children.length).toBe(0)
   })
 
   it('exposes the virtualizer instance', async () => {

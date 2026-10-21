@@ -361,6 +361,130 @@ describe('scroll-lock handoff to a modal layer without its own scroll lock (#278
   })
 })
 
+describe('body pointer-events shared by scroll locks and modal layers (#2867)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    context.layersRoot.clear()
+    context.layersWithOutsidePointerEventsDisabled.clear()
+  })
+
+  // Mimics `DialogOverlayImpl`: holds a body scroll lock while mounted.
+  const ScrollLock = defineComponent({
+    setup() {
+      useBodyScrollLock(true)
+      return () => h('div', 'overlay')
+    },
+  })
+
+  /** Mounts a scroll-lock holder and a modal layer, each toggled by its own ref. */
+  function mountLockAndLayer() {
+    const lockOpen = ref(false)
+    const layerOpen = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          lockOpen.value ? h(ScrollLock) : null,
+          layerOpen.value
+            ? h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'dialog')
+            : null,
+        ])
+      },
+    }), { attachTo: document.body })
+
+    /**
+     * Engages the scroll lock (its `nextTick` included) before the layer mounts,
+     * as happens when an open modal Dialog hydrates outside a scheduler flush.
+     */
+    async function openLockThenLayer() {
+      lockOpen.value = true
+      await nextTick()
+      await sleep(1)
+      expect(document.body.style.pointerEvents).toBe('none')
+      layerOpen.value = true
+      await sleep(1)
+      expect(document.body.style.pointerEvents).toBe('none')
+    }
+
+    return { wrapper, lockOpen, layerOpen, openLockThenLayer }
+  }
+
+  it('should restore body pointer-events when the lock releases before a layer that mounted under it', async () => {
+    const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
+    await openLockThenLayer()
+
+    lockOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    layerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should restore body pointer-events when a layer that mounted under the lock releases first', async () => {
+    const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
+    await openLockThenLayer()
+
+    layerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    lockOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should keep body pointer-events none while a scroll lock still holds after the layer releases', async () => {
+    const { wrapper, lockOpen, layerOpen } = mountLockAndLayer()
+
+    layerOpen.value = true
+    await sleep(1)
+    lockOpen.value = true
+    await nextTick()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    layerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    lockOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    wrapper.unmount()
+  })
+
+  it('should preserve a page-defined body pointer-events value through the whole cycle', async () => {
+    document.body.style.pointerEvents = 'auto'
+    const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
+    await openLockThenLayer()
+
+    lockOpen.value = false
+    await sleep(1)
+    layerOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('auto')
+
+    lockOpen.value = true
+    await nextTick()
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    lockOpen.value = false
+    await sleep(1)
+    expect(document.body.style.pointerEvents).toBe('auto')
+
+    wrapper.unmount()
+  })
+})
+
 describe('given a default DismissableLayer', () => {
   let wrapper: VueWrapper<InstanceType<typeof DismissableLayer>>
   let trigger: DOMWrapper<HTMLElement>

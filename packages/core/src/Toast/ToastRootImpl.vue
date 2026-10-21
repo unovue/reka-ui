@@ -49,7 +49,7 @@ export interface ToastRootImplProps extends PrimitiveProps {
 }
 
 export const [injectToastRootContext, provideToastRootContext]
-  = createContext<{ onClose: () => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
+  = createContext<{ onClose: (event?: PointerEvent) => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
 </script>
 
 <script setup lang="ts">

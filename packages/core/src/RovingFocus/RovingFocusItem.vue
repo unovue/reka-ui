@@ -17,7 +17,7 @@ export interface RovingFocusItemProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId } from '@/shared'
@@ -105,7 +105,18 @@ function handleKeydown(event: KeyboardEvent) {
 // `ToolbarButton`) or a consumer can then claim a key with `preventDefault()`,
 // matching Radix, where the wrapped child's handler runs first.
 const { forwardRef, currentElement } = useForwardExpose()
-useEventListener(currentElement, 'keydown', handleKeydown)
+const itemElement = shallowRef<HTMLElement>()
+watch(currentElement, (element) => {
+  itemElement.value = element
+}, { immediate: true, flush: 'post' })
+useEventListener(itemElement, 'keydown', handleKeydown)
+
+// An `asChild` child can replace its root element without this component
+// re-rendering, which would leave the listener on the detached element. Focus
+// reaches the item before any key does, so rebind from there.
+function handleFocusIn(event: FocusEvent) {
+  itemElement.value = event.currentTarget as HTMLElement
+}
 </script>
 
 <template>
@@ -128,6 +139,7 @@ useEventListener(currentElement, 'keydown', handleKeydown)
         }
       "
       @focus="context.onItemFocus(id)"
+      @focusin="handleFocusIn"
     >
       <slot />
     </Primitive>

@@ -47,7 +47,8 @@ if (isRendered.value && !altText.value)
 function handleClick(event: MouseEvent) {
   actionProps.value?.onClick?.(event)
   if (actionProps.value?.closeOnClick ?? props.closeOnClick)
-    rootContext.onClose()
+    // Pass the event on, like `ToastClose`: a keyboard click hands focus to the viewport.
+    rootContext.onClose(event as PointerEvent)
 }
 </script>
 

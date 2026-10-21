@@ -2,8 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
+import { AutocompleteAnchor, AutocompleteCancel, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompleteRoot, AutocompleteViewport } from '.'
 import Autocomplete from './story/_Autocomplete.vue'
 
 describe('given default Autocomplete', () => {
@@ -294,5 +295,56 @@ describe('given autocomplete in a form', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: 'Banana' })
     })
+  })
+})
+
+describe('given autocomplete with cancel button and openOnFocus', () => {
+  const components = { AutocompleteRoot, AutocompleteAnchor, AutocompleteInput, AutocompleteCancel, AutocompleteContent, AutocompleteViewport, AutocompleteItem }
+  const options = ['Apple', 'Banana', 'Cherry']
+
+  // https://github.com/unovue/reka-ui/issues/2988
+  it.each([
+    ['uncontrolled', '<AutocompleteRoot open-on-focus open-on-click>'],
+    ['controlled', '<AutocompleteRoot v-model="model" open-on-focus open-on-click>'],
+  ])('should show all items after clearing a closed, blurred input (%s)', async (_, root) => {
+    document.body.innerHTML = ''
+    const wrapper = mount({
+      components,
+      setup() {
+        return { options, model: ref('') }
+      },
+      template: `
+        ${root}
+          <AutocompleteAnchor>
+            <AutocompleteInput />
+            <AutocompleteCancel>X</AutocompleteCancel>
+          </AutocompleteAnchor>
+          <AutocompleteContent>
+            <AutocompleteViewport>
+              <AutocompleteItem v-for="option in options" :key="option" :value="option">
+                {{ option }}
+              </AutocompleteItem>
+            </AutocompleteViewport>
+          </AutocompleteContent>
+        </AutocompleteRoot>
+      `,
+    }, { attachTo: document.body })
+    const input = wrapper.find('input')
+
+    input.element.focus()
+    await nextTick()
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    await nextTick()
+    expect(input.element.value).toBe('Banana')
+    expect(wrapper.find('[role=listbox]').exists()).toBe(false)
+
+    input.element.blur()
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    await nextTick()
+
+    expect(input.element.value).toBe('')
+    expect(document.activeElement).toBe(input.element)
+    expect(wrapper.findAll('[role=option]').map(i => i.text())).toEqual(options)
   })
 })

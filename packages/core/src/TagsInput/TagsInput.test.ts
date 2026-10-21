@@ -166,6 +166,29 @@ describe('given default TagsInput', () => {
       expect(tags[1].text()).toBe(tag)
     })
 
+    it('should keep focus in the input on keydown:tab that adds a value', async () => {
+      await wrapper.setProps({ addOnTab: true })
+      await setValueInInput('tag:tab')
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(wrapper.html()).toContain('tag:tab')
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('should let keydown:tab move focus when the draft is empty', async () => {
+      await wrapper.setProps({ addOnTab: true })
+      await setValueInInput('')
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     it('should add value on blur', async () => {
       const tag = 'tag:blur'
       await wrapper.setProps({ addOnBlur: true })

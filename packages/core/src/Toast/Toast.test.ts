@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastViewport } from '.'
+import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
@@ -224,5 +224,39 @@ describe('given a Toast with an action', () => {
     expect(wrapper.vm.actionClicks).toBe(1)
     expect(wrapper.vm.open).toBe(true)
     expect(document.body.innerHTML).toContain('Action available')
+  })
+
+  it('should move focus to the viewport when the action is activated by keyboard', async () => {
+    wrapper = mount(ToastWithAction, { attachTo: document.body })
+
+    const action = await findByText(document.body, 'Undo')
+    const viewport = action.closest('ol')
+    action.focus()
+    // A click from Enter / Space has an empty `pointerType`. jsdom does not support PointerEvent.
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'pointerType', { value: '' })
+    action.dispatchEvent(event)
+    await nextTick()
+
+    expect(wrapper.vm.open).toBe(false)
+    expect(viewport).toHaveFocus()
+  })
+})
+
+describe('given a ToastTitle and ToastDescription outside a managed toast', () => {
+  // Vue only falls attrs through a fragment root in development, so a root that
+  // is not a single element loses `class` / `id` in a production build.
+  it.each([
+    ['ToastTitle', ToastTitle],
+    ['ToastDescription', ToastDescription],
+  ])('%s should render a single root element', (_, component) => {
+    const wrapper = mount(component, {
+      attrs: { class: 'custom', id: 'custom-id' },
+      slots: { default: 'Content' },
+    })
+
+    expect(wrapper.vm.$.subTree.el).toBeInstanceOf(HTMLElement)
+    expect(wrapper.element.outerHTML).toBe('<div class="custom" id="custom-id">Content</div>')
+    wrapper.unmount()
   })
 })
