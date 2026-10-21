@@ -12,7 +12,7 @@ import { injectComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { ListboxFilter } from '@/Listbox'
 import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { usePrimitiveElement } from '@/Primitive'
-import { useComposing } from '@/shared'
+import { useComposing, useId } from '@/shared'
 import { injectAutocompleteRootContext } from './AutocompleteRoot.vue'
 
 const props = withDefaults(defineProps<AutocompleteInputProps>(), {
@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<AutocompleteInputProps>(), {
 const emits = defineEmits<AutocompleteInputEmits>()
 
 const rootContext = injectComboboxRootContext()
+rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
 const autocompleteContext = injectAutocompleteRootContext()
 const listboxContext = injectListboxRootContext()
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -114,7 +115,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :auto-focus="autoFocus"
     :disabled="disabled"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
+    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
     aria-autocomplete="list"
     role="combobox"
     autocomplete="off"
