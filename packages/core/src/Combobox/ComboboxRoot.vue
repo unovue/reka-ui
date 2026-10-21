@@ -6,7 +6,7 @@ import { usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
-  modelValue: Ref<T | Array<T>>
+  modelValue: Ref<T | Array<T> | undefined>
   multiple: Ref<boolean>
   disabled: Ref<boolean>
   open: Ref<boolean>
@@ -33,6 +33,7 @@ type ComboboxRootContext<T> = {
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
+  getClearValue: () => T | null | undefined
   unmountOnHide: Ref<boolean>
 }
 
@@ -81,6 +82,13 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
    */
   resetModelValueOnClear?: boolean
+  /**
+   * The value to set the `modelValue` to when the combobox is cleared
+   * and `resetModelValueOnClear` is `true`. When not provided, defaults to
+   * `null` for single select or `[]` for multiple select. Explicitly passing
+   * `undefined` clears a single selection to `undefined`.
+   */
+  clearValue?: T
   /**
    * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
    * Useful when you want to improve performance by not remounting the content on every open.
@@ -257,6 +265,10 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear,
+  getClearValue: () => {
+    const rawProps = inst?.vnode.props
+    return rawProps && ('clearValue' in rawProps || 'clear-value' in rawProps) ? props.clearValue : null
+  },
   unmountOnHide,
 })
 </script>
