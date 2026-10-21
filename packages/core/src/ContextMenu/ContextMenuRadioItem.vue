@@ -16,12 +16,22 @@ import { useEmitAsProps, useForwardExpose } from '@/shared'
 const props = defineProps<ContextMenuRadioItemProps>()
 const emits = defineEmits<ContextMenuRadioItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Current checked state */
+    checked: boolean
+  }) => any
+}>()
+
 const emitsAsProps = useEmitAsProps(emits)
 useForwardExpose()
 </script>
 
 <template>
-  <MenuRadioItem v-bind="{ ...props, ...emitsAsProps }">
-    <slot />
+  <MenuRadioItem
+    v-slot="slotProps"
+    v-bind="{ ...props, ...emitsAsProps }"
+  >
+    <slot v-bind="slotProps" />
   </MenuRadioItem>
 </template>

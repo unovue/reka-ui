@@ -8,11 +8,12 @@ import type { PrimitiveProps } from '@/Primitive'
 import {
   computed,
   nextTick,
-  reactive,
   watch,
   watchEffect,
 } from 'vue'
-import { isNullish, useForwardExpose } from '@/shared'
+import { useForwardExpose } from '@/shared'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from '@/shared/bodyPointerEvents'
+import { context } from './context'
 
 export interface DismissableLayerProps extends PrimitiveProps {
   /**
@@ -54,12 +55,7 @@ export type DismissableLayerPrivateEmits = DismissableLayerEmits & {
   dismiss: []
 }
 
-export const context = reactive({
-  layersRoot: new Set<HTMLElement>(),
-  layersWithOutsidePointerEventsDisabled: new Set<HTMLElement>(),
-  originalBodyPointerEvents: undefined as string | undefined,
-  branches: new Set<HTMLElement>(),
-})
+export { context }
 </script>
 
 <script setup lang="ts">
@@ -90,7 +86,8 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
 const emits = defineEmits<DismissableLayerPrivateEmits>()
 
 const { forwardRef, currentElement: layerElement } = useForwardExpose()
-const ownerDocument = computed(
+// `undefined` on the server, where there is no document to fall back to.
+const ownerDocument = computed<Document | undefined>(
   () => layerElement.value?.ownerDocument ?? globalThis.document,
 )
 
@@ -114,6 +111,11 @@ const isPointerEventsEnabled = computed(() => {
   return index.value >= highestLayerWithOutsidePointerEventsDisabledIndex
 })
 
+// A layer that stays mounted while hidden (e.g. a Dialog with `unmountOnHide: false`)
+// must not listen while it is not present, hence the `present` guard passed as `enabled`.
+// On touch the dispatch is deferred to the `click` event, so a `pointerdown` captured
+// while hidden would be delivered right after the layer opened and dismiss it on the
+// very interaction that opened it.
 const pointerDownOutside = usePointerDownOutside(async (event) => {
   const isPointerDownOnBranch = [...context.branches].some(branch =>
     branch?.contains(event.target as HTMLElement),
@@ -126,7 +128,7 @@ const pointerDownOutside = usePointerDownOutside(async (event) => {
   await nextTick()
   if (!event.defaultPrevented)
     emits('dismiss')
-}, layerElement)
+}, layerElement, () => props.present)
 
 const focusOutside = useFocusOutside((event) => {
   const isFocusInBranch = [...context.branches].some(branch =>
@@ -154,6 +156,10 @@ onKeyStroke('Escape', (event) => {
   emits('escapeKeyDown', event)
   if (!event.defaultPrevented)
     emits('dismiss')
+}, {
+  // Listen on the layer's own window so Escape works for a layer rendered
+  // inside an iframe, whose key events never reach the top-level window.
+  target: () => ownerDocument.value?.defaultView ?? globalThis.window,
 })
 
 // Use `watch` with explicit sources (instead of `watchEffect`) so this effect
@@ -168,27 +174,20 @@ watch(
     if (!element || !present)
       return
     if (disableOutsidePointerEvents) {
-      if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-        context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents
-        ownerDocument.value.body.style.pointerEvents = 'none'
-      }
+      const doc = element.ownerDocument
+      acquireBodyPointerEvents(doc, element)
       context.layersWithOutsidePointerEventsDisabled.add(element)
 
-      // Remove this layer from the set on cleanup (re-run via prop toggle, or
-      // unmount) and restore the body's `pointer-events` only once the last
-      // disabling layer is gone. Removing here — rather than relying solely on
-      // the unmount-only effect below — keeps the set accurate when
-      // `disableOutsidePointerEvents` toggles `true -> false` while still
-      // mounted (e.g. a modal Menu closing). Checking `size === 0` *after*
-      // deletion makes the restore independent of cleanup ordering (#2674).
+      // Remove this layer from the set and release its share of the body's
+      // `pointer-events` on cleanup (re-run via prop toggle, or unmount).
+      // Removing here — rather than relying solely on the unmount-only effect
+      // below — keeps the set accurate when `disableOutsidePointerEvents`
+      // toggles `true -> false` while still mounted (e.g. a modal Menu
+      // closing). The shared owner restores the body only once the last
+      // layer or scroll lock lets go, whatever the cleanup order (#2674, #2867).
       onCleanup(() => {
         context.layersWithOutsidePointerEventsDisabled.delete(element)
-        if (
-          context.layersWithOutsidePointerEventsDisabled.size === 0
-          && !isNullish(context.originalBodyPointerEvents)
-        ) {
-          ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents
-        }
+        releaseBodyPointerEvents(doc, element)
       })
     }
   },

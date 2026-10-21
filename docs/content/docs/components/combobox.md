@@ -594,6 +594,8 @@ import { ref } from 'vue'
 
 When `resetModelValueOnClear` is `true`, clicking `ComboboxCancel` will reset the `modelValue`. In single-select mode, it resets to `null` by default, but you can use `clearValue` to specify a custom value. In multiple-select mode, it always resets to `[]`, regardless of `clearValue`.
 
+Pass `:clear-value="undefined"` to clear a single selection to `undefined` instead of `null`.
+
 ```vue line=5-6,14
 <script setup lang="ts">
 import {
@@ -606,14 +608,14 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 
-const selectedPerson = ref('Durward Reynolds')
+const selectedPerson = ref<string | undefined>('Durward Reynolds')
 </script>
 
 <template>
   <ComboboxRoot
     v-model="selectedPerson"
     reset-model-value-on-clear
-    clear-value="No one selected"
+    :clear-value="undefined"
   >
     <ComboboxInput placeholder="Search person..." />
     <ComboboxCancel>Clear</ComboboxCancel>

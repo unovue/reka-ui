@@ -184,6 +184,54 @@ export function getNextLastDayOfWeek<T extends DateValue = DateValue>(
   return date.add({ days: lastDayOfWeek - day }) as T
 }
 
+export type DateSelection = DateValue | DateValue[] | null | undefined
+
+/**
+ * Whether two controlled selections describe the same period.
+ * A new object for the same day, month, or year is still the same selection.
+ */
+export function isSameDateSelection(
+  left: DateSelection,
+  right: DateSelection,
+  isSame: (a: DateValue, b: DateValue) => boolean,
+) {
+  if (left === right)
+    return true
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length)
+      return false
+
+    return left.every((item, index) => {
+      const other = right[index]
+      return !!other && isSame(item, other)
+    })
+  }
+
+  if (!left || !right)
+    return false
+
+  return isSame(left, right)
+}
+
+/**
+ * Whether two dates are the exact same value, including calendar system, time, offset, and time zone.
+ * `compare()` alone treats the same instant in two zones as equal, and `toString()`
+ * serializes every calendar system as Gregorian.
+ */
+export function isSameDateValue(a: DateValue, b: DateValue) {
+  return a.calendar.identifier === b.calendar.identifier
+    && a.toString() === b.toString()
+}
+
+/** The date that should drive the visible page: the last multiple value, otherwise the value itself. */
+export function focusedDateValue(value: DateSelection) {
+  if (Array.isArray(value))
+    return value.at(-1)
+
+  return value
+}
+
 /**
  * Check if two dates are in the same year and month.
  */

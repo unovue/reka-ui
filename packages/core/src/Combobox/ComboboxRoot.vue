@@ -6,11 +6,14 @@ import { usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
-  modelValue: Ref<T | Array<T>>
+  modelValue: Ref<T | Array<T> | undefined>
   multiple: Ref<boolean>
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
+  onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
+  onContentPlaced: (content: symbol) => void
+  onContentUnmount: (content: symbol) => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
   contentId: string
@@ -30,7 +33,8 @@ type ComboboxRootContext<T> = {
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
-  clearValue: Ref<T | undefined>
+  getClearValue: () => T | null | undefined
+  unmountOnHide: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -81,9 +85,16 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
   /**
    * The value to set the `modelValue` to when the combobox is cleared
    * and `resetModelValueOnClear` is `true`. When not provided, defaults to
-   * `null` for single select or `[]` for multiple select.
+   * `null` for single select or `[]` for multiple select. Explicitly passing
+   * `undefined` clears a single selection to `undefined`.
    */
   clearValue?: T
+  /**
+   * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to improve performance by not remounting the content on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 </script>
 
@@ -93,6 +104,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   open: undefined,
@@ -102,6 +114,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   openOnClick: false,
   resetModelValueOnClear: false,
   highlightOnHover: true,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ComboboxRootEmits<T>>()
 
@@ -115,7 +128,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, clearValue, highlightOnHover } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, loop, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -157,6 +170,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
@@ -231,6 +245,7 @@ provideComboboxRootContext({
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,
@@ -250,7 +265,11 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear,
-  clearValue,
+  getClearValue: () => {
+    const rawProps = inst?.vnode.props
+    return rawProps && ('clearValue' in rawProps || 'clear-value' in rawProps) ? props.clearValue : null
+  },
+  unmountOnHide,
 })
 </script>
 
@@ -271,6 +290,7 @@ provideComboboxRootContext({
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >

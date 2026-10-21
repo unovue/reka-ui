@@ -94,6 +94,7 @@ export interface MenuRootContentTypeProps
 import {
   onUnmounted,
   ref,
+  shallowRef,
   toRefs,
   watch,
 } from 'vue'
@@ -166,10 +167,17 @@ function onKeydownEnter() {
 }
 
 const filterElement = ref<HTMLElement>()
-const activeSubmenuContext = ref<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> }>()
+// A deep `ref` would unwrap `trigger` to the element, so `trigger.value` would always be `undefined`.
+const activeSubmenuContext = shallowRef<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> }>()
 
 watch(highlightedElement, (el) => {
   if (activeSubmenuContext.value && (el === undefined || el !== activeSubmenuContext.value.trigger.value)) {
+    // Don't close the submenu when the highlight disappears (pointer left
+    // all parent items, likely because the submenu opened on top of the
+    // trigger in a constrained viewport). Only close when highlight moves
+    // to a different parent item.
+    if (el === undefined)
+      return
     activeSubmenuContext.value.onOpenChange(false)
     activeSubmenuContext.value = undefined
   }
@@ -238,8 +246,7 @@ function handleKeyDown(event: KeyboardEvent) {
   const collectionItems = rovingFocusGroupRef.value?.getItems() ?? []
 
   if (isKeyDownInside) {
-    // menus should not be navigated using tab key so we prevent it
-    if (event.key === 'Tab')
+    if (event.key === 'Tab' && rootContext.modal.value)
       event.preventDefault()
     if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
       handleTypeaheadSearch(event.key, collectionItems)

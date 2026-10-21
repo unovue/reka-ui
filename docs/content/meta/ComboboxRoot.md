@@ -23,7 +23,7 @@
   },
   {
     'name': 'clearValue',
-    'description': '<p>The value to set the <code>modelValue</code> to when the combobox is cleared\nand <code>resetModelValueOnClear</code> is <code>true</code>. When not provided, defaults to\n<code>null</code> for single select or <code>[]</code> for multiple select.</p>\n',
+    'description': '<p>The value to set the <code>modelValue</code> to when the combobox is cleared\nand <code>resetModelValueOnClear</code> is <code>true</code>. When not provided, defaults to\n<code>null</code> for single select or <code>[]</code> for multiple select. Explicitly passing\n<code>undefined</code> clears a single selection to <code>undefined</code>.</p>\n',
     'type': 'T',
     'required': false
   },
@@ -61,6 +61,12 @@
   {
     'name': 'ignoreFilter',
     'description': '<p>When <code>true</code>, disable the default filters</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -128,6 +134,13 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the Combobox content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to improve performance by not remounting the content on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -172,13 +185,14 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
-| `clearValue` | The value to set the modelValue to when the combobox is cleared and resetModelValueOnClear is true. When not provided, defaults to null for single select or [] for multiple select. | `T` | No | - |
+| `clearValue` | The value to set the modelValue to when the combobox is cleared and resetModelValueOnClear is true. When not provided, defaults to null for single select or [] for multiple select. Explicitly passing undefined clears a single selection to undefined. | `T` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -189,6 +203,7 @@
 | `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple) | `boolean` | No | `false` |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
 | `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
+| `unmountOnHide` | When set to false, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |
 
 **Events**
 

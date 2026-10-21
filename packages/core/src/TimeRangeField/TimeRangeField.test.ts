@@ -47,6 +47,22 @@ it('should pass axe accessibility tests', async () => {
 })
 
 describe('timeField', () => {
+  it('advances focus through segments in DOM order when typing in RTL', async () => {
+    const { user, start, end } = setup({
+      timeRangeFieldProps: {
+        dir: 'rtl',
+        locale: 'en-GB',
+      },
+    })
+
+    await user.click(start.hour)
+    expect(start.hour).toHaveFocus()
+    await user.keyboard('{11}')
+    expect(start.minute).toHaveFocus()
+    await user.keyboard('{45}')
+    expect(end.hour).toHaveFocus()
+  })
+
   it('populates segment with value - `Time`', async () => {
     const { start, end } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
@@ -158,6 +174,31 @@ describe('timeField', () => {
     await user.keyboard('2')
     expect(start.minute).toHaveTextContent('2')
     expect(end.minute).toHaveTextContent(String(time.end.minute))
+  })
+
+  it('updates segments when the value changes externally', async () => {
+    const { start, end, rerender } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    const nextTime = { start: new Time(10, 0), end: new Time(11, 30) }
+    await rerender({ timeRangeFieldProps: { modelValue: nextTime, locale: 'en-GB' } })
+
+    expect(start.hour).toHaveTextContent(String(nextTime.start.hour))
+    expect(start.minute).toHaveTextContent(String(nextTime.start.minute).padStart(2, '0'))
+    expect(end.hour).toHaveTextContent(String(nextTime.end.hour))
+    expect(end.minute).toHaveTextContent(String(nextTime.end.minute))
+  })
+
+  it('clears segments when the value is reset externally', async () => {
+    const { start, end, rerender } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
+    })
+
+    await rerender({ timeRangeFieldProps: { modelValue: null, locale: 'en-GB' } })
+
+    expect(start.hour).toHaveTextContent('––')
+    expect(end.minute).toHaveTextContent('––')
   })
 
   it('modifying end value does not affect start value', async () => {
