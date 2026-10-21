@@ -66,12 +66,19 @@ function handleKeyDown(event: KeyboardEvent) {
 
 const { forwardRef, currentElement } = useForwardExpose()
 
+let registeredElement: HTMLElement | null = null
+
 onMounted(() => {
-  rootContext.totalStepperItems.value.add(currentElement.value)
+  registeredElement = currentElement.value
+  if (registeredElement)
+    rootContext.totalStepperItems.value.add(registeredElement)
 })
 
 onUnmounted(() => {
-  rootContext.totalStepperItems.value.delete(currentElement.value)
+  if (registeredElement) {
+    rootContext.totalStepperItems.value.delete(registeredElement)
+    registeredElement = null
+  }
 })
 </script>
 

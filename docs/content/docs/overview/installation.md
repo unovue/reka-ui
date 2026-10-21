@@ -12,7 +12,7 @@ A quick tutorial to walk through installing the packages, as well as the support
 
 Reka UI offers Nuxt modules support.
 
-In `nuxt.config.ts`, simply add `reka-ui/nuxt` into the modules, and it will auto-imports all the components for you.
+In `nuxt.config.ts`, simply add `reka-ui/nuxt` into the modules, and it will auto-import all the components for you.
 
 ```ts
 export default defineNuxtConfig({
@@ -24,7 +24,7 @@ export default defineNuxtConfig({
 
 Reka UI also has resolver for the popular [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components).
 
-In `vite.config.ts`, import `reka-ui/resolver`, and configure as such and it will auto-imports all the components from Reka UI.
+In `vite.config.ts`, import `reka-ui/resolver` and configure it as follows. The resolver will then auto-import all Reka UI components.
 
 ```ts{2,10  }
 import Components from 'unplugin-vue-components/vite'

@@ -13,7 +13,7 @@ import './styles.css'
       aria-label="Manage your account"
     >
       <TabsIndicator class="TabsIndicator">
-        <div class="TabsIndicatorContent"/>
+        <div class="TabsIndicatorContent" />
       </TabsIndicator>
       <TabsTrigger
         class="TabsTrigger"

@@ -5,6 +5,7 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 ## Commands (from repo root)
 - Install: `pnpm i`
 - Test (one-shot): `pnpm --filter reka-ui exec vitest run [path]`  (`pnpm test` = watch mode — avoid in automation)
+- Browser tests (real Chromium, `*.browser.test.ts`): `pnpm test:browser` (first run: `pnpm --filter reka-ui exec playwright install chromium`)
 - Coverage: `pnpm --filter reka-ui test:coverage`
 - Type-check: `pnpm --filter reka-ui type-check`
 - Lint: `pnpm lint` (fix: `pnpm lint:fix`)
@@ -22,6 +23,7 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 ## Conventions
 - Context: `createContext('<Component>')` → `[inject, provide]`; `*Root.vue` provides, descendants inject.
 - Rendering: `Primitive` with `as` / `asChild`; expose refs via `useForwardExpose()`.
+- Browser tests: colocated `*.browser.test.ts`, vitest browser mode + Playwright; use `userEvent` from `vitest/browser` (trusted events). For behaviour jsdom can't represent: native focus order, form submission, key defaults, layout/positioning.
 - Tests: colocated `*.test.ts`, vitest + jsdom + `@testing-library/vue` + `vitest-axe` (axe check expected for new components); jsdom quirks handled in `packages/core/vitest.setup.ts`.
 - Commits: Conventional Commits, scope = component family (`fix(Dialog): …`); commitlint enforces; lint-staged runs `eslint --fix` (lints JSON/MD/YAML too — intentional).
 

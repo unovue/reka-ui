@@ -22,6 +22,7 @@ import {
 const checkboxOne = ref(false)
 const checkboxTwo = ref(false)
 const person = ref('pedro')
+const open = ref(false)
 
 function handleClick() {
   // eslint-disable-next-line no-alert
@@ -344,6 +345,33 @@ function handleClick() {
             </ContextMenuRadioGroup>
           </ContextMenuContent>
         </ContextMenuPortal>
+      </ContextMenuRoot>
+    </Variant>
+    <Variant title="controlled">
+      <button
+        class="block border-2 border-white text-white rounded my-[10px] text-[15px] select-none py-[5px] w-[300px] text-center"
+        @click="open = !open"
+      >
+        {{ open ? 'Close' : 'Open' }}
+      </button>
+
+      <ContextMenuRoot v-model:open="open">
+        <ContextMenuTrigger
+          class="block border-2 border-white border-dashed text-white rounded text-[15px] select-none py-[45px] w-[300px] text-center"
+        >
+          Right click for contextmenu
+        </ContextMenuTrigger>
+
+        <ContextMenuContent>
+          <ContextMenuItem>Item 1</ContextMenuItem>
+          <ContextMenuItem>Item 2</ContextMenuItem>
+          <button
+            @click="open = false"
+          >
+            Close
+          </button>
+          <ContextMenuItem>Item 3</ContextMenuItem>
+        </ContextMenuContent>
       </ContextMenuRoot>
     </Variant>
   </Story>

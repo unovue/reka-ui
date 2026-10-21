@@ -92,6 +92,12 @@ function changeHoveredRating(rating: number) {
   hoveredRating.value = rating
 }
 
+// Unconditional, so a preview left over from a `hoverable`/`disabled` toggle
+// mid-hover still clears once the pointer leaves.
+function resetHoveredRating() {
+  hoveredRating.value = 0
+}
+
 provideRatingRootContext({
   modelValue,
   items,
@@ -107,6 +113,7 @@ provideRatingRootContext({
   <RadioGroupRoot
     v-bind="reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step')"
     :disabled="disabled"
+    @mouseleave="resetHoveredRating"
   >
     <slot
       :items="items"

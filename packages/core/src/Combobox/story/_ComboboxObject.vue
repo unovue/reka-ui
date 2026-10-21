@@ -4,7 +4,9 @@ import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '..'
 
-const props = defineProps<ComboboxRootProps & { input?: ComboboxInputProps }>()
+const props = withDefaults(defineProps<ComboboxRootProps & { input?: ComboboxInputProps }>(), {
+  unmountOnHide: true,
+})
 const people = [
   { id: 1, name: 'Durward Reynolds' },
   { id: 2, name: 'Kenton Towne' },

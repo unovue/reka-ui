@@ -13,8 +13,8 @@ export function usePresence(
   const prevPresentRef = ref(present)
   const initialState = present.value ? 'mounted' : 'unmounted'
   let timeoutId: number | undefined
-  let transitionTimeout: number | undefined
-  let transitionPendingCount: number | undefined
+  let exitGeneration = 0
+  let waitingForAnimations = false
   const ownerWindow = node.value?.ownerDocument.defaultView ?? defaultWindow
 
   const { state, dispatch } = useStateMachine(initialState, {
@@ -43,8 +43,12 @@ export function usePresence(
   watch(
     present,
     async (currentPresent, prevPresent) => {
+      const generation = ++exitGeneration
+      waitingForAnimations = false
       const hasPresentChanged = prevPresent !== currentPresent
       await nextTick()
+      if (generation !== exitGeneration)
+        return
       if (hasPresentChanged) {
         const prevAnimationName = prevAnimationNameRef.value
         const currentAnimationName = getAnimationName(node.value)
@@ -55,42 +59,39 @@ export function usePresence(
           if (currentAnimationName === 'none')
             dispatchCustomEvent('after-enter')
         }
+        else if (node.value?.getAnimations) {
+          const element = node.value
+          const animations = element.getAnimations().filter(animation =>
+            (animation.playState === 'running' || animation.pending)
+            && animation.effect?.getComputedTiming().endTime !== Infinity,
+          )
+
+          dispatchCustomEvent('leave')
+          if (animations.length) {
+            waitingForAnimations = true
+            dispatch('ANIMATION_OUT')
+            Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+              if (generation !== exitGeneration || node.value !== element || present.value)
+                return
+              waitingForAnimations = false
+              dispatchCustomEvent('after-leave')
+              dispatch('ANIMATION_END')
+            })
+          }
+          else {
+            dispatch('UNMOUNT')
+            dispatchCustomEvent('after-leave')
+          }
+        }
         else if (
           currentAnimationName === 'none' || currentAnimationName === 'undefined'
           || stylesRef.value?.display === 'none'
         ) {
-          if (
-            currentAnimationName === 'none'
-            && stylesRef.value?.display !== 'none'
-            && hasTransition(node.value)
-          ) {
-            dispatch('ANIMATION_OUT')
-            dispatchCustomEvent('leave')
-
-            const duration = getTransitionDuration(node.value)
-            if (duration > 0) {
-              transitionPendingCount = getTransitionPropertyCount(node.value)
-              transitionTimeout = ownerWindow?.setTimeout(() => {
-                if (state.value === 'unmountSuspended') {
-                  dispatchCustomEvent('after-leave')
-                  dispatch('ANIMATION_END')
-                }
-                transitionTimeout = undefined
-                transitionPendingCount = undefined
-              }, duration + 50)
-            }
-            else {
-              dispatchCustomEvent('after-leave')
-              dispatch('ANIMATION_END')
-            }
-          }
-          else {
-            // If there is no exit animation or the element is hidden, animations won't run
-            // so we unmount instantly
-            dispatch('UNMOUNT')
-            dispatchCustomEvent('leave')
-            dispatchCustomEvent('after-leave')
-          }
+          // If there is no exit animation or the element is hidden, animations won't run
+          // so we unmount instantly rv
+          dispatch('UNMOUNT')
+          dispatchCustomEvent('leave')
+          dispatchCustomEvent('after-leave')
         }
         else {
           /**
@@ -120,12 +121,15 @@ export function usePresence(
    * make sure we only trigger ANIMATION_END for the currently active animation.
    */
   const handleAnimationEnd = (event: AnimationEvent) => {
+    if (event.target !== node.value || waitingForAnimations)
+      return
+
     const currentAnimationName = getAnimationName(node.value)
     const isCurrentAnimation = currentAnimationName.includes(
       CSS.escape(event.animationName),
     )
     const directionName = state.value === 'mounted' ? 'enter' : 'leave'
-    if (event.target === node.value && isCurrentAnimation) {
+    if (isCurrentAnimation) {
       dispatchCustomEvent(`after-${directionName}`)
       dispatch('ANIMATION_END')
 
@@ -144,7 +148,7 @@ export function usePresence(
       }
     }
     // if no animation, immediately trigger 'ANIMATION_END'
-    if (event.target === node.value && currentAnimationName === 'none')
+    if (currentAnimationName === 'none')
       dispatch('ANIMATION_END')
   }
   const handleAnimationStart = (event: AnimationEvent) => {
@@ -152,44 +156,6 @@ export function usePresence(
       // if animation occurred, store its name as the previous animation.
       prevAnimationNameRef.value = getAnimationName(node.value)
     }
-  }
-
-  const handleTransitionEnd = (event: TransitionEvent) => {
-    if (event.target !== node.value)
-      return
-    if (state.value !== 'unmountSuspended')
-      return
-
-    // For `transition: all`, pendingCount is Infinity and never reaches 0;
-    // the fallback timeout (duration + 50ms) serves as the completion path.
-    if (transitionPendingCount !== undefined && transitionPendingCount > 0) {
-      transitionPendingCount--
-      if (transitionPendingCount > 0)
-        return
-    }
-
-    if (transitionTimeout !== undefined) {
-      ownerWindow?.clearTimeout(transitionTimeout)
-      transitionTimeout = undefined
-    }
-
-    dispatchCustomEvent('after-leave')
-    dispatch('ANIMATION_END')
-  }
-
-  const handleTransitionCancel = (event: TransitionEvent) => {
-    if (event.target !== node.value)
-      return
-    if (state.value !== 'unmountSuspended')
-      return
-
-    if (transitionTimeout !== undefined) {
-      ownerWindow?.clearTimeout(transitionTimeout)
-      transitionTimeout = undefined
-    }
-
-    dispatchCustomEvent('after-leave')
-    dispatch('ANIMATION_END')
   }
 
   const watcher = watch(
@@ -200,26 +166,19 @@ export function usePresence(
         newNode.addEventListener('animationstart', handleAnimationStart)
         newNode.addEventListener('animationcancel', handleAnimationEnd)
         newNode.addEventListener('animationend', handleAnimationEnd)
-        newNode.addEventListener('transitioncancel', handleTransitionCancel)
-        newNode.addEventListener('transitionend', handleTransitionEnd)
       }
       else {
+        exitGeneration++
+        waitingForAnimations = false
         // Transition to the unmounted state if the node is removed prematurely.
         // We avoid doing so during cleanup as the node may change but still exist.
         dispatch('ANIMATION_END')
 
         if (timeoutId !== undefined)
           ownerWindow?.clearTimeout(timeoutId)
-        if (transitionTimeout !== undefined) {
-          ownerWindow?.clearTimeout(transitionTimeout)
-          transitionTimeout = undefined
-        }
-        transitionPendingCount = undefined
         oldNode?.removeEventListener('animationstart', handleAnimationStart)
         oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
         oldNode?.removeEventListener('animationend', handleAnimationEnd)
-        oldNode?.removeEventListener('transitioncancel', handleTransitionCancel)
-        oldNode?.removeEventListener('transitionend', handleTransitionEnd)
       }
     },
     { immediate: true },
@@ -232,22 +191,16 @@ export function usePresence(
   })
 
   onUnmounted(() => {
+    exitGeneration++
     watcher()
     stateWatcher()
     if (node.value) {
       node.value.removeEventListener('animationstart', handleAnimationStart)
       node.value.removeEventListener('animationcancel', handleAnimationEnd)
       node.value.removeEventListener('animationend', handleAnimationEnd)
-      node.value.removeEventListener('transitioncancel', handleTransitionCancel)
-      node.value.removeEventListener('transitionend', handleTransitionEnd)
     }
     if (timeoutId !== undefined)
       ownerWindow?.clearTimeout(timeoutId)
-    if (transitionTimeout !== undefined) {
-      ownerWindow?.clearTimeout(transitionTimeout)
-      transitionTimeout = undefined
-    }
-    transitionPendingCount = undefined
   })
 
   const isPresent = computed(() =>
@@ -261,59 +214,4 @@ export function usePresence(
 
 function getAnimationName(node?: HTMLElement) {
   return node ? getComputedStyle(node).animationName || 'none' : 'none'
-}
-
-function hasTransition(node?: HTMLElement) {
-  if (!node)
-    return false
-  const { transitionProperty, transitionDuration } = getComputedStyle(node)
-  return (
-    typeof transitionProperty === 'string'
-    && transitionProperty !== 'none'
-    && typeof transitionDuration === 'string'
-    && transitionDuration !== ''
-    && transitionDuration !== '0s'
-  )
-}
-
-function getTransitionPropertyCount(node?: HTMLElement): number {
-  if (!node)
-    return 0
-  const { transitionProperty } = getComputedStyle(node)
-  if (!transitionProperty || transitionProperty === 'none')
-    return 0
-  if (transitionProperty === 'all')
-    return Infinity
-  return transitionProperty.split(',').length
-}
-
-function getTransitionDuration(node?: HTMLElement): number {
-  if (!node)
-    return 0
-  const style = getComputedStyle(node)
-  const durations = style.transitionDuration
-  const delays = style.transitionDelay
-  if (typeof durations !== 'string' || typeof delays !== 'string')
-    return 0
-
-  const durationArray = durations.split(',').map((d) => {
-    const val = parseFloat(d)
-    if (Number.isNaN(val))
-      return 0
-    return d.endsWith('ms') ? val : val * 1000
-  })
-  const delayArray = delays.split(',').map((d) => {
-    const val = parseFloat(d)
-    if (Number.isNaN(val))
-      return 0
-    return d.endsWith('ms') ? val : val * 1000
-  })
-
-  let max = 0
-  for (let i = 0; i < durationArray.length; i++) {
-    const total = (durationArray[i] || 0) + (delayArray[i] || 0)
-    if (total > max)
-      max = total
-  }
-  return max
 }

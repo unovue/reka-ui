@@ -9,6 +9,10 @@ import {
   MenuSubContent,
   MenuSubTrigger,
 } from '..'
+
+defineProps<{
+  graceDuration?: number
+}>()
 </script>
 
 <template>
@@ -26,11 +30,12 @@ import {
           Item 1
         </MenuItem>
         <MenuSub>
-          <MenuSubTrigger>
+          <MenuSubTrigger :grace-duration="graceDuration">
             Sub Trigger
           </MenuSubTrigger>
           <MenuPortal disabled>
             <MenuSubContent>
+              <input aria-label="Sub input">
               <MenuItem>
                 Sub Item 1
               </MenuItem>

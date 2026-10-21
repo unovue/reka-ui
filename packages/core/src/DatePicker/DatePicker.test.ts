@@ -81,6 +81,18 @@ describe('datePicker', async () => {
     expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
   })
 
+  it('syncs a same-day time zone change from `modelValue`', async () => {
+    const { getByTestId, rerender } = setup({
+      datePickerProps: { modelValue: zonedDateTime },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
+
+    await rerender({
+      datePickerProps: { modelValue: toZoned(calendarDateTime, 'Asia/Tokyo') },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('GMT+9')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, input, label } = setup()
     await user.click(label)
@@ -467,6 +479,58 @@ describe('datePicker', async () => {
       // January 1980 should be displayed
       expect(heading).toHaveTextContent('January')
       expect(heading).toHaveTextContent('1980')
+    })
+
+    it('keeps the visible month when modelValue is a new object for the same day', async () => {
+      const selected = new CalendarDate(1980, 1, 20)
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: selected, closeOnSelect: true },
+      })
+
+      await user.click(trigger)
+
+      const heading = getByTestId('heading')
+      expect(heading).toHaveTextContent('January 1980')
+      await user.click(getByTestId('next-button'))
+      expect(heading).toHaveTextContent('February 1980')
+
+      await rerender({
+        datePickerProps: { modelValue: selected.copy(), closeOnSelect: true },
+      })
+
+      expect(heading).toHaveTextContent('February 1980')
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('keeps the popover open when modelValue changes time on the same day', async () => {
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: calendarDateTime, closeOnSelect: true },
+      })
+
+      await user.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+      await rerender({
+        datePickerProps: { modelValue: calendarDateTime.set({ hour: 15 }), closeOnSelect: true },
+      })
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('moves the visible month when the selected day changes', async () => {
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: new CalendarDate(1980, 1, 20) },
+      })
+
+      await user.click(trigger)
+      await user.click(getByTestId('next-button'))
+      expect(getByTestId('heading')).toHaveTextContent('February 1980')
+
+      await rerender({
+        datePickerProps: { modelValue: new CalendarDate(1980, 9, 23) },
+      })
+
+      expect(getByTestId('heading')).toHaveTextContent('September 1980')
     })
   })
 })

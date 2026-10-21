@@ -87,7 +87,7 @@ onMounted(() => {
       rootContext.onClose()
   }, { capture: true })
   // Close this tooltip if another one opens
-  useEventListener(window, TOOLTIP_OPEN, rootContext.onClose)
+  useEventListener(document, TOOLTIP_OPEN, rootContext.onClose)
 })
 </script>
 
