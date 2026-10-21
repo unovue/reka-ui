@@ -13,11 +13,12 @@ export function createContext<ContextValue>(
   contextName?: string,
 ) {
   const symbolDescription
-    = typeof providerComponentName === 'string' && !contextName
-      ? `${providerComponentName}Context`
-      : contextName
+    = contextName
+      ?? (typeof providerComponentName === 'string'
+        ? `${providerComponentName}Context`
+        : providerComponentName.join('/'))
 
-  const injectionKey: InjectionKey<ContextValue | null> = Symbol(symbolDescription)
+  const injectionKey: InjectionKey<ContextValue | null> = Symbol.for(`reka-ui:${symbolDescription}`)
 
   /**
    * @param fallback The context value to return if the injection fails.
