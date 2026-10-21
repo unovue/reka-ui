@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
 function mountDialog() {
@@ -34,6 +34,35 @@ function mountDialog() {
 }
 
 describe('given a modal Dialog, in a real browser', () => {
+  it('retains the body lock until content finishes leaving after the overlay', async () => {
+    const open = ref(true)
+    const css = document.createElement('style')
+    css.textContent = '.dialog-lock-exit { opacity: 1; transition: opacity 200ms; } .dialog-lock-exit[data-state=closed] { opacity: 0; }'
+    document.head.append(css)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DialogRoot, { open: open.value }, () => [
+        h(DialogOverlay, { 'data-testid': 'early-overlay' }),
+        h(DialogContent, { 'class': 'dialog-lock-exit', 'aria-describedby': undefined }, () => h(DialogTitle, () => 'Title')),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const content = wrapper.get('[role=dialog]').element as HTMLElement
+    getComputedStyle(content).opacity
+    expect(document.body.style.overflow).toBe('hidden')
+
+    open.value = false
+    await nextTick()
+    await nextTick()
+    await expect.poll(() => wrapper.find('[data-testid=early-overlay]').exists()).toBe(false)
+    expect(content.isConnected).toBe(true)
+    expect(document.body.style.overflow).toBe('hidden')
+    await Promise.allSettled(content.getAnimations().map(animation => animation.finished))
+    await expect.poll(() => content.isConnected).toBe(false)
+    await expect.poll(() => document.body.style.overflow).not.toBe('hidden')
+    wrapper.unmount()
+    css.remove()
+  })
+
   it('traps Tab focus, closes on Escape and returns focus to the trigger', async () => {
     const { get } = mountDialog()
 
