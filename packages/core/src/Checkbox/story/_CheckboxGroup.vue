@@ -43,5 +43,28 @@ const items = [{ name: 'jack' }, { name: 'john' }, { name: 'mike' }]
         {{ item.name }}
       </label>
     </div>
+    <CheckboxRoot
+      id="parent"
+      aria-label="parent"
+      parent
+    >
+      <template #default="{ state }">
+        <CheckboxIndicator
+          data-testid="test-indicator"
+          class="bg-white h-full w-full rounded flex items-center justify-center"
+        >
+          <Icon
+            v-if="state === 'indeterminate'"
+            icon="radix-icons:divider-horizontal"
+            class="h-4 w-4 text-black"
+          />
+          <Icon
+            v-else-if="state"
+            icon="radix-icons:check"
+            class="h-4 w-4 text-black"
+          />
+        </CheckboxIndicator>
+      </template>
+    </CheckboxRoot>
   </CheckboxGroupRoot>
 </template>
