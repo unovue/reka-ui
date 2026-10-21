@@ -1,0 +1,60 @@
+<script setup lang="ts">
+import { FieldControl, FieldError, FieldLabel, FieldRoot, FormRoot } from 'reka-ui'
+import { ref } from 'vue'
+import './styles.css'
+
+const serverErrors = ref<Record<string, string>>({})
+const submittedUsername = ref('')
+
+function onFormSubmit(values: Record<string, unknown>) {
+  submittedUsername.value = ''
+  const username = values.username
+
+  // Pretend this came back from an API call.
+  if (username === 'taken') {
+    serverErrors.value = { username: 'That username is already taken.' }
+  }
+  else {
+    serverErrors.value = {}
+    submittedUsername.value = String(username)
+  }
+}
+</script>
+
+<template>
+  <FormRoot
+    class="FormRoot"
+    :errors="serverErrors"
+    @form-submit="onFormSubmit"
+  >
+    <FieldRoot
+      class="FieldRoot"
+      name="username"
+      required
+      validation-mode="onBlur"
+    >
+      <FieldLabel class="FieldLabel">
+        Username
+      </FieldLabel>
+      <FieldControl
+        placeholder="Try 'taken'"
+        class="FieldControl"
+      />
+      <FieldError class="FieldError" />
+    </FieldRoot>
+
+    <button
+      type="submit"
+      class="SubmitButton"
+    >
+      Submit
+    </button>
+
+    <p
+      v-if="submittedUsername"
+      class="SuccessMessage"
+    >
+      Submitted as "{{ submittedUsername }}".
+    </p>
+  </FormRoot>
+</template>

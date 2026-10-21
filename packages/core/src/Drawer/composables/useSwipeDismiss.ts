@@ -17,8 +17,15 @@ export interface UseSwipeDismissOptions {
   movementCssVars: { x: string, y: string }
   swipeThreshold?: number | ((opts: { element: HTMLElement, direction: SwipeDirection }) => number)
   ignoreScrollableAncestors?: boolean
+  /**
+   * When `false`, touch swipes may start on the interactive elements
+   * (buttons, links, labels, fields) that mouse and pen swipes skip.
+   * @default true
+   */
+  ignoreSelectorWhenTouch?: boolean
   canStart?: () => boolean
-  onDismiss?: () => void
+  /** Return `false` when the dismissal was rejected, so the element settles back. */
+  onDismiss?: () => boolean | void
   onProgress?: (progress: number, details?: SwipeProgressDetails) => void
   onCancel?: () => void
   onSwipeStart?: () => void
@@ -42,6 +49,13 @@ const AXIS_LOCK_BIAS = 2
 const MIN_RELEASE_VELOCITY_DURATION_MS = 16
 const MAX_RELEASE_VELOCITY_AGE_MS = 80
 const DEFAULT_IGNORE_SELECTOR = 'button,a,input,select,textarea,label,[role="button"]'
+// Opts an element out of swipe dismissal for every input type. Ported from
+// Base UI's `data-base-ui-swipe-ignore`.
+const SWIPE_IGNORE_SELECTOR = '[data-reka-swipe-ignore]'
+
+function isRangeInput(target: EventTarget): boolean {
+  return (target as Element).tagName === 'INPUT' && (target as HTMLInputElement).type === 'range'
+}
 
 function findScrollableAncestor(
   el: Element | null,
@@ -120,6 +134,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     movementCssVars,
     swipeThreshold: swipeThresholdProp,
     canStart,
+    ignoreSelectorWhenTouch = true,
     onDismiss,
     onProgress,
     onCancel,
@@ -441,6 +456,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     // would otherwise set a stray `data-swipe-dismissed` on a drawer that
     // actually snapped to a point, or clear CSS vars onRelease already wrote.
     const releaseHandled = onRelease?.(velocity) === true
+    let dismissed = false
 
     if (!releaseHandled) {
       const velInDirection = getDisplacement(
@@ -451,13 +467,13 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       const shouldDismiss = !cancelledSwipe
         && (displacement >= threshold || velInDirection > 0.3)
 
-      if (shouldDismiss) {
+      if (shouldDismiss && onDismiss?.() !== false) {
         // BaseUI parity: on dismiss, keep the drag transform in place so the
         // close animation runs smoothly from the dragged position. Clearing the
         // CSS vars here would cause a one-frame snap-back to resting before the
         // closing transition begins (visible as a flicker).
         el.setAttribute('data-swipe-dismissed', '')
-        onDismiss?.()
+        dismissed = true
       }
       else {
         // On cancel, reset the drag transform so the drawer animates back to rest.
@@ -465,6 +481,11 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         onCancel?.()
       }
     }
+
+    // BaseUI parity (`settleInPlace`): a drawer that stays open settles back to
+    // rest, so drop the published progress along with the drag transform.
+    if (!dismissed)
+      onProgress?.(0)
 
     reset()
   }
@@ -482,7 +503,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const target = e.target as HTMLElement
-    if (target?.closest(DEFAULT_IGNORE_SELECTOR))
+    if (target?.closest(`${DEFAULT_IGNORE_SELECTOR},${SWIPE_IGNORE_SELECTOR}`))
       return
 
     const el = elementRef.value
@@ -554,8 +575,16 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const target = e.target as HTMLElement
-    if (target?.closest(DEFAULT_IGNORE_SELECTOR))
+    if (target?.closest(SWIPE_IGNORE_SELECTOR))
       return
+    // A tap that stays under the drag threshold still clicks, so touch can
+    // start a swipe on buttons and links; a range input's thumb drag cannot
+    // be told apart from a swipe, so it keeps the gesture.
+    if (ignoreSelectorWhenTouch
+      ? target?.closest(DEFAULT_IGNORE_SELECTOR)
+      : e.composedPath().some(isRangeInput)) {
+      return
+    }
 
     const el = elementRef.value
     if (!el)
@@ -702,9 +731,24 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     reset()
   })
 
+  /**
+   * Undoes a dismissal that did not take effect, e.g. a controlled `open` the
+   * parent never updated. The element animates back to rest.
+   */
+  function restore() {
+    const el = elementRef.value
+    if (!el?.hasAttribute('data-swipe-dismissed'))
+      return
+    el.removeAttribute('data-swipe-dismissed')
+    clearCssVars(el)
+    onProgress?.(0)
+    onCancel?.()
+  }
+
   return {
     isSwiping,
     swipeDirection,
     dragOffset,
+    restore,
   }
 }

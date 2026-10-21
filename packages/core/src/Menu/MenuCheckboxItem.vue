@@ -30,6 +30,8 @@ const emits = defineEmits<MenuCheckboxItemEmits>()
 
 defineSlots<{
   default?: (props: {
+    /** Current checked state */
+    checked: typeof modelValue.value
     /** Current modelValue state */
     modelValue: typeof modelValue.value
   }) => any
@@ -61,6 +63,9 @@ provideMenuItemIndicatorContext({ modelValue })
       }
     "
   >
-    <slot :model-value="modelValue" />
+    <slot
+      :checked="modelValue"
+      :model-value="modelValue"
+    />
   </MenuItem>
 </template>

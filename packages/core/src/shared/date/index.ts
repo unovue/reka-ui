@@ -40,4 +40,5 @@ export type {
   TimeSegmentPart,
 } from './types'
 export { useDateField } from './useDateField'
+export { useSegmentNavigation } from './useSegmentNavigation'
 export * from './utils'

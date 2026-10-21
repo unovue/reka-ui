@@ -81,6 +81,30 @@ describe('year picker', async () => {
     expect(heading).toHaveTextContent('2004 - 2015')
   })
 
+  it('keeps the visible decade when modelValue is a new object for the same year', async () => {
+    const selected = new CalendarDate(1980, 1, 20)
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: selected } })
+    const heading = getByTestId('heading')
+
+    await user.click(getByTestId('next-button'))
+    expect(heading).toHaveTextContent('1992 - 2003')
+
+    await rerender({ pickerProps: { modelValue: selected.copy() } })
+
+    expect(heading).toHaveTextContent('1992 - 2003')
+  })
+
+  it('moves the visible decade when the selected year changes', async () => {
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: new CalendarDate(1980, 1, 20) } })
+
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
+
+    await rerender({ pickerProps: { modelValue: new CalendarDate(2010, 1, 1) } })
+
+    expect(getByTestId('heading')).toHaveTextContent('2010 - 2021')
+  })
+
   it('navigates to prev decade using prev button', async () => {
     const { getByTestId, user } = setup({ pickerProps: { modelValue: calendarDate } })
 
