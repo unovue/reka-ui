@@ -4,6 +4,8 @@ A quick tutorial to walk through installing the packages, as well as the support
 
 ## Installing the package
 
+Reka UI requires Vue 3.5 or later.
+
 <a href="https://www.npmjs.com/package/reka-ui" target="__blank"><img alt="NPM Downloads" src="https://img.shields.io/npm/dm/reka-ui?flat&colorA=002438&colorB=41c399"></a>
 
 <InstallationTabs value="reka-ui" />
