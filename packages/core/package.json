@@ -87,7 +87,7 @@
     "size": "size-limit"
   },
   "peerDependencies": {
-    "vue": ">= 3.4.0"
+    "vue": ">= 3.5.0"
   },
   "dependencies": {
     "@floating-ui/vue": "^2.0.1",

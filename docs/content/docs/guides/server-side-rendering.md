@@ -17,10 +17,10 @@ Static rendering is another similar approach. Instead it pre-renders pages to HT
 
 You should be able to use all of our primitives with both approaches, for example with [Nuxt.js](https://nuxt.com/).
 
-## Nuxt Hydration issue (Vue < 3.5)
+## ID generation
 
-Reka UI offers a [Nuxt module](/docs/overview/installation.html#nuxt-modules) that supports auto importing components. However, if you are using Vue < 3.5, minor hydration issues might arise because as of vue <= 3.4 there is [currently no way](https://github.com/vuejs/rfcs/discussions/557) to ensure consistent DOM element `id` between the client and server renders. This is something that Reka UI relies on.
+Reka UI requires Vue 3.5 or later and uses Vue's native `useId` to generate IDs that are stable between server and client renders.
 
-As a temporary workaround, we expose a way to allow Nuxt (with version > `3.10`) inject it's `useId` implementation to `reka-ui`.
+If your framework provides its own SSR-stable ID source, such as Nuxt's `useId`, you can supply it through `ConfigProvider`. The configured generator takes precedence over Vue's native `useId`.
 
-To provide a custom `useId` implementation, please follow this [guide](/docs/utilities/config-provider.html#hydration-issue-vue-3-5).
+To provide a custom `useId` implementation, please follow this [guide](/docs/utilities/config-provider.html#hydration-issue).
