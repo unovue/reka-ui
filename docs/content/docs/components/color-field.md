@@ -26,7 +26,7 @@ An input field component for entering color values. Supports hex color input or 
     'Page Up/Down for larger value changes.',
     'Home/End keys to jump to min/max values.',
     'Form integration with hidden inputs.',
-    'Support for HSL, HSB, and RGB color spaces.',
+    'Support for HSL, HSB, RGB, and OKLCH color spaces.',
   ]"
 />
 
@@ -119,6 +119,34 @@ const color = ref('#3b82f6')
     v-model="color"
     color-space="hsl"
     channel="hue"
+  >
+    <ColorFieldInput />
+  </ColorFieldRoot>
+</template>
+```
+
+### OKLCH Chroma
+
+Chroma values use a default step of `0.001` and keep their fractional precision.
+
+In full-color mode (without `channel`), the field also accepts CSS `oklch()` values, including percentage lightness/chroma, hue angle units, and alpha. The model emits hex as before; `update:color` exposes the precise color object. See [ColorSlider](./color-slider#oklch-chroma) for coordinating controls without hex round-trips.
+
+```vue
+<script setup>
+import {
+  ColorFieldInput,
+  ColorFieldRoot,
+} from 'reka-ui'
+import { ref } from 'vue'
+
+const color = ref('oklch(62% 0.18 250)')
+</script>
+
+<template>
+  <ColorFieldRoot
+    v-model="color"
+    color-space="oklch"
+    channel="chroma"
   >
     <ColorFieldInput />
   </ColorFieldRoot>

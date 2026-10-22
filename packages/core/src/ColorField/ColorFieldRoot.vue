@@ -63,13 +63,16 @@ import { computed, ref, toRefs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import {
   colorToString,
+  convertToHsb,
+  convertToHsl,
+  convertToOklch,
   convertToRgb,
   getChannelRange,
-  getChannelValue,
+  getChannelValue as getNativeChannelValue,
   isValidColor,
   normalizeColor,
   parseColor,
-  setChannelValue,
+  setChannelValue as setNativeChannelValue,
 } from '@/shared/color'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
@@ -95,13 +98,54 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
+/** Converts to the configured field space without a quantizing hex round-trip. */
+function toNativeSpace(value: Color): Color {
+  switch (colorSpace.value) {
+    case 'rgb':
+      return convertToRgb(value)
+    case 'hsl':
+      return convertToHsl(value)
+    case 'hsb':
+      return convertToHsb(value)
+    case 'oklch':
+      return convertToOklch(value)
+  }
+}
+
+/**
+ * Reads an unrounded channel in the configured field space.
+ * Returns degree hue, 0–255 RGB, unitless chroma, or percentages for other channels.
+ */
+function getChannelValue(value: Color, colorChannel: ColorChannel): number {
+  return getNativeChannelValue(toNativeSpace(value), colorChannel)
+}
+
+/** Updates a clamped channel in the configured space without display rounding; alpha uses percent. */
+function setChannelValue(value: Color, colorChannel: ColorChannel, channelValue: number): Color {
+  return setNativeChannelValue(toNativeSpace(value), colorChannel, channelValue)
+}
+
+// Keep channel precision internally while preserving the existing hex v-model API.
+const internalColor = ref(toNativeSpace(normalizeColor(modelValue.value ?? '#000000')))
 const color = computed({
-  get: () => normalizeColor(modelValue.value ?? '#000000'),
+  get: () => internalColor.value,
   set: (newColor: Color) => {
-    const hexString = colorToString(newColor, 'hex')
-    modelValue.value = hexString
-    emits('update:color', newColor)
+    const nativeColor = toNativeSpace(newColor)
+    internalColor.value = nativeColor
+    modelValue.value = colorToString(newColor, 'hex')
+    emits('update:color', nativeColor)
   },
+})
+
+watch(() => modelValue.value, (newValue) => {
+  if (newValue == null)
+    return
+  const parsed = normalizeColor(newValue)
+  if (typeof newValue !== 'string' || !newValue.startsWith('#') || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
+    internalColor.value = toNativeSpace(parsed)
+})
+watch(colorSpace, () => {
+  internalColor.value = toNativeSpace(internalColor.value)
 })
 
 // Input value for the text field
@@ -109,18 +153,18 @@ const inputValue = ref('')
 const isEditing = ref(false)
 
 // Update input value when color changes (unless user is editing)
-watch(() => color.value, (newColor) => {
+watch([color, channel], ([newColor]) => {
   if (!isEditing.value) {
     inputValue.value = formatValue(newColor)
   }
 }, { immediate: true })
 
+/** Formats chroma to three decimals, other channels to integers, or full colors as hex. */
 function formatValue(c: Color): string {
   if (channel.value) {
     const value = getChannelValue(c, channel.value)
-    if (channel.value === 'alpha') {
-      return String(Math.round(value))
-    }
+    if (channel.value === 'chroma')
+      return String(Number(value.toFixed(3)))
     return String(Math.round(value))
   }
   // Hex mode

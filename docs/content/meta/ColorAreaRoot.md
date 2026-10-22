@@ -18,7 +18,7 @@
   {
     'name': 'colorSpace',
     'description': '<p>The color space to operate in.</p>\n',
-    'type': '\'hsl\' | \'rgb\' | \'hsb\'',
+    'type': '\'hsl\' | \'rgb\' | \'hsb\' | \'oklch\'',
     'required': false,
     'default': '\'hsl\''
   },
@@ -57,7 +57,7 @@
   {
     'name': 'xChannel',
     'description': '<p>Color channel for the horizontal (x) axis.</p>\n',
-    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\'',
+    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\' | \'chroma\'',
     'required': false,
     'default': '\'hue\''
   },
@@ -70,7 +70,7 @@
   {
     'name': 'yChannel',
     'description': '<p>Color channel for the vertical (y) axis.</p>\n',
-    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\'',
+    'type': '\'hue\' | \'saturation\' | \'red\' | \'green\' | \'blue\' | \'alpha\' | \'lightness\' | \'brightness\' | \'chroma\'',
     'required': false,
     'default': '\'saturation\''
   },
@@ -122,15 +122,15 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `colorSpace` | The color space to operate in. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
+| `colorSpace` | The color space to operate in. | `"hsl" \| "rgb" \| "hsb" \| "oklch"` | No | `"hsl"` |
 | `defaultValue` | The default color value (uncontrolled). | `string \| Color` | No | `"#ff0000"` |
 | `disabled` | When true, prevents the user from interacting with the area. | `boolean` | No | `false` |
 | `modelValue` | The color value (controlled). Can be a hex string or Color object. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `xChannel` | Color channel for the horizontal (x) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"hue"` |
+| `xChannel` | Color channel for the horizontal (x) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness" \| "chroma"` | No | `"hue"` |
 | `xName` | The name of the x channel input element for form submission. | `string` | No | - |
-| `yChannel` | Color channel for the vertical (y) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"saturation"` |
+| `yChannel` | Color channel for the vertical (y) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness" \| "chroma"` | No | `"saturation"` |
 | `yName` | The name of the y channel input element for form submission. | `string` | No | - |
 
 **Events**

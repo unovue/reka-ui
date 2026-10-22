@@ -32,9 +32,10 @@ const ariaLabel = computed(() => {
 const ariaValueText = computed(() => {
   const value = rootContext.channelValue.value
   const channel = rootContext.channel.value
-  if (channel === 'alpha') {
+  if (channel === 'alpha')
     return `${Math.round(value)}%`
-  }
+  if (channel === 'chroma')
+    return String(Number(value.toFixed(3)))
   return String(Math.round(value))
 })
 </script>

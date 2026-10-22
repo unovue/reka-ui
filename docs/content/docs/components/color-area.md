@@ -19,7 +19,7 @@ A two-dimensional area control that allows users to select color values by inter
 
 <Highlights
   :features="[
-    'Supports HSL, HSB, and RGB color spaces.',
+    'Supports HSL, HSB, RGB, and OKLCH color spaces.',
     'Configurable channels for horizontal (x) and vertical (y) axes.',
     'Full keyboard navigation support.',
     'Pointer/touch interaction for value selection.',
@@ -107,6 +107,41 @@ const color = ref('#3b82f6')
     color-space="hsl"
     x-channel="saturation"
     y-channel="lightness"
+  >
+    <ColorAreaArea :style="style">
+      <ColorAreaThumb />
+    </ColorAreaArea>
+  </ColorAreaRoot>
+</template>
+```
+
+### OKLCH Hue/Chroma
+
+OKLCH areas support `hue`, `chroma`, `lightness`, and `alpha` axes. Lightness uses `0–100`; the chroma control range is `0–0.4` with a `0.001` step. The area samples one axis into 32 native OKLCH gradient rows, avoiding HSL conversion and alpha-blended approximations between axes.
+
+The model continues to emit hex strings. For coordinated precise controls, bind a `Color` object through `:model-value` and update it from `@update:color`, as shown in the [ColorSlider example](./color-slider#oklch-chroma).
+
+A perceptual plane with hue on the horizontal axis and chroma on the vertical axis.
+
+```vue
+<script setup>
+import {
+  ColorAreaArea,
+  ColorAreaRoot,
+  ColorAreaThumb,
+} from 'reka-ui'
+import { ref } from 'vue'
+
+const color = ref('oklch(62% 0.18 250)')
+</script>
+
+<template>
+  <ColorAreaRoot
+    v-slot="{ style }"
+    v-model="color"
+    color-space="oklch"
+    x-channel="hue"
+    y-channel="chroma"
   >
     <ColorAreaArea :style="style">
       <ColorAreaThumb />

@@ -40,6 +40,24 @@ import ColorArea from './_ColorArea.vue'
       />
     </Variant>
 
+    <Variant title="Hue / Chroma (OKLCH)">
+      <ColorArea
+        default-value="oklch(62% 0.18 250)"
+        color-space="oklch"
+        x-channel="hue"
+        y-channel="chroma"
+      />
+    </Variant>
+
+    <Variant title="Chroma / Lightness (OKLCH)">
+      <ColorArea
+        default-value="oklch(62% 0.18 250)"
+        color-space="oklch"
+        x-channel="chroma"
+        y-channel="lightness"
+      />
+    </Variant>
+
     <Variant title="Red / Green (RGB)">
       <ColorArea
         default-value="#7f007f"

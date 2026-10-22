@@ -54,6 +54,15 @@ import ColorField from './_ColorField.vue'
       />
     </Variant>
 
+    <Variant title="Chroma (OKLCH)">
+      <ColorField
+        default-value="oklch(62% 0.18 250)"
+        channel="chroma"
+        color-space="oklch"
+        placeholder="Chroma (0–0.4)"
+      />
+    </Variant>
+
     <Variant title="Red (RGB)">
       <ColorField
         default-value="#7f007f"

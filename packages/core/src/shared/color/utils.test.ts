@@ -1,11 +1,13 @@
-import type { HSBColor, HSLColor } from './types'
+import type { HSBColor, HSLColor, OKLCHColor } from './types'
 import { describe, expect, it } from 'vitest'
 import {
   colorToHex,
   colorToHsl,
+  colorToOklch,
   colorToRgb,
   convertToHsb,
   convertToHsl,
+  convertToOklch,
   convertToRgb,
   getChannelRange,
   getChannelValue,
@@ -322,6 +324,89 @@ describe('color utilities', () => {
 
       expect(getChannelValue(result, 'saturation')).toBe(10)
       expect(getChannelValue(result, 'brightness')).toBe(50)
+    })
+
+    it('should safely apply channels from different color spaces', () => {
+      const rgb: RGBColor = { space: 'rgb', r: 100, g: 150, b: 200, alpha: 1 }
+      const result = setChannelValues(rgb, [
+        { channel: 'red', value: 120 },
+        { channel: 'hue', value: 60 },
+      ])
+
+      expect(result.space).toBe('rgb')
+      expect(getChannelValue(result, 'hue')).toBeCloseTo(60, 5)
+    })
+  })
+
+  describe('oKLCH support', () => {
+    it('parses and serializes CSS oklch() colors', () => {
+      const color = parseColor('oklch(62.8% 0.258 29.23 / 50%)')
+      expect(color).toEqual({ space: 'oklch', l: 62.8, c: 0.258, h: 29.23, alpha: 0.5 })
+      expect(colorToOklch(color)).toBe('oklch(62.8% 0.258 29.23 / 0.5)')
+    })
+
+    it('supports CSS percentage chroma and angle units', () => {
+      expect(parseColor('oklch(0.5 50% 0.5turn / 0.25)')).toEqual({
+        space: 'oklch',
+        l: 50,
+        c: 0.2,
+        h: 180,
+        alpha: 0.25,
+      })
+      expect(getChannelValue(parseColor('oklch(50% 0.2 3.1415926536rad)'), 'hue')).toBeCloseTo(180)
+      expect(getChannelValue(parseColor('oklch(50% 0.2 200grad)'), 'hue')).toBe(180)
+    })
+
+    it('rejects malformed OKLCH syntax', () => {
+      expect(() => parseColor('oklch(50% 0.2 180) trailing')).toThrow()
+      expect(() => parseColor('oklch(50% 0.2)')).toThrow()
+    })
+
+    it('round-trips sRGB through OKLCH', () => {
+      const original = { space: 'rgb' as const, r: 255, g: 0, b: 0, alpha: 1 }
+      const oklch = convertToOklch(original)
+      const roundTrip = convertToRgb(oklch)
+      expect(oklch.l).toBeCloseTo(62.8, 1)
+      expect(oklch.c).toBeCloseTo(0.258, 2)
+      expect(oklch.h).toBeCloseTo(29.23, 1)
+      expect(roundTrip.r).toBeCloseTo(255, 0)
+      expect(roundTrip.g).toBeCloseTo(0, 0)
+      expect(roundTrip.b).toBeCloseTo(0, 0)
+    })
+
+    it('uses native OKLCH lightness, chroma, and hue channels', () => {
+      const color: OKLCHColor = { space: 'oklch', l: 60, c: 0.2, h: 240, alpha: 1 }
+      expect(getChannelRange('chroma')).toEqual({ min: 0, max: 0.4, step: 0.001 })
+      expect(getChannelValue(color, 'lightness')).toBe(60)
+      expect(getChannelValue(color, 'chroma')).toBe(0.2)
+      expect(getChannelValue(color, 'hue')).toBe(240)
+      expect(setChannelValue(color, 'chroma', 0.3)).toEqual({ ...color, c: 0.3 })
+    })
+
+    it('matches reference OKLCH values for sRGB primaries', () => {
+      const green = convertToOklch({ space: 'rgb', r: 0, g: 255, b: 0, alpha: 1 })
+      const blue = convertToOklch({ space: 'rgb', r: 0, g: 0, b: 255, alpha: 1 })
+      expect(green.l).toBeCloseTo(86.644, 3)
+      expect(green.c).toBeCloseTo(0.29483, 4)
+      expect(green.h).toBeCloseTo(142.495, 3)
+      expect(blue.l).toBeCloseTo(45.201, 3)
+      expect(blue.c).toBeCloseTo(0.31321, 4)
+      expect(blue.h).toBeCloseTo(264.052, 3)
+    })
+
+    it('reduces chroma instead of clipping RGB channels for out-of-gamut colors', () => {
+      const source: OKLCHColor = { space: 'oklch', l: 90, c: 0.4, h: 80, alpha: 1 }
+      const mapped = convertToRgb(source)
+      const mappedOklch = convertToOklch(mapped)
+      expect(mapped.r).toBeGreaterThanOrEqual(0)
+      expect(mapped.r).toBeLessThanOrEqual(255)
+      expect(mapped.g).toBeGreaterThanOrEqual(0)
+      expect(mapped.g).toBeLessThanOrEqual(255)
+      expect(mapped.b).toBeGreaterThanOrEqual(0)
+      expect(mapped.b).toBeLessThanOrEqual(255)
+      expect(mappedOklch.l).toBeCloseTo(source.l, 3)
+      expect(mappedOklch.h).toBeCloseTo(source.h, 3)
+      expect(mappedOklch.c).toBeLessThan(source.c)
     })
   })
 
