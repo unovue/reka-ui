@@ -134,7 +134,7 @@ watch(() => modelValue.value, (newValue) => {
   if (newValue == null)
     return
   const parsed = normalizeColor(newValue)
-  if (typeof newValue !== 'string' || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
+  if (typeof newValue !== 'string' || !newValue.startsWith('#') || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
     internalColor.value = toNativeSpace(parsed)
 })
 watch(colorSpace, () => {
@@ -146,7 +146,7 @@ const inputValue = ref('')
 const isEditing = ref(false)
 
 // Update input value when color changes (unless user is editing)
-watch(() => color.value, (newColor) => {
+watch([color, channel], ([newColor]) => {
   if (!isEditing.value) {
     inputValue.value = formatValue(newColor)
   }

@@ -6,9 +6,9 @@ const HEX8_RE = /^[0-9A-F]{8}$/i
 const RGB_RE = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/
 const HSL_RE = /hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/
 const HSB_RE = /hsb[av]?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/
-const NUMBER_PATTERN = '[+-]?(?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:e[+-]?\\d+)?'
+const NUMBER_PATTERN = '[+-]?(?:\\d*\\.\\d+|\\d+)(?:e[+-]?\\d+)?'
 const OKLCH_RE = new RegExp(
-  `^oklch\\(\\s*(${NUMBER_PATTERN})(%)?\\s+(${NUMBER_PATTERN})(%)?\\s+(${NUMBER_PATTERN})(deg|grad|rad|turn)?\\s*(?:/\\s*(${NUMBER_PATTERN})(%)?\\s*)?\\)$`,
+  `^oklch\\(\\s*(${NUMBER_PATTERN}|none)(%)?\\s+(${NUMBER_PATTERN}|none)(%)?\\s+(${NUMBER_PATTERN}|none)(deg|grad|rad|turn)?\\s*(?:/\\s*(${NUMBER_PATTERN}|none)(%)?\\s*)?\\)$`,
   'i',
 )
 
@@ -137,10 +137,19 @@ function parseOklch(value: string): OKLCHColor {
   if (!match)
     throw new Error(`Invalid OKLCH color: ${value}`)
 
-  const lightness = Number(match[1]) * (match[2] ? 1 : 100)
-  const chroma = Number(match[3]) * (match[4] ? 0.004 : 1)
-  const alpha = match[7] ? Number(match[7]) / (match[8] ? 100 : 1) : 1
-  const parsedHue = toDegrees(Number(match[5]), match[6])
+  const coordinate = (value: string) => value === 'none' ? 0 : Number(value)
+  if ((match[1] === 'none' && match[2]) || (match[3] === 'none' && match[4])
+    || (match[5] === 'none' && match[6]) || (match[7] === 'none' && match[8])) {
+    throw new Error(`Invalid OKLCH color: ${value}`)
+  }
+
+  const lightness = coordinate(match[1]) * (match[2] ? 1 : 100)
+  const chroma = coordinate(match[3]) * (match[4] ? 0.004 : 1)
+  const alpha = match[7] ? coordinate(match[7]) / (match[8] ? 100 : 1) : 1
+  const parsedHue = toDegrees(coordinate(match[5]), match[6])
+  if ([lightness, chroma, alpha, parsedHue].some(value => !Number.isFinite(value))) {
+    throw new Error(`Invalid OKLCH color: ${value}`)
+  }
   const hue = parsedHue >= 0 && parsedHue < 360
     ? parsedHue
     : ((parsedHue % 360) + 360) % 360

@@ -26,6 +26,8 @@ const inputType = computed(() => {
 })
 
 const inputMode = computed(() => {
+  if (rootContext.channel.value === 'chroma')
+    return 'decimal'
   return rootContext.channel.value ? 'numeric' : 'text'
 })
 

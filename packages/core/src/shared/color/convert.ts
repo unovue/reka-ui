@@ -335,6 +335,10 @@ function rgbToOklch(rgb: RGBColor): OKLCHColor {
 
 /** Reduces chroma until the color fits in sRGB while preserving lightness and hue. */
 function oklchToSrgb(oklch: OKLCHColor): RGBColor {
+  if (oklch.l <= 0 || oklch.l >= 100) {
+    const value = oklch.l <= 0 ? 0 : 255
+    return { space: 'rgb', r: value, g: value, b: value, alpha: oklch.alpha }
+  }
   const direct = oklchToRgbRaw(oklch)
   if (inSrgbGamut(direct))
     return clampRgb(direct)

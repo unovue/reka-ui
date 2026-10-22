@@ -143,6 +143,34 @@ const color = ref('oklch(62% 0.18 250)')
 
 `v-model` continues to emit the current hex representation. When coordinating several controls, listen to `update:color` to keep the precise `OKLCHColor` object between interactions.
 
+OKLCH objects use lightness `l` from `0` to `100`, chroma `c` in CSS units, hue `h` in degrees, and alpha from `0` to `1`. The chroma control's `0–0.4` range is a UI reference range, not a limit on parsed CSS colors.
+
+For a group of controls, bind the precise object as input and update it from `update:color` instead of round-tripping each edit through hex:
+
+```vue
+<script setup lang="ts">
+import type { Color } from 'reka-ui'
+import { ColorSliderRoot, ColorSliderThumb, ColorSliderTrack } from 'reka-ui'
+import { ref } from 'vue'
+
+const preciseColor = ref<Color>({ space: 'oklch', l: 62, c: 0.18, h: 250, alpha: 1 })
+</script>
+
+<template>
+  <ColorSliderRoot
+    :model-value="preciseColor"
+    color-space="oklch"
+    channel="chroma"
+    @update:color="preciseColor = $event"
+  >
+    <ColorSliderTrack />
+    <ColorSliderThumb />
+  </ColorSliderRoot>
+</template>
+```
+
+The internal color and `update:color` retain out-of-sRGB coordinates. When producing hex or RGB output, Reka reduces chroma while preserving OKLCH lightness and hue until the color fits in sRGB. Native CSS gradients use the browser's gamut mapping, which can differ from this conversion.
+
 ### Alpha Channel
 
 Slider for adjusting the alpha (opacity) channel.

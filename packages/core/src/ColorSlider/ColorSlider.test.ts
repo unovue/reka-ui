@@ -190,6 +190,26 @@ describe('given different channels', () => {
 })
 
 describe('given a controlled OKLCH color object', () => {
+  it('applies CSS string hue updates even when their sRGB value is unchanged', async () => {
+    const wrapper = mount(ColorSliderRoot, {
+      props: { modelValue: 'oklch(60% 0 120)', channel: 'hue', colorSpace: 'oklch' },
+      slots: { default: ColorSliderThumb },
+    })
+    await wrapper.setProps({ modelValue: 'oklch(60% 0 240)' })
+    expect(wrapper.find('[role="slider"]').attributes('aria-valuenow')).toBe('240')
+  })
+
+  it('keeps native hue when switching channels after a chroma edit', async () => {
+    const wrapper = mount(ColorSliderRoot, {
+      props: { defaultValue: 'oklch(60% .2 240)', channel: 'chroma', colorSpace: 'oklch' },
+      slots: { default: ColorSliderThumb },
+    })
+    await wrapper.vm.$nextTick()
+    await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
+    await wrapper.setProps({ channel: 'hue' })
+    expect(wrapper.find('[role="slider"]').attributes('aria-valuenow')).toBe('240')
+  })
+
   it('should apply object updates even when their sRGB hex value is unchanged', async () => {
     const wrapper = mount(ColorSliderRoot, {
       props: {

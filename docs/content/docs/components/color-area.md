@@ -117,6 +117,10 @@ const color = ref('#3b82f6')
 
 ### OKLCH Hue/Chroma
 
+OKLCH areas support `hue`, `chroma`, `lightness`, and `alpha` axes. Lightness uses `0–100`; the chroma control range is `0–0.4` with a `0.001` step. The area samples one axis into 32 native OKLCH gradient rows, avoiding HSL conversion and alpha-blended approximations between axes.
+
+The model continues to emit hex strings. For coordinated precise controls, bind a `Color` object through `:model-value` and update it from `@update:color`, as shown in the [ColorSlider example](./color-slider#oklch-chroma).
+
 A perceptual plane with hue on the horizontal axis and chroma on the vertical axis.
 
 ```vue

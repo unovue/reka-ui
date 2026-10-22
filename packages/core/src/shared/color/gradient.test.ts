@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAreaBackgroundStyle, getSliderGradient } from './gradient'
+import { getAreaBackgroundStyle, getAreaGradient, getSliderGradient } from './gradient'
 import { parseColor } from './parse'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,8 +67,11 @@ describe('getSliderGradient', () => {
 
     it('uses native OKLCH interpolation for hue', () => {
       const gradient = getSliderGradient(color, 'hue', 'oklch')
-      expect(gradient).toContain('in oklch longer hue')
+      expect(gradient).toContain('in oklch')
       expect(gradient).toContain('oklch(60% 0.2 0)')
+      expect(gradient).toContain('oklch(60% 0.2 120)')
+      expect(gradient).toContain('oklch(60% 0.2 240)')
+      expect(gradient).toContain('oklch(60% 0.2 360)')
     })
 
     it('uses the CSS reference range for chroma', () => {
@@ -120,19 +123,34 @@ describe('getAreaBackgroundStyle', () => {
     it('renders the hue/chroma plane at the maximum chroma', () => {
       const style = getAreaBackgroundStyle(color, 'hue', 'chroma', 'oklch')
       expect(style.backgroundImage).toContain('oklch(60% 0.4 0)')
-      expect(style.backgroundImage).toContain('oklch(60% 0 240)')
+      expect(style.backgroundImage).toContain('oklch(60% 0 0)')
     })
 
-    it('renders the hue/lightness plane around 50% lightness', () => {
+    it('renders the hue/lightness plane across its full range', () => {
       const style = getAreaBackgroundStyle(color, 'hue', 'lightness', 'oklch')
-      expect(style.backgroundImage).toContain('oklch(50% 0.2 0)')
-      expect(style.backgroundImage).toContain('#000000, transparent, #ffffff')
+      expect(style.backgroundImage).toContain('oklch(100% 0.2 0)')
+      expect(style.backgroundImage).toContain('oklch(0% 0.2 0)')
     })
 
     it('renders chroma/lightness while holding hue constant', () => {
       const style = getAreaBackgroundStyle(color, 'chroma', 'lightness', 'oklch')
-      expect(style.backgroundColor).toBe('oklch(50% 0.4 240)')
-      expect(style.backgroundImage).toContain('oklch(50% 0 240)')
+      expect(style.backgroundImage).toContain('oklch(100% 0.4 240)')
+      expect(style.backgroundImage).toContain('oklch(0% 0 240)')
+    })
+
+    it('supports swapped lightness/chroma axes', () => {
+      const style = getAreaBackgroundStyle(color, 'lightness', 'chroma', 'oklch')
+      expect(style.backgroundImage).toContain('oklch(0% 0.4 240), oklch(100% 0.4 240)')
+      expect(style.backgroundImage).toContain('oklch(0% 0 240), oklch(100% 0 240)')
+      expect(style.backgroundRepeat).toBe('no-repeat')
+      expect(style.backgroundPosition.split(', ')).toHaveLength(32)
+    })
+
+    it('keeps the exported area gradient helper in the requested color space', () => {
+      const gradients = getAreaGradient(color, 'chroma', 'lightness', 'oklch')
+      expect(gradients.background).toBe('oklch(60% 0.2 240)')
+      expect(gradients.gradientX).toContain('to right in oklch')
+      expect(gradients.gradientY).toContain('to top in oklch')
     })
   })
 

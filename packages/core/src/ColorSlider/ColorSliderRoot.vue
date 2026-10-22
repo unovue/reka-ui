@@ -127,7 +127,7 @@ watch(() => modelValue.value, (newVal) => {
   if (newVal == null)
     return
   const parsed = normalizeColor(newVal)
-  if (typeof newVal !== 'string') {
+  if (typeof newVal !== 'string' || !newVal.startsWith('#')) {
     internalColor.value = toNativeSpace(parsed, channel.value, colorSpace.value)
     return
   }

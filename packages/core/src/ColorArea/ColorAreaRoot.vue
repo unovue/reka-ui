@@ -124,7 +124,7 @@ watch(() => modelValue.value, (newValue) => {
   if (newValue == null)
     return
   const parsed = normalizeColor(newValue)
-  if (typeof newValue !== 'string' || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
+  if (typeof newValue !== 'string' || !newValue.startsWith('#') || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
     internalColor.value = toColorSpace(parsed)
 })
 watch(colorSpace, () => {
@@ -142,6 +142,11 @@ function normalizeChannelValue(value: number, channel: ColorChannel): number {
 // Store exact channel values as refs to avoid floating-point drift.
 const xValue = ref(normalizeChannelValue(getChannelValue(color.value, xChannel.value), xChannel.value))
 const yValue = ref(normalizeChannelValue(getChannelValue(color.value, yChannel.value), yChannel.value))
+
+watch([xChannel, yChannel], () => {
+  xValue.value = normalizeChannelValue(getChannelValue(color.value, xChannel.value), xChannel.value)
+  yValue.value = normalizeChannelValue(getChannelValue(color.value, yChannel.value), yChannel.value)
+})
 
 // Store the hue separately to preserve it when saturation is 0 (grayscale)
 const hueValue = ref(colorSpace.value === 'hsl'
@@ -202,8 +207,7 @@ const areaStyles = computed(() => {
     bgColor = { space: 'hsb', h: hueValue.value, s: 100, b: 100, alpha: 1 }
   }
   else if (colorSpace.value === 'oklch') {
-    const oklch = convertToOklch(bgColor)
-    bgColor = { ...oklch, h: hueValue.value }
+    bgColor = convertToOklch(bgColor)
   }
   return getAreaBackgroundStyle(bgColor, xChannel.value, yChannel.value, colorSpace.value)
 })
@@ -228,7 +232,7 @@ function updateValues(x: number, y: number) {
   // Preserve hue only when it is NOT directly controlled by an axis
   const usesHueAxis = xChannel.value === 'hue' || yChannel.value === 'hue'
   if (!usesHueAxis && (colorSpace.value === 'hsl' || colorSpace.value === 'hsb' || colorSpace.value === 'oklch')) {
-    channels.push({ channel: 'hue', value: hueValue.value })
+    channels.push({ channel: 'hue', value: color.value.space === 'oklch' ? color.value.h : hueValue.value })
   }
 
   color.value = setChannelValues(color.value, channels)

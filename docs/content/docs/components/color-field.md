@@ -129,6 +129,8 @@ const color = ref('#3b82f6')
 
 Chroma values use a default step of `0.001` and keep their fractional precision.
 
+In full-color mode (without `channel`), the field also accepts CSS `oklch()` values, including percentage lightness/chroma, hue angle units, and alpha. The model emits hex as before; `update:color` exposes the precise color object. See [ColorSlider](./color-slider#oklch-chroma) for coordinating controls without hex round-trips.
+
 ```vue
 <script setup>
 import {
