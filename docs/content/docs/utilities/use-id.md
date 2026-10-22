@@ -27,14 +27,20 @@ Use `ConfigProvider` when your framework provides its own SSR-stable ID source, 
 
 ## Usage
 
-```ts
+```vue
+<script setup lang="ts">
 import { useId } from 'reka-ui'
 
-const buttonId = useId() // reka-v-0
-```
+const buttonId = useId()
+const customId = useId('test-id')
+</script>
 
-```ts
-import { useId } from 'reka-ui'
-
-const buttonId = useId('test-id') // test-id
+<template>
+  <button :id="buttonId">
+    Generated ID
+  </button>
+  <button :id="customId">
+    Explicit ID
+  </button>
+</template>
 ```
