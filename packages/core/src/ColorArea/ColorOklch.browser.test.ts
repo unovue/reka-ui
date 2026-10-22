@@ -5,7 +5,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { ColorFieldInput, ColorFieldRoot } from '@/ColorField'
 import { ColorSliderRoot, ColorSliderThumb, ColorSliderTrack } from '@/ColorSlider'
-import { getAreaBackgroundStyle, getSliderBackgroundStyle } from '@/shared/color'
+import { convertToOklch, getAreaBackgroundStyle, getSliderBackgroundStyle, parseColor } from '@/shared/color'
 import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb } from '.'
 
 const color: OKLCHColor = { space: 'oklch', l: 60, c: 0.2, h: 240, alpha: 1 }
@@ -66,6 +66,46 @@ describe('oklch gradients and interactions in a real browser', () => {
     expect((updates.at(-1) as OKLCHColor).c).toBeCloseTo(0.2, 2)
     expect(models.at(-1)).toMatch(/^#[\da-f]{6}$/i)
     wrapper.unmount()
+  })
+
+  it('preserves untouched fractional area coordinates during keyboard edits', async () => {
+    const preciseColor: OKLCHColor = { space: 'oklch', l: 60.45, c: 0.20045, h: 240.45, alpha: 0.6545 }
+    const wrapper = mount(ColorAreaRoot, {
+      props: { defaultValue: preciseColor, colorSpace: 'oklch', xChannel: 'chroma', yChannel: 'lightness' },
+      slots: { default: () => h(ColorAreaArea, () => h(ColorAreaThumb)) },
+      attachTo: document.body,
+    })
+
+    try {
+      (wrapper.get('[role=slider]').element as HTMLElement).focus()
+      await userEvent.keyboard('{ArrowRight}')
+      expect(wrapper.emitted('update:color')?.at(-1)?.[0]).toEqual({ ...preciseColor, c: expect.closeTo(0.20145, 8) })
+      await userEvent.keyboard('{ArrowUp}')
+      expect(wrapper.emitted('update:color')?.at(-1)?.[0]).toEqual({ ...preciseColor, l: 61.45, c: expect.closeTo(0.20145, 8) })
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('commits hex input as native OKLCH while keeping the hex model', async () => {
+    const wrapper = mount(ColorFieldRoot, {
+      props: { colorSpace: 'oklch' },
+      slots: { default: () => h(ColorFieldInput, { 'aria-label': 'Color' }) },
+      attachTo: document.body,
+    })
+
+    try {
+      const input = wrapper.get('input').element as HTMLInputElement
+      await userEvent.fill(input, '#336699')
+      await userEvent.keyboard('{Enter}')
+      expect(wrapper.emitted('update:color')?.at(-1)?.[0]).toEqual(convertToOklch(parseColor('#336699')))
+      expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBe('#336699')
+      expect(input.value).toBe('#336699')
+    }
+    finally {
+      wrapper.unmount()
+    }
   })
 
   it('steps chroma through the slider with trusted keyboard events', async () => {

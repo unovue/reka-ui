@@ -124,9 +124,10 @@ const internalColor = ref(toNativeSpace(normalizeColor(modelValue.value ?? '#000
 const color = computed({
   get: () => internalColor.value,
   set: (newColor: Color) => {
-    internalColor.value = newColor
+    const nativeColor = toNativeSpace(newColor)
+    internalColor.value = nativeColor
     modelValue.value = colorToString(newColor, 'hex')
-    emits('update:color', newColor)
+    emits('update:color', nativeColor)
   },
 })
 

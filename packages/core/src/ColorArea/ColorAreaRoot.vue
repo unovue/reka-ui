@@ -136,6 +136,8 @@ const xRange = computed(() => getChannelRange(xChannel.value))
 const yRange = computed(() => getChannelRange(yChannel.value))
 
 function normalizeChannelValue(value: number, channel: ColorChannel): number {
+  if (colorSpace.value === 'oklch')
+    return value
   return channel === 'chroma' ? Number(value.toFixed(3)) : Math.round(value)
 }
 
@@ -169,9 +171,7 @@ watch(() => color.value, (newColor) => {
   const newX = normalizeChannelValue(getChannelValue(newColor, xChannel.value), xChannel.value)
   const newY = normalizeChannelValue(getChannelValue(newColor, yChannel.value), yChannel.value)
 
-  // Only update if the normalized value meaningfully changed.
-  // During drag, xValue/yValue store exact floats (e.g. 80.45).
-  // External updates should not snap these unless the displayed value changed.
+  // OKLCH state stays exact; legacy spaces retain their rounded external sync.
   if (normalizeChannelValue(xValue.value, xChannel.value) !== newX)
     xValue.value = newX
   if (normalizeChannelValue(yValue.value, yChannel.value) !== newY)
