@@ -135,6 +135,13 @@ watch(colorSpace, () => {
 const xRange = computed(() => getChannelRange(xChannel.value))
 const yRange = computed(() => getChannelRange(yChannel.value))
 
+/**
+ * Preserves native OKLCH coordinates so editing one axis cannot quantize the other.
+ * Other color spaces retain legacy rounding: three decimals for chroma, integers otherwise.
+ * @param value - The channel coordinate to store or compare during synchronization.
+ * @param channel - The channel whose legacy rounding precision applies.
+ * @returns The exact OKLCH coordinate or the rounded legacy-space coordinate.
+ */
 function normalizeChannelValue(value: number, channel: ColorChannel): number {
   if (colorSpace.value === 'oklch')
     return value
