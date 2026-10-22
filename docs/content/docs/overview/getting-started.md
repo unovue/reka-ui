@@ -11,6 +11,12 @@ name: getting-started
 A quick tutorial to get you up and running with Reka UI.
 </Description>
 
+## Requirements
+
+Use Vue 3.5 or later and Node.js 22 or later for builds and server-side rendering.
+Reka UI uses VueUse 15, which no longer supports Node.js 20. Browser runtime support
+is unchanged by the Node.js requirement.
+
 ## Implementing a Popover
 
 In this quick tutorial, we will install and style the [Popover](../components/popover) component.

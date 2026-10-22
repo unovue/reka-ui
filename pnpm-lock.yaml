@@ -54,11 +54,11 @@ importers:
         specifier: ^4.6.2
         version: 4.6.2(vite@5.4.21(@types/node@24.0.13)(lightningcss@1.33.0))(vue@3.5.43(typescript@5.8.3))
       '@vueuse/core':
-        specifier: ^12.0.0
-        version: 12.5.0(typescript@5.8.3)
+        specifier: ^15.0.0
+        version: 15.0.0(vue@3.5.43(typescript@5.8.3))
       '@vueuse/shared':
-        specifier: ^12.0.0
-        version: 12.5.0(typescript@5.8.3)
+        specifier: ^15.0.0
+        version: 15.0.0(vue@3.5.43(typescript@5.8.3))
       vite:
         specifier: ^5.4.19
         version: 8.3.1(@types/node@24.0.13)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
@@ -112,8 +112,8 @@ importers:
         specifier: ^1.11.0
         version: 1.11.0
       '@vueuse/core':
-        specifier: ^14.1.0
-        version: 14.1.0(vue@3.5.43(typescript@5.8.3))
+        specifier: ^15.0.0
+        version: 15.0.0(vue@3.5.43(typescript@5.8.3))
       motion-v:
         specifier: 2.2.0
         version: 2.2.0(@vueuse/core@14.1.0(vue@3.5.43(typescript@5.8.3)))(vue@3.5.43(typescript@5.8.3))
@@ -212,11 +212,11 @@ importers:
         specifier: ^3.12.0
         version: 3.12.0(vue@3.5.43(typescript@5.8.3))
       '@vueuse/core':
-        specifier: ^14.1.0
-        version: 14.1.0(vue@3.5.43(typescript@5.8.3))
+        specifier: ^15.0.0
+        version: 15.0.0(vue@3.5.43(typescript@5.8.3))
       '@vueuse/shared':
-        specifier: ^14.1.0
-        version: 14.1.0(vue@3.5.43(typescript@5.8.3))
+        specifier: ^15.0.0
+        version: 15.0.0(vue@3.5.43(typescript@5.8.3))
       aria-hidden:
         specifier: ^1.2.4
         version: 1.2.4
@@ -2638,6 +2638,12 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
+  '@vueuse/core@15.0.0':
+    resolution: {integrity: sha512-Zv67h5mrk7YHDJsRObx+DXaCBz6RKBUpxqLesJ+3xZNPG6yuQs7ja7kg3veFrrouYLWAqydQ7CwGEbLVxB43Ng==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      vue: ^3.5.0
+
   '@vueuse/integrations@12.5.0':
     resolution: {integrity: sha512-HYLt8M6mjUfcoUOzyBcX2RjpfapIwHPBmQJtTmXOQW845Y/Osu9VuTJ5kPvnmWJ6IUa05WpblfOwZ+P0G4iZsQ==}
     peerDependencies:
@@ -2685,11 +2691,21 @@ packages:
   '@vueuse/metadata@14.1.0':
     resolution: {integrity: sha512-7hK4g015rWn2PhKcZ99NyT+ZD9sbwm7SGvp7k+k+rKGWnLjS/oQozoIZzWfCewSUeBmnJkIb+CNr7Zc/EyRnnA==}
 
+  '@vueuse/metadata@15.0.0':
+    resolution: {integrity: sha512-sfWE5LADAKJ0KnjtGliMdSN8Ij/L7uP6rXIZlgPloAI4zvvefbw6H5Lt7KJA6RqQOYgVqWF5Guj50HHMIzygBg==}
+    engines: {node: '>=22'}
+
   '@vueuse/shared@12.5.0':
     resolution: {integrity: sha512-vMpcL1lStUU6O+kdj6YdHDixh0odjPAUM15uJ9f7MY781jcYkIwFA4iv2EfoIPO6vBmvutI1HxxAwmf0cx5ISQ==}
 
   '@vueuse/shared@14.1.0':
     resolution: {integrity: sha512-EcKxtYvn6gx1F8z9J5/rsg3+lTQnvOruQd8fUecW99DCK04BkWD7z5KQ/wTAx+DazyoEE9dJt/zV8OIEQbM6kw==}
+    peerDependencies:
+      vue: ^3.5.0
+
+  '@vueuse/shared@15.0.0':
+    resolution: {integrity: sha512-vbNXhGrbV53xPOMSyOzMHQRvhMgZf7oNDw2RChUetVxwTIEkInQ1joZ9JbT0G3z2n2AJNjvmCWeM9ySYrnvogA==}
+    engines: {node: '>=22'}
     peerDependencies:
       vue: ^3.5.0
 
@@ -9592,6 +9608,13 @@ snapshots:
       '@vueuse/shared': 14.1.0(vue@3.5.43(typescript@5.8.3))
       vue: 3.5.43(typescript@5.8.3)
 
+  '@vueuse/core@15.0.0(vue@3.5.43(typescript@5.8.3))':
+    dependencies:
+      '@types/web-bluetooth': 0.0.21
+      '@vueuse/metadata': 15.0.0
+      '@vueuse/shared': 15.0.0(vue@3.5.43(typescript@5.8.3))
+      vue: 3.5.43(typescript@5.8.3)
+
   '@vueuse/integrations@12.5.0(change-case@5.4.4)(focus-trap@7.6.4)(typescript@5.8.3)':
     dependencies:
       '@vueuse/core': 12.5.0(typescript@5.8.3)
@@ -9607,6 +9630,8 @@ snapshots:
 
   '@vueuse/metadata@14.1.0': {}
 
+  '@vueuse/metadata@15.0.0': {}
+
   '@vueuse/shared@12.5.0(typescript@5.8.3)':
     dependencies:
       vue: 3.5.17(typescript@5.8.3)
@@ -9614,6 +9639,10 @@ snapshots:
       - typescript
 
   '@vueuse/shared@14.1.0(vue@3.5.43(typescript@5.8.3))':
+    dependencies:
+      vue: 3.5.43(typescript@5.8.3)
+
+  '@vueuse/shared@15.0.0(vue@3.5.43(typescript@5.8.3))':
     dependencies:
       vue: 3.5.43(typescript@5.8.3)
 
