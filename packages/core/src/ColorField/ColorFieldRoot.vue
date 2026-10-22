@@ -98,6 +98,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
+/** Converts to the configured field space without a quantizing hex round-trip. */
 function toNativeSpace(value: Color): Color {
   switch (colorSpace.value) {
     case 'rgb':
@@ -111,10 +112,15 @@ function toNativeSpace(value: Color): Color {
   }
 }
 
+/**
+ * Reads an unrounded channel in the configured field space.
+ * Returns degree hue, 0–255 RGB, unitless chroma, or percentages for other channels.
+ */
 function getChannelValue(value: Color, colorChannel: ColorChannel): number {
   return getNativeChannelValue(toNativeSpace(value), colorChannel)
 }
 
+/** Updates a clamped channel in the configured space without display rounding; alpha uses percent. */
 function setChannelValue(value: Color, colorChannel: ColorChannel, channelValue: number): Color {
   return setNativeChannelValue(toNativeSpace(value), colorChannel, channelValue)
 }
@@ -153,6 +159,7 @@ watch([color, channel], ([newColor]) => {
   }
 }, { immediate: true })
 
+/** Formats chroma to three decimals, other channels to integers, or full colors as hex. */
 function formatValue(c: Color): string {
   if (channel.value) {
     const value = getChannelValue(c, channel.value)

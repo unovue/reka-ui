@@ -83,8 +83,10 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
-// Convert a color to the native color space for the given channel.
-// This ensures setChannelValue/getChannelValue operate without cross-space round-trips.
+/**
+ * Selects a working space that avoids cross-space round-trips during channel edits.
+ * Chroma uses OKLCH, alpha retains the input space, and hue/lightness follow the configured space.
+ */
 function toNativeSpace(color: Color, ch: ColorChannelType, space: ColorSpace): Color {
   switch (ch) {
     case 'hue':
@@ -114,7 +116,7 @@ watch([channel, colorSpace], () => {
   internalColor.value = toNativeSpace(internalColor.value, channel.value, colorSpace.value)
 })
 
-// Check if a color is achromatic (hue information is lost in hex round-trips)
+/** Detects zero-chroma/saturation or endpoint lightness so hex echoes cannot erase hue. */
 function isAchromatic(color: Color): boolean {
   if (color.space === 'oklch')
     return color.c === 0 || color.l === 0 || color.l >= 100

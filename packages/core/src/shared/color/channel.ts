@@ -1,7 +1,11 @@
 import type { ChannelRange, Color, ColorChannel, ColorSpace } from './types'
 import { convertToHsb, convertToHsl, convertToOklch, convertToRgb } from './convert'
 
-/** Gets the presentation range for a color channel. */
+/**
+ * Returns UI bounds and step: degrees for hue, 0–255 for RGB, percentages otherwise.
+ * Chroma instead uses unitless [0, 0.4] with step 0.001, not a gamut boundary.
+ * Throws for unknown channels.
+ */
 export function getChannelRange(channel: ColorChannel): ChannelRange {
   switch (channel) {
     case 'hue':
@@ -22,6 +26,7 @@ export function getChannelRange(channel: ColorChannel): ChannelRange {
   }
 }
 
+/** Returns the English channel label, falling back to the supplied name for unknown channels. */
 export function getChannelName(channel: ColorChannel): string {
   const names: Record<ColorChannel, string> = {
     red: 'Red',
@@ -37,6 +42,11 @@ export function getChannelName(channel: ColorChannel): string {
   return names[channel] ?? channel
 }
 
+/**
+ * Reads a channel in UI units: degree hue, 0–255 RGB, unitless chroma, percentages otherwise.
+ * Uses native hue and OKLCH lightness; saturation is HSB only for HSB input, otherwise HSL.
+ * Converts other channels as needed (gamut-mapping OKLCH to sRGB); throws for unknown channels.
+ */
 export function getChannelValue(color: Color, channel: ColorChannel): number {
   switch (channel) {
     case 'red':
@@ -62,6 +72,7 @@ export function getChannelValue(color: Color, channel: ColorChannel): number {
   }
 }
 
+/** Converts to the requested space, preserving alpha; throws for unknown spaces. */
 function convertToSpace(color: Color, space: ColorSpace): Color {
   switch (space) {
     case 'rgb':
@@ -77,7 +88,11 @@ function convertToSpace(color: Color, space: ColorSpace): Color {
   }
 }
 
-/** Sets one channel while retaining the input color space. */
+/**
+ * Returns a new color in the input space after clamping the channel to its UI range.
+ * Alpha uses percentage input; cross-space edits may gamut-map through sRGB.
+ * Throws for unknown channels.
+ */
 export function setChannelValue(color: Color, channel: ColorChannel, value: number): Color {
   const range = getChannelRange(channel)
   const clamped = Math.max(range.min, Math.min(range.max, value))
@@ -112,7 +127,11 @@ export function setChannelValue(color: Color, channel: ColorChannel, value: numb
   return convertToSpace(updated, color.space)
 }
 
-/** Sets area channels in their native space without intermediate RGB quantization. */
+/**
+ * Applies clamped channel edits in order, returning the chosen working color space.
+ * Multiple edits prefer RGB, then OKLCH (chroma or native hue/lightness/alpha), then HSB
+ * (brightness), otherwise HSL. Empty edits return the input; a single edit retains its space.
+ */
 export function setChannelValues(color: Color, channels: Array<{ channel: ColorChannel, value: number }>): Color {
   if (channels.length === 0)
     return color

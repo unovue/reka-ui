@@ -5,6 +5,7 @@ import { h } from 'vue'
 import { colorToString, convertToHsb, convertToHsl, convertToOklch, convertToRgb, parseColor } from '@/shared/color'
 import { ColorFieldInput, ColorFieldRoot } from '.'
 
+/** Mounts an OKLCH chroma field with a labeled input; overrides also exercise full-color mode. */
 function mountField(props: Record<string, unknown>) {
   return mount(ColorFieldRoot, {
     props: { colorSpace: 'oklch', channel: 'chroma', ...props },

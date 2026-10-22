@@ -10,6 +10,7 @@ import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb } from '.'
 
 const color: OKLCHColor = { space: 'oklch', l: 60, c: 0.2, h: 240, alpha: 1 }
 
+/** Applies generated styles to a DOM element and asserts that the browser accepts its background image. */
 function supportedStyle(style: Record<string, string>) {
   const element = document.createElement('div')
   Object.assign(element.style, style)

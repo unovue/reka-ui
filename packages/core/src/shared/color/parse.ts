@@ -14,7 +14,8 @@ const OKLCH_RE = new RegExp(
 
 /**
  * Parses a color string into a Color object.
- * Supports hex (#rrggbb, #rgb), rgb(), hsl(), hsb()/hsv(), and oklch() formats.
+ * Supports hex (#rgb, #rrggbb, #rrggbbaa), rgb(), hsl(), hsb(), and oklch().
+ * Trims whitespace, ignores case and throws when the selected parser rejects the input.
  */
 export function parseColor(value: string): Color {
   const trimmed = value.trim().toLowerCase()
@@ -132,11 +133,18 @@ function parseHsb(hsb: string): HSBColor {
   }
 }
 
+/**
+ * Parses space-separated OKLCH coordinates and optional slash alpha; bare `none` means 0.
+ * Returns clamped 0–100 lightness and 0–1 alpha, nonnegative chroma and wrapped degree hue.
+ * Chroma percentages use 100% = 0.4; positive out-of-gamut chroma is retained.
+ * Throws for malformed syntax, units on `none`, or non-finite coordinates.
+ */
 function parseOklch(value: string): OKLCHColor {
   const match = value.match(OKLCH_RE)
   if (!match)
     throw new Error(`Invalid OKLCH color: ${value}`)
 
+  /** Resolves a lowercase `none` coordinate to 0, otherwise parses its numeric value. */
   const coordinate = (value: string) => value === 'none' ? 0 : Number(value)
   if ((match[1] === 'none' && match[2]) || (match[3] === 'none' && match[4])
     || (match[5] === 'none' && match[6]) || (match[7] === 'none' && match[8])) {
@@ -162,6 +170,7 @@ function parseOklch(value: string): OKLCHColor {
   }
 }
 
+/** Converts grad, rad or turn angles to degrees; absent or unrecognized units pass through. */
 function toDegrees(value: number, unit?: string): number {
   switch (unit) {
     case 'grad':

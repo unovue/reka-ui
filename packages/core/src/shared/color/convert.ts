@@ -1,7 +1,8 @@
 import type { Color, ColorFormat, HSBColor, HSLColor, OKLCHColor, RGBColor } from './types'
 
 /**
- * Converts a Color object to a string representation.
+ * Serializes a color in the requested format (hex by default).
+ * Throws for unknown formats; sRGB-based formats gamut-map OKLCH colors.
  */
 export function colorToString(color: Color, format: ColorFormat = 'hex'): string {
   switch (format) {
@@ -75,7 +76,8 @@ export function colorToHsb(color: Color): string {
 }
 
 /**
- * Converts any color to CSS oklch() syntax.
+ * Serializes CSS oklch() with percentage lightness and degree hue, without gamut mapping.
+ * Rounds coordinates to four decimals and includes slash alpha only when below 1.
  */
 export function colorToOklch(color: Color): string {
   const oklch = color.space === 'oklch' ? color : convertToOklch(color)
@@ -84,7 +86,8 @@ export function colorToOklch(color: Color): string {
 }
 
 /**
- * Converts any color to RGB color space.
+ * Returns sRGB channels on the 0–255 scale, preserving alpha and existing RGB objects.
+ * Maps out-of-gamut OKLCH by reducing chroma; throws for unknown color spaces.
  */
 export function convertToRgb(color: Color): RGBColor {
   if (color.space === 'rgb') {
@@ -123,7 +126,8 @@ export function convertToHsb(color: Color): HSBColor {
 }
 
 /**
- * Converts any color to OKLCH color space.
+ * Returns OKLCH with lightness on the 0–100 scale, unitless chroma and degree hue.
+ * Preserves alpha and returns existing OKLCH objects unchanged.
  */
 export function convertToOklch(color: Color): OKLCHColor {
   if (color.space === 'oklch') {
@@ -318,6 +322,10 @@ function hsbToRgb(hsb: HSBColor): RGBColor {
 
 // OKLab matrices from Björn Ottosson's reference implementation:
 // https://bottosson.github.io/posts/oklab/#converting-from-linear-srgb-to-oklab
+/**
+ * Converts 0–255 sRGB channels through OKLab, preserving alpha.
+ * Returns percentage lightness and hue in [0, 360); near-neutral chroma uses hue 0.
+ */
 function rgbToOklch(rgb: RGBColor): OKLCHColor {
   const r = srgbToLinear(rgb.r / 255)
   const g = srgbToLinear(rgb.g / 255)
@@ -333,7 +341,11 @@ function rgbToOklch(rgb: RGBColor): OKLCHColor {
   return { space: 'oklch', l: lightness * 100, c: chroma, h: hue, alpha: rgb.alpha }
 }
 
-/** Reduces chroma until the color fits in sRGB while preserving lightness and hue. */
+/**
+ * Maps OKLCH to clamped 0–255 sRGB, preserving alpha.
+ * Uses up to 24 chroma bisections at fixed lightness and hue when outside gamut;
+ * lightness at or beyond 0/100 returns black/white respectively.
+ */
 function oklchToSrgb(oklch: OKLCHColor): RGBColor {
   if (oklch.l <= 0 || oklch.l >= 100) {
     const value = oklch.l <= 0 ? 0 : 255
@@ -360,6 +372,7 @@ function oklchToSrgb(oklch: OKLCHColor): RGBColor {
   return clampRgb(mapped)
 }
 
+/** Clamps RGB channels to [0, 255] without rounding or changing alpha. */
 function clampRgb(color: RGBColor): RGBColor {
   return {
     ...color,
@@ -369,6 +382,11 @@ function clampRgb(color: RGBColor): RGBColor {
   }
 }
 
+/**
+ * Converts OKLCH to unbounded, gamma-encoded 0–255 sRGB, preserving alpha.
+ * Clamps percentage lightness to [0, 100], floors chroma at 0 and wraps degree hue;
+ * output channels may lie outside sRGB gamut.
+ */
 function oklchToRgbRaw(oklch: OKLCHColor): RGBColor {
   const lightness = clamp(oklch.l, 0, 100) / 100
   const hue = normalizeHue(oklch.h) * Math.PI / 180
@@ -386,14 +404,17 @@ function oklchToRgbRaw(oklch: OKLCHColor): RGBColor {
   }
 }
 
+/** Decodes a normalized gamma-encoded sRGB channel to linear light without clamping. */
 function srgbToLinear(value: number): number {
   return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
 }
 
+/** Encodes a linear-light sRGB channel without clamping, including out-of-gamut values. */
 function linearToSrgb(value: number): number {
   return value <= 0.0031308 ? 12.92 * value : 1.055 * value ** (1 / 2.4) - 0.055
 }
 
+/** Tests 0–255 RGB channels against sRGB bounds with a 0.0001 tolerance per channel. */
 function inSrgbGamut(color: RGBColor): boolean {
   const epsilon = 0.0001
   return color.r >= -epsilon && color.r <= 255 + epsilon
@@ -401,16 +422,19 @@ function inSrgbGamut(color: RGBColor): boolean {
     && color.b >= -epsilon && color.b <= 255 + epsilon
 }
 
+/** Wraps a finite degree hue into [0, 360). */
 function normalizeHue(value: number): number {
   if (value >= 0 && value < 360)
     return value
   return ((value % 360) + 360) % 360
 }
 
+/** Bounds a number inclusively between min and max; NaN remains NaN. */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
+/** Rounds to four decimal places and removes trailing zeros for CSS serialization. */
 function format(value: number): string {
   return String(Number(value.toFixed(4)))
 }

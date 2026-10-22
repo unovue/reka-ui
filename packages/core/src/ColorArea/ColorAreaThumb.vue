@@ -42,6 +42,7 @@ const ariaLabel = computed(() => {
   return `${getChannelName(rootContext.xChannel.value)}, ${getChannelName(rootContext.yChannel.value)}`
 })
 
+/** Formats accessible text to three chroma decimals or integer units without changing axis state. */
 function formatChannelValue(value: number, channel: typeof rootContext.xChannel.value): string {
   return channel === 'chroma' ? String(Number(value.toFixed(3))) : String(Math.round(value))
 }

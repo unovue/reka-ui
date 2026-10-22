@@ -3,7 +3,8 @@ import { getChannelRange, setChannelValue } from './channel'
 import { colorToString, convertToHsb, convertToHsl, convertToOklch, convertToRgb } from './convert'
 
 /**
- * Generates a CSS gradient for a color slider track.
+ * Returns a left-to-right CSS slider gradient, or an empty string for unknown channels.
+ * OKLCH hue/lightness and all chroma tracks use CSS OKLCH interpolation; alpha adds a checkerboard.
  */
 export function getSliderGradient(
   color: Color,
@@ -44,6 +45,11 @@ export function getSliderGradient(
   }
 }
 
+/**
+ * Returns CSS background layers sampling the y-axis in 32 rows, maximum at the top.
+ * Rows interpolate x in OKLCH, using extra hue stops to span the full wheel without
+ * alpha-blending two planes. Starts from opaque color; alpha-axis edits still apply.
+ */
 function getOklchAreaBackground(color: OKLCHColor, xChannel: ColorChannel, yChannel: ColorChannel): Record<string, string> {
   const xRange = getChannelRange(xChannel)
   const yRange = getChannelRange(yChannel)
@@ -69,7 +75,8 @@ function getOklchAreaBackground(color: OKLCHColor, xChannel: ColorChannel, yChan
 }
 
 /**
- * Generates a CSS gradient for a color area (2D picker).
+ * Returns the base color and separate x/rightward and y/upward area gradients.
+ * OKLCH uses native CSS interpolation; use getAreaBackgroundStyle for its sampled 2D plane.
  */
 export function getAreaGradient(
   color: Color,
@@ -105,11 +112,13 @@ function getHueGradient(): string {
   return 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
 }
 
+/** Sweeps opaque hue from 0° to 360° in OKLCH while retaining lightness and chroma. */
 function getOklchHueGradient(color: OKLCHColor): string {
   const stops = [0, 120, 240, 360].map(h => colorToString({ ...color, h, alpha: 1 }, 'oklch'))
   return `linear-gradient(to right in oklch, ${stops.join(', ')})`
 }
 
+/** Sweeps opaque OKLCH lightness from 0% through 50% to 100%, retaining chroma and hue. */
 function getOklchLightnessGradient(color: OKLCHColor): string {
   const start = colorToString({ ...color, l: 0, alpha: 1 }, 'oklch')
   const middle = colorToString({ ...color, l: 50, alpha: 1 }, 'oklch')
@@ -117,6 +126,7 @@ function getOklchLightnessGradient(color: OKLCHColor): string {
   return `linear-gradient(to right in oklch, ${start}, ${middle}, ${end})`
 }
 
+/** Sweeps opaque unitless OKLCH chroma from 0 to the UI maximum 0.4, retaining lightness and hue. */
 function getOklchChromaGradient(color: OKLCHColor): string {
   const start = colorToString({ ...color, c: 0, alpha: 1 }, 'oklch')
   const end = colorToString({ ...color, c: 0.4, alpha: 1 }, 'oklch')
@@ -237,7 +247,8 @@ function getAreaBackgroundColor(
 }
 
 /**
- * Gets the CSS background style for a color area.
+ * Returns composited CSS background properties for the selected 2D channel plane.
+ * OKLCH samples rows instead of alpha-blending axes; RGB uses additive screen blending.
  */
 export function getAreaBackgroundStyle(
   color: Color,

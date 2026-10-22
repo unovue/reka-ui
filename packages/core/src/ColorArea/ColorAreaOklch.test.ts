@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, ref } from 'vue'
 import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb } from '.'
 
+/** Mounts a chroma/lightness OKLCH area with a thumb, allowing each test to override axes or values. */
 function mountArea(props: Record<string, unknown>) {
   return mount(ColorAreaRoot, {
     props: { colorSpace: 'oklch', xChannel: 'chroma', yChannel: 'lightness', ...props },

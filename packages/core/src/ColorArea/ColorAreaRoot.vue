@@ -96,6 +96,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
+/** Converts to the configured area space without a quantizing hex round-trip. */
 function toColorSpace(value: Color): Color {
   switch (colorSpace.value) {
     case 'rgb':
@@ -219,6 +220,10 @@ const areaStyles = computed(() => {
   return getAreaBackgroundStyle(bgColor, xChannel.value, yChannel.value, colorSpace.value)
 })
 
+/**
+ * Applies both axes in channel units without rounding, preserving non-axis hue.
+ * Values are clamped to UI bounds; OKLCH uses its current native hue.
+ */
 function updateValues(x: number, y: number) {
   const clampedX = Math.max(xRange.value.min, Math.min(xRange.value.max, x))
   const clampedY = Math.max(yRange.value.min, Math.min(yRange.value.max, y))
