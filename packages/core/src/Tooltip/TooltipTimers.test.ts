@@ -4,6 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { TooltipProvider, TooltipRoot, TooltipTrigger } from '.'
 
+/**
+ * Mounts two tooltip triggers under one provider to test shared delay state.
+ * Uses a 100 ms open delay and a 200 ms skip-delay window with hoverable content disabled.
+ * @returns The body-attached fixture wrapper, which the caller must unmount.
+ */
 function mountTooltips() {
   return mount(defineComponent({
     setup: () => () => h(TooltipProvider, { delayDuration: 100, skipDelayDuration: 200, disableHoverableContent: true }, () => [
