@@ -350,7 +350,7 @@ describe('given NavigationMenu and the Space key', () => {
     vi.mocked(useDebounceFn).mockImplementation((cb: (val: string) => void) => (arg: string) => cb(arg))
   })
 
-  function mountNavigationMenu() {
+  function mountNavigationMenu({ asChild = false } = {}) {
     document.body.innerHTML = ''
     const value = ref('')
     const onLinkClick = vi.fn((event: Event) => event.preventDefault())
@@ -360,7 +360,9 @@ describe('given NavigationMenu and the Space key', () => {
         'onUpdate:modelValue': (next: string) => { value.value = next },
       }, () => h(NavigationMenuList, () => [
         h(NavigationMenuItem, { value: 'learn' }, () => [
-          h(NavigationMenuTrigger, () => 'Learn'),
+          asChild
+            ? h(NavigationMenuTrigger, { asChild: true }, () => h('span', { tabindex: 0 }, 'Learn'))
+            : h(NavigationMenuTrigger, () => 'Learn'),
           h(NavigationMenuContent, () => h(NavigationMenuLink, { href: '#' }, () => 'Docs')),
         ]),
         h(NavigationMenuItem, () => h(NavigationMenuLink, { 'href': '#github', 'data-testid': 'link', 'onClick': onLinkClick }, () => 'GitHub')),
@@ -386,8 +388,12 @@ describe('given NavigationMenu and the Space key', () => {
     wrapper.unmount()
   })
 
-  it('should toggle the trigger once while Space is held down', async () => {
-    const { wrapper, value, trigger } = mountNavigationMenu()
+  it.each([
+    ['a button trigger', false],
+    ['a non-button asChild trigger', true],
+  ])('should toggle %s once while Space is held down', async (_, asChild) => {
+    const { wrapper, value, trigger } = mountNavigationMenu({ asChild })
+    expect(trigger.element.tagName).toBe(asChild ? 'SPAN' : 'BUTTON')
     pressSpace(trigger.element)
     await nextTick()
     const repeats = [pressSpace(trigger.element, true), pressSpace(trigger.element, true)]
