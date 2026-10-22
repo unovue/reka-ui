@@ -343,3 +343,66 @@ describe('given NavigationMenuTrigger with consumer event listeners', () => {
     expect(stopPropagation).not.toHaveBeenCalled()
   })
 })
+
+describe('given NavigationMenu and the Space key', () => {
+  beforeEach(() => {
+    // @ts-expect-error simple mock
+    vi.mocked(useDebounceFn).mockImplementation((cb: (val: string) => void) => (arg: string) => cb(arg))
+  })
+
+  function mountNavigationMenu() {
+    document.body.innerHTML = ''
+    const value = ref('')
+    const onLinkClick = vi.fn((event: Event) => event.preventDefault())
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(NavigationMenuRoot, {
+        'modelValue': value.value,
+        'onUpdate:modelValue': (next: string) => { value.value = next },
+      }, () => h(NavigationMenuList, () => [
+        h(NavigationMenuItem, { value: 'learn' }, () => [
+          h(NavigationMenuTrigger, () => 'Learn'),
+          h(NavigationMenuContent, () => h(NavigationMenuLink, { href: '#' }, () => 'Docs')),
+        ]),
+        h(NavigationMenuItem, () => h(NavigationMenuLink, { 'href': '#github', 'data-testid': 'link', 'onClick': onLinkClick }, () => 'GitHub')),
+      ])),
+    }), { attachTo: document.body })
+    return { wrapper, value, onLinkClick, trigger: wrapper.find('[data-navigation-menu-trigger]') }
+  }
+
+  function pressSpace(element: Element, repeat = false) {
+    const event = new KeyboardEvent('keydown', { key: ' ', keyCode: 32, repeat, bubbles: true, cancelable: true })
+    element.dispatchEvent(event)
+    return event
+  }
+
+  it('should toggle the trigger', async () => {
+    const { wrapper, value, trigger } = mountNavigationMenu()
+    pressSpace(trigger.element)
+    await nextTick()
+    expect(value.value).toBe('learn')
+    pressSpace(trigger.element)
+    await nextTick()
+    expect(value.value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('should toggle the trigger once while Space is held down', async () => {
+    const { wrapper, value, trigger } = mountNavigationMenu()
+    pressSpace(trigger.element)
+    await nextTick()
+    const repeats = [pressSpace(trigger.element, true), pressSpace(trigger.element, true)]
+    await nextTick()
+    expect(value.value).toBe('learn')
+    expect(repeats.every(event => event.defaultPrevented)).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('should leave Space on a link to the browser', async () => {
+    const { wrapper, onLinkClick } = mountNavigationMenu()
+    const event = pressSpace(wrapper.find('[data-testid="link"]').element)
+    await nextTick()
+    expect(onLinkClick).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+    wrapper.unmount()
+  })
+})
