@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
 import { createContext, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
-export interface SwitchRootProps<TrueValue = true, FalseValue = false> extends PrimitiveProps, FormFieldProps {
+export interface SwitchRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
   defaultValue?: NoInfer<TrueValue | FalseValue>
   /** The controlled state of the switch. Can be bind as `v-model`. */
@@ -24,9 +24,9 @@ export interface SwitchRootProps<TrueValue = true, FalseValue = false> extends P
   falseValue?: FalseValue
 }
 
-export type SwitchRootEmits<TrueValue = true, FalseValue = false> = {
+export type SwitchRootEmits<TrueValue = boolean, FalseValue = TrueValue> = {
   /** Event handler called when the value of the switch changes. */
-  'update:modelValue': [payload: NoInfer<TrueValue | FalseValue>]
+  'update:modelValue': [payload: TrueValue | FalseValue]
 }
 
 export interface SwitchRootContext {
@@ -39,7 +39,7 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
   = createContext<SwitchRootContext>('SwitchRoot')
 </script>
 
-<script setup lang="ts" generic="const TrueValue = true, const FalseValue = false">
+<script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'

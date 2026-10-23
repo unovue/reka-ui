@@ -7,7 +7,7 @@ import { useVModel } from '@vueuse/core'
 import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
-export interface CheckboxRootProps<TrueValue = true, FalseValue = false> extends PrimitiveProps, FormFieldProps {
+export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
   defaultValue?: NoInfer<TrueValue | FalseValue> | 'indeterminate'
   /** The controlled value of the checkbox. Can be binded with v-model. */
@@ -31,9 +31,9 @@ export interface CheckboxRootProps<TrueValue = true, FalseValue = false> extends
   falseValue?: FalseValue
 }
 
-export type CheckboxRootEmits<TrueValue = true, FalseValue = false> = {
+export type CheckboxRootEmits<TrueValue = boolean, FalseValue = TrueValue> = {
   /** Event handler called when the value of the checkbox changes. */
-  'update:modelValue': [value: NoInfer<TrueValue | FalseValue> | 'indeterminate']
+  'update:modelValue': [value: TrueValue | FalseValue | 'indeterminate']
 }
 
 interface CheckboxRootContext {
@@ -45,7 +45,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
   = createContext<CheckboxRootContext>('CheckboxRoot')
 </script>
 
-<script setup lang="ts" generic="const TrueValue = true, const FalseValue = false">
+<script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { isEqual } from 'ohash'
 import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'

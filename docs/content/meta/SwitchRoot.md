@@ -78,7 +78,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the switch changes.</p>\n',
-    'type': '[payload: NoInfer&lt;TrueValue | FalseValue&gt;]'
+    'type': '[payload: TrueValue | FalseValue]'
   }
 ]" />
 
@@ -118,7 +118,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: NoInfer<TrueValue \| FalseValue>]` |
+| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: TrueValue \| FalseValue]` |
 
 **Slots**
 

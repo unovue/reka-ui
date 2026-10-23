@@ -78,7 +78,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: \'indeterminate\' | NoInfer&lt;TrueValue | FalseValue&gt;]'
+    'type': '[value: TrueValue | FalseValue | \'indeterminate\']'
   }
 ]" />
 
@@ -118,7 +118,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: "indeterminate" \| NoInfer<TrueValue \| FalseValue>]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: TrueValue \| FalseValue \| "indeterminate"]` |
 
 **Slots**
 

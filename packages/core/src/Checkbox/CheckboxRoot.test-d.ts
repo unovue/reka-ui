@@ -20,14 +20,19 @@ type Payload<E> = E extends { 'update:modelValue': [value: infer P] } ? P : neve
 
 // Public types: `trueValue` and `falseValue` can have different types
 type _propsDefault = Expect<Equal<NonNullable<CheckboxRootProps['modelValue']>, boolean | 'indeterminate'>>
+// A single type argument keeps its previous meaning: both values share it
+type _propsSingle = Expect<Equal<NonNullable<CheckboxRootProps<string>['modelValue']>, string | 'indeterminate'>>
 type _propsMixed = Expect<Equal<NonNullable<CheckboxRootProps<'on', 0>['modelValue']>, 'on' | 0 | 'indeterminate'>>
 type _emitsDefault = Expect<Equal<Payload<CheckboxRootEmits>, boolean | 'indeterminate'>>
+type _emitsSingle = Expect<Equal<Payload<CheckboxRootEmits<string>>, string | 'indeterminate'>>
 type _emitsMixed = Expect<Equal<Payload<CheckboxRootEmits<'on', 0>>, 'on' | 0 | 'indeterminate'>>
 
 declare const bool: boolean
+declare const str: string
+declare const num: number
 declare const onOff: 'on' | 'off'
-declare const onOrZero: 'on' | 0
-declare const onOrFalse: 'on' | false
+declare const strOrNum: string | number
+declare const strOrFalse: string | false
 
 // Never executed: only type-checked
 export function _checkboxRootTypeTests() {
@@ -37,19 +42,21 @@ export function _checkboxRootTypeTests() {
   } })
 
   // `trueValue` and `falseValue` of different types
-  CheckboxRoot({ 'trueValue': 'on', 'falseValue': 0, 'modelValue': onOrZero, 'onUpdate:modelValue': (v) => {
-    type _ = Expect<Equal<typeof v, 'on' | 0 | 'indeterminate'>>
+  CheckboxRoot({ 'trueValue': 'on', 'falseValue': 0, 'modelValue': strOrNum, 'onUpdate:modelValue': (v) => {
+    type _ = Expect<Equal<typeof v, string | number | 'indeterminate'>>
   } })
 
   // Only `trueValue`: the emitted value still includes `false`
-  CheckboxRoot({ 'trueValue': 'on', 'modelValue': onOrFalse, 'onUpdate:modelValue': (v) => {
-    type _ = Expect<Equal<typeof v, 'on' | false | 'indeterminate'>>
+  CheckboxRoot({ 'trueValue': 'on', 'modelValue': strOrFalse, 'onUpdate:modelValue': (v) => {
+    type _ = Expect<Equal<typeof v, string | false | 'indeterminate'>>
   } })
 
-  // Literal types are kept (`const` generics)
-  CheckboxRoot({ 'trueValue': 'on', 'falseValue': 'off', 'modelValue': onOff, 'onUpdate:modelValue': (v) => {
-    type _ = Expect<Equal<typeof v, 'on' | 'off' | 'indeterminate'>>
+  // Widened refs bound with v-model are accepted (e.g. `ref('off')`, `ref(0)`)
+  CheckboxRoot({ 'trueValue': 'on', 'falseValue': 'off', 'modelValue': str, 'onUpdate:modelValue': (v) => {
+    type _ = Expect<Equal<typeof v, string | 'indeterminate'>>
   } })
+  CheckboxRoot({ trueValue: 1, falseValue: 0, modelValue: num })
+  CheckboxRoot({ trueValue: 'on', falseValue: 'off', modelValue: onOff })
 
   // `indeterminate` is always accepted
   CheckboxRoot({ trueValue: 'on', falseValue: 'off', modelValue: 'indeterminate' })
@@ -59,12 +66,9 @@ export function _checkboxRootTypeTests() {
   // @ts-expect-error 'on' | 'off' is not assignable to boolean
   CheckboxRoot({ modelValue: onOff })
 
-  // @ts-expect-error the runtime emits `false`, not 'off'
-  CheckboxRoot({ trueValue: 'on', modelValue: onOff })
+  // @ts-expect-error the runtime emits `false`, not a number
+  CheckboxRoot({ trueValue: 'on', modelValue: num })
 
-  // @ts-expect-error `defaultValue` must match `trueValue` or `falseValue`
-  CheckboxRoot({ trueValue: 'on', defaultValue: 'off' })
-
-  // @ts-expect-error `modelValue` outside of `trueValue` | `falseValue`
-  CheckboxRoot({ trueValue: 'on', falseValue: 'off', modelValue: 'nope' })
+  // @ts-expect-error `defaultValue` must match the type of `trueValue` or `falseValue`
+  CheckboxRoot({ trueValue: 1, falseValue: 0, defaultValue: 'off' })
 }
