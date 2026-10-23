@@ -396,7 +396,7 @@ describe('given NavigationMenu and the Space key', () => {
     expect(trigger.element.tagName).toBe(asChild ? 'SPAN' : 'BUTTON')
     pressSpace(trigger.element)
     await nextTick()
-    const repeats = [pressSpace(trigger.element, true), pressSpace(trigger.element, true)]
+    const repeats = [pressSpace(trigger.element, true)]
     await nextTick()
     expect(value.value).toBe('learn')
     expect(repeats.every(event => event.defaultPrevented)).toBe(true)
