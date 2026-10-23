@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
-import { NavigationMenuContent, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger } from '.'
+import { NavigationMenuContent, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport } from '.'
 
 import NavigationMenuUnmountOnHideFalse from './__test__/NavigationMenuUnmountOnHideFalse.vue'
 import NavigationMenuItem from './NavigationMenuItem.vue'
@@ -341,6 +341,33 @@ describe('given NavigationMenuTrigger with consumer event listeners', () => {
     const stopPropagation = vi.spyOn(event, 'stopPropagation')
     trigger.element.dispatchEvent(event)
     expect(stopPropagation).not.toHaveBeenCalled()
+  })
+})
+
+describe('given an open NavigationMenuTrigger', () => {
+  beforeEach(() => {
+    // @ts-expect-error simple mock
+    vi.mocked(useDebounceFn).mockImplementation((cb: (val: string) => void) => (arg: string) => cb(arg))
+  })
+
+  it.each([
+    { withViewport: false, ownsContent: false },
+    { withViewport: true, ownsContent: true },
+  ])('should render the aria-owns span only with a viewport (withViewport: $withViewport)', async ({ withViewport, ownsContent }) => {
+    document.body.innerHTML = ''
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(NavigationMenuRoot, { modelValue: 'learn' }, () => [
+        h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'learn' }, () => [
+          h(NavigationMenuTrigger, () => 'Learn'),
+          h(NavigationMenuContent, () => h(NavigationMenuLink, { href: '#' }, () => 'Docs')),
+        ])),
+        withViewport ? h(NavigationMenuViewport) : null,
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+
+    expect(document.querySelector('span[aria-owns]') !== null).toBe(ownsContent)
+    wrapper.unmount()
   })
 })
 
