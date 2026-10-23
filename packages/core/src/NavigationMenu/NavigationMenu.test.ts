@@ -350,7 +350,7 @@ describe('given NavigationMenu and the Space key', () => {
     vi.mocked(useDebounceFn).mockImplementation((cb: (val: string) => void) => (arg: string) => cb(arg))
   })
 
-  function mountNavigationMenu({ asChild = false } = {}) {
+  async function mountNavigationMenu({ asChild = false } = {}) {
     document.body.innerHTML = ''
     const value = ref('')
     const onLinkClick = vi.fn((event: Event) => event.preventDefault())
@@ -368,6 +368,9 @@ describe('given NavigationMenu and the Space key', () => {
         h(NavigationMenuItem, () => h(NavigationMenuLink, { 'href': '#github', 'data-testid': 'link', 'onClick': onLinkClick }, () => 'GitHub')),
       ])),
     }), { attachTo: document.body })
+    // Vue ignores bubbling events stamped in the same millisecond its listeners were attached
+    const mountedAt = Date.now()
+    await vi.waitFor(() => expect(Date.now()).toBeGreaterThan(mountedAt))
     return { wrapper, value, onLinkClick, trigger: wrapper.find('[data-navigation-menu-trigger]') }
   }
 
@@ -378,7 +381,7 @@ describe('given NavigationMenu and the Space key', () => {
   }
 
   it('should toggle the trigger', async () => {
-    const { wrapper, value, trigger } = mountNavigationMenu()
+    const { wrapper, value, trigger } = await mountNavigationMenu()
     pressSpace(trigger.element)
     await nextTick()
     expect(value.value).toBe('learn')
@@ -392,7 +395,7 @@ describe('given NavigationMenu and the Space key', () => {
     ['a button trigger', false],
     ['a non-button asChild trigger', true],
   ])('should toggle %s once while Space is held down', async (_, asChild) => {
-    const { wrapper, value, trigger } = mountNavigationMenu({ asChild })
+    const { wrapper, value, trigger } = await mountNavigationMenu({ asChild })
     expect(trigger.element.tagName).toBe(asChild ? 'SPAN' : 'BUTTON')
     pressSpace(trigger.element)
     await nextTick()
@@ -404,7 +407,7 @@ describe('given NavigationMenu and the Space key', () => {
   })
 
   it('should leave Space on a link to the browser', async () => {
-    const { wrapper, onLinkClick } = mountNavigationMenu()
+    const { wrapper, onLinkClick } = await mountNavigationMenu()
     const event = pressSpace(wrapper.find('[data-testid="link"]').element)
     await nextTick()
     expect(onLinkClick).not.toHaveBeenCalled()
