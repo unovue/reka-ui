@@ -57,6 +57,7 @@ import {
   focusFirst,
   getTabbableCandidates,
   getTabbableEdges,
+  isTabStop,
 } from './utils'
 
 const props = withDefaults(defineProps<FocusScopeProps>(), {
@@ -325,12 +326,12 @@ function handleKeyDown(event: KeyboardEvent) {
         event.preventDefault()
     }
     else {
-      if (!event.shiftKey && focusedElement === last) {
+      if (!event.shiftKey && isTabStop(focusedElement, last)) {
         event.preventDefault()
         if (props.loop)
           focus(first, { select: true })
       }
-      else if (event.shiftKey && focusedElement === first) {
+      else if (event.shiftKey && isTabStop(focusedElement, first)) {
         event.preventDefault()
         if (props.loop)
           focus(last, { select: true })

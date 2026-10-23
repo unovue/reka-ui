@@ -57,6 +57,10 @@ export function getTabbableCandidates(container: HTMLElement) {
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden'
       if (node.disabled || node.hidden || isHiddenInput)
         return NodeFilter.FILTER_SKIP
+      // A native radio group is a single tab stop: its checked radio, or any of them
+      // when none is checked. The others still report `tabIndex` 0, so skip them here.
+      if (isRadioInput(node) && !isTabbableRadio(node))
+        return NodeFilter.FILTER_SKIP
       // `.tabIndex` is not the same as the `tabindex` attribute. It works on the
       // runtime's understanding of tabbability, so this automatically accounts
       // for any kind of element that could be tabbed to.
@@ -75,6 +79,39 @@ export function getTabbableCandidates(container: HTMLElement) {
       return -1
     return a.tabIndex - b.tabIndex
   })
+}
+
+function isRadioInput(node: Element): node is HTMLInputElement {
+  return node.tagName === 'INPUT' && (node as HTMLInputElement).type === 'radio'
+}
+
+/**
+ * Returns the radios in the same group as `radio`: same `name` and same form owner.
+ */
+function getRadioGroup(radio: HTMLInputElement): HTMLInputElement[] {
+  if (!radio.name)
+    return [radio]
+  const elements = radio.form
+    ? Array.from(radio.form.elements)
+    : Array.from((radio.getRootNode() as Document | ShadowRoot).querySelectorAll('input'))
+  return elements.filter((element): element is HTMLInputElement =>
+    isRadioInput(element) && element.name === radio.name && element.form === radio.form,
+  )
+}
+
+function isTabbableRadio(radio: HTMLInputElement) {
+  const checked = getRadioGroup(radio).find(element => element.checked && !element.disabled)
+  return !checked || checked === radio
+}
+
+/**
+ * Whether `element` is the tab stop `edge`. Tab leaves a native radio group from any of
+ * its radios, so a focused radio counts as the edge when the edge is a radio of its group.
+ */
+export function isTabStop(element: HTMLElement, edge: HTMLElement) {
+  if (element === edge)
+    return true
+  return isRadioInput(element) && isRadioInput(edge) && getRadioGroup(edge).includes(element)
 }
 
 /**
