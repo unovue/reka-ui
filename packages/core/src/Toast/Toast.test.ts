@@ -63,6 +63,10 @@ describe('given a default Toast', () => {
     trigger = wrapper.find('button')
   })
 
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
   it('should have visible toast that is focusable', async () => {
     // Open toast
     await fireEvent.click(trigger.element)
@@ -191,6 +195,149 @@ describe('given a default Toast', () => {
         expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
       })
     })
+  })
+})
+
+describe('toastProvider pauseOnInteraction', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it.each([
+    { pauseOnInteraction: undefined, interaction: 'pointermove', shouldPause: true },
+    { pauseOnInteraction: false, interaction: 'pointermove', shouldPause: false },
+    { pauseOnInteraction: undefined, interaction: 'focusin', shouldPause: true },
+    { pauseOnInteraction: false, interaction: 'focusin', shouldPause: false },
+    { pauseOnInteraction: undefined, interaction: 'window blur', shouldPause: true },
+    { pauseOnInteraction: false, interaction: 'window blur', shouldPause: false },
+  ])('should apply pauseOnInteraction to $interaction', async ({ pauseOnInteraction, interaction, shouldPause }) => {
+    vi.useFakeTimers()
+
+    const open = ref(true)
+    const providerProps = pauseOnInteraction === undefined ? {} : { pauseOnInteraction }
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000, ...providerProps }, () => [
+          h(ToastRoot, {
+            'open': open.value,
+            'onUpdate:open': (value: boolean) => {
+              open.value = value
+            },
+          }, () => h(ToastDescription, null, () => 'Timeout toast')),
+          h(ToastViewport),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const viewport = wrapper.find<HTMLElement>('ol').element
+      if (interaction === 'pointermove')
+        await fireEvent.pointerMove(viewport)
+      else if (interaction === 'focusin')
+        await fireEvent.focusIn(viewport)
+      else
+        await fireEvent.blur(window)
+
+      vi.advanceTimersByTime(1000)
+      await nextTick()
+
+      expect(open.value).toBe(shouldPause)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should resume when the pointer leaves while another toast is closing', async () => {
+    vi.useFakeTimers()
+
+    const openA = ref(true)
+    const openB = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000 }, () => [
+          h(ToastRoot, {
+            'open': openA.value,
+            'forceMount': true,
+            'duration': 100000,
+            'onUpdate:open': (value: boolean) => {
+              openA.value = value
+            },
+          }, () => h(ToastDescription, null, () => 'Closing toast')),
+          h(ToastRoot, {
+            'open': openB.value,
+            'onUpdate:open': (value: boolean) => {
+              openB.value = value
+            },
+          }, () => h(ToastDescription, null, () => 'Remaining toast')),
+          h(ToastViewport),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const viewport = wrapper.find<HTMLElement>('ol').element
+      await fireEvent.pointerMove(viewport)
+      openA.value = false
+      await nextTick()
+      await fireEvent.pointerLeave(viewport)
+
+      vi.advanceTimersByTime(1500)
+      await nextTick()
+
+      expect(openB.value).toBe(false)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each(['pointermove', 'focusin', 'window blur'])('should pause when enabled during a %s interaction', async (interaction) => {
+    vi.useFakeTimers()
+
+    const open = ref(true)
+    const pauseOnInteraction = ref(false)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000, pauseOnInteraction: pauseOnInteraction.value }, () => [
+          h(ToastRoot, {
+            'open': open.value,
+            'onUpdate:open': (value: boolean) => {
+              open.value = value
+            },
+          }, () => h(ToastDescription, null, () => 'Timeout toast')),
+          h(ToastViewport),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    try {
+      await nextTick()
+
+      const viewport = wrapper.find<HTMLElement>('ol').element
+      if (interaction === 'pointermove')
+        await fireEvent.pointerMove(viewport)
+      else if (interaction === 'focusin')
+        await fireEvent.focusIn(viewport)
+      else
+        await fireEvent.blur(window)
+
+      vi.advanceTimersByTime(500)
+      pauseOnInteraction.value = true
+      await nextTick()
+
+      vi.advanceTimersByTime(500)
+      await nextTick()
+
+      expect(open.value).toBe(true)
+    }
+    finally {
+      wrapper.unmount()
+    }
   })
 })
 
