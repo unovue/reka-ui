@@ -127,7 +127,7 @@
     "vitest": "^5.0.3",
     "vitest-axe": "0.1.0",
     "vitest-canvas-mock": "^1.2.0",
-    "vue": "3.5.43",
+    "vue": "3.5.44",
     "vue-component-type-helpers": "^3.3.11",
     "vue-tsc": "3.3.11"
   }
