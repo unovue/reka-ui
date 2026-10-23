@@ -21,21 +21,26 @@ Generate random id
 
 1. Explicit ID passed to `useId(id)`.
 2. The `useId` function provided by `ConfigProvider`.
-3. Vue's native `useId` when available.
-4. Reka UI's fallback counter for older Vue versions.
+3. Vue's native `useId` (Vue 3.5 or later is required).
 
 Use `ConfigProvider` when your framework provides its own SSR-stable ID source, such as Nuxt's `useId`.
 
 ## Usage
 
-```ts
+```vue
+<script setup lang="ts">
 import { useId } from 'reka-ui'
 
-const buttonId = useId() // reka-1
-```
+const buttonId = useId()
+const customId = useId('test-id')
+</script>
 
-```ts
-import { useId } from 'reka-ui'
-
-const buttonId = useId('test-id') // test-id
+<template>
+  <button :id="buttonId">
+    Generated ID
+  </button>
+  <button :id="customId">
+    Explicit ID
+  </button>
+</template>
 ```

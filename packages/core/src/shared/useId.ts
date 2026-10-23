@@ -1,12 +1,9 @@
-import * as vue from 'vue'
-// Inspired from https://github.com/tailwindlabs/headlessui/issues/2913
-// as the alternative, and a fallback for Vue version < 3.5
+import { useId as useVueId } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 
-let count = 0
 /**
  * The `useId` function generates a unique identifier using a provided deterministic ID,
- * a configured `<ConfigProvider>` ID source, Vue's native `useId`, or a fallback counter.
+ * a configured `<ConfigProvider>` ID source, or Vue's native `useId`.
  * @param {string | null | undefined} [deterministicId] - The `useId` function you provided takes an
  * optional parameter `deterministicId`, which can be a string, null, or undefined. If
  * `deterministicId` is provided, the function will return it. Otherwise, it will generate an id using
@@ -26,11 +23,8 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
   if (configProviderContext.useId) {
     id = configProviderContext.useId()
   }
-  else if ('useId' in vue) {
-    id = vue.useId?.()
-  }
   else {
-    id = `${++count}`
+    id = useVueId()
   }
 
   return prefix ? `${prefix}-${id}` : id
