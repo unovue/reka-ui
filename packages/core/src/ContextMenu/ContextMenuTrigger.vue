@@ -142,7 +142,9 @@ onMounted(() => {
     :data-disabled="disabled ? '' : undefined"
     :style="{
       WebkitTouchCallout: 'none',
-      pointerEvents: 'auto',
+      // Only while open: a right click on the trigger then moves the menu instead of closing and
+      // reopening it. Closed, it must not catch clicks while another layer disables pointer events.
+      pointerEvents: rootContext.open.value ? 'auto' : undefined,
     }"
     v-bind="$attrs"
     @contextmenu="handleContextMenu"
