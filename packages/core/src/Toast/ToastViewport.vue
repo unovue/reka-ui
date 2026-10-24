@@ -75,6 +75,9 @@ watch(hasToasts, (value) => {
     providerContext.hovering.value = false
     providerContext.focused.value = false
     pendingPointerLeave.value = false
+    // The resume listeners go away with the last toast, so a pause still held here
+    // would keep the next toast's timer from ever starting.
+    providerContext.isClosePausedRef.value = false
   }
 })
 

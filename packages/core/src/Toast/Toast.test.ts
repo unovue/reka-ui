@@ -194,6 +194,59 @@ describe('given a default Toast', () => {
   })
 })
 
+const PausableToast = defineComponent({
+  setup() {
+    const open = ref(true)
+    return { open }
+  },
+  render() {
+    return h(ToastProvider, { duration: 1000 }, {
+      default: () => [
+        h(ToastRoot, {
+          'open': this.open,
+          'onUpdate:open': (value: boolean) => {
+            this.open = value
+          },
+        }, {
+          default: () => h(ToastDescription, null, { default: () => 'Saved' }),
+        }),
+        h(ToastViewport),
+      ],
+    })
+  },
+})
+
+describe('given a toast closed while its timer is paused', () => {
+  let wrapper: VueWrapper<InstanceType<typeof PausableToast>>
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    document.body.innerHTML = ''
+    wrapper = mount(PausableToast, { attachTo: document.body })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.useRealTimers()
+  })
+
+  it('should not leave the next toast paused', async () => {
+    await nextTick()
+    await fireEvent.pointerMove(document.querySelector('ol')!)
+    await fireEvent.keyDown(document.body, { key: 'Escape' })
+    // The last toast unmounts, and the viewport's resume listeners go with it.
+    await nextTick()
+    expect(wrapper.vm.open).toBe(false)
+
+    wrapper.vm.open = true
+    await nextTick()
+    vi.advanceTimersByTime(1000)
+    await nextTick()
+
+    expect(wrapper.vm.open).toBe(false)
+  })
+})
+
 describe('given a Toast with an action', () => {
   let wrapper: VueWrapper<InstanceType<typeof ToastWithAction>>
 
