@@ -51,11 +51,11 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
       :disabled="disabled"
       :data-disabled="disabled ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
-      @mousedown.left="(event: MouseEvent) => {
+      @mousedown="(event: MouseEvent) => {
         if (event.defaultPrevented) return;
         // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
         // but not when the control key is pressed (avoiding MacOS right click)
-        if (!disabled && event.ctrlKey === false) {
+        if (!disabled && event.button === 0 && event.ctrlKey === false) {
           rootContext.changeModelValue(value);
         }
         else {
