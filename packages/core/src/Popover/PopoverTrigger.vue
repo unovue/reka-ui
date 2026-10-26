@@ -6,7 +6,7 @@ export interface PopoverTriggerProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, useAttrs } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -19,7 +19,9 @@ const rootContext = injectPopoverRootContext()
 
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
-rootContext.triggerId ||= useId(undefined, 'reka-popover-trigger')
+const attrs = useAttrs()
+
+rootContext.triggerId ||= (attrs.id as string | undefined) || useId(undefined, 'reka-popover-trigger')
 rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 onMounted(() => {
   rootContext.triggerElement.value = triggerElement.value
