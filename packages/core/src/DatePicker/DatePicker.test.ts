@@ -3,7 +3,7 @@ import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfigProvider } from '@/ConfigProvider'
@@ -255,7 +255,7 @@ describe('datePicker', async () => {
     const { user, trigger, getByTestId } = setup()
 
     await user.click(trigger)
-    const calendar = getByTestId('calendar')
+    const calendar = await screen.findByTestId('calendar')
     const targetCell = calendar.querySelector('div[data-reka-calendar-cell-trigger]:not([data-outside-view])')!
 
     await user.click(targetCell)
@@ -396,7 +396,7 @@ describe('datePicker', async () => {
 
     await user.click(trigger)
 
-    const popoverContent = getByTestId('popover-content')
+    const popoverContent = await screen.findByTestId('popover-content')
     expect(popoverContent).toBeVisible()
 
     const day = getByTestId('date-1-1')
@@ -414,7 +414,7 @@ describe('datePicker', async () => {
 
     await user.click(trigger)
 
-    const popoverContent = getByTestId('popover-content')
+    const popoverContent = await screen.findByTestId('popover-content')
     expect(popoverContent).toBeVisible()
 
     const day = getByTestId('date-1-1')
@@ -440,7 +440,7 @@ describe('datePicker', async () => {
       const trigger = getByTestId('trigger')
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       // German locale should display month name in German (e.g., "Januar" not "January")
       expect(heading).toHaveTextContent('Januar')
     })
@@ -462,7 +462,7 @@ describe('datePicker', async () => {
       const trigger = getByTestId('trigger')
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       // Even though ConfigProvider sets 'de', explicit prop should use 'en-US'
       expect(heading).toHaveTextContent('January')
     })
@@ -474,7 +474,7 @@ describe('datePicker', async () => {
 
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       // Should use browser default locale (typically 'en' in test environment)
       // January 1980 should be displayed
       expect(heading).toHaveTextContent('January')
@@ -489,7 +489,7 @@ describe('datePicker', async () => {
 
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       expect(heading).toHaveTextContent('January 1980')
       await user.click(getByTestId('next-button'))
       expect(heading).toHaveTextContent('February 1980')
@@ -523,7 +523,7 @@ describe('datePicker', async () => {
       })
 
       await user.click(trigger)
-      await user.click(getByTestId('next-button'))
+      await user.click(await screen.findByTestId('next-button'))
       expect(getByTestId('heading')).toHaveTextContent('February 1980')
 
       await rerender({

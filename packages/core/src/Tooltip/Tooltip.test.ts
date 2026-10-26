@@ -40,12 +40,13 @@ describe('given default Tooltip', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
 
     await wrapper.find('button').trigger('focus')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('Add to library'))
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
   it('should open when focus', async () => {
     await wrapper.find('button').trigger('focus')
-    expect(document.body.innerHTML).toContain('Add to library')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('Add to library'))
   })
 
   describe('after focusing out', () => {
@@ -70,7 +71,7 @@ describe('given default Tooltip', () => {
 
   it('should close when another tooltip broadcasts that it opened', async () => {
     await wrapper.find('button').trigger('focus')
-    expect(document.body.innerHTML).toContain('Add to library')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('Add to library'))
 
     document.dispatchEvent(new CustomEvent(TOOLTIP_OPEN))
     await flushPromises()
@@ -109,7 +110,7 @@ describe('given tooltip within TooltipProvider', () => {
 
     expect(tooltipContentImpl.props('content')).toBe(undefined)
 
-    expect(tooltipContentImpl.html()).toContain('data-side="top"')
+    await vi.waitFor(() => expect(tooltipContentImpl.html()).toContain('data-side="top"'))
 
     await wrapper.setProps({
       tooltipProvider: {
@@ -176,7 +177,7 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
 
   it('should still close on pointerleave after the trigger element is replaced', async () => {
     await wrapper.find('button').trigger('focus')
-    expect(document.body.innerHTML).toContain('tooltip content')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('tooltip content'))
 
     wrapper.vm.tag = 'a'
     await flushPromises()
@@ -194,6 +195,7 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
 
   it('should stop listening on the replaced trigger element', async () => {
     await wrapper.find('button').trigger('focus')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('tooltip content'))
     const replacedTrigger = wrapper.find('button').element as HTMLElement
 
     wrapper.vm.tag = 'a'
@@ -262,7 +264,7 @@ describe('given stacked tooltips whose content covers another trigger', () => {
     document.body.innerHTML = ''
     wrapper = mount(StackedTooltips, { attachTo: document.body })
     await wrapper.find('[data-testid="trigger-2"]').trigger('focus')
-    expect(getContent()).not.toBeNull()
+    await vi.waitFor(() => expect(getContent()).not.toBeNull())
   })
 
   afterEach(async () => {
