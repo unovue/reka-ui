@@ -77,23 +77,24 @@ const useBodyLockStackCount = createSharedComposable(() => {
     if (isIOS) {
       let touchStart: { identifier: number, x: number, y: number } | undefined
 
-      stopTouchListeners = useEventListener(
+      // Only `touchmove` cancels, so gesture tracking stays passive and never delays scrolling.
+      const stopTrackingListener = useEventListener(
         document,
-        ['touchstart', 'touchmove', 'touchend', 'touchcancel'],
+        ['touchstart', 'touchend', 'touchcancel'],
         (e: TouchEvent) => {
           const touch = e.touches[0]
-          if (e.type === 'touchstart') {
-            touchStart = e.touches.length === 1
-              ? { identifier: touch.identifier, x: touch.clientX, y: touch.clientY }
-              : undefined
-            return
-          }
+          touchStart = e.type === 'touchstart' && e.touches.length === 1
+            ? { identifier: touch.identifier, x: touch.clientX, y: touch.clientY }
+            : undefined
+        },
+        { passive: true },
+      )
 
-          if (e.type !== 'touchmove') {
-            touchStart = undefined
-            return
-          }
-
+      const stopTouchMoveListener = useEventListener(
+        document,
+        'touchmove',
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
           // iOS can report subpixel coordinate noise as a move; cancelling it suppresses the tap's click.
           if (touchStart && e.touches.length === 1 && touch.identifier === touchStart.identifier
             && Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y) <= 0.01) {
@@ -106,6 +107,11 @@ const useBodyLockStackCount = createSharedComposable(() => {
         },
         { passive: false },
       )
+
+      stopTouchListeners = () => {
+        stopTrackingListener()
+        stopTouchMoveListener()
+      }
     }
 
     nextTick(() => {
