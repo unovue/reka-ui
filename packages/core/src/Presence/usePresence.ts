@@ -38,20 +38,29 @@ export function usePresence(
     }
   }
 
+  let isEnterPending = false
+  const dispatchEnter = () => {
+    dispatchCustomEvent('enter')
+    if (getAnimationName(node.value) === 'none')
+      dispatchCustomEvent('after-enter')
+  }
+
   watch(
     present,
     async (currentPresent, prevPresent) => {
       const hasPresentChanged = prevPresent !== currentPresent
       await nextTick()
       if (hasPresentChanged) {
+        isEnterPending = false
         const prevAnimationName = prevAnimationNameRef.value
         const currentAnimationName = getAnimationName(node.value)
 
         if (currentPresent) {
           dispatch('MOUNT')
-          dispatchCustomEvent('enter')
-          if (currentAnimationName === 'none')
-            dispatchCustomEvent('after-enter')
+          if (node.value)
+            dispatchEnter()
+          else
+            isEnterPending = true
         }
         else if (
           currentAnimationName === 'none' || currentAnimationName === 'undefined'
@@ -136,6 +145,10 @@ export function usePresence(
         newNode.addEventListener('animationstart', handleAnimationStart)
         newNode.addEventListener('animationcancel', handleAnimationEnd)
         newNode.addEventListener('animationend', handleAnimationEnd)
+        if (isEnterPending) {
+          isEnterPending = false
+          dispatchEnter()
+        }
       }
       else {
         // Transition to the unmounted state if the node is removed prematurely.
