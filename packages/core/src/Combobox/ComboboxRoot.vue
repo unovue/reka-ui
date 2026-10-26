@@ -97,6 +97,7 @@ import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
+import { omitBeforeUpdateModelValue } from '@/Listbox/utils'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
@@ -267,7 +268,7 @@ provideComboboxRootContext({
   <PopperRoot>
     <ListboxRoot
       ref="primitiveElement"
-      v-bind="$attrs"
+      v-bind="omitBeforeUpdateModelValue($attrs)"
       v-model="modelValue"
       :style="{
         pointerEvents: open ? 'auto' : undefined,
