@@ -17,6 +17,7 @@ export type UseColorFieldProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[
 
 export type ColorFieldRootState = { disabled: boolean, readonly: boolean }
 export interface UseColorFieldReturn {
+  /** Provisional: the model is written as a hex `string` today; in v3 it becomes a `Color` object (#2789). */
   readonly modelValue: ComputedRef<string | Color>
   readonly color: ComputedRef<Readonly<Color>>
   readonly disabled: ComputedRef<boolean>
@@ -40,6 +41,9 @@ export interface UseColorFieldReturn {
 
 /**
  * Headless ColorField state. Call in setup or an effect scope to dispose synchronization watchers.
+ *
+ * The model types are provisional: `modelValue` is a hex string today and becomes a `Color`
+ * object in v3 (#2789).
  *
  * @experimental
  * @lifecycle setup
@@ -93,11 +97,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
 
   function formatValue(c: Color): string {
     if (channel.value) {
-      const value = getChannelValue(c, channel.value)
-      if (channel.value === 'alpha') {
-        return String(Math.round(value))
-      }
-      return String(Math.round(value))
+      return String(Math.round(getChannelValue(c, channel.value)))
     }
     // Hex mode
     return colorToString(c, 'hex')
@@ -317,10 +317,6 @@ export function createColorFieldInputSurface(rootContext: ColorFieldRootContext)
   const isFocused = ref(false)
   const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
 
-  const inputType = computed(() => {
-    return rootContext.channel.value ? 'text' : 'text'
-  })
-
   const inputMode = computed(() => {
     return rootContext.channel.value ? 'numeric' : 'text'
   })
@@ -414,7 +410,7 @@ export function createColorFieldInputSurface(rootContext: ColorFieldRootContext)
     }
   }
   return createPartSurface<ColorFieldInputState>(() => ({
-    type: inputType.value,
+    type: 'text',
     inputmode: inputMode.value,
     value: rootContext.inputValue.value,
     placeholder: rootContext.placeholder.value,

@@ -21,6 +21,7 @@ export type UseColorSliderProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs
 
 export type ColorSliderRootState = { disabled: boolean }
 export interface UseColorSliderReturn {
+  /** Provisional: the model is written as a hex `string` today; in v3 it becomes a `Color` object (#2789). */
   readonly modelValue: ComputedRef<string | Color>
   readonly color: ComputedRef<Readonly<Color>>
   readonly disabled: ComputedRef<boolean>
@@ -47,6 +48,10 @@ export interface UseColorSliderReturn {
 /**
  * Headless ColorSlider state. Call in setup or an effect scope to dispose synchronization watchers.
  * Compose SliderRoot/Track/Thumb for pointer and keyboard navigation.
+ *
+ * The model types are provisional: `modelValue` and the `change`/`changeEnd` payloads are hex
+ * strings today and become `Color` objects in v3 (#2789).
+ *
  * @experimental
  * @lifecycle setup
  */
