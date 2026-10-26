@@ -78,15 +78,23 @@ export interface AccordionItemSurfaceContext {
   value: ComputedRef<string>
 }
 
-export interface AccordionItemSurfaceReturn {
+/** The item wrapper alone: what the `AccordionItem` shell binds. */
+export interface AccordionItemStateReturn {
   open: ComputedRef<boolean>
   disabled: ComputedRef<boolean>
   /** Whether closed content should be unmounted rather than `hidden="until-found"`. */
   unmountOnHide: ComputedRef<boolean>
+  state: ComputedRef<AccordionPartState>
   item: PartSurface<AccordionPartState>
+}
+
+export interface AccordionItemSurfaceReturn extends AccordionItemStateReturn {
   header: PartSurface<AccordionPartState>
   trigger: PartSurface<AccordionPartState>
+  /** Standalone content: carries `hidden` (`''`, or `'until-found'` with `unmountOnHide: false`) while closed. */
   content: PartSurface<AccordionPartState>
+  /** Call from a `beforematch` listener to open discovered content; ignored when disabled or already open. */
+  onContentFound: (event?: Event) => void
   context: AccordionItemSurfaceContext
 }
 
@@ -101,29 +109,44 @@ export function getAccordionHeaderSurface(
   )
 }
 
+function getAccordionContentProps(itemContext: AccordionItemSurfaceContext): Record<string, any> {
+  return {
+    ...contentIdAttr(itemContext, 'id'),
+    'role': 'region',
+    'aria-labelledby': toValue(itemContext.triggerId),
+    'style': `
+        --reka-accordion-content-width: var(--reka-collapsible-content-width);
+        --reka-accordion-content-height: var(--reka-collapsible-content-height);
+      `,
+  }
+}
+
+// `beforematch` can only reveal content: it never opens a disabled item and never toggles an open one closed.
+function createContentFoundHandler(
+  rootContext: AccordionRootContext<AccordionRootProps>,
+  itemContext: AccordionItemSurfaceContext,
+) {
+  return (event?: Event) => {
+    if (itemContext.disabled.value || itemContext.open.value)
+      return
+    rootContext.changeModelValue(itemContext.value.value, 'content-found', event)
+  }
+}
+
 /**
- * Content aria/style/event surface. Presence, measurement, animation suppression,
- * and `beforematch` remain responsibilities of `CollapsibleContent`.
+ * Content aria/style/event surface for the `AccordionContent` shell. Presence,
+ * `hidden`, measurement, animation suppression, and the `beforematch` listener
+ * remain responsibilities of `CollapsibleContent`, which emits `contentFound`.
  */
 export function getAccordionContentSurface(
   rootContext: AccordionRootContext<AccordionRootProps>,
   itemContext: AccordionItemSurfaceContext,
 ): PartSurface<AccordionPartState> {
+  const onContentFound = createContentFoundHandler(rootContext, itemContext)
   return createPartSurface(
     () => ({
-      ...contentIdAttr(itemContext, 'id'),
-      'role': 'region',
-      'aria-labelledby': toValue(itemContext.triggerId),
-      'style': `
-        --reka-accordion-content-width: var(--reka-collapsible-content-width);
-        --reka-accordion-content-height: var(--reka-collapsible-content-height);
-      `,
-      // `beforematch` can only reveal content: it never opens a disabled item and never toggles an open one closed.
-      'onContentFound': (event?: Event) => {
-        if (itemContext.disabled.value || itemContext.open.value)
-          return
-        rootContext.changeModelValue(itemContext.value.value, 'content-found', event)
-      },
+      ...getAccordionContentProps(itemContext),
+      onContentFound,
     }),
     getAccordionPartState(rootContext, itemContext),
   )
@@ -177,19 +200,15 @@ export function getAccordionTriggerSurface(
 }
 
 /**
- * Creates one Accordion item and its descendant surfaces. Call exactly once per
- * standalone item: the factory owns the item's open/disabled state and closes its
- * keyboard handler over the root element used to collect triggers.
- *
- * Existing SFCs keep their established provide/inject context. AccordionItem uses
- * this factory for its wrapper, while Header/Trigger/Content call the same exported
- * descendant builders with the injected context.
+ * The item wrapper alone: open/disabled state plus the root-element-backed
+ * arrow-key handler. `AccordionItem` uses this; its descendants build their own
+ * surfaces from the injected item context.
  */
-export function getAccordionItemSurface(
+export function getAccordionItemState(
   rootContext: AccordionRootContext<AccordionRootProps>,
   value: MaybeRefOrGetter<string>,
-  options: AccordionItemSurfaceOptions = {},
-): AccordionItemSurfaceReturn {
+  options: Pick<AccordionItemSurfaceOptions, 'disabled' | 'unmountOnHide'> = {},
+): AccordionItemStateReturn {
   const open = computed(() => rootContext.isSingle.value
     ? toValue(value) === rootContext.modelValue.value
     : Array.isArray(rootContext.modelValue.value) && rootContext.modelValue.value.includes(toValue(value)))
@@ -221,6 +240,23 @@ export function getAccordionItemSurface(
     }),
     state,
   )
+
+  return { open, disabled, unmountOnHide, state, item }
+}
+
+/**
+ * Creates one standalone Accordion item and its descendant surfaces. Call exactly
+ * once per item. Every surface carries only DOM-safe attrs, so each binds onto a
+ * plain element; closed content is `hidden`. Wire a `beforematch` listener to
+ * `onContentFound` when using `unmountOnHide: false`.
+ */
+export function getAccordionItemSurface(
+  rootContext: AccordionRootContext<AccordionRootProps>,
+  value: MaybeRefOrGetter<string>,
+  options: AccordionItemSurfaceOptions = {},
+): AccordionItemSurfaceReturn {
+  const itemState = getAccordionItemState(rootContext, value, options)
+  const { open, disabled, unmountOnHide, state } = itemState
   // Values become part of ids, and `aria-labelledby`/`aria-controls` are space-separated id lists.
   const idPart = () => encodeURIComponent(toValue(value))
   const itemContext: AccordionItemSurfaceContext = {
@@ -233,9 +269,16 @@ export function getAccordionItemSurface(
   }
   const header = getAccordionHeaderSurface(rootContext, itemContext)
   const trigger = getAccordionTriggerSurface(rootContext, itemContext)
-  const content = getAccordionContentSurface(rootContext, itemContext)
+  const content = createPartSurface(
+    () => ({
+      ...getAccordionContentProps(itemContext),
+      hidden: open.value ? undefined : unmountOnHide.value ? '' : 'until-found',
+    }),
+    state,
+  )
+  const onContentFound = createContentFoundHandler(rootContext, itemContext)
 
-  return { open, disabled, unmountOnHide, item, header, trigger, content, context: itemContext }
+  return { ...itemState, header, trigger, content, onContentFound, context: itemContext }
 }
 
 /**
@@ -262,7 +305,9 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
   })
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | string[] | undefined, AccordionChangeReason>({
     prop: props.modelValue,
-    defaultValue: () => props.defaultValue ?? (isSingle.value ? undefined : []),
+    // v2 `getDefaultValue` parity (as in `useToggleGroup`): keyed off the raw `type`,
+    // so a root with neither `type` nor a value starts as `[]`.
+    defaultValue: () => props.defaultValue ?? (toValue(props.type) === 'single' ? undefined : []),
     name: 'modelValue',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdate,

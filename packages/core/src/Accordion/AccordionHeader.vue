@@ -1,12 +1,12 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
 
 export interface AccordionHeaderProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardExpose } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 import { getAccordionHeaderSurface } from './useAccordion'

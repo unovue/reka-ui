@@ -667,3 +667,64 @@ describe('accordion change details through the shell', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a horizontal rtl Accordion', () => {
+  const rtlFixture = {
+    components: { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger },
+    template: `
+      <AccordionRoot type="single" orientation="horizontal" dir="rtl">
+        <AccordionItem v-for="value in ['one', 'two', 'three']" :key="value" :value="value">
+          <AccordionHeader><AccordionTrigger>{{ value }}</AccordionTrigger></AccordionHeader>
+          <AccordionContent>Content {{ value }}</AccordionContent>
+        </AccordionItem>
+      </AccordionRoot>
+    `,
+  }
+
+  let wrapper: VueWrapper
+  let triggers: HTMLElement[]
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(rtlFixture, { attachTo: document.body })
+    triggers = wrapper.findAll('button').map(button => button.element)
+  })
+  afterEach(() => wrapper.unmount())
+
+  it('moves focus forward on `ArrowLeft` and back on `ArrowRight`, ignoring vertical arrows', () => {
+    triggers[0].focus()
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(triggers[1])
+
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(triggers[0])
+
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(triggers[0])
+  })
+
+  it('loops focus past either end', () => {
+    triggers[2].focus()
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(triggers[0])
+
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(triggers[2])
+  })
+})
+
+describe('given an untyped Accordion with no model', () => {
+  it('starts from an empty array model, as in v2', () => {
+    const wrapper = mount({
+      components: { AccordionItem, AccordionRoot },
+      template: `
+        <AccordionRoot v-slot="{ modelValue }">
+          <span data-testid="model">{{ JSON.stringify(modelValue) }}</span>
+          <AccordionItem value="one" />
+        </AccordionRoot>
+      `,
+    })
+
+    expect(wrapper.find('[data-testid="model"]').text()).toBe('[]')
+    wrapper.unmount()
+  })
+})

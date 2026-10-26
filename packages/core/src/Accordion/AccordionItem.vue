@@ -38,7 +38,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
-import { getAccordionItemSurface } from './useAccordion'
+import { getAccordionItemState } from './useAccordion'
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
@@ -56,14 +56,14 @@ defineSlots<{
 
 const rootContext = injectAccordionRootContext()
 
-const surface = getAccordionItemSurface(rootContext, () => props.value, {
+const surface = getAccordionItemState(rootContext, () => props.value, {
   disabled: () => props.disabled,
   unmountOnHide: () => props.unmountOnHide,
 })
 const { open, disabled, unmountOnHide } = surface
 
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
-const dataState = computed<DisclosureState>(() => surface.item.state.value.state)
+const dataState = computed<DisclosureState>(() => surface.state.value.state)
 
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()

@@ -181,12 +181,15 @@ one stateful factory boundary:
   renders no Accordion-specific attrs, so `useAccordion()` returns model state,
   `changeModelValue`, the frozen-shape root context, and `getItemSurface(value)`.
   There is no empty root `PartSurface` merely to satisfy a shape.
-- **The item surface is a once-per-item factory.** `getAccordionItemSurface()` owns
+- **The item surface is a once-per-item factory.** `getAccordionItemState()` owns
   the item's `open`/`disabled` computeds plus the root-element-backed arrow-key
-  handler. It returns the item/header/trigger/content surfaces for standalone use.
-  The descendant SFCs inject the existing item context and call the same internal
-  header/trigger/content builders, so aria/handlers/state do not fork into an SFC-
-  only implementation.
+  handler, and is all the `AccordionItem` shell builds. `getAccordionItemSurface()`
+  wraps it and adds the header/trigger/content surfaces for standalone use; its
+  content carries `hidden` while closed and the item returns `onContentFound`, so
+  every standalone surface stays DOM-safe. The descendant SFCs inject the existing
+  item context and call the same internal header/trigger/content builders (the
+  shell content leaves `hidden` to `CollapsibleContent`), so aria/handlers/state do
+  not fork into an SFC-only implementation.
 - **Component wrappers stay wrappers, but can consume surfaces.** `AccordionItem`,
   `AccordionTrigger`, and `AccordionContent` keep `CollapsibleRoot`/
   `CollapsibleTrigger`/`CollapsibleContent`; their surfaces carry only DOM-safe

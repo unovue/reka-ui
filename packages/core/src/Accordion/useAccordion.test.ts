@@ -1,13 +1,23 @@
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { axe } from 'vitest-axe'
+import { defineComponent, ref } from 'vue'
 import { useAccordion } from './useAccordion'
 
 describe('useAccordion — state', () => {
   it('defaults to an unselected single accordion', () => {
     const accordion = useAccordion()
 
-    expect(accordion.modelValue.value).toBeUndefined()
+    // v2 `getDefaultValue` parity: the raw `type` is unset, so the model starts as `[]`.
+    expect(accordion.modelValue.value).toEqual([])
     expect(accordion.isSingle.value).toBe(true)
+    expect(accordion.getItemSurface('one').open.value).toBe(false)
+    accordion.changeModelValue('one')
+    expect(accordion.modelValue.value).toBe('one')
+  })
+
+  it('starts an explicitly single accordion with no value as undefined', () => {
+    expect(useAccordion({ type: 'single' }).modelValue.value).toBeUndefined()
   })
 
   it('toggles a single selected value', () => {
@@ -268,7 +278,7 @@ describe('useAccordion — item surface', () => {
     const item = accordion.getItemSurface('one')
 
     const event = new Event('beforematch')
-    item.content.attrs.value.onContentFound(event)
+    item.onContentFound(event)
 
     expect(accordion.modelValue.value).toBe('one')
     expect(accordion.lastChangeDetails.value).toMatchObject({ reason: 'content-found', event })
@@ -282,16 +292,58 @@ describe('useAccordion — item surface', () => {
     const rootDisabled = useAccordion({ disabled, onBeforeUpdate }).getItemSurface('one')
     const alreadyOpen = accordion.getItemSurface('two')
 
-    itemDisabled.content.attrs.value.onContentFound(new Event('beforematch'))
-    rootDisabled.content.attrs.value.onContentFound(new Event('beforematch'))
-    alreadyOpen.content.attrs.value.onContentFound(new Event('beforematch'))
+    itemDisabled.onContentFound(new Event('beforematch'))
+    rootDisabled.onContentFound(new Event('beforematch'))
+    alreadyOpen.onContentFound(new Event('beforematch'))
 
     expect(onBeforeUpdate).not.toHaveBeenCalled()
     expect(accordion.modelValue.value).toEqual(['two'])
 
     disabled.value = false
-    rootDisabled.content.attrs.value.onContentFound(new Event('beforematch'))
+    rootDisabled.onContentFound(new Event('beforematch'))
     expect(rootDisabled.open.value).toBe(true)
+  })
+})
+
+describe('useAccordion — standalone content', () => {
+  it('hides closed content and keeps only DOM-safe attrs on it', () => {
+    const accordion = useAccordion({ defaultValue: 'one' })
+    const open = accordion.getItemSurface('one')
+    const closed = accordion.getItemSurface('two')
+    const foundable = useAccordion({ unmountOnHide: false }).getItemSurface('one')
+
+    expect(open.content.attrs.value.hidden).toBeUndefined()
+    expect(closed.content.attrs.value.hidden).toBe('')
+    expect(foundable.content.attrs.value.hidden).toBe('until-found')
+    for (const item of [open, closed, foundable])
+      expect(Object.keys(item.content.attrs.value).filter(key => key.startsWith('on'))).toEqual([])
+
+    closed.trigger.attrs.value.onClick(new MouseEvent('click'))
+    expect(closed.content.attrs.value.hidden).toBeUndefined()
+    expect(open.content.attrs.value.hidden).toBe('')
+  })
+
+  it('renders an accessible standalone accordion', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        const accordion = useAccordion({ baseId: 'faq', defaultValue: 'one' })
+        return { items: ['one', 'two'].map(value => ({ value, surface: accordion.getItemSurface(value) })) }
+      },
+      template: `
+        <div>
+          <div v-for="{ value, surface } in items" :key="value" v-bind="surface.item.attrs.value">
+            <h3 v-bind="surface.header.attrs.value">
+              <button type="button" v-bind="surface.trigger.attrs.value">Question {{ value }}</button>
+            </h3>
+            <div v-bind="surface.content.attrs.value">Answer {{ value }}</div>
+          </div>
+        </div>
+      `,
+    }), { attachTo: document.body })
+
+    expect(wrapper.find('#faq-content-two').attributes('hidden')).toBeDefined()
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+    wrapper.unmount()
   })
 })
 
