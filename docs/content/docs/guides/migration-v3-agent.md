@@ -143,6 +143,30 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** Selection and highlighting of string options in those lists behave as before.
 
+### 7. Listbox keyboard handling
+
+**What changed.** `ListboxContent` and `ListboxFilter` (rendered by `ComboboxInput` and `AutocompleteInput`) resolve every keydown through one navigation intent.
+- PageUp and PageDown now move the highlight to the first or last item and prevent the default, both in the content and in the filter input. In v2 they scrolled the container natively.
+- While a filter has focus, ArrowLeft and ArrowRight always stay with the text input, even in a `horizontal` listbox. ArrowUp, ArrowDown, Home and End still navigate from the filter. `ListboxContent` no longer prevents the default of arrow keys while a filter owns the keyboard.
+- Typeahead no longer receives navigation keys.
+- New and additive: `getNavigationIntent` on `ListboxRoot` returns `'first' | 'last' | 'prev' | 'next' | 'select'`, `null` (opt the key out, Enter's selection included) or `undefined` (default mapping). The filter never passes it unmodified printable keys, and a `'select'` intent for Space on a focused item does not select twice. `ComboboxRoot` does not accept it yet. `textValue` on `ListboxItem` sets the label-registry text and defaults to the text content.
+- `ListboxRoot`'s `update:modelValue` and `beforeUpdate:modelValue` are typed `T | T[] | undefined` (type-only).
+
+**How to find it.**
+- Keydown listeners next to these parts that handle PageUp/PageDown themselves: search for `PageUp`, `PageDown`, `'Page` in components that render `ListboxContent`, `ListboxFilter`, `ComboboxInput` or `AutocompleteInput`.
+- Code that re-implemented custom navigation keys: `@keydown` on `ListboxRoot`, `ListboxContent` or `ListboxFilter` that calls `highlightItem`, `highlightFirstItem` or moves focus between options, and `key === 'n'` / `key === 'p'` checks with `ctrlKey`.
+- Tests that press arrow keys in a listbox filter and assert `defaultPrevented`, or that rely on PageUp/PageDown scrolling: search `*.test.*` and `*.spec.*` for `PageUp`, `PageDown` and `defaultPrevented` near `ListboxFilter` / `ComboboxInput`.
+- Handlers typed for one value on `@update:model-value` of `ListboxRoot` (`(value: string) =>`).
+
+**Rewrite rules.**
+- A custom PageUp/PageDown handler on these parts that only jumped to the first/last item: remove it. If the app needs the native scroll, pass `:get-navigation-intent="e => (e.key === 'PageUp' || e.key === 'PageDown') ? null : undefined"` on `ListboxRoot`.
+- A `@keydown` handler that maps extra keys to moves (Ctrl+N/P, vim keys): replace it with `getNavigationIntent` on `ListboxRoot` returning the intent; return `undefined` for every other key. Leave such handlers on `ComboboxRoot` unchanged, since it does not take the prop yet.
+- An item whose visible content is not plain text and that is shown elsewhere by label: add `text-value="…"`. Otherwise no change.
+- A `ListboxRoot` model handler typed for a single value: widen it to `T | T[] | undefined`, or narrow inside (`Array.isArray(v)`). Do not change runtime logic.
+- Tests: update an expectation that ArrowLeft/ArrowRight in a horizontal filter is prevented, or that PageUp/PageDown is not. Ask the developer before changing any other keyboard assertion.
+
+**Verify.** In each affected listbox: PageUp/PageDown move to the first/last option; ArrowLeft/ArrowRight move the caret in a filter; typing letters in a filter still filters; Enter still selects unless `getNavigationIntent` returns `null` for it. Run the type-check for the handler retyping.
+
 ### Report
 
 When you are done, give the developer:

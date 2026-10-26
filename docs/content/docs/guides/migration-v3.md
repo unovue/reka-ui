@@ -139,3 +139,18 @@ If you relied on a disabled `asChild` control still reacting to clicks, drop `di
 ## `by` comparison functions receive every value
 
 A comparison function passed as `by` (on `ListboxRoot`, `ComboboxRoot` and `SelectRoot`) now runs for every value, strings included. In v2 string values were always compared with `===` and the function was only called for objects, so a case-insensitive `by` never matched string options. A function that assumes objects (`a.id === b.id`) must now guard for strings when the list mixes both. `by` is read once at setup, as before; changing it after mount has no effect.
+
+## Listbox keyboard handling
+
+Keyboard navigation in `ListboxContent` and `ListboxFilter` (which `ComboboxInput` and `AutocompleteInput` render) now goes through one intent resolution. Most keys behave as before; these changed:
+
+- **PageUp / PageDown** move the highlight to the first / last item and prevent the browser default, in `ListboxContent` and in the filter input. In v2 neither handled them, so they scrolled the listbox container (or the page).
+- **Arrow keys while a filter has focus.** ArrowLeft and ArrowRight always stay with the text input (caret movement, Shift selection), even in a `horizontal` listbox. ArrowUp, ArrowDown, Home and End still move the highlight from the filter. `ListboxContent` no longer prevents the default of arrow keys while a filter owns the keyboard.
+- **Typeahead** no longer receives navigation keys. In v2 an arrow or Home/End press was also appended to the typeahead search.
+
+Two additions come with it:
+
+- `getNavigationIntent` on `ListboxRoot` decides what a keydown means. Return `'first' | 'last' | 'prev' | 'next'` to move, `'select'` to select the highlighted item as Enter does, `null` to opt the key out (for Enter this also skips the selection), or `undefined` to keep the default mapping. Use it for command-palette keys such as Ctrl+N / Ctrl+P. The filter input never hands it unmodified printable keys, so typing is never swallowed. Space on a focused item already selects that item, and a `'select'` intent for Space does not select it a second time. `ComboboxRoot` does not accept it yet.
+- `textValue` on `ListboxItem` sets the text the root's label registry records for the item, and defaults to the item's text content. Set it when the visible content is not plain text (an icon, a component that updates on its own).
+
+The `update:modelValue` and `beforeUpdate:modelValue` events of `ListboxRoot` are now typed as `T | T[] | undefined`: an array with `multiple`, and `undefined` when a single selection is cleared. A handler typed for a single `T` may need widening; the runtime payload is unchanged.
