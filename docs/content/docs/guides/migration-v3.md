@@ -147,7 +147,7 @@ If you relied on a disabled `asChild` control still reacting to clicks, drop `di
 | `MonthRangePickerRoot`, `YearRangePickerRoot` | `RangeCalendarRoot granularity="month"` / `"year"` |
 | `MonthPicker<Part>`, `YearPicker<Part>` | `Calendar<Part>` |
 | `MonthRangePicker<Part>`, `YearRangePicker<Part>` | `RangeCalendar<Part>` |
-| `isMonthDisabled`, `isYearDisabled` | `isDateDisabled` (receives the cell's unit as its second argument) |
+| `isMonthDisabled`, `isYearDisabled` | `isDateDisabled` (called only for cells at the `granularity`, with that unit as its second argument) |
 | `isMonthUnavailable`, `isYearUnavailable` | `isDateUnavailable` |
 | `maximumMonths`, `maximumYears` | `maximumLength` (counted in units of `granularity`; `maximumDays` remains as a deprecated alias) |
 | `CalendarCell :date`, `RangeCalendarCell :date` | `:value` |
@@ -155,7 +155,7 @@ If you relied on a disabled `asChild` control still reacting to clicks, drop `di
 | `MonthPickerCellTrigger :month`, `YearPickerCellTrigger :year` | `CalendarCellTrigger :value` |
 | cell trigger slot `dayValue` / `monthValue` / `yearValue` | `cellValue` |
 | `grid` slot prop as a single object (month and year pickers) | `grid` is always an array of pages; iterate it |
-| `nextPage` / `prevPage` `(placeholder) => DateValue` | unchanged signature; the active view arrives as an additive second argument |
+| `nextPage` / `prevPage` `(placeholder) => DateValue` | unchanged signature, with the view as an additive second argument; the root function is used only in the `granularity` view |
 | `data-selected="true"`, `data-selection-start="true"` … | emitted as empty strings; presence selectors (`[data-selected]`, `data-[selected]:`) are unaffected |
 
 The `DatePicker` and `DateRangePicker` roots forward `view`, `defaultView`, `maxView`, `yearsPerPage` and `columns` and emit `beforeUpdate:view` / `update:view` with the calendar's change details; they do not expose the calendar `granularity` (that name already belongs to the field's time granularity, and a field edits full dates), so month or year pickers use `Calendar` / `RangeCalendar` directly.
@@ -182,3 +182,41 @@ Change events on these roots now follow the [details contract](#change-events-ca
         <CalendarCell v-for="month in row" :key="month.toString()" :value="month"> <!-- [!code ++] -->
           <CalendarCellTrigger :value="month" /> <!-- [!code ++] -->
 ```
+
+### Matchers and paging apply at the granularity
+
+`isDateDisabled` and `isDateUnavailable` are called only for cells at the `granularity`: day cells in a day calendar, month cells in a `granularity="month"` calendar. The views coarser than the granularity are navigation. Their cells are disabled only by `minValue`, `maxValue` and `disabled`, they never call your matchers, and they show no selection state. So a day matcher such as `isWeekend` keeps working once you add views: it does not disable a month because the 1st of that month is a Sunday. In the same way, a `nextPage` / `prevPage` function on the root is used only in the `granularity` view, and the month and year views page by a year and by `yearsPerPage`. A `nextPage` / `prevPage` on a `CalendarNext` / `CalendarPrev` part applies in every view; place the part inside a `CalendarView` to limit it to one view.
+
+### Adding views to a day calendar
+
+The views are optional, and a calendar without them is unchanged. To let users drill up from the days to the months and years, wrap each grid in a `CalendarView`, move the `v-slot` from the root to each `CalendarView` (its slot passes the `grid` of that view), and replace `CalendarHeading` with a `CalendarViewTrigger`. If you built your own switcher around a `Calendar` and a `MonthPicker` / `YearPicker` with `v-if`, this replaces it. The [view switching example](/examples/date-picker-view-switching) shows a complete calendar.
+
+```vue
+<CalendarRoot v-model="date">
+  <CalendarHeader>
+    <CalendarPrev />
+    <CalendarHeading /> <!-- [!code --] -->
+    <CalendarViewTrigger /> <!-- [!code ++] -->
+    <CalendarNext />
+  </CalendarHeader>
+  <CalendarView v-slot="{ grid, weekDays }" view="day"> <!-- [!code ++] -->
+    <CalendarGrid v-for="month in grid" :key="month.value.toString()" :value="month.value">
+      <!-- the existing day grid -->
+    </CalendarGrid>
+  </CalendarView> <!-- [!code ++] -->
+  <CalendarView v-slot="{ grid }" view="month"> <!-- [!code ++] -->
+    <CalendarGrid v-for="page in grid" :key="page.value.toString()" :value="page.value"> <!-- [!code ++] -->
+      <CalendarGridBody> <!-- [!code ++] -->
+        <CalendarGridRow v-for="(row, i) in page.rows" :key="i"> <!-- [!code ++] -->
+          <CalendarCell v-for="month in row" :key="month.toString()" :value="month"> <!-- [!code ++] -->
+            <CalendarCellTrigger :value="month" /> <!-- [!code ++] -->
+          </CalendarCell> <!-- [!code ++] -->
+        </CalendarGridRow> <!-- [!code ++] -->
+      </CalendarGridBody> <!-- [!code ++] -->
+    </CalendarGrid> <!-- [!code ++] -->
+  </CalendarView> <!-- [!code ++] -->
+  <!-- a third CalendarView with view="year" has the same shape -->
+</CalendarRoot>
+```
+
+The `CalendarViewTrigger` shows the heading of the active view (`September 2026`, `2026`, `2020 - 2031`) and switches to the next coarser view, up to `maxView`. Selecting a month or year cell drills back down. Bind `v-model:view` to control the view, or set `defaultView` to start on another one.
