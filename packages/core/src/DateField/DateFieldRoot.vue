@@ -392,6 +392,7 @@ defineExpose({
       :required="resolvedRequired"
       :max="inputMaxValue"
       :min="inputMinValue"
+      :step="inferredGranularity === 'second' ? 1 : undefined"
       @focus="Array.from(segmentElements)?.[0]?.focus()"
     />
   </Primitive>
