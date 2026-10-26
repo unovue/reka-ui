@@ -32,7 +32,9 @@ export type ColorAreaRootEmits = {
   /** Event handler called when the color value changes. */
   'update:modelValue': [value: string, details: ChangeEventDetails<ColorAreaChangeReason>]
   'update:color': [value: Color]
+  /** Event handler called with the hex value on every pointer move or keyboard step that changes the color. */
   'change': [value: string]
+  /** Event handler called with the hex value when the pointer is released and after each keyboard step. */
   'changeEnd': [value: string]
 }
 
@@ -47,7 +49,7 @@ export interface ColorAreaRootContext {
   xRange: ComputedRef<{ min: number, max: number, step: number }>
   yRange: ComputedRef<{ min: number, max: number, step: number }>
   thumbRef: Ref<HTMLElement | undefined>
-  updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => void
+  updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
   commitValues: () => void
 }
 

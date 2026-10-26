@@ -101,4 +101,27 @@ describe('useColorArea', () => {
     surface.props.value.onPointerup(event)
     expect(emit.mock.calls.at(-1)?.[0]).toBe('changeEnd')
   })
+
+  it('commits each keyboard step with the written color, also when controlled', () => {
+    const emit = vi.fn()
+    const onChangeEnd = vi.fn()
+    const area = setup({ modelValue: () => '#ff0000', emit, onChangeEnd })
+    const surface = area.createAreaSurface(ref())
+    surface.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
+    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue', 'update:color', 'change', 'changeEnd'])
+    // The controlled prop has not changed yet; changeEnd still reports the new color.
+    expect(onChangeEnd).toHaveBeenCalledWith('#ff0400')
+    expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', '#ff0400'])
+  })
+
+  it('does not commit a keyboard step that is cancelled or clamped', () => {
+    const onChangeEnd = vi.fn()
+    const area = setup({ onChangeEnd, onBeforeUpdate: (_, details) => details.cancel() })
+    const surface = area.createAreaSurface(ref())
+    surface.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
+    expect(onChangeEnd).not.toHaveBeenCalled()
+    const clamped = setup({ onChangeEnd })
+    clamped.createAreaSurface(ref()).props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true }))
+    expect(onChangeEnd).not.toHaveBeenCalled()
+  })
 })

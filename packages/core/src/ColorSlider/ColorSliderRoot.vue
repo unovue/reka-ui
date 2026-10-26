@@ -34,7 +34,9 @@ export type ColorSliderRootEmits = {
   /** Event handler called when the color value changes. */
   'update:modelValue': [value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>]
   'update:color': [value: Color]
+  /** Event handler called with the hex value on every pointer move or keyboard step that changes the color. */
   'change': [value: string]
+  /** Event handler called with the hex value when a pointer drag that changed the color ends, and after each keyboard step. */
   'changeEnd': [value: string]
 }
 

@@ -90,12 +90,12 @@
   },
   {
     'name': 'change',
-    'description': '',
+    'description': '<p>Event handler called with the hex value on every pointer move or keyboard step that changes the color.</p>\n',
     'type': '[value: string]'
   },
   {
     'name': 'changeEnd',
-    'description': '',
+    'description': '<p>Event handler called with the hex value when the pointer is released and after each keyboard step.</p>\n',
     'type': '[value: string]'
   },
   {
@@ -143,8 +143,8 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
-| `change` |  | `[value: string]` |
-| `changeEnd` |  | `[value: string]` |
+| `change` | Event handler called with the hex value on every pointer move or keyboard step that changes the color. | `[value: string]` |
+| `changeEnd` | Event handler called with the hex value when the pointer is released and after each keyboard step. | `[value: string]` |
 | `update:color` |  | `[value: Color]` |
 | `update:modelValue` | Event handler called when the color value changes. | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 

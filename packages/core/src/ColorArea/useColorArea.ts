@@ -21,6 +21,7 @@ export type UseColorAreaProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K
 
 export type ColorAreaRootState = { disabled: boolean }
 export interface UseColorAreaReturn {
+  /** Provisional: the model is written as a hex `string` today; in v3 it becomes a `Color` object (#2789). */
   readonly modelValue: ComputedRef<string | Color>
   readonly color: ComputedRef<Readonly<Color>>
   readonly disabled: ComputedRef<boolean>
@@ -36,12 +37,15 @@ export interface UseColorAreaReturn {
   setThumbElement: (element: HTMLElement | null | undefined) => void
   readonly thumb: PartSurface<ColorAreaThumbState>
   createAreaSurface: (element: Ref<HTMLElement | undefined>) => PartSurface<ColorAreaAreaState>
-  updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => void
+  updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
   commitValues: () => void
 }
 
 /**
  * Headless ColorArea state. Call in setup or an effect scope to dispose synchronization watchers.
+ *
+ * The model types are provisional: `modelValue` and the `change`/`changeEnd` payloads are hex
+ * strings today and become `Color` objects in v3 (#2789).
  *
  * @experimental
  * @lifecycle setup
@@ -157,7 +161,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     const clampedY = Math.max(yRange.value.min, Math.min(yRange.value.max, y))
 
     if (clampedX === xValue.value && clampedY === yValue.value)
-      return
+      return false
 
     // Prevent watch from syncing back to xValue/yValue
     isUpdating = true
@@ -174,7 +178,8 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
       channels.push({ channel: 'hue', value: hueValue.value })
     }
 
-    if (setColor(setChannelValues(color.value, channels), reason, event)) {
+    const changed = setColor(setChannelValues(color.value, channels), reason, event)
+    if (changed) {
       xValue.value = clampedX
       yValue.value = clampedY
       const value = colorToString(precisionColor, 'hex')
@@ -186,10 +191,13 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     nextTick(() => {
       isUpdating = false
     })
+    return changed
   }
 
   function commitValues() {
-    const value = colorToString(color.value, 'hex')
+    // `precisionColor` is the last written color; in controlled mode `color` still
+    // reads the previous prop until the parent re-renders.
+    const value = colorToString(precisionColor, 'hex')
     props.onChangeEnd?.(value)
     props.emit?.('changeEnd', value)
   }
@@ -340,12 +348,15 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     }
 
     event.preventDefault()
-    rootContext.updateValues(
+    const changed = rootContext.updateValues(
       rootContext.xValue.value + xDelta,
       rootContext.yValue.value + yDelta,
       'keyboard',
       event,
     )
+    // Each keyboard step is a complete change, like a pointer release.
+    if (changed)
+      rootContext.commitValues()
   }
   return createPartSurface<ColorAreaAreaState>(() => ({
     'role': 'application',
