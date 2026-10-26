@@ -5,7 +5,8 @@ import type { BaseChangeReason, By, ChangeEventDetails, PartSurface, SelectionSt
 import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types'
 import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
-import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
+import { hash } from 'ohash'
+import { computed, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
 import { compare, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
 
@@ -26,6 +27,17 @@ export type ListboxChangeReason = 'item-press' | 'item-keydown' | 'select-all' |
  * `'select'`, which runs the Enter path (select the highlighted item).
  */
 export type ListboxNavigationIntent = 'first' | 'last' | 'prev' | 'next' | 'select'
+
+/**
+ * What the root hands `ListboxVirtualizer` for a keydown. `intent` is the
+ * already-resolved move (`getNavigationIntent` override included); `null`
+ * means "not a navigation key" — the virtualizer then only runs select-all and
+ * typeahead, and never re-derives a move from `event.key`.
+ */
+export interface ListboxVirtualKeydown {
+  event: KeyboardEvent
+  intent: Exclude<ListboxNavigationIntent, 'select'> | null
+}
 
 /** Semantic state of one item (`data-state` / `data-disabled` / `data-highlighted`). */
 export type ListboxItemState = { state: SelectionState, disabled: boolean, highlighted: boolean }
@@ -201,13 +213,23 @@ export function getListboxContentSurface<T extends AcceptableValue = AcceptableV
       'onKeydown': (event: KeyboardEvent) => {
         // Was `@keydown.down.up.left.right.home.end` + `@keydown.enter` +
         // `@keydown`, in that order. The key list (and the orientation
-        // filtering) now live in the navigation-intent resolution; the default
-        // is prevented only for a key that was handled, and a key that already
-        // ran the Enter path as a `'select'` intent skips the Enter branch.
-        const navigated = context.focusable.value ? context.onKeydownNavigation(event) : false
-        if (navigated)
+        // filtering) now live in the navigation-intent resolution, resolved
+        // once per keydown. A handled key prevents the default and stops there
+        // (no typeahead, no Enter fallback).
+        const intent = context.getNavigationIntent(event)
+        // The focused item already handled this key (Space selects it and
+        // prevents the default): a `'select'` intent for the same key would run
+        // the Enter path and select it a second time.
+        if (intent === 'select' && event.defaultPrevented)
+          return
+        const canNavigate = intent === 'select' || context.focusable.value
+        if (intent && canNavigate && context.onKeydownNavigation(event, intent)) {
           event.preventDefault()
-        else if (event.key === 'Enter')
+          return
+        }
+        // `null` means the override opted the key out, Enter included; only a
+        // key the resolution left alone (`undefined`) falls back to Enter.
+        if (intent === undefined && event.key === 'Enter')
           context.onKeydownEnter(event)
         context.onKeydownTypeAhead(event)
       },
@@ -248,7 +270,11 @@ export interface UseListboxRootProps<T = AcceptableValue> {
    * The single keyboard hook (#2824): resolves what a keydown means. Return
    * `undefined` to fall through to the default `getFocusIntent` mapping
    * (arrows/Home/End/PageUp/PageDown, orientation and direction aware), `null`
-   * to say "not a navigation key", or `'select'` to run the Enter path.
+   * to opt the key out (no navigation, and no Enter selection for Enter), or
+   * `'select'` to run the Enter path. A `ListboxFilter` never consults it for
+   * unmodified printable keys, Enter, ArrowLeft or ArrowRight (they stay text
+   * input). Space on a focused item already selects that item; a `'select'`
+   * intent for Space is skipped there so the item is not toggled twice.
    */
   getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
   /**
@@ -379,7 +405,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const isVirtual = ref(false)
   const isComposing = ref(false)
   const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
-  const virtualKeydownHook = createEventHook<KeyboardEvent>()
+  const virtualKeydownHook = createEventHook<ListboxVirtualKeydown>()
   const virtualHighlightHook = createEventHook<T>()
 
   // `ListboxVirtualizer` still assigns `context.modelValue.value` directly for
@@ -402,10 +428,10 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     get: () => modelValue.value,
     set: value => setModelValue(value, virtualWriteReason(virtualKeydownEvent), virtualKeydownEvent),
   })
-  function triggerVirtualKeydown(event: KeyboardEvent) {
+  function triggerVirtualKeydown(event: KeyboardEvent, intent: ListboxVirtualKeydown['intent']) {
     virtualKeydownEvent = event
     try {
-      return virtualKeydownHook.trigger(event)
+      return virtualKeydownHook.trigger({ event, intent })
     }
     finally {
       virtualKeydownEvent = undefined
@@ -495,7 +521,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       return
     isUserAction.value = true
     if (isVirtual.value) {
-      triggerVirtualKeydown(event)
+      // Not a navigation key (a handled one never reaches typeahead): the
+      // virtualizer only runs select-all and typeahead for it.
+      triggerVirtualKeydown(event, null)
     }
     else {
       const isMetaKey = event.altKey || event.ctrlKey || event.metaKey
@@ -568,17 +596,34 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     }
   }
 
-  /** The override first; `undefined` falls through to `getFocusIntent`, `null` means "not a navigation key". */
-  function getNavigationIntent(event: KeyboardEvent): ListboxNavigationIntent | undefined {
+  /**
+   * The override first; its `undefined` falls through to `getFocusIntent`.
+   * Resolves to `null` when the override opted the key out, and to `undefined`
+   * when neither the override nor the default mapping knows the key.
+   */
+  function getNavigationIntent(event: KeyboardEvent): ListboxNavigationIntent | null | undefined {
     const intent = props.getNavigationIntent?.(event)
     if (intent === undefined)
       return getFocusIntent(event, orientation.value, dir.value)
-    return intent ?? undefined
+    return intent
   }
 
-  /** Returns `true` when the key was handled, so a shell prevents the default only then. */
-  function onKeydownNavigation(event: KeyboardEvent): boolean {
-    return navigate(getNavigationIntent(event), event)
+  /**
+   * Returns `true` when the key was handled, so a shell prevents the default
+   * only then. A shell that already resolved the intent passes it, so the
+   * override runs once per keydown.
+   */
+  function onKeydownNavigation(event: KeyboardEvent, intent: ListboxNavigationIntent | null | undefined = getNavigationIntent(event)): boolean {
+    if (!intent)
+      return false
+    // A keyboard move is a user action: a range selection it writes must not
+    // trigger the programmatic-change re-highlight (the typeahead path used to
+    // set this for every key).
+    isUserAction.value = true
+    setTimeout(() => {
+      isUserAction.value = false
+    }, 1)
+    return navigate(intent, event)
   }
 
   /** Runs a resolved intent: `'select'` takes the Enter path, the four moves shift the highlight. */
@@ -602,8 +647,10 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
         if (shouldLoop && isVirtual.value) {
           if (isAtVirtualBoundary(intent)) {
             // Let the virtualizer scroll to and highlight the opposite end.
-            const key = intent === 'next' ? kbd.HOME : kbd.END
-            virtualKeydownHook.trigger(new KeyboardEvent('keydown', { key, shiftKey: event.shiftKey }))
+            // The virtualizer takes the resolved intent, so the user's own
+            // keydown travels with it: a Shift range write it makes reports
+            // `'range-select'` with that event.
+            triggerVirtualKeydown(event, intent === 'next' ? 'first' : 'last')
             return true
           }
           collection = []
@@ -621,7 +668,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     }
 
     if (isVirtual.value)
-      triggerVirtualKeydown(event)
+      triggerVirtualKeydown(event, intent)
     return true
   }
 
@@ -697,9 +744,16 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }, { immediate: true, deep: true })
 
   // Sticky label registry: by-aware, last write wins, never auto-removed.
-  // Primitive identities (a primitive value, or a primitive `value[by]` for a
-  // key `by`) are indexed in a Map; a function `by` (and object identities
-  // without a key) fall back to a `compare` scan.
+  // Every identity that `compare` resolves without a custom function is
+  // indexed in a Map, so a registration is O(1) rather than a scan:
+  // - a primitive value (or a primitive `value[by]` under a key `by`) by its
+  //   tagged string form;
+  // - an object value with no `by` by its ohash `hash`, which agrees with the
+  //   default `isEqual` comparison (both are built on ohash's `serialize`).
+  // Only a function `by` (no stable key exists) and the rare leftovers (an
+  // `undefined` value, a non-primitive `value[by]`) fall back to a `compare`
+  // scan. The entries array is mutated in place and the ref triggered, so a
+  // registration never copies the whole registry.
   const labelEntries = shallowRef<Array<{ value: T, label: string, disabled: boolean }>>([])
   const labelIndex = new Map<string, number>()
   function labelKey(value: T): string | undefined {
@@ -708,36 +762,37 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     const keyed = typeof props.by === 'string' && value !== null && typeof value === 'object'
     const key: unknown = keyed ? (value as Record<string, unknown>)[props.by as string] : value
     const type = typeof key
-    if (type !== 'string' && type !== 'number' && type !== 'bigint' && type !== 'boolean')
-      return undefined
-    // Tagged so a plain `'1'`, a `1` and a `{ id: 1 }` under `by: 'id'` never collide.
-    return `${keyed ? 'k' : 'v'}:${type}:${String(key)}`
+    if (type === 'string' || type === 'number' || type === 'bigint' || type === 'boolean')
+      // Tagged so a plain `'1'`, a `1` and a `{ id: 1 }` under `by: 'id'` never collide.
+      return `${keyed ? 'k' : 'v'}:${type}:${String(key)}`
+    if (props.by === undefined && type === 'object')
+      return `h:${hash(key)}`
+    return undefined
   }
-  function labelIndexOf(value: T) {
-    const key = labelKey(value)
+  function labelIndexOf(value: T, key = labelKey(value)) {
     if (key !== undefined)
       return labelIndex.get(key) ?? -1
     return labelEntries.value.findIndex(i => compare(i.value, value, props.by))
   }
   const labels: ListboxLabelRegistry<T> = {
     register: (value, label, disabled = false) => {
-      const entry = { value, label, disabled }
-      const index = labelIndexOf(value)
-      const current = labelEntries.value[index]
+      const key = labelKey(value)
+      const index = labelIndexOf(value, key)
+      const entries = labelEntries.value
+      const current = entries[index]
       // Items re-register on every render; only an actual change is written.
       if (current && current.label === label && current.disabled === disabled)
         return
-      const next = [...labelEntries.value]
+      const entry = { value, label, disabled }
       if (index === -1) {
-        const key = labelKey(value)
         if (key !== undefined)
-          labelIndex.set(key, next.length)
-        next.push(entry)
+          labelIndex.set(key, entries.length)
+        entries.push(entry)
       }
       else {
-        next.splice(index, 1, entry)
+        entries[index] = entry
       }
-      labelEntries.value = next
+      triggerRef(labelEntries)
     },
     get: (value) => {
       const index = labelIndexOf(value)

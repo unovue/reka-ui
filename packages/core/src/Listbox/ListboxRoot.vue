@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref } from 'vue'
-import type { ListboxChangeReason, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent } from './useListbox'
+import type { ListboxChangeReason, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
@@ -22,7 +22,7 @@ export type ListboxRootContext<T> = {
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
-  virtualKeydownHook: EventHook<KeyboardEvent>
+  virtualKeydownHook: EventHook<ListboxVirtualKeydown>
   virtualHighlightHook: EventHook<any>
   by?: string | ((a: T, b: T) => boolean)
   firstValue?: Ref<T | undefined>
@@ -33,8 +33,8 @@ export type ListboxRootContext<T> = {
   onLeave: (event: Event) => void
   onEnter: (event: Event) => void
   changeHighlight: (el: HTMLElement, scrollIntoView?: boolean, focus?: boolean) => void
-  /** Returns `true` when the key was handled, so the caller prevents the default only then. */
-  onKeydownNavigation: (event: KeyboardEvent) => boolean
+  /** Returns `true` when the key was handled, so the caller prevents the default only then. Pass an already-resolved `intent` to skip resolving it again. */
+  onKeydownNavigation: (event: KeyboardEvent, intent?: ListboxNavigationIntent | null) => boolean
   onKeydownEnter: (event: KeyboardEvent) => void
   onKeydownTypeAhead: (event: KeyboardEvent) => void
   onCompositionStart: () => void
@@ -45,8 +45,11 @@ export type ListboxRootContext<T> = {
   labels: ListboxLabelRegistry<T>
   highlightItem: (value: T) => void
   highlightSelected: (event?: Event, scroll?: boolean) => Promise<void>
-  /** The resolved navigation intent of a keydown (`getNavigationIntent` override first, then the default mapping). */
-  getNavigationIntent: (event: KeyboardEvent) => ListboxNavigationIntent | undefined
+  /**
+   * The resolved navigation intent of a keydown (`getNavigationIntent` override first, then the default mapping):
+   * `null` when the override opted the key out, `undefined` when no mapping knows it.
+   */
+  getNavigationIntent: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
@@ -81,17 +84,19 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   by?: string | ((a: T, b: T) => boolean)
   /**
    * Resolves what a keydown means for keyboard navigation. Return `undefined` to fall back to the default mapping
-   * (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), `null` to declare the key is not
-   * a navigation key, or `'select'` to select the highlighted item as Enter does.
+   * (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), `null` to opt the key out (for
+   * Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. `ListboxFilter`
+   * never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a
+   * `'select'` intent for Space does not select it twice.
    */
   getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
 }
 
 export type ListboxRootEmits<T = AcceptableValue> = {
-  /** Event handler called before the value changes; call `details.cancel()` to keep the current value. */
-  'beforeUpdate:modelValue': [value: T, details: ChangeEventDetails<ListboxChangeReason>]
+  /** Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `undefined` when a single selection is cleared. */
+  'beforeUpdate:modelValue': [value: T | T[] | undefined, details: ChangeEventDetails<ListboxChangeReason>]
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: T, details: ChangeEventDetails<ListboxChangeReason>]
+  'update:modelValue': [value: T | T[] | undefined, details: ChangeEventDetails<ListboxChangeReason>]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when container is being focused. Can be prevented. */

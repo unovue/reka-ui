@@ -92,6 +92,10 @@ function handleKeydownNavigation(event: KeyboardEvent) {
   // (v2 never bound them here either).
   if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
     return
+  // An unmodified printable key (Space included) is text: it is never handed
+  // to `getNavigationIntent`, so a vim-style `j` mapping cannot swallow typing.
+  if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey)
+    return
   // Was `@keydown.down.up.home.end`: the key list now lives in the navigation
   // intent resolution, and the default is prevented only for a handled key.
   if (rootContext.onKeydownNavigation(event))
@@ -101,6 +105,9 @@ function handleKeydownNavigation(event: KeyboardEvent) {
 function handleKeydownEnter(event: KeyboardEvent) {
   // Don't select mid-composition, Enter commits the IME candidate
   if (isComposing.value)
+    return
+  // A `getNavigationIntent` override returning `null` opts Enter out too.
+  if (rootContext.getNavigationIntent(event) === null)
     return
   rootContext.onKeydownEnter(event)
 }

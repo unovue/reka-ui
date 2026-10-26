@@ -460,6 +460,68 @@ describe('useListboxRoot — label registry', () => {
     expect(context.labels.entries()).toEqual([{ value: 'cherry', label: 'Cherry label', disabled: true }])
     wrapper.unmount()
   })
+
+  /**
+   * Object values whose `id` getter counts its reads. A registry that scans its
+   * entries with the default structural comparison reads every earlier entry
+   * on each registration (quadratic); an indexed one reads each value only
+   * while hashing it.
+   */
+  function countedValues(count: number) {
+    const reads = { count: 0 }
+    const values = Array.from({ length: count }, (_, i) => {
+      const value = { name: `Item ${i}` } as { id: number, name: string }
+      Object.defineProperty(value, 'id', {
+        enumerable: true,
+        get: () => {
+          reads.count++
+          return i
+        },
+      })
+      return value
+    })
+    return { values, reads }
+  }
+
+  it('indexes object values without `by` by hash: registration cost stays linear', () => {
+    const { values, reads } = countedValues(2000)
+    const api = harness<{ id: number, name: string }>()
+    for (const value of values)
+      api.labels.register(value, value.name)
+    // A re-render pass re-registers every item with nothing changed.
+    for (const value of values)
+      api.labels.register(value, value.name)
+    expect(api.labels.entries()).toHaveLength(2000)
+    // One `hash` per registration (plus the label reads above); a scan would be ~2M.
+    expect(reads.count).toBeLessThanOrEqual(2000 * 4)
+    // Structural identity still applies: an equal object finds the same entry.
+    expect(api.labels.get({ id: 7, name: 'Item 7' } as any)).toBe('Item 7')
+    api.labels.register({ id: 7, name: 'Item 7' } as any, 'Seven')
+    expect(api.labels.entries()).toHaveLength(2000)
+    expect(api.labels.get(values[7])).toBe('Seven')
+  })
+
+  it('mounts 2000 object-valued items without a quadratic label registration', () => {
+    const { values, reads } = countedValues(2000)
+    let context!: ListboxRootContext<AcceptableValue>
+    const Probe = defineComponent({
+      setup() {
+        context = injectListboxRootContext()
+        return () => null
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, null, () => [
+          h(ListboxContent, { 'aria-label': 'Items' }, () => values.map(value => h(ListboxItem, { value }, () => value.name))),
+          h(Probe),
+        ])
+      },
+    }), { attachTo: document.body })
+    expect(context.labels.entries()).toHaveLength(2000)
+    expect(reads.count).toBeLessThan(2000 * 20)
+    wrapper.unmount()
+  })
 })
 
 describe('useListboxRoot — surfaces', () => {
