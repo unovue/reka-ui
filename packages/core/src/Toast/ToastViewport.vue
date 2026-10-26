@@ -21,7 +21,7 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, unrefElement } from '@vueuse/core'
+import { onKeyStroke, unrefElement, useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
@@ -75,10 +75,21 @@ watch(hasToasts, (value) => {
     providerContext.hovering.value = false
     providerContext.focused.value = false
     pendingPointerLeave.value = false
-    // The resume listeners go away with the last toast, so a pause still held here
-    // would keep the next toast's timer from ever starting.
+  }
+})
+
+function releasePause(viewport: HTMLElement | undefined) {
+  if (providerContext.isClosePausedRef.value) {
+    viewport?.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
     providerContext.isClosePausedRef.value = false
   }
+}
+
+// A pause left over once the resume listeners are gone would keep later toasts from
+// ever starting their timers. A blur pause is kept until the window gets focus back.
+useEventListener('focus', () => {
+  if (!hasToasts.value)
+    releasePause(currentElement.value)
 })
 
 watchEffect((cleanupFn) => {
@@ -92,13 +103,7 @@ watchEffect((cleanupFn) => {
       }
     }
 
-    const handleResume = () => {
-      if (providerContext.isClosePausedRef.value) {
-        const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-        viewport.dispatchEvent(resumeEvent)
-        providerContext.isClosePausedRef.value = false
-      }
-    }
+    const handleResume = () => releasePause(viewport)
 
     const handleFocusOutResume = (event: FocusEvent) => {
       const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
@@ -180,6 +185,8 @@ watchEffect((cleanupFn) => {
       viewport.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('blur', handlePause)
       window.removeEventListener('focus', handleResume)
+      if (document.hasFocus())
+        releasePause(viewport)
     })
   }
 })
