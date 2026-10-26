@@ -84,6 +84,14 @@ describe('given default Autocomplete', () => {
       expect(newInput.element.value).toBe('Testing')
     })
 
+    it('should remove aria-activedescendant when close', async () => {
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
+      await input.trigger('keydown', { key: 'Escape' })
+      await vi.waitFor(() => expect(document.querySelector('[role="option"]')).toBeNull())
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+    })
+
     describe('after selecting a value', () => {
       beforeEach(async () => {
         const selection = items[1]

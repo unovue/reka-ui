@@ -183,4 +183,13 @@ describe('given TabsTrigger with consumer event listeners', () => {
     await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
     expect(value.value).toBe('one')
   })
+
+  it.each([1, 2])('should not activate or take focus on mousedown with button %i', async (button) => {
+    const { value, trigger } = mountTabs()
+    const event = new MouseEvent('mousedown', { button, bubbles: true, cancelable: true })
+    trigger.element.dispatchEvent(event)
+    await nextTick()
+    expect(value.value).toBe('one')
+    expect(event.defaultPrevented).toBe(true)
+  })
 })
