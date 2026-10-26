@@ -107,7 +107,7 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; }]'
+    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; } | undefined]'
   },
   {
     'name': 'leave',
@@ -157,7 +157,7 @@
 | --- | --- | --- |
 | `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. | `[value: AcceptableValue, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 

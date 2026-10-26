@@ -8,6 +8,30 @@ A quick tutorial to walk through installing the packages, as well as the support
 
 <InstallationTabs value="reka-ui" />
 
+## Importing components
+
+Import everything you need from the package root. This is the default, and what every example in this documentation uses.
+
+```vue
+<script setup lang="ts">
+import { DialogContent, DialogRoot, DialogTrigger } from 'reka-ui'
+</script>
+```
+
+Each component is also available from its own entry point, named after the component in kebab-case (the same name as its documentation page). Both styles export the very same components, so you can mix them freely, even within one component tree.
+
+```vue
+<script setup lang="ts">
+import { AlertDialogRoot } from 'reka-ui/alert-dialog'
+import { DialogContent, DialogRoot, DialogTrigger } from 'reka-ui/dialog'
+import { Primitive, Slot } from 'reka-ui/primitive'
+</script>
+```
+
+Per-component entry points are optional. The root import is tree-shaken by your bundler, so production bundles are the same either way. An entry point only loads the modules of that component, which can help in setups that do not bundle or tree-shake dependencies.
+
+Shared utilities and composables such as `useForwardPropsEmits` or `createContext` are exported from the package root only.
+
 ## Nuxt modules
 
 Reka UI offers Nuxt modules support.

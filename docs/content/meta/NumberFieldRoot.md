@@ -132,7 +132,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[val: number]'
+    'type': '[val: number | undefined]'
   }
 ]" />
 
@@ -186,7 +186,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[val: number]` |
+| `update:modelValue` | Event handler called when the value changes. | `[val: number \| undefined]` |
 
 **Slots**
 
