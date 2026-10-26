@@ -4,14 +4,13 @@ import type {
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
+import { useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -185,17 +184,6 @@ export interface PopperContentProps extends PrimitiveProps {
    */
   dir?: Direction
 }
-
-export interface PopperContentContext {
-  placedSide: Ref<Side>
-  onArrowChange: (arrow: HTMLElement | undefined) => void
-  arrowX?: Ref<number>
-  arrowY?: Ref<number>
-  shouldHideArrow: Ref<boolean>
-}
-
-export const [injectPopperContentContext, providePopperContentContext]
-  = createContext<PopperContentContext>('PopperContent')
 </script>
 
 <script setup lang="ts">
@@ -214,6 +202,7 @@ import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
+import { providePopperContentContext } from './PopperContentContext'
 import { injectPopperRootContext } from './PopperRoot.vue'
 import {
   getSideAndAlignFromPlacement,
