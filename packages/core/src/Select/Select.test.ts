@@ -3,7 +3,7 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
@@ -378,6 +378,105 @@ describe('given Select with options containing spaces', () => {
     document.activeElement!.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
+  })
+})
+
+describe('given a closed Select', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Select>>
+  let trigger: DOMWrapper<HTMLElement>
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Select, { attachTo: document.body })
+    trigger = wrapper.find('[role="combobox"]')
+    trigger.element.focus()
+    await nextTick()
+  })
+
+  async function type(element: HTMLElement, ...keys: string[]) {
+    for (const key of keys) {
+      await fireEvent.keyDown(element, { key })
+      await nextTick()
+      await nextTick()
+    }
+  }
+
+  async function mountSelect<T>(options: T[], { initialValue, rootProps = {}, triggerProps = {}, itemProps = () => ({}) }: {
+    initialValue?: T
+    rootProps?: Record<string, unknown>
+    triggerProps?: Record<string, unknown>
+    itemProps?: (option: T) => Record<string, unknown>
+  } = {}) {
+    const modelValue = shallowRef<T | undefined>(initialValue)
+    const selectWrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, { ...rootProps, 'modelValue': modelValue.value, 'onUpdate:modelValue': (value: T) => { modelValue.value = value } }, () => [
+          h(SelectTrigger, triggerProps, () => h(SelectValue)),
+          h(SelectContent, () => h(SelectViewport, () => options.map(option =>
+            h(SelectItem, { value: option, ...itemProps(option) }, () => h(SelectItemText, () => String((option as { name?: string }).name ?? option))),
+          ))),
+        ])
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    const selectTrigger = selectWrapper.find('[role="combobox"]').element as HTMLElement
+    selectTrigger.focus()
+    return { modelValue, trigger: selectTrigger }
+  }
+
+  it('should select the item matching the typed characters without opening', async () => {
+    await type(trigger.element, 'b', 'l')
+    expect(trigger.text()).toContain('Blueberry')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('should cycle through items that start with a repeated letter', async () => {
+    await type(trigger.element, 'b')
+    expect(trigger.text()).toContain('Banana')
+    await type(trigger.element, 'b')
+    expect(trigger.text()).toContain('Blueberry')
+  })
+
+  it('should still select after the content has been opened and closed', async () => {
+    await fireEvent.pointerDown(trigger.element, { button: 0, ctrlKey: false })
+    await nextTick()
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    trigger.element.focus()
+    await type(trigger.element, 'p')
+    expect(trigger.text()).toContain('Pineapple')
+  })
+
+  it('should skip disabled items', async () => {
+    document.body.innerHTML = ''
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana', 'Blueberry'], { itemProps: option => ({ disabled: option === 'Banana' }) })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Blueberry')
+  })
+
+  it('should let an item\'s `select` event prevent the selection', async () => {
+    document.body.innerHTML = ''
+    const onSelect = vi.fn((event: Event) => event.preventDefault())
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Create new'], { itemProps: option => option === 'Create new' ? { onSelect } : {} })
+    await type(trigger, 'c')
+    expect(onSelect).toHaveBeenCalledOnce()
+    expect(modelValue.value).toBeUndefined()
+  })
+
+  it('should emit the item\'s own object value to a controlled Select', async () => {
+    document.body.innerHTML = ''
+    const options = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
+    const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], rootProps: { by: 'id' } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe(options[1])
+  })
+
+  it('should not select when the Select is disabled', async () => {
+    document.body.innerHTML = ''
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { disabled: true }, triggerProps: { as: 'div', tabindex: 0 } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBeUndefined()
   })
 })
 

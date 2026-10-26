@@ -8,15 +8,16 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUnmount, onMounted, toRaw, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId, useTypeahead } from '@/shared'
+import { getNextMatch } from '@/shared/useTypeahead'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
-import { OPEN_KEYS, shouldShowPlaceholder } from './utils'
+import { OPEN_KEYS, shouldShowPlaceholder, valueComparator } from './utils'
 
 const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
@@ -77,7 +78,21 @@ onMounted(() => {
 onBeforeUnmount(() => unregisterControl?.())
 
 const { getItems } = useCollection()
-const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()
+// The trigger only has focus while the content is closed, so there is no item to
+// focus. The search is only collected here; `selectTypeaheadMatch` selects the match.
+const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead(() => {})
+
+// Selects the next enabled item matching the search, as a native `select` and
+// Radix do. It goes through the item, so its cancellable `select` event fires and
+// the emitted value is the item's own, as on click or Enter.
+function selectTypeaheadMatch(event: KeyboardEvent) {
+  if (isDisabled.value || rootContext.multiple.value)
+    return
+  const items = getItems().map(item => toRaw(item.value))
+  const currentItem = items.find(item => valueComparator(rootContext.modelValue.value, item.value, rootContext.by))
+  const nextMatch = getNextMatch(items.map(item => item.textValue), search.value, currentItem?.textValue)
+  items.find(item => item.textValue === nextMatch)?.select(event)
+}
 function handleOpen() {
   if (!isDisabled.value) {
     rootContext.onOpenChange(true)
@@ -173,8 +188,10 @@ function onTriggerKeyDown(event: KeyboardEvent) {
   const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
   // Only printable characters extend the search; otherwise keys like `Shift`
   // or `ArrowLeft` would be appended and swallow the next `Space`.
-  if (!isModifierKey && event.key.length === 1)
-    handleTypeaheadSearch(event.key, getItems())
+  if (!isModifierKey && event.key.length === 1) {
+    handleTypeaheadSearch(event.key, [])
+    selectTypeaheadMatch(event)
+  }
   if (isTypingAhead && event.key === ' ')
     return
 
