@@ -33,10 +33,9 @@ export function focusFirst(candidates: HTMLElement[], { select = false } = {}) {
 /**
  * Returns the first and last tabbable elements inside a container.
  */
-export function getTabbableEdges(container: HTMLElement) {
-  const candidates = getTabbableCandidates(container)
+export function getTabbableEdges(container: HTMLElement, candidates = getTabbableCandidates(container)) {
   const first = findVisible(candidates, container)
-  const last = findVisible(candidates.reverse(), container)
+  const last = findVisible([...candidates].reverse(), container)
   return [first, last] as const
 }
 
@@ -57,10 +56,6 @@ export function getTabbableCandidates(container: HTMLElement) {
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden'
       if (node.disabled || node.hidden || isHiddenInput)
         return NodeFilter.FILTER_SKIP
-      // A native radio group is a single tab stop: its checked radio, or any of them
-      // when none is checked. The others still report `tabIndex` 0, so skip them here.
-      if (isRadioInput(node) && !isTabbableRadio(node))
-        return NodeFilter.FILTER_SKIP
       // `.tabIndex` is not the same as the `tabindex` attribute. It works on the
       // runtime's understanding of tabbability, so this automatically accounts
       // for any kind of element that could be tabbed to.
@@ -70,7 +65,7 @@ export function getTabbableCandidates(container: HTMLElement) {
     },
   })
   while (walker.nextNode()) nodes.push(walker.currentNode as HTMLElement)
-  return nodes.sort((a, b) => {
+  return keepRadioTabStops(nodes, container).sort((a, b) => {
     if (a.tabIndex === b.tabIndex)
       return 0
     if (a.tabIndex === 0)
@@ -81,37 +76,53 @@ export function getTabbableCandidates(container: HTMLElement) {
   })
 }
 
-function isRadioInput(node: Element): node is HTMLInputElement {
-  return node.tagName === 'INPUT' && (node as HTMLInputElement).type === 'radio'
+function isRadioInput(node: Element | null): node is HTMLInputElement {
+  return node?.tagName === 'INPUT' && (node as HTMLInputElement).type === 'radio'
+}
+
+/** Whether `a` and `b` are radios of the same named group: same `name`, form owner and root. */
+function isSameRadioGroup(a: Element | null, b: Element | null) {
+  return isRadioInput(a) && isRadioInput(b) && a.name !== '' && a.name === b.name
+    && a.form === b.form && a.getRootNode() === b.getRootNode()
 }
 
 /**
- * Returns the radios in the same group as `radio`: same `name` and same form owner.
+ * A native radio group is a single tab stop: its checked radio, or any of its radios when
+ * none is checked. The other radios still report `tabIndex` 0, so drop them from `candidates`.
+ * Only a checked radio that is itself a visible candidate counts, so a group whose checked
+ * radio can't be tabbed to (or sits outside the container) keeps its other radios.
  */
-function getRadioGroup(radio: HTMLInputElement): HTMLInputElement[] {
-  if (!radio.name)
-    return [radio]
-  const elements = radio.form
-    ? Array.from(radio.form.elements)
-    : Array.from((radio.getRootNode() as Document | ShadowRoot).querySelectorAll('input'))
-  return elements.filter((element): element is HTMLInputElement =>
-    isRadioInput(element) && element.name === radio.name && element.form === radio.form,
+export function keepRadioTabStops(candidates: HTMLElement[], container: HTMLElement) {
+  const checkedRadios = candidates.filter((candidate): candidate is HTMLInputElement =>
+    isRadioInput(candidate) && candidate.checked && candidate.name !== '' && !isHidden(candidate, { upTo: container }),
+  )
+  if (!checkedRadios.length)
+    return candidates
+  return candidates.filter(candidate =>
+    !isRadioInput(candidate) || checkedRadios.includes(candidate)
+    || !checkedRadios.some(checked => isSameRadioGroup(checked, candidate)),
   )
 }
 
-function isTabbableRadio(radio: HTMLInputElement) {
-  const checked = getRadioGroup(radio).find(element => element.checked && !element.disabled)
-  return !checked || checked === radio
-}
-
 /**
- * Whether `element` is the tab stop `edge`. Tab leaves a native radio group from any of
- * its radios, so a focused radio counts as the edge when the edge is a radio of its group.
+ * Returns the tab stops that follow `element` in `candidates`, which are given in tabbing order.
+ * Tab never stays inside a native radio group, and enters a group with nothing checked at
+ * its first radio in tabbing order, so the other radios of a group are not tab stops. A
+ * radio that is not a candidate itself is placed at the radio of its group that is.
  */
-export function isTabStop(element: HTMLElement, edge: HTMLElement) {
-  if (element === edge)
-    return true
-  return isRadioInput(element) && isRadioInput(edge) && getRadioGroup(edge).includes(element)
+export function getTabStopsAfter(candidates: HTMLElement[], element: Element | null) {
+  let index = candidates.indexOf(element as HTMLElement)
+  if (index === -1)
+    index = candidates.findIndex(candidate => isSameRadioGroup(candidate, element))
+  const groups: HTMLInputElement[] = []
+  return candidates.filter((candidate, i) => {
+    if (!isRadioInput(candidate) || candidate.name === '')
+      return i > index
+    if (groups.some(radio => isSameRadioGroup(radio, candidate)))
+      return false
+    groups.push(candidate)
+    return i > index
+  })
 }
 
 /**
