@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { h, nextTick, ref } from 'vue'
+import { axe } from 'vitest-axe'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, useCollapsible } from './index'
 
 describe('useCollapsible', () => {
@@ -63,6 +64,27 @@ describe('useCollapsible', () => {
     disabled.value = true
     disclosure.context.onContentFound?.(event)
     expect(disclosure.open.value).toBe(false)
+  })
+})
+
+describe('useCollapsible standalone render', () => {
+  it('renders an accessible disclosure', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => ({ disclosure: useCollapsible({ baseId: 'details', unmountOnHide: false }) }),
+      template: `
+        <div v-bind="disclosure.root.attrs.value">
+          <button type="button" v-bind="disclosure.trigger.attrs.value">Details</button>
+          <div v-bind="disclosure.content.attrs.value">Additional information</div>
+        </div>
+      `,
+    }), { attachTo: document.body })
+
+    expect(wrapper.find('#details-content').attributes('hidden')).toBeDefined()
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.find('#details-content').attributes('hidden')).toBeUndefined()
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+    wrapper.unmount()
   })
 })
 
