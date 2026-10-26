@@ -144,6 +144,22 @@ describe('given a default Toast', () => {
     expect(text).toContain('Scheduled: Catch up')
   })
 
+  it('should expose the live region to assistive technology (not aria-hidden)', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+
+    const liveRegion = document.querySelector('[role="alert"][aria-live]')
+    expect(liveRegion).toBeTruthy()
+
+    // A live region inside an aria-hidden subtree is ignored by screen readers,
+    // so the toast would never be announced.
+    expect(liveRegion!.closest('[aria-hidden="true"]')).toBeNull()
+  })
+
   it('should remove viewport event listeners when the toast is dismissed', async () => {
     await fireEvent.click(trigger.element)
     await findByText(document.body, 'Scheduled: Catch up')
