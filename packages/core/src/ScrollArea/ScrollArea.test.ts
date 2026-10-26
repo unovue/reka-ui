@@ -168,3 +168,41 @@ describe('given prop:type="hover" ScrollArea with both scrollbars and a corner',
     expect(wrapper.find('[data-testid="corner-content"]').exists()).toBe(true)
   })
 })
+
+describe('given prop:type="always" ScrollArea thumb state', () => {
+  let originalResizeObserver: typeof globalThis.ResizeObserver
+
+  beforeEach(() => {
+    originalResizeObserver = globalThis.ResizeObserver
+    // Fire the callback on observe so the scrollbar measures its sizes (jsdom has no ResizeObserver).
+    globalThis.ResizeObserver = class {
+      constructor(private cb: ResizeObserverCallback) {}
+      observe(target: Element) {
+        this.cb([{ target } as ResizeObserverEntry], this as unknown as ResizeObserver)
+      }
+
+      unobserve() {}
+      disconnect() {}
+    }
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, value: 500 })
+  })
+
+  afterEach(() => {
+    globalThis.ResizeObserver = originalResizeObserver
+  })
+
+  it.each([
+    { content: 500, state: 'hidden' },
+    { content: 2000, state: 'visible' },
+  ])('sets data-state="$state" when the content height is $content', async ({ content, state }) => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: content })
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: content })
+
+    const wrapper = mount(ScrollArea, { attachTo: document.body, props: { type: 'always' } })
+    await sleep(100)
+
+    expect(wrapper.find('[data-orientation="vertical"] > div').attributes('data-state')).toBe(state)
+    wrapper.unmount()
+  })
+})
