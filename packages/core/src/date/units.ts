@@ -8,6 +8,7 @@ import {
   areAllDaysBetweenValid,
   areAllMonthsBetweenValid,
   areAllYearsBetweenValid,
+  compareYear,
   compareYearMonth,
   getDaysInMonth,
   getMonthsBetween,
@@ -17,7 +18,11 @@ import {
   toDate,
 } from './comparators'
 
-/** A consumer-supplied paging function: receives the placeholder and the view being paged. */
+/**
+ * A consumer-supplied paging function: receives the placeholder and the view
+ * being paged. The root `nextPage` / `prevPage` props are used only in the
+ * `granularity` view; coarser views page by their default step.
+ */
 export type CalendarPageFunction = (placeholder: DateValue, view: CalendarUnit) => DateValue
 
 /** How the placeholder should be resolved after a page change (see the day adapter). */
@@ -102,6 +107,18 @@ export interface CalendarUnitAdapter {
   formatHeading: (formatter: Formatter, grid: CalendarGridData[], options: DateFormatterOptions) => string
   /** Fallback for `calendarLabel` (v2 kept a different one per family). */
   defaultLabel: string
+}
+
+/**
+ * A date in the year of `value` with the month and day of `reference`, built
+ * by stepping from the start of the year so eras and calendars with a varying
+ * number of months are handled (the month and the day are clamped).
+ */
+function withMonthAndDay(value: DateValue, reference: DateValue): DateValue {
+  const yearStart = startOfYear(value)
+  const month = Math.min(reference.month, value.calendar.getMonthsInYear(yearStart))
+  const monthStart = yearStart.add({ months: month - 1 })
+  return monthStart.set({ day: Math.min(reference.day, monthStart.calendar.getDaysInMonth(monthStart)) })
 }
 
 const dayAdapter: CalendarUnitAdapter = {
@@ -217,8 +234,8 @@ const monthAdapter: CalendarUnitAdapter = {
   distance: getMonthsBetween,
   areAllBetweenValid: areAllMonthsBetweenValid,
   createGrid: (placeholder, layout) => [createMonthGrid({ dateObj: placeholder, columns: layout.columns })],
-  isInVisibleView: (date, grid) => grid.some(page => page.value.year === date.year),
-  isInPage: (cell, page) => cell.year === page.year,
+  isInVisibleView: (date, grid) => grid.some(page => isSameYear(page.value, date)),
+  isInPage: (cell, page) => isSameYear(cell, page),
   pageDuration: () => ({ years: 1 }),
   rowLength: layout => layout.columns,
   pageTarget: (grid, _layout, direction, fn) => {
@@ -227,18 +244,14 @@ const monthAdapter: CalendarUnitAdapter = {
       return fn(current, 'month')
     return direction > 0 ? current.add({ years: 1 }) : current.subtract({ years: 1 })
   },
-  placeholderAfterPaging: (newGrid, _previousFirst, placeholder) =>
-    newGrid[0].value.set({ month: placeholder.month, day: placeholder.day }),
+  placeholderAfterPaging: (newGrid, _previousFirst, placeholder) => withMonthAndDay(newGrid[0].value, placeholder),
   nextPageStart: (grid, _layout, fn) => {
     const current = grid[0].value
-    const next = fn ? fn(current, 'month') : current.add({ years: 1 })
-    return next.set({ month: 1, day: 1 })
+    return startOfYear(fn ? fn(current, 'month') : current.add({ years: 1 }))
   },
   prevPageEnd: (grid, _layout, fn) => {
     const current = grid[0].value
-    if (fn)
-      return endOfMonth(fn(current, 'month').set({ month: 12 }))
-    return current.subtract({ years: 1 }).set({ month: 12, day: 31 })
+    return endOfYear(fn ? fn(current, 'month') : current.subtract({ years: 1 }))
   },
   formatCell: (formatter, d) => formatter.custom(toDate(d), { month: 'short' }),
   formatLabel: (formatter, d) => formatter.custom(toDate(d), { month: 'long', year: 'numeric' }),
@@ -249,11 +262,11 @@ const monthAdapter: CalendarUnitAdapter = {
 const yearAdapter: CalendarUnitAdapter = {
   unit: 'year',
   isSame: isSameYear,
-  compare: (a, b) => a.year - b.year,
+  compare: compareYear,
   startOf: startOfYear,
   endOf: endOfYear,
   add: (d, n) => d.add({ years: n }),
-  resolve: (value, reference) => reference ? value.copy().set({ month: reference.month, day: reference.day }) : value.copy(),
+  resolve: (value, reference) => reference ? withMonthAndDay(value, reference) : value.copy(),
   isCurrent: d => isSameYear(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
   distance: getYearsBetween,
   areAllBetweenValid: areAllYearsBetweenValid,
@@ -266,7 +279,7 @@ const yearAdapter: CalendarUnitAdapter = {
   isInVisibleView: (date, grid) => grid.some((page) => {
     const first = page.cells[0]
     const last = page.cells.at(-1)
-    return !!first && !!last && date.year >= first.year && date.year <= last.year
+    return !!first && !!last && compareYear(date, first) >= 0 && compareYear(date, last) <= 0
   }),
   // A year grid has no leading/trailing cells from a neighbouring page.
   isInPage: () => true,
@@ -278,8 +291,7 @@ const yearAdapter: CalendarUnitAdapter = {
       return fn(first, 'year')
     return direction > 0 ? first.add({ years: layout.yearsPerPage }) : first.subtract({ years: layout.yearsPerPage })
   },
-  placeholderAfterPaging: (newGrid, _previousFirst, placeholder) =>
-    newGrid[0].value.set({ month: placeholder.month, day: placeholder.day }),
+  placeholderAfterPaging: (newGrid, _previousFirst, placeholder) => withMonthAndDay(newGrid[0].value, placeholder),
   nextPageStart: (grid, _layout, fn) => {
     const lastPage = grid.at(-1)!
     const lastYearInView = lastPage.cells.at(-1) ?? lastPage.value

@@ -1,7 +1,7 @@
 import type { DateValue } from '@internationalized/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import type { CalendarUnit } from '@/date'
-import { CalendarDate } from '@internationalized/date'
+import { CalendarDate, isWeekend } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -231,7 +231,8 @@ describe('calendar — views and drill-down', () => {
     expect(queryByTestId('view-month')).toBeNull()
     expect(queryByTestId('view-year')).toBeNull()
     expect(getByTestId('view-trigger')).toHaveTextContent('September 2026')
-    expect(getByTestId('view-trigger')).toHaveAttribute('aria-label', 'Switch to month view')
+    // The visible heading names the trigger (label in name).
+    expect(getByTestId('view-trigger')).not.toHaveAttribute('aria-label')
   })
 
   it('drills up with the heading trigger and down by selecting, without touching the model', async () => {
@@ -276,8 +277,8 @@ describe('calendar — views and drill-down', () => {
     await user.keyboard(kbd.ARROW_LEFT)
     await user.keyboard(kbd.ENTER)
     expect(getByTestId('view-day')).toBeInTheDocument()
-    // Arrow keys move the placeholder to the cell's own value, the first of the month.
-    expect(getByTestId('day-2028-08-01')).toHaveFocus()
+    // Arrow keys keep the placeholder's day, so the drill lands on the 5th as a click would.
+    expect(getByTestId('day-2028-08-05')).toHaveFocus()
   })
 
   it('leaves focus on the view trigger when it drills up', async () => {
@@ -330,5 +331,81 @@ describe('calendar — views and drill-down', () => {
     expect(cancel).toHaveBeenCalledTimes(1)
     expect(onModel).not.toHaveBeenCalled()
     expect(getByTestId('day-2026-09-10')).not.toHaveAttribute('data-selected')
+  })
+})
+
+describe('calendar — coarser views are navigation only', () => {
+  const weekend = (d: DateValue) => isWeekend(d, 'en-US')
+
+  it('applies day matchers only in the day view: a weekend matcher leaves every month reachable', async () => {
+    const units = new Set<CalendarUnit | undefined>()
+    const { user, getByTestId, calendar } = setupViews({
+      defaultPlaceholder: sep5,
+      defaultView: 'month',
+      isDateDisabled: (d, unit) => {
+        units.add(unit)
+        return weekend(d)
+      },
+      isDateUnavailable: weekend,
+    })
+    expect(calendar.querySelectorAll('[data-view="month"] [data-disabled], [data-view="month"] [data-unavailable]')).toHaveLength(0)
+    expect(units.has('month')).toBe(false)
+    // 1 February 2026 is a Sunday.
+    await user.click(getByTestId('month-2026-02-01'))
+    expect(getByTestId('view-day')).toBeInTheDocument()
+    expect(getByTestId('day-2026-02-01')).toHaveAttribute('data-disabled')
+    expect(getByTestId('day-2026-02-05')).not.toHaveAttribute('data-disabled')
+  })
+
+  it('still applies minValue / maxValue in the coarser views', () => {
+    const { getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new CalendarDate(2026, 3, 15) })
+    expect(getByTestId('month-2026-02-01')).toHaveAttribute('data-disabled')
+    expect(getByTestId('month-2026-03-01')).not.toHaveAttribute('data-disabled')
+  })
+
+  it('marks no selection in views coarser than the granularity', () => {
+    for (const day of [1, 15]) {
+      const { calendar, getByTestId, unmount } = setupViews({ modelValue: new CalendarDate(2026, 9, day), defaultView: 'month' })
+      expect(getByTestId('month-2026-09-01')).not.toHaveAttribute('data-selected')
+      expect(calendar.querySelectorAll('[aria-selected]')).toHaveLength(0)
+      unmount()
+    }
+    const { calendar, unmount } = setupViews({ modelValue: new CalendarDate(2026, 1, 1), defaultView: 'year' })
+    expect(selected(calendar)).toHaveLength(0)
+    unmount()
+  })
+
+  it('uses the root nextPage / prevPage only in the granularity view', async () => {
+    const nextPage = vi.fn((d: DateValue) => d.add({ months: 1 }))
+    const { user, getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', nextPage })
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('view-trigger')).toHaveTextContent('2027')
+    expect(nextPage).not.toHaveBeenCalled()
+    await user.click(getByTestId('month-2027-09-01'))
+    await user.click(getByTestId('next-button'))
+    expect(nextPage).toHaveBeenCalledWith(expect.anything(), 'day')
+    expect(getByTestId('view-trigger')).toHaveTextContent('October 2027')
+  })
+
+  it('does not drill down when beforeUpdate:placeholder is cancelled', async () => {
+    const cancel = vi.fn((_value: unknown, details: { cancel: () => void }) => details.cancel())
+    const user = userEvent.setup()
+    const { getByTestId, queryByTestId } = render(CalendarViews, {
+      props: { 'defaultPlaceholder': sep5, 'defaultView': 'month', 'onBeforeUpdate:placeholder': cancel } as any,
+    })
+    await user.click(getByTestId('month-2026-03-01'))
+    expect(cancel).toHaveBeenCalled()
+    expect(getByTestId('view-month')).toBeInTheDocument()
+    expect(queryByTestId('view-day')).toBeNull()
+  })
+
+  it('keeps the placeholder day when the keyboard moves between months', async () => {
+    const onPlaceholder = vi.fn()
+    const { user, getByTestId } = setupViews({ defaultPlaceholder: new CalendarDate(2026, 9, 15), defaultView: 'month' }, { 'onUpdate:placeholder': onPlaceholder })
+    getByTestId('month-2026-09-01').focus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(onPlaceholder.mock.calls.at(-1)![0].toString()).toBe('2026-10-15')
+    await user.keyboard(kbd.ENTER)
+    expect(getByTestId('day-2026-10-15')).toHaveFocus()
   })
 })

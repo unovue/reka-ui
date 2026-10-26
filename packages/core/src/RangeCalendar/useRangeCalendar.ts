@@ -84,7 +84,9 @@ export interface UseRangeCalendarProps {
   isDateUnavailable?: MaybeRef<Matcher | undefined>
   isDateHighlightable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
+  /** Custom paging, used only in the `granularity` view (coarser views page by their default step). */
   nextPage?: MaybeRef<CalendarPageFunction | undefined>
+  /** Custom paging, used only in the `granularity` view (coarser views page by their default step). */
   prevPage?: MaybeRef<CalendarPageFunction | undefined>
   headingId?: string
   parentElement?: Ref<HTMLElement | undefined>
@@ -163,7 +165,8 @@ export function getRangeCalendarCellSurface(
   return createPartSurface<RangeCalendarCellState>(
     () => ({
       'role': 'gridcell',
-      'aria-selected': context.isSelected(toValue(value)) ? true : undefined,
+      // Only cells at the granularity carry selection; a coarser view is navigation.
+      'aria-selected': context.view.value === context.granularity.value && context.isSelected(toValue(value)) ? true : undefined,
       'aria-disabled': disabled.value || context.isDateUnavailable(toValue(value)) || undefined,
     }),
     () => ({ disabled: disabled.value, view: context.view.value }),
@@ -381,6 +384,7 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
 
   const gridApi = useCalendarGrid({
     unit: view,
+    granularity,
     placeholder,
     setPlaceholder: value => setPlaceholder(value, 'page-navigation'),
     locale,
@@ -597,6 +601,12 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     endValue.value = validModelValue.value.end?.copy()
   }
 
+  // A hover in another view leaves a value of that view's unit behind; it must
+  // not drive the highlighted range once the view changes.
+  watch(view, () => {
+    focusedValue.value = undefined
+  })
+
   function setFocusedValue(value: DateValue | undefined) {
     focusedValue.value = value
   }
@@ -610,7 +620,11 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     // Above the granularity a cell is navigation, not selection (D2).
     if (isCoarserUnit(view.value, granularity.value)) {
       const finer = finerUnit(view.value)!
-      setPlaceholder(gridApi.adapter.value.resolve(date, placeholder.value), 'view-drill', event)
+      // A cancelled `beforeUpdate:placeholder` keeps the current page, so don't
+      // drill into it. `false` for an unchanged placeholder is a no-op, not a cancel.
+      const target = gridApi.adapter.value.resolve(date, placeholder.value)
+      if (!setPlaceholder(target, 'view-drill', event) && target.compare(placeholder.value) !== 0)
+        return
       setView(finer, 'view-drill', event)
       return
     }

@@ -87,7 +87,7 @@
   },
   {
     'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument.</p>\n',
+    'description': '<p>A function that returns whether or not a date is disabled. Called only for cells at the <code>granularity</code> (with that unit as its second argument); the coarser navigation views apply only <code>minValue</code>, <code>maxValue</code> and <code>disabled</code>.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -280,7 +280,7 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isDateDisabled` | A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument. | `Matcher` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled. Called only for cells at the granularity (with that unit as its second argument); the coarser navigation views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |

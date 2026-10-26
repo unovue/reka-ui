@@ -13,9 +13,11 @@ export type { DateValue }
 export type CalendarUnit = 'day' | 'month' | 'year'
 
 /**
- * A predicate over a `DateValue`. In v3 the calendar also passes the unit
- * of the cell being tested (`'day'` in the day view, `'month'` in the month
- * view, …) as an additive second argument; day-only matchers can ignore it.
+ * A predicate over a `DateValue`. In v3 the calendar also passes the unit of
+ * the cell being tested as an additive second argument. `Calendar` and
+ * `RangeCalendar` call their matchers only for cells at the `granularity`, so
+ * the unit is the granularity (`'month'` in a month picker); the coarser
+ * navigation views never call them.
  */
 export type Matcher = (date: DateValue, unit?: CalendarUnit) => boolean
 

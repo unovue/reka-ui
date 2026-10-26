@@ -4,7 +4,7 @@
 **Epic:** [unovue/reka-ui#2721](https://github.com/unovue/reka-ui/issues/2721) (v3 roadmap)
 **Related:** #741, #1199, #1730, #2191, #2389 (drill-down month/year views), #1933 (MonthPicker/YearPicker), #2781 (month picker keyboard bug)
 **Branch:** `claude/dates-components-refactor-lhs0j2`
-**Status:** Accepted 2026-09-05 — the four proposals under "Open questions" were approved as written (`granularity`, optional `CalendarView`, `columns` default 4, `view` argument on `nextPage` / `prevPage`). D12 and D13 remain follow-ups. Implementation runs on this branch per the plan.
+**Status:** Accepted 2026-09-05 — the four proposals under "Open questions" were approved as written (`granularity`, optional `CalendarView`, `columns` default 4, `view` argument on `nextPage` / `prevPage`). Decision 4 and D9 were narrowed in review (2026-10-26): the root paging functions and the user matchers apply only in the `granularity` view; coarser views are navigation with default paging and `minValue` / `maxValue` only. D12 and D13 remain follow-ups. Implementation runs on this branch per the plan.
 
 ## Summary
 
@@ -125,7 +125,7 @@ Parts, with what changes from v2:
 | --- | --- | --- |
 | `CalendarRoot` | — | + `view`, `defaultView`, `granularity`, `maxView`, `yearsPerPage`, `columns`; slot gains `view`, `granularity` |
 | `CalendarHeader`, `CalendarPrev`, `CalendarNext`, `CalendarHeading` | — | unchanged API; page/format by active view |
-| `CalendarViewTrigger` | — | **new**. Renders `headingValue` inside a `button`, `aria-label="Switch to month view"` etc., `data-view`. Disabled at `maxView`. |
+| `CalendarViewTrigger` | — | **new**. Renders `headingValue` inside a `button` (the visible heading is its accessible name; no `aria-label`, so label and name match), `data-view`. Disabled at `maxView`. |
 | `CalendarView` | — | **new**, optional. Props: `view`. Renders its slot only while `view` is active; provides the view unit to descendants; slot `{ grid, weekDays, view }`. |
 | `CalendarGrid` | no props | + `value?: DateValue` — the page this grid renders (a month in day view, a year in month view). Needed to mark `outside-view` cells; provided to descendants. |
 | `CalendarGridHead`, `CalendarHeadCell`, `CalendarGridBody`, `CalendarGridRow` | — | unchanged (day-view only in practice) |
@@ -169,7 +169,7 @@ interface CalendarGridData<T = DateValue> {
 | month | 1 year | `2026` |
 | year | `yearsPerPage` years | `2020 - 2031` |
 
-The `nextPage` / `prevPage` function props become `(placeholder: DateValue, view: CalendarView) => DateValue`: the v2 signature stays valid (the second argument is additive) and the function is consulted in every view, receiving the view being paged (resolved in the decisions below).
+The `nextPage` / `prevPage` function props become `(placeholder: DateValue, view: CalendarView) => DateValue`: the v2 signature stays valid (the second argument is additive). The root function is consulted only in the `granularity` view (so `view` is always the granularity there); the coarser navigation views page by their default step. Every v2 function was written for days, and applying it in the month or year view broke paging there (a `+1 month` function never left the year). A `nextPage` / `prevPage` passed to a `CalendarNext` / `CalendarPrev` part still applies in every view, and the part can be placed inside one `CalendarView` to scope it.
 
 ### D8. Keyboard is one implementation
 
@@ -177,7 +177,7 @@ The `nextPage` / `prevPage` function props become `(placeholder: DateValue, view
 
 ### D9. Matchers and bounds are unit-aware
 
-`isDateDisabled` / `isDateUnavailable` (and `isDateHighlightable` on ranges) replace `isMonthDisabled` / `isYearDisabled` etc. They are called with the cell's `DateValue` (start of the unit) and, additively, the unit:
+`isDateDisabled` / `isDateUnavailable` (and `isDateHighlightable` on ranges) replace `isMonthDisabled` / `isYearDisabled` etc. They are called with the cell's `DateValue` (start of the unit) and, additively, the unit — but only for cells at the `granularity`. A coarser view above the granularity is navigation: its cells apply `minValue` / `maxValue` and `disabled` only, and carry no selection state. Calling a day matcher on month cells (the 1st of each month) disabled whole months — a weekend matcher blocked every month starting on a Saturday or Sunday:
 
 ```ts
 type Matcher = (date: DateValue, unit?: CalendarUnit) => boolean
@@ -329,7 +329,7 @@ Resolved 2026-09-05 (items 1–4 accepted as proposed):
 1. **`granularity` vs `minView`.** `granularity` matches `DateField`; `minView` matches Ark, which the shadcn-vue audience knows. **Decision: `granularity`.**
 2. **`CalendarView` optional** (D5) or required? Optional keeps day-calendar migration to renames; required is more explicit. **Decision: optional.**
 3. **`columns` default** 4 (v2 layout, 3 rows of 4) or 3 (the shadcn / Ark layout). **Decision: 4**, to keep existing month-picker styling working.
-4. **`nextPage` / `prevPage` props** gain a `view` argument (D7). **Decision: yes**, additive — `(placeholder: DateValue, view: CalendarView) => DateValue`.
+4. **`nextPage` / `prevPage` props** gain a `view` argument (D7). **Decision: yes**, additive — `(placeholder: DateValue, view: CalendarView) => DateValue`. *Revised in review:* the root functions run only in the `granularity` view; coarser views use the default paging.
 
 Still open:
 

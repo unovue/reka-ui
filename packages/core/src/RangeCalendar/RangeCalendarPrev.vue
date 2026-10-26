@@ -3,7 +3,7 @@ import type { CalendarPageFunction } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface RangeCalendarPrevProps extends PrimitiveProps {
-  /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `RangeCalendarRoot`. Receives the placeholder and the active view. */
+  /** The function to be used for the prev page. Overwrites the `prevPage` function set on the `RangeCalendarRoot`. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a `RangeCalendarView` to scope it to one view. */
   prevPage?: CalendarPageFunction
 }
 

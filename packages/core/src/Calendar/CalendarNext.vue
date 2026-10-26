@@ -3,7 +3,7 @@ import type { CalendarPageFunction } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarNextProps extends PrimitiveProps {
-  /** The function to be used for the next page. Overwrites the `nextPage` function set on the `CalendarRoot`. Receives the placeholder and the active view. */
+  /** The function to be used for the next page. Overwrites the `nextPage` function set on the `CalendarRoot`. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a `CalendarView` to scope it to one view. */
   nextPage?: CalendarPageFunction
 }
 

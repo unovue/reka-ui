@@ -300,7 +300,7 @@ Renders its content only while the root's `view` matches, and tells the cells in
 
 ### View Trigger
 
-The heading as a button. Each press switches to the next coarser view (day → month → year) up to `maxView`; selecting a cell in a coarser view drills back down without touching the range.
+The heading as a button. Each press switches to the next coarser view (day → month → year) up to `maxView`; selecting a cell in a coarser view drills back down without touching the range. The coarser views apply only `minValue` / `maxValue`: `isDateDisabled`, `isDateUnavailable`, `isDateHighlightable` and the root `nextPage` / `prevPage` run in the `granularity` view.
 
 <!-- @include: @/meta/RangeCalendarViewTrigger.md -->
 

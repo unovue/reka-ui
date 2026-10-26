@@ -81,7 +81,9 @@ export interface UseCalendarProps {
   isDateDisabled?: MaybeRef<Matcher | undefined>
   isDateUnavailable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
+  /** Custom paging, used only in the `granularity` view (coarser views page by their default step). */
   nextPage?: MaybeRef<CalendarPageFunction | undefined>
+  /** Custom paging, used only in the `granularity` view (coarser views page by their default step). */
   prevPage?: MaybeRef<CalendarPageFunction | undefined>
   /** Id of the (visually hidden) heading that labels the grids. The SFC passes `useId()`. */
   headingId?: string
@@ -158,7 +160,11 @@ export function getCalendarHeadingSurface(context: CalendarChromeContext): PartS
   )
 }
 
-/** The `CalendarViewTrigger` surface: a button that drills up to the next coarser view. */
+/**
+ * The `CalendarViewTrigger` surface: a button that drills up to the next coarser
+ * view. It sets no `aria-label`: the visible heading (`September 2026`) is its
+ * accessible name, so the name matches what is on screen (WCAG 2.5.3).
+ */
 export function getCalendarViewTriggerSurface(context: CalendarChromeContext): PartSurface<CalendarViewTriggerState> {
   const nextView = computed(() => {
     const next = coarserUnit(context.view.value)
@@ -167,7 +173,6 @@ export function getCalendarViewTriggerSurface(context: CalendarChromeContext): P
   const disabled = computed(() => context.disabled.value || !nextView.value)
   return createPartSurface<CalendarViewTriggerState>(
     () => ({
-      'aria-label': nextView.value ? `Switch to ${nextView.value} view` : undefined,
       'aria-disabled': disabled.value || undefined,
       'disabled': disabled.value,
       'onClick': (event: MouseEvent) => {
@@ -235,7 +240,8 @@ export function getCalendarCellSurface(
   return createPartSurface<CalendarCellState>(
     () => ({
       'role': 'gridcell',
-      'aria-selected': context.isDateSelected(toValue(value)) ? true : undefined,
+      // Only cells at the granularity carry selection; a coarser view is navigation.
+      'aria-selected': context.view.value === context.granularity.value && context.isDateSelected(toValue(value)) ? true : undefined,
       'aria-disabled': disabled.value || context.isDateUnavailable(toValue(value)) || undefined,
     }),
     () => ({ disabled: disabled.value, view: context.view.value }),
@@ -275,7 +281,8 @@ export function getCalendarCellTriggerSurface(
   const isUnavailable = computed(() => context.isDateUnavailable(date.value))
   const isDisabled = computed(() => context.isDateDisabled(date.value) || (context.disableDaysOutsideCurrentView.value && isOutsideView.value))
   const isCurrent = computed(() => adapter.value.isCurrent(date.value))
-  const isSelected = computed(() => context.isDateSelected(date.value))
+  // Cells of a view coarser than the granularity are navigation only.
+  const isSelected = computed(() => cellUnit.value === context.granularity.value && context.isDateSelected(date.value))
 
   const isFocused = computed(() => {
     if (isOutsideView.value || isDisabled.value)
@@ -409,6 +416,7 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
 
   const gridApi = useCalendarGrid({
     unit: view,
+    granularity,
     placeholder,
     setPlaceholder: value => setPlaceholder(value, 'page-navigation'),
     locale,
@@ -487,7 +495,11 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     // Above the granularity a cell is navigation, not selection (D2).
     if (isCoarserUnit(view.value, granularity.value)) {
       const finer = finerUnit(view.value)!
-      setPlaceholder(gridApi.adapter.value.resolve(value, placeholder.value), 'view-drill', event)
+      // A cancelled `beforeUpdate:placeholder` keeps the current page, so don't
+      // drill into it. `false` for an unchanged placeholder is a no-op, not a cancel.
+      const target = gridApi.adapter.value.resolve(value, placeholder.value)
+      if (!setPlaceholder(target, 'view-drill', event) && target.compare(placeholder.value) !== 0)
+        return
       setView(finer, 'view-drill', event)
       return
     }

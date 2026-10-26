@@ -17,7 +17,7 @@
   },
   {
     'name': 'nextPage',
-    'description': '<p>The function to be used for the next page. Overwrites the <code>nextPage</code> function set on the <code>CalendarRoot</code>. Receives the placeholder and the active view.</p>\n',
+    'description': '<p>The function to be used for the next page. Overwrites the <code>nextPage</code> function set on the <code>CalendarRoot</code>. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a <code>CalendarView</code> to scope it to one view.</p>\n',
     'type': 'CalendarPageFunction',
     'required': false
   }
@@ -40,7 +40,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `nextPage` | The function to be used for the next page. Overwrites the nextPage function set on the CalendarRoot. Receives the placeholder and the active view. | `CalendarPageFunction` | No | - |
+| `nextPage` | The function to be used for the next page. Overwrites the nextPage function set on the CalendarRoot. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a CalendarView to scope it to one view. | `CalendarPageFunction` | No | - |
 
 **Slots**
 

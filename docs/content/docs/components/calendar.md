@@ -315,6 +315,8 @@ Set `granularity="year"`. The grid holds `yearsPerPage` years starting at the pl
 
 Wrap each grid in a `CalendarView` and put a `CalendarViewTrigger` in the header to let users drill from the day grid up to the month and year grids and back. See the [view switching example](/examples/date-picker-view-switching).
 
+The month and year views of a day calendar are navigation: `isDateDisabled`, `isDateUnavailable` and the root `nextPage` / `prevPage` apply only in the `granularity` view, so the coarser cells are limited by `minValue` and `maxValue` alone and show no selection.
+
 ### Calendar with Year Incrementation
 
 This example showcases a calendar which allows incrementing the year.

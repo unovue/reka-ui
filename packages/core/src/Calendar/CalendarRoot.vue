@@ -115,15 +115,15 @@ export interface CalendarRootProps extends PrimitiveProps {
   readonly?: boolean
   /** If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted */
   initialFocus?: boolean
-  /** A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument. */
+  /** A function that returns whether or not a date is disabled. Called only for cells at the `granularity` (with that unit as its second argument); the coarser navigation views apply only `minValue`, `maxValue` and `disabled`. */
   isDateDisabled?: Matcher
-  /** A function that returns whether or not a date is unavailable. Receives the unit of the cell being tested as its second argument. */
+  /** A function that returns whether or not a date is unavailable. Called only for cells at the `granularity` (with that unit as its second argument); the coarser navigation views apply only `minValue`, `maxValue` and `disabled`. */
   isDateUnavailable?: Matcher
   /** The reading direction of the calendar when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
-  /** A function that returns the next page of the calendar. It receives the current placeholder and the active view. */
+  /** A function that returns the next page of the calendar. It receives the current placeholder and the view being paged, and is used only in the `granularity` view; the coarser views page by their default step. */
   nextPage?: CalendarPageFunction
-  /** A function that returns the previous page of the calendar. It receives the current placeholder and the active view. */
+  /** A function that returns the previous page of the calendar. It receives the current placeholder and the view being paged, and is used only in the `granularity` view; the coarser views page by their default step. */
   prevPage?: CalendarPageFunction
   /** The controlled selected date value of the calendar. Can be bound as `v-model`. */
   modelValue?: DateValue | DateValue[] | null

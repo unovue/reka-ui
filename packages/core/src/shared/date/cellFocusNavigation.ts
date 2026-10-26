@@ -9,6 +9,8 @@ import { useKbd } from '@/shared/useKbd'
 /** What the keyboard loop needs from a calendar root context (Calendar and RangeCalendar both satisfy it). */
 export interface CellNavigationHost {
   parentElement: Ref<HTMLElement | undefined>
+  /** Read so a move in a coarser view keeps the placeholder's finer fields. */
+  placeholder: ComputedRef<DateValue>
   minValue: ComputedRef<DateValue | undefined>
   maxValue: ComputedRef<DateValue | undefined>
   dir: ComputedRef<Direction>
@@ -83,7 +85,9 @@ export function createCellFocusNavigation(
   }
 
   function focusCell(candidate: DateValue, el: HTMLElement, event?: Event) {
-    host.onPlaceholderChange(candidate, 'focus-navigation', event)
+    // Month and year cells are the first day of their period: keep the day (and
+    // month) of the placeholder so a later drill-down lands on it, as a click does.
+    host.onPlaceholderChange(adapter.value.resolve(candidate, host.placeholder.value), 'focus-navigation', event)
     el.focus()
   }
 

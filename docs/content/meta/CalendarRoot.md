@@ -89,13 +89,13 @@
   },
   {
     'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument.</p>\n',
+    'description': '<p>A function that returns whether or not a date is disabled. Called only for cells at the <code>granularity</code> (with that unit as its second argument); the coarser navigation views apply only <code>minValue</code>, <code>maxValue</code> and <code>disabled</code>.</p>\n',
     'type': 'Matcher',
     'required': false
   },
   {
     'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable. Receives the unit of the cell being tested as its second argument.</p>\n',
+    'description': '<p>A function that returns whether or not a date is unavailable. Called only for cells at the <code>granularity</code> (with that unit as its second argument); the coarser navigation views apply only <code>minValue</code>, <code>maxValue</code> and <code>disabled</code>.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -139,7 +139,7 @@
   },
   {
     'name': 'nextPage',
-    'description': '<p>A function that returns the next page of the calendar. It receives the current placeholder and the active view.</p>\n',
+    'description': '<p>A function that returns the next page of the calendar. It receives the current placeholder and the view being paged, and is used only in the <code>granularity</code> view; the coarser views page by their default step.</p>\n',
     'type': 'CalendarPageFunction',
     'required': false
   },
@@ -172,7 +172,7 @@
   },
   {
     'name': 'prevPage',
-    'description': '<p>A function that returns the previous page of the calendar. It receives the current placeholder and the active view.</p>\n',
+    'description': '<p>A function that returns the previous page of the calendar. It receives the current placeholder and the view being paged, and is used only in the <code>granularity</code> view; the coarser views page by their default step.</p>\n',
     'type': 'CalendarPageFunction',
     'required': false
   },
@@ -312,20 +312,20 @@
 | `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
 | `granularity` | The unit a selection commits: a day, a month or a year. Views finer than this are unreachable. | `"day" \| "month" \| "year"` | No | `"day"` |
 | `initialFocus` | If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted | `boolean` | No | `false` |
-| `isDateDisabled` | A function that returns whether or not a date is disabled. Receives the unit of the cell being tested as its second argument. | `Matcher` | No | - |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable. Receives the unit of the cell being tested as its second argument. | `Matcher` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled. Called only for cells at the granularity (with that unit as its second argument); the coarser navigation views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable. Called only for cells at the granularity (with that unit as its second argument); the coarser navigation views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `maxView` | The coarsest view CalendarViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
 | `modelValue` | The controlled selected date value of the calendar. Can be bound as v-model. | `DateValue \| DateValue[] \| null` | No | - |
 | `multiple` | Whether multiple dates can be selected | `boolean` | No | `false` |
-| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder and the active view. | `CalendarPageFunction` | No | - |
+| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder and the view being paged, and is used only in the granularity view; the coarser views page by their default step. | `CalendarPageFunction` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
 | `placeholder` | The placeholder date, which is used to determine what page to display when no date is selected | `DateValue` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
-| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder and the active view. | `CalendarPageFunction` | No | - |
+| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder and the view being paged, and is used only in the granularity view; the coarser views page by their default step. | `CalendarPageFunction` | No | - |
 | `readonly` | Whether the calendar is readonly | `boolean` | No | `false` |
 | `view` | The controlled view: the unit the calendar currently shows. Can be bound as v-model:view. | `"day" \| "month" \| "year"` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |

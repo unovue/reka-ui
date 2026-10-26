@@ -141,7 +141,7 @@ describe('useCalendar', () => {
       expect(api.root.attrs.value['data-view']).toBe('day')
       expect(api.root.attrs.value['aria-label']).toBe('Event Date, September 2026')
       expect(api.prev.attrs.value.disabled).toBe(true)
-      expect(api.viewTrigger.attrs.value['aria-label']).toBe('Switch to month view')
+      expect(api.viewTrigger.attrs.value['aria-label']).toBeUndefined()
 
       const cell = api.getCellTriggerSurface(() => sep5, () => sep5)
       expect(cell.cellValue.value).toBe('5')

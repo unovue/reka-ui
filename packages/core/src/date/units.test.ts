@@ -1,6 +1,7 @@
+import type { DateValue } from '@internationalized/date'
 import type { Matcher } from './types'
 import type { CalendarLayout } from './units'
-import { CalendarDate, CalendarDateTime } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, EthiopicCalendar, GregorianCalendar, HebrewCalendar, JapaneseCalendar, toCalendar, toCalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 import { clampLayoutCount, createMonthGrid, createYearGrid } from './calendar'
@@ -229,5 +230,75 @@ describe('range validation across units', () => {
     const y2028: Matcher = d => d.year === 2028
     expect(year.areAllBetweenValid(new CalendarDate(2026, 1, 1), new CalendarDate(2030, 1, 1), y2028, undefined)).toBe(false)
     expect(year.areAllBetweenValid(new CalendarDate(2026, 1, 1), new CalendarDate(2030, 1, 1), y2028, undefined, y2028)).toBe(true)
+  })
+})
+
+describe('calendar systems and eras', () => {
+  const month = getUnitAdapter('month')
+  const year = getUnitAdapter('year')
+  const gregorian = new GregorianCalendar()
+  const inGregorian = (d: DateValue) => toCalendar(toCalendarDate(d), gregorian)
+  const japanese = (y: number, m: number, d: number) => toCalendar(new CalendarDate(y, m, d), new JapaneseCalendar())
+
+  it('builds all thirteen months of a Hebrew leap year', () => {
+    const date = toCalendar(new CalendarDate(2024, 3, 1), new HebrewCalendar())
+    expect(date.calendar.getMonthsInYear(date)).toBe(13)
+    const grid = createMonthGrid({ dateObj: date })
+    expect(grid.cells).toHaveLength(13)
+    expect(grid.cells.map(c => c.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+    expect(grid.cells.every(c => c.year === date.year && c.day === 1)).toBe(true)
+  })
+
+  it('builds the thirteen months of an Ethiopic year', () => {
+    const date = toCalendar(new CalendarDate(2026, 3, 1), new EthiopicCalendar())
+    const grid = createMonthGrid({ dateObj: date })
+    expect(grid.cells).toHaveLength(13)
+    expect(grid.cells.at(-1)!.month).toBe(13)
+    expect(month.isInPage(grid.cells.at(-1)!, date)).toBe(true)
+  })
+
+  it('pages a Japanese year grid across the Heisei / Reiwa boundary', () => {
+    const grid = createYearGrid({ dateObj: japanese(2018, 6, 1) })
+    expect(grid.cells.map(c => inGregorian(c).year)).toEqual(Array.from({ length: 12 }, (_, i) => 2010 + i))
+    expect(grid.cells.map(c => `${c.era} ${c.year}`).slice(8)).toEqual(['heisei 30', 'heisei 31', 'reiwa 2', 'reiwa 3'])
+
+    const reiwa2 = japanese(2020, 6, 1)
+    expect(year.isInVisibleView(reiwa2, [grid])).toBe(true)
+    expect(year.compare(japanese(2018, 6, 1), reiwa2)).toBeLessThan(0)
+    expect(year.isSame(japanese(2019, 2, 1), japanese(2019, 6, 1))).toBe(true)
+    expect(year.distance(japanese(2018, 6, 1), reiwa2)).toBe(3)
+  })
+
+  it('builds the months of a year that spans two Japanese eras', () => {
+    const grid = createMonthGrid({ dateObj: japanese(2019, 6, 1) })
+    expect(grid.cells.map(c => inGregorian(c).toString())).toEqual(Array.from({ length: 12 }, (_, i) => new CalendarDate(2019, i + 1, 1).toString()))
+    expect(month.distance(japanese(2019, 4, 10), japanese(2019, 5, 10))).toBe(2)
+    expect(month.isInPage(grid.cells[0], grid.cells[11])).toBe(true)
+  })
+
+  it('aligns and orders BC year pages', () => {
+    const grid = createYearGrid({ dateObj: new CalendarDate('BC', 5, 1, 1) })
+    expect(grid.cells.map(c => `${c.era} ${c.year}`)).toEqual([
+      'BC 11',
+      'BC 10',
+      'BC 9',
+      'BC 8',
+      'BC 7',
+      'BC 6',
+      'BC 5',
+      'BC 4',
+      'BC 3',
+      'BC 2',
+      'BC 1',
+      'AD 1',
+    ])
+    expect(year.compare(new CalendarDate('BC', 2, 1, 1), new CalendarDate('BC', 1, 1, 1))).toBeLessThan(0)
+    expect(year.isSame(new CalendarDate('BC', 1, 1, 1), new CalendarDate('AD', 1, 1, 1))).toBe(false)
+    expect(year.distance(new CalendarDate('BC', 2, 1, 1), new CalendarDate('AD', 2, 1, 1))).toBe(4)
+  })
+
+  it('keeps the reference month and day when resolving a year across eras', () => {
+    const resolved = year.resolve(japanese(2019, 1, 1), japanese(2026, 9, 5))
+    expect(inGregorian(resolved).toString()).toBe('2019-09-05')
   })
 })

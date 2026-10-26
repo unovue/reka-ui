@@ -9,6 +9,14 @@ import { useDateFormatter } from '@/shared/useDateFormatter'
 export interface UseCalendarGridProps {
   /** The unit the grid renders: the calendar's active `view`. */
   unit: MaybeRefOrGetter<CalendarUnit>
+  /**
+   * The unit a selection commits. The user matchers (`isDateDisabled`,
+   * `isDateUnavailable`) and the root `nextPage` / `prevPage` functions are
+   * written for this unit, so they apply only while `unit` equals it; a
+   * coarser navigation view uses `minValue` / `maxValue`, `disabled` and the
+   * default paging. Defaults to `unit` (always apply).
+   */
+  granularity?: MaybeRefOrGetter<CalendarUnit | undefined>
   /** The date that decides which page is shown. Read-only here; paging goes through `setPlaceholder`. */
   placeholder: Ref<DateValue>
   /**
@@ -42,9 +50,9 @@ export interface UseCalendarGridProps {
   isDateDisabled?: MaybeRef<Matcher | undefined>
   isDateUnavailable?: MaybeRef<Matcher | undefined>
   calendarLabel?: MaybeRefOrGetter<string | undefined>
-  /** Root-level custom paging (the `nextPage` prop). */
+  /** Root-level custom paging (the `nextPage` prop). Used only in the `granularity` view. */
   nextPage?: MaybeRef<CalendarPageFunction | undefined>
-  /** Root-level custom paging (the `prevPage` prop). */
+  /** Root-level custom paging (the `prevPage` prop). Used only in the `granularity` view. */
   prevPage?: MaybeRef<CalendarPageFunction | undefined>
 }
 
@@ -95,6 +103,11 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
   const minValue = computed(() => toValue(props.minValue))
   const maxValue = computed(() => toValue(props.maxValue))
   const disabled = computed(() => toValue(props.disabled) ?? false)
+  /** Whether the active view is the one the user matchers and paging functions target. */
+  const atGranularity = computed(() => {
+    const granularity = toValue(props.granularity)
+    return !granularity || granularity === unit.value
+  })
 
   const layout = computed<CalendarLayout>(() => ({
     locale: locale.value,
@@ -130,7 +143,7 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
   }
 
   const isDateDisabled: Matcher = (date) => {
-    if (unref(props.isDateDisabled)?.(date, unit.value) || disabled.value)
+    if (disabled.value || (atGranularity.value && unref(props.isDateDisabled)?.(date, unit.value)))
       return true
     if (maxValue.value && isAfter(adapter.value.startOf(date), maxValue.value))
       return true
@@ -139,10 +152,10 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     return false
   }
 
-  const isDateUnavailable: Matcher = date => !!unref(props.isDateUnavailable)?.(date, unit.value)
+  const isDateUnavailable: Matcher = date => atGranularity.value && !!unref(props.isDateUnavailable)?.(date, unit.value)
 
   function resolvePageFn(explicit: CalendarPageFunction | undefined, prop: MaybeRef<CalendarPageFunction | undefined> | undefined) {
-    const fn = explicit ?? unref(prop)
+    const fn = explicit ?? (atGranularity.value ? unref(prop) : undefined)
     const mode = explicit ? 'explicit-fn' : fn ? 'root-fn' : 'default'
     return { fn, mode } as const
   }

@@ -1,6 +1,6 @@
 import type { DateValue } from '@internationalized/date'
 import type { Matcher } from './types'
-import { CalendarDateTime, getDayOfWeek, getLocalTimeZone, parseDate, parseDateTime, parseZonedDateTime, toCalendar, ZonedDateTime } from '@internationalized/date'
+import { CalendarDateTime, getDayOfWeek, getLocalTimeZone, parseDate, parseDateTime, parseZonedDateTime, startOfMonth, startOfYear, toCalendar, toCalendarDate, ZonedDateTime } from '@internationalized/date'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the
@@ -233,17 +233,52 @@ export function focusedDateValue(value: DateSelection) {
 }
 
 /**
+ * The first day of the month / year containing `date`, as a `CalendarDate`
+ * (time and zone dropped). Comparing these instead of the raw `year` / `month`
+ * fields is era-safe (Japanese eras, BC dates) and works across calendars.
+ */
+function monthStart(date: DateValue) {
+  return toCalendarDate(startOfMonth(date))
+}
+
+function yearStart(date: DateValue) {
+  return toCalendarDate(startOfYear(date))
+}
+
+/**
+ * Inclusive number of `unit`s from `start` to `end`. Counted by stepping, so
+ * eras and calendars with a varying number of months per year are handled.
+ * When `end` is before `start` the result is `2 - count(end..start)`, the same
+ * as subtracting the field values.
+ */
+function countPeriods(start: DateValue, end: DateValue, unit: 'months' | 'years') {
+  const toStart = unit === 'months' ? monthStart : yearStart
+  const step = unit === 'months' ? { months: 1 } : { years: 1 }
+  const from = toStart(start)
+  const to = toStart(end)
+  const forward = to.compare(from) >= 0
+  const [low, high] = forward ? [from, to] : [to, from]
+  let count = 1
+  let current = low
+  while (current.compare(high) < 0) {
+    current = toStart(current.add(step))
+    count++
+  }
+  return forward ? count : 2 - count
+}
+
+/**
  * Check if two dates are in the same year and month.
  */
 export function isSameYearMonth(a: DateValue, b: DateValue): boolean {
-  return a.year === b.year && a.month === b.month
+  return compareYearMonth(a, b) === 0
 }
 
 /**
  * Check if two dates are in the same year.
  */
 export function isSameYear(a: DateValue, b: DateValue): boolean {
-  return a.year === b.year
+  return compareYear(a, b) === 0
 }
 
 export function areAllDaysBetweenValid(
@@ -277,9 +312,14 @@ export function areAllDaysBetweenValid(
  * Compare two dates by year and month only (ignoring day).
  */
 export function compareYearMonth(a: DateValue, b: DateValue): number {
-  if (a.year !== b.year)
-    return a.year - b.year
-  return a.month - b.month
+  return monthStart(a).compare(monthStart(b))
+}
+
+/**
+ * Compare two dates by year only (ignoring month and day). Era-safe.
+ */
+export function compareYear(a: DateValue, b: DateValue): number {
+  return yearStart(a).compare(yearStart(b))
 }
 
 /**
@@ -293,21 +333,21 @@ export function isMonthBetweenInclusive(date: DateValue, start: DateValue, end: 
  * Check if a date's year is between start and end (inclusive), comparing year only.
  */
 export function isYearBetweenInclusive(date: DateValue, start: DateValue, end: DateValue): boolean {
-  return date.year >= start.year && date.year <= end.year
+  return compareYear(date, start) >= 0 && compareYear(date, end) <= 0
 }
 
 /**
  * Get the number of months between two dates (inclusive).
  */
 export function getMonthsBetween(start: DateValue, end: DateValue): number {
-  return (end.year - start.year) * 12 + (end.month - start.month) + 1
+  return countPeriods(start, end, 'months')
 }
 
 /**
  * Get the number of years between two dates (inclusive).
  */
 export function getYearsBetween(start: DateValue, end: DateValue): number {
-  return end.year - start.year + 1
+  return countPeriods(start, end, 'years')
 }
 
 /**
@@ -323,13 +363,12 @@ export function areAllMonthsBetweenValid(
   if (isUnavailable === undefined && isDisabled === undefined && isHighlightable === undefined)
     return true
 
-  let current = start.set({ day: 1 })
-  const endMonth = end.set({ day: 1 })
+  let current = startOfMonth(start)
 
-  while (compareYearMonth(current, endMonth) <= 0) {
+  while (compareYearMonth(current, end) <= 0) {
     if ((isDisabled?.(current, 'month') || isUnavailable?.(current, 'month')) && !isHighlightable?.(current, 'month'))
       return false
-    current = current.add({ months: 1 })
+    current = startOfMonth(current.add({ months: 1 }))
   }
   return true
 }
@@ -347,13 +386,12 @@ export function areAllYearsBetweenValid(
   if (isUnavailable === undefined && isDisabled === undefined && isHighlightable === undefined)
     return true
 
-  let current = start.set({ day: 1, month: 1 })
-  const endYear = end.set({ day: 1, month: 1 })
+  let current = startOfYear(start)
 
-  while (current.year <= endYear.year) {
+  while (compareYear(current, end) <= 0) {
     if ((isDisabled?.(current, 'year') || isUnavailable?.(current, 'year')) && !isHighlightable?.(current, 'year'))
       return false
-    current = current.add({ years: 1 })
+    current = startOfYear(current.add({ years: 1 }))
   }
   return true
 }

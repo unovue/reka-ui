@@ -1,6 +1,7 @@
+import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
 import type { DateRange } from '@/shared/date'
-import { CalendarDate } from '@internationalized/date'
+import { CalendarDate, isWeekend } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -159,5 +160,32 @@ describe('range calendar — views and drill-down', () => {
     expect(cancel).toHaveBeenCalledTimes(1)
     expect(onUpdate).not.toHaveBeenCalled()
     expect(container.querySelector('[data-selection-start]')).toBeNull()
+  })
+})
+
+describe('range calendar — coarser views are navigation only', () => {
+  const weekend = (d: DateValue) => isWeekend(d, 'en-US')
+
+  it('applies day matchers only in the day view: a weekend matcher leaves every month reachable', async () => {
+    const { user, getByTestId, calendar } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', isDateDisabled: weekend, isDateUnavailable: weekend })
+    expect(calendar.querySelectorAll('[data-view="month"] [data-disabled], [data-view="month"] [data-unavailable]')).toHaveLength(0)
+    // 1 February 2026 is a Sunday.
+    await user.click(getByTestId('month-2026-02-01'))
+    expect(getByTestId('view-day')).toBeInTheDocument()
+    expect(getByTestId('day-2026-02-01')).toHaveAttribute('data-disabled')
+  })
+
+  it('sets aria-selected on no gridcell in views coarser than the granularity', () => {
+    const { calendar } = setupViews({ defaultView: 'month', modelValue: { start: new CalendarDate(2026, 1, 15), end: new CalendarDate(2026, 3, 10) } })
+    expect(calendar.querySelectorAll('[role="gridcell"][aria-selected]')).toHaveLength(0)
+  })
+
+  it('drops a hover from another view when the view changes', async () => {
+    // A controlled view change moves no focus, so only the stale hover could highlight.
+    const { user, getByTestId, calendar, rerender } = setupViews({ defaultPlaceholder: sep5, view: 'month', modelValue: { start: new CalendarDate(2026, 9, 3), end: undefined } })
+    await user.hover(getByTestId('month-2026-11-01'))
+    await rerender({ view: 'day' })
+    expect(getByTestId('view-day')).toBeInTheDocument()
+    expect(calendar.querySelectorAll('[data-highlighted]')).toHaveLength(0)
   })
 })
