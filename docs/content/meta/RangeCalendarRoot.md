@@ -204,7 +204,7 @@
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue | undefined]'
   },
   {
     'name': 'update:validModelValue',
@@ -294,7 +294,7 @@
 | --- | --- | --- |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined]` |
 | `update:validModelValue` | Event handler called whenever there is a new validModel | `[date: DateRange]` |
 
 **Slots**
