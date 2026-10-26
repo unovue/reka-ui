@@ -23,6 +23,7 @@ export interface UseColorSwatchPickerProps {
 }
 
 export interface UseColorSwatchPickerReturn {
+  /** Provisional: values are hex strings today; in v3 they accept and emit `Color` objects (#2789). */
   readonly modelValue: ComputedRef<string | readonly string[] | undefined>
   readonly multiple: ComputedRef<boolean>
   readonly disabled: ComputedRef<boolean>
@@ -47,6 +48,10 @@ export interface UseColorSwatchPickerReturn {
  * Headless picker model and color-specific part surfaces. Compose ListboxRoot,
  * ListboxContent, ListboxItem and ListboxItemIndicator for collection registration,
  * selection interactions, roving focus, keyboard navigation and indicator presence.
+ *
+ * The model types are provisional: values are hex strings today and become `Color` objects
+ * in v3 (#2789).
+ *
  * @experimental
  * @lifecycle pure
  */

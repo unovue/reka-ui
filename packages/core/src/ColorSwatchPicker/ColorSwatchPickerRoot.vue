@@ -2,7 +2,6 @@
 import type { ColorSwatchPickerChangeReason } from './useColorSwatchPicker'
 import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
 import type { ChangeEventDetails } from '@/shared'
-import type { AcceptableValue } from '@/shared/types'
 import { useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by'> {
@@ -14,7 +13,7 @@ export type ColorSwatchPickerRootEmits = Omit<ListboxRootEmits, 'update:modelVal
   /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
   'beforeUpdate:modelValue': [value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
   /** Event handler called when the color value changes. */
-  'update:modelValue': [value: AcceptableValue, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
+  'update:modelValue': [value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
 }
 </script>
 

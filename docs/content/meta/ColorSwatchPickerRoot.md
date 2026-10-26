@@ -111,7 +111,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: AcceptableValue, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
+    'type': '[value: string | string[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   }
 ]" />
 
@@ -152,7 +152,7 @@
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue, details: ChangeEventDetails<"selection", Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: string \| string[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 
 **Slots**
 
