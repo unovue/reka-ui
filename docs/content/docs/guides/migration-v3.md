@@ -339,11 +339,12 @@ const shifted = { ...convertToHsl(color), h: (hue + 30) % 360 } // [!code ++]
 
 ## Template refs on parts
 
-A template ref on a part now exposes the part's element and its documented methods, and nothing else. Every part exposes `element` and `$el`, both backed by the same reactive ref to its rendered DOM element, next to the methods listed in its API reference. See [the element-first ref contract](../utilities/use-forward-expose#the-element-first-ref-contract).
+A template ref on a part now exposes the part's element and its documented methods, and nothing else. Every part exposes `element` and `$el`, both reading the same reactive ref to its rendered DOM element, next to the methods listed in its API reference. See [the element-first ref contract](../utilities/use-forward-expose#the-element-first-ref-contract).
 
 What changed:
 
 - **`$el` needs no migration.** `partRef.value.$el` still returns the part's element. It is now reactive: a `computed` that reads it re-runs when the part's root element changes (a `v-if`, an `as` change, an `asChild` child swap). In v2 it was a snapshot that could point at a removed element. `partRef.value.element` returns the same element.
+- **`element` is `null` when the part renders no element** (a closed `DialogContent`, an unmounted `PopoverContent`). `$el` then falls back to the placeholder comment node Vue renders, as in v2, so VueUse's `unrefElement(partRef)` and `useEventListener(partRef, …)` receive a node and never the component itself. Check `element` when you need to know whether the part is rendered.
 - **Props are no longer readable from a part ref.** In v2, `partRef.value.disabled` or `partRef.value.modelValue` returned the part's prop value. This was never documented and is now `undefined`. Read the value from the state you pass to the part. In development, the first such read logs a warning that names the part and the prop.
 - **Methods are no longer forwarded through `as` / `asChild`.** In v2, when a part rendered your component through `as` or `asChild`, the methods your component exposed were also reachable on the part's ref. Put a ref on your own component to call them. The methods a part documents (`validate`, `scrollTop`, `highlightItem`, …) are unchanged.
 - **Components passed to `asChild` should expose `element`.** A component with a single root element works without changes. A component with several root nodes, a root that changes with `v-if`, or a target on an inner element should call `useForwardElement()` and `defineExpose(expose)`, and bind `forwardRef` on the element the part should target. Without it, Reka UI falls back to the component's `$el`, which Vue does not keep up to date.

@@ -303,8 +303,9 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 ### 13. Template refs on parts
 
-**What changed.** A template ref on a part exposes `element` and `$el` (one reactive ref to the part's DOM element) plus the methods in that part's API reference, and nothing else.
+**What changed.** A template ref on a part exposes `element` and `$el` (both read one reactive ref to the part's DOM element) plus the methods in that part's API reference, and nothing else.
 - `partRef.value.$el` and `partRef.value.element` return the element. `$el` is now reactive. No rewrite.
+- When the part renders no element (for example a closed `DialogContent`), `element` is `null` and `$el` falls back to Vue's placeholder comment node, as in v2. No rewrite.
 - Prop values are no longer readable from a part ref: `partRef.value.<prop>` is `undefined`. Development builds warn once per part and prop, with a message that starts with `[reka-ui] <PartName>: reading the prop`.
 - Methods of a component rendered through a part's `as` / `asChild` are no longer reachable on the part's ref.
 - `useForwardExpose` is deprecated and logs a one-time warning in development; `useForwardElement` replaces it.

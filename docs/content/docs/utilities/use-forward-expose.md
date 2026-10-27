@@ -17,14 +17,14 @@ Deprecated. Expose a component's element with the element-first ref contract (us
 
 ## The element-first ref contract
 
-A template ref on any Reka UI part gives you the part's DOM element through two keys that hold the same reactive ref:
+A template ref on any Reka UI part gives you the part's DOM element through two keys that read the same reactive ref:
 
 ```ts
-defineExpose({ element, $el: element })
+defineExpose({ element, $el }) // $el reads `element`, see below
 ```
 
-- `element` is the rendered DOM element, or `null` before mount. Reka UI resolves child components by this key, so a component that exposes it is targeted reliably.
-- `$el` is the same ref under the name Vue developers expect. It overrides Vue's built-in `$el`, so it follows root swaps (`v-if`, `as` changes, `asChild` children) instead of keeping a stale value, and on a multi-root component it points at the element rather than at a fragment anchor.
+- `element` is the rendered DOM element, or `null` whenever the part renders no element (before mount, or a closed `DialogContent`). Reka UI resolves child components by this key, so a component that exposes it is targeted reliably, and a part with no element resolves to `null`.
+- `$el` is the same ref under the name Vue developers expect. It overrides Vue's built-in `$el`, so it follows root swaps (`v-if`, `as` changes, `asChild` children) instead of keeping a stale value, and on a multi-root component it points at the element rather than at a fragment anchor. When the part renders no element, `$el` falls back to the placeholder comment node Vue renders in its place, as in v2, so `unrefElement` and `useEventListener` receive a node and never the component itself.
 
 The component's expose proxy unwraps both refs, so you read `partRef.value.$el` or `partRef.value.element` without `.value`. VueUse's `unrefElement(partRef)` and floating-ui's Vue bindings resolve to the right element as they did before.
 
@@ -72,7 +72,7 @@ defineExpose(mergeExpose(expose, {
 
 ### Components passed to `asChild`
 
-When you render your own component as the child of an `asChild` part, Reka UI targets it through the ref contract above. A component with a single root element works without changes. If your component has several root nodes, swaps its root with `v-if`, or should target an inner element, expose `element`. A multi-root component also has to bind the part's attributes itself:
+When you render your own component as the child of an `asChild` part, Reka UI targets it through the ref contract above. A component with a single root element works without changes. If your component has several root nodes, swaps its root with `v-if`, or should target an inner element, expose `element`. A multi-root component that does not expose it is resolved through the first element after its fragment anchor, read when the ref is set: after that first element is swapped (by `v-if` or a list change), the part can keep holding the removed, detached node. A multi-root component also has to bind the part's attributes itself:
 
 ```vue
 <script setup lang="ts">
