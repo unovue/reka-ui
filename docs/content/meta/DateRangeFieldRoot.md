@@ -42,7 +42,7 @@
   },
   {
     'name': 'granularity',
-    'description': '<p>The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity</p>\n',
+    'description': '<p>The granularity to use for formatting times. Defaults to day if a <code>Temporal.PlainDate</code> is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity</p>\n',
     'type': '\'day\' | \'hour\' | \'minute\' | \'second\'',
     'required': false
   },
@@ -178,7 +178,7 @@
 <MethodsTable :data="[
   {
     'name': 'setFocusedElement',
-    'description': '',
+    'description': '<p>Records <code>el</code> as the focused segment for keyboard navigation. It does not move focus; call <code>el.focus()</code> for that.</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
@@ -196,7 +196,7 @@
 | `defaultValue` | The default value for the calendar | `DateRange` | No | - |
 | `dir` | The reading direction of the date field when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
-| `granularity` | The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
+| `granularity` | The granularity to use for formatting times. Defaults to day if a `Temporal.PlainDate` is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
@@ -233,6 +233,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `setFocusedElement` |  | `(el: HTMLElement) => void` |
+| `setFocusedElement` | Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. | `(el: HTMLElement) => void` |
 
 </llm-only>

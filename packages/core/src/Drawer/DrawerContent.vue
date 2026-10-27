@@ -13,6 +13,11 @@ export type DrawerPopupEmits = Omit<DrawerContentImplEmits, 'closeAutoFocus'> & 
 // popup sets both itself.
 export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocus' | 'disableOutsidePointerEvents'> {
   forceMount?: boolean
+  /**
+   * Id of the element, which the trigger's `aria-controls` points at.
+   * Auto-generated when not provided.
+   */
+  id?: string
 }
 /** @deprecated Use `DrawerPopupEmits`; `DrawerContent` is a deprecated alias of `DrawerPopup`. */
 export type DrawerContentEmits = DrawerPopupEmits
@@ -23,7 +28,7 @@ export type DrawerContentProps = DrawerPopupProps
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { Presence } from '@/Presence'
-import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
+import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers, usePartId } from '@/shared'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerContentModality } from './useDrawer'
@@ -35,6 +40,9 @@ const props = withDefaults(defineProps<DrawerPopupProps>(), {
 const emits = defineEmits<DrawerPopupEmits>()
 
 const rootContext = injectDrawerRootContext()
+// Forwarded as the element's `id` (merged after the surface's context id);
+// mirrored into the context for the trigger's `aria-controls`.
+const contentId = usePartId(() => props.id, rootContext, 'contentId')
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -86,7 +94,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
     <DrawerContentImpl
       v-if="isFullModal"
       :ref="forwardRef"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="rootContext.open.value"
       @close-auto-focus="onCloseAutoFocusModal"
@@ -99,7 +107,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
     <DrawerContentImpl
       v-else
       :ref="forwardRef"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="false"
       @close-auto-focus="onCloseAutoFocusNonModal"

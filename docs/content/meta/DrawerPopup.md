@@ -29,6 +29,12 @@
     'required': false
   },
   {
+    'name': 'id',
+    'description': '<p>Id of the element, which the trigger\'s <code>aria-controls</code> points at.\nAuto-generated when not provided.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'initialFocus',
     'description': '<p>Initial focus target when the drawer opens.</p>\n<ul>\n<li><code>true</code> / default: focus the first focusable element inside</li>\n<li><code>false</code>: do not focus anything</li>\n<li>element ref: focus that specific element</li>\n</ul>\n',
     'type': 'boolean | HTMLElement | null',
@@ -81,6 +87,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `finalFocus` | Final focus target when the drawer closes.  `true` / default: focus the trigger `false`: do not restore focus element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 | `forceMount` |  | `boolean` | No | - |
+| `id` | Id of the element, which the trigger's `aria-controls` points at. Auto-generated when not provided. | `string` | No | - |
 | `initialFocus` | Initial focus target when the drawer opens.  `true` / default: focus the first focusable element inside `false`: do not focus anything element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 
 **Events**

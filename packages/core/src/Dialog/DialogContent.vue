@@ -8,6 +8,11 @@ export type DialogContentEmits = DialogContentImplEmits
 
 export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFocus'> {
   /**
+   * Id of the element, which the trigger's `aria-controls` points at.
+   * Auto-generated when not provided.
+   */
+  id?: string
+  /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    */
@@ -18,7 +23,7 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
-import { useEmitAsProps, useForwardElement } from '@/shared'
+import { useEmitAsProps, useForwardElement, usePartId } from '@/shared'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -33,6 +38,9 @@ const props = withDefaults(defineProps<DialogContentProps>(), {
 const emits = defineEmits<DialogContentEmits>()
 
 const rootContext = injectDialogRootContext()
+// Forwarded as the element's `id` (merged after the surface's context id);
+// mirrored into the context for the trigger's `aria-controls`.
+const contentId = usePartId(() => props.id, rootContext, 'contentId')
 
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, expose } = useForwardElement()
@@ -61,7 +69,7 @@ const staysMounted = computed(
       v-show="forceMount || rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="staysMounted ? present : true"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
     >
       <slot />
     </DialogContentModal>
@@ -70,7 +78,7 @@ const staysMounted = computed(
       v-show="forceMount || rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="staysMounted ? present : true"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
     >
       <slot />
     </DialogContentNonModal>

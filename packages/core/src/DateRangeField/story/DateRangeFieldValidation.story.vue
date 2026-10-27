@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { Matcher } from '@/date'
-import { CalendarDate } from '@internationalized/date'
 import DateRangeField from './_DummyDateRangeField.vue'
 
-const defaultValue = { start: new CalendarDate(2024, 2, 20), end: new CalendarDate(2024, 2, 27) }
-const minValue = new CalendarDate(2024, 2, 15)
-const maxValue = new CalendarDate(2024, 2, 28)
+const defaultValue = { start: new Temporal.PlainDate(2024, 2, 20), end: new Temporal.PlainDate(2024, 2, 27) }
+const minValue = new Temporal.PlainDate(2024, 2, 15)
+const maxValue = new Temporal.PlainDate(2024, 2, 28)
 
 const isFirstOrFifteenth: Matcher = (date) => {
   return date.day === 1 || date.day === 15

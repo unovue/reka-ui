@@ -1,16 +1,14 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DatePickerOpenChangeReason, DatePickerRootContext } from './DatePickerRoot.vue'
 import type { CalendarChangeReason, CalendarModelValue, UseCalendarProps } from '@/Calendar/useCalendar'
-import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateFieldChangeReason, UseDateFieldProps } from '@/DateField/useDateField'
 import type { PopoverOpenChangeReason, UsePopoverReturn } from '@/Popover'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { getWeekStartsOn, isSameDateSelection } from '@/date'
+import { compareDateValues, getWeekStartsOn, isPlainDate, isSameDateSelection, isSameDay } from '@/date'
 import { usePopover } from '@/Popover/usePopover'
 import { useControllableState } from '@/shared'
 import { bridgeChange, getDefaultDate, isSameTemporalValue } from '@/shared/date'
@@ -106,7 +104,7 @@ export interface UseDatePickerReturn {
 function resetTime(date: DateValue) {
   if (!('hour' in date))
     return date
-  return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+  return isPlainDate(date) ? date : date.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
 }
 
 /**
@@ -145,7 +143,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
       granularity: toValue(props.granularity),
       defaultValue: modelValue.value,
       locale: locale.value,
-    }).copy(),
+    }),
     name: 'placeholder',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdatePlaceholder,
@@ -172,10 +170,10 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
   })
 
   function setModelValue(value: DateValue | undefined, reason: DatePickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setModelState(value?.copy(), reason, event)
+    return setModelState(value, reason, event)
   }
   function setPlaceholder(value: DateValue, reason: DatePickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
   function setOpen(value: boolean, reason: DatePickerOpenChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     // `date-select` is the picker's own addition to the popover's reasons.
@@ -205,7 +203,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
       setPlaceholder(resetTime(placeholder.value))
 
     // Only a new day is a pick. A same-day time or zone change leaves the popover open.
-    if (closeOnSelect.value && !isSameDateSelection(previous, value, isEqualDay))
+    if (closeOnSelect.value && !isSameDateSelection(previous, value, isSameDay))
       setOpen(false, 'date-select')
   })
 
@@ -216,13 +214,13 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
   function onCalendarBeforeUpdate(value: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>) {
     // `multiple` is pinned to false, so the model is never an array.
     const date = Array.isArray(value) ? value.at(-1) : value
-    if (date && modelValue.value && isEqualDay(date, modelValue.value))
+    if (date && modelValue.value && isSameDay(date, modelValue.value))
       return
     bridgeChange<DateValue | undefined, DatePickerChangeReason>(setModelValue, lastChangeDetails)(date, details)
   }
 
   function onCalendarPlaceholderChange(value: DateValue, details: ChangeEventDetails<CalendarChangeReason>) {
-    if (isEqualDay(value, placeholder.value))
+    if (isSameDay(value, placeholder.value))
       return
     setPlaceholder(value, details.reason, details.event)
   }
@@ -264,7 +262,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
     open: popover.open,
     modal: computed(() => toValue(props.modal) ?? false),
     onDateChange(date: DateValue | undefined, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) {
-      if (date && modelValue.value && !preventDeselect.value && modelValue.value.compare(date) === 0)
+      if (date && modelValue.value && !preventDeselect.value && compareDateValues(modelValue.value, date) === 0)
         return setModelValue(undefined, reason, event)
       return setModelValue(date, reason, event)
     },

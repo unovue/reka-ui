@@ -1,25 +1,24 @@
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
 import type { DateRange } from '@/shared/date'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import DateRangeField from './story/_DateRangeField.vue'
 
 const calendarDate = {
-  start: new CalendarDate(2022, 1, 1),
-  end: new CalendarDate(2022, 3, 1),
+  start: new Temporal.PlainDate(2022, 1, 1),
+  end: new Temporal.PlainDate(2022, 3, 1),
 }
 
 const calendarDateTime = {
-  start: new CalendarDateTime(2022, 1, 1, 12, 30),
-  end: new CalendarDateTime(2022, 3, 1, 12, 30),
+  start: new Temporal.PlainDateTime(2022, 1, 1, 12, 30),
+  end: new Temporal.PlainDateTime(2022, 3, 1, 12, 30),
 }
 const zonedDateTime = {
-  start: toZoned(calendarDateTime.start, 'America/New_York'),
-  end: toZoned(calendarDateTime.end, 'America/New_York'),
+  start: calendarDateTime.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTime.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
@@ -245,7 +244,7 @@ describe('dateRangeField (parity with DateField)', () => {
   it('emits the whole range once both ends are complete, and only then', async () => {
     const emitted: DateRange[] = []
     const { user, start, end } = setup({
-      dateFieldProps: { placeholder: new CalendarDate(2024, 1, 1) },
+      dateFieldProps: { placeholder: new Temporal.PlainDate(2024, 1, 1) },
       emits: { 'onUpdate:modelValue': value => emitted.push(value) },
     })
 
@@ -326,14 +325,14 @@ describe('dateRangeField (parity with DateField)', () => {
 
   it('is invalid when an end is outside `minValue` / `maxValue`', async () => {
     const { input, rerender } = setup({
-      dateFieldProps: { modelValue: calendarDate, minValue: new CalendarDate(2022, 1, 2) },
+      dateFieldProps: { modelValue: calendarDate, minValue: new Temporal.PlainDate(2022, 1, 2) },
     })
     expect(input).toHaveAttribute('data-invalid')
 
-    await rerender({ dateFieldProps: { modelValue: calendarDate, maxValue: new CalendarDate(2022, 2, 28) } })
+    await rerender({ dateFieldProps: { modelValue: calendarDate, maxValue: new Temporal.PlainDate(2022, 2, 28) } })
     expect(input).toHaveAttribute('data-invalid')
 
-    await rerender({ dateFieldProps: { modelValue: calendarDate, minValue: new CalendarDate(2022, 1, 1), maxValue: new CalendarDate(2022, 3, 1) } })
+    await rerender({ dateFieldProps: { modelValue: calendarDate, minValue: new Temporal.PlainDate(2022, 1, 1), maxValue: new Temporal.PlainDate(2022, 3, 1) } })
     expect(input).not.toHaveAttribute('data-invalid')
   })
 
@@ -362,5 +361,29 @@ describe('dateRangeField (parity with DateField)', () => {
 
     const invalid = setup({ dateFieldProps: { modelValue: { start: calendarDate.end, end: calendarDate.start } } })
     expect(await axe(invalid.container)).toHaveNoViolations()
+  })
+})
+
+describe('coderabbit review (#3088)', () => {
+  const hiddenInput = (container: Element) => container.querySelector<HTMLInputElement>('input[name="range"]')!
+
+  it('submits an empty endpoint as an empty string, and an empty range as nothing', async () => {
+    const start = new Temporal.PlainDate(2024, 1, 1)
+    const partial = render(DateRangeField, { props: { dateFieldProps: { name: 'range', modelValue: { start, end: undefined } } } })
+    expect(hiddenInput(partial.container).value).toBe('2024-01-01 - ')
+    partial.unmount()
+
+    const empty = render(DateRangeField, { props: { dateFieldProps: { name: 'range', modelValue: { start: undefined, end: undefined } } } })
+    expect(hiddenInput(empty.container).value).toBe('')
+  })
+
+  it('follows a same-instant change of time zone of the start', async () => {
+    const start = Temporal.ZonedDateTime.from('2024-07-10T12:30[America/New_York]')
+    const end = start.add({ days: 1 })
+    const { getByTestId, rerender } = render(DateRangeField, { props: { dateFieldProps: { modelValue: { start, end }, granularity: 'minute', locale: 'en-US' } } })
+    expect(getByTestId('start-timeZoneName')).toHaveTextContent('EDT')
+
+    await rerender({ dateFieldProps: { modelValue: { start: start.withTimeZone('America/Chicago'), end }, granularity: 'minute', locale: 'en-US' } })
+    await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
   })
 })

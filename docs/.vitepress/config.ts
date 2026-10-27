@@ -192,38 +192,14 @@ export default defineConfig({
           {
             text: 'Dates',
             items: [
-              {
-                text: `Calendar ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/calendar',
-              },
-              {
-                text: `Date Field ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/date-field',
-              },
-              {
-                text: `Date Picker ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/date-picker',
-              },
-              {
-                text: `Date Range Field ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/date-range-field',
-              },
-              {
-                text: `Date Range Picker ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/date-range-picker',
-              },
-              {
-                text: `Range Calendar ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/range-calendar',
-              },
-              {
-                text: `Time Field ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/time-field',
-              },
-              {
-                text: `Time Range Field ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/time-range-field',
-              },
+              { text: 'Calendar', link: '/docs/components/calendar' },
+              { text: 'Date Field', link: '/docs/components/date-field' },
+              { text: 'Date Picker', link: '/docs/components/date-picker' },
+              { text: 'Date Range Field', link: '/docs/components/date-range-field' },
+              { text: 'Date Range Picker', link: '/docs/components/date-range-picker' },
+              { text: 'Range Calendar', link: '/docs/components/range-calendar' },
+              { text: 'Time Field', link: '/docs/components/time-field' },
+              { text: 'Time Range Field', link: '/docs/components/time-range-field' },
             ],
           },
           {

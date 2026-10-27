@@ -183,12 +183,14 @@ function handleClose() {
 }
 
 // Sync open state with DrawerProvider (provider coupling stays in the shell).
+// Keyed by the generated content id: a `DrawerPopup` `id` can change the context's.
+const providerKey = context.contentId
 watch(open, (isOpen) => {
   if (isOpen) {
-    providerContext?.setDrawerOpen(context.contentId, true)
+    providerContext?.setDrawerOpen(providerKey, true)
   }
   else {
-    providerContext?.setDrawerOpen(context.contentId, false)
+    providerContext?.setDrawerOpen(providerKey, false)
   }
 }, { immediate: true })
 
@@ -196,7 +198,7 @@ watch(open, (isOpen) => {
 // that the popup's enter/exit transitions and animations finished (#2827).
 
 onUnmounted(() => {
-  providerContext?.removeDrawer(context.contentId)
+  providerContext?.removeDrawer(providerKey)
 })
 </script>
 

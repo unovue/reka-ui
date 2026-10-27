@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import { CalendarDateTime } from '@internationalized/date'
+import type { DateValue } from '@/date'
 import { ref } from 'vue'
 import DateRangePicker from './_DummyDateRangePicker.vue'
 
-const defaultValue = { start: new CalendarDateTime(2024, 2, 20), end: new CalendarDateTime(2024, 2, 27) }
+const defaultValue = { start: new Temporal.PlainDateTime(2024, 2, 20), end: new Temporal.PlainDateTime(2024, 2, 27) }
 const modelValue = ref(defaultValue) as Ref<{ start: DateValue, end: DateValue }>
 </script>
 

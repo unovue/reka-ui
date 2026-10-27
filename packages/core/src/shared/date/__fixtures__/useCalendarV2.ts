@@ -4,14 +4,24 @@
  * Do not import it from production code.
  */
 
-import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { DateValue, Grid, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { isEqualMonth, isSameDay, isSameMonth } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
-import { createMonths, getDaysInMonth, isAfter, isBefore, toDate } from '@/date'
+import { createMonths, getDaysInMonth, isAfter, isBefore, isSameDay, isSameMonth, toDate, toPlainDate } from '@/date'
 import { useDateFormatter } from '@/shared'
+
+type DateFields = { day?: number, month?: number }
+
+/** v2's `set()`: an empty field set leaves the date as is (Temporal's `with()` throws). */
+function withFields(date: DateValue, fields: DateFields) {
+  return Object.keys(fields).length ? date.with(fields) : date
+}
+
+/** v2's `CalendarDate#compare`: the number of days from `b` to `a`. */
+function compareDays(a: DateValue, b: DateValue) {
+  return toPlainDate(b).until(toPlainDate(a), { largestUnit: 'days' }).days
+}
 
 export type UseCalendarProps = {
   locale: Ref<string>
@@ -98,23 +108,23 @@ export function useCalendarState(props: UseCalendarStateProps) {
 
 function handleNextDisabled(lastPeriodInView: DateValue, nextPageFunc: (date: DateValue) => DateValue): DateValue {
   const firstPeriodOfNextPage = nextPageFunc(lastPeriodInView)
-  const diff = firstPeriodOfNextPage.compare(lastPeriodInView)
+  const diff = compareDays(firstPeriodOfNextPage, lastPeriodInView)
   const duration: DateFields = {}
   if (diff >= 7)
     duration.day = 1
   if (diff >= getDaysInMonth(lastPeriodInView))
     duration.month = 1
-  return firstPeriodOfNextPage.set({ ...duration })
+  return withFields(firstPeriodOfNextPage, duration)
 }
 function handlePrevDisabled(firstPeriodInView: DateValue, prevPageFunc: (date: DateValue) => DateValue): DateValue {
   const lastPeriodOfPrevPage = prevPageFunc(firstPeriodInView)
-  const diff = firstPeriodInView.compare(lastPeriodOfPrevPage)
+  const diff = compareDays(firstPeriodInView, lastPeriodOfPrevPage)
   const duration: DateFields = {}
   if (diff >= 7)
     duration.day = 35
   if (diff >= getDaysInMonth(firstPeriodInView))
     duration.month = 13
-  return lastPeriodOfPrevPage.set({ ...duration })
+  return withFields(lastPeriodOfPrevPage, duration)
 }
 function handleNextPage(date: DateValue, nextPageFunc: (date: DateValue) => DateValue): DateValue {
   return nextPageFunc(date)
@@ -129,10 +139,10 @@ export function useCalendar(props: UseCalendarProps) {
 
   const headingFormatOptions = computed(() => {
     const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendar.identifier,
+      calendar: props.placeholder.value.calendarId,
     }
 
-    if (props.placeholder.value.calendar.identifier === 'gregory' && props.placeholder.value.era === 'BC')
+    if (props.placeholder.value.calendarId === 'gregory' && props.placeholder.value.era === 'BC')
       options.era = 'short'
 
     return options
@@ -151,7 +161,7 @@ export function useCalendar(props: UseCalendarProps) {
   })
 
   function isOutsideVisibleView(date: DateValue) {
-    return !visibleView.value.some(month => isEqualMonth(date, month))
+    return !visibleView.value.some(month => isSameMonth(date, month))
   }
 
   const isNextButtonDisabled = (nextPageFunc?: (date: DateValue) => DateValue) => {
@@ -163,7 +173,7 @@ export function useCalendar(props: UseCalendarProps) {
     const lastPeriodInView = grid.value.at(-1)!.value
 
     if (!nextPageFunc && !props.nextPage.value) {
-      const firstPeriodOfNextPage = lastPeriodInView.add({ months: 1 }).set({ day: 1 })
+      const firstPeriodOfNextPage = lastPeriodInView.add({ months: 1 }).with({ day: 1 })
       return isAfter(firstPeriodOfNextPage, props.maxValue.value)
     }
 
@@ -179,7 +189,7 @@ export function useCalendar(props: UseCalendarProps) {
     const firstPeriodInView = grid.value[0].value
 
     if (!prevPageFunc && !props.prevPage.value) {
-      const lastPeriodOfPrevPage = firstPeriodInView.subtract({ months: 1 }).set({ day: 35 })
+      const lastPeriodOfPrevPage = firstPeriodInView.subtract({ months: 1 }).with({ day: 35 })
       return isBefore(lastPeriodOfPrevPage, props.minValue.value)
     }
 
@@ -227,7 +237,7 @@ export function useCalendar(props: UseCalendarProps) {
 
       grid.value = newGrid
 
-      props.placeholder.value = newGrid[0].value.set({ day: 1 })
+      props.placeholder.value = newGrid[0].value.with({ day: 1 })
       return
     }
 
@@ -246,7 +256,7 @@ export function useCalendar(props: UseCalendarProps) {
 
     // Do not adjust the placeholder if the nextPageFunc is defined (overwrite)
     if (!nextPageFunc) {
-      const diff = newGrid[0].value.compare(firstDate)
+      const diff = compareDays(newGrid[0].value, firstDate)
       if (diff >= getDaysInMonth(firstDate))
         duration.day = 1
 
@@ -254,7 +264,7 @@ export function useCalendar(props: UseCalendarProps) {
         duration.month = 1
     }
 
-    props.placeholder.value = newGrid[0].value.set({ ...duration })
+    props.placeholder.value = withFields(newGrid[0].value, duration)
   }
 
   const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
@@ -273,7 +283,7 @@ export function useCalendar(props: UseCalendarProps) {
 
       grid.value = newGrid
 
-      props.placeholder.value = newGrid[0].value.set({ day: 1 })
+      props.placeholder.value = newGrid[0].value.with({ day: 1 })
       return
     }
 
@@ -292,7 +302,7 @@ export function useCalendar(props: UseCalendarProps) {
 
     // Do not adjust the placeholder if the prevPageFunc is defined (overwrite)
     if (!prevPageFunc) {
-      const diff = firstDate.compare(newGrid[0].value)
+      const diff = compareDays(firstDate, newGrid[0].value)
       if (diff >= getDaysInMonth(firstDate))
         duration.day = 1
 
@@ -300,11 +310,11 @@ export function useCalendar(props: UseCalendarProps) {
         duration.month = 1
     }
 
-    props.placeholder.value = newGrid[0].value.set({ ...duration })
+    props.placeholder.value = withFields(newGrid[0].value, duration)
   }
 
   watch(props.placeholder, (value) => {
-    if (visibleView.value.some(month => isEqualMonth(month, value)))
+    if (visibleView.value.some(month => isSameMonth(month, value)))
       return
     grid.value = createMonths({
       dateObj: value,
@@ -368,7 +378,7 @@ export function useCalendar(props: UseCalendarProps) {
       const startDay = props.minValue.value && isSameMonth(props.minValue.value, month.value) ? props.minValue.value.day : 1
 
       for (let day = startDay; day <= daysInMonth; day++) {
-        const date = month.value.set({ day })
+        const date = month.value.with({ day })
         if (isDateDisabled(date) || isDateUnavailable(date))
           continue
         return date

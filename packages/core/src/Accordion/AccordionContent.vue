@@ -23,6 +23,7 @@ defineExpose(expose)
 
 <template>
   <CollapsibleContent
+    :id="props.id"
     :ref="forwardRef"
     :as-child="props.asChild"
     :as="as"

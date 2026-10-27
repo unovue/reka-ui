@@ -20,6 +20,12 @@
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'id',
+    'description': '<p>Id of the element, which the trigger\'s <code>aria-controls</code> points at.\nAuto-generated when not provided.</p>\n',
+    'type': 'string',
+    'required': false
   }
 ]" />
 </llm-exclude>
@@ -33,5 +39,6 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
+| `id` | Id of the element, which the trigger's `aria-controls` points at. Auto-generated when not provided. | `string` | No | - |
 
 </llm-only>

@@ -94,6 +94,12 @@
     'required': false
   },
   {
+    'name': 'id',
+    'description': '<p>Id of the element, which the trigger\'s <code>aria-controls</code> points at.\nAuto-generated when not provided.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'memoDependencies',
     'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
     'type': 'unknown[]',
@@ -210,6 +216,7 @@
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When `true`, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
+| `id` | Id of the element, which the trigger's `aria-controls` points at. Auto-generated when not provided. | `string` | No | - |
 | `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `portal` | Props to control the portal wrapped around the content. | `PopoverPortalProps` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |

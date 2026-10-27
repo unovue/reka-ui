@@ -1,6 +1,4 @@
-import type { DateValue } from '@internationalized/date'
-import type { CalendarUnit } from '@/date'
-import { CalendarDate } from '@internationalized/date'
+import type { CalendarUnit, DateValue } from '@/date'
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref, shallowRef } from 'vue'
 import { useCalendar } from './__fixtures__/useCalendarV2'
@@ -121,18 +119,18 @@ function buildOldYear(s: Scenario) {
   return { api, placeholder }
 }
 
-const sep5 = new CalendarDate(2026, 9, 5)
+const sep5 = new Temporal.PlainDate(2026, 9, 5)
 
 describe('useCalendarGrid — day view parity with useCalendar', () => {
   const scenarios: Record<string, Scenario> = {
     'single month': { placeholder: sep5 },
     'fixed weeks, Monday start': { placeholder: sep5, fixedWeeks: true, weekStartsOn: 1 },
     'two months paged': { placeholder: sep5, numberOfMonths: 2, pagedNavigation: true },
-    'bounded': { placeholder: sep5, minValue: new CalendarDate(2026, 8, 20), maxValue: new CalendarDate(2026, 11, 10) },
-    'bounded inside the month': { placeholder: sep5, minValue: new CalendarDate(2026, 9, 10), maxValue: new CalendarDate(2026, 9, 20) },
+    'bounded': { placeholder: sep5, minValue: new Temporal.PlainDate(2026, 8, 20), maxValue: new Temporal.PlainDate(2026, 11, 10) },
+    'bounded inside the month': { placeholder: sep5, minValue: new Temporal.PlainDate(2026, 9, 10), maxValue: new Temporal.PlainDate(2026, 9, 20) },
     'matcher': { placeholder: sep5, isDateDisabled: d => d.day % 2 === 0, isDateUnavailable: d => d.day === 13 },
-    'disabled': { placeholder: sep5, disabled: true, minValue: new CalendarDate(2020, 1, 1), maxValue: new CalendarDate(2030, 1, 1) },
-    'custom paging by year': { placeholder: sep5, nextPage: d => d.add({ years: 1 }), prevPage: d => d.subtract({ years: 1 }), maxValue: new CalendarDate(2028, 1, 1), minValue: new CalendarDate(2024, 1, 1) },
+    'disabled': { placeholder: sep5, disabled: true, minValue: new Temporal.PlainDate(2020, 1, 1), maxValue: new Temporal.PlainDate(2030, 1, 1) },
+    'custom paging by year': { placeholder: sep5, nextPage: d => d.add({ years: 1 }), prevPage: d => d.subtract({ years: 1 }), maxValue: new Temporal.PlainDate(2028, 1, 1), minValue: new Temporal.PlainDate(2024, 1, 1) },
     'de-DE locale': { placeholder: sep5, locale: 'de-DE', weekStartsOn: 1 },
   }
 
@@ -186,7 +184,7 @@ describe('useCalendarGrid — day view parity with useCalendar', () => {
 
   it('matches when a paging function is passed straight to nextPage()', () => {
     withScope(() => {
-      const s: Scenario = { placeholder: sep5, maxValue: new CalendarDate(2030, 1, 1) }
+      const s: Scenario = { placeholder: sep5, maxValue: new Temporal.PlainDate(2030, 1, 1) }
       const { api: oldApi, placeholder: oldPh } = buildOldDay(s)
       const { api: newApi, placeholder: newPh } = buildNew('day', s)
       const jump = (d: DateValue) => d.add({ years: 1 })
@@ -202,8 +200,8 @@ describe('useCalendarGrid — day view parity with useCalendar', () => {
     await withScope(async () => {
       const { api: oldApi, placeholder: oldPh } = buildOldDay({ placeholder: sep5 })
       const { api: newApi, placeholder: newPh } = buildNew('day', { placeholder: sep5 })
-      oldPh.value = new CalendarDate(2027, 2, 14)
-      newPh.value = new CalendarDate(2027, 2, 14)
+      oldPh.value = new Temporal.PlainDate(2027, 2, 14)
+      newPh.value = new Temporal.PlainDate(2027, 2, 14)
       await nextTick()
       expect(cellStrings(newApi.grid.value)).toEqual(cellStrings(oldApi.grid.value))
       expect(newApi.headingValue.value).toBe('February 2027')
@@ -212,7 +210,7 @@ describe('useCalendarGrid — day view parity with useCalendar', () => {
 
   it('finds a focusable day inside the month even when minValue is after the 1st', () => {
     withScope(() => {
-      const { api } = buildNew('day', { placeholder: sep5, minValue: new CalendarDate(2026, 9, 10) })
+      const { api } = buildNew('day', { placeholder: sep5, minValue: new Temporal.PlainDate(2026, 9, 10) })
       expect(api.firstFocusableDate.value?.toString()).toBe('2026-09-10')
     })
   })
@@ -221,10 +219,10 @@ describe('useCalendarGrid — day view parity with useCalendar', () => {
 describe('useCalendarGrid — month view parity with useMonthPicker', () => {
   const scenarios: Record<string, Scenario> = {
     'plain': { placeholder: sep5 },
-    'bounded': { placeholder: sep5, minValue: new CalendarDate(2026, 3, 15), maxValue: new CalendarDate(2027, 6, 30) },
+    'bounded': { placeholder: sep5, minValue: new Temporal.PlainDate(2026, 3, 15), maxValue: new Temporal.PlainDate(2027, 6, 30) },
     'matcher': { placeholder: sep5, isDateDisabled: d => d.month === 7, isDateUnavailable: d => d.month === 12 },
-    'disabled': { placeholder: sep5, disabled: true, minValue: new CalendarDate(2020, 1, 1), maxValue: new CalendarDate(2030, 1, 1) },
-    'custom paging by two years': { placeholder: sep5, nextPage: d => d.add({ years: 2 }), prevPage: d => d.subtract({ years: 2 }), minValue: new CalendarDate(2023, 1, 1), maxValue: new CalendarDate(2029, 12, 31) },
+    'disabled': { placeholder: sep5, disabled: true, minValue: new Temporal.PlainDate(2020, 1, 1), maxValue: new Temporal.PlainDate(2030, 1, 1) },
+    'custom paging by two years': { placeholder: sep5, nextPage: d => d.add({ years: 2 }), prevPage: d => d.subtract({ years: 2 }), minValue: new Temporal.PlainDate(2023, 1, 1), maxValue: new Temporal.PlainDate(2029, 12, 31) },
   }
 
   for (const [name, s] of Object.entries(scenarios)) {
@@ -266,8 +264,8 @@ describe('useCalendarGrid — month view parity with useMonthPicker', () => {
     await withScope(async () => {
       const { api: oldApi, placeholder: oldPh } = buildOldMonth({ placeholder: sep5 })
       const { api: newApi, placeholder: newPh } = buildNew('month', { placeholder: sep5 })
-      oldPh.value = new CalendarDate(2031, 4, 1)
-      newPh.value = new CalendarDate(2031, 4, 1)
+      oldPh.value = new Temporal.PlainDate(2031, 4, 1)
+      newPh.value = new Temporal.PlainDate(2031, 4, 1)
       await nextTick()
       expect(cellStrings(newApi.grid.value)).toEqual([oldApi.grid.value.cells.map(c => c.toString())])
       expect(newApi.headingValue.value).toBe('2031')
@@ -279,10 +277,10 @@ describe('useCalendarGrid — year view parity with useYearPicker', () => {
   const scenarios: Record<string, Scenario> = {
     'plain': { placeholder: sep5 },
     'twenty per page': { placeholder: sep5, yearsPerPage: 20 },
-    'bounded': { placeholder: sep5, minValue: new CalendarDate(2015, 6, 1), maxValue: new CalendarDate(2040, 1, 1) },
+    'bounded': { placeholder: sep5, minValue: new Temporal.PlainDate(2015, 6, 1), maxValue: new Temporal.PlainDate(2040, 1, 1) },
     'matcher': { placeholder: sep5, isDateDisabled: d => d.year % 5 === 0, isDateUnavailable: d => d.year === 2027 },
-    'disabled': { placeholder: sep5, disabled: true, minValue: new CalendarDate(1990, 1, 1), maxValue: new CalendarDate(2100, 1, 1) },
-    'custom paging by a century': { placeholder: sep5, nextPage: d => d.add({ years: 100 }), prevPage: d => d.subtract({ years: 100 }), minValue: new CalendarDate(1900, 1, 1), maxValue: new CalendarDate(2200, 1, 1) },
+    'disabled': { placeholder: sep5, disabled: true, minValue: new Temporal.PlainDate(1990, 1, 1), maxValue: new Temporal.PlainDate(2100, 1, 1) },
+    'custom paging by a century': { placeholder: sep5, nextPage: d => d.add({ years: 100 }), prevPage: d => d.subtract({ years: 100 }), minValue: new Temporal.PlainDate(1900, 1, 1), maxValue: new Temporal.PlainDate(2200, 1, 1) },
   }
 
   for (const [name, s] of Object.entries(scenarios)) {
@@ -323,8 +321,8 @@ describe('useCalendarGrid — year view parity with useYearPicker', () => {
     await withScope(async () => {
       const { api: oldApi, placeholder: oldPh } = buildOldYear({ placeholder: sep5 })
       const { api: newApi, placeholder: newPh } = buildNew('year', { placeholder: sep5 })
-      oldPh.value = new CalendarDate(2055, 1, 1)
-      newPh.value = new CalendarDate(2055, 1, 1)
+      oldPh.value = new Temporal.PlainDate(2055, 1, 1)
+      newPh.value = new Temporal.PlainDate(2055, 1, 1)
       await nextTick()
       expect(cellStrings(newApi.grid.value)).toEqual([oldApi.grid.value.cells.map(c => c.toString())])
       expect(newApi.grid.value[0].cells[0].toString()).toBe('2050-01-01')
@@ -356,7 +354,7 @@ describe('useCalendarGrid — switching unit', () => {
       unit.value = 'year'
       await nextTick()
       expect(api.headingValue.value).toBe('2020 - 2031')
-      expect(api.isOutsideVisibleView(new CalendarDate(2031, 12, 31))).toBe(false)
+      expect(api.isOutsideVisibleView(new Temporal.PlainDate(2031, 12, 31))).toBe(false)
     })
   })
 

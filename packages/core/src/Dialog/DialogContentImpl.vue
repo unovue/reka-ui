@@ -73,8 +73,9 @@ if (process.env.NODE_ENV !== 'production') {
     titleName: 'DialogTitle',
     contentName: 'DialogContent',
     componentLink: 'dialog.html#title',
-    titleId: rootContext.titleId,
-    descriptionId: rootContext.descriptionId,
+    // Read on mount: a `DialogTitle` / `DialogDescription` `id` replaces them at setup.
+    titleId: () => rootContext.titleId,
+    descriptionId: () => rootContext.descriptionId,
     contentElement,
   })
 }

@@ -4,14 +4,14 @@
 
 <SlotsTable :data="[
   {
-    'name': 'segments',
-    'description': '',
-    'type': 'Record&lt;DateRangeType, { part: SegmentPart; value: string; }[]&gt;'
+    'name': 'modelValue',
+    'description': '<p>The current date range of the field</p>\n',
+    'type': 'DateRange'
   },
   {
-    'name': 'modelValue',
-    'description': '',
-    'type': 'DateRange'
+    'name': 'segments',
+    'description': '<p>The date field segment contents</p>\n',
+    'type': 'Record&lt;DateRangeType, { part: SegmentPart; value: string; }[]&gt;'
   }
 ]" />
 </llm-exclude>
@@ -22,7 +22,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `segments` |  | `Record<DateRangeType, { part: SegmentPart; value: string; }[]>` |
-| `modelValue` |  | `DateRange` |
+| `modelValue` | The current date range of the field | `DateRange` |
+| `segments` | The date field segment contents | `Record<DateRangeType, { part: SegmentPart; value: string; }[]>` |
 
 </llm-only>

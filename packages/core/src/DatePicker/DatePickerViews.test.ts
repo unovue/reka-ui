@@ -1,5 +1,4 @@
-import type { DateValue } from '@internationalized/date'
-import { CalendarDate } from '@internationalized/date'
+import type { DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,7 +7,7 @@ import { useTestKbd } from '@/shared'
 import DatePickerViews from './story/_DatePickerViews.vue'
 
 const kbd = useTestKbd()
-const jan20 = new CalendarDate(1980, 1, 20)
+const jan20 = new Temporal.PlainDate(1980, 1, 20)
 
 describe('datePicker — calendar views', () => {
   it('drills through the views without closing, then closes on a day when closeOnSelect is set', async () => {

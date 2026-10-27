@@ -4,14 +4,14 @@
 
 <SlotsTable :data="[
   {
-    'name': 'segments',
-    'description': '',
-    'type': '{ part: SegmentPart; value: string; }[]'
+    'name': 'modelValue',
+    'description': '<p>The current date of the field</p>\n',
+    'type': 'DateValue | undefined'
   },
   {
-    'name': 'modelValue',
-    'description': '',
-    'type': 'DateValue | undefined'
+    'name': 'segments',
+    'description': '<p>The date field segment contents</p>\n',
+    'type': '{ part: SegmentPart; value: string; }[]'
   }
 ]" />
 </llm-exclude>
@@ -22,7 +22,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `segments` |  | `{ part: SegmentPart; value: string; }[]` |
-| `modelValue` |  | `DateValue \| undefined` |
+| `modelValue` | The current date of the field | `DateValue \| undefined` |
+| `segments` | The date field segment contents | `{ part: SegmentPart; value: string; }[]` |
 
 </llm-only>

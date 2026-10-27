@@ -1,4 +1,3 @@
-import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
@@ -7,7 +6,7 @@ import DateField from './story/_DateField.vue'
 describe('given a DateField inside a shadow root, in a real browser', () => {
   it('moves between segments with the arrow keys and edits them', async () => {
     const { get, activeElement } = mountInShadowRoot(DateField, {
-      props: { dateFieldProps: { defaultValue: new CalendarDate(2024, 1, 20), locale: 'en-US' } },
+      props: { dateFieldProps: { defaultValue: new Temporal.PlainDate(2024, 1, 20), locale: 'en-US' } },
     })
 
     get('month')!.focus()

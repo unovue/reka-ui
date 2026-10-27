@@ -1,7 +1,10 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 
-export interface DrawerTriggerProps extends PrimitiveProps {}
+export interface DrawerTriggerProps extends PrimitiveProps {
+  /** Id of the element. */
+  id?: string
+}
 </script>
 
 <script setup lang="ts">
@@ -38,6 +41,7 @@ onUnmounted(() => {
 
 <template>
   <Primitive
+    :id="props.id"
     :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"

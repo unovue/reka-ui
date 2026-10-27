@@ -2,7 +2,6 @@ import type { PropType } from 'vue'
 import type { UseTimeRangeFieldProps, UseTimeRangeFieldReturn } from './useTimeRangeField'
 import type { DateRangeType } from '@/DateRangeField'
 import type { SegmentPart, TimeRange } from '@/shared/date'
-import { Time } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -16,7 +15,7 @@ import { useTimeRangeField } from './useTimeRangeField'
  * covered by `TimeRangeField.test.ts`.
  */
 
-const range: TimeRange = { start: new Time(10, 0), end: new Time(12, 30) }
+const range: TimeRange = { start: new Temporal.PlainTime(10, 0), end: new Temporal.PlainTime(12, 30) }
 
 function withScope<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -76,7 +75,7 @@ describe('useTimeRangeField', () => {
     await user.click(getByTestId('start-minute'))
     await user.keyboard('{ArrowUp}')
     let [value, details] = onUpdate.mock.lastCall!
-    expect(value.start).toBeInstanceOf(Time)
+    expect(value.start).toBeInstanceOf(Temporal.PlainTime)
     expect(value.start.toString()).toBe('10:01:00')
     expect(value.end.toString()).toBe('12:30:00')
     expect(details.reason).toBe('segment-increment')
@@ -131,16 +130,16 @@ describe('useTimeRangeField', () => {
       const emit = vi.fn()
       const api = useTimeRangeField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)
-      api.setModelValue({ start: new Time(8), end: new Time(9) })
-      expect(emit).toHaveBeenCalledWith('update:modelValue', { start: new Time(8), end: new Time(9) }, expect.objectContaining({ reason: 'imperative-action' }))
+      api.setModelValue({ start: new Temporal.PlainTime(8), end: new Temporal.PlainTime(9) })
+      expect(emit).toHaveBeenCalledWith('update:modelValue', { start: new Temporal.PlainTime(8), end: new Temporal.PlainTime(9) }, expect.objectContaining({ reason: 'imperative-action' }))
       expect(api.modelValue.value.start?.toString()).toBe('10:00:00')
       model.value = null
       expect(api.modelValue.value).toEqual({ start: undefined, end: undefined })
 
       const uncontrolled = useTimeRangeField({ defaultValue: range, locale: 'en-US' })
       expect(uncontrolled.isControlled.value).toBe(false)
-      expect(uncontrolled.setModelValue({ start: new Time(10, 0), end: new Time(12, 30) })).toBe(false)
-      expect(uncontrolled.setModelValue({ start: new Time(8), end: new Time(9) })).toBe(true)
+      expect(uncontrolled.setModelValue({ start: new Temporal.PlainTime(10, 0), end: new Temporal.PlainTime(12, 30) })).toBe(false)
+      expect(uncontrolled.setModelValue({ start: new Temporal.PlainTime(8), end: new Temporal.PlainTime(9) })).toBe(true)
       expect(uncontrolled.modelValue.value.start?.toString()).toBe('08:00:00')
     })
   })
@@ -149,7 +148,7 @@ describe('useTimeRangeField', () => {
     withScope(() => {
       expect(useTimeRangeField({ defaultValue: range, locale: 'en-US' }).isInvalid.value).toBe(false)
       expect(useTimeRangeField({ defaultValue: { start: range.end, end: range.start }, locale: 'en-US' }).isInvalid.value).toBe(true)
-      expect(useTimeRangeField({ defaultValue: range, maxValue: new Time(12), locale: 'en-US' }).isInvalid.value).toBe(true)
+      expect(useTimeRangeField({ defaultValue: range, maxValue: new Temporal.PlainTime(12), locale: 'en-US' }).isInvalid.value).toBe(true)
       const api = useTimeRangeField({ defaultValue: range, isTimeUnavailable: (d: any) => d.hour === 12, locale: 'en-US' })
       expect(api.isInvalid.value).toBe(true)
       expect(api.root.attrs.value['data-invalid']).toBe('')
@@ -158,7 +157,7 @@ describe('useTimeRangeField', () => {
 
   it('follows the hour cycle and the locale', async () => {
     const locale = ref('en-US')
-    const pm = { start: new Time(14), end: new Time(16) }
+    const pm = { start: new Temporal.PlainTime(14), end: new Temporal.PlainTime(16) }
     const api = withScope(() => useTimeRangeField({ defaultValue: pm, locale }))
     expect(api.editableSegments.value.start.map(s => s.part)).toContain('dayPeriod')
     expect(api.segments.value.start.find(s => s.part === 'hour')?.value).toBe('2')

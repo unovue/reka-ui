@@ -1,10 +1,9 @@
-import type { DateValue } from '@internationalized/date'
 import type { PropType } from 'vue'
 import type { UseDateRangePickerProps, UseDateRangePickerReturn } from './useDateRangePicker'
+import type { DateValue } from '@/date'
 import type { DateRangeType, UseDateRangeFieldReturn } from '@/DateRangeField'
 import type { UseRangeCalendarReturn } from '@/RangeCalendar/useRangeCalendar'
 import type { DateRange, SegmentPart } from '@/shared/date'
-import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -22,7 +21,7 @@ import { useDateRangePicker } from './useDateRangePicker'
  * behaviour is covered by `DateRangePicker.test.ts`.
  */
 
-const range: DateRange = { start: new CalendarDate(2024, 1, 20), end: new CalendarDate(2024, 1, 25) }
+const range: DateRange = { start: new Temporal.PlainDate(2024, 1, 20), end: new Temporal.PlainDate(2024, 1, 25) }
 
 function withScope<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -109,7 +108,7 @@ describe('useDateRangePicker', () => {
     expect(api().picker.open.value).toBe(true)
 
     await user.click(getByTestId('date-1-8'))
-    expect(onUpdateStartValue).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+    expect(onUpdateStartValue).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
     await user.click(getByTestId('date-1-12'))
     const [value, details] = onUpdate.mock.lastCall!
     expect(value.start.toString()).toBe('2024-01-08')
@@ -154,7 +153,7 @@ describe('useDateRangePicker', () => {
       const emit = vi.fn()
       const picker = useDateRangePicker({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(picker.isControlled.value).toBe(true)
-      const next = { start: new CalendarDate(2024, 2, 1), end: new CalendarDate(2024, 2, 3) }
+      const next = { start: new Temporal.PlainDate(2024, 2, 1), end: new Temporal.PlainDate(2024, 2, 3) }
       expect(picker.setModelValue(next)).toBe(true)
       expect(emit).toHaveBeenCalledWith('beforeUpdate:modelValue', next, expect.objectContaining({ reason: 'imperative-action' }))
       expect(emit).toHaveBeenCalledWith('update:modelValue', next, expect.objectContaining({ reason: 'imperative-action' }))
@@ -164,7 +163,7 @@ describe('useDateRangePicker', () => {
 
       const uncontrolled = useDateRangePicker({ defaultValue: range, locale: 'en-US' })
       expect(uncontrolled.isControlled.value).toBe(false)
-      expect(uncontrolled.setModelValue({ start: new CalendarDate(2024, 1, 20), end: new CalendarDate(2024, 1, 25) })).toBe(false)
+      expect(uncontrolled.setModelValue({ start: new Temporal.PlainDate(2024, 1, 20), end: new Temporal.PlainDate(2024, 1, 25) })).toBe(false)
       expect(uncontrolled.setModelValue(next)).toBe(true)
       expect(uncontrolled.modelValue.value.end?.toString()).toBe('2024-02-03')
     })
@@ -179,13 +178,13 @@ describe('useDateRangePicker', () => {
       const picker = useDateRangePicker({ defaultValue: range, emit, locale: 'en-US' })
       return { picker, calendar: useRangeCalendar(picker.getCalendarProps()) }
     })
-    calendar.select(new CalendarDate(2024, 1, 8), 'cell-press')
+    calendar.select(new Temporal.PlainDate(2024, 1, 8), 'cell-press')
     await nextTick()
     // A pointer hovers the end before pressing it (it highlights the range).
-    calendar.setFocusedValue(new CalendarDate(2024, 1, 12))
-    calendar.select(new CalendarDate(2024, 1, 12), 'cell-press')
+    calendar.setFocusedValue(new Temporal.PlainDate(2024, 1, 12))
+    calendar.select(new Temporal.PlainDate(2024, 1, 12), 'cell-press')
     await nextTick()
-    expect(emit).toHaveBeenCalledWith('beforeUpdate:startValue', new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+    expect(emit).toHaveBeenCalledWith('beforeUpdate:startValue', new Temporal.PlainDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
     expect(emit.mock.calls.some(([event]) => event === 'update:startValue')).toBe(false)
     expect(picker.modelValue.value.start?.toString()).toBe('2024-01-08')
     expect(picker.modelValue.value.end?.toString()).toBe('2024-01-12')
@@ -194,10 +193,10 @@ describe('useDateRangePicker', () => {
   it('closes on select with date-select once both ends are set', async () => {
     const onUpdateOpen = vi.fn()
     const picker = withScope(() => useDateRangePicker({ defaultOpen: true, closeOnSelect: true, locale: 'en-US', onUpdateOpen }))
-    picker.setModelValue({ start: new CalendarDate(2024, 3, 1), end: undefined }, 'cell-press')
+    picker.setModelValue({ start: new Temporal.PlainDate(2024, 3, 1), end: undefined }, 'cell-press')
     await nextTick()
     expect(picker.open.value).toBe(true)
-    picker.setModelValue({ start: new CalendarDate(2024, 3, 1), end: new CalendarDate(2024, 3, 4) }, 'cell-press')
+    picker.setModelValue({ start: new Temporal.PlainDate(2024, 3, 1), end: new Temporal.PlainDate(2024, 3, 4) }, 'cell-press')
     await nextTick()
     expect(picker.open.value).toBe(false)
     expect(onUpdateOpen).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'date-select' }))
@@ -207,7 +206,7 @@ describe('useDateRangePicker', () => {
     const locale = ref('de-DE')
     const field = withScope(() => {
       const picker = useDateRangePicker({
-        defaultValue: { start: new CalendarDateTime(2024, 1, 20, 14, 30), end: new CalendarDateTime(2024, 1, 21, 9, 0) },
+        defaultValue: { start: new Temporal.PlainDateTime(2024, 1, 20, 14, 30), end: new Temporal.PlainDateTime(2024, 1, 21, 9, 0) },
         locale,
         hourCycle: 24,
         stepSnapping: true,
@@ -232,7 +231,7 @@ describe('useDateRangePicker', () => {
       })
       await user.click(getByTestId('trigger'))
       await user.click(getByTestId('date-1-8'))
-      expect(onStart).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+      expect(onStart).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
       await user.click(getByTestId('date-1-12'))
       const [value, details] = onUpdate.mock.lastCall!
       expect(value.end.toString()).toBe('2024-01-12')
@@ -274,22 +273,22 @@ describe('useDateRangePicker review fixes', () => {
     // Open: press Jan 8, then close (the calendar unmounts).
     const first = effectScope()
     const calendar = first.run(() => useRangeCalendar(picker.getCalendarProps()))!
-    calendar.select(new CalendarDate(2024, 1, 8), 'cell-press')
+    calendar.select(new Temporal.PlainDate(2024, 1, 8), 'cell-press')
     await nextTick()
-    expect(onUpdateStartValue).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+    expect(onUpdateStartValue).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
     first.stop()
 
     // The field moves the range while the popover is closed.
-    picker.setModelValue({ start: new CalendarDate(2024, 1, 3), end: new CalendarDate(2024, 1, 12) }, 'segment-input')
+    picker.setModelValue({ start: new Temporal.PlainDate(2024, 1, 3), end: new Temporal.PlainDate(2024, 1, 12) }, 'segment-input')
     await nextTick()
     expect(picker.startValue.value?.toString()).toBe('2024-01-03')
 
     // Reopen and press Jan 8 again: a real change, so it is emitted.
     onUpdateStartValue.mockClear()
     const reopened = withScope(() => useRangeCalendar(picker.getCalendarProps()))
-    reopened.select(new CalendarDate(2024, 1, 8), 'cell-press')
+    reopened.select(new Temporal.PlainDate(2024, 1, 8), 'cell-press')
     await nextTick()
-    expect(onUpdateStartValue).toHaveBeenCalledWith(new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+    expect(onUpdateStartValue).toHaveBeenCalledWith(new Temporal.PlainDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
     expect(picker.startValue.value?.toString()).toBe('2024-01-08')
   })
 
@@ -302,7 +301,7 @@ describe('useDateRangePicker review fixes', () => {
         onBeforeUpdatePlaceholder: (_value, details) => details.cancel(),
         onUpdatePlaceholder,
       })
-      expect(picker.setPlaceholder(new CalendarDate(2024, 5, 1))).toBe(false)
+      expect(picker.setPlaceholder(new Temporal.PlainDate(2024, 5, 1))).toBe(false)
       expect(onUpdatePlaceholder).not.toHaveBeenCalled()
       expect(picker.placeholder.value.toString()).toBe('2024-01-20')
     })

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { Time } from '@internationalized/date'
 import { ref } from 'vue'
 import { TimeFieldInput, TimeFieldRoot } from '..'
 
-const modelValue = ref<Time>()
-const defaultValue = new Time(10, 0, 0)
-const minValue = new Time(9)
-const maxValue = new Time(18)
+const modelValue = ref<Temporal.PlainTime>()
+const defaultValue = new Temporal.PlainTime(10, 0, 0)
+const minValue = new Temporal.PlainTime(9)
+const maxValue = new Temporal.PlainTime(18)
 </script>
 
 <template>

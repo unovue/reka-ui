@@ -1,8 +1,8 @@
-import type { DateValue } from '@internationalized/date'
 import type { Matcher } from './types'
 import type { CalendarLayout } from './units'
-import { CalendarDate, CalendarDateTime, EthiopicCalendar, GregorianCalendar, HebrewCalendar, JapaneseCalendar, toCalendar, toCalendarDate } from '@internationalized/date'
+import type { DateValue } from '@/date'
 import { describe, expect, it } from 'vitest'
+import { toCalendar, toIsoString, toPlainDate } from '@/date'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 import { clampLayoutCount, createMonthGrid, createYearGrid } from './calendar'
 import { CALENDAR_UNITS, clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isCoarserUnit } from './units'
@@ -17,7 +17,7 @@ const layout: CalendarLayout = {
   columns: 4,
 }
 
-const sep5 = new CalendarDate(2026, 9, 5)
+const sep5 = new Temporal.PlainDate(2026, 9, 5)
 const strings = (dates: { toString: () => string }[]) => dates.map(d => d.toString())
 
 describe('unit ordering helpers', () => {
@@ -55,22 +55,22 @@ describe('day adapter', () => {
   })
 
   it('counts distance in whole days, inclusive, for date-time values too', () => {
-    expect(day.distance(sep5, new CalendarDate(2026, 9, 7))).toBe(3)
+    expect(day.distance(sep5, new Temporal.PlainDate(2026, 9, 7))).toBe(3)
     // `compare()` on date-times counts milliseconds; the same day is still one day.
-    expect(day.distance(new CalendarDateTime(2026, 9, 5, 9), new CalendarDateTime(2026, 9, 5, 17))).toBe(1)
-    expect(day.distance(new CalendarDateTime(2026, 9, 5, 23), new CalendarDateTime(2026, 9, 7, 1))).toBe(3)
+    expect(day.distance(new Temporal.PlainDateTime(2026, 9, 5, 9), new Temporal.PlainDateTime(2026, 9, 5, 17))).toBe(1)
+    expect(day.distance(new Temporal.PlainDateTime(2026, 9, 5, 23), new Temporal.PlainDateTime(2026, 9, 7, 1))).toBe(3)
   })
 
   it('marks leading and trailing days as outside the page', () => {
     const [page] = day.createGrid(sep5, layout)
     expect(day.isInPage(page.cells[0], page.value)).toBe(false)
-    expect(day.isInPage(new CalendarDate(2026, 9, 1), page.value)).toBe(true)
-    expect(day.isInVisibleView(new CalendarDate(2026, 9, 30), [page])).toBe(true)
-    expect(day.isInVisibleView(new CalendarDate(2026, 10, 1), [page])).toBe(false)
+    expect(day.isInPage(new Temporal.PlainDate(2026, 9, 1), page.value)).toBe(true)
+    expect(day.isInVisibleView(new Temporal.PlainDate(2026, 9, 30), [page])).toBe(true)
+    expect(day.isInVisibleView(new Temporal.PlainDate(2026, 10, 1), [page])).toBe(false)
   })
 
   it('pages by one month, or by numberOfMonths with pagedNavigation', () => {
-    const grid = day.createGrid(new CalendarDate(2026, 9, 1), { ...layout, numberOfMonths: 2 })
+    const grid = day.createGrid(new Temporal.PlainDate(2026, 9, 1), { ...layout, numberOfMonths: 2 })
     expect(day.pageTarget(grid, { ...layout, numberOfMonths: 2 }, 1).toString()).toBe('2026-10-01')
     expect(day.pageTarget(grid, { ...layout, numberOfMonths: 2, pagedNavigation: true }, 1).toString()).toBe('2026-11-01')
     expect(day.pageTarget(grid, { ...layout, numberOfMonths: 2 }, -1).toString()).toBe('2026-08-01')
@@ -78,7 +78,7 @@ describe('day adapter', () => {
   })
 
   it('computes the bounds Prev / Next are checked against', () => {
-    const grid = day.createGrid(new CalendarDate(2026, 9, 1), layout)
+    const grid = day.createGrid(new Temporal.PlainDate(2026, 9, 1), layout)
     expect(day.nextPageStart(grid, layout).toString()).toBe('2026-10-01')
     expect(day.prevPageEnd(grid, layout).toString()).toBe('2026-08-31')
     // A custom page function that jumps a year is snapped to the start / end of
@@ -88,11 +88,11 @@ describe('day adapter', () => {
   })
 
   it('snaps the placeholder after paging', () => {
-    const grid = day.createGrid(new CalendarDate(2026, 10, 1), layout)
-    const previousFirst = new CalendarDate(2026, 9, 17)
+    const grid = day.createGrid(new Temporal.PlainDate(2026, 10, 1), layout)
+    const previousFirst = new Temporal.PlainDate(2026, 9, 17)
     expect(day.placeholderAfterPaging(grid, previousFirst, previousFirst, 'default').toString()).toBe('2026-10-01')
     expect(day.placeholderAfterPaging(grid, previousFirst, previousFirst, 'explicit-fn').toString()).toBe('2026-10-01')
-    const yearGrid = day.createGrid(new CalendarDate(2027, 9, 17), layout)
+    const yearGrid = day.createGrid(new Temporal.PlainDate(2027, 9, 17), layout)
     expect(day.placeholderAfterPaging(yearGrid, previousFirst, previousFirst, 'root-fn').toString()).toBe('2027-01-01')
   })
 
@@ -102,7 +102,7 @@ describe('day adapter', () => {
     expect(day.formatLabel(formatter, sep5)).toBe('Saturday, September 5, 2026')
     expect(day.formatHeading(formatter, day.createGrid(sep5, layout), {})).toBe('September 2026')
     expect(day.formatHeading(formatter, day.createGrid(sep5, { ...layout, numberOfMonths: 2 }), {})).toBe('September - October 2026')
-    expect(day.formatHeading(formatter, day.createGrid(new CalendarDate(2026, 12, 1), { ...layout, numberOfMonths: 2 }), {})).toBe('December 2026 - January 2027')
+    expect(day.formatHeading(formatter, day.createGrid(new Temporal.PlainDate(2026, 12, 1), { ...layout, numberOfMonths: 2 }), {})).toBe('December 2026 - January 2027')
   })
 })
 
@@ -120,30 +120,30 @@ describe('month adapter', () => {
   })
 
   it('resolves a selection against a reference and detects the current unit', () => {
-    expect(month.resolve(new CalendarDate(2026, 3, 1), sep5).toString()).toBe('2026-03-05')
-    expect(month.resolve(new CalendarDate(2026, 2, 1), new CalendarDate(2026, 1, 31)).toString()).toBe('2026-02-28')
-    expect(month.resolve(new CalendarDate(2026, 3, 1)).toString()).toBe('2026-03-01')
-    expect(getUnitAdapter('year').resolve(new CalendarDate(2030, 1, 1), sep5).toString()).toBe('2030-09-05')
-    expect(getUnitAdapter('day').resolve(new CalendarDate(2030, 1, 1), sep5).toString()).toBe('2030-01-01')
-    expect(month.isCurrent(new CalendarDate(1900, 1, 1))).toBe(false)
-    expect(getUnitAdapter('year').isCurrent(new CalendarDate(1900, 1, 1))).toBe(false)
+    expect(month.resolve(new Temporal.PlainDate(2026, 3, 1), sep5).toString()).toBe('2026-03-05')
+    expect(month.resolve(new Temporal.PlainDate(2026, 2, 1), new Temporal.PlainDate(2026, 1, 31)).toString()).toBe('2026-02-28')
+    expect(month.resolve(new Temporal.PlainDate(2026, 3, 1)).toString()).toBe('2026-03-01')
+    expect(getUnitAdapter('year').resolve(new Temporal.PlainDate(2030, 1, 1), sep5).toString()).toBe('2030-09-05')
+    expect(getUnitAdapter('day').resolve(new Temporal.PlainDate(2030, 1, 1), sep5).toString()).toBe('2030-01-01')
+    expect(month.isCurrent(new Temporal.PlainDate(1900, 1, 1))).toBe(false)
+    expect(getUnitAdapter('year').isCurrent(new Temporal.PlainDate(1900, 1, 1))).toBe(false)
   })
 
   it('compares, bounds and pages by month and year', () => {
-    expect(month.isSame(sep5, new CalendarDate(2026, 9, 30))).toBe(true)
-    expect(month.compare(new CalendarDate(2026, 9, 30), new CalendarDate(2026, 10, 1))).toBeLessThan(0)
+    expect(month.isSame(sep5, new Temporal.PlainDate(2026, 9, 30))).toBe(true)
+    expect(month.compare(new Temporal.PlainDate(2026, 9, 30), new Temporal.PlainDate(2026, 10, 1))).toBeLessThan(0)
     expect(month.startOf(sep5).toString()).toBe('2026-09-01')
     expect(month.endOf(sep5).toString()).toBe('2026-09-30')
     expect(month.add(sep5, 4).toString()).toBe('2027-01-05')
-    expect(month.distance(new CalendarDate(2026, 1, 1), new CalendarDate(2026, 3, 1))).toBe(3)
+    expect(month.distance(new Temporal.PlainDate(2026, 1, 1), new Temporal.PlainDate(2026, 3, 1))).toBe(3)
 
     const grid = month.createGrid(sep5, layout)
     expect(month.pageTarget(grid, layout, 1).toString()).toBe('2027-09-05')
     expect(month.nextPageStart(grid, layout).toString()).toBe('2027-01-01')
     expect(month.prevPageEnd(grid, layout).toString()).toBe('2025-12-31')
-    expect(month.isInVisibleView(new CalendarDate(2026, 1, 1), grid)).toBe(true)
-    expect(month.isInVisibleView(new CalendarDate(2027, 1, 1), grid)).toBe(false)
-    expect(month.placeholderAfterPaging(month.createGrid(new CalendarDate(2027, 9, 5), layout), sep5, sep5, 'default').toString()).toBe('2027-09-05')
+    expect(month.isInVisibleView(new Temporal.PlainDate(2026, 1, 1), grid)).toBe(true)
+    expect(month.isInVisibleView(new Temporal.PlainDate(2027, 1, 1), grid)).toBe(false)
+    expect(month.placeholderAfterPaging(month.createGrid(new Temporal.PlainDate(2027, 9, 5), layout), sep5, sep5, 'default').toString()).toBe('2027-09-05')
   })
 
   it('formats cells, labels and headings', () => {
@@ -170,17 +170,17 @@ describe('year adapter', () => {
   })
 
   it('compares, bounds and pages by year', () => {
-    expect(year.isSame(sep5, new CalendarDate(2026, 1, 1))).toBe(true)
+    expect(year.isSame(sep5, new Temporal.PlainDate(2026, 1, 1))).toBe(true)
     expect(year.startOf(sep5).toString()).toBe('2026-01-01')
     expect(year.endOf(sep5).toString()).toBe('2026-12-31')
-    expect(year.distance(new CalendarDate(2020, 1, 1), new CalendarDate(2026, 1, 1))).toBe(7)
+    expect(year.distance(new Temporal.PlainDate(2020, 1, 1), new Temporal.PlainDate(2026, 1, 1))).toBe(7)
 
     const grid = year.createGrid(sep5, layout)
     expect(year.nextPageStart(grid, layout).toString()).toBe('2032-01-01')
     expect(year.prevPageEnd(grid, layout).toString()).toBe('2019-12-31')
-    expect(year.isInVisibleView(new CalendarDate(2031, 6, 1), grid)).toBe(true)
-    expect(year.isInVisibleView(new CalendarDate(2032, 1, 1), grid)).toBe(false)
-    expect(year.isInPage(new CalendarDate(1999, 1, 1), grid[0].value)).toBe(true)
+    expect(year.isInVisibleView(new Temporal.PlainDate(2031, 6, 1), grid)).toBe(true)
+    expect(year.isInVisibleView(new Temporal.PlainDate(2032, 1, 1), grid)).toBe(false)
+    expect(year.isInPage(new Temporal.PlainDate(1999, 1, 1), grid[0].value)).toBe(true)
   })
 
   it('formats cells, labels and headings', () => {
@@ -221,28 +221,28 @@ describe('range validation across units', () => {
   it('lets a highlightable unit override disabled / unavailable, like the day validator', () => {
     const month = getUnitAdapter('month')
     const year = getUnitAdapter('year')
-    const start = new CalendarDate(2026, 2, 1)
-    const end = new CalendarDate(2026, 6, 1)
+    const start = new Temporal.PlainDate(2026, 2, 1)
+    const end = new Temporal.PlainDate(2026, 6, 1)
     const april: Matcher = d => d.month === 4
     expect(month.areAllBetweenValid(start, end, undefined, april)).toBe(false)
     expect(month.areAllBetweenValid(start, end, undefined, april, april)).toBe(true)
 
     const y2028: Matcher = d => d.year === 2028
-    expect(year.areAllBetweenValid(new CalendarDate(2026, 1, 1), new CalendarDate(2030, 1, 1), y2028, undefined)).toBe(false)
-    expect(year.areAllBetweenValid(new CalendarDate(2026, 1, 1), new CalendarDate(2030, 1, 1), y2028, undefined, y2028)).toBe(true)
+    expect(year.areAllBetweenValid(new Temporal.PlainDate(2026, 1, 1), new Temporal.PlainDate(2030, 1, 1), y2028, undefined)).toBe(false)
+    expect(year.areAllBetweenValid(new Temporal.PlainDate(2026, 1, 1), new Temporal.PlainDate(2030, 1, 1), y2028, undefined, y2028)).toBe(true)
   })
 })
 
 describe('calendar systems and eras', () => {
   const month = getUnitAdapter('month')
   const year = getUnitAdapter('year')
-  const gregorian = new GregorianCalendar()
-  const inGregorian = (d: DateValue) => toCalendar(toCalendarDate(d), gregorian)
-  const japanese = (y: number, m: number, d: number) => toCalendar(new CalendarDate(y, m, d), new JapaneseCalendar())
+  const gregorian = 'gregory'
+  const inGregorian = (d: DateValue) => toCalendar(toPlainDate(d), gregorian)
+  const japanese = (y: number, m: number, d: number) => toCalendar(new Temporal.PlainDate(y, m, d), 'japanese')
 
   it('builds all thirteen months of a Hebrew leap year', () => {
-    const date = toCalendar(new CalendarDate(2024, 3, 1), new HebrewCalendar())
-    expect(date.calendar.getMonthsInYear(date)).toBe(13)
+    const date = toCalendar(new Temporal.PlainDate(2024, 3, 1), 'hebrew')
+    expect(date.monthsInYear).toBe(13)
     const grid = createMonthGrid({ dateObj: date })
     expect(grid.cells).toHaveLength(13)
     expect(grid.cells.map(c => c.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
@@ -250,7 +250,7 @@ describe('calendar systems and eras', () => {
   })
 
   it('builds the thirteen months of an Ethiopic year', () => {
-    const date = toCalendar(new CalendarDate(2026, 3, 1), new EthiopicCalendar())
+    const date = toCalendar(new Temporal.PlainDate(2026, 3, 1), 'ethiopic')
     const grid = createMonthGrid({ dateObj: date })
     expect(grid.cells).toHaveLength(13)
     expect(grid.cells.at(-1)!.month).toBe(13)
@@ -260,7 +260,7 @@ describe('calendar systems and eras', () => {
   it('pages a Japanese year grid across the Heisei / Reiwa boundary', () => {
     const grid = createYearGrid({ dateObj: japanese(2018, 6, 1) })
     expect(grid.cells.map(c => inGregorian(c).year)).toEqual(Array.from({ length: 12 }, (_, i) => 2010 + i))
-    expect(grid.cells.map(c => `${c.era} ${c.year}`).slice(8)).toEqual(['heisei 30', 'heisei 31', 'reiwa 2', 'reiwa 3'])
+    expect(grid.cells.map(c => `${c.era} ${c.eraYear}`).slice(8)).toEqual(['heisei 30', 'heisei 31', 'reiwa 2', 'reiwa 3'])
 
     const reiwa2 = japanese(2020, 6, 1)
     expect(year.isInVisibleView(reiwa2, [grid])).toBe(true)
@@ -271,34 +271,35 @@ describe('calendar systems and eras', () => {
 
   it('builds the months of a year that spans two Japanese eras', () => {
     const grid = createMonthGrid({ dateObj: japanese(2019, 6, 1) })
-    expect(grid.cells.map(c => inGregorian(c).toString())).toEqual(Array.from({ length: 12 }, (_, i) => new CalendarDate(2019, i + 1, 1).toString()))
+    expect(grid.cells.map(c => toIsoString(c))).toEqual(Array.from({ length: 12 }, (_, i) => new Temporal.PlainDate(2019, i + 1, 1).toString()))
     expect(month.distance(japanese(2019, 4, 10), japanese(2019, 5, 10))).toBe(2)
     expect(month.isInPage(grid.cells[0], grid.cells[11])).toBe(true)
   })
 
   it('aligns and orders BC year pages', () => {
-    const grid = createYearGrid({ dateObj: new CalendarDate('BC', 5, 1, 1) })
-    expect(grid.cells.map(c => `${c.era} ${c.year}`)).toEqual([
-      'BC 11',
-      'BC 10',
-      'BC 9',
-      'BC 8',
-      'BC 7',
-      'BC 6',
-      'BC 5',
-      'BC 4',
-      'BC 3',
-      'BC 2',
-      'BC 1',
-      'AD 1',
+    const gregorianEra = (era: 'bce' | 'ce', eraYear: number) => Temporal.PlainDate.from({ calendar: 'gregory', era, eraYear, month: 1, day: 1 })
+    const grid = createYearGrid({ dateObj: gregorianEra('bce', 5) })
+    expect(grid.cells.map(c => `${c.era} ${c.eraYear}`)).toEqual([
+      'bce 11',
+      'bce 10',
+      'bce 9',
+      'bce 8',
+      'bce 7',
+      'bce 6',
+      'bce 5',
+      'bce 4',
+      'bce 3',
+      'bce 2',
+      'bce 1',
+      'ce 1',
     ])
-    expect(year.compare(new CalendarDate('BC', 2, 1, 1), new CalendarDate('BC', 1, 1, 1))).toBeLessThan(0)
-    expect(year.isSame(new CalendarDate('BC', 1, 1, 1), new CalendarDate('AD', 1, 1, 1))).toBe(false)
-    expect(year.distance(new CalendarDate('BC', 2, 1, 1), new CalendarDate('AD', 2, 1, 1))).toBe(4)
+    expect(year.compare(gregorianEra('bce', 2), gregorianEra('bce', 1))).toBeLessThan(0)
+    expect(year.isSame(gregorianEra('bce', 1), gregorianEra('ce', 1))).toBe(false)
+    expect(year.distance(gregorianEra('bce', 2), gregorianEra('ce', 2))).toBe(4)
   })
 
   it('keeps the reference month and day when resolving a year across eras', () => {
     const resolved = year.resolve(japanese(2019, 1, 1), japanese(2026, 9, 5))
-    expect(inGregorian(resolved).toString()).toBe('2019-09-05')
+    expect(toIsoString(resolved)).toBe('2019-09-05')
   })
 })

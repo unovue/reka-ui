@@ -1,8 +1,6 @@
-import type { DateDuration, DateFields, DateValue } from '@internationalized/date'
 import type { WeekStartsOn } from './calendar'
-import type { CalendarGridData, CalendarUnit, Matcher } from './types'
+import type { CalendarGridData, CalendarUnit, DateValue, Matcher } from './types'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
-import { endOfMonth, endOfYear, getLocalTimeZone, isEqualMonth, isSameDay, isSameMonth, isToday, startOfMonth, startOfYear, toCalendar, toCalendarDate, today } from '@internationalized/date'
 import { createMonthGrid, createMonths, createYearGrid } from './calendar'
 import {
   areAllDaysBetweenValid,
@@ -15,8 +13,11 @@ import {
   getYearsBetween,
   isSameYear,
   isSameYearMonth,
-  toDate,
 } from './comparators'
+import { compareDateValues, endOfMonth, endOfYear, isSameDay, isSameMonth, isToday, startOfMonth, startOfYear, toCalendar, today, toPlainDate } from './temporal'
+
+type DateDuration = Temporal.DurationLikeObject
+type DateFields = { day?: number, month?: number }
 
 /**
  * A consumer-supplied paging function: receives the placeholder and the view
@@ -109,6 +110,16 @@ export interface CalendarUnitAdapter {
   defaultLabel: string
 }
 
+/** Whole days from `from` to `to` (negative when `to` is earlier). */
+function daysBetween(from: DateValue, to: DateValue): number {
+  return toPlainDate(from).until(toPlainDate(to), { largestUnit: 'days' }).days
+}
+
+/** `value` snapped to the first day (`day: 1`) and / or the first month (`month: 1`) of its period. */
+function withFields(value: DateValue, fields: DateFields): DateValue {
+  return Object.keys(fields).length ? value.with(fields) : value
+}
+
 /**
  * A date in the year of `value` with the month and day of `reference`, built
  * by stepping from the start of the year so eras and calendars with a varying
@@ -116,23 +127,22 @@ export interface CalendarUnitAdapter {
  */
 function withMonthAndDay(value: DateValue, reference: DateValue): DateValue {
   const yearStart = startOfYear(value)
-  const month = Math.min(reference.month, value.calendar.getMonthsInYear(yearStart))
+  const month = Math.min(reference.month, yearStart.monthsInYear)
   const monthStart = yearStart.add({ months: month - 1 })
-  return monthStart.set({ day: Math.min(reference.day, monthStart.calendar.getDaysInMonth(monthStart)) })
+  return monthStart.with({ day: Math.min(reference.day, monthStart.daysInMonth) })
 }
 
 const dayAdapter: CalendarUnitAdapter = {
   unit: 'day',
   isSame: isSameDay,
-  compare: (a, b) => a.compare(b),
+  compare: compareDateValues,
   startOf: d => d,
   endOf: d => d,
   add: (d, n) => d.add({ days: n }),
-  resolve: value => value.copy(),
-  isCurrent: d => isToday(d, getLocalTimeZone()),
-  // Whole days, inclusive: `compare()` on a date-time or zoned value counts
-  // milliseconds, so compare the calendar-date parts.
-  distance: (start, end) => toCalendarDate(end).compare(toCalendarDate(start)) + 1,
+  resolve: value => value,
+  isCurrent: d => isToday(d),
+  // Whole days, inclusive, counted on the calendar-date parts.
+  distance: (start, end) => toPlainDate(start).until(toPlainDate(end), { largestUnit: 'days' }).days + 1,
   areAllBetweenValid: areAllDaysBetweenValid,
   createGrid: (placeholder, layout) => createMonths({
     dateObj: placeholder,
@@ -141,7 +151,7 @@ const dayAdapter: CalendarUnitAdapter = {
     fixedWeeks: layout.fixedWeeks,
     numberOfMonths: layout.numberOfMonths,
   }),
-  isInVisibleView: (date, grid) => grid.some(page => isEqualMonth(page.value, date)),
+  isInVisibleView: (date, grid) => grid.some(page => isSameMonth(page.value, date)),
   isInPage: (cell, page) => isSameMonth(cell, page),
   pageDuration: layout => ({ months: layout.pagedNavigation ? layout.numberOfMonths : 1 }),
   rowLength: () => 7,
@@ -155,48 +165,49 @@ const dayAdapter: CalendarUnitAdapter = {
   placeholderAfterPaging: (newGrid, previousFirst, _placeholder, mode) => {
     const first = newGrid[0].value
     if (mode === 'default')
-      return first.set({ day: 1 })
+      return first.with({ day: 1 })
     // A paging function passed straight to `nextPage()` / `prevPage()` overwrites
     // the placeholder as-is; the root-level `nextPage` / `prevPage` props get the
     // placeholder snapped to the first day/month of the page they landed on.
     if (mode === 'explicit-fn')
-      return first.set({})
-    const diff = Math.abs(first.compare(previousFirst))
+      return first
+    const diff = Math.abs(daysBetween(previousFirst, first))
     const duration: DateFields = {}
     if (diff >= getDaysInMonth(previousFirst))
       duration.day = 1
     if (diff >= 365)
       duration.month = 1
-    return first.set({ ...duration })
+    return withFields(first, duration)
   },
   nextPageStart: (grid, _layout, fn) => {
     const lastPeriodInView = grid.at(-1)!.value
     if (!fn)
-      return lastPeriodInView.add({ months: 1 }).set({ day: 1 })
+      return lastPeriodInView.add({ months: 1 }).with({ day: 1 })
     const firstPeriodOfNextPage = fn(lastPeriodInView, 'day')
-    const diff = firstPeriodOfNextPage.compare(lastPeriodInView)
+    const diff = daysBetween(lastPeriodInView, firstPeriodOfNextPage)
     const duration: DateFields = {}
     if (diff >= 7)
       duration.day = 1
     if (diff >= getDaysInMonth(lastPeriodInView))
       duration.month = 1
-    return firstPeriodOfNextPage.set({ ...duration })
+    return withFields(firstPeriodOfNextPage, duration)
   },
   prevPageEnd: (grid, _layout, fn) => {
     const firstPeriodInView = grid[0].value
     if (!fn)
-      return firstPeriodInView.subtract({ months: 1 }).set({ day: 35 })
+      return endOfMonth(firstPeriodInView.subtract({ months: 1 }))
     const lastPeriodOfPrevPage = fn(firstPeriodInView, 'day')
-    const diff = firstPeriodInView.compare(lastPeriodOfPrevPage)
+    const diff = daysBetween(lastPeriodOfPrevPage, firstPeriodInView)
     const duration: DateFields = {}
-    if (diff >= 7)
-      duration.day = 35
+    let result = lastPeriodOfPrevPage
     if (diff >= getDaysInMonth(firstPeriodInView))
-      duration.month = 13
-    return lastPeriodOfPrevPage.set({ ...duration })
+      result = result.with({ month: result.monthsInYear })
+    if (diff >= 7)
+      result = endOfMonth(result)
+    return result
   },
   formatCell: (_formatter, d, locale) => d.day.toLocaleString(locale),
-  formatLabel: (formatter, d) => formatter.custom(toDate(d), {
+  formatLabel: (formatter, d) => formatter.custom(d, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -206,10 +217,10 @@ const dayAdapter: CalendarUnitAdapter = {
     if (!grid.length)
       return ''
     if (grid.length === 1)
-      return formatter.fullMonthAndYear(toDate(grid[0].value), options)
+      return formatter.fullMonthAndYear(grid[0].value, options)
 
-    const startMonth = toDate(grid[0].value)
-    const endMonth = toDate(grid.at(-1)!.value)
+    const startMonth = grid[0].value
+    const endMonth = grid.at(-1)!.value
     const startMonthName = formatter.fullMonth(startMonth, options)
     const endMonthName = formatter.fullMonth(endMonth, options)
     const startMonthYear = formatter.fullYear(startMonth, options)
@@ -229,8 +240,8 @@ const monthAdapter: CalendarUnitAdapter = {
   startOf: startOfMonth,
   endOf: endOfMonth,
   add: (d, n) => d.add({ months: n }),
-  resolve: (value, reference) => reference ? value.copy().set({ day: reference.day }) : value.copy(),
-  isCurrent: d => isSameYearMonth(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
+  resolve: (value, reference) => reference ? value.with({ day: reference.day }) : value,
+  isCurrent: d => isSameYearMonth(d, toCalendar(today(), d.calendarId)),
   distance: getMonthsBetween,
   areAllBetweenValid: areAllMonthsBetweenValid,
   createGrid: (placeholder, layout) => [createMonthGrid({ dateObj: placeholder, columns: layout.columns })],
@@ -253,9 +264,9 @@ const monthAdapter: CalendarUnitAdapter = {
     const current = grid[0].value
     return endOfYear(fn ? fn(current, 'month') : current.subtract({ years: 1 }))
   },
-  formatCell: (formatter, d) => formatter.custom(toDate(d), { month: 'short' }),
-  formatLabel: (formatter, d) => formatter.custom(toDate(d), { month: 'long', year: 'numeric' }),
-  formatHeading: (formatter, grid, options) => grid.length ? formatter.fullYear(toDate(grid[0].value), options) : '',
+  formatCell: (formatter, d) => formatter.custom(d, { month: 'short' }),
+  formatLabel: (formatter, d) => formatter.custom(d, { month: 'long', year: 'numeric' }),
+  formatHeading: (formatter, grid, options) => grid.length ? formatter.fullYear(grid[0].value, options) : '',
   defaultLabel: 'Month Picker',
 }
 
@@ -266,8 +277,8 @@ const yearAdapter: CalendarUnitAdapter = {
   startOf: startOfYear,
   endOf: endOfYear,
   add: (d, n) => d.add({ years: n }),
-  resolve: (value, reference) => reference ? withMonthAndDay(value, reference) : value.copy(),
-  isCurrent: d => isSameYear(d, toCalendar(today(getLocalTimeZone()), d.calendar)),
+  resolve: (value, reference) => reference ? withMonthAndDay(value, reference) : value,
+  isCurrent: d => isSameYear(d, toCalendar(today(), d.calendarId)),
   distance: getYearsBetween,
   areAllBetweenValid: areAllYearsBetweenValid,
   createGrid: (placeholder, layout, options) => [createYearGrid({
@@ -301,14 +312,14 @@ const yearAdapter: CalendarUnitAdapter = {
     const firstYearInView = grid[0].value
     return endOfYear(fn ? fn(firstYearInView, 'year') : firstYearInView.subtract({ years: 1 }))
   },
-  formatCell: (formatter, d) => formatter.custom(toDate(d), { year: 'numeric' }),
-  formatLabel: (formatter, d) => formatter.custom(toDate(d), { year: 'numeric' }),
+  formatCell: (formatter, d) => formatter.custom(d, { year: 'numeric' }),
+  formatLabel: (formatter, d) => formatter.custom(d, { year: 'numeric' }),
   formatHeading: (formatter, grid, options) => {
     const first = grid[0]?.cells[0]
     const last = grid.at(-1)?.cells.at(-1)
     if (!first || !last)
       return ''
-    return `${formatter.fullYear(toDate(first), options)} - ${formatter.fullYear(toDate(last), options)}`
+    return `${formatter.fullYear(first, options)} - ${formatter.fullYear(last, options)}`
   },
   defaultLabel: 'Year Picker',
 }

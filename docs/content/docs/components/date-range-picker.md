@@ -6,8 +6,6 @@ name: date-range-picker
 
 # Date Range Picker
 
-<Badge>Alpha</Badge>
-
 <Description>
 Facilitates the selection of date ranges through an input and calendar-based interface.
 </Description>
@@ -29,15 +27,20 @@ Facilitates the selection of date ranges through an input and calendar-based int
 
 ## Preface
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
-
-We highly recommend reading through the documentation for the package to get a solid feel for how it works, and you'll need to install it in your project to use the date-related components.
+The component works with the [Temporal API](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal): its values are `Temporal.PlainDate`, `Temporal.PlainDateTime` or `Temporal.ZonedDateTime`. Reka UI does not bundle a Temporal implementation, so on runtimes without native Temporal your app loads a polyfill. See [Dates & Times](/docs/guides/dates) for the setup and how the components treat calendars and time zones.
 
 ## Installation
 
-Install the date package.
+On runtimes without native Temporal, install a polyfill and load it once, before the app mounts.
 
-<InstallationTabs value="@internationalized/date" />
+<InstallationTabs value="temporal-polyfill-lite" />
+
+```ts
+// main.ts
+import { install } from 'temporal-polyfill-lite/shim'
+
+install(false) // keeps the native Temporal when the browser has one
+```
 
 Install the component from your command line.
 
@@ -170,7 +173,7 @@ Contains the date picker date field segments
 
 ### Trigger
 
-The button that toggles the popover. By default, the `DateRangePickerContent` will position itself against the trigger.
+The button that toggles the popover. By default, the `DateRangePickerContent` will position itself against the trigger. A trigger that holds only an icon has no accessible name, so give it an `aria-label` (for example `aria-label="Open calendar"`).
 
 <!-- @include: @/meta/DateRangePickerTrigger.md -->
 

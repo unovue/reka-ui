@@ -29,7 +29,7 @@ Reka UI v3 is still in progress, so this page grows as breaking changes land on 
 
 ## Instructions for the agent
 
-You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 6 and the color value type covered in section 10, component names, props, slots and `v-model` bindings are unchanged in v3.
+You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 6, the color value type covered in section 10 and the date value types covered in section 30, component names, props, slots and `v-model` bindings are unchanged in v3.
 
 ### Before you start
 
@@ -122,7 +122,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **How to find it.** Search for `reka-dialog-`, `reka-alert-dialog-`, `reka-drawer-`, `reka-popover-`, `reka-dropdown-menu-`, `reka-menubar-content-`, `reka-tooltip-` and for `aria-describedby` / `aria-labelledby` / `aria-controls` values in tests and selectors.
 
-**Rewrite rules.** Never depend on the shape of a generated id. In tests, select by role, label or text (`getByRole('dialog')`, `getByRole('tooltip')`) or compare the attribute to the id read from the other element. In CSS, style by data attribute or class, not by generated id. Code that passes its own `id` to a part is unaffected.
+**Rewrite rules.** Never depend on the shape of a generated id. In tests, select by role, label or text (`getByRole('dialog')`, `getByRole('tooltip')`) or compare the attribute to the id read from the other element. In CSS, style by data attribute or class, not by generated id. Code that passes its own `id` to a part is unaffected, except that the paired attribute now follows it: the trigger and content of Collapsible, Accordion, Popover and Tabs, and the trigger, content, title and description of Dialog, AlertDialog and Drawer, take an `id` prop that `aria-controls` / `aria-labelledby` / `aria-describedby` point at (in Tabs, per `value`). `CollapsibleContent` and `AccordionContent` used to drop a passed `id`; they now render it. Remove code that copied a custom id into those attributes by hand.
 
 ### 5. Disabled triggers rendered `asChild`
 
@@ -496,10 +496,10 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `:model-value="null"` is a controlled empty value (also on `CalendarRoot`, as in v2; a controlled-empty `DatePickerRoot` keeps its calendar controlled). For a controlled `null`, `modelValue` on the `DateFieldRoot`, `TimeFieldRoot` and `DatePickerRoot` contexts reads `undefined`; the `DateRangeFieldRoot` and `TimeRangeFieldRoot` contexts have no `modelValue` and read `undefined` from `startValue` and `endValue`; `modelValue` on the `DateRangePickerRoot` context reads the empty range `{ start: undefined, end: undefined }`. A cleared field emits `undefined` (single) or `{ start: undefined, end: undefined }` (range). The range roots' `modelValue` slot prop is typed `DateRange` / `TimeRange` (v2: `DateRange | null` / `TimeRange | undefined`).
 - A model set to a value equal to the current one emits nothing.
 - `update:startValue` on `RangeCalendarRoot` and `DateRangePickerRoot` is `[date, details]`. `beforeUpdate:startValue` on `DateRangePickerRoot` is new; cancelling it suppresses only that `update:startValue`.
-- `TimeFieldRoot` emits `update:placeholder` with a `Time` when the placeholder is a `Time` (v2: a `CalendarDateTime`).
+- `TimeFieldRoot` emits `update:placeholder` with a time (`Temporal.PlainTime` in v3, see section 30) when the placeholder is one (v2: a `CalendarDateTime`).
 - Root contexts: `modelValue` / `placeholder` (and `startValue` / `endValue` on the range field contexts) are writable computeds that report `'imperative-action'`. New: `setModelValue(value, reason?, event?)`, `setPlaceholder(value, reason?, event?)`, `setRangeValue(type, value, reason?, event?)` (range fields), all returning a boolean. On the picker contexts, `onDateChange(date, reason?, event?)` and `onPlaceholderChange(date, reason?, event?)` return a boolean, and `onStartValueChange(date, details?)` takes the details.
 - The time zone segment renders `data-readonly=""` (v2: `data-readonly="true"`).
-- `DateFieldRoot`, `DateRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot`: without a `locale` prop and a `placeholder`, the default placeholder uses the `ConfigProvider` locale, including its calendar system: under a `th-TH`, `fa-IR`, `ar-SA` (or other non-Gregorian) `ConfigProvider` the emitted values are in that calendar, and `.year` is that calendar's year. `TimeFieldRoot` and `TimeRangeFieldRoot` are unaffected: their default placeholder is a `Time`, and a `CalendarDateTime` or `ZonedDateTime` placeholder or model keeps the calendar it was created with.
+- `DateFieldRoot`, `DateRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot`: without a `locale` prop and a `placeholder`, the default placeholder uses the `ConfigProvider` locale, including its calendar system: under a `th-TH`, `fa-IR`, `ar-SA` (or other non-Gregorian) `ConfigProvider` the emitted values are in that calendar, and `.year` is that calendar's year. `TimeFieldRoot` and `TimeRangeFieldRoot` are unaffected: their default placeholder is a `Temporal.PlainTime`, and a `PlainDateTime` or `ZonedDateTime` placeholder or model keeps the calendar it was created with.
 - Rendered attributes can come in a different order; update snapshots.
 - Additive: `isTimeUnavailable` on `TimeFieldRoot`; `stepSnapping` on `DateRangeFieldRoot`, `TimeRangeFieldRoot` and `DateRangePickerRoot`; `stepSnapping` on the picker roots now reaches the field; `useDateField()`, `useTimeField()`, `useDateRangeField()`, `useTimeRangeField()`, `useDatePicker()`, `useDateRangePicker()`.
 
@@ -508,7 +508,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `findComponent(PopoverRoot)` / `findAllComponents(PopoverRoot)` in date picker tests.
 - `=== null` / `!== null` checks on the `modelValue` slot prop of `DateRangeFieldRoot` / `TimeRangeFieldRoot`, and handlers that expect `null` from a cleared field.
 - `injectDateFieldRootContext(`, `injectTimeFieldRootContext(`, `injectDateRangeFieldRootContext(`, `injectTimeRangeFieldRootContext(`, `injectDatePickerRootContext(`, `injectDateRangePickerRootContext(` in custom parts.
-- `instanceof CalendarDateTime` or `'day' in` checks on a `TimeFieldRoot` `update:placeholder` payload.
+- `instanceof CalendarDateTime`, `isPlainDateTime(` or `'day' in` checks on a `TimeFieldRoot` `update:placeholder` payload.
 - `data-readonly="true"` in selectors, styles and snapshots.
 - A `ConfigProvider` with a `locale` whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …) above a date or time field or picker that has no `locale` and no `placeholder` prop, and code that reads `.year`, compares, stores or serializes the field's values.
 - `is-date-unavailable` / `isDateUnavailable` on `TimeFieldRoot` (it was never applied there).
@@ -518,9 +518,9 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `findComponent(PopoverRoot)` under a picker: assert on the picker root's `update:open` or on the rendered `[role=dialog]` instead.
 - A `null` check on a range slot's `modelValue`: replace with a check on `modelValue.start` / `modelValue.end`.
 - Context writes such as `ctx.modelValue.value = date` keep working; leave them. Replace them with `ctx.setModelValue(date, reason, event)` only where a reason is wanted. Code that awaited `onDateChange` or ignored its return value keeps working.
-- A `TimeFieldRoot` placeholder handler that needs a date: convert with `toCalendarDateTime(today(tz), time)` from `@internationalized/date`. *Ask* if the intent is unclear.
+- A `TimeFieldRoot` placeholder handler that needs a date: convert with `Temporal.Now.plainDateISO(tz).toPlainDateTime(time)`. *Ask* if the intent is unclear.
 - `[data-readonly="true"]`: replace with `[data-readonly]`; update snapshots.
-- A field under a non-Gregorian `ConfigProvider` locale whose values are consumed as Gregorian (stored, sent to an API, compared with `.year`): *ask* the developer. If they want Gregorian values, add `:placeholder="today(getLocalTimeZone())"` (or `locale="en-US"`) to the root, or convert with `toCalendar(value, new GregorianCalendar())`.
+- A field under a non-Gregorian `ConfigProvider` locale whose values are consumed as Gregorian (stored, sent to an API, compared with `.year`): *ask* the developer. If they want Gregorian values, bind a `placeholder` created in `<script setup>` with `Temporal.Now.plainDateISO()` (or add `locale="en-US"`) to the root, or convert with `value.withCalendar('iso8601')`.
 - A `beforeUpdate:modelValue` guard on a field: leave it. A cancelled typed change keeps the typed segments, so the user can keep typing to an accepted value.
 - `isDateUnavailable` on `TimeFieldRoot`: rename to `isTimeUnavailable` (it receives a date-time). It now applies, so *ask* before keeping it if the matcher's result was never tested.
 - Do not add `stepSnapping` or `beforeUpdate:*` handlers on your own.
@@ -768,10 +768,95 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes; menu checkbox items and radio groups still toggle with `v-model`; filtered lists match as before under the app's locale, or the developer confirmed the change.
 
+### 30. Temporal instead of `@internationalized/date`
+
+**What changed.**
+- The date components (`Calendar`, `RangeCalendar`, `DateField`, `DateRangeField`, `DatePicker`, `DateRangePicker`, `TimeField`, `TimeRangeField`) take and emit [Temporal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal) values instead of `@internationalized/date` objects. Reka UI no longer depends on `@internationalized/date`.
+- `DateValue` (exported from `reka-ui`) is `Temporal.PlainDate | Temporal.PlainDateTime | Temporal.ZonedDateTime`. `TimeValue` is `Temporal.PlainTime | Temporal.PlainDateTime | Temporal.ZonedDateTime`. Every `modelValue`, `placeholder`, `minValue`, `maxValue`, matcher argument, slot prop, context value and emitted value uses these types.
+- Reka UI reads the global `Temporal` and bundles no polyfill. A date component that mounts without a global `Temporal` throws `[Reka UI] The date components need the Temporal API…` in development and `[Reka UI] Temporal is not defined…` in production.
+- The types come from TypeScript 6's `esnext.temporal` lib. Projects need TypeScript 6 with `ESNext` (or `ESNext.Temporal`) in `lib`, or a polyfill's global types.
+- `Temporal.PlainDate.year` is the arithmetic year. In calendars with eras the year a user reads is `eraYear`: Reiwa 6 has `year` 2024 and `eraYear` 6, and 1 BCE in `gregory` has `year` 0 and `eraYear` 1. `@internationalized/date`'s `year` was the year of the era. The year segment of the fields still shows and edits the year of the era.
+- New values for Gregorian locales (the default placeholder, today) use the `iso8601` calendar instead of `gregory`. `calendarId` is `'iso8601'` and `era` is `undefined`. Non-Gregorian locales still get their calendar (`th-TH` → `buddhist`).
+- `era` is a lower-case Temporal era code, and `undefined` for an `iso8601` value. Changed codes: `gregory` `AD` / `BC` → `ce` / `bce`; `roc` `minguo` / `before_minguo` → `roc` / `broc`; `buddhist` `BE` → `be`, `persian` `AP` → `ap`, `islamic-*` `AH` → `ah`, `hebrew` `AM` → `am`. Japanese era names (`reiwa`, `heisei`, …) are unchanged.
+- The first day of the week comes from `Intl.Locale.prototype.getWeekInfo()`, with a CLDR table as fallback. A few regions differ from v2, for example `AE` now starts on Monday. `weekStartsOn` still overrides it.
+- `reka-ui/date`: `isCalendarDateTime` is renamed `isPlainDateTime` (the old name stays as a deprecated alias). `isWeekend`, `isPlainDate`, `isPlainTime`, `isDateValue`, `compareDateValues`, `compareDays`, `isSameDay`, `isSameMonth`, `isToday`, `today`, `getLocalTimeZone`, `toCalendar`, `toPlainDate`, `toPlainDateTime`, `toIsoString`, `startOfMonth`, `endOfMonth`, `startOfYear`, `endOfYear`, `startOfWeek`, `getDayOfWeek`, `getLocaleWeekStart`, `getFieldValue`, `setFields` and `cycleField` are new. `toDate(value, timeZone?)` keeps its signature.
+- `useDateFormatter()` methods accept Temporal values (and still `Date`). A plain value is formatted from its own fields, a `ZonedDateTime` in its own zone and a non-ISO value in its calendar.
+- Unchanged: hidden form input values and `data-value` attributes are ISO strings without a calendar annotation, as v2's `toString()` produced.
+
+**How to find it.**
+- `@internationalized/date` in imports, `package.json`, `optimizeDeps`, `ssr.noExternal`, auto-import presets and Vitest `deps`/`server.deps` config.
+- Its names in code: `CalendarDate`, `CalendarDateTime`, `ZonedDateTime`, `Time`, `parseDate`, `parseDateTime`, `parseTime`, `parseZonedDateTime`, `parseAbsolute`, `parseAbsoluteToLocal`, `today(`, `now(`, `getLocalTimeZone(`, `fromDate(`, `toZoned(`, `toCalendarDate(`, `toCalendarDateTime(`, `toTime(`, `toCalendar(`, `isSameDay(`, `isSameMonth(`, `isEqualDay(`, `isToday(`, `isWeekend(`, `getDayOfWeek(`, `startOfMonth(`, `endOfMonth(`, `startOfWeek(`, `DateFormatter`, `createCalendar(`, and `new GregorianCalendar()` (or any other `*Calendar` class).
+- Methods on date values: `.set(`, `.cycle(`, `.copy(`, `.compare(`, `.toDate(`, `.calendar.identifier`, `.timeZone`, `.offset`.
+- `isCalendarDateTime` imported from `reka-ui/date`.
+- `DateValue` imported from `@internationalized/date`.
+- Code that reads `.year` or `.era` of a date value in a calendar with eras (`japanese`, `roc`, `gregory` BCE dates), comparisons of `.era` with a string (`'AD'`, `'BC'`, `'minguo'`, …), and `calendar.identifier === 'gregory'` checks.
+- `<`, `>`, `===` or `==` between two date values, and `+date` / `Number(date)` / `date.valueOf()` (Temporal throws on `valueOf`).
+- `tsconfig*.json` files: their `lib` setting and the `typescript` version in `package.json`.
+- Test files and stories that build date values. Snapshots that print them.
+
+**Rewrite rules.**
+
+| `@internationalized/date` | Temporal |
+| --- | --- |
+| `import type { DateValue } from '@internationalized/date'` | `import type { DateValue } from 'reka-ui'` |
+| `CalendarDate` / `CalendarDateTime` / `ZonedDateTime` / `Time` (types) | `Temporal.PlainDate` / `Temporal.PlainDateTime` / `Temporal.ZonedDateTime` / `Temporal.PlainTime` |
+| `new CalendarDate(2024, 7, 10)` | `new Temporal.PlainDate(2024, 7, 10)` |
+| `new CalendarDateTime(2024, 7, 10, 12, 30)` | `new Temporal.PlainDateTime(2024, 7, 10, 12, 30)` |
+| `new Time(9, 30)` | `new Temporal.PlainTime(9, 30)` |
+| `new ZonedDateTime(2024, 7, 10, 'America/New_York', offset, 12, 30)` | `Temporal.ZonedDateTime.from({ year: 2024, month: 7, day: 10, hour: 12, minute: 30, timeZone: 'America/New_York' })` |
+| `new CalendarDate(new JapaneseCalendar(), 'reiwa', 6, 5, 1)` | `Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })` |
+| `new CalendarDate(new HebrewCalendar(), 5784, 7, 1)` | `Temporal.PlainDate.from({ calendar: 'hebrew', year: 5784, month: 7, day: 1 })` |
+| `parseDate(s)` / `parseDateTime(s)` / `parseTime(s)` / `parseZonedDateTime(s)` | `Temporal.PlainDate.from(s)` / `Temporal.PlainDateTime.from(s)` / `Temporal.PlainTime.from(s)` / `Temporal.ZonedDateTime.from(s)` |
+| `parseAbsolute(s, tz)` | `Temporal.Instant.from(s).toZonedDateTimeISO(tz)` |
+| `parseAbsoluteToLocal(s)` | `Temporal.Instant.from(s).toZonedDateTimeISO(Temporal.Now.timeZoneId())` |
+| `today(tz)` / `now(tz)` | `Temporal.Now.plainDateISO(tz)` / `Temporal.Now.zonedDateTimeISO(tz)` |
+| `getLocalTimeZone()` | `Temporal.Now.timeZoneId()` |
+| `fromDate(date, tz)` | `Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(tz)` |
+| `value.toDate(tz)` | `toDate(value, tz)` from `reka-ui/date` |
+| `toZoned(value, tz)` | `value.toZonedDateTime(tz)` for a `PlainDate` (the start of that day) or a `PlainDateTime`; `value.withTimeZone(tz)` for a `ZonedDateTime` |
+| `toCalendarDate(value)` | `toPlainDate(value)` from `reka-ui/date` (works on every `DateValue`; Temporal's `PlainDate` has no `toPlainDate()` method) |
+| `toTime(value)` | `value.toPlainTime()` (`value` is a `PlainDateTime` or `ZonedDateTime`) |
+| `toCalendarDateTime(date, time)` | `date.toPlainDateTime(time)` when `date` is a `PlainDate`; `toPlainDateTime(value)` from `reka-ui/date` when it may be any `DateValue` and there is no `time` |
+| `toCalendar(value, new GregorianCalendar())` | `value.withCalendar('gregory')`, or `'iso8601'` for an unannotated ISO date |
+| `value.calendar.identifier` | `value.calendarId` |
+| `value.set({ month: 8 })` | `value.with({ month: 8 })` (in a calendar with eras, set `era` and `eraYear` instead of `year`) |
+| `value.add(…)` / `value.subtract(…)` | unchanged |
+| `value.cycle('month', 1)` | `cycleField(value, 'month', 1)` from `reka-ui/date` |
+| `value.copy()` | `value` (Temporal values are immutable; share them) |
+| `a.compare(b)` | `compareDateValues(a, b)` from `reka-ui/date`; or `Temporal.<Type>.compare(a, b)` with the type of both values (`Temporal.PlainDate.compare` ignores the time of a `PlainDateTime`). Both return `-1`, `0` or `1`, where v2 returned a difference: keep only sign tests (`< 0`, `> 0`, `=== 0`) |
+| `isSameDay(a, b)` / `isSameMonth(a, b)` / `isEqualDay(a, b)` / `isToday(value, tz)` | `isSameDay` / `isSameMonth` / `isSameDay` / `isToday` from `reka-ui/date` |
+| `startOfMonth` / `endOfMonth` / `startOfYear` / `endOfYear` / `startOfWeek(value, locale)` / `getDayOfWeek(value, locale)` | the functions of the same names in `reka-ui/date` |
+| `isWeekend(value, locale)` | `isWeekend(value, locale)` from `reka-ui/date` |
+| `value.timeZone` / `value.offset` | `value.timeZoneId` / `value.offsetNanoseconds / 1e6` |
+| `value.toString()` | unchanged for ISO dates; `value.toString({ calendarName: 'never' })` (or `toIsoString(value)` from `reka-ui/date`) for the v2 string of a non-ISO date |
+| `value instanceof CalendarDate` (or any other class) | `isPlainDate(value)` / `isPlainDateTime(value)` / `isZonedDateTime(value)` / `isPlainTime(value)` from `reka-ui/date` |
+| `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name still works but is deprecated) |
+| `new DateFormatter(locale, options).format(value.toDate(tz))` | `useDateFormatter(locale).custom(value, options)`, or `value.toLocaleString(locale, options)` |
+
+- Install a Temporal polyfill if the project runs anywhere without native Temporal (most browsers today, Node before Temporal ships): add `temporal-polyfill-lite` to `dependencies` and load it first in the app entry (`main.ts`, a Nuxt client plugin, the test setup file):
+  ```ts
+  import { install } from 'temporal-polyfill-lite/shim'
+
+  install(false)
+  ```
+  Use `temporal-polyfill-lite/calendars-full/shim` if the app uses a non-Gregorian calendar or a locale whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …). *Ask* before adding it if the project already loads another Temporal polyfill (`temporal-polyfill`, `@js-temporal/polyfill`); keep that one instead.
+- Server rendering: the polyfill must load on the server too (an SSR entry or a universal Nuxt plugin).
+- TypeScript: on TypeScript 6, make sure every `tsconfig` that type-checks app code has `ESNext` (or `ESNext.Temporal`) in `lib`. A `tsconfig` extending `@vue/tsconfig/tsconfig.dom.json` inherits `lib: ["ES2022", "DOM", "DOM.Iterable"]`: set `lib` in it explicitly. With `skipLibCheck: true`, a missing Temporal lib gives no error, only `any` date types, so check that `DateValue` is not `any` (for example, `const x: DateValue = 42` must fail). On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file instead, or *ask* about upgrading TypeScript. Do not add both.
+- Remove `@internationalized/date` from `package.json` once nothing imports it. Keep it if the app uses it for its own purposes and *ask* whether to migrate those uses.
+- `.year` on a value in a calendar with eras: replace with `.eraYear` where the code wants the year as displayed, and keep `.year` where it does arithmetic. For a Gregorian/ISO date after year 0 they are equal.
+- `calendar.identifier === 'gregory'` checks: also accept `'iso8601'`, the calendar new values use.
+- `.era` compared with a v2 era code: use the new code from **What changed** (`'AD'` → `'ce'`, and for an `iso8601` value, which has no era, test `value.year > 0`). Text shown to users: `formatter.part(value, 'era')` instead of the code.
+- `<`, `>` or `===` between date values: replace with `compareDateValues` / `equals`.
+- `ref<CalendarDate>(…) as Ref<DateValue>` casts: write `ref<DateValue>(…)` or `shallowRef<DateValue>(…)`. Vue does not proxy Temporal values, so no `markRaw` or `.copy()` is needed.
+- Templates cannot read the `Temporal` global (Vue only exposes an allow-list of globals), so a v2 binding such as `:min-value="new CalendarDate(2024, 1, 1)"` becomes a constant created in `<script setup>` and bound by name.
+- Snapshots that print a date value: update them. Temporal values print as their ISO string.
+
+**Verify.** The type-check passes with no `Cannot find name 'Temporal'` error. Nothing imports `@internationalized/date` (unless the developer chose to keep it). The app mounts in a browser without native Temporal, with no `[Reka UI] The date components need the Temporal API` error in the console. Each date component shows today's month and emits values of the type it was given. Tests pass after their setup file loads the polyfill.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, and every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

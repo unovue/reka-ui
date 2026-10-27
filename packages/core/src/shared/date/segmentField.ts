@@ -4,6 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, Formatter, PartSurface } fro
 import type { DateStep, DateValue, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date/types'
 import type { Direction } from '@/shared/types'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toValue, watch } from 'vue'
+import { isSameDateValue } from '@/date/temporal'
 import { createPartSurface } from '@/shared/partSurface'
 import { useKbd } from '@/shared/useKbd'
 import { isSegmentNavigationKey } from './segment'
@@ -256,15 +257,11 @@ export function watchSegmentFieldLocale(locale: Ref<string>, formatter: Formatte
   })
 }
 
-/** A `DateValue` (which carries its `calendar`) or a `Time` (which has none). */
-type TemporalLike = { toString: () => string, calendar?: { identifier: string } }
-
-/** `true` when both are empty, or both are the same calendar value (time and zone included). @internal */
-export function isSameTemporalValue(a: TemporalLike | null | undefined, b: TemporalLike | null | undefined): boolean {
+/** `true` when both are empty, or both are the same Temporal value (type, calendar, time and zone included). @internal */
+export function isSameTemporalValue(a: DateValue | Temporal.PlainTime | null | undefined, b: DateValue | Temporal.PlainTime | null | undefined): boolean {
   if (a == null || b == null)
     return a == null && b == null
-  return a.calendar?.identifier === b.calendar?.identifier
-    && a.toString() === b.toString()
+  return isSameDateValue(a, b)
 }
 
 /**

@@ -1,8 +1,8 @@
-import type { DateValue } from '@internationalized/date'
 import type { WeekStartsOn } from '@/date'
-import { toCalendar, toCalendarDate } from '@internationalized/date'
+import type { DateValue } from '@/date/types'
 import { nextTick } from 'vue'
 import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from '@/date'
+import { compareDateValues, compareDays, toCalendar, toIsoString, toPlainDate } from '@/date/temporal'
 
 /**
  * Upper bound on focus-search steps when skipping over disabled/unavailable
@@ -62,7 +62,7 @@ export function focusPagination(options: FocusPaginationOptions) {
 
   const customPageFn = (date: DateValue) => {
     const pageDate = isYear ? date.add({ years: amount }) : date.add({ months: amount })
-    return pageDate.set({ day: 1 })
+    return pageDate.with({ day: 1 })
   }
 
   if (isOutsideVisibleView(target)) {
@@ -79,13 +79,11 @@ export function getTargetMonthDay(date: DateValue, unit: 'month' | 'year', amoun
   const targetBase = date.add(unit === 'month' ? { months: amount } : { years: amount })
   const daysInTargetMonth = getDaysInMonth(targetBase)
   const targetDay = Math.min(date.day, daysInTargetMonth)
-  return targetBase.set({ day: targetDay })
+  return targetBase.with({ day: targetDay })
 }
 
 /** Compares the calendar days of two dates, ignoring their time and type. */
-function compareDay(date: DateValue, reference: DateValue) {
-  return toCalendarDate(date).compare(toCalendarDate(reference))
-}
+const compareDay = compareDays
 
 /**
  * Moves `date` to the day of `bound`. The result keeps the type, time and
@@ -93,8 +91,8 @@ function compareDay(date: DateValue, reference: DateValue) {
  * the placeholder and not from `minValue` / `maxValue`.
  */
 function setDay(date: DateValue, bound: DateValue): DateValue {
-  const day = toCalendar(toCalendarDate(bound), date.calendar)
-  return date.set({ era: day.era, year: day.year, month: day.month, day: day.day })
+  const day = toCalendar(toPlainDate(bound), date.calendarId)
+  return date.with({ year: day.year, month: day.month, day: day.day })
 }
 
 export function clampTargetDate(date: DateValue, minValue?: DateValue, maxValue?: DateValue): DateValue {
@@ -150,7 +148,7 @@ function tryFocusDate(
 
   // With multiple months, a date can render both in its own grid and as an
   // outside-view copy in a neighbouring grid; always prefer the in-month cell.
-  const valueSelector = `[data-value='${target.toString()}']`
+  const valueSelector = `[data-value='${toIsoString(target)}']`
   const candidateDay = parentElement.querySelector<HTMLElement>(`${valueSelector}:not([data-outside-view])`)
     ?? (options.allowOutsideView ? parentElement.querySelector<HTMLElement>(valueSelector) : null)
 
@@ -164,7 +162,7 @@ function tryFocusDate(
       return
 
     const nextTarget = clampTargetDate(target.add({ days: directionSign }), options.minValue, options.maxValue)
-    if (nextTarget.compare(target) === 0)
+    if (compareDateValues(nextTarget, target) === 0)
       return
 
     options.onPlaceholderChange(nextTarget)

@@ -60,7 +60,10 @@ import './styles.css'
           </DatePickerInput>
         </template>
 
-        <DatePickerTrigger class="PopoverTrigger">
+        <DatePickerTrigger
+          class="PopoverTrigger"
+          aria-label="Open calendar"
+        >
           <Icon
             icon="radix-icons:calendar"
             class="Icon"

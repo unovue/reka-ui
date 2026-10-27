@@ -1,18 +1,17 @@
-import type { DateFields, DateValue, TimeFields, ZonedDateTime } from '@internationalized/date'
-
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import type { DateTimeField, DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfigProvider } from '@/ConfigProvider'
+import { cycleField, getFieldValue } from '@/date'
 import { useTestKbd } from '@/shared'
 import DatePicker from './story/_DatePicker.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = new Temporal.PlainDate(1980, 1, 20)
+const calendarDateTime = new Temporal.PlainDateTime(1980, 1, 20, 12, 30, 0, 0)
+const zonedDateTime = calendarDateTime.toZonedDateTime('America/New_York')
 
 const kbd = useTestKbd()
 
@@ -42,6 +41,13 @@ function setup(props: { datePickerProps?: DatePickerRootProps, emits?: { 'onUpda
 it('should pass axe accessibility tests', async () => {
   const { container } = setup()
   expect(await axe(container)).toHaveNoViolations()
+})
+
+it('should pass axe accessibility tests with the calendar open', async () => {
+  const { user, trigger, getByTestId, baseElement } = setup()
+  await user.click(trigger)
+  expect(getByTestId('calendar')).toBeInTheDocument()
+  expect(await axe(baseElement)).toHaveNoViolations()
 })
 
 describe('datePicker', async () => {
@@ -88,7 +94,7 @@ describe('datePicker', async () => {
     expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
 
     await rerender({
-      datePickerProps: { modelValue: toZoned(calendarDateTime, 'Asia/Tokyo') },
+      datePickerProps: { modelValue: calendarDateTime.toZonedDateTime('Asia/Tokyo') },
     })
     expect(getByTestId('timeZoneName')).toHaveTextContent('GMT+9')
   })
@@ -128,8 +134,8 @@ describe('datePicker', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, 1)[segment])
+    function cycle(segment: DateTimeField) {
+      return String(getFieldValue(cycleField(zonedDateTime, segment, 1), segment))
     }
 
     await user.click(day)
@@ -164,8 +170,8 @@ describe('datePicker', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, -1)[segment])
+    function cycle(segment: DateTimeField) {
+      return String(getFieldValue(cycleField(zonedDateTime, segment, -1), segment))
     }
 
     await user.click(day)
@@ -290,16 +296,16 @@ describe('datePicker', async () => {
     await user.click(getByTestId('date-1-1'))
 
     const selectedValue = emittedValues.at(-1)
-    expect(selectedValue).toBeInstanceOf(CalendarDateTime)
-    expect((selectedValue as CalendarDateTime).hour).toBe(0)
-    expect((selectedValue as CalendarDateTime).minute).toBe(0)
-    expect((selectedValue as CalendarDateTime).second).toBe(0)
-    expect((selectedValue as CalendarDateTime).millisecond).toBe(0)
+    expect(selectedValue).toBeInstanceOf(Temporal.PlainDateTime)
+    expect((selectedValue as Temporal.PlainDateTime).hour).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).minute).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).second).toBe(0)
+    expect((selectedValue as Temporal.PlainDateTime).millisecond).toBe(0)
   })
 
   it('resets stale ZonedDateTime placeholder time when selecting a date after the model value is cleared', async () => {
     const emittedValues: (DateValue | undefined)[] = []
-    const zonedValue = toZoned(new CalendarDateTime(1980, 1, 20, 12, 30, 45, 123), 'America/New_York')
+    const zonedValue = new Temporal.PlainDateTime(1980, 1, 20, 12, 30, 45, 123).toZonedDateTime('America/New_York')
     const { user, trigger, getByTestId, rerender } = setup({
       datePickerProps: {
         modelValue: zonedValue,
@@ -323,8 +329,8 @@ describe('datePicker', async () => {
     await user.click(trigger)
     await user.click(getByTestId('date-1-1'))
 
-    const selectedValue = emittedValues.at(-1) as ZonedDateTime | undefined
-    expect(selectedValue).toHaveProperty('timeZone', 'America/New_York')
+    const selectedValue = emittedValues.at(-1) as Temporal.ZonedDateTime | undefined
+    expect(selectedValue).toHaveProperty('timeZoneId', 'America/New_York')
     expect(selectedValue?.hour).toBe(0)
     expect(selectedValue?.minute).toBe(0)
     expect(selectedValue?.second).toBe(0)
@@ -429,11 +435,11 @@ describe('datePicker', async () => {
         components: { ConfigProvider, DatePicker },
         template: `
           <ConfigProvider locale="de">
-            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15) }" />
+            <DatePicker :datePickerProps="{ modelValue: new Temporal.PlainDate(2024, 1, 15) }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 
@@ -451,11 +457,11 @@ describe('datePicker', async () => {
         components: { ConfigProvider, DatePicker },
         template: `
           <ConfigProvider locale="de">
-            <DatePicker :datePickerProps="{ modelValue: new CalendarDate(2024, 1, 15), locale: 'en-US' }" />
+            <DatePicker :datePickerProps="{ modelValue: new Temporal.PlainDate(2024, 1, 15), locale: 'en-US' }" />
           </ConfigProvider>
         `,
         setup() {
-          return { CalendarDate }
+          return { Temporal }
         },
       })
 
@@ -482,7 +488,7 @@ describe('datePicker', async () => {
     })
 
     it('keeps the visible month when modelValue is a new object for the same day', async () => {
-      const selected = new CalendarDate(1980, 1, 20)
+      const selected = new Temporal.PlainDate(1980, 1, 20)
       const { user, trigger, getByTestId, rerender } = setup({
         datePickerProps: { modelValue: selected, closeOnSelect: true },
       })
@@ -495,7 +501,7 @@ describe('datePicker', async () => {
       expect(heading).toHaveTextContent('February 1980')
 
       await rerender({
-        datePickerProps: { modelValue: selected.copy(), closeOnSelect: true },
+        datePickerProps: { modelValue: selected, closeOnSelect: true },
       })
 
       expect(heading).toHaveTextContent('February 1980')
@@ -511,7 +517,7 @@ describe('datePicker', async () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
       await rerender({
-        datePickerProps: { modelValue: calendarDateTime.set({ hour: 15 }), closeOnSelect: true },
+        datePickerProps: { modelValue: calendarDateTime.with({ hour: 15 }), closeOnSelect: true },
       })
 
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
@@ -519,7 +525,7 @@ describe('datePicker', async () => {
 
     it('moves the visible month when the selected day changes', async () => {
       const { user, trigger, getByTestId, rerender } = setup({
-        datePickerProps: { modelValue: new CalendarDate(1980, 1, 20) },
+        datePickerProps: { modelValue: new Temporal.PlainDate(1980, 1, 20) },
       })
 
       await user.click(trigger)
@@ -527,7 +533,7 @@ describe('datePicker', async () => {
       expect(getByTestId('heading')).toHaveTextContent('February 1980')
 
       await rerender({
-        datePickerProps: { modelValue: new CalendarDate(1980, 9, 23) },
+        datePickerProps: { modelValue: new Temporal.PlainDate(1980, 9, 23) },
       })
 
       expect(getByTestId('heading')).toHaveTextContent('September 1980')

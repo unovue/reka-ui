@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { CalendarUnit } from '@/date'
+import type { CalendarUnit, DateValue } from '@/date'
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { ref } from 'vue'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, CalendarView, CalendarViewTrigger } from '..'
 
-const date = ref(new CalendarDate(2026, 9, 5)) as Ref<DateValue | undefined>
-const month = ref(new CalendarDate(2026, 9, 1)) as Ref<DateValue | undefined>
-const year = ref(new CalendarDate(2026, 1, 1)) as Ref<DateValue | undefined>
+const date = ref(new Temporal.PlainDate(2026, 9, 5)) as Ref<DateValue | undefined>
+const month = ref(new Temporal.PlainDate(2026, 9, 1)) as Ref<DateValue | undefined>
+const year = ref(new Temporal.PlainDate(2026, 1, 1)) as Ref<DateValue | undefined>
 const view = ref<CalendarUnit>('day')
 
 const nav = 'inline-flex items-center cursor-pointer text-black justify-center rounded-[9px] bg-transparent w-10 h-10 hover:bg-black hover:text-white active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-black data-[disabled]:text-black/30 data-[disabled]:pointer-events-none'
 const cell = 'relative flex items-center justify-center whitespace-nowrap rounded-[9px] border border-transparent bg-transparent text-sm font-normal text-black w-full h-10 outline-none hover:border-black focus:shadow-[0_0_0_2px] focus:shadow-black data-[selected]:bg-black data-[selected]:font-medium data-[selected]:text-white data-[disabled]:text-black/30 data-[unavailable]:pointer-events-none data-[unavailable]:text-black/30 data-[unavailable]:line-through data-[outside-view]:text-black/30 before:absolute before:bottom-[5px] before:hidden before:rounded-full before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-black data-[selected]:before:bg-white'
+const minYear = new Temporal.PlainDate(2015, 1, 1)
+const maxYear = new Temporal.PlainDate(2035, 12, 31)
 </script>
 
 <template>
@@ -191,8 +191,8 @@ const cell = 'relative flex items-center justify-center whitespace-nowrap rounde
         granularity="year"
         :years-per-page="9"
         :columns="3"
-        :min-value="new CalendarDate(2015, 1, 1)"
-        :max-value="new CalendarDate(2035, 12, 31)"
+        :min-value="minYear"
+        :max-value="maxYear"
         class="rounded-xl border border-black bg-white p-4 shadow-md"
       >
         <CalendarHeader class="flex items-center justify-between">

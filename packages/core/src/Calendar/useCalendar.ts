@@ -1,11 +1,11 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CalendarRootContext } from './CalendarRoot.vue'
-import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { clampCalendarView, coarserUnit, finerUnit, focusedDateValue, getUnitAdapter, isAfter, isBefore, isCoarserUnit, isSameDateSelection } from '@/date'
+import { clampCalendarView, coarserUnit, compareDateValues, finerUnit, focusedDateValue, getUnitAdapter, isAfter, isBefore, isCoarserUnit, isSameDateSelection, toIsoString } from '@/date'
+import { assertTemporal } from '@/date/runtime'
 import { createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
 
@@ -310,7 +310,7 @@ export function getCalendarCellTriggerSurface(
       'aria-disabled': isDisabled.value || isUnavailable.value ? true : undefined,
       // Selectors (not semantic state): `data-value` drives keyboard focus queries,
       // the `data-reka-*` marker is what `handleCalendarInitialFocus` looks for.
-      'data-value': date.value.toString(),
+      'data-value': toIsoString(date.value),
       'data-reka-calendar-cell-trigger': '',
       'tabindex': isFocused.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1,
       'onClick': (event: MouseEvent) => {
@@ -345,6 +345,7 @@ export function getCalendarCellTriggerSurface(
  * @lifecycle setup — installs watchers (model → placeholder sync, grid rebuilds).
  */
 export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
+  assertTemporal()
   const locale = computed(() => toValue(props.locale))
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -382,15 +383,15 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<DateValue, CalendarChangeReason>({
     prop: () => toValue(props.placeholder),
-    defaultValue: () => props.defaultPlaceholder?.copy() ?? getDefaultDate({
+    defaultValue: () => props.defaultPlaceholder ?? getDefaultDate({
       defaultPlaceholder: toValue(props.placeholder),
       defaultValue: modelValue.value,
       locale: locale.value,
-    }).copy(),
+    }),
     name: 'placeholder',
     emit: props.emit,
     onUpdate: props.onUpdatePlaceholder,
-    isEqual: (a, b) => a.compare(b) === 0,
+    isEqual: (a, b) => compareDateValues(a, b) === 0,
   })
 
   const { state: rawView, setState: setViewState } = useControllableState<CalendarUnit, CalendarChangeReason>({
@@ -403,7 +404,7 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
   const view = computed(() => clampCalendarView(rawView.value, granularity.value, maxView.value))
 
   function setPlaceholder(value: DateValue, reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
 
   function setView(next: CalendarUnit, reason: CalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
@@ -501,7 +502,7 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
       // A cancelled `beforeUpdate:placeholder` keeps the current page, so don't
       // drill into it. `false` for an unchanged placeholder is a no-op, not a cancel.
       const target = gridApi.adapter.value.resolve(value, placeholder.value)
-      if (!setPlaceholder(target, 'view-drill', event) && target.compare(placeholder.value) !== 0)
+      if (!setPlaceholder(target, 'view-drill', event) && compareDateValues(target, placeholder.value) !== 0)
         return
       setView(finer, 'view-drill', event)
       return
@@ -541,7 +542,7 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
         setModelValue(undefined, reason, event)
         return
       }
-      setModelValue(next.map(d => d.copy()), reason, event)
+      setModelValue([...next], reason, event)
     }
   }
 

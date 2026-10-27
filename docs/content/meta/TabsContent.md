@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'id',
+    'description': '<p>Id of the element, which the trigger with the same <code>value</code> points its\n<code>aria-controls</code> at. Defaults to one derived from the Root\'s id and <code>value</code>.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'value',
     'description': '<p>A unique value that associates the content with a trigger.</p>\n',
     'type': 'string | number',
@@ -39,6 +45,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
+| `id` | Id of the element, which the trigger with the same `value` points its `aria-controls` at. Defaults to one derived from the Root's id and `value`. | `string` | No | - |
 | `value` | A unique value that associates the content with a trigger. | `string \| number` | Yes | - |
 
 </llm-only>

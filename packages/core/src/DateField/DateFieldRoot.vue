@@ -1,8 +1,7 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { DateFieldChangeReason } from './useDateField'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
@@ -50,7 +49,7 @@ export interface DateFieldRootProps extends PrimitiveProps, FormFieldProps {
   step?: DateStep
   /** Whether to enforce snapping the time value to the nearest step increment after input. Defaults to `false`. */
   stepSnapping?: boolean
-  /** The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
+  /** The granularity to use for formatting times. Defaults to day if a `Temporal.PlainDate` is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: Granularity
   /** Whether or not to hide the time zone segment of the field */
   hideTimeZone?: boolean
@@ -250,7 +249,7 @@ function handleFocusout(event: FocusEvent) {
 provideDateFieldRootContext(context)
 
 defineExpose(mergeExpose(expose, {
-  /** Helper to set the focused element inside the DateField */
+  /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
 </script>

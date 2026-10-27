@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
 import type { DisclosureState } from '@/shared'
-import { createContext, mergeExpose, useForwardElement, useId } from '@/shared'
+import { createContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 export interface AccordionItemProps
@@ -41,7 +41,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
 import { getAccordionItemState } from './useAccordion'
 
@@ -81,17 +81,21 @@ const currentElement = computed(() => currentRef.value ?? undefined)
 
 // Allocated here rather than in AccordionTrigger: content may render before its
 // trigger, and SSR serializes `aria-labelledby` once, without a second pass.
-const triggerId = useId(undefined, 'reka-accordion-trigger')
-provideAccordionItemContext({
+// Writable so an `AccordionTrigger` `id` replaces it (and the content's `aria-labelledby` follows).
+const triggerId = ref(useId(undefined, 'reka-accordion-trigger'))
+const itemContext: AccordionItemContext = {
   open,
   dataState,
   disabled,
   dataDisabled,
-  triggerId,
+  get triggerId() { return triggerId.value },
+  set triggerId(value) { triggerId.value = value },
   currentRef,
   currentElement,
   value: computed(() => props.value),
-})
+}
+setGeneratedIds(itemContext, { triggerId: triggerId.value })
+provideAccordionItemContext(itemContext)
 </script>
 
 <template>

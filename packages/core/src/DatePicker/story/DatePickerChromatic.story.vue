@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
+import type { DateValue } from '@/date'
 
-import { CalendarDate } from '@internationalized/date'
 import { ref } from 'vue'
 import DatePicker from './_DummyDatePicker.vue'
 
-const defaultValue = new CalendarDate(2024, 2, 20)
+const defaultValue = new Temporal.PlainDate(2024, 2, 20)
 const modelValue = ref(defaultValue) as Ref<DateValue>
 </script>
 

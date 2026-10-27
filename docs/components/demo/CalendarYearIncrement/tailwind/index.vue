@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-import type { CalendarRootProps } from 'reka-ui'
+import type { CalendarRootProps, DateValue } from 'reka-ui'
 import { Icon } from '@iconify/vue'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
 

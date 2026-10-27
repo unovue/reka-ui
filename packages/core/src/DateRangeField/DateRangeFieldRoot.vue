@@ -1,8 +1,7 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { DateRangeFieldChangeReason } from './useDateRangeField'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
@@ -54,7 +53,7 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   step?: DateStep
   /** Whether to enforce snapping the time value to the nearest step increment after input. Defaults to `false`. */
   stepSnapping?: boolean
-  /** The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
+  /** The granularity to use for formatting times. Defaults to day if a `Temporal.PlainDate` is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity */
   granularity?: Granularity
   /** Whether or not to hide the time zone segment of the field */
   hideTimeZone?: boolean
@@ -94,6 +93,7 @@ export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { toRangeFormValue } from '@/shared/date'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateRangeField } from './useDateRangeField'
 
@@ -152,6 +152,7 @@ const { root, context, modelValue, segments, isInvalid, setFocusedElement, focus
 provideDateRangeFieldRootContext(context)
 
 defineExpose(mergeExpose(expose, {
+  /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
 </script>
@@ -173,7 +174,7 @@ defineExpose(mergeExpose(expose, {
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue.start?.toString()} - ${modelValue.end?.toString()}`"
+      :value="toRangeFormValue(modelValue)"
       :name="name"
       :disabled="disabled"
       :required="required"

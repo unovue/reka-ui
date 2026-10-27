@@ -66,7 +66,7 @@
   },
   {
     'name': 'isTimeUnavailable',
-    'description': '<p>A function that returns whether or not a time is unavailable. It receives the time as a date-time (a <code>Time</code> is placed on today\'s date); an unavailable time marks the field invalid.</p>\n',
+    'description': '<p>A function that returns whether or not a time is unavailable. It receives the time as a date-time (a <code>PlainTime</code> is placed on today\'s date); an unavailable time marks the field invalid.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -178,7 +178,7 @@
 <MethodsTable :data="[
   {
     'name': 'setFocusedElement',
-    'description': '<p>Helper to set the focused element inside the TimeField</p>\n',
+    'description': '<p>Records <code>el</code> as the focused segment for keyboard navigation. It does not move focus; call <code>el.focus()</code> for that.</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
@@ -200,7 +200,7 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isTimeUnavailable` | A function that returns whether or not a time is unavailable. It receives the time as a date-time (a `Time` is placed on today's date); an unavailable time marks the field invalid. | `Matcher` | No | - |
+| `isTimeUnavailable` | A function that returns whether or not a time is unavailable. It receives the time as a date-time (a `PlainTime` is placed on today's date); an unavailable time marks the field invalid. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `TimeValue` | No | - |
 | `minValue` | The minimum date that can be selected | `TimeValue` | No | - |
@@ -233,6 +233,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `setFocusedElement` | Helper to set the focused element inside the TimeField | `(el: HTMLElement) => void` |
+| `setFocusedElement` | Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. | `(el: HTMLElement) => void` |
 
 </llm-only>

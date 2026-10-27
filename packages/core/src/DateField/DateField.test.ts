@@ -1,18 +1,17 @@
-import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
-
 import type { DateFieldRootProps } from './DateFieldRoot.vue'
-import { CalendarDate, CalendarDateTime, getLocalTimeZone, now, parseAbsoluteToLocal, toTimeZone, toZoned } from '@internationalized/date'
+import type { DateTimeField, DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
+import { cycleField, getFieldValue } from '@/date'
 import { useTestKbd } from '@/shared'
 import DateField from './story/_DateField.vue'
 
-const calendarDate = new CalendarDate(1980, 1, 20)
-const calendarDateTime = new CalendarDateTime(1980, 1, 20, 12, 30, 0, 0)
-const zonedDateTime = toZoned(calendarDateTime, 'America/New_York')
+const calendarDate = new Temporal.PlainDate(1980, 1, 20)
+const calendarDateTime = new Temporal.PlainDateTime(1980, 1, 20, 12, 30, 0, 0)
+const zonedDateTime = calendarDateTime.toZonedDateTime('America/New_York')
 
 const kbd = useTestKbd()
 
@@ -48,7 +47,7 @@ function thisTimeZone(date: string): string {
  * twelve hours wide, so one of them always qualifies.
  */
 function zonedDateTimeInForeignZone() {
-  const local = toZoned(new CalendarDateTime(2024, 1, 20, 2, 30), getLocalTimeZone())
+  const local = new Temporal.PlainDateTime(2024, 1, 20, 2, 30).toZonedDateTime(Temporal.Now.timeZoneId())
   const candidateZones = [
     'Pacific/Honolulu',
     'America/Los_Angeles',
@@ -64,7 +63,7 @@ function zonedDateTimeInForeignZone() {
     'Australia/Sydney',
     'Pacific/Auckland',
   ]
-  const foreign = candidateZones.map(zone => toTimeZone(local, zone)).find(date => date.hour >= 12)
+  const foreign = candidateZones.map(zone => local.withTimeZone(zone)).find(date => date.hour >= 12)
   if (!foreign)
     throw new Error('No candidate zone reads PM while the local zone reads AM')
   return foreign
@@ -191,8 +190,8 @@ describe('dateField', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, 1)[segment])
+    function cycle(segment: DateTimeField) {
+      return String(getFieldValue(cycleField(zonedDateTime, segment, 1), segment))
     }
 
     await user.click(day)
@@ -227,8 +226,8 @@ describe('dateField', async () => {
     const minute = getByTestId('minute')
     const second = getByTestId('second')
 
-    function cycle(segment: keyof TimeFields | keyof DateFields) {
-      return String(zonedDateTime.cycle(segment, -1)[segment])
+    function cycle(segment: DateTimeField) {
+      return String(getFieldValue(cycleField(zonedDateTime, segment, -1), segment))
     }
 
     await user.click(day)
@@ -259,7 +258,7 @@ describe('dateField', async () => {
          * And use a month (here is April, 30 days) with less than 31 days to ensure the day can be 31
          * when user input day segment first.
          */
-        placeholder: new CalendarDate(2025, 4, 30),
+        placeholder: new Temporal.PlainDate(2025, 4, 30),
       },
     })
 
@@ -374,7 +373,7 @@ describe('dateField', async () => {
   it('should clear all segment when `modelValue` is set to nullish', async () => {
     const { day, month, year, rerender } = setup({
       dateFieldProps: {
-        modelValue: zonedDateTime.copy(),
+        modelValue: zonedDateTime,
       },
     })
 
@@ -402,13 +401,13 @@ describe('dateField', async () => {
     expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
 
     await rerender({
-      dateFieldProps: { modelValue: toZoned(calendarDateTime, 'Asia/Tokyo') },
+      dateFieldProps: { modelValue: calendarDateTime.toZonedDateTime('Asia/Tokyo') },
     })
     expect(getByTestId('timeZoneName')).toHaveTextContent('GMT+9')
 
     await user.click(getByTestId('minute'))
     await user.keyboard(kbd.ARROW_UP)
-    expect(emitted.at(-1)).toMatchObject({ timeZone: 'Asia/Tokyo', minute: 31 })
+    expect(emitted.at(-1)).toMatchObject({ timeZoneId: 'Asia/Tokyo', minute: 31 })
   })
 
   it('prevents interaction when `disabled`', async () => {
@@ -447,7 +446,7 @@ describe('dateField', async () => {
       expect(segment).toHaveFocus()
       await user.keyboard(kbd.ARROW_UP)
       expect(segment).toHaveTextContent(
-        String(zonedDateTime[segment.getAttribute('data-reka-date-field-segment') as keyof TimeFields | keyof DateFields]),
+        String(getFieldValue(zonedDateTime, segment.getAttribute('data-reka-date-field-segment') as DateTimeField)),
       )
     }
   })
@@ -651,7 +650,7 @@ describe('dateField', async () => {
     await user.click(hour)
     await user.keyboard('{3}')
 
-    expect(getByTestId('value').textContent).toBe(foreign.set({ hour: 15 }).toString())
+    expect(getByTestId('value').textContent).toBe(foreign.with({ hour: 15 }).toString())
     expect(dayPeriod).toHaveTextContent('PM')
   })
 
@@ -750,7 +749,7 @@ describe('dateField', async () => {
 
   it('displays correct timezone with ZonedDateTime value - `now`', async () => {
     const { getByTestId } = setup({
-      dateFieldProps: { modelValue: now('America/Los_Angeles') },
+      dateFieldProps: { modelValue: Temporal.Now.zonedDateTimeISO('America/Los_Angeles') },
     })
 
     const timeZone = getByTestId('timeZoneName')
@@ -762,7 +761,7 @@ describe('dateField', async () => {
 
   it('displays correct timezone with ZonedDateTime value - absolute -> local', async () => {
     const { getByTestId } = setup({
-      dateFieldProps: { modelValue: parseAbsoluteToLocal('2023-10-12T12:30:00Z') },
+      dateFieldProps: { modelValue: Temporal.Instant.from('2023-10-12T12:30:00Z').toZonedDateTimeISO(Temporal.Now.timeZoneId()) },
     })
 
     const timeZone = getByTestId('timeZoneName')
@@ -773,7 +772,7 @@ describe('dateField', async () => {
     function setupStepSnappingTest({
       step,
       stepSnapping,
-      modelValue = new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+      modelValue = new Temporal.PlainDateTime(1980, 1, 20, 12, 0, 0, 0),
       hourCycle,
     }: {
       step: DateFieldRootProps['step']
@@ -853,7 +852,7 @@ describe('dateField', async () => {
     it('snaps typed minute value down to the nearest step', async () => {
       const { user, getByTestId, rerender } = setup({
         dateFieldProps: {
-          modelValue: new CalendarDateTime(1980, 1, 20, 12, 0, 0, 0),
+          modelValue: new Temporal.PlainDateTime(1980, 1, 20, 12, 0, 0, 0),
           granularity: 'second',
           step: { minute: 15 },
           stepSnapping: true,
@@ -910,7 +909,7 @@ describe('dateField', async () => {
 
     it('snaps typed hour value to nearest step', async () => {
       const { user, getByTestId } = setupStepSnappingTest({
-        modelValue: new CalendarDateTime(1980, 1, 20, 0, 0, 0, 0),
+        modelValue: new Temporal.PlainDateTime(1980, 1, 20, 0, 0, 0, 0),
         hourCycle: 24,
         step: { hour: 4 },
         stepSnapping: true,
@@ -1244,8 +1243,8 @@ describe('useDateField – characterization tests (coverage gaps)', () => {
  * @see https://github.com/unovue/reka-ui/issues/2956
  */
 describe('dayPeriod across locales', () => {
-  const afternoon = new CalendarDateTime(2024, 1, 20, 15, 30)
-  const morning = new CalendarDateTime(2024, 1, 20, 9, 30)
+  const afternoon = new Temporal.PlainDateTime(2024, 1, 20, 15, 30)
+  const morning = new Temporal.PlainDateTime(2024, 1, 20, 9, 30)
   const locales = ['en-US', 'nl-NL', 'es-ES', 'ja-JP', 'zh-CN', 'ko-KR', 'ar-EG', 'hi-IN']
 
   describe.each(locales)('%s', (locale) => {
@@ -1272,8 +1271,120 @@ describe('dayPeriod across locales', () => {
       await user.click(getByTestId('hour'))
       await user.keyboard('{3}')
 
-      expect(getByTestId('value').textContent).toBe(afternoon.set({ hour: 15 }).toString())
+      expect(getByTestId('value').textContent).toBe(afternoon.with({ hour: 15 }).toString())
       expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
     })
+  })
+})
+
+describe('temporal calendar systems', () => {
+  it('shows and edits the year of the era', async () => {
+    const onUpdate = vi.fn()
+    const reiwa6 = Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })
+    const { user, year, getByTestId } = setup({
+      dateFieldProps: { modelValue: reiwa6, locale: 'en-US' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    expect(year).toHaveTextContent('6')
+    // en-US abbreviates Reiwa to its narrow form.
+    expect(getByTestId('era')).toHaveTextContent('R')
+
+    await user.click(year)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled())
+    const decremented = onUpdate.mock.lastCall![0] as Temporal.PlainDate
+    expect([decremented.era, decremented.eraYear]).toEqual(['reiwa', 5])
+    expect(decremented.toString({ calendarName: 'never' })).toBe('2023-05-01')
+  })
+})
+
+describe('temporal regressions (#3088 review)', () => {
+  it('steps the hour of a ZonedDateTime over a spring-forward gap', async () => {
+    const onUpdate = vi.fn()
+    // New York springs forward at 02:00 on 2024-03-10: 02:30 does not exist.
+    const { user, getByTestId } = setup({
+      dateFieldProps: { modelValue: Temporal.ZonedDateTime.from('2024-03-10T03:30-04:00[America/New_York]'), granularity: 'minute' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(getByTestId('hour'))
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2024-03-10T01:30:00-05:00[America/New_York]')
+
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(2))
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2024-03-10T00:30:00-05:00[America/New_York]')
+  })
+
+  it('steps the hour of a ZonedDateTime forward over a spring-forward gap', async () => {
+    const onUpdate = vi.fn()
+    const { user, getByTestId } = setup({
+      dateFieldProps: { modelValue: Temporal.ZonedDateTime.from('2024-03-10T01:30-05:00[America/New_York]'), granularity: 'minute' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(getByTestId('hour'))
+    await user.keyboard(kbd.ARROW_UP)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2024-03-10T03:30:00-04:00[America/New_York]')
+  })
+
+  it('wraps the year within a Japanese era', async () => {
+    const onUpdate = vi.fn()
+    const heisei1 = Temporal.PlainDate.from('1989-04-30').withCalendar('japanese')
+    const { user, year } = setup({
+      dateFieldProps: { modelValue: heisei1, locale: 'ja-JP-u-ca-japanese' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(year)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled())
+    // Heisei 31 is the era's last year: it ends on 30 April 2019.
+    const wrapped = onUpdate.mock.lastCall![0] as Temporal.PlainDate
+    expect([wrapped.era, wrapped.eraYear]).toEqual(['heisei', 31])
+    expect(wrapped.toString({ calendarName: 'never' })).toBe('2019-04-30')
+  })
+
+  it('keeps the years of the current era within the ISO years 1 to 9999', async () => {
+    const onUpdate = vi.fn()
+    const { user, year } = setup({
+      dateFieldProps: { modelValue: Temporal.PlainDate.from('2019-05-01').withCalendar('japanese'), locale: 'ja-JP-u-ca-japanese' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(year)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled())
+    const wrapped = onUpdate.mock.lastCall![0] as Temporal.PlainDate
+    expect(wrapped.era).toBe('reiwa')
+    expect(wrapped.withCalendar('iso8601').year).toBe(9999)
+  })
+
+  it('reads the era segment\'s value as its label, not its Temporal code', () => {
+    const reiwa6 = Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })
+    const { getByTestId } = setup({ dateFieldProps: { modelValue: reiwa6, locale: 'en-US' } })
+    expect(getByTestId('era')).toHaveAttribute('aria-valuetext', 'Reiwa')
+  })
+
+  it('ignores keys on the era segment', async () => {
+    const reiwa6 = Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })
+    const { getByTestId } = setup({ dateFieldProps: { modelValue: reiwa6, locale: 'en-US' } })
+    const era = getByTestId('era')
+    // Vue reports a throwing event handler instead of rethrowing it.
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      await fireEvent.keyDown(era, { key: kbd.ARROW_UP })
+      expect([...error.mock.calls, ...warn.mock.calls]).toEqual([])
+      expect(era).toHaveTextContent('R')
+    }
+    finally {
+      error.mockRestore()
+      warn.mockRestore()
+    }
+  })
+
+  it('shows an ISO value in the Gregorian calendar, whatever the locale\'s default calendar', () => {
+    const { year, queryByTestId } = setup({ dateFieldProps: { modelValue: Temporal.PlainDate.from('2024-05-01'), locale: 'ja-JP-u-ca-japanese' } })
+    expect(year).toHaveTextContent('2024')
+    expect(queryByTestId('era')).toBeNull()
   })
 })
