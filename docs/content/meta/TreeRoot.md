@@ -53,14 +53,14 @@
   },
   {
     'name': 'getChildren',
-    'description': '<p>This function is passed the index of each item and should return a list of children for that item</p>\n',
+    'description': '<p>Returns an item\'s children. <code>undefined</code> marks a leaf. An array, even an empty one, marks a branch that can be expanded: return <code>[]</code> for children that are loaded when the item expands.</p>\n',
     'type': '((val: T) =&gt; T[])',
     'required': false,
     'default': 'val.children'
   },
   {
     'name': 'getKey',
-    'description': '<p>This function is passed the index of each item and should return a unique key for that item</p>\n',
+    'description': '<p>Returns a unique key for an item. Keys identify items in the selection and in <code>expanded</code>, so they must be strings: convert a numeric id with <code>String(item.id)</code>.</p>\n',
     'type': '(val: T): string',
     'required': true
   },
@@ -159,8 +159,8 @@
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with tree | `boolean` | No | - |
 | `expanded` | The controlled value of the expanded item. Can be binded with v-model. | `string[]` | No | - |
-| `getChildren` | This function is passed the index of each item and should return a list of children for that item | `((val: T) => T[])` | No | `val.children` |
-| `getKey` | This function is passed the index of each item and should return a unique key for that item | `(val: T): string` | Yes | - |
+| `getChildren` | Returns an item's children. undefined marks a leaf. An array, even an empty one, marks a branch that can be expanded: return [] for children that are loaded when the item expands. | `((val: T) => T[])` | No | `val.children` |
+| `getKey` | Returns a unique key for an item. Keys identify items in the selection and in expanded, so they must be strings: convert a numeric id with String(item.id). | `(val: T): string` | Yes | - |
 | `items` | List of items | `T[]` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the tree. Can be binded with v-model. | `(M extends true ? U[] : U)` | No | - |

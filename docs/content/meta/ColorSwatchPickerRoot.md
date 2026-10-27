@@ -96,7 +96,7 @@
 <EmitsTable :data="[
   {
     'name': 'beforeUpdate:modelValue',
-    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
+    'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
     'type': '[value: ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   },
   {
@@ -116,7 +116,7 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
+    'description': '<p>Event handler called when the color value changes, with the value of the selected item (or items) as declared.</p>\n',
     'type': '[value: ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   }
 ]" />
@@ -155,11 +155,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: ColorSwatchPickerValue \| ColorSwatchPickerValue[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: ColorSwatchPickerValue \| ColorSwatchPickerValue[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: ColorSwatchPickerValue \| ColorSwatchPickerValue[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
+| `update:modelValue` | Event handler called when the color value changes, with the value of the selected item (or items) as declared. | `[value: ColorSwatchPickerValue \| ColorSwatchPickerValue[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 
 **Slots**
 

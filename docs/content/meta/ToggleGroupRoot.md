@@ -83,12 +83,12 @@
 <EmitsTable :data="[
   {
     'name': 'beforeUpdate:modelValue',
-    'description': '<p>Event handler called before the value of the toggle changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value.</p>\n',
     'type': '[payload: AcceptableValue | AcceptableValue[], details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
+    'description': '<p>Event handler called when the value changes.</p>\n',
     'type': '[payload: AcceptableValue | AcceptableValue[], details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
   }
 ]" />
@@ -125,8 +125,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value of the toggle changes; details.cancel() vetoes the change. | `[payload: AcceptableValue \| AcceptableValue[], details: ChangeEventDetails<"item-press", Event>]` |
-| `update:modelValue` | Event handler called when the value of the toggle changes. | `[payload: AcceptableValue \| AcceptableValue[], details: ChangeEventDetails<"item-press", Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. | `[payload: AcceptableValue \| AcceptableValue[], details: ChangeEventDetails<"item-press", Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[payload: AcceptableValue \| AcceptableValue[], details: ChangeEventDetails<"item-press", Event>]` |
 
 **Slots**
 

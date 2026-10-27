@@ -59,17 +59,17 @@
 <EmitsTable :data="[
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state of the dialog changes.</p>\n',
+    'description': '<p>Called before the open state changes, with why it is changing. Calling <code>details.cancel()</code> keeps the current state (Base UI <code>onOpenChange</code>).</p>\n',
     'type': '[value: boolean, details: DrawerOpenChangeDetails]'
   },
   {
     'name': 'update:openComplete',
-    'description': '',
+    'description': '<p>Called once the popup\'s enter or exit animations and transitions have finished, or right away when it has none.</p>\n',
     'type': '[value: boolean]'
   },
   {
     'name': 'update:snapPoint',
-    'description': '',
+    'description': '<p>Called when the active snap point changes.</p>\n',
     'type': '[value: DrawerSnapPoint | null]'
   }
 ]" />
@@ -107,9 +107,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: DrawerOpenChangeDetails]` |
-| `update:openComplete` |  | `[value: boolean]` |
-| `update:snapPoint` |  | `[value: DrawerSnapPoint \| null]` |
+| `update:open` | Called before the open state changes, with why it is changing. Calling details.cancel() keeps the current state (Base UI onOpenChange). | `[value: boolean, details: DrawerOpenChangeDetails]` |
+| `update:openComplete` | Called once the popup's enter or exit animations and transitions have finished, or right away when it has none. | `[value: boolean]` |
+| `update:snapPoint` | Called when the active snap point changes. | `[value: DrawerSnapPoint \| null]` |
 
 **Slots**
 

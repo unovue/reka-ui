@@ -117,7 +117,7 @@ Contains all the parts of an Autocomplete.
 
 Used as an anchor if you set `AutocompleteContent`'s position to `popper`.
 
-<!-- @include: @/meta/ComboboxAnchor.md -->
+<!-- @include: @/meta/AutocompleteAnchor.md -->
 
 ### Input
 
@@ -129,7 +129,7 @@ The input component to search through the autocomplete items. Typing updates the
 
 The button that toggles the Autocomplete Content.
 
-<!-- @include: @/meta/ComboboxTrigger.md -->
+<!-- @include: @/meta/AutocompleteTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -148,13 +148,13 @@ The button that toggles the Autocomplete Content.
 
 The button that clears the input text and resets the value.
 
-<!-- @include: @/meta/ComboboxCancel.md -->
+<!-- @include: @/meta/AutocompleteCancel.md -->
 
 ### Empty
 
 Shown when none of the items match the query.
 
-<!-- @include: @/meta/ComboboxEmpty.md -->
+<!-- @include: @/meta/AutocompleteEmpty.md -->
 
 ### Portal
 
@@ -162,7 +162,7 @@ When used, portals the content part into the `body`.
 
 You need to set `position="popper"` for `AutocompleteContent` to make sure the position was automatically computed similar to `Popover` or `DropdownMenu`.
 
-<!-- @include: @/meta/ComboboxPortal.md -->
+<!-- @include: @/meta/AutocompletePortal.md -->
 
 ### Content
 
@@ -170,7 +170,7 @@ The component that pops out when the autocomplete is open.
 
 <PresenceCallout />
 
-<!-- @include: @/meta/ComboboxContent.md -->
+<!-- @include: @/meta/AutocompleteContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -222,13 +222,13 @@ The component that pops out when the autocomplete is open.
 
 The scrolling viewport that contains all of the items.
 
-<!-- @include: @/meta/ComboboxViewport.md -->
+<!-- @include: @/meta/AutocompleteViewport.md -->
 
 ### Item
 
 The component that contains the autocomplete items. When selected, the item's string value fills the input.
 
-<!-- @include: @/meta/ComboboxItem.md -->
+<!-- @include: @/meta/AutocompleteItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -251,25 +251,25 @@ The component that contains the autocomplete items. When selected, the item's st
 
 Used to group multiple items. Use in conjunction with `AutocompleteLabel` to ensure good accessibility via automatic labelling.
 
-<!-- @include: @/meta/ComboboxGroup.md -->
+<!-- @include: @/meta/AutocompleteGroup.md -->
 
 ### Label
 
 Used to render the label of a group. It won't be focusable using arrow keys.
 
-<!-- @include: @/meta/ComboboxLabel.md -->
+<!-- @include: @/meta/AutocompleteLabel.md -->
 
 ### Separator
 
 Used to visually separate items in the Autocomplete.
 
-<!-- @include: @/meta/ComboboxSeparator.md -->
+<!-- @include: @/meta/AutocompleteSeparator.md -->
 
 ### Arrow
 
 An optional arrow element to render alongside the content. This can be used to help visually link the trigger with the `AutocompleteContent`. Must be rendered inside `AutocompleteContent`. Only available when `position` is set to `popper`.
 
-<!-- @include: @/meta/ComboboxArrow.md -->
+<!-- @include: @/meta/AutocompleteArrow.md -->
 
 ### Virtualizer
 
@@ -277,7 +277,7 @@ Virtual container to achieve list virtualization. The root's `filter` runs over 
 
 See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
 
-<!-- @include: @/meta/ComboboxVirtualizer.md -->
+<!-- @include: @/meta/AutocompleteVirtualizer.md -->
 
 ## Examples
 

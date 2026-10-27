@@ -622,10 +622,32 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before; the type-check passes.
 
+### 28. Drawer open-complete, Tree custom children and Combobox blur reset
+
+**What changed.**
+- `DrawerRoot` emits `update:openComplete(true)` once the drawer has opened (v2 never emitted it) and `update:openComplete(false)` once it has closed. Like Base UI's `onOpenChangeComplete`, it waits for every animation and transition on the popup (`DrawerContent`) one frame after the change, and fires right away when there is none; v2 waited for the popup's own `transitionend` / `animationend` and never completed without CSS animation. A drawer that mounts open reports `true`.
+- `DrawerContent` with `force-mount` returns focus to the trigger (or `finalFocus`) on close, as `DialogContent` does.
+- `TreeRoot` with `propagate-select` or `bubble-select` reads every level of descendants through `getChildren`; v2 read `item.children` below the first level. It also warns in development when either flag is set without `multiple`.
+- With `resetSearchTermOnBlur`, `ComboboxRoot` and `AutocompleteRoot` cancel the pending blur reset when the popup reopens within a tick of closing.
+
+**How to find it.**
+- `@update:open-complete` / `@update:openComplete` handlers on `DrawerRoot`, and `transitionend` / `animationend` listeners or timers on drawer content that stand in for the missing `true` event.
+- `DrawerContent` with `force-mount` / `forceMount`, and `@update:open` handlers on its root that move focus by hand.
+- `TreeRoot` with a `get-children` / `getChildren` that reads a key other than `children`, together with `propagate-select` or `bubble-select`; and either flag without `multiple`.
+
+**Rewrite rules.**
+- An `update:openComplete` handler that only ever expected `false`: make it check the value (`if (!value) …`).
+- A `transitionend` / `animationend` listener or a timer that detects the end of the drawer's open animation: replace it with an `@update:open-complete` handler that checks `value === true`. *Ask* if the listener does more than that.
+- Focus moved to the trigger by hand after closing a `force-mount` drawer: remove it.
+- Code that selected a tree's grandchildren by hand to work around `propagateSelect`: *ask* before removing it.
+- `propagate-select` / `bubble-select` without `multiple`: *ask* whether the tree should be `multiple`; otherwise remove the flag.
+
+**Verify.** The type-check passes; each drawer reports `openComplete` after it opens and after it closes; a `force-mount` drawer returns focus on close; propagated and bubbled tree selections include every level.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, and every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, and every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, and every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, and every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, and every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, and every drawer animation listener, hand-written tree selection workaround or select flag without `multiple` from section 28 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

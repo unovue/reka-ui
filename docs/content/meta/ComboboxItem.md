@@ -23,7 +23,7 @@
   },
   {
     'name': 'textValue',
-    'description': '<p>A string representation of the item contents.</p>\n<p>If the children are not plain text, then the <code>textValue</code> prop must also be set to a plain text representation, which will be used for autocomplete in the ComboBox.</p>\n',
+    'description': '<p>A string representation of the item contents.</p>\n<p>If the children are not plain text, then the <code>textValue</code> prop must also be set to a plain text representation, which is used to filter the items and for typeahead.</p>\n',
     'type': 'string',
     'required': false
   },
@@ -61,7 +61,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
-| `textValue` | A string representation of the item contents. If the children are not plain text, then the textValue prop must also be set to a plain text representation, which will be used for autocomplete in the ComboBox. | `string` | No | - |
+| `textValue` | A string representation of the item contents. If the children are not plain text, then the textValue prop must also be set to a plain text representation, which is used to filter the items and for typeahead. | `string` | No | - |
 | `value` | The value given as data when submitted with a name. | `T` | Yes | - |
 
 **Events**

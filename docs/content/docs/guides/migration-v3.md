@@ -598,3 +598,13 @@ Two fixes in neighbouring families:
 - **Root context.** `injectToastRootContext().onClose(event?, reason?)` takes an optional reason (`'imperative-action'` by default) and returns `false` when the toast was already closed or the close was cancelled. `ToastClose` closes with `close-press` and `ToastAction` with `action-press`.
 - **Provider context.** The `ToastProviderContext` type is exported. Its `label`, `duration`, `disableSwipe`, `swipeDirection` and `swipeThreshold` are read-only refs, and the unused `isFocusedToastEscapeKeyDownRef` is gone.
 - **New and additive:** the composables.
+
+## Drawer, Tree and Combobox corrections
+
+These come from the review of the Alpha components for their Stable release ([#2789](https://github.com/unovue/reka-ui/issues/2789)).
+
+- **`DrawerRoot` `update:openComplete`.** It now fires `true` once the drawer has opened, which v2 never did, and `false` once it has closed. It follows Base UI's `onOpenChangeComplete`: one frame after the change it waits for every animation and transition running on the popup (`DrawerContent`), and fires right away when there is none. v2 waited for the popup's own `transitionend` / `animationend`, so a popup without CSS animation never completed. A drawer that mounts open (`default-open`) reports `true` too.
+- **`DrawerContent` with `force-mount`** returns focus to the trigger (or `finalFocus`) when the drawer closes, as `DialogContent` does. v2 left focus inside the hidden content.
+- **`propagateSelect` and `bubbleSelect` with a custom `getChildren`.** `TreeRoot` now reads every level of descendants through `getChildren`. v2 used it for the first level only and read `item.children` below it, so with another children key (`getChildren: item => item.nodes`) grandchildren were neither selected with their ancestor nor counted for its indeterminate state.
+- **`TreeRoot` warns** in development when `propagateSelect` or `bubbleSelect` is set without `multiple`; both have always required it and were ignored.
+- **Combobox and Autocomplete blur reset.** With `resetSearchTermOnBlur`, the reset runs a tick after the popup closes. A popup reopened within that tick (typing straight after an outside press, a quick second click) cancels it; v2 still ran it and wiped the text typed into the reopened popup.
