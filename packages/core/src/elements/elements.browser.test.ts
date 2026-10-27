@@ -298,9 +298,10 @@ describe('the host is the rendered part', () => {
     const trigger = query('reka-collapsible-trigger')
     const content = query('reka-collapsible-content')
     await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
-    // `aria-controls` needs the part's id while it is rendered.
-    expect(trigger.getAttribute('aria-controls')).toBe(content.id)
+    // `id` is a prop of the content: the consumer's, referenced by the trigger.
+    expect(trigger.getAttribute('aria-controls')).toBe('mine')
     content.setAttribute('data-state', 'tampered')
+    // Removing it leaves the part to generate one.
     content.removeAttribute('id')
     await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
     expect(trigger.getAttribute('aria-controls')).toBe(content.id)

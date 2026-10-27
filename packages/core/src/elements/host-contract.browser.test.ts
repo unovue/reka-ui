@@ -69,7 +69,7 @@ describe('`disabled`', () => {
 })
 
 describe('ids', () => {
-  it('keeps the part\'s id while rendered, and gives back what the consumer set meanwhile', async () => {
+  it('renders the consumer\'s id on a part that takes one, and references follow it', async () => {
     render(`
       <reka-collapsible-root default-open>
         <reka-collapsible-trigger>T</reka-collapsible-trigger>
@@ -78,13 +78,30 @@ describe('ids', () => {
     const trigger = query('reka-collapsible-trigger')
     const content = query('reka-collapsible-content')
     await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    expect(content.id).toBe('mine')
+    expect(trigger.getAttribute('aria-controls')).toBe('mine')
     content.id = 'changed-by-consumer'
-    await settle()
-    // `aria-controls` keeps pointing at the element.
-    expect(trigger.getAttribute('aria-controls')).toBe(content.id)
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-controls')).toBe('changed-by-consumer'))
+    expect(content.id).toBe('changed-by-consumer')
     await userEvent.click(trigger)
     await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
     expect(content.id).toBe('changed-by-consumer')
+  })
+
+  it('generates an id when the consumer sets none, and removes it when the part unmounts', async () => {
+    render(`
+      <reka-collapsible-root default-open>
+        <reka-collapsible-trigger>T</reka-collapsible-trigger>
+        <reka-collapsible-content>Body</reka-collapsible-content>
+      </reka-collapsible-root>`)
+    const trigger = query('reka-collapsible-trigger')
+    const content = query('reka-collapsible-content')
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    expect(content.id).not.toBe('')
+    expect(trigger.getAttribute('aria-controls')).toBe(content.id)
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+    expect(content.hasAttribute('id')).toBe(false)
   })
 
   it('feeds the consumer\'s id to a part that takes an `id` prop', async () => {
@@ -349,13 +366,14 @@ describe('cloneNode', () => {
     const c = render(`
       <reka-collapsible-root default-open>
         <reka-collapsible-trigger class="trigger">T</reka-collapsible-trigger>
-        <reka-collapsible-content id="mine">Body</reka-collapsible-content>
+        <reka-collapsible-content data-state="mine">Body</reka-collapsible-content>
       </reka-collapsible-root>`)
     const root = query('reka-collapsible-root')
     const content = query('reka-collapsible-content')
     await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    // Library-owned while mounted: a generated id, and `data-state` over the consumer's.
     const generatedId = content.id
-    expect(generatedId).not.toBe('mine')
+    expect(generatedId).not.toBe('')
 
     const clone = root.cloneNode(true) as HTMLElement
     c.append(clone)
@@ -368,8 +386,9 @@ describe('cloneNode', () => {
 
     await userEvent.click(ct)
     await vi.waitFor(() => expect(cc.hasAttribute('data-reka-unmounted')).toBe(true))
-    expect(cc.id).toBe('mine')
-    expect(cc.getAttribute('data-state')).toBeNull()
+    // What the copy gives back is the consumer's, not the original's rendered state.
+    expect(cc.hasAttribute('id')).toBe(false)
+    expect(cc.getAttribute('data-state')).toBe('mine')
   })
 })
 
