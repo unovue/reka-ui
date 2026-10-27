@@ -378,3 +378,72 @@ describe('keyboard interactions', () => {
     expect(input.element.value).toBe('1')
   })
 })
+
+describe('invalid input', () => {
+  it('marks hex text that does not parse as aria-invalid, then reverts it on blur', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    const root = wrapper.find('[role="group"]')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(input.attributes('data-invalid')).toBeUndefined()
+
+    await input.setValue('#ff00')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    expect(input.attributes('data-invalid')).toBe('')
+    expect(root.attributes('data-invalid')).toBe('')
+
+    await input.trigger('blur')
+    expect(input.element.value).toBe('#ff0000')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(root.attributes('data-invalid')).toBeUndefined()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('clears aria-invalid once the text parses again', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    await input.setValue('nope')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.setValue('hsl(120, 100%, 50%)')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+  })
+
+  it('reverts invalid hex text on Enter and keeps the color', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    await input.setValue('#zzzzzz')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(input.element.value).toBe('#ff0000')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('marks a channel value that is not a number as aria-invalid and reverts it', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000', channel: 'hue', colorSpace: 'hsl' } })
+    const input = wrapper.find('input')
+    await input.setValue('-')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.setValue('')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.trigger('blur')
+    expect(input.element.value).toBe('0')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('does not mark an out-of-range channel number as invalid; it is clamped on commit', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000', channel: 'saturation', colorSpace: 'hsl' } })
+    const input = wrapper.find('input')
+    await input.setValue('250')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    await input.trigger('blur')
+    expect(input.element.value).toBe('100')
+  })
+
+  it('passes axe while the text is invalid', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    await wrapper.find('input').setValue('#ff00')
+    expect(await axe(wrapper.element, { rules: { label: { enabled: false } } })).toHaveNoViolations()
+  })
+})

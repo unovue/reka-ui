@@ -23,7 +23,7 @@ export type UseColorFieldProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[
   onUpdate?: (value: Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
 }
 
-export type ColorFieldRootState = { disabled: boolean, readonly: boolean }
+export type ColorFieldRootState = { disabled: boolean, readonly: boolean, invalid: boolean }
 export interface UseColorFieldReturn {
   /** The model as passed in (`string | Color`); every emitted value is a `Color`. */
   readonly modelValue: ComputedRef<string | Color>
@@ -36,6 +36,8 @@ export interface UseColorFieldReturn {
   readonly root: PartSurface<ColorFieldRootState>
   readonly context: { readonly [K in keyof ColorFieldRootContext]: ColorFieldRootContext[K] extends Ref ? Readonly<ColorFieldRootContext[K]> : ColorFieldRootContext[K] }
   readonly inputValue: ComputedRef<string>
+  /** `true` while the edited text does not parse as a color (or, with a `channel`, a number). Committing it reverts the text. */
+  readonly invalid: ComputedRef<boolean>
   createInputSurface: () => PartSurface<ColorFieldInputState>
   updateValue: (value: string) => void
   commit: (event?: Event) => void
@@ -142,6 +144,14 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
       inputValue.value = formatted
   }, { immediate: true })
 
+  /** Whether `text` parses: a number for a channel field, a color string otherwise. */
+  function isParsable(text: string) {
+    return channel.value ? !Number.isNaN(Number.parseFloat(text)) : isValidColor(text.trim())
+  }
+
+  // Only text the user is editing can be invalid; the formatted model always parses.
+  const invalid = computed(() => isEditing.value && !isParsable(inputValue.value))
+
   function resetInput() {
     inputValue.value = formatValue(color.value)
   }
@@ -167,18 +177,16 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     if (inputValue.value === formatValue(color.value))
       return
 
-    if (channel.value) {
-      const numValue = parseFloat(inputValue.value)
-      if (!Number.isNaN(numValue)) {
+    // Text that does not parse is dropped: the input reverts to the model.
+    if (isParsable(inputValue.value)) {
+      if (channel.value) {
         const range = getChannelRange(channel.value)
-        const clamped = Math.max(range.min, Math.min(range.max, numValue))
+        const clamped = Math.max(range.min, Math.min(range.max, Number.parseFloat(inputValue.value)))
         applyChange(setChannelValue(color.value, channel.value, clamped), event)
       }
-    }
-    else {
-      const trimmed = inputValue.value.trim()
-      if (isValidColor(trimmed))
-        applyChange(parseColor(trimmed), event)
+      else {
+        applyChange(parseColor(inputValue.value.trim()), event)
+      }
     }
     resetInput()
   }
@@ -242,6 +250,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   const context: ColorFieldRootContext = {
     color,
     inputValue,
+    invalid,
     channel,
     colorSpace,
     disabled,
@@ -259,7 +268,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     handleWheel,
   }
 
-  const root = createPartSurface<ColorFieldRootState>(() => ({ role: 'group' }), () => ({ disabled: disabled.value, readonly: readonly.value }))
+  const root = createPartSurface<ColorFieldRootState>(() => ({ role: 'group' }), () => ({ disabled: disabled.value, readonly: readonly.value, invalid: invalid.value }))
   return {
     modelValue,
     color,
@@ -271,6 +280,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     context,
     createInputSurface: () => createColorFieldInputSurface(context),
     inputValue: computed(() => inputValue.value),
+    invalid,
     updateValue,
     commit,
     increment,
@@ -283,7 +293,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   }
 }
 
-export type ColorFieldInputState = { disabled: boolean, readonly: boolean }
+export type ColorFieldInputState = { disabled: boolean, readonly: boolean, invalid: boolean }
 
 const ALLOWED_INPUT_RE = /[\d.-]/
 
@@ -388,19 +398,21 @@ export function createColorFieldInputSurface(rootContext: ColorFieldRootContext)
     }
   }
   return createPartSurface<ColorFieldInputState>(() => ({
-    type: 'text',
-    inputmode: inputMode.value,
-    value: rootContext.inputValue.value,
-    placeholder: rootContext.placeholder.value,
-    disabled: rootContext.disabled.value,
-    readonly: rootContext.readonly.value,
-    onInput: handleInput,
-    onBlur: handleBlur,
-    onFocus: handleFocus,
-    onKeydown: handleKeydown,
-    onWheel: handleWheel,
-    onBeforeinput: handleBeforeInput,
-    onCompositionstart: handleCompositionStart,
-    onCompositionend: handleCompositionEnd,
-  }), () => ({ disabled: rootContext.disabled.value, readonly: rootContext.readonly.value }))
+    'type': 'text',
+    'inputmode': inputMode.value,
+    'value': rootContext.inputValue.value,
+    'placeholder': rootContext.placeholder.value,
+    'disabled': rootContext.disabled.value,
+    'readonly': rootContext.readonly.value,
+    // Text that does not parse is announced as invalid until it is fixed or committed (which reverts it).
+    'aria-invalid': rootContext.invalid.value ? 'true' : undefined,
+    'onInput': handleInput,
+    'onBlur': handleBlur,
+    'onFocus': handleFocus,
+    'onKeydown': handleKeydown,
+    'onWheel': handleWheel,
+    'onBeforeinput': handleBeforeInput,
+    'onCompositionstart': handleCompositionStart,
+    'onCompositionend': handleCompositionEnd,
+  }), () => ({ disabled: rootContext.disabled.value, readonly: rootContext.readonly.value, invalid: rootContext.invalid.value }))
 }
