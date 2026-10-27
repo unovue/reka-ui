@@ -152,7 +152,7 @@ const { root, context, modelValue, segments, isInvalid, setFocusedElement, focus
 provideDateRangeFieldRootContext(context)
 
 defineExpose(mergeExpose(expose, {
-  /** Helper to set the focused element inside the DateRangeField */
+  /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
 </script>

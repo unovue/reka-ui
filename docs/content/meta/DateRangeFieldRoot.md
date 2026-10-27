@@ -178,7 +178,7 @@
 <MethodsTable :data="[
   {
     'name': 'setFocusedElement',
-    'description': '<p>Helper to set the focused element inside the DateRangeField</p>\n',
+    'description': '<p>Records <code>el</code> as the focused segment for keyboard navigation. It does not move focus; call <code>el.focus()</code> for that.</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
@@ -233,6 +233,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `setFocusedElement` | Helper to set the focused element inside the DateRangeField | `(el: HTMLElement) => void` |
+| `setFocusedElement` | Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. | `(el: HTMLElement) => void` |
 
 </llm-only>
