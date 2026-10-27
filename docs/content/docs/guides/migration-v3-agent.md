@@ -412,10 +412,11 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 ### 17. Select
 
 **What changed.**
-- `update:modelValue` and `update:open` on `SelectRoot` carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press' | 'focus-outside'`).
-- Pressing the selected item of a single select closes it without emitting `update:modelValue`. Mutating an uncontrolled model array in place no longer emits.
-- `update:modelValue` is typed `T[]` when `multiple` is set and `T | null` otherwise (type-only).
+- `update:modelValue` and `update:open` on `SelectRoot` carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press'`).
+- Pressing the selected item of a single select closes it without emitting `update:modelValue`, also when `by` matches a different object. Mutating an uncontrolled model array in place no longer emits.
+- `update:modelValue` is typed `T[]` when `multiple` is set and `T` otherwise, as in v2 (type-only; a single select never emits `null`).
 - Typing on a focused, closed `SelectTrigger` selects the next matching item (reason `typeahead`). In v2 it did nothing. `multiple` selects are unchanged.
+- In `popper` position, pressing the trigger of an open select closes it (reason `trigger-press`).
 - `SelectValue` keeps the text of a selected item after its `SelectItemText` unmounts.
 - The hidden native `<select>` marks selected options with `selected` and no longer receives `value`. A `multiple` select submits every selected value.
 - Content ids are `<root id>-content` (`reka-select-v-0-content`; v2 `reka-select-content-v-1`).

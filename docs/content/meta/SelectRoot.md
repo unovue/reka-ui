@@ -40,7 +40,7 @@
   },
   {
     'name': 'displayValue',
-    'description': '<p>The text shown for a selected value. Wins over the text of its <code>SelectItemText</code>, so the value can be shown before\nthe content ever rendered; with it set, the closed content is not rendered just to collect the item texts.</p>\n',
+    'description': '<p>The text shown for a selected value. Wins over the text of its <code>SelectItemText</code>, so the value can be shown before\nthe content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost:\nuntil the content has been opened once, the hidden native <code>select</code> only holds the selected values (so browser\nautofill cannot pick another one) and the closed trigger\'s typeahead has no items to match.</p>\n',
     'type': '((value: T) =&gt; string)',
     'required': false
   },
@@ -115,8 +115,8 @@
 <SlotsTable :data="[
   {
     'name': 'modelValue',
-    'description': '<p>Current input values</p>\n',
-    'type': 'SelectModelValue&lt;T, M&gt;'
+    'description': '<p>Current input values; <code>undefined</code> while a single select is empty</p>\n',
+    'type': 'M extends true ? T[] : T | undefined'
   },
   {
     'name': 'open',
@@ -138,7 +138,7 @@
 | `defaultValue` | The value of the select when initially rendered. Use when you do not need to control the state of the Select | `T \| T[]` | No | - |
 | `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with Select | `boolean` | No | - |
-| `displayValue` | The text shown for a selected value. Wins over the text of its SelectItemText, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. | `((value: T) => string)` | No | - |
+| `displayValue` | The text shown for a selected value. Wins over the text of its SelectItemText, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native select only holds the selected values (so browser autofill cannot pick another one) and the closed trigger's typeahead has no items to match. | `((value: T) => string)` | No | - |
 | `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return undefined to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), null to opt the key out (for Enter and Space this also skips the selection), or 'select' to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `modelValue` | The controlled value of the Select. Can be bind as v-model. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
@@ -160,7 +160,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `SelectModelValue<T, M>` |
+| `modelValue` | Current input values; undefined while a single select is empty | `M extends true ? T[] : T \| undefined` |
 | `open` | Current open state | `boolean` |
 
 </llm-only>

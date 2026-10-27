@@ -571,7 +571,7 @@ const value = ref('france')
 
 ### Showing the value before the content renders
 
-`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. To show the value of a select whose items have never rendered (object values, items loaded on open), pass `display-value` to the root. With it set, the closed content is not rendered just to collect the item texts.
+`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. To show the value of a select whose items have never rendered (object values, items loaded on open), pass `display-value` to the root. With it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native `<select>` only holds the selected values, so browser autofill cannot pick another one, and typing on the closed trigger has no items to match.
 
 ```vue
 <template>
@@ -609,7 +609,7 @@ With `multiple`, an item press toggles its value and the content stays open. `v-
 
 ### Reacting to changes
 
-`update:modelValue` and `update:open` receive a second argument with the `reason` for the change and the native `event`. `beforeUpdate:modelValue` and `beforeUpdate:open` fire first, and `details.cancel()` keeps the current state. Cancelling the value of an item press keeps the content open. The reasons are exported as `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press' | 'focus-outside'`), plus `'imperative-action'` for programmatic changes. Pressing the selected item of a single select emits nothing and closes the content.
+`update:modelValue` and `update:open` receive a second argument with the `reason` for the change and the native `event`. `beforeUpdate:modelValue` and `beforeUpdate:open` fire first, and `details.cancel()` keeps the current state. Cancelling the value of an item press keeps the content open. The reasons are exported as `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press'`), plus `'imperative-action'` for programmatic changes. Pressing the selected item of a single select emits nothing and closes the content, also when `by` matches a different object. In `popper` position the trigger stays clickable above the backdrop, and pressing it closes the content (`'trigger-press'`).
 
 ```vue
 <template>
@@ -759,7 +759,7 @@ See the W3C [Select-Only Combobox](https://www.w3.org/TR/wai-aria-practices/exam
     },
     {
       keys: ['A-Z', 'a-z'],
-      description: '<span> When focus is on a closed <Code>SelectTrigger</Code>, selects the next item whose text starts with the typed characters. <br /> When focus is on an item, moves focus to the next matching item. </span>',
+      description: '<span> When focus is on a closed <Code>SelectTrigger</Code> of a single select, selects the next item whose text starts with the typed characters. <br /> When focus is on an item, moves focus to the next matching item. </span>',
     },
   ]"
 />
