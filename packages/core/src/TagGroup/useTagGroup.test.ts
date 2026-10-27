@@ -184,6 +184,16 @@ describe('useTagGroup — surfaces', () => {
     expect(item.row.attrs.value['aria-selected']).toBeUndefined()
   })
 
+  it('baseId-derived item ids depend only on baseId and creation order (SSR-stable)', () => {
+    const ids = () => {
+      const group = useTagGroup<string>({ baseId: 'tags' })
+      return ['Vue', 'React'].map(value => group.createItem({ value, element: undefined }).context.id)
+    }
+    // A second call (another request on the server, or the client hydrating) restarts the sequence.
+    expect(ids()).toEqual(['tags-item-1', 'tags-item-2'])
+    expect(ids()).toEqual(['tags-item-1', 'tags-item-2'])
+  })
+
   it('the delete surface is labelled by itself and its row', () => {
     const { items, group } = standalone()
     const surface = group.getItemDeleteSurface(items[0], { id: 'del' })

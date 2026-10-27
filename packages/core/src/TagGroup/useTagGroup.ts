@@ -51,7 +51,11 @@ export interface UseTagGroupProps<T = AcceptableValue> {
   mounted?: MaybeRefOrGetter<boolean>
   /** The group element, focused once the last focused tag is removed. */
   rootElement?: MaybeRefOrGetter<HTMLElement | undefined>
-  /** Base for the standalone item ids. Must be stable for SSR; the SFCs allocate ids with `useId`. */
+  /**
+   * Base for the standalone item ids: `createItem` derives `${baseId}-item-${n}` from a per-call
+   * counter, so the ids are SSR-stable when `baseId` is. Without it, ids come from a module
+   * counter that is not. The SFCs allocate ids with `useId`.
+   */
   baseId?: string
   /** Component `emit`; receives `beforeUpdate:modelValue`, `update:modelValue` and `remove`. */
   emit?: (event: any, ...args: any[]) => void
@@ -248,13 +252,16 @@ export function getTagGroupItemDeleteSurface(
  * (`context.currentTabStopId`), as the SFCs do.
  *
  * SSR-safe (no `document` at call scope) and callable outside `setup()`: no
- * lifecycle hooks. Item ids default to a per-call counter, which is not
- * SSR-stable; pass `id` to `createItem` when rendering on the server.
+ * lifecycle hooks. Without `baseId` (or an `id` per `createItem`), item ids come
+ * from a module counter, which is not SSR-stable; pass one when rendering on the server.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
 export function useTagGroup<T extends AcceptableValue = AcceptableValue>(props: UseTagGroupProps<T> = {}): UseTagGroupReturn<T> {
+  // Per-call: ids derived from `baseId` depend only on the base and creation order, so a
+  // server render and its hydration agree (a module counter keeps growing across requests).
+  let itemCount = 0
   const selectionMode = computed<TagGroupSelectionMode>(() => toValue(props.selectionMode) ?? 'none')
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
@@ -459,7 +466,7 @@ export function useTagGroup<T extends AcceptableValue = AcceptableValue>(props: 
     root,
     createItem: options => createTagGroupItem(context, {
       ...options,
-      id: options.id ?? (props.baseId ? `${props.baseId}-item-${++count}` : undefined),
+      id: options.id ?? (props.baseId ? `${props.baseId}-item-${++itemCount}` : undefined),
     }),
     getItemDeleteSurface: (item, options) => getTagGroupItemDeleteSurface(item.context, options),
     context,
