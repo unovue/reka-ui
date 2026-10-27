@@ -10,7 +10,7 @@
 // while content with a higher one (e.g. a third-party launcher) stays
 // interactive, which `pointer-events: none` on `<body>` made impossible.
 
-import { containsComposed } from '@/shared/getRootNode'
+import { containsComposed, getFlatTreeParentElement } from '@/shared/getRootNode'
 
 export const INTERNAL_BACKDROP_ATTRIBUTE = 'data-reka-internal-backdrop'
 
@@ -94,17 +94,14 @@ interface BackdropPlacement {
   inBody: boolean
 }
 
-function composedParentElement(el: Element): Element | null {
-  return el.parentElement ?? ((el.parentNode as ShadowRoot | null)?.host ?? null)
-}
-
 function resolveBackdropPlacement(layer: HTMLElement, view: Window): BackdropPlacement {
   let anchor: Element = layer.closest(POSITIONING_WRAPPER_SELECTOR) ?? layer
   const doc = layer.ownerDocument
   let inBody = false
-  // Composed walk: a shadow host (or one of its ancestors) can be the
-  // containing block too, for a layer rendered inside a shadow root.
-  for (let el = composedParentElement(anchor); el && el !== doc.body && el !== doc.documentElement; el = composedParentElement(el)) {
+  // Flat-tree walk, as layout sees it: a shadow host (or one of its
+  // ancestors) can be the containing block for a layer inside a shadow root,
+  // and so can an element around the slot a light-DOM layer is assigned to.
+  for (let el = getFlatTreeParentElement(anchor); el && el !== doc.body && el !== doc.documentElement; el = getFlatTreeParentElement(el)) {
     const style = view.getComputedStyle(el)
     if (isFixedContainingBlock(style))
       inBody = true

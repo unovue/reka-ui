@@ -203,6 +203,28 @@ describe('useGraceArea', () => {
     expect(api.isPointerInTransit.value).toBe(false)
   })
 
+  it('ends the grace on another grace-area trigger when the pointer is inside a web component in it', async () => {
+    const api = setup()
+    const exitSpy = vi.fn()
+    api.onPointerExit(exitSpy)
+    const otherTrigger = document.createElement('div')
+    otherTrigger.setAttribute('data-grace-area-trigger', '')
+    const icon = document.createElement('x-icon')
+    const inner = document.createElement('span')
+    icon.attachShadow({ mode: 'open' }).appendChild(inner)
+    otherTrigger.appendChild(icon)
+    document.body.appendChild(otherTrigger)
+
+    trigger.dispatchEvent(pointerEvent('pointerleave', { clientX: 100, clientY: 50 }))
+    await nextTick()
+    const Ctor = typeof PointerEvent !== 'undefined' ? PointerEvent : MouseEvent
+    // Inside the hull, so only the "another trigger" check ends the grace.
+    inner.dispatchEvent(new Ctor('pointermove', { bubbles: true, composed: true, clientX: 150, clientY: 50 }))
+
+    expect(exitSpy).toHaveBeenCalledTimes(1)
+    otherTrigger.remove()
+  })
+
   it('auto-resets isPointerInTransit after 300ms', () => {
     vi.useFakeTimers()
     const api = setup()

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getElementByIdFrom, getEventTarget, getOwnerDocument, getRootNode, resolveTeleportTarget } from './getRootNode'
+import { closestComposed, containsComposed, getComposedParentElement, getElementByIdFrom, getEventTarget, getFlatTreeParentElement, getOwnerDocument, getRootNode, resolveTeleportTarget } from './getRootNode'
 
 function makeShadow() {
   const host = document.createElement('div')
@@ -78,5 +78,61 @@ describe('resolveTeleportTarget', () => {
     expect(resolveTeleportTarget(undefined, shadowRoot)).toBe(shadowRoot)
     expect(resolveTeleportTarget('.portal', shadowRoot)).toBe(inner)
     expect(resolveTeleportTarget('body', shadowRoot)).toBe('body')
+  })
+})
+
+/** A host with a light-DOM child slotted into a wrapper inside its shadow root. */
+function makeSlotted() {
+  const host = document.createElement('div')
+  host.className = 'host'
+  document.body.appendChild(host)
+  const wrapper = document.createElement('div')
+  wrapper.className = 'wrapper'
+  const slot = document.createElement('slot')
+  wrapper.appendChild(slot)
+  host.attachShadow({ mode: 'open' }).appendChild(wrapper)
+  const child = document.createElement('span')
+  host.appendChild(child)
+  return { host, wrapper, slot, child }
+}
+
+describe('composed and flat-tree walks', () => {
+  it('steps from a shadow root\'s top level to its host', () => {
+    const { host, inner } = makeShadow()
+    expect(getComposedParentElement(inner)).toBe(host)
+    host.remove()
+  })
+
+  it('follows the slot a light-DOM child is assigned to', () => {
+    const { host, wrapper, slot, child } = makeSlotted()
+    expect(getComposedParentElement(child)).toBe(host)
+    expect(getFlatTreeParentElement(child)).toBe(slot)
+    expect(getFlatTreeParentElement(slot)).toBe(wrapper)
+    expect(getFlatTreeParentElement(wrapper)).toBe(host)
+    host.remove()
+  })
+
+  it('contains slotted content through its slot, and everything a tree root holds', () => {
+    const { host, wrapper, child } = makeSlotted()
+    expect(containsComposed(wrapper, child)).toBe(true)
+    expect(containsComposed(host, child)).toBe(true)
+    expect(containsComposed(document, child)).toBe(true)
+    expect(containsComposed(child, wrapper)).toBe(false)
+    expect(containsComposed(child, null)).toBe(false)
+    expect(containsComposed(host, host.shadowRoot)).toBe(true)
+    host.remove()
+  })
+
+  it('matches `closest` across shadow boundaries', () => {
+    const { host, inner } = makeShadow()
+    host.setAttribute('data-match', '')
+    expect(inner.closest('[data-match]')).toBeNull()
+    expect(closestComposed(inner, '[data-match]')).toBe(host)
+    expect(closestComposed(inner, '[data-none]')).toBeNull()
+    host.remove()
+
+    const slotted = makeSlotted()
+    expect(closestComposed(slotted.child, '.wrapper')).toBe(slotted.wrapper)
+    slotted.host.remove()
   })
 })

@@ -14,7 +14,7 @@ export interface ScrollAreaScrollbarImplProps {
 import { useResizeObserver } from '@vueuse/core'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
-import { getEventTarget, getOwnerDocument, useForwardElement } from '@/shared'
+import { containsComposed, getEventTarget, getOwnerDocument, useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
@@ -78,7 +78,8 @@ function handleWheel(event: WheelEvent) {
   // shadow-mounted scrollbar isn't retargeted to the host (which would fail the
   // containment check and break wheel scrolling).
   const element = getEventTarget<HTMLElement>(event)
-  const isScrollbarWheel = scrollbar.value?.contains(element)
+  // Composed in both directions: also a web component inside the scrollbar.
+  const isScrollbarWheel = !!scrollbar.value && containsComposed(scrollbar.value, element)
   const maxScrollPos
     = scrollbarVisibleContext.sizes.value.content
       - scrollbarVisibleContext.sizes.value.viewport

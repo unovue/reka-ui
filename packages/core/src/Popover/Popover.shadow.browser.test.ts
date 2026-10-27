@@ -85,3 +85,42 @@ describe.each([false, true])('given a Popover (modal: %s) inside a shadow root, 
     await expect.poll(activeElement).toBe(get('input'))
   })
 })
+
+// A custom element that slots its own light-DOM children into the popup it
+// renders in its shadow root.
+describe.each([false, true])('given a Popover (modal: %s) with slotted light-DOM content, in a real browser', (modal) => {
+  it('treats a press and focus on the slotted content as inside', async () => {
+    const { get, host } = mountInShadowRoot(defineComponent({
+      setup: () => () => h(PopoverRoot, { modal }, () => [
+        h(PopoverTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+        h(PopoverPortal, null, () => h(PopoverContent, { 'data-testid': 'content', 'style': 'background: white;' }, () => [
+          h('button', { 'data-testid': 'own' }, 'Own'),
+          h('slot'),
+        ])),
+      ]),
+    }))
+    const slotted = document.createElement('input')
+    host.append(slotted)
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')).not.toBeNull()
+    await expect.poll(() => slotted.assignedSlot).not.toBeNull()
+    await userEvent.click(slotted)
+    expect(document.activeElement).toBe(slotted)
+    await userEvent.keyboard('x')
+    expect(slotted.value).toBe('x')
+    expect(get('content')).not.toBeNull()
+  })
+})
+
+describe('given non-modal Popovers in two shadow roots, in a real browser', () => {
+  it('dismisses one on a press inside the other shadow root', async () => {
+    const a = mountPopover()
+    const b = mountPopover()
+
+    await userEvent.click(a.get('trigger')!)
+    await expect.poll(() => a.get('content')).not.toBeNull()
+    await userEvent.click(b.get('outside')!)
+    await expect.poll(() => a.get('content')).toBeNull()
+  })
+})

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
@@ -80,5 +81,43 @@ describe('given a Tooltip inside a shadow root, in a real browser', () => {
     await expect.poll(() => get('content')).not.toBeNull()
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => get('content')).toBeNull()
+  })
+})
+
+// A scroll container inside a shadow root around a slotted (light-DOM)
+// trigger, like Ionic's `ion-content`.
+if (!customElements.get('x-tooltip-scroller')) {
+  customElements.define('x-tooltip-scroller', class extends HTMLElement {
+    constructor() {
+      super()
+      const box = document.createElement('div')
+      box.setAttribute('data-scroller', '')
+      box.style.cssText = 'height: 100px; overflow: auto;'
+      const spacer = document.createElement('div')
+      spacer.style.height = '1000px'
+      box.append(document.createElement('slot'), spacer)
+      this.attachShadow({ mode: 'open' }).append(box)
+    }
+  })
+}
+
+describe('given a Tooltip whose trigger is slotted into a shadow scroll container, in a real browser', () => {
+  it('closes when that container scrolls', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TooltipProvider, { delayDuration: 0 }, () => h('x-tooltip-scroller', null, [
+        h(TooltipRoot, null, () => [
+          h(TooltipTrigger, { 'data-testid': 'trigger' }, () => 'Hover me'),
+          h(TooltipPortal, null, () => h(TooltipContent, { 'data-testid': 'content' }, () => 'Tip')),
+        ]),
+      ])),
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    const content = () => document.querySelector('[data-testid="content"]')
+
+    await userEvent.hover(document.querySelector<HTMLElement>('[data-testid="trigger"]')!)
+    await expect.poll(content).not.toBeNull()
+    const scroller = document.querySelector('x-tooltip-scroller')!.shadowRoot!.querySelector<HTMLElement>('[data-scroller]')!
+    scroller.scrollTop = 20
+    await expect.poll(content).toBeNull()
   })
 })
