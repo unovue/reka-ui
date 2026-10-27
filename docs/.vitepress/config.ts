@@ -157,7 +157,7 @@ export default defineConfig({
           {
             text: 'Form',
             items: [
-              { text: `Autocomplete ${BadgeHTML('Alpha', true)}`, link: '/docs/components/autocomplete' },
+              { text: 'Autocomplete', link: '/docs/components/autocomplete' },
               { text: 'Checkbox', link: '/docs/components/checkbox' },
               { text: 'Combobox', link: '/docs/components/combobox' },
               { text: `Editable`, link: '/docs/components/editable' },
@@ -235,7 +235,7 @@ export default defineConfig({
               { text: 'Collapsible', link: '/docs/components/collapsible' },
               { text: 'Context Menu', link: '/docs/components/context-menu' },
               { text: 'Dialog', link: '/docs/components/dialog' },
-              { text: `Drawer ${BadgeHTML('Alpha', true)}`, link: '/docs/components/drawer' },
+              { text: 'Drawer', link: '/docs/components/drawer' },
               { text: 'Dropdown Menu', link: '/docs/components/dropdown-menu' },
               { text: 'Hover Card', link: '/docs/components/hover-card' },
               { text: 'Menubar', link: '/docs/components/menubar' },
@@ -254,10 +254,7 @@ export default defineConfig({
               { text: 'Toast', link: '/docs/components/toast' },
               { text: 'Toolbar', link: '/docs/components/toolbar' },
               { text: 'Tooltip', link: '/docs/components/tooltip' },
-              {
-                text: `Tree ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/tree',
-              },
+              { text: 'Tree', link: '/docs/components/tree' },
             ],
           },
         ],

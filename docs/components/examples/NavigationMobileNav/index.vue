@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useMediaQuery } from '@vueuse/core'
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, DrawerClose, DrawerContent, DrawerDescription, DrawerHandle, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport, VisuallyHidden } from 'reka-ui'
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger, DrawerBackdrop, DrawerClose, DrawerDescription, DrawerGrabber, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport, VisuallyHidden } from 'reka-ui'
 import { ref } from 'vue'
 import { sections } from './nav'
 
@@ -81,9 +81,9 @@ const current = ref('')
           />
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="MobileNavOverlay fixed inset-0 z-30 bg-background/80" />
-          <DrawerContent class="MobileNavContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-h-[80vh] max-w-[500px] flex-col rounded-t-2xl border-t border-muted bg-card outline-none">
-            <DrawerHandle class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/40" />
+          <DrawerBackdrop class="MobileNavOverlay fixed inset-0 z-30 bg-background/80" />
+          <DrawerPopup class="MobileNavContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-h-[80vh] max-w-[500px] flex-col rounded-t-2xl border-t border-muted bg-card outline-none">
+            <DrawerGrabber class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/40" />
             <VisuallyHidden>
               <DrawerTitle>Navigation</DrawerTitle>
               <DrawerDescription>Browse the site sections</DrawerDescription>
@@ -132,7 +132,7 @@ const current = ref('')
                 </AccordionContent>
               </AccordionItem>
             </AccordionRoot>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </header>

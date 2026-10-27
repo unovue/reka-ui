@@ -1,6 +1,6 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { SegmentFieldChangeReason } from './useDateFieldSegment'
-import type { ChangeEventDetails, Formatter, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Formatter, PartSurface } from '@/shared'
 import type { DateStep, DateValue, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date/types'
 import type { Direction } from '@/shared/types'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toValue, watch } from 'vue'
@@ -256,11 +256,14 @@ export function watchSegmentFieldLocale(locale: Ref<string>, formatter: Formatte
   })
 }
 
+/** A `DateValue` (which carries its `calendar`) or a `Time` (which has none). */
+type TemporalLike = { toString: () => string, calendar?: { identifier: string } }
+
 /** `true` when both are empty, or both are the same calendar value (time and zone included). @internal */
-export function isSameTemporalValue(a: { toString: () => string } | null | undefined, b: { toString: () => string } | null | undefined): boolean {
+export function isSameTemporalValue(a: TemporalLike | null | undefined, b: TemporalLike | null | undefined): boolean {
   if (a == null || b == null)
     return a == null && b == null
-  return (a as any).calendar?.identifier === (b as any).calendar?.identifier
+  return a.calendar?.identifier === b.calendar?.identifier
     && a.toString() === b.toString()
 }
 
@@ -270,7 +273,7 @@ export function isSameTemporalValue(a: { toString: () => string } | null | undef
  *
  * @internal
  */
-export function wasCanceled(lastChangeDetails: Readonly<Ref<ChangeEventDetails<any>>>, before: ChangeEventDetails<any>) {
+export function wasCanceled(lastChangeDetails: Readonly<Ref<ChangeEventDetails<string>>>, before: ChangeEventDetails<string>) {
   return lastChangeDetails.value !== before && lastChangeDetails.value.isCanceled
 }
 
@@ -284,10 +287,10 @@ export function wasCanceled(lastChangeDetails: Readonly<Ref<ChangeEventDetails<a
  * @internal
  */
 export function bridgeChange<T, R extends string>(
-  setState: (value: T, reason?: any, event?: Event) => boolean,
+  setState: (value: T, reason?: R | BaseChangeReason, event?: Event) => boolean,
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<R>>>,
 ) {
-  return (value: T, details: ChangeEventDetails<any>) => {
+  return (value: T, details: ChangeEventDetails<R>) => {
     const before = lastChangeDetails.value
     setState(value, details.reason, details.event)
     if (wasCanceled(lastChangeDetails, before))

@@ -1,6 +1,5 @@
-import type { DateValue } from '@internationalized/date'
-
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
+import type { DateRange } from '@/shared/date'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
@@ -25,7 +24,7 @@ const zonedDateTime = {
 
 const kbd = useTestKbd()
 
-function setup(props: { dateFieldProps?: DateRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { dateFieldProps?: DateRangeFieldRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void } } = {}) {
   const user = userEvent.setup()
   const returned = render(DateRangeField, { props })
 
@@ -207,5 +206,161 @@ describe('dateField', async () => {
     await user.keyboard('2')
     expect(start.month).toHaveTextContent('2')
     expect(end.month).toHaveTextContent(String(calendarDate.end.month))
+  })
+})
+
+// #2789: the range field had about a sixth of DateField's coverage. These port
+// the DateField cases that matter per end, plus the range-only rules.
+describe('dateRangeField (parity with DateField)', () => {
+  const emptyRange = { start: undefined, end: undefined }
+
+  it('orders both ends by `locale`', () => {
+    const { input } = setup({ dateFieldProps: { locale: 'en-GB' } })
+    const parts = Array.from(input.querySelectorAll('[data-reka-date-field-segment]'))
+      .map(el => el.getAttribute('data-reka-date-field-segment'))
+      .filter(part => part !== 'literal')
+    expect(parts).toEqual(['day', 'month', 'year', 'day', 'month', 'year'])
+  })
+
+  it('focuses the first start segment on label click', async () => {
+    const { user, label, start } = setup()
+    await user.click(label)
+    expect(start.month).toHaveFocus()
+  })
+
+  it('increments and decrements each end on its own', async () => {
+    const { user, start, end } = setup({ dateFieldProps: { defaultValue: calendarDate } })
+
+    await user.click(start.day)
+    await user.keyboard(kbd.ARROW_UP)
+    expect(start.day).toHaveTextContent('2')
+    expect(end.day).toHaveTextContent('1')
+
+    await user.click(end.month)
+    await user.keyboard(kbd.ARROW_DOWN)
+    expect(end.month).toHaveTextContent('2')
+    expect(start.month).toHaveTextContent('1')
+  })
+
+  it('emits the whole range once both ends are complete, and only then', async () => {
+    const emitted: DateRange[] = []
+    const { user, start, end } = setup({
+      dateFieldProps: { placeholder: new CalendarDate(2024, 1, 1) },
+      emits: { 'onUpdate:modelValue': value => emitted.push(value) },
+    })
+
+    await user.click(start.month)
+    await user.keyboard('3151999')
+    // The start is complete, the end is still empty.
+    expect(end.month).toHaveFocus()
+    expect(emitted.at(-1)?.end).toBeUndefined()
+
+    await user.keyboard('4202000')
+    const last = emitted.at(-1)!
+    expect(last.start?.toString()).toBe('1999-03-15')
+    expect(last.end?.toString()).toBe('2000-04-20')
+    expect(start.month).toHaveTextContent('3')
+  })
+
+  it('keeps the other segments when one is deleted', async () => {
+    const { user, start, end } = setup({ dateFieldProps: { defaultValue: calendarDate } })
+
+    await user.click(end.day)
+    await user.keyboard(kbd.BACKSPACE)
+    expect(end.day).toHaveTextContent('dd')
+    expect(end.month).toHaveTextContent('3')
+    expect(start.day).toHaveTextContent('1')
+  })
+
+  it('clears both ends when `modelValue` is set to nullish', async () => {
+    const { start, end, rerender } = setup({ dateFieldProps: { modelValue: calendarDate } })
+    expect(start.month).not.toHaveTextContent('mm')
+
+    await rerender({ dateFieldProps: { modelValue: emptyRange } })
+    expect(start.month).toHaveTextContent('mm')
+    expect(end.year).toHaveTextContent('yyyy')
+
+    await rerender({ dateFieldProps: { modelValue: calendarDate } })
+    await rerender({ dateFieldProps: { modelValue: null } })
+    expect(start.day).toHaveTextContent('dd')
+    expect(end.day).toHaveTextContent('dd')
+  })
+
+  it('prevents interaction when `disabled`', async () => {
+    const { user, start, end, input } = setup({ dateFieldProps: { modelValue: calendarDate, disabled: true } })
+    expect(input).toHaveAttribute('data-disabled')
+    for (const segment of [start.month, start.day, end.year]) {
+      await user.click(segment)
+      expect(segment).not.toHaveFocus()
+      expect(segment).not.toHaveAttribute('tabindex')
+    }
+  })
+
+  it('prevents modification when `readonly`', async () => {
+    const { user, start, end, input } = setup({ dateFieldProps: { modelValue: calendarDate, readonly: true } })
+    expect(input).toHaveAttribute('data-readonly')
+    for (const segment of [start.day, end.month]) {
+      await user.click(segment)
+      expect(segment).toHaveFocus()
+      const before = segment.textContent
+      await user.keyboard(kbd.ARROW_UP)
+      expect(segment).toHaveTextContent(before!)
+    }
+  })
+
+  it('is invalid when the start is after the end', () => {
+    const { input, start, end } = setup({
+      dateFieldProps: { modelValue: { start: calendarDate.end, end: calendarDate.start } },
+    })
+    expect(input).toHaveAttribute('data-invalid')
+    expect(start.month).toHaveAttribute('aria-invalid', 'true')
+    expect(end.month).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('is invalid when a day in the range is unavailable', () => {
+    const { input } = setup({
+      dateFieldProps: { modelValue: calendarDate, isDateUnavailable: date => date.month === 2 && date.day === 14 },
+    })
+    expect(input).toHaveAttribute('data-invalid')
+  })
+
+  it('is invalid when an end is outside `minValue` / `maxValue`', async () => {
+    const { input, rerender } = setup({
+      dateFieldProps: { modelValue: calendarDate, minValue: new CalendarDate(2022, 1, 2) },
+    })
+    expect(input).toHaveAttribute('data-invalid')
+
+    await rerender({ dateFieldProps: { modelValue: calendarDate, maxValue: new CalendarDate(2022, 2, 28) } })
+    expect(input).toHaveAttribute('data-invalid')
+
+    await rerender({ dateFieldProps: { modelValue: calendarDate, minValue: new CalendarDate(2022, 1, 1), maxValue: new CalendarDate(2022, 3, 1) } })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('follows `granularity` and `hourCycle` on both ends', () => {
+    const { queryByTestId } = setup({
+      dateFieldProps: { modelValue: calendarDateTime, granularity: 'minute', hourCycle: 24 },
+    })
+    for (const end of ['start', 'end']) {
+      expect(queryByTestId(`${end}-hour`)).toHaveTextContent('12')
+      expect(queryByTestId(`${end}-minute`)).toHaveTextContent('30')
+      expect(queryByTestId(`${end}-second`)).toBeNull()
+      expect(queryByTestId(`${end}-dayPeriod`)).toBeNull()
+    }
+  })
+
+  it('shows the day period for a 12-hour locale', () => {
+    const { queryByTestId } = setup({ dateFieldProps: { modelValue: calendarDateTime } })
+    expect(queryByTestId('start-dayPeriod')).toHaveTextContent('PM')
+    expect(queryByTestId('end-dayPeriod')).toHaveTextContent('PM')
+  })
+
+  it('passes axe with a value and while invalid', async () => {
+    const valid = setup({ dateFieldProps: { modelValue: calendarDateTime, granularity: 'minute' } })
+    expect(await axe(valid.container)).toHaveNoViolations()
+    valid.unmount()
+
+    const invalid = setup({ dateFieldProps: { modelValue: { start: calendarDate.end, end: calendarDate.start } } })
+    expect(await axe(invalid.container)).toHaveNoViolations()
   })
 })

@@ -8,8 +8,6 @@ aria: https://www.w3.org/WAI/ARIA/apg/patterns/combobox
 
 # Autocomplete
 
-<Badge>Alpha</Badge>
-
 <Description>
 An input with suggestions that allows free-form text entry. Unlike Combobox, the value is the input text itself rather than a selected item.
 </Description>
@@ -117,7 +115,7 @@ Contains all the parts of an Autocomplete.
 
 Used as an anchor if you set `AutocompleteContent`'s position to `popper`.
 
-<!-- @include: @/meta/ComboboxAnchor.md -->
+<!-- @include: @/meta/AutocompleteAnchor.md -->
 
 ### Input
 
@@ -129,7 +127,7 @@ The input component to search through the autocomplete items. Typing updates the
 
 The button that toggles the Autocomplete Content.
 
-<!-- @include: @/meta/ComboboxTrigger.md -->
+<!-- @include: @/meta/AutocompleteTrigger.md -->
 
 <DataAttributesTable
   :data="[
@@ -148,13 +146,13 @@ The button that toggles the Autocomplete Content.
 
 The button that clears the input text and resets the value.
 
-<!-- @include: @/meta/ComboboxCancel.md -->
+<!-- @include: @/meta/AutocompleteCancel.md -->
 
 ### Empty
 
 Shown when none of the items match the query.
 
-<!-- @include: @/meta/ComboboxEmpty.md -->
+<!-- @include: @/meta/AutocompleteEmpty.md -->
 
 ### Portal
 
@@ -162,7 +160,7 @@ When used, portals the content part into the `body`.
 
 You need to set `position="popper"` for `AutocompleteContent` to make sure the position was automatically computed similar to `Popover` or `DropdownMenu`.
 
-<!-- @include: @/meta/ComboboxPortal.md -->
+<!-- @include: @/meta/AutocompletePortal.md -->
 
 ### Content
 
@@ -170,7 +168,7 @@ The component that pops out when the autocomplete is open.
 
 <PresenceCallout />
 
-<!-- @include: @/meta/ComboboxContent.md -->
+<!-- @include: @/meta/AutocompleteContent.md -->
 
 <DataAttributesTable
   :data="[
@@ -222,13 +220,13 @@ The component that pops out when the autocomplete is open.
 
 The scrolling viewport that contains all of the items.
 
-<!-- @include: @/meta/ComboboxViewport.md -->
+<!-- @include: @/meta/AutocompleteViewport.md -->
 
 ### Item
 
-The component that contains the autocomplete items. When selected, the item's string value fills the input.
+The component that contains the autocomplete items. When selected, the item fills the input with `displayValue(value)`, else `String(value)`.
 
-<!-- @include: @/meta/ComboboxItem.md -->
+<!-- @include: @/meta/AutocompleteItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -251,25 +249,25 @@ The component that contains the autocomplete items. When selected, the item's st
 
 Used to group multiple items. Use in conjunction with `AutocompleteLabel` to ensure good accessibility via automatic labelling.
 
-<!-- @include: @/meta/ComboboxGroup.md -->
+<!-- @include: @/meta/AutocompleteGroup.md -->
 
 ### Label
 
 Used to render the label of a group. It won't be focusable using arrow keys.
 
-<!-- @include: @/meta/ComboboxLabel.md -->
+<!-- @include: @/meta/AutocompleteLabel.md -->
 
 ### Separator
 
 Used to visually separate items in the Autocomplete.
 
-<!-- @include: @/meta/ComboboxSeparator.md -->
+<!-- @include: @/meta/AutocompleteSeparator.md -->
 
 ### Arrow
 
 An optional arrow element to render alongside the content. This can be used to help visually link the trigger with the `AutocompleteContent`. Must be rendered inside `AutocompleteContent`. Only available when `position` is set to `popper`.
 
-<!-- @include: @/meta/ComboboxArrow.md -->
+<!-- @include: @/meta/AutocompleteArrow.md -->
 
 ### Virtualizer
 
@@ -277,7 +275,7 @@ Virtual container to achieve list virtualization. The root's `filter` runs over 
 
 See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
 
-<!-- @include: @/meta/ComboboxVirtualizer.md -->
+<!-- @include: @/meta/AutocompleteVirtualizer.md -->
 
 ## Examples
 
@@ -337,7 +335,41 @@ const { startsWith } = useFilter({ sensitivity: 'base' })
 
 `update:modelValue` receives a second argument with the `reason` (`'input-change'`, `'item-press'` or `'clear-press'`, exported as `AutocompleteChangeReason`) and the native `event`. `update:open` reports a `ComboboxOpenChangeReason`. The matching `beforeUpdate:modelValue` and `beforeUpdate:open` events fire first, and `details.cancel()` keeps the current state.
 
-Set `display-value` on `AutocompleteRoot` to control the text a selected item writes into the value, for example a label for an item whose value is an id.
+Set `display-value` on `AutocompleteRoot` to control the text a selected item writes into the value, for example a label for an item whose value is an object.
+
+`AutocompleteRoot` is generic over the item value type (`string` by default): `display-value`, `filter` and the `highlight` payload receive the item's `value` with its own type.
+
+```vue
+<script setup lang="ts">
+import { AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+interface Fruit { id: number, label: string }
+const fruits: Fruit[] = [{ id: 1, label: 'Apple' }, { id: 2, label: 'Banana' }]
+const searchText = ref('')
+</script>
+
+<template>
+  <AutocompleteRoot
+    v-model="searchText"
+    :display-value="(fruit: Fruit) => fruit.label"
+  >
+    <AutocompleteInput placeholder="Type a fruit..." />
+    <AutocompletePortal>
+      <AutocompleteContent>
+        <AutocompleteItem
+          v-for="fruit in fruits"
+          :key="fruit.id"
+          :value="fruit"
+          :text-value="fruit.label"
+        >
+          {{ fruit.label }}
+        </AutocompleteItem>
+      </AutocompleteContent>
+    </AutocompletePortal>
+  </AutocompleteRoot>
+</template>
+```
 
 ### Hide menu when empty
 

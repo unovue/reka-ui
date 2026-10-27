@@ -1,4 +1,5 @@
 import type { DrawerOpenChangeDetails } from './DrawerRoot.vue'
+import type { DrawerSnapPoint } from './utils'
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -34,10 +35,10 @@ describe('useDrawer — state', () => {
 
   it('onOpenChange / onOpenToggle drive the uncontrolled model; unchanged is a no-op that reports true', () => {
     const onOpenChange = vi.fn()
-    const d = useDrawer({ onOpenChange })
+    const d = useDrawer({ onUpdate: onOpenChange })
     expect(d.onOpenChange(true)).toBe(true)
     expect(d.open.value).toBe(true)
-    expect(onOpenChange).toHaveBeenCalledWith(true, expect.objectContaining({ reason: undefined, isCanceled: false }))
+    expect(onOpenChange).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'imperative-action', isCanceled: false }))
     // Base UI parity: an unchanged request returns true and emits nothing.
     expect(d.onOpenChange(true)).toBe(true)
     expect(onOpenChange).toHaveBeenCalledTimes(1)
@@ -46,10 +47,10 @@ describe('useDrawer — state', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
-  it('details.cancel() inside onOpenChange vetoes the change', () => {
+  it('details.cancel() inside onBeforeUpdate vetoes the change', () => {
     const d = useDrawer({
       defaultOpen: true,
-      onOpenChange: (_value, details) => details.cancel(),
+      onBeforeUpdate: (_value, details) => details.cancel(),
     })
     expect(d.close.props.value.onClick()).toBe(false)
     expect(d.open.value).toBe(true)
@@ -61,23 +62,66 @@ describe('useDrawer — state', () => {
     const onOpenChange = vi.fn((value: boolean, _details: DrawerOpenChangeDetails) => {
       open.value = value
     })
-    const d = useDrawer({ open, onOpenChange })
+    const d = useDrawer({ open, onUpdate: onOpenChange })
     d.trigger.props.value.onClick()
     expect(onOpenChange).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press' }))
     expect(d.open.value).toBe(true)
 
     // A parent that ignores the request keeps the drawer where it is.
-    const ignored = useDrawer({ open: () => false, onOpenChange: vi.fn() })
+    const ignored = useDrawer({ open: () => false, onUpdate: vi.fn() })
     ignored.onOpenToggle()
     expect(ignored.open.value).toBe(false)
   })
 
-  it('setActiveSnapPoint writes the passed snap-point ref', () => {
-    const snap = ref<number | string | null | undefined>(null)
-    const d = useDrawer({ activeSnapPoint: snap })
-    d.context.setActiveSnapPoint(0.3)
+  it('setActiveSnapPoint writes a passed snap-point ref (ref-owned)', () => {
+    const snap = ref<DrawerSnapPoint | null | undefined>(null)
+    const d = useDrawer({ snapPoint: snap })
+    expect(d.context.setActiveSnapPoint(0.3, 'swipe')).toBe(true)
     expect(snap.value).toBe(0.3)
-    expect(d.activeSnapPoint).toBe(snap)
+    expect(d.activeSnapPoint.value).toBe(0.3)
+  })
+
+  it('snap point: beforeUpdate can cancel, update reports the committed change (#2789)', () => {
+    const onBeforeSnapPointUpdate = vi.fn()
+    const onSnapPointUpdate = vi.fn()
+    const d = useDrawer({ snapPoints: [0.5, 1], defaultSnapPoint: 0.5, onBeforeSnapPointUpdate, onSnapPointUpdate })
+    expect(d.setActiveSnapPoint(1, 'swipe')).toBe(true)
+    expect(d.activeSnapPoint.value).toBe(1)
+    expect(onSnapPointUpdate).toHaveBeenCalledWith(1, expect.objectContaining({ reason: 'swipe' }))
+    // An unchanged point reports `true` and emits nothing.
+    expect(d.setActiveSnapPoint(1)).toBe(true)
+    expect(onBeforeSnapPointUpdate).toHaveBeenCalledTimes(1)
+    onBeforeSnapPointUpdate.mockImplementation((_v, details) => details.cancel())
+    expect(d.setActiveSnapPoint(0.5, 'swipe')).toBe(false)
+    expect(d.activeSnapPoint.value).toBe(1)
+  })
+
+  it('snap point: controlled mode latches and only reports the request', () => {
+    const onSnapPointUpdate = vi.fn()
+    const d = useDrawer({ snapPoints: [0.5, 1], snapPoint: () => 0.5, onSnapPointUpdate })
+    d.setActiveSnapPoint(1, 'swipe')
+    expect(onSnapPointUpdate).toHaveBeenCalledWith(1, expect.objectContaining({ reason: 'swipe' }))
+    expect(d.activeSnapPoint.value).toBe(0.5)
+  })
+
+  it('a close a controlled parent ignores keeps the snap point', async () => {
+    const onSnapPointUpdate = vi.fn()
+    const d = useDrawer({ open: () => true, snapPoints: [0.5, 1], defaultSnapPoint: 0.5, onSnapPointUpdate })
+    d.setActiveSnapPoint(1, 'swipe')
+    expect(d.onOpenChange(false, 'escape-key')).toBe(true)
+    await nextTick()
+    expect(d.open.value).toBe(true)
+    expect(d.activeSnapPoint.value).toBe(1)
+    expect(onSnapPointUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('a close resets the snap point to the default, as Base UI does', () => {
+    const onSnapPointUpdate = vi.fn()
+    const d = useDrawer({ defaultOpen: true, snapPoints: [0.5, 1], defaultSnapPoint: 0.5, onSnapPointUpdate })
+    d.setActiveSnapPoint(1, 'swipe')
+    d.onOpenChange(false, 'escape-key')
+    expect(d.activeSnapPoint.value).toBe(0.5)
+    expect(onSnapPointUpdate).toHaveBeenLastCalledWith(0.5, expect.objectContaining({ reason: 'escape-key' }))
   })
 
   it('notifies the parent and provider contexts for nested drawers', () => {
@@ -108,12 +152,12 @@ describe('useDrawer — ids and surfaces', () => {
 
   it('props carry no data-* (except the viewport selector); attrs derive them from state', () => {
     const d = useDrawer({ baseId: 'x' })
-    for (const part of [d.trigger, d.close, d.title, d.description, d.handle, d.viewport, d.overlay, d.content])
+    for (const part of [d.trigger, d.close, d.title, d.description, d.grabber, d.viewport, d.overlay, d.content])
       expect(noDataAttrs(part.props.value)).toBe(true)
 
     expect(d.trigger.attrs.value).toMatchObject({ 'aria-haspopup': 'dialog', 'aria-expanded': false, 'data-state': 'closed' })
     expect(d.trigger.attrs.value['aria-controls']).toBeUndefined()
-    expect(d.handle.attrs.value).toEqual({ 'aria-hidden': 'true', 'data-state': 'closed' })
+    expect(d.grabber.attrs.value).toEqual({ 'aria-hidden': 'true', 'data-state': 'closed' })
     expect(d.viewport.attrs.value).toEqual({ 'data-drawer-viewport': '', 'data-state': 'closed' })
     expect(d.overlay.attrs.value).toEqual({ 'data-state': 'closed', 'data-swipe-direction': 'down' })
     expect(d.content.attrs.value).toEqual({
@@ -143,12 +187,12 @@ describe('useDrawer — reasons through the shell', () => {
     unmount = undefined
   })
 
-  function mountDrawer(onUpdate: (value: boolean, details: DrawerOpenChangeDetails) => void) {
+  function mountDrawer(onUpdate: (value: boolean, details: DrawerOpenChangeDetails) => void, event = 'update:open') {
     const result = render(defineComponent({
       components: { DrawerRoot, DrawerPortal, DrawerContent, DrawerTitle },
-      setup: () => ({ onUpdate }),
+      setup: () => ({ onUpdate, event }),
       template: `
-        <DrawerRoot :default-open="true" @update:open="onUpdate">
+        <DrawerRoot :default-open="true" v-on="{ [event]: onUpdate }">
           <DrawerPortal>
             <DrawerContent><DrawerTitle>Title</DrawerTitle></DrawerContent>
           </DrawerPortal>
@@ -161,7 +205,7 @@ describe('useDrawer — reasons through the shell', () => {
 
   it('reports escape-key, and cancel() keeps the drawer open', async () => {
     const onUpdate = vi.fn((_v: boolean, details: DrawerOpenChangeDetails) => details.cancel())
-    const { getByRole } = mountDrawer(onUpdate)
+    const { getByRole } = mountDrawer(onUpdate, 'beforeUpdate:open')
     await nextTick()
     await fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     expect(onUpdate).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'escape-key' }))

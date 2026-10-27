@@ -3,7 +3,7 @@ import type { ComboboxRootContext } from './ComboboxRoot.vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxItemState, ListboxState, UseListboxRootProps, UseListboxRootReturn } from '@/Listbox/useListbox'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { createEventHook } from '@vueuse/core'
+import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
 import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
@@ -372,8 +372,8 @@ export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseList
   select: (value: T, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
   /** The current value: an array when `multiple`; `null` once a single selection is cleared. */
   modelValue: ComputedRef<T | T[] | null | undefined>
-  /** Write the whole model; returns `false` when unchanged or cancelled. */
-  setModelValue: (value: T | T[] | null | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Write the whole model; returns `false` when unchanged or cancelled. `AutocompleteRoot` writes the typed text with `'input-change'`. */
+  setModelValue: (value: T | T[] | null | undefined, reason?: ComboboxChangeReason | 'input-change' | BaseChangeReason, event?: Event) => boolean
   open: ComputedRef<boolean>
   /** Returns `false` when the change was cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -446,11 +446,28 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   const triggerElement = ref<HTMLElement>()
   const bool = (source: MaybeRefOrGetter<boolean | undefined>, fallback = false) => computed(() => toValue(source) ?? fallback) as Ref<boolean>
 
+  // The blur reset runs a tick after the close. A reopen inside that window
+  // (typing straight after an outside press, a quick re-click) cancels it, so
+  // it never wipes the text of a popup that is open again (#2789).
+  let resetSearchTermTimer: ReturnType<typeof setTimeout> | undefined
+  function clearResetSearchTermTimer() {
+    clearTimeout(resetSearchTermTimer)
+    resetSearchTermTimer = undefined
+  }
+  tryOnScopeDispose(clearResetSearchTermTimer)
+
   function onOpenChange(value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) {
     // v2 ran the open/close side effects even for a no-op write (a controlled
     // `open` the parent keeps); only a cancelled change skips them.
+    // Typing drops a pending blur reset even when `beforeUpdate:open` cancels
+    // the reopen it requests: the reset would wipe the text being typed. Any
+    // other request drops it only once it went through, so a cancelled trigger
+    // press or focus still restores the input text.
+    if (reason === 'input-change')
+      clearResetSearchTermTimer()
     if (value !== open.value && !setOpen(value, reason, event))
       return false
+    clearResetSearchTermTimer()
     filterSearch.value = value ? (props.openSearchTerm?.() ?? '') : ''
     if (value) {
       // make sure the DOM is ready, then highlight the selected item
@@ -462,15 +479,18 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     }
     else {
       isUserInputted.value = false
-      setTimeout(() => {
-        if (toValue(props.resetSearchTermOnBlur) ?? true)
+      resetSearchTermTimer = setTimeout(() => {
+        resetSearchTermTimer = undefined
+        // A controlled parent may have reopened the popup through `open`
+        // (or kept it open) without going through `onOpenChange`.
+        if (!open.value && (toValue(props.resetSearchTermOnBlur) ?? true))
           resetSearchTerm.trigger()
       }, 1)
     }
     return true
   }
 
-  function setModelValue(value: T | T[] | null | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) {
+  function setModelValue(value: T | T[] | null | undefined, reason?: ComboboxChangeReason | 'input-change' | BaseChangeReason, event?: Event) {
     // The Listbox model treats `null` like any other single value.
     return listbox.setModelValue(value as T | T[] | undefined, reason as ListboxChangeReason, event)
   }
