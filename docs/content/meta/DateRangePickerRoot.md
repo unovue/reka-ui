@@ -101,7 +101,7 @@
   },
   {
     'name': 'isDateDisabled',
-    'description': '<p>A function that returns whether or not a date is disabled. Called only for cells at the <code>granularity</code> (with that unit as its second argument); the coarser navigation views apply only <code>minValue</code>, <code>maxValue</code> and <code>disabled</code>.</p>\n',
+    'description': '<p>A function that returns whether or not a date is disabled. The picker\'s calendar always commits days, so it is called only for day-view cells (with <code>\'day\'</code> as its second argument); the month and year views apply only <code>minValue</code>, <code>maxValue</code> and <code>disabled</code>.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -113,7 +113,7 @@
   },
   {
     'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
+    'description': '<p>A function that returns whether or not a date is unavailable. The field marks the range invalid when either end, or any day between them, is unavailable. The picker\'s calendar always commits days, so it is called there only for day-view cells (with <code>\'day\'</code> as its second argument); the month and year views apply only <code>minValue</code>, <code>maxValue</code> and <code>disabled</code>.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -188,7 +188,7 @@
   },
   {
     'name': 'pagedNavigation',
-    'description': '<p>This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month</p>\n',
+    'description': '<p>In the day view, makes the previous and next buttons move by the number of months displayed at once (<code>numberOfMonths</code>) rather than one month. The month view always pages by one year and the year view by <code>yearsPerPage</code> years.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -326,9 +326,9 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isDateDisabled` | A function that returns whether or not a date is disabled. Called only for cells at the granularity (with that unit as its second argument); the coarser navigation views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with 'day' as its second argument); the month and year views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
 | `isDateHighlightable` | A function that returns whether or not a date is highlightable | `Matcher` | No | - |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable. The field marks the range invalid when either end, or any day between them, is unavailable. The picker's calendar always commits days, so it is called there only for day-view cells (with 'day' as its second argument); the month and year views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maximumDays` | The maximum number of days in the range (inclusive). Alias of maximumLength for day ranges. | `number` | No | - |
 | `maximumLength` | The maximum length of the range in days (inclusive). | `number` | No | - |
@@ -340,7 +340,7 @@
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
-| `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
+| `pagedNavigation` | In the day view, makes the previous and next buttons move by the number of months displayed at once (numberOfMonths) rather than one month. The month view always pages by one year and the year view by yearsPerPage years. | `boolean` | No | `false` |
 | `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |

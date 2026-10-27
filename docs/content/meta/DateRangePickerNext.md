@@ -17,7 +17,7 @@
   },
   {
     'name': 'nextPage',
-    'description': '<p>The function to be used for the next page. Overwrites the <code>nextPage</code> function set on the <code>RangeCalendarRoot</code>. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a <code>RangeCalendarView</code> to scope it to one view.</p>\n',
+    'description': '<p>A function that returns the next page of the calendar, used instead of the default step. It receives the current placeholder and the active view, and applies in every view; render the button inside a <code>DateRangePickerView</code> to scope it to one view.</p>\n',
     'type': 'CalendarPageFunction',
     'required': false
   }
@@ -40,7 +40,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `nextPage` | The function to be used for the next page. Overwrites the nextPage function set on the RangeCalendarRoot. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a RangeCalendarView to scope it to one view. | `CalendarPageFunction` | No | - |
+| `nextPage` | A function that returns the next page of the calendar, used instead of the default step. It receives the current placeholder and the active view, and applies in every view; render the button inside a DateRangePickerView to scope it to one view. | `CalendarPageFunction` | No | - |
 
 **Slots**
 

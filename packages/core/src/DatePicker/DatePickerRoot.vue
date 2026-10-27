@@ -58,7 +58,13 @@ type DatePickerRootContext = {
  * dates), so the calendar's `granularity` is not exposed here; the drill-down
  * views are.
  */
-export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & PopoverRootProps & Pick<CalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
+  /** A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
+  isDateDisabled?: Matcher
+  /** A function that returns whether or not a date is unavailable. The field marks an unavailable value invalid. The picker's calendar always commits days, so it is called there only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
+  isDateUnavailable?: Matcher
+  /** In the day view, makes the previous and next buttons move by the number of months displayed at once (`numberOfMonths`) rather than one month. The month view always pages by one year and the year view by `yearsPerPage` years. */
+  pagedNavigation?: boolean
   /** The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. */
   view?: CalendarUnit
   /** The calendar view shown when the picker opens. Defaults to `day`. */
