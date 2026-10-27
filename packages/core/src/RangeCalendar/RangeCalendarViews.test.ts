@@ -88,6 +88,32 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
     expect(getByTestId('cell-2027-01-01')).toHaveFocus()
     expect(getByTestId('heading')).toHaveTextContent('2027')
   })
+
+  it('moves to the first and last month of the page on Home and End', async () => {
+    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
+    getByTestId('cell-2026-09-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2026-01-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2026-12-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2026')
+  })
+
+  it('skips disabled and out-of-range months on Home and End', async () => {
+    const { user, getByTestId } = setupUnit({
+      granularity: 'month',
+      defaultPlaceholder: sep5,
+      minValue: new CalendarDate(2026, 2, 10),
+      maxValue: new CalendarDate(2026, 11, 20),
+      isDateDisabled: (date, unit) => unit === 'month' && date.month === 2,
+    })
+    getByTestId('cell-2026-09-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2026-03-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2026-11-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2026')
+  })
 })
 
 describe('range calendar — granularity="year" (replaces YearRangePicker)', () => {
@@ -99,6 +125,31 @@ describe('range calendar — granularity="year" (replaces YearRangePicker)', () 
     await user.click(getByTestId('cell-2027-01-01'))
     expect(selected(calendar)).toHaveLength(4)
     expect(range(onUpdate.mock.calls.at(-1)![0])).toBe('2024-01-01..2027-01-01')
+  })
+
+  it('moves to the first and last year of the page on Home and End', async () => {
+    const { user, getByTestId } = setupUnit({ granularity: 'year', defaultPlaceholder: sep5 })
+    getByTestId('cell-2026-01-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2020-01-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2031-01-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2020 - 2031')
+  })
+
+  it('skips disabled and out-of-range years on Home and End', async () => {
+    const { user, getByTestId } = setupUnit({
+      granularity: 'year',
+      defaultPlaceholder: sep5,
+      minValue: new CalendarDate(2021, 6, 1),
+      maxValue: new CalendarDate(2029, 6, 1),
+      isDateDisabled: (date, unit) => unit === 'year' && date.year === 2021,
+    })
+    getByTestId('cell-2026-01-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2022-01-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2029-01-01')).toHaveFocus()
   })
 })
 
@@ -173,6 +224,23 @@ describe('range calendar — coarser views are navigation only', () => {
     await user.click(getByTestId('month-2026-02-01'))
     expect(getByTestId('view-day')).toBeInTheDocument()
     expect(getByTestId('day-2026-02-01')).toHaveAttribute('data-disabled')
+  })
+
+  it('moves to the page edges on Home and End in the coarser views, within minValue / maxValue', async () => {
+    const { user, getByTestId, unmount } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', maxValue: new CalendarDate(2026, 10, 15) })
+    getByTestId('month-2026-09-01').focus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('month-2026-10-01')).toHaveFocus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('month-2026-01-01')).toHaveFocus()
+    unmount()
+
+    const views = setupViews({ defaultPlaceholder: sep5, defaultView: 'year', minValue: new CalendarDate(2023, 1, 1) })
+    views.getByTestId('year-2026-01-01').focus()
+    await views.user.keyboard(kbd.HOME)
+    expect(views.getByTestId('year-2023-01-01')).toHaveFocus()
+    await views.user.keyboard(kbd.END)
+    expect(views.getByTestId('year-2031-01-01')).toHaveFocus()
   })
 
   it('sets aria-selected on no gridcell in views coarser than the granularity', () => {
