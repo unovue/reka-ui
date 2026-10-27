@@ -5,10 +5,11 @@ export interface DrawerOverlayImplProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useBodyScrollLock, useForwardElement } from '@/shared'
+import { useBodyScrollLock, useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
+import { getDrawerOverlaySurface } from './useDrawer'
 import { DRAWER_CSS_VARS } from './utils'
 
 defineProps<DrawerOverlayImplProps>()
@@ -27,15 +28,8 @@ defineExpose(expose)
 
 // BaseUI parity: the backdrop carries data-swiping / data-swipe-direction so
 // downstream CSS can target `[data-swiping] [data-slot="drawer-backdrop"]`.
-const dataAttributes = computed(() => {
-  const attrs: Record<string, string | undefined> = {
-    'data-state': disclosureState(rootContext.open.value),
-    'data-swipe-direction': rootContext.swipeDirection.value,
-  }
-  if (rootContext.isSwiping.value)
-    attrs['data-swiping'] = ''
-  return attrs
-})
+// They derive from the shared surface builder (single source with `useDrawer()`).
+const overlay = getDrawerOverlaySurface(rootContext)
 </script>
 
 <template>
@@ -43,7 +37,7 @@ const dataAttributes = computed(() => {
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    v-bind="dataAttributes"
+    v-bind="overlay.attrs.value"
     :style="{
       pointerEvents: 'auto',
       userSelect: 'none',

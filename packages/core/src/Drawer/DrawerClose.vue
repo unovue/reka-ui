@@ -8,19 +8,23 @@ export interface DrawerCloseProps extends PrimitiveProps {}
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
+import { getDrawerCloseSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerCloseProps>(), { as: 'button' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectDrawerRootContext()
+// `onClick` → `onOpenChange(false, 'close-press')` from the shared surface builder.
+const close = getDrawerCloseSurface(rootContext)
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
-    v-bind="props"
+    :as="props.as"
+    :as-child="props.asChild"
     :type="as === 'button' ? 'button' : undefined"
-    @click="rootContext.onOpenChange(false, 'close-press')"
+    v-bind="close.attrs.value"
   >
     <slot />
   </Primitive>
