@@ -3,6 +3,7 @@ import type { By } from './compare'
 import type { BaseChangeReason, ChangeEventDetails } from './types'
 import { ref, toRaw, toValue } from 'vue'
 import { compare, valueComparator } from './compare'
+import { isNullish } from './nullish'
 import { useControllableState } from './useControllableState'
 
 export interface UseListSelectionOptions<T, R extends string = string> {
@@ -114,7 +115,14 @@ export function useListSelection<T, R extends string = string>(options: UseListS
         // A no-op write returns before touching `lastChangeDetails`; a cancelled
         // one records its details, which tells the two `false`s apart (a
         // ref-owned `undefined` model treats a write of its default as real).
-        const isCurrent = isSameSelection([val], toRaw(modelValue.value))
+        const current = toRaw(modelValue.value)
+        // Re-pressing the sole selected value is a no-op even when `by`
+        // matches a different instance.
+        if (Array.isArray(current) && current.length === 1 && !Object.is(current[0], val) && compare(current[0], val, by)) {
+          firstValue.value = val
+          return false
+        }
+        const isCurrent = isSameSelection([val], current)
         const detailsBefore = lastChangeDetails.value
         const changed = setState([val], reason, event)
         if (changed || (isCurrent && lastChangeDetails.value === detailsBefore))
@@ -130,6 +138,11 @@ export function useListSelection<T, R extends string = string>(options: UseListS
           return setState(val, reason, event)
       }
       else {
+        // A re-press of the selected value is a no-op, matched with `by` (a
+        // different instance of the same object must not emit).
+        const current = modelValue.value as T | undefined
+        if (!isNullish(current) && !Object.is(current, val) && compare(current, val, by))
+          return false
         return setState(val, reason, event)
       }
     }

@@ -3,7 +3,7 @@ import type {
   ComponentPublicInstance,
   Ref,
 } from 'vue'
-import type { DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, DismissableLayerDismissReason, DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
@@ -104,17 +104,45 @@ const emits = defineEmits<SelectContentImplEmits>()
 
 const rootContext = injectSelectRootContext()
 
+// The modal side effects follow the open state, not the mount: a
+// `forceMount`ed content that is closed (or animating out) must not keep the
+// scroll lock, the internal backdrop or `aria-hidden` on its siblings.
+const present = computed(() => rootContext.open.value)
+
 // Modal by default (#2822): page scroll is locked while the content is open,
 // and `disableOutsidePointerEvents` mounts the dismissable layer's internal
 // backdrop under the content.
-const scrollLocked = useBodyScrollLock(props.bodyLock)
-watch(() => props.bodyLock, value => scrollLocked.value = value)
+const scrollLocked = useBodyScrollLock(present.value && props.bodyLock)
+watch([present, () => props.bodyLock], ([isPresent, bodyLock]) => scrollLocked.value = isPresent && bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
 // Scope focus guards to the content's root (shadow-safe); set up after `content`.
 useFocusGuards(content)
-useHideOthers(content)
+useHideOthers(computed(() => present.value ? content.value : undefined))
+
+// In `popper` position the trigger stays visible beside the content: cut it
+// out of the backdrop so a press on it toggles the select closed (Base UI).
+const backdropCutout = computed(() => props.position === 'popper' ? rootContext.triggerElement.value : undefined)
+
+// `focus-outside` is prevented below, so a dismissal is only ever an Escape
+// key or an outside press.
+function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
+  rootContext.onOpenChange(false, reason as Exclude<DismissableLayerDismissReason, 'focus-outside'>, event)
+}
+
+function handlePointerDownOutside(event: PointerDownOutsideEvent) {
+  emits('pointerDownOutside', event)
+  if (event.defaultPrevented)
+    return
+  // A press on the trigger toggles the select closed: report it as a
+  // `'trigger-press'`, not a dismissal.
+  const target = event.target as Node | null
+  if (target && rootContext.triggerElement.value?.contains(target)) {
+    event.preventDefault()
+    rootContext.onOpenChange(false, 'trigger-press', event.detail.originalEvent)
+  }
+}
 
 // Keyboard navigation and typeahead, the selected-item tracking for
 // item-aligned positioning, and the pointer-release guard after opening.
@@ -146,6 +174,7 @@ defineExpose(expose)
   <CollectionSlot :ref="forwardRef">
     <FocusScope
       as-child
+      :present="present"
       @mount-auto-focus.prevent
       @unmount-auto-focus="
         (event) => {
@@ -158,11 +187,13 @@ defineExpose(expose)
     >
       <DismissableLayer
         as-child
+        :present="present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
+        :backdrop-cutout="backdropCutout"
         @focus-outside.prevent
-        @dismiss="({ reason, event }) => rootContext.onOpenChange(false, reason, event)"
+        @dismiss="handleDismiss"
         @escape-key-down="emits('escapeKeyDown', $event)"
-        @pointer-down-outside="emits('pointerDownOutside', $event)"
+        @pointer-down-outside="handlePointerDownOutside"
       >
         <component
           :is="

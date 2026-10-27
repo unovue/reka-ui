@@ -29,7 +29,9 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   disabled?: boolean
   /**
    * The text shown for a selected value. Wins over the text of its `SelectItemText`, so the value can be shown before
-   * the content ever rendered; with it set, the closed content is not rendered just to collect the item texts.
+   * the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost:
+   * until the content has been opened once, the hidden native `select` only holds the selected values (so browser
+   * autofill cannot pick another one) and the closed trigger's typeahead has no items to match.
    */
   displayValue?: (value: T) => string
   /**
@@ -91,7 +93,7 @@ export interface SelectRootContext<T = AcceptableValue> {
   /** Text of each selected value (`displayValue`, then `labels`). */
   selectedLabels: ComputedRef<string[]>
   /** The root's `displayValue` resolver, if any. */
-  displayValue?: (value: T) => string
+  displayValue: Ref<((value: T) => string) | undefined>
   /** The root's `getNavigationIntent` over the default mapping. */
   getNavigationIntent: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
 }
@@ -120,8 +122,8 @@ const emits = defineEmits<SelectRootEmits<T, M>>()
 
 defineSlots<{
   default?: (props: {
-    /** Current input values */
-    modelValue: SelectModelValue<T, M>
+    /** Current input values; `undefined` while a single select is empty */
+    modelValue: M extends true ? T[] : T | undefined
     /** Current open state */
     open: boolean
   }) => any
@@ -157,7 +159,7 @@ const select = useSelectRoot<AcceptableValue>({
   required,
   dir,
   baseId: useId(undefined, 'reka-select'),
-  displayValue: props.displayValue && (value => props.displayValue!(value as T)),
+  displayValue: toRef(() => props.displayValue as ((value: AcceptableValue) => string) | undefined),
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   emit: emits,
   // User-driven selection (as opposed to a programmatic/parent-driven
@@ -168,7 +170,7 @@ const select = useSelectRoot<AcceptableValue>({
   onUpdate: value => fieldContext?.handleControlInput({ value }),
 })
 const { context, open, isEmptyModelValue, isSelected } = select
-const modelValue = select.modelValue as unknown as Ref<SelectModelValue<T, M>>
+const modelValue = select.modelValue as unknown as Ref<M extends true ? T[] : T | undefined>
 
 // `dirty` is reported from `onUpdate` instead (the user-driven path) — this
 // watcher also fires for a programmatic/parent-driven `modelValue` change,
@@ -190,17 +192,13 @@ const nativeOptions = computed(() => {
   const selectedValues = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as AcceptableValue[]
   for (const selected of selectedValues) {
     if (!entries.some(entry => compare(entry.value, selected, context.by)))
-      options.push({ value: selected, label: context.displayValue?.(selected) ?? '', disabled: false, selected: true })
+      options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
   return options
 })
-
-// The native `select` only associates the correct default value if the corresponding
-// `option` is rendered as a child **at the same time** as itself.
-// Because it might take a few renders for our items to gather the information to build
-// the native `option`(s), we generate a key on the `select` to make sure Vue re-builds it
-// each time the options change.
-const nativeSelectKey = computed(() => nativeOptions.value.map(option => option.value).join(';'))
+// The native `select` is patched in place (each option's `selected` is bound),
+// never re-keyed: re-creating it on a model change would skip the `change`
+// event `BubbleSelect` dispatches for that change.
 
 provideSelectRootContext(context)
 </script>
@@ -214,7 +212,6 @@ provideSelectRootContext(context)
 
     <BubbleSelect
       v-if="isFormControl && resolvedName"
-      :key="nativeSelectKey"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"
@@ -226,6 +223,7 @@ provideSelectRootContext(context)
     >
       <option
         v-if="isNullish(modelValue)"
+        data-nullable
         :value="nullableValue"
         selected
       />

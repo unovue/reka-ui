@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectSelectRootContext } from './SelectRoot.vue'
 
@@ -40,9 +40,30 @@ watch(() => props.value, (cur, prev) => {
  */
 function handleInput(event: Event) {
   const select = event.target as HTMLSelectElement
-  const option = select.options[select.selectedIndex] as (HTMLOptionElement & { _value?: any }) | undefined
+  const option = select.options[select.selectedIndex] as NativeOption | undefined
   if (option)
-    rootContext.onValueChange('_value' in option ? option._value : option.value, 'autofill', event)
+    rootContext.onValueChange(optionValue(option), 'autofill', event)
+  // The browser already moved the native selection. When the change was
+  // cancelled (`beforeUpdate:modelValue`) or a controlled parent ignored it,
+  // nothing re-renders the options, so put their `selected` back in line with
+  // the model once the parent had its chance to update.
+  nextTick(syncSelection)
+}
+
+type NativeOption = HTMLOptionElement & { _value?: any }
+
+function optionValue(option: NativeOption) {
+  return '_value' in option ? option._value : option.value
+}
+
+function syncSelection() {
+  const select = selectElement.value
+  if (!select)
+    return
+  for (const option of Array.from(select.options) as NativeOption[]) {
+    // The nullable option only renders while the model is empty.
+    option.selected = option.hasAttribute('data-nullable') || rootContext.isSelected(optionValue(option))
+  }
 }
 
 /**

@@ -404,6 +404,222 @@ describe('getNavigationIntent', () => {
   })
 })
 
+describe('review fixes (#3072)', () => {
+  function nativeSelect() {
+    return document.querySelector('select')!
+  }
+  function formValue() {
+    return new FormData(document.querySelector('form')!).get('fruit')
+  }
+  function isScrollLocked() {
+    return getComputedStyle(document.body).overflowY === 'hidden' || getComputedStyle(document.documentElement).overflowY === 'hidden'
+  }
+  async function autofill(value: string) {
+    nativeSelect().value = value
+    nativeSelect().dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+  }
+
+  it('a cancelled autofill puts the native select back on the model', async () => {
+    const onBefore = vi.fn((_value, details) => details.cancel())
+    mountSelect({ 'name': 'fruit', 'defaultValue': 'Apple', 'onBeforeUpdate:modelValue': onBefore }, { form: true })
+    await flushPromises()
+    await autofill('Cherry')
+    expect(onBefore).toHaveBeenCalledWith('Cherry', expect.objectContaining({ reason: 'autofill' }))
+    expect(valueText()).toBe('Apple')
+    expect(formValue()).toBe('Apple')
+  })
+
+  it('an autofill a controlled parent ignores puts the native select back on the model', async () => {
+    const onUpdate = vi.fn()
+    mountSelect({ 'name': 'fruit', 'modelValue': 'Apple', 'onUpdate:modelValue': onUpdate }, { form: true })
+    await flushPromises()
+    await autofill('Cherry')
+    expect(onUpdate).toHaveBeenCalledWith('Cherry', expect.objectContaining({ reason: 'autofill' }))
+    expect(formValue()).toBe('Apple')
+  })
+
+  for (const withDisplayValue of [false, true]) {
+    it(`dispatches change on every programmatic model change${withDisplayValue ? ' with displayValue' : ''}`, async () => {
+      const onChange = vi.fn()
+      const model = ref<string>()
+      mount(defineComponent({
+        setup: () => () => h('form', { onChange }, h(SelectRoot, {
+          'name': 'fruit',
+          'modelValue': model.value,
+          'onUpdate:modelValue': (value: string) => model.value = value,
+          'displayValue': withDisplayValue ? (value: string) => value : undefined,
+        }, () => [
+          h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
+          h(SelectContent, { position: 'popper' }, () => h(SelectViewport, () => fruits.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value))))),
+        ])),
+      }), { attachTo: document.body })
+      await flushPromises()
+      model.value = 'Cherry'
+      await flushPromises()
+      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(formValue()).toBe('Cherry')
+      model.value = 'Apple'
+      await flushPromises()
+      expect(onChange).toHaveBeenCalledTimes(2)
+      expect(formValue()).toBe('Apple')
+    })
+  }
+
+  it('closed-trigger typeahead with displayValue falls back to the registered labels', async () => {
+    const onUpdate = vi.fn()
+    mountSelect({ 'displayValue': (value: string) => value.toUpperCase(), 'onUpdate:modelValue': onUpdate })
+    await flushPromises()
+    // Nothing rendered yet, so nothing to match.
+    await keydownOn(trigger(), 'b')
+    expect(onUpdate).not.toHaveBeenCalled()
+
+    await open()
+    await keydownOn(document.activeElement!, 'Escape')
+    await flushPromises()
+    expect(isOpen()).toBe(false)
+    await keydownOn(trigger(), 'c')
+    expect(onUpdate).toHaveBeenCalledWith('Cherry', expect.objectContaining({ reason: 'typeahead' }))
+    expect(valueText()).toBe('CHERRY')
+  })
+
+  it('reacts to a new displayValue', async () => {
+    const displayValue = ref((value: string) => value.toUpperCase())
+    mount(defineComponent({
+      setup: () => () => h(SelectRoot, { defaultValue: 'Cherry', displayValue: displayValue.value }, () => [
+        h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
+        h(SelectContent, () => fruits.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(valueText()).toBe('CHERRY')
+    displayValue.value = (value: string) => `${value}!`
+    await flushPromises()
+    expect(valueText()).toBe('Cherry!')
+  })
+
+  // `useHideOthers` is a no-op under vitest (MODE === "test"), so only the backdrop and the scroll lock are asserted.
+  it('a closed forceMount content keeps no backdrop or scroll lock', async () => {
+    const open = ref(false)
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h(SelectRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
+          h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
+          h(SelectPortal, () => h(SelectContent, { position: 'popper', forceMount: true }, () => h(SelectViewport, () =>
+            fruits.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value)))))),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(document.querySelector('[data-reka-internal-backdrop]')).toBeNull()
+    expect(isScrollLocked()).toBe(false)
+
+    open.value = true
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(document.querySelector('[data-reka-internal-backdrop]')).not.toBeNull()
+    expect(isScrollLocked()).toBe(true)
+
+    open.value = false
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(document.querySelector('[data-reka-internal-backdrop]')).toBeNull()
+    expect(isScrollLocked()).toBe(false)
+  })
+
+  it('pressing the trigger of an open popper select closes it with trigger-press', async () => {
+    const onOpen = vi.fn()
+    mountSelect({ 'onUpdate:open': onOpen })
+    await open()
+    expect(isOpen()).toBe(true)
+    await new Promise(resolve => setTimeout(resolve, 20))
+    await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false })
+    await flushPromises()
+    expect(isOpen()).toBe(false)
+    expect(onOpen).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
+  })
+
+  it('re-pressing the selected value matched with by does not emit', async () => {
+    const items = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
+    const onUpdate = vi.fn()
+    mount(defineComponent({
+      setup: () => () => h(SelectRoot, { 'by': 'id', 'defaultValue': { id: 2, name: 'Banana' }, 'onUpdate:modelValue': onUpdate }, () => [
+        h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
+        h(SelectContent, { position: 'popper' }, () => h(SelectViewport, () => items.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value.name))))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    await open()
+    await press(option('Banana'))
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(isOpen()).toBe(false)
+  })
+
+  it('re-registers an item label when only its text or disabled state changes', async () => {
+    const label = ref('Cherry')
+    const disabled = ref(true)
+    mount(defineComponent({
+      setup: () => () => h('form', h(SelectRoot, { name: 'fruit', defaultValue: 'Cherry' }, () => [
+        h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
+        h(SelectContent, { position: 'popper' }, () => h(SelectViewport, () => fruits.map(value =>
+          h(SelectItem, { value, disabled: value === 'Cherry' && disabled.value }, () =>
+            h(SelectItemText, () => value === 'Cherry' ? label.value : value))))),
+      ])),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const nativeCherry = () => Array.from(nativeSelect().options).find(option => option.value === 'Cherry')!
+    expect(nativeCherry().disabled).toBe(true)
+
+    disabled.value = false
+    await flushPromises()
+    expect(nativeCherry().disabled).toBe(false)
+
+    label.value = 'Cherry!'
+    await flushPromises()
+    expect(valueText()).toBe('Cherry!')
+    expect(nativeCherry().textContent?.trim()).toBe('Cherry!')
+  })
+
+  describe('trigger press that does not open', () => {
+    function mountTrigger(rootProps: Parameters<typeof useSelectRoot<string>>[0]) {
+      let api!: UseSelectRootReturn<string>
+      mount(defineComponent({
+        setup() {
+          api = useSelectRoot<string>(rootProps)
+          const { trigger } = useSelectTrigger({ context: api.context })
+          return () => h('button', { ...trigger.attrs.value, 'type': 'button', 'aria-label': 'Fruit' })
+        },
+      }), { attachTo: document.body })
+      return () => api
+    }
+
+    it('drops the pointer position when beforeUpdate:open cancels', async () => {
+      const api = mountTrigger({ onBeforeUpdateOpen: (_value, details) => details.cancel() })
+      await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false, pageX: 10, pageY: 10 })
+      expect(api().open.value).toBe(false)
+      expect(api().context.triggerPointerDownPosRef.value).toBeNull()
+    })
+
+    it('drops the pointer position when a controlled parent keeps it closed', async () => {
+      const onUpdateOpen = vi.fn()
+      const api = mountTrigger({ open: () => false, onUpdateOpen })
+      await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false, pageX: 10, pageY: 10 })
+      expect(onUpdateOpen).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press' }))
+      await nextTick()
+      expect(api().context.triggerPointerDownPosRef.value).toBeNull()
+    })
+
+    it('keeps the pointer position for an open that took', async () => {
+      const api = mountTrigger({})
+      await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false })
+      await nextTick()
+      expect(api().open.value).toBe(true)
+      expect(api().context.triggerPointerDownPosRef.value).not.toBeNull()
+    })
+  })
+})
+
 describe('exports', () => {
   it('exposes the composables from the package root but not the surface builders', () => {
     expect(typeof Reka.useSelectRoot).toBe('function')

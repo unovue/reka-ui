@@ -5,7 +5,7 @@ import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { computed, nextTick, onMounted, onUpdated, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
   createLabelRegistry,
@@ -63,9 +63,9 @@ export type SelectChangeReason = 'item-press' | 'item-keydown' | 'typeahead' | '
  * - `'trigger-press'`: a press on the trigger, or Enter / Space on it.
  * - `'list-navigation'`: ArrowDown / ArrowUp on the trigger.
  * - `'item-press'` / `'item-keydown'`: selecting an item closed a single select.
- * - `'escape-key'` / `'outside-press'` / `'focus-outside'`: dismissed. Releasing
- *   the pointer outside the content after dragging from the trigger is also
- *   `'outside-press'`.
+ * - `'escape-key'` / `'outside-press'`: dismissed. Releasing the pointer
+ *   outside the content after dragging from the trigger is also
+ *   `'outside-press'`. Focus moving out does not close a select.
  */
 export type SelectOpenChangeReason
   = | 'trigger-press'
@@ -74,7 +74,6 @@ export type SelectOpenChangeReason
     | 'item-keydown'
     | 'escape-key'
     | 'outside-press'
-    | 'focus-outside'
 
 /**
  * What a keydown in the content means: one of the four focus moves, or
@@ -83,11 +82,11 @@ export type SelectOpenChangeReason
 export type SelectNavigationIntent = ListboxNavigationIntent
 
 /**
- * The model of a select: an array when `multiple` is `true`, a single value
- * (or `null`) when it is absent or `false`, either while it is a plain
- * `boolean`.
+ * The value a select emits: an array when `multiple` is `true`, a single value
+ * when it is absent or `false`, either while it is a plain `boolean`. No
+ * interaction clears a single select, so it never emits `null` or `undefined`.
  */
-export type SelectModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | null : M extends true ? T[] : T | null
+export type SelectModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] : M extends true ? T[] : T
 
 /** Semantic state of the trigger (`data-state` / `data-disabled` / `data-placeholder`). */
 export type SelectTriggerState = { state: DisclosureState, disabled: boolean, placeholder: boolean }
@@ -161,9 +160,13 @@ export interface UseSelectRootProps<T = AcceptableValue> {
   baseId?: string
   /**
    * Resolves the text shown for a selected value. Wins over the label
-   * registry, so the value can be shown before its item ever rendered.
+   * registry, so the value can be shown before its item ever rendered. Pass a
+   * `Ref` to swap the resolver at runtime (a plain function is NOT treated as
+   * a getter). With it set the closed content is not rendered, so the hidden
+   * native `<select>` only holds the selected values (autofill can only
+   * re-pick them) until the content has been opened once.
    */
-  displayValue?: (value: T) => string
+  displayValue?: ((value: T) => string) | Ref<((value: T) => string) | undefined>
   /**
    * Resolves what a keydown in the content means. Return `undefined` to fall
    * back to the default mapping (ArrowUp/ArrowDown/Home/End), `null` to opt
@@ -250,6 +253,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   })
 
   const labels = createLabelRegistry<T>(props.by)
+  const displayValue = computed(() => isRef(props.displayValue) ? props.displayValue.value : props.displayValue)
 
   const isEmptyModelValue = computed(() => {
     const value = modelValue.value
@@ -259,7 +263,8 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   })
 
   function resolveLabel(value: T) {
-    const resolved = props.displayValue && !isNullish(value) ? props.displayValue(value) : undefined
+    const resolve = displayValue.value
+    const resolved = resolve && !isNullish(value) ? resolve(value) : undefined
     return resolved ?? labels.get(value)
   }
 
@@ -328,7 +333,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     isEmptyModelValue,
     labels,
     selectedLabels,
-    displayValue: props.displayValue,
+    displayValue,
     getNavigationIntent,
   }
 
@@ -386,9 +391,13 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   const isDisabled = computed(() => context.disabled.value || toValue(options.disabled) || false)
   const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead(() => {})
 
+  // The mounted items, else the label registry: with `displayValue` the
+  // closed content renders nothing, so only items that rendered while open
+  // (and registered their text) can be typed to.
   function getTypeaheadItems(): SelectTypeaheadItem<T>[] {
-    if (options.getItems)
-      return options.getItems()
+    const items = options.getItems?.() ?? []
+    if (items.length)
+      return items
     return context.labels.entries().map(entry => ({ value: entry.value, textValue: entry.label, disabled: entry.disabled }))
   }
 
@@ -404,19 +413,39 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   }
 
   function handleOpen(reason: SelectOpenChangeReason, event: Event) {
-    if (!isDisabled.value) {
-      context.onOpenChange(true, reason, event)
-      // reset typeahead when we open
-      resetTypeahead()
-    }
+    if (isDisabled.value)
+      return false
+    const changed = context.onOpenChange(true, reason, event)
+    // reset typeahead when we open
+    resetTypeahead()
+    return changed
   }
 
   function handlePointerOpen(event: PointerEvent) {
-    handleOpen('trigger-press', event)
+    const wasOpen = context.open.value
     context.triggerPointerDownPosRef.value = {
       x: Math.round(event.pageX),
       y: Math.round(event.pageY),
     }
+    // A press on the trigger of an open select (reachable in `popper`
+    // position, where the trigger is cut out of the backdrop) is closed by the
+    // content's outside-press handling, with `'trigger-press'`.
+    if (wasOpen) {
+      handleOpen('trigger-press', event)
+      return
+    }
+    // Keep the press only for an open that took: the content's pointer-release
+    // guard reads it, and a stale position would swallow the next release.
+    if (!handleOpen('trigger-press', event)) {
+      context.triggerPointerDownPosRef.value = null
+      return
+    }
+    // A controlled parent may ignore `update:open`: drop the press if the
+    // select is still closed once the parent had its chance to re-render.
+    nextTick(() => {
+      if (!context.open.value)
+        context.triggerPointerDownPosRef.value = null
+    })
   }
 
   function isPlainLeftClick(event: MouseEvent) {
@@ -645,7 +674,8 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   // and close on `pointerup` outside.
   const { triggerPointerDownPosRef } = context
   watchEffect((cleanupFn) => {
-    if (!contentElement.value)
+    // A `forceMount`ed content listens only while open.
+    if (!contentElement.value || !context.open.value)
       return
     let pointerMoveDelta = { x: 0, y: 0 }
 
@@ -956,13 +986,14 @@ export interface UseSelectItemTextOptions<T = AcceptableValue> {
 }
 
 /**
- * The item text: the `id` the option is labelled by. Once mounted (and on
- * every update) it registers its text in the root's sticky label registry —
+ * The item text: the `id` the option is labelled by. Once mounted (and
+ * whenever its text, value or `disabled` changes) it registers its text in
+ * the root's sticky label registry —
  * which is what `SelectValue` and the hidden native `<select>` read — and
  * reports itself to the content for item-aligned positioning.
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle setup — registers on mount/update; call inside the item text's `setup()`.
+ * @lifecycle setup — registers on mount and observes its text; call inside the item text's `setup()`.
  */
 export function useSelectItemText<T extends AcceptableValue = AcceptableValue>(options: UseSelectItemTextOptions<T>): { itemText: PartSurface<Record<string, never>> } {
   const { context, itemContext } = options
@@ -975,6 +1006,10 @@ export function useSelectItemText<T extends AcceptableValue = AcceptableValue>(o
     context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
   }
 
+  // Text-only changes (a translated label, a slot that re-renders on its own)
+  // do not update this component, so watch the text node itself.
+  let observer: MutationObserver | undefined
+
   onMounted(() => {
     const el = options.element.value
     if (!el)
@@ -982,8 +1017,13 @@ export function useSelectItemText<T extends AcceptableValue = AcceptableValue>(o
     itemContext.onItemTextChange(el)
     options.contentContext?.itemTextRefCallback(el, itemContext.value, itemContext.disabled.value)
     register()
+    if (typeof MutationObserver !== 'undefined') {
+      observer = new MutationObserver(register)
+      observer.observe(el, { characterData: true, childList: true, subtree: true })
+    }
   })
-  onUpdated(register)
+  onBeforeUnmount(() => observer?.disconnect())
+  watch([() => itemContext.value, () => itemContext.disabled.value], register, { flush: 'post' })
 
   const itemText = createPartSurface<Record<string, never>>(
     () => ({ id: itemContext.textId }),

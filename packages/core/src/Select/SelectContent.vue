@@ -92,7 +92,7 @@ onUnmounted(clearRenderPresenceTimeout)
     </SelectContentImpl>
   </Presence>
 
-  <div v-else-if="fragment && !rootContext.displayValue">
+  <div v-else-if="fragment && !rootContext.displayValue.value">
     <Teleport :to="fragment">
       <SelectProvider :context="rootContext">
         <slot />

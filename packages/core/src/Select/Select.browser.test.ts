@@ -96,4 +96,21 @@ describe('given a Select, in a real browser', () => {
     await expect.poll(() => get('value')?.textContent).toBe('Blueberry')
     expect(get('content')).toBeNull()
   })
+
+  it('closes a popper select from a press on its trigger (cut out of the backdrop)', async () => {
+    const reasons: string[] = []
+    const { wrapper, get } = mountSelect({
+      'onUpdate:open': (_open: boolean, details: { reason: string }) => reasons.push(details.reason),
+    }, { position: 'popper' })
+    unmount = () => wrapper.unmount()
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('true')
+    // Let the dismissable layer arm its outside-press listener.
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('false')
+    expect(reasons).toEqual(['trigger-press', 'trigger-press'])
+  })
 })
