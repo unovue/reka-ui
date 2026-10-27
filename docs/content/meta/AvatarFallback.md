@@ -17,7 +17,7 @@
   },
   {
     'name': 'delayMs',
-    'description': '<p>Useful for delaying rendering so it only appears for those with slower connections.</p>\n',
+    'description': '<p>Useful for delaying rendering so it only appears for those with slower connections. Unset or <code>0</code> renders it immediately.</p>\n',
     'type': 'number',
     'required': false
   }
@@ -32,6 +32,6 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `delayMs` | Useful for delaying rendering so it only appears for those with slower connections. | `number` | No | - |
+| `delayMs` | Useful for delaying rendering so it only appears for those with slower connections. Unset or 0 renders it immediately. | `number` | No | - |
 
 </llm-only>

@@ -10,6 +10,7 @@ export interface LabelProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps, useAttrs } from 'vue'
 import { useRender } from '@/Primitive'
+import { useLabel } from './useLabel'
 
 // Attrs are folded into `renderProps` below so they reach the element on both
 // the default path and the `#render` path (where the root is a fragment and Vue
@@ -22,19 +23,14 @@ const props = withDefaults(defineProps<LabelProps>(), {
   as: 'label',
 })
 const attrs = useAttrs()
-
-function onMousedown(event: MouseEvent) {
-  // prevent text selection when double clicking label
-  if (!event.defaultPrevented && event.detail > 1)
-    event.preventDefault()
-}
+const { root } = useLabel({ for: () => props.for })
 
 const { tag, renderProps, state, elementRef, expose } = useRender({
   defaultTagName: 'label',
   as: () => props.as,
   asChild: () => props.asChild,
   // Consumer attrs merge last so their listeners chain after Label's own.
-  props: () => mergeProps({ for: props.for, onMousedown }, attrs),
+  props: () => mergeProps(root.attrs.value, attrs),
 })
 defineExpose(expose)
 </script>

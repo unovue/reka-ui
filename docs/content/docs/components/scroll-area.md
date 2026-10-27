@@ -143,6 +143,42 @@ function scrollToBottom() {
 </template>
 ```
 
+## Headless composable
+
+`useScrollArea` returns the root registry (`context`), `scrollTop` / `scrollTopLeft`, and the `root`, `viewport` and `content` surfaces. Bind each surface's `attrs.value` to its element and register the viewport through `context`.
+
+```vue
+<script setup lang="ts">
+import { useScrollArea } from 'reka-ui'
+import { onMounted, ref } from 'vue'
+
+const viewportEl = ref<HTMLElement>()
+const scrollArea = useScrollArea()
+
+onMounted(() => {
+  scrollArea.context.onViewportChange(viewportEl.value!)
+  // Lets the viewport scroll vertically.
+  scrollArea.context.onScrollbarYEnabledChange(true)
+})
+</script>
+
+<template>
+  <div v-bind="scrollArea.root.attrs.value">
+    <div
+      ref="viewportEl"
+      v-bind="scrollArea.viewport.attrs.value"
+      style="height: 200px"
+    >
+      <div v-bind="scrollArea.content.attrs.value">
+        …
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+The custom scrollbars stay in the components: their ResizeObserver sizing, pointer capture, thumb positioning and the `auto` / `scroll` / `hover` / `glimpse` visibility timers are not part of the composable, so `type` and `scrollHideDelay` only matter when the scrollbar parts render. Hide the native scrollbars yourself when you render your own. The composable is experimental and callable outside component setup.
+
 ## Accessibility
 
 In most cases, it's best to rely on native scrolling and work with the customization options available in CSS. When that isn't enough, `ScrollArea` provides additional customizability while maintaining the browser's native scroll behavior (as well as accessibility features, like keyboard scrolling).

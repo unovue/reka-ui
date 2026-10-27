@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface ScrollAreaThumbProps extends PrimitiveProps {}
 </script>
@@ -11,6 +11,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
+import { getScrollAreaThumbSurface } from './useScrollArea'
 import { addUnlinkedScrollListener } from './utils'
 
 const props = defineProps<ScrollAreaThumbProps>()
@@ -18,17 +19,7 @@ const props = defineProps<ScrollAreaThumbProps>()
 const rootContext = injectScrollAreaRootContext()
 const scrollbarContextVisible = injectScrollAreaScrollbarVisibleContext()
 
-function handlePointerDown(event: MouseEvent) {
-  const thumb = event.target as HTMLElement
-  const thumbRect = thumb.getBoundingClientRect()
-  const x = event.clientX - thumbRect.left
-  const y = event.clientY - thumbRect.top
-  scrollbarContextVisible.handleThumbDown(event, { x, y })
-}
-
-function handlePointerUp(event: MouseEvent) {
-  scrollbarContextVisible.handleThumbUp(event)
-}
+const thumb = getScrollAreaThumbSurface(scrollbarContextVisible)
 
 const { forwardRef, currentElement: thumbElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -72,15 +63,9 @@ onUnmounted(() => {
 <template>
   <Primitive
     :ref="forwardRef"
-    :data-state="disclosureState(scrollbarContextVisible.hasThumb.value)"
-    :style="{
-      width: 'var(--reka-scroll-area-thumb-width)',
-      height: 'var(--reka-scroll-area-thumb-height)',
-    }"
+    v-bind="thumb.attrs.value"
     :as-child="props.asChild"
     :as="as"
-    @pointerdown="handlePointerDown"
-    @pointerup="handlePointerUp"
   >
     <slot />
   </Primitive>

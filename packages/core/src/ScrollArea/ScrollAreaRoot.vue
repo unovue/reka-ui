@@ -47,84 +47,35 @@ export interface ScrollAreaRootProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
+import { toRef } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useScrollArea } from './useScrollArea'
 
 const props = withDefaults(defineProps<ScrollAreaRootProps>(), {
   type: 'hover',
   scrollHideDelay: 600,
 })
 
-const cornerWidth = ref(0)
-const cornerHeight = ref(0)
-const viewport = ref<HTMLElement>()
-const content = ref<HTMLElement>()
-const scrollbarX = ref<HTMLElement>()
-const scrollbarY = ref<HTMLElement>()
-const scrollbarXEnabled = ref(false)
-const scrollbarYEnabled = ref(false)
-
-const { type, dir: propDir, scrollHideDelay } = toRefs(props)
-const dir = useDirection(propDir)
-
-function scrollTop() {
-  viewport.value?.scrollTo({
-    top: 0,
-  })
-}
-function scrollTopLeft() {
-  viewport.value?.scrollTo({
-    top: 0,
-    left: 0,
-  })
-}
-
+const dir = useDirection(toRef(props, 'dir'))
 const { forwardRef, currentElement: scrollArea, expose } = useForwardElement()
+
+const { viewportElement, scrollTop, scrollTopLeft, root, context } = useScrollArea({
+  type: () => props.type,
+  dir,
+  scrollHideDelay: () => props.scrollHideDelay,
+  scrollArea,
+})
+
 defineExpose(mergeExpose(expose, {
   /** Viewport element within ScrollArea */
-  viewport,
+  viewport: viewportElement,
   /** Scroll viewport to top */
   scrollTop,
   /** Scroll viewport to top-left */
   scrollTopLeft,
 }))
 
-provideScrollAreaRootContext({
-  type,
-  dir,
-  scrollHideDelay,
-  scrollArea,
-  viewport,
-  onViewportChange: (el) => {
-    viewport.value = el || undefined
-  },
-  content,
-  onContentChange: (el) => {
-    content.value = el
-  },
-  scrollbarX,
-  scrollbarXEnabled,
-  scrollbarY,
-  scrollbarYEnabled,
-  onScrollbarXChange: (scrollbar) => {
-    scrollbarX.value = scrollbar || undefined
-  },
-  onScrollbarYChange: (scrollbar) => {
-    scrollbarY.value = scrollbar || undefined
-  },
-  onScrollbarXEnabledChange: (rendered) => {
-    scrollbarXEnabled.value = rendered
-  },
-  onScrollbarYEnabledChange: (rendered) => {
-    scrollbarYEnabled.value = rendered
-  },
-  onCornerWidthChange: (width) => {
-    cornerWidth.value = width
-  },
-  onCornerHeightChange: (height) => {
-    cornerHeight.value = height
-  },
-})
+provideScrollAreaRootContext(context)
 </script>
 
 <template>
@@ -132,13 +83,7 @@ provideScrollAreaRootContext({
     :ref="forwardRef"
     :as-child="props.asChild"
     :as="as"
-    :dir="dir"
-    :style="{
-      position: 'relative',
-      // Pass corner sizes as CSS vars to reduce re-renders of context consumers
-      ['--reka-scroll-area-corner-width' as any]: `${cornerWidth}px`,
-      ['--reka-scroll-area-corner-height' as any]: `${cornerHeight}px`,
-    }"
+    v-bind="root.attrs.value"
   >
     <slot />
   </Primitive>
