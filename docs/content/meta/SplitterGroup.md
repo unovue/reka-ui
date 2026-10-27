@@ -42,6 +42,12 @@
     'default': '10'
   },
   {
+    'name': 'layout',
+    'description': '<p>The controlled layout: one size per panel, in each panel\'s <code>sizeUnit</code> (the\nvalues <code>@layout</code> reports). Can be bound as <code>v-model:layout</code>.</p>\n',
+    'type': 'number[]',
+    'required': false
+  },
+  {
     'name': 'storage',
     'description': '<p>Custom storage API; defaults to localStorage</p>\n',
     'type': 'PanelGroupStorage',
@@ -52,9 +58,19 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:layout',
+    'description': '<p>Event handler called before the layout changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: number[], details: ChangeEventDetails&lt;SplitterLayoutChangeReason, Event&gt;]'
+  },
+  {
     'name': 'layout',
     'description': '<p>Event handler called when group layout changes</p>\n',
     'type': '[val: number[]]'
+  },
+  {
+    'name': 'update:layout',
+    'description': '<p>Event handler called when the layout changes.</p>\n',
+    'type': '[value: number[], details: ChangeEventDetails&lt;SplitterLayoutChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -79,13 +95,16 @@
 | `direction` | The group orientation of splitter. | `"vertical" \| "horizontal"` | Yes | - |
 | `id` | Group id; falls back to useId when not provided. | `string \| null` | No | - |
 | `keyboardResizeBy` | Step size when arrow key was pressed. | `number \| null` | No | `10` |
+| `layout` | The controlled layout: one size per panel, in each panel's sizeUnit (the values @layout reports). Can be bound as v-model:layout. | `number[]` | No | - |
 | `storage` | Custom storage API; defaults to localStorage | `PanelGroupStorage` | No | `defaultStorage` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:layout` | Event handler called before the layout changes; details.cancel() vetoes the change. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
 | `layout` | Event handler called when group layout changes | `[val: number[]]` |
+| `update:layout` | Event handler called when the layout changes. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
 
 **Slots**
 

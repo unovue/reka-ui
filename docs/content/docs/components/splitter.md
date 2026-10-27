@@ -164,6 +164,39 @@ const layout = useCookie<number[]>('splitter:layout')
 </template>
 ```
 
+### Controlled layout
+
+Bind `v-model:layout` to read or set every panel size at once. Each entry is in its panel's `sizeUnit`, the same values `@layout` reports. A controlled layout takes precedence over `defaultSize` and `autoSaveId`, and the sizes must fill the group.
+
+`update:layout` receives a second `details` argument whose `reason` is `drag`, `keyboard`, `panel-change` (the initial layout, a restored saved layout or panels being added, removed or reconfigured), `group-resize` (`px` panels keeping their size while the group resizes) or `imperative-action` (the panel `collapse()`, `expand()` and `resize()` methods). It fires only when the layout changes. Call `details.cancel()` in `beforeUpdate:layout` to veto a change.
+
+```vue line=2,6-9,15-16
+<script setup lang="ts">
+import type { ChangeEventDetails, SplitterLayoutChangeReason } from 'reka-ui'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
+import { ref } from 'vue'
+
+const layout = ref([30, 70])
+
+function onBeforeUpdate(_value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason>) {
+  if (details.reason === 'keyboard')
+    details.cancel()
+}
+</script>
+
+<template>
+  <SplitterGroup
+    v-model:layout="layout"
+    direction="horizontal"
+    @before-update:layout="onBeforeUpdate"
+  >
+    <SplitterPanel>Panel A</SplitterPanel>
+    <SplitterResizeHandle />
+    <SplitterPanel>Panel B</SplitterPanel>
+  </SplitterGroup>
+</template>
+```
+
 ### Collapse/Expand programmatically
 
 Sometimes panels need to resize or collapse/expand in response to user actions. `SplitterPanel` exposes the `collapse` and `expand` methods to achieve this.
@@ -263,6 +296,39 @@ Thus, if you are using Nuxt or other SSR framework, you are required to manually
   </SplitterGroup>
 </template>
 ```
+
+## Headless composable
+
+`useSplitter` owns the group: the layout model, constraints, `storage`, and drag and keyboard resizing. `useSplitterPanel` and `useSplitterResizeHandle` register a panel and a handle with the group's `context`. Bind each surface's `attrs.value` to its element and pass the group and handle elements in.
+
+```vue
+<script setup lang="ts">
+import { useSplitter, useSplitterPanel, useSplitterResizeHandle } from 'reka-ui'
+import { ref } from 'vue'
+
+const groupEl = ref<HTMLElement | null>(null)
+const handleEl = ref<HTMLElement | null>(null)
+
+const splitter = useSplitter({ id: 'editor', direction: 'horizontal', element: groupEl })
+const sidebar = useSplitterPanel(splitter.context, { id: 'sidebar', minSize: 20 })
+const handle = useSplitterResizeHandle(splitter.context, { id: 'editor-handle', element: handleEl })
+const main = useSplitterPanel(splitter.context, { id: 'main' })
+</script>
+
+<template>
+  <div ref="groupEl" v-bind="splitter.root.attrs.value">
+    <div v-bind="sidebar.root.attrs.value">
+      Sidebar
+    </div>
+    <div ref="handleEl" v-bind="handle.root.attrs.value" />
+    <div v-bind="main.root.attrs.value">
+      Main
+    </div>
+  </div>
+</template>
+```
+
+`useSplitter` takes `layout` with `onUpdate` for a controlled layout, `onBeforeUpdate(value, details)` to cancel a change, and `onLayout` for the `@layout` notification. The composables are experimental and register watchers, so call them inside `setup()`. Pass stable `id`s when rendering on the server.
 
 ## Accessibility
 
