@@ -3,9 +3,12 @@ import type { ListboxFilterFunction } from './useListbox'
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { renderToString } from 'vue/server-renderer'
+import { AutocompleteAnchor, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompleteRoot, AutocompleteViewport } from '@/Autocomplete'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport } from '@/Combobox'
 import { useFilter, useKbd } from '@/shared'
-import { ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { injectListboxRootContext, ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import { useListboxRoot } from './useListbox'
 
 const kbd = useKbd()
@@ -390,5 +393,271 @@ describe('useListboxRoot filtering', () => {
       expect(listbox.context.isFilteredOut('b')).toBe(false)
     })
     scope.stop()
+  })
+})
+
+// Hands the test the root context, to drive the search without a `ListboxFilter`
+// (which would also take the keyboard away from the content).
+const ContextProbe = defineComponent({
+  setup(_, { expose }) {
+    expose({ context: injectListboxRootContext() })
+    return () => null
+  },
+})
+
+describe('given a filtered Listbox driven through the context', () => {
+  function mountListbox(rootProps: Record<string, unknown> = {}) {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const probe = ref()
+    const root = ref()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { ref: root, filter: contains, ...rootProps }, () => [
+          h(ContextProbe, { ref: probe }),
+          h(ListboxContent, { 'aria-label': 'Fruits' }, () => fruits.map(value => h(ListboxItem, { value }, () => value))),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { wrapper, probe, root, content: wrapper.find('[role=listbox]') }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('skips filtered-out items in typeahead', async () => {
+    const { wrapper, probe, content } = mountListbox()
+    await settle()
+    probe.value.context.setFilterSearch('an')
+    await settle()
+    await content.trigger('focus')
+    expect(highlightedText(wrapper)).toBe('Banana')
+
+    // "Apple" starts with "a" but is filtered out: typeahead stays put.
+    await content.trigger('keydown', { key: 'a' })
+    expect(highlightedText(wrapper)).toBe('Banana')
+    await new Promise(resolve => setTimeout(resolve, 1100))
+    await content.trigger('keydown', { key: 'm' })
+    expect(highlightedText(wrapper)).toBe('Mango')
+  })
+
+  it('selects only the matching items on Ctrl+A', async () => {
+    const { wrapper, probe, content } = mountListbox({ multiple: true })
+    await settle()
+    probe.value.context.setFilterSearch('an')
+    await settle()
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toEqual(['Banana', 'Mango'])
+  })
+
+  it('leaves hidden items out of a Shift range', async () => {
+    const { wrapper, probe, content } = mountListbox({ multiple: true, selectionBehavior: 'replace' })
+    await settle()
+    probe.value.context.setFilterSearch('an')
+    await settle()
+    await content.trigger('focus')
+    await wrapper.findAll('[role=option]')[0].trigger('click')
+    // Blueberry, Cherry and Grape sit between Banana and Mango but are filtered out.
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN, shiftKey: true })
+    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toEqual(['Banana', 'Mango'])
+  })
+
+  it('counts the matches in `filtered.count`', async () => {
+    const { probe, root } = mountListbox()
+    await settle()
+    expect(root.value.filtered.count).toBe(6)
+    probe.value.context.setFilterSearch('b')
+    await settle()
+    expect(root.value.filtered.count).toBe(2)
+    probe.value.context.setFilterSearch('zz')
+    await settle()
+    expect(root.value.filtered.count).toBe(0)
+    probe.value.context.setFilterSearch('')
+    await settle()
+    expect(root.value.filtered.count).toBe(6)
+  })
+})
+
+describe('given a filtered Listbox whose index-keyed items are reused', () => {
+  it('re-measures an item that now holds another value', async () => {
+    document.body.innerHTML = ''
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const data = ref(['Apple', 'Banana', 'Grape'])
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { filter: contains }, () => [
+          h(ListboxFilter, { 'aria-label': 'Search' }),
+          h(ListboxContent, { 'aria-label': 'Fruits' }, () => data.value.map((value, index) => h(ListboxItem, { key: index, value }, () => value))),
+        ])
+      },
+    }), { attachTo: document.body })
+    await settle()
+    await type(wrapper.find('input'), 'ap')
+    expect(optionTexts(wrapper)).toEqual(['Apple', 'Grape'])
+
+    // The hidden second item (was Banana) now holds Apricot, which matches.
+    data.value = ['Cherry', 'Apricot', 'Grapefruit']
+    await settle()
+    expect(optionTexts(wrapper)).toEqual(['Apricot', 'Grapefruit'])
+  })
+})
+
+describe('given a Listbox with a non-empty search during SSR', () => {
+  it('does not render a group hidden before its items registered', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const app = createSSRApp(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { filter: contains }, () => [
+          h(ListboxFilter, { 'aria-label': 'Search', 'modelValue': 'berry' }),
+          h(ListboxContent, { 'aria-label': 'Food' }, () => [
+            h(ListboxGroup, { 'data-testid': 'fruits' }, () => fruits.map(value => h(ListboxItem, { value, textValue: value }, () => value))),
+            h(ListboxGroup, { 'data-testid': 'vegetables' }, () => vegetables.map(value => h(ListboxItem, { value, textValue: value }, () => value))),
+          ]),
+        ])
+      },
+    }))
+    const html = await renderToString(app)
+    expect(html).toContain('Blueberry')
+    const fruitsGroup = html.match(/<div[^>]*data-testid="fruits"[^>]*>/)![0]
+    expect(fruitsGroup).not.toContain('hidden')
+  })
+})
+
+describe('given a Combobox or Autocomplete with a `filter` attribute', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('keeps the inner Listbox filter off in Combobox', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ComboboxRoot, { open: true, filter: (text: string) => text === 'Apple' } as any, () => [
+          h(ComboboxAnchor, null, () => h(ComboboxInput)),
+          h(ComboboxContent, null, () => h(ComboboxViewport, null, () => fruits.map(value => h(ComboboxItem, { value }, () => value)))),
+        ])
+      },
+    }), { attachTo: document.body })
+    await settle()
+    await type(wrapper.find('input'), 'a')
+    // Combobox's own `contains` filter only.
+    expect(optionTexts(wrapper)).toEqual(['Apple', 'Banana', 'Grape', 'Mango'])
+  })
+
+  it('keeps the inner Listbox filter off in Autocomplete', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(AutocompleteRoot, { open: true, filter: (text: string) => text === 'Apple' } as any, () => [
+          h(AutocompleteAnchor, null, () => h(AutocompleteInput)),
+          h(AutocompleteContent, null, () => h(AutocompleteViewport, null, () => fruits.map(value => h(AutocompleteItem, { value }, () => value)))),
+        ])
+      },
+    }), { attachTo: document.body })
+    await settle()
+    await type(wrapper.find('input'), 'a')
+    expect(optionTexts(wrapper)).toEqual(['Apple', 'Banana', 'Grape', 'Mango'])
+  })
+})
+
+describe('given a virtualized Listbox driven through the context', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 100 }, (_, i) => ({ value: i, label: i % 10 === 0 ? `Match ${i}` : `Item ${i}` }))
+
+  function mountVirtual(rootProps: Record<string, unknown> = {}, textContent: ((o: any) => string) | null = o => o.label) {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const probe = ref()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { filter: contains, ...rootProps }, () => [
+          h(ContextProbe, { ref: probe }),
+          h(ListboxContent, { 'aria-label': 'Options', 'style': 'height: 200px; overflow: auto' }, () =>
+            h(ListboxVirtualizer, { options, textContent: textContent ?? undefined }, {
+              default: ({ option }: any) => h(ListboxItem, { value: option }, () => option.label),
+            })),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { wrapper, probe, content: wrapper.find('[role=listbox]') }
+  }
+
+  async function flush() {
+    await settle()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('drops a highlight whose option no longer matches, although its row is reused', async () => {
+    const { wrapper, probe, content } = mountVirtual()
+    await flush()
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await flush()
+    expect(highlightedText(wrapper)).toBe('Item 1')
+    const row = wrapper.find('[data-index="1"]').element
+
+    probe.value.context.setFilterSearch('match')
+    await flush()
+    // Row 1 now renders "Match 10"; it must not inherit the highlight of "Item 1".
+    expect(wrapper.find('[data-index="1"]').element).toBe(row)
+    expect(wrapper.find('[data-index="1"]').text()).toBe('Match 10')
+    expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+    expect(probe.value.context.highlightedElement.value).toBeNull()
+  })
+
+  it('selects only the matching options on Ctrl+A', async () => {
+    const { wrapper, probe, content } = mountVirtual({ multiple: true })
+    await flush()
+    probe.value.context.setFilterSearch('match')
+    await flush()
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    await flush()
+    const value = wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.at(-1)?.[0] as Array<{ value: number }>
+    expect(value.map(o => o.value)).toEqual([0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+  })
+
+  it('leaves filtered-out options out of a Shift range', async () => {
+    const { wrapper, probe, content } = mountVirtual({ multiple: true, selectionBehavior: 'replace' })
+    await flush()
+    probe.value.context.setFilterSearch('match')
+    await flush()
+    await content.trigger('focus')
+    await wrapper.find('[data-index="0"]').trigger('click')
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN, shiftKey: true })
+    await flush()
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN, shiftKey: true })
+    await flush()
+    const value = wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.at(-1)?.[0] as Array<{ value: number }>
+    expect(value.map(o => o.value)).toEqual([0, 10, 20])
+  })
+
+  it('warns in development when object options are filtered without `textContent`', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { probe } = mountVirtual({}, null)
+    await flush()
+    expect(warn).not.toHaveBeenCalled()
+    probe.value.context.setFilterSearch('match')
+    await flush()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('textContent')
+    warn.mockRestore()
   })
 })

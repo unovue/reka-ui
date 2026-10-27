@@ -876,19 +876,23 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const filterItems = shallowReactive(new Map<string, ListboxFilterItem<T>>())
   const filterResult = computed(() => {
     const hidden = new Set<string>()
+    // Groups with at least one registered item, and those with a match.
     const groups = new Set<string>()
+    const matched = new Set<string>()
     for (const [id, item] of filterItems) {
       const label = item.label()
+      if (item.group)
+        groups.add(item.group)
       // An item that was never measured renders once so it can report its text.
       if (label === undefined || filterOption(item.value(), label)) {
         if (item.group)
-          groups.add(item.group)
+          matched.add(item.group)
       }
       else {
         hidden.add(id)
       }
     }
-    return { hidden, groups }
+    return { hidden, groups, matched }
   })
   // Set by `ListboxVirtualizer`: the number of `options` that match.
   const virtualFilterCount = ref<number>()
@@ -952,7 +956,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       return () => filterItems.delete(id)
     },
     isFilteredOut: id => !isVirtual.value && isFilterActive.value && filterResult.value.hidden.has(id),
-    isGroupFilteredOut: id => !isVirtual.value && isFilterActive.value && !filterResult.value.groups.has(id),
+    // A group renders before its items register (always so during SSR): one
+    // without registered items stays visible rather than flashing `hidden`.
+    isGroupFilteredOut: id => !isVirtual.value && isFilterActive.value && filterResult.value.groups.has(id) && !filterResult.value.matched.has(id),
     virtualFilterCount,
   }
 

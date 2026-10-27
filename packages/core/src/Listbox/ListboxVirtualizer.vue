@@ -18,7 +18,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, onUnmounted, useSlots, watchSyncEffect } from 'vue'
+import { cloneVNode, computed, Fragment, onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { findValuesBetween, getActiveElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
@@ -46,9 +46,26 @@ rootContext.isVirtual.value = true
 // The root's `filter` (#2824 item 7) applies to `options`, not to the rendered
 // rows: a filtered-out option takes no virtual index, is not counted in
 // `aria-setsize`, and is skipped by navigation, typeahead and select-all.
-const options = computed(() => rootContext.isFilterActive.value
-  ? props.options.filter(option => rootContext.filterOption(option, props.textContent ? props.textContent(option) : String(option)))
-  : props.options)
+let hasWarnedTextContent = false
+const options = computed(() => {
+  if (!rootContext.isFilterActive.value)
+    return props.options
+
+  if (process.env.NODE_ENV !== 'production' && !props.textContent && !hasWarnedTextContent && props.options.some(option => option !== null && typeof option === 'object')) {
+    hasWarnedTextContent = true
+    console.warn('[reka-ui] ListboxVirtualizer: pass `textContent` to filter object options.')
+  }
+  return props.options.filter(option => rootContext.filterOption(option, props.textContent ? props.textContent(option) : String(option)))
+})
+// Rows are keyed by index, so a highlighted row is reused for another option
+// once the list is filtered. Before the rows re-render, drop the highlight if
+// its option no longer matches.
+watch(options, (current) => {
+  const element = rootContext.highlightedElement.value
+  const highlighted = element && getItems(true).find(i => i.ref === element)
+  if (highlighted && !current.some(option => compare(option, highlighted.value, rootContext.by)))
+    rootContext.highlightedElement.value = null
+})
 watchSyncEffect(() => {
   rootContext.virtualFilterCount.value = options.value.length
 })

@@ -255,6 +255,8 @@ const { contains } = useFilter({ sensitivity: 'base' })
 
 Set `textValue` on an item whose content is not plain text, so the filter matches the text you want. The root exposes the result as `filtered` (`{ search, active, count }`, read it through a template ref), which you can use to render an empty state.
 
+Each item stays a mounted component while it is filtered out, and clearing or widening the search renders every item that matches again. For a large list (thousands of items) use a `ListboxVirtualizer`, which only renders the visible window of the matching options.
+
 With a `ListboxVirtualizer`, the filter runs over its `options` before they are virtualized: it matches `textContent(option)` (or the option's string form, so pass `textContent` for object options), and a filtered-out option takes no virtual index and does not count in `aria-setsize`.
 
 ```vue line=10,14

@@ -28,12 +28,13 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import { computed, mergeProps, onUnmounted, onUpdated, ref, watchPostEffect } from 'vue'
+import { computed, mergeProps, onUnmounted, onUpdated, ref, watch, watchPostEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxItemSurface } from './useListbox'
+import { compare } from './utils'
 
 defineOptions({ inheritAttrs: false })
 
@@ -77,6 +78,12 @@ const disabled = computed(() => surface.state.value.disabled)
 // A filtered-out item (#2824 item 7) renders nothing, so it has no text to
 // read: it keeps the label it last rendered with.
 const label = ref<string>()
+// A reused item (index-keyed `v-for`) that now holds another value must not
+// keep the old value's text: forget it, so the item renders once and re-measures.
+watch(() => props.value, (value, old) => {
+  if (!compare(value, old, rootContext.by))
+    label.value = undefined
+})
 function syncLabel() {
   const text = props.textValue ?? (isFilteredOut.value ? label.value : currentElement.value?.textContent ?? '')
   if (text === undefined)
