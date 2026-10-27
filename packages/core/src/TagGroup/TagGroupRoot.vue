@@ -1,9 +1,10 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { TagGroupChangeReason } from './useTagGroup'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { useVModel } from '@vueuse/core'
-import { createContext, getActiveElement, useDirection, useForwardElement, useTypeahead } from '@/shared'
+import { createContext, useDirection, useForwardElement } from '@/shared'
 
 export type TagGroupSelectionMode = 'none' | 'single' | 'multiple'
 
@@ -38,8 +39,10 @@ export interface TagGroupRootProps<T = AcceptableValue> extends PrimitiveProps {
 }
 
 export type TagGroupRootEmits<T = AcceptableValue> = {
+  /** Event handler called before the selection changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [value: T | Array<T> | undefined, details: ChangeEventDetails<TagGroupChangeReason>]
   /** Event handler called when the selection changes. */
-  'update:modelValue': [value: T | Array<T> | undefined]
+  'update:modelValue': [value: T | Array<T> | undefined, details: ChangeEventDetails<TagGroupChangeReason>]
   /**
    * Event handler called when the user removes tags, with the values to remove.
    * Tags are only removable when this event has a listener; remove the values from your own list to remove the tags.
@@ -54,15 +57,17 @@ export interface TagGroupItemRegistration {
   textValue: () => string
 }
 
-interface TagGroupRootContext<T = AcceptableValue> {
+export interface TagGroupRootContext<T = AcceptableValue> {
+  /** Read-only; change the selection with `toggleSelection`. */
   modelValue: Ref<T | Array<T> | undefined>
   selectionMode: Ref<TagGroupSelectionMode>
   disabled: Ref<boolean>
   currentTabStopId: Ref<string | null | undefined>
   allowsRemoving: () => boolean
   isSelected: (value: T) => boolean
-  toggleSelection: (value: T) => void
-  removeTags: (value: T, withSelection: boolean) => void
+  /** Returns `false` when the selection is unchanged or the change was cancelled. */
+  toggleSelection: (value: T, reason?: TagGroupChangeReason | BaseChangeReason, event?: Event) => boolean
+  removeTags: (value: T, withSelection: boolean, reason?: TagGroupChangeReason | BaseChangeReason, event?: Event) => void
   registerItem: (item: TagGroupItemRegistration) => () => void
   onFocusedItemUnmount: (element: HTMLElement) => void
   handleTypeahead: (key: string) => void
@@ -73,11 +78,11 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, shallowReactive, toRefs } from 'vue'
+import { getCurrentInstance, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
-import { compare, valueComparator } from '@/Listbox/utils'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { useTagGroup } from './useTagGroup'
 
 const props = withDefaults(defineProps<TagGroupRootProps<T>>(), {
   selectionMode: 'none',
@@ -94,7 +99,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { selectionMode, loop, dir: propDir } = toRefs(props)
+const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -103,137 +108,30 @@ const instance = getCurrentInstance()
 // Optional Field participation: `injectFieldRootContext(null)` returns `null`
 // outside a `FieldRoot`, so every binding below is inert without a Field.
 const fieldContext = injectFieldRootContext(null)
-const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
-
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: (props.defaultValue ?? (props.selectionMode === 'multiple' ? [] : undefined)) as any,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<T | Array<T> | undefined>
-
-const selectedValues = computed<T[]>(() => {
-  const value = modelValue.value
-  if (value === undefined || value === null)
-    return []
-  return Array.isArray(value) ? value : [value]
-})
-
-function isSelected(value: AcceptableValue) {
-  return selectionMode.value !== 'none' && valueComparator(selectedValues.value, value as T, props.by)
-}
-
-function setSelection(values: T[]) {
-  modelValue.value = selectionMode.value === 'multiple' ? values : values[0]
-}
-
-function toggleSelection(value: AcceptableValue) {
-  if (selectionMode.value === 'none' || disabled.value)
-    return
-
-  if (isSelected(value)) {
-    const next = selectedValues.value.filter(item => !compare(item, value as T, props.by))
-    if (props.disallowEmptySelection && next.length === 0)
-      return
-    setSelection(next)
-  }
-  else {
-    setSelection(selectionMode.value === 'multiple' ? [...selectedValues.value, value as T] : [value as T])
-  }
-}
-
-// Tags are removable only when the consumer listens to `remove`, as there is
-// nothing to remove them from otherwise.
-function allowsRemoving() {
-  return Boolean(instance?.vnode.props?.onRemove)
-}
-
-function removeTags(value: AcceptableValue, withSelection: boolean) {
-  if (!allowsRemoving() || disabled.value)
-    return
-
-  // Removing a selected tag with the keyboard removes the whole selection,
-  // except for disabled tags, which the user cannot interact with.
-  const values = withSelection && isSelected(value)
-    ? selectedValues.value.filter(selected => !isDisabledValue(selected))
-    : [value as T]
-  if (values.some(item => isSelected(item))) {
-    const next = selectedValues.value.filter(item => !valueComparator(values, item, props.by))
-    setSelection(next)
-  }
-  emits('remove', values)
-}
-
-const items = shallowReactive(new Set<TagGroupItemRegistration>())
-
-function getOrderedItems() {
-  return Array.from(items, item => ({ ...item, el: item.element() }))
-    .filter((item): item is TagGroupItemRegistration & { el: HTMLElement } => !!item.el)
-    .sort((a, b) => a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
-}
-
-function isDisabledValue(value: T) {
-  return [...items].some(item => item.disabled() && compare(item.value() as T, value, props.by))
-}
-
-function registerItem(item: TagGroupItemRegistration) {
-  items.add(item)
-  return () => items.delete(item)
-}
 
 // Tags register during their setup, which happens while this component
-// renders, so read the count only once mounted (and on later changes).
+// renders, so the group reads "empty" only once mounted.
 const isMounted = ref(false)
 onMounted(() => {
   isMounted.value = true
 })
-const isEmpty = computed(() => isMounted.value && items.size === 0)
 
-// When the focused tag is removed, move focus to the next remaining tag, or
-// the previous one if it was the last, or the group itself once it is empty.
-let pendingFocusRestore = false
-function onFocusedItemUnmount(element: HTMLElement) {
-  if (pendingFocusRestore)
-    return
-  pendingFocusRestore = true
-
-  const snapshot = getOrderedItems()
-  const index = snapshot.findIndex(item => item.el === element)
-  const isCandidate = (item: typeof snapshot[number]) => item.el.isConnected && !item.disabled()
-
-  nextTick(() => {
-    pendingFocusRestore = false
-    if (getActiveElement() && getActiveElement() !== document.body)
-      return
-
-    const next = snapshot.slice(index + 1).find(isCandidate)
-      ?? snapshot.slice(0, Math.max(index, 0)).reverse().find(isCandidate)
-    const target = next?.el ?? currentElement.value
-    target?.focus()
-  })
-}
-
-const { handleTypeaheadSearch } = useTypeahead()
-function handleTypeahead(key: string) {
-  const candidates = getOrderedItems()
-    .filter(item => !item.disabled())
-    .map(item => ({ ref: item.el, value: { textValue: item.textValue() } }))
-  handleTypeaheadSearch(key, candidates)
-}
-
-function handleKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Escape' || props.escapeKeyBehavior !== 'clearSelection' || props.disallowEmptySelection)
-    return
-  if (selectionMode.value === 'none' || selectedValues.value.length === 0)
-    return
-  event.preventDefault()
-  event.stopPropagation()
-  setSelection([])
-}
-
-// While focus is inside, additions are announced (e.g. a tag added from an
-// adjacent input), matching React Aria.
-const isFocusWithin = ref(false)
-
-const currentTabStopId = ref<string | null>()
+const { modelValue, root, context, getFocusTarget } = useTagGroup<T>({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  selectionMode: () => props.selectionMode,
+  disallowEmptySelection: () => props.disallowEmptySelection,
+  escapeKeyBehavior: () => props.escapeKeyBehavior,
+  disabled: () => Boolean(props.disabled || fieldContext?.disabled.value),
+  dir,
+  by: () => props.by,
+  // Tags are removable only when the consumer listens to `remove`, as there is
+  // nothing to remove them from otherwise.
+  allowsRemoving: () => Boolean(instance?.vnode.props?.onRemove),
+  mounted: isMounted,
+  rootElement: currentElement,
+  emit: emits,
+})
 
 function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
   return [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
@@ -242,28 +140,16 @@ function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
 let unregisterControl: (() => void) | undefined
 onMounted(() => {
   unregisterControl = fieldContext?.registerControl({
-    element: () => {
-      const focusable = getOrderedItems().filter(item => !item.disabled())
-      return focusable.find(item => item.el.tabIndex === 0)?.el ?? focusable[0]?.el ?? currentElement.value
-    },
+    element: getFocusTarget,
     getValue: () => modelValue.value,
   })
 })
 onBeforeUnmount(() => unregisterControl?.())
 
-provideTagGroupRootContext({
-  modelValue,
-  selectionMode,
-  disabled,
-  currentTabStopId,
-  allowsRemoving,
-  isSelected,
-  toggleSelection,
-  removeTags,
-  registerItem,
-  onFocusedItemUnmount,
-  handleTypeahead,
-})
+// RovingFocusGroup owns the tab stop; the tags read it to make their delete button tabbable.
+const currentTabStopId = context.currentTabStopId
+
+provideTagGroupRootContext(context as unknown as TagGroupRootContext)
 </script>
 
 <template>
@@ -277,20 +163,9 @@ provideTagGroupRootContext({
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :role="isEmpty ? 'group' : 'grid'"
-      v-bind="isEmpty ? { tabindex: 0 } : {}"
-      :aria-multiselectable="!isEmpty && selectionMode === 'multiple' ? true : undefined"
+      v-bind="root.attrs.value"
       :aria-labelledby="mergeIds($attrs['aria-labelledby'], fieldContext?.labelId.value)"
       :aria-describedby="mergeIds($attrs['aria-describedby'], fieldContext?.describedBy.value)"
-      aria-atomic="false"
-      aria-relevant="additions"
-      :aria-live="isFocusWithin ? 'polite' : 'off'"
-      :data-disabled="disabled ? '' : undefined"
-      :data-empty="isEmpty ? '' : undefined"
-      :dir="dir"
-      @keydown="handleKeydown"
-      @focusin="isFocusWithin = true"
-      @focusout="(event: FocusEvent) => { if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) isFocusWithin = false }"
     >
       <slot :model-value="modelValue" />
     </Primitive>
