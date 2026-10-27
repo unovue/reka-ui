@@ -30,8 +30,9 @@ export interface StepperItemContextOptions {
   step: MaybeRefOrGetter<number>
   disabled?: MaybeRefOrGetter<boolean | undefined>
   completed?: MaybeRefOrGetter<boolean | undefined>
-  titleId: string
-  descriptionId: string
+  /** Read on every access, so a getter keeps the id in step with a reactive `step`. */
+  titleId: MaybeRefOrGetter<string>
+  descriptionId: MaybeRefOrGetter<string>
 }
 
 /**
@@ -63,8 +64,12 @@ export function getStepperItemContext(context: StepperRootContext, options: Step
   })
 
   return {
-    titleId: options.titleId,
-    descriptionId: options.descriptionId,
+    get titleId() {
+      return toValue(options.titleId)
+    },
+    get descriptionId() {
+      return toValue(options.descriptionId)
+    },
     step,
     state,
     disabled,
@@ -281,7 +286,11 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
     if (step < 1)
       return false
 
-    if (totalStepperItems.value.size && !!totalStepperItemsArray.value[step] && !!totalStepperItemsArray.value[step].getAttribute('disabled'))
+    // The target step's trigger renders `disabled=""` while the step is
+    // disabled (or not reachable in a linear stepper). v2 read the wrong index
+    // and tested the empty attribute value for truthiness, so it never blocked.
+    const target = totalStepperItemsArray.value[step - 1]
+    if (target?.hasAttribute('disabled'))
       return false
 
     if (linear.value) {
@@ -343,8 +352,8 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
       step,
       disabled: options.disabled,
       completed: options.completed,
-      titleId: `${baseId}-item-${toValue(step)}-title`,
-      descriptionId: `${baseId}-item-${toValue(step)}-description`,
+      titleId: () => `${baseId}-item-${toValue(step)}-title`,
+      descriptionId: () => `${baseId}-item-${toValue(step)}-description`,
     })
     return {
       context: itemContext,

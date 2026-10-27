@@ -148,6 +148,16 @@ describe('useStepper — surfaces', () => {
     expect(step.description.attrs.value).toEqual({ id: 'checkout-item-2-description' })
     expect(step.trigger.attrs.value).toMatchObject({ 'aria-labelledby': 'checkout-item-2-title', 'aria-describedby': 'checkout-item-2-description' })
   })
+
+  it('title / description ids follow a reactive step', () => {
+    const s = withStepper({ baseId: 'checkout' })
+    const stepNumber = ref(2)
+    const step = s.getItem(() => stepNumber.value)
+    stepNumber.value = 3
+    expect(step.title.attrs.value).toEqual({ id: 'checkout-item-3-title' })
+    expect(step.description.attrs.value).toEqual({ id: 'checkout-item-3-description' })
+    expect(step.trigger.attrs.value).toMatchObject({ 'aria-labelledby': 'checkout-item-3-title' })
+  })
 })
 
 describe('useStepper — standalone render', () => {
@@ -186,12 +196,26 @@ describe('useStepper — standalone render', () => {
 })
 
 describe('stepperRoot — details contract', () => {
-  function mountRoot(props: Record<string, any>) {
+  function mountRoot(props: Record<string, any>, disabledSteps: number[] = []) {
     return render(defineComponent({
       setup: () => () => h(StepperRoot, props, () => [1, 2, 3].map(step =>
-        h(StepperItem, { key: step, step }, () => h(StepperTrigger, { 'data-testid': `trigger-${step}` }, () => `Step ${step}`)))),
+        h(StepperItem, { key: step, step, disabled: disabledSteps.includes(step) }, () => h(StepperTrigger, { 'data-testid': `trigger-${step}` }, () => `Step ${step}`)))),
     }))
   }
+
+  // Regression (#3074 review): v2 checked the wrong trigger and read `disabled=""` as false.
+  it('goToStep onto a disabled step returns false and emits nothing', async () => {
+    const root = ref<any>()
+    const onUpdate = vi.fn()
+    const { getByTestId } = mountRoot({ 'ref': root, 'linear': false, 'onUpdate:modelValue': onUpdate }, [2])
+    await nextTick()
+    expect(root.value.goToStep(2)).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(getByTestId('trigger-1')).toHaveAttribute('data-state', 'current')
+    // An enabled step is still reachable.
+    expect(root.value.goToStep(3)).toBe(true)
+    expect(onUpdate).toHaveBeenCalledWith(3, expect.objectContaining({ reason: 'imperative-action' }))
+  })
 
   it('emits update:modelValue with details', async () => {
     const onUpdate = vi.fn()

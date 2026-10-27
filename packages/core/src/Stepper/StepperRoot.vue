@@ -74,11 +74,11 @@ defineSlots<{
     /** Whether or not the last step is active */
     isLastStep: boolean
     /** Go to a specific step */
-    goToStep: (step: number) => void
+    goToStep: (step: number) => boolean
     /** Go to the next step */
-    nextStep: () => void
+    nextStep: () => boolean
     /** Go to the previous step */
-    prevStep: () => void
+    prevStep: () => boolean
     /** Whether or not there is a next step */
     hasNext: () => boolean
     /** Whether or not there is a previous step */
