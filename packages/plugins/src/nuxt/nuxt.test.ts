@@ -1,5 +1,5 @@
 import type { ModuleOptions } from '.'
-import { addComponent, extendViteConfig } from '@nuxt/kit'
+import { addComponent, addVitePlugin } from '@nuxt/kit'
 import { components } from 'reka-ui/constant'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RekaModule from '.'
@@ -7,7 +7,7 @@ import RekaModule from '.'
 vi.mock('@nuxt/kit', () => ({
   defineNuxtModule: (definition: unknown) => definition,
   addComponent: vi.fn(),
-  extendViteConfig: vi.fn(),
+  addVitePlugin: vi.fn(),
 }))
 
 interface Definition {
@@ -24,10 +24,13 @@ function registered() {
   return vi.mocked(addComponent).mock.calls.map(([options]) => options)
 }
 
+interface ConfigPlugin { name: string, config: (config: Record<string, any>) => void }
+
 function viteConfig(config: Record<string, any> = {}) {
-  const [extend, options] = vi.mocked(extendViteConfig).mock.calls[0]
-  extend(config)
-  return { config, options }
+  expect(addVitePlugin).toHaveBeenCalledTimes(1)
+  const [plugin, options] = vi.mocked(addVitePlugin).mock.calls[0] as unknown as [ConfigPlugin, unknown]
+  plugin.config(config)
+  return { config, options, plugin }
 }
 
 const allComponents = Object.values(components).flat()
@@ -35,7 +38,7 @@ const allComponents = Object.values(components).flat()
 describe('reka-ui/nuxt', () => {
   beforeEach(() => {
     vi.mocked(addComponent).mockClear()
-    vi.mocked(extendViteConfig).mockClear()
+    vi.mocked(addVitePlugin).mockClear()
   })
 
   it('registers every component from its family entry point by default', () => {
@@ -51,7 +54,7 @@ describe('reka-ui/nuxt', () => {
     expect(registered()).toHaveLength(allComponents.length)
     for (const options of registered())
       expect(options).toEqual({ name: `Reka${options.export}`, export: options.export, filePath: 'reka-ui' })
-    expect(extendViteConfig).not.toHaveBeenCalled()
+    expect(addVitePlugin).not.toHaveBeenCalled()
   })
 
   it('only registers the enabled groups', () => {
@@ -62,19 +65,33 @@ describe('reka-ui/nuxt', () => {
   it('registers nothing with `components: false`', () => {
     setup({ components: false })
     expect(addComponent).not.toHaveBeenCalled()
-    expect(extendViteConfig).not.toHaveBeenCalled()
+    expect(addVitePlugin).not.toHaveBeenCalled()
   })
 
-  it('pre-bundles the registered entry points for the client', () => {
+  it('pre-bundles reka-ui and the registered entry points for the client', () => {
     setup({ components: { dialog: true, alertDialog: true } })
-    const { config, options } = viteConfig({ optimizeDeps: { include: ['some-dep', 'reka-ui/dialog'] } })
+    const { config, options, plugin } = viteConfig({ optimizeDeps: { include: ['some-dep', 'reka-ui/dialog'] } })
+    expect(plugin.name).toBe('reka-ui:optimize-deps')
     expect(options).toEqual({ server: false })
-    expect(config.optimizeDeps.include).toEqual(['some-dep', 'reka-ui/dialog', 'reka-ui/alert-dialog'])
+    expect(config.optimizeDeps.include).toEqual(['some-dep', 'reka-ui/dialog', 'reka-ui', 'reka-ui/alert-dialog'])
   })
 
-  it('does not pre-bundle when reka-ui is excluded from optimization', () => {
+  it('pre-bundles into an empty config', () => {
+    setup({ components: { dialog: true } })
+    expect(viteConfig().config).toEqual({ optimizeDeps: { include: ['reka-ui', 'reka-ui/dialog'] } })
+  })
+
+  it.each([
+    ['top-level', { optimizeDeps: { exclude: ['reka-ui'] } }],
+    ['client environment', { environments: { client: { optimizeDeps: { exclude: ['reka-ui'] } } } }],
+  ])('pre-bundles nothing when reka-ui is excluded (%s)', (_, config) => {
     setup()
-    const { config } = viteConfig({ optimizeDeps: { exclude: ['reka-ui'] } })
-    expect(config.optimizeDeps.include).toBeUndefined()
+    expect(viteConfig(config).config.optimizeDeps.include).toBeUndefined()
+  })
+
+  it('skips the entry points the app excludes', () => {
+    setup({ components: { dialog: true, select: true } })
+    const { config } = viteConfig({ optimizeDeps: { exclude: ['reka-ui/select'] }, environments: { client: { optimizeDeps: { exclude: ['reka-ui/dialog'] } } } })
+    expect(config.optimizeDeps.include).toEqual(['reka-ui'])
   })
 })

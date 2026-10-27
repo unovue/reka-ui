@@ -589,20 +589,26 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 ### 24. Auto-imports use per-component entry points
 
-**What changed.** Every component family has its own entry point (`reka-ui/dialog`, `reka-ui/alert-dialog`, …: the family name in kebab-case) that exports the same objects as the package root. The Nuxt module (`reka-ui/nuxt`) and the `unplugin-vue-components` resolver (`reka-ui/resolver`) now import each auto-imported component from its entry point instead of from `reka-ui`. `import { X } from 'reka-ui'` is unchanged and keeps working, also mixed with entry-point imports.
+**What changed.**
+- Every component family has its own entry point that exports the same objects as the package root. The name is the family in kebab-case: `reka-ui/dialog`, `reka-ui/alert-dialog`, ….
+- The Nuxt module (`reka-ui/nuxt`) now imports each auto-imported component from its entry point instead of from `reka-ui`. It adds `reka-ui` and those entry points to the client `optimizeDeps.include`, skipping any the app excludes.
+- The `unplugin-vue-components` resolver (`reka-ui/resolver`) is unchanged: it imports from `reka-ui` unless the project opts in with `RekaResolver({ subpaths: true })`.
+- `import { X } from 'reka-ui'` is unchanged and keeps working, also mixed with entry-point imports.
 
 **How to find it.**
-- `reka-ui/nuxt` in `nuxt.config.*`, `reka-ui/resolver` in a Vite, Webpack or Rspack config.
-- A committed `components.d.ts` (or the file named by the resolver's `dts` option) that mentions `import('reka-ui')`.
-- Configuration that matches the exact specifier `reka-ui`: an `alias` / `resolve.alias` entry, a Jest `moduleNameMapper` key, `optimizeDeps` or `ssr.noExternal` entries written as regular expressions that end at `reka-ui` (`/^reka-ui$/`).
+- `reka-ui/nuxt` in `nuxt.config.*` (or in a Nuxt layer's config).
+- In a project that uses the Nuxt module, configuration that matches the exact specifier `reka-ui`:
+  - an `alias` / `vite.resolve.alias` entry;
+  - `vite.optimizeDeps` or `vite.ssr.noExternal` entries written as regular expressions that end at `reka-ui` (`/^reka-ui$/`);
+  - a Vitest or Jest mapping keyed on `^reka-ui$`.
 
 **Rewrite rules.**
 - Do not rewrite the project's own `import … from 'reka-ui'` statements; root imports stay valid.
-- Regenerate a committed `components.d.ts` by running the dev server or the build once, and keep the regenerated file.
-- Exact-specifier configuration: extend the pattern to the subpaths (`/^reka-ui(\/.*)?$/`). If an alias redirects `reka-ui` to a local copy or a fork that has no per-component entry points, *ask* whether to set `subpaths: false` (`reka: { subpaths: false }` in `nuxt.config.ts`, `RekaResolver({ subpaths: false })`) instead.
-- Do not add `subpaths: false` on your own.
+- Exact-specifier configuration: extend the pattern to the subpaths (`/^reka-ui(\/.*)?$/`).
+- If an alias redirects `reka-ui` to a local copy or a fork that has no per-component entry points, *ask* whether to set `reka: { subpaths: false }` in `nuxt.config.ts` instead.
+- Do not add `subpaths: false` to the Nuxt module, or `subpaths: true` to the resolver, on your own.
 
-**Verify.** The type-check passes, and the dev server and the build start without `Failed to resolve import "reka-ui/…"` or `Cannot find module 'reka-ui/…'` errors.
+**Verify.** The type-check passes. The dev server and the build start without `Failed to resolve import "reka-ui/…"` or `Cannot find module 'reka-ui/…'` errors.
 
 ### Report
 

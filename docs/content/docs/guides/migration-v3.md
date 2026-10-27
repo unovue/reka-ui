@@ -167,10 +167,12 @@ What to check in your code:
 
 Every component family now has its own entry point, named after it in kebab-case (`reka-ui/dialog`, `reka-ui/alert-dialog`, …). It exports the very same components as the package root, so `import { DialogRoot } from 'reka-ui'` keeps working, and parts from both can be mixed in one component tree. See [Importing components](../overview/installation#importing-components).
 
-The [Nuxt module](../overview/installation#nuxt-modules) and the [`unplugin-vue-components` resolver](../overview/installation#unplugin-vue-components) now import each component from its entry point instead of from `reka-ui`. Your code needs no change, but check:
+The [Nuxt module](../overview/installation#nuxt-modules) now imports each component from its entry point instead of from `reka-ui`. It also adds `reka-ui` and those entry points to Vite's `optimizeDeps.include`, so layers and libraries that import from `reka-ui` share the same components. Most apps need no change. Check:
 
-- A committed `components.d.ts` is regenerated with `typeof import('reka-ui/dialog')['DialogRoot']` instead of `typeof import('reka-ui')['DialogRoot']`. Commit the new file.
-- Configuration that matches the exact specifier `reka-ui`, such as an `alias` entry, a Jest `moduleNameMapper` key `^reka-ui$` or a regular expression that ends at `reka-ui`, does not match `reka-ui/dialog`. Extend it to the subpaths, or keep the v2 imports with `subpaths: false` (`reka: { subpaths: false }` in `nuxt.config.ts`, `RekaResolver({ subpaths: false })` in the resolver).
+- Configuration that matches the exact specifier `reka-ui` does not match `reka-ui/dialog`. Examples are an `alias` entry, a regular expression in `vite.optimizeDeps` or `vite.ssr.noExternal` that ends at `reka-ui`, and a Vitest or Jest mapping keyed on `^reka-ui$`. Extend these to the subpaths.
+- To keep the v2 imports, set `reka: { subpaths: false }` in `nuxt.config.ts`.
+
+The [`unplugin-vue-components` resolver](../overview/installation#unplugin-vue-components) still imports from `reka-ui` by default. `RekaResolver({ subpaths: true })` switches it to the entry points. That option also needs `reka-ui` and the entry points in Vite's `optimizeDeps.include`; see [Per-component entry points](../overview/installation#per-component-entry-points).
 
 ## Generated ids
 
