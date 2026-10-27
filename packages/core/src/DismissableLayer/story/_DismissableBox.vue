@@ -25,7 +25,7 @@ const buttonRef = ref<HTMLElement>()
       @dismiss="open = false"
       @focus-outside.prevent
       @pointer-down-outside="
-        (ev) => {
+        (ev: Event) => {
           if (ev.target === buttonRef) {
             ev.preventDefault();
           }

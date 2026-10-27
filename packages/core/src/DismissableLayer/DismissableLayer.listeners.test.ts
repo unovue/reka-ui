@@ -19,7 +19,7 @@ function mountLayers(n: number) {
   }), { attachTo: document.body })
 }
 
-function count(spy: ReturnType<typeof vi.spyOn>, kind: string) {
+function count(spy: { mock: { calls: unknown[][] } }, kind: string) {
   return spy.mock.calls.filter(c => c[0] === kind).length
 }
 

@@ -10,6 +10,10 @@ describe('useListSelection — defaults', () => {
     expect(useListSelection({ multiple: true, defaultValue: ['a'] }).modelValue.value).toEqual(['a'])
   })
 
+  it('keeps an explicit null default instead of falling back', () => {
+    expect(useListSelection<string | null>({ defaultValue: null }).modelValue.value).toBeNull()
+  })
+
   it('is uncontrolled with `reason: none` until the first change', () => {
     const s = useListSelection()
     expect(s.isControlled.value).toBe(false)

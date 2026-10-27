@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -84,8 +85,8 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     mounted.push(wrapper)
     const root = wrapper.findComponent(PopoverRoot)
     const vm = wrapper.vm as unknown as { open: boolean }
-    const trigger = () => wrapper.find('[aria-haspopup="dialog"]')
-    const close = () => wrapper.find('[role="dialog"] button')
+    const trigger = () => wrapper.find<HTMLElement>('[aria-haspopup="dialog"]')
+    const close = () => wrapper.find<HTMLElement>('[role="dialog"] button')
     return { wrapper, root, vm, trigger, close }
   }
 
@@ -106,8 +107,8 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
 
     const keys = Object.keys(root.emitted()).filter(k => k.endsWith(':open'))
     expect(keys).toEqual(['beforeUpdate:open', 'update:open'])
-    const [beforeValue, beforeDetails] = root.emitted('beforeUpdate:open')![0]
-    const [value, details] = root.emitted('update:open')![0]
+    const [beforeValue, beforeDetails] = root.emitted<[boolean, ChangeEventDetails]>('beforeUpdate:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(beforeValue).toBe(true)
     expect(value).toBe(true)
     expect(beforeDetails).toBe(details)
@@ -125,7 +126,7 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     await wrapper.find('[role="dialog"]').trigger('keydown', { key: 'Escape' })
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'escape-key' })
     expect(details.event).toBeInstanceOf(KeyboardEvent)
@@ -141,7 +142,7 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
     await flushPromises()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'close-press' })
     expect(details.event).toBeInstanceOf(MouseEvent)
@@ -213,10 +214,10 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     const root = wrapper.findComponent(PopoverRoot)
     expect(wrapper.find('[aria-haspopup="dialog"]').text()).toBe('true')
 
-    wrapper.find('[data-testid="slot-close"]').element.click()
+    wrapper.find<HTMLElement>('[data-testid="slot-close"]').element.click()
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'imperative-action' })
     expect(details.event).toBeUndefined()

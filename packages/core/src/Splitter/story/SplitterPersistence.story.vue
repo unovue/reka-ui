@@ -5,7 +5,7 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '..'
 <template>
   <Story
     title="Splitter/Persistence"
-    :layout="{ type: 'single', width: '100%', iframe: false }"
+    :layout="{ type: 'single', iframe: false }"
   >
     <Variant title="default">
       <div class="w-full h-48">

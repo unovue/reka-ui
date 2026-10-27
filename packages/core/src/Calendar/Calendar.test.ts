@@ -33,7 +33,7 @@ function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:m
 
 function setupMulti(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue[]) => void } } = { }) {
   const user = userEvent.setup()
-  const returned = render(CalendarMultiple, { props: { ...props, multiple: true } })
+  const returned = render(CalendarMultiple, { props })
   const calendar = returned.getByTestId('calendar')
   expect(calendar).toBeVisible()
   return { ...returned, user, calendar }

@@ -259,7 +259,7 @@ describe('controlled and uncontrolled', () => {
   it('controlled with v-model: follows the parent', async () => {
     const model = ref('Apple')
     mount(defineComponent({
-      setup: () => () => h(SelectRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (v: string) => model.value = v }, () => [
+      setup: () => () => h(SelectRoot<string>, { 'modelValue': model.value, 'onUpdate:modelValue': (v: string) => model.value = v }, () => [
         h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
         h(SelectContent, { position: 'popper' }, () => h(SelectViewport, () => fruits.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value))))),
       ]),
@@ -361,7 +361,7 @@ describe('displayValue', () => {
     const values = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
     const itemText = vi.fn()
     mount(defineComponent({
-      setup: () => () => h('form', h(SelectRoot, { name: 'fruit', by: 'id', defaultValue: { id: 2, name: 'Banana' }, displayValue: (v: { name: string }) => v.name }, () => [
+      setup: () => () => h('form', h(SelectRoot<{ id: number, name: string }>, { name: 'fruit', by: 'id', defaultValue: { id: 2, name: 'Banana' }, displayValue: v => v.name }, () => [
         h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
         h(SelectContent, () => h(SelectViewport, () => values.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => {
           itemText()
@@ -444,7 +444,7 @@ describe('review fixes (#3072)', () => {
       const onChange = vi.fn()
       const model = ref<string>()
       mount(defineComponent({
-        setup: () => () => h('form', { onChange }, h(SelectRoot, {
+        setup: () => () => h('form', { onChange }, h(SelectRoot<string>, {
           'name': 'fruit',
           'modelValue': model.value,
           'onUpdate:modelValue': (value: string) => model.value = value,
@@ -486,7 +486,7 @@ describe('review fixes (#3072)', () => {
   it('reacts to a new displayValue', async () => {
     const displayValue = ref((value: string) => value.toUpperCase())
     mount(defineComponent({
-      setup: () => () => h(SelectRoot, { defaultValue: 'Cherry', displayValue: displayValue.value }, () => [
+      setup: () => () => h(SelectRoot<string>, { defaultValue: 'Cherry', displayValue: displayValue.value }, () => [
         h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { 'data-testid': 'value' })),
         h(SelectContent, () => fruits.map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value)))),
       ]),

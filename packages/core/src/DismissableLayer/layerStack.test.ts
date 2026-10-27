@@ -1,9 +1,10 @@
+import type { StackLayer } from './layerStack'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isTopLayer, layers, registerOutsideSubscriber, registerStackLayer, resetLayerStack } from './layerStack'
 
 afterEach(() => resetLayerStack())
 
-function stackLayer(over = {}) {
+function stackLayer(over: Partial<StackLayer> = {}): StackLayer {
   return { element: () => document.body, isPresent: () => true, disableOutsidePointerEvents: () => false, ...over }
 }
 function subscriber(over = {}) {

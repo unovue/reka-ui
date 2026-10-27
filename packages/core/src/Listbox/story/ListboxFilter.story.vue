@@ -12,7 +12,7 @@ const options = computed(() => searchTerm.value.trim() ? countryList.slice(0, 20
 <template>
   <Story
     title="Listbox/Filter"
-    :layout="{ type: 'grid', iframe: false, width: '50%' }"
+    :layout="{ type: 'grid', width: '50%' }"
   >
     <Variant title="Filter (Single)">
       <ListboxRoot class="w-48  flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto ">
