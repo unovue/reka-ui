@@ -11,12 +11,23 @@ it.each(constants)('it should export %s', (component) => {
 
 // The resolver, the Nuxt module and `reka-ui/namespaced` only know the components listed in `constant`
 const listedComponents = new Set<string>(Object.values(components).flat())
+/**
+ * Exported, but implementation details that are never written in a template:
+ * - `ScrollAreaScrollbarGlimpse` is what `ScrollAreaScrollbar` renders for `type="glimpse"`, like its
+ *   unexported `auto` / `hover` / `scroll` siblings.
+ */
+const notAutoImported = ['ScrollAreaScrollbarGlimpse']
 const exportedVueComponents = Object.entries(RekaUI)
   .filter(([, value]) => typeof value === 'object' && value !== null && ('setup' in value || 'render' in value || '__name' in value))
   .map(([name]) => name)
+  .filter(name => !notAutoImported.includes(name))
 
 it('finds the exported components', () => {
-  expect(exportedVueComponents).toEqual(expect.arrayContaining(['DialogRoot', 'Primitive', 'ScrollAreaScrollbarGlimpse']))
+  expect(exportedVueComponents).toEqual(expect.arrayContaining(['DialogRoot', 'Primitive', 'DrawerProvider']))
+  for (const name of notAutoImported) {
+    expect(RekaUI).toHaveProperty(name)
+    expect(listedComponents.has(name), name).toBe(false)
+  }
 })
 
 it.each(exportedVueComponents)('lists the exported component %s in constant/components.ts', (component) => {

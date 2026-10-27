@@ -404,7 +404,6 @@ export const components = {
     'ScrollAreaScrollbar',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
-    'ScrollAreaScrollbarGlimpse',
   ] as const,
 
   select: [
