@@ -430,32 +430,33 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The type-check passes, and the custom parts still change the value.
 
-### 18. TagsInput and Editable events
+### 18. TagsInput, PinInput and Editable events
 
 **What changed.**
-- `TagsInputRoot`: `addTag` and `removeTag` fire after `update:modelValue` (v2: before it), and not at all when `beforeUpdate:modelValue` cancels the change. A paste adds all its tags in one `update:modelValue` (v2: one emit per tag; `invalid` and `addTag` still fire per tag). Mutating the bound array in place (`push`, `splice`) no longer emits `update:modelValue`. With `:model-value` and no update handler, the tags no longer change locally.
-- `EditableRoot`: on a submit that changes the value, `update:modelValue` fires before `update:state` and `submit` (v2 uncontrolled: on the next tick, after them). A cancelled submit stays in edit mode and fires neither `update:state` nor `submit`. An unchanged submit emits no `update:modelValue` but still fires `update:state` and `submit`.
+- `TagsInputRoot`: `addTag` and `removeTag` fire after `update:modelValue` (v2: before it), and not at all when `beforeUpdate:modelValue` cancels the change. `invalid` fires for each rejected tag before `beforeUpdate:modelValue`, and also when the change is then cancelled. A paste adds all its tags in one `update:modelValue` (v2: one emit per tag; `invalid` and `addTag` still fire per tag).
+- `TagsInputRoot` and `PinInputRoot`: mutating the bound array in place (`push`, `splice`) no longer emits `update:modelValue`. With `:model-value` and no update handler, the tags or digits no longer change locally (v2 kept a local copy). When the parent does not apply a change, TagsInput keeps the typed text and PinInput restores the digit without moving focus.
+- `EditableRoot`, uncontrolled only: on a submit that changes the value, `update:modelValue` fires before `update:state` and `submit` (v2: on the next tick, after them). A controlled Editable already used this order. In both modes a cancelled submit stays in edit mode and fires neither `update:state` nor `submit`, and an unchanged submit emits no `update:modelValue` but still fires `update:state` and `submit`.
 
 **How to find it.**
 - `@add-tag` / `@remove-tag` / `onAddTag` / `onRemoveTag` handlers on `TagsInputRoot` that read the bound model.
-- `TagsInputRoot` used with `:model-value` and no `@update:model-value`.
-- `.push(` / `.splice(` / `.length = ` on an array bound to `TagsInputRoot`'s `v-model`.
+- `TagsInputRoot` or `PinInputRoot` used with `:model-value` and no `@update:model-value`.
+- `.push(` / `.splice(` / `.length = ` / index assignments on an array bound to the `v-model` of `TagsInputRoot` or `PinInputRoot`.
 - Tests that count `update:modelValue` emits after a paste into `TagsInputInput`.
-- `@submit` / `@update:state` handlers on `EditableRoot` that read the bound model.
+- `@submit` / `@update:state` handlers on an `EditableRoot` without `v-model` / `:model-value` that read the value.
 
 **Rewrite rules.**
 - An `@add-tag` / `@remove-tag` handler that reads the model now sees the updated array. If it relied on the old value: *ask*.
-- `:model-value` without an update handler on `TagsInputRoot`, where the tags were expected to change: replace with `v-model`. If it was meant to be read-only: leave it.
+- `:model-value` without an update handler on `TagsInputRoot` or `PinInputRoot`, where the value was expected to change: replace with `v-model`. If it was meant to be read-only: leave it.
 - An in-place mutation that relied on `update:modelValue` firing: assign a new array (`model.value = [...model.value, tag]`).
 - A test expecting one emit per pasted tag: expect one emit whose payload holds all of them.
-- Editable `@submit` / `@update:state` handlers: the model is already updated when they run. Leave them unchanged unless they compensated for the old order.
+- Editable `@submit` / `@update:state` handlers: the model is already updated when they run. Leave them unchanged unless they compensated for the old order; if they did: *ask*.
 
-**Verify.** The type-check passes, and the TagsInput and Editable tests pass.
+**Verify.** The type-check passes, and the TagsInput, PinInput and Editable tests pass.
 
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use and every overlay-less modal dialog that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17 and every TagsInput / Editable handler from section 18 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.
