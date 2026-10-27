@@ -1,17 +1,24 @@
 <script lang="ts">
-import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
+import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from '@/Combobox/useCombobox'
+import type { ListboxFilterProps } from '@/Listbox'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 
-export type AutocompleteInputEmits = ListboxFilterEmits
+export type AutocompleteInputEmits = {
+  /**
+   * Event handler called when the input text changes. The text is the Autocomplete value: veto typing with
+   * `beforeUpdate:modelValue` on `AutocompleteRoot`.
+   */
+  'update:modelValue': [value: string, details: ChangeEventDetails<ComboboxInputChangeReason>]
+}
 export interface AutocompleteInputProps extends ListboxFilterProps {}
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
 import { onMounted, onUnmounted, watch } from 'vue'
 import { injectComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { createComboboxInputSurface } from '@/Combobox/useCombobox'
 import { Primitive } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { useControllableState, useForwardElement } from '@/shared'
 import { injectAutocompleteRootContext } from './AutocompleteRoot.vue'
 
 const props = withDefaults(defineProps<AutocompleteInputProps>(), {
@@ -31,17 +38,28 @@ const autocompleteContext = injectAutocompleteRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const modelValue = useVModel(props, 'modelValue', emits, {
+// The input text, with change details (#2828). It has no `beforeUpdate` of its
+// own: the text is the Autocomplete value, which `AutocompleteRoot` vetoes.
+const { state: modelValue, setState: setText } = useControllableState<string, ComboboxInputChangeReason>({
+  prop: () => props.modelValue,
   defaultValue: '',
-  passive: (props.modelValue === undefined) as false,
+  name: 'modelValue',
+  emit: (event: string, value: string, details: ChangeEventDetails<ComboboxInputChangeReason>) => {
+    if (event === 'update:modelValue')
+      emits('update:modelValue', value, details)
+  },
 })
 
 if (autocompleteContext.modelValue.value)
-  modelValue.value = autocompleteContext.modelValue.value
+  setText(autocompleteContext.modelValue.value, 'none')
 
 // The Combobox input surface; the typed text is also the Autocomplete value.
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
+  setText: (value, event) => {
+    setText(value, 'input-change', event)
+    return true
+  },
   disabled: () => props.disabled,
   // `false` (a cancelled `beforeUpdate:modelValue`) restores the input; an
   // unchanged value is not a veto.
@@ -67,13 +85,20 @@ onUnmounted(() => {
 // When the value changes elsewhere (an item press, a clear, the parent), show it in the input.
 watch(autocompleteContext.modelValue, (newVal) => {
   const text = newVal ?? ''
-  if (modelValue.value !== text)
-    modelValue.value = text
+  if (modelValue.value !== text) {
+    const reason = rootContext.lastChangeDetails.value.reason
+    setText(text, reason === 'item-press' || reason === 'clear-press' ? reason : 'none')
+  }
+})
+
+rootContext.onClearInput((event?: Event) => {
+  setText('', 'clear-press', event)
 })
 
 // Restore the input text when the root resets it (closing with `resetSearchTermOnBlur`).
-rootContext.onResetSearchTerm(() => {
-  modelValue.value = autocompleteContext.modelValue.value ?? ''
+rootContext.onResetSearchTerm((closeReason?: ComboboxOpenChangeReason | BaseChangeReason) => {
+  const text = autocompleteContext.modelValue.value ?? ''
+  setText(text, closeReason === 'escape-key' ? 'escape-key' : text === '' ? 'input-clear' : 'none')
 })
 
 watch(rootContext.filterState, (_newValue, oldValue) => {

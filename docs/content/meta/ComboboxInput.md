@@ -43,9 +43,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the input text changes; <code>details.cancel()</code> keeps the current text.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;ComboboxInputChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[string]'
+    'description': '<p>Event handler called when the input text changes.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;ComboboxInputChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -53,7 +58,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string | undefined'
+    'type': 'string'
   }
 ]" />
 </llm-exclude>
@@ -75,12 +80,13 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[string]` |
+| `beforeUpdate:modelValue` | Called before the input text changes; details.cancel() keeps the current text. | `[value: string, details: ChangeEventDetails<ComboboxInputChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the input text changes. | `[value: string, details: ChangeEventDetails<ComboboxInputChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `string \| undefined` |
+| `modelValue` | Current input values | `string` |
 
 </llm-only>

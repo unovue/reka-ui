@@ -42,7 +42,13 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   onTriggerElementChange: (el: HTMLElement) => void
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
-  onResetSearchTerm: EventHookOn
+  /** Called with the close reason when the popup closes and the input text should be reset. */
+  onResetSearchTerm: EventHookOn<ComboboxOpenChangeReason | BaseChangeReason | undefined>
+  /** `ComboboxCancel` cleared the input text. */
+  clearInput: (event?: Event) => void
+  onClearInput: EventHookOn<Event | undefined>
+  /** The details of the last value change (or cancelled attempt). */
+  lastChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxChangeReason>>>
   /** The resolved filter: `null` while client filtering is off (`filter: null` or `ignoreFilter`). */
   filter: ComputedRef<ListboxFilterFunction<T> | null>
   /** The search term the filter runs against. */
