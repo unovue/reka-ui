@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, Teleport as NativeTeleport, nextTick, onMounted, ref } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import Teleport from './Teleport.vue'
 
@@ -186,6 +186,23 @@ describe('given a Teleport inside a shadow root (#2725)', () => {
     host.remove()
   })
 
+  it('resolves a deferred selector against an element rendered later in the shadow root', async () => {
+    const { host, shadowRoot, mountTarget } = shadowHost()
+    const show = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', show.value
+        ? [h(Teleport, { to: '#later', defer: true, forceMount: true }, () => h('span', { id: 'deferred' })), h('div', { id: 'later' })]
+        : []),
+    }), { attachTo: mountTarget })
+
+    show.value = true
+    await nextTick()
+    await nextTick()
+    expect(shadowRoot.querySelector('#later #deferred')).not.toBeNull()
+    wrapper.unmount()
+    host.remove()
+  })
+
   it('still honours an explicit `to="body"`', async () => {
     const { host, mountTarget } = shadowHost()
     const wrapper = mount(defineComponent({
@@ -194,6 +211,133 @@ describe('given a Teleport inside a shadow root (#2725)', () => {
     await nextTick()
 
     expect(document.getElementById('in-body')?.parentNode).toBe(document.body)
+    wrapper.unmount()
+    host.remove()
+  })
+})
+
+describe('given a force-mounted Teleport on the app\'s first client render', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('renders in place synchronously when disabled', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', { id: 'host' }, h(Teleport, { forceMount: true, disabled: true }, () => h('span', { id: 'inline' }))),
+    }), { attachTo: document.body })
+
+    expect(document.getElementById('host')!.contains(document.getElementById('inline'))).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('renders synchronously into an explicit element `to`', () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Teleport, { forceMount: true, to: target }, () => h('span', { id: 'in-target' })),
+    }), { attachTo: document.body })
+
+    expect(target.querySelector('#in-target')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it('renders synchronously into a ConfigProvider `teleportTo` element', () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ConfigProvider, { teleportTo: target }, () => h(Teleport, { forceMount: true }, () => h('span', { id: 'in-target' }))),
+    }), { attachTo: document.body })
+
+    expect(target.querySelector('#in-target')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  // Documented in the v3 migration guide: the default target depends on the
+  // root the portal renders in, which is unknown until it mounts.
+  it('mounts the content after the parent\'s onMounted when `to` is the default', async () => {
+    let seenInParentMounted: HTMLElement | undefined | 'unset' = 'unset'
+    const content = ref<HTMLElement>()
+    const wrapper = mount(defineComponent({
+      setup() {
+        onMounted(() => {
+          seenInParentMounted = content.value
+        })
+        return () => h(Teleport, { forceMount: true }, () => h('span', { ref: content, id: 'content' }))
+      },
+    }), { attachTo: document.body })
+
+    expect(seenInParentMounted).toBeUndefined()
+    await nextTick()
+    expect(content.value).toBe(document.getElementById('content'))
+    wrapper.unmount()
+  })
+})
+
+describe('given a force-mounted Teleport created inside a native Teleport', () => {
+  function shadowTarget() {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadowRoot = host.attachShadow({ mode: 'open' })
+    const target = document.createElement('div')
+    shadowRoot.appendChild(target)
+    return { host, shadowRoot, target }
+  }
+
+  function mountBehindNativeTeleport(to: HTMLElement, nativeProps: Record<string, unknown> = {}) {
+    const show = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', show.value
+        ? [h(NativeTeleport, { to, ...nativeProps }, [h(Teleport, { forceMount: true }, () => h('span', { id: 'force-mounted' }))])]
+        : []),
+    }), { attachTo: document.body })
+    return { show, wrapper }
+  }
+
+  /** Records whether `#force-mounted` is ever inserted under `document.body` itself (outside any shadow root). */
+  function watchBody() {
+    const seen: Node[] = []
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if ((node as Element).id === 'force-mounted' || (node as Element).querySelector?.('#force-mounted'))
+            seen.push(node)
+        }
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return { seen, stop: () => observer.disconnect() }
+  }
+
+  // The parent component's DOM sits in the document; the portal renders in the
+  // native Teleport's target, so the ancestor walk stops at the Teleport.
+  it('uses the native Teleport target\'s shadow root, never mounting into body', async () => {
+    const { host, shadowRoot, target } = shadowTarget()
+    const body = watchBody()
+    const { show, wrapper } = mountBehindNativeTeleport(target)
+
+    show.value = true
+    await nextTick()
+    await nextTick()
+    body.stop()
+
+    expect(shadowRoot.getElementById('force-mounted')?.parentNode).toBe(shadowRoot)
+    expect(body.seen).toEqual([])
+    wrapper.unmount()
+    host.remove()
+  })
+
+  it('waits for the mount when the native Teleport target is deferred', async () => {
+    const { host, shadowRoot, target } = shadowTarget()
+    const body = watchBody()
+    const { show, wrapper } = mountBehindNativeTeleport(target, { defer: true })
+
+    show.value = true
+    await nextTick()
+    await nextTick()
+    body.stop()
+
+    expect(shadowRoot.getElementById('force-mounted')?.parentNode).toBe(shadowRoot)
+    expect(body.seen).toEqual([])
     wrapper.unmount()
     host.remove()
   })
