@@ -20,6 +20,13 @@ describe('useScrollArea', () => {
     expect(root.attrs.value.style['--reka-scroll-area-corner-width']).toBe('12px')
   })
 
+  it('builds the viewport / content surfaces once, on first read', () => {
+    const scrollArea = useScrollArea()
+    expect(Object.getOwnPropertyDescriptor(scrollArea, 'viewport')!.get).toBeTypeOf('function')
+    expect(scrollArea.viewport).toBe(scrollArea.viewport)
+    expect(scrollArea.content).toBe(scrollArea.content)
+  })
+
   it('follows dir and opens the viewport overflow per enabled scrollbar', () => {
     const dir = ref<'ltr' | 'rtl'>('rtl')
     const { root, viewport, content, context } = useScrollArea({ dir })

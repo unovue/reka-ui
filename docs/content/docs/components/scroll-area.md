@@ -153,7 +153,7 @@ import { useScrollArea } from 'reka-ui'
 import { onMounted, ref } from 'vue'
 
 const viewportEl = ref<HTMLElement>()
-const scrollArea = useScrollArea({ type: 'always' })
+const scrollArea = useScrollArea()
 
 onMounted(() => {
   scrollArea.context.onViewportChange(viewportEl.value!)
@@ -177,7 +177,7 @@ onMounted(() => {
 </template>
 ```
 
-The custom scrollbars stay in the components: their ResizeObserver sizing, pointer capture, thumb positioning and the `auto` / `scroll` / `hover` / `glimpse` visibility timers are not part of the composable. Hide the native scrollbars yourself when you render your own. The composable is experimental and callable outside component setup.
+The custom scrollbars stay in the components: their ResizeObserver sizing, pointer capture, thumb positioning and the `auto` / `scroll` / `hover` / `glimpse` visibility timers are not part of the composable, so `type` and `scrollHideDelay` only matter when the scrollbar parts render. Hide the native scrollbars yourself when you render your own. The composable is experimental and callable outside component setup.
 
 ## Accessibility
 

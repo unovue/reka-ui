@@ -166,9 +166,17 @@ const layout = useCookie<number[]>('splitter:layout')
 
 ### Controlled layout
 
-Bind `v-model:layout` to read or set every panel size at once. Each entry is in its panel's `sizeUnit`, the same values `@layout` reports. A controlled layout takes precedence over `defaultSize` and `autoSaveId`, and the sizes must fill the group.
+Bind `v-model:layout` to read or set every panel size at once. Each entry is in its panel's `sizeUnit`, the same values `@layout` reports. A controlled layout takes precedence over `defaultSize`, and `autoSaveId` storage is neither read nor written while the layout is controlled.
 
-`update:layout` receives a second `details` argument whose `reason` is `drag`, `keyboard`, `panel-change` (the initial layout, a restored saved layout or panels being added, removed or reconfigured), `group-resize` (`px` panels keeping their size while the group resizes) or `imperative-action` (the panel `collapse()`, `expand()` and `resize()` methods). It fires only when the layout changes. Call `details.cancel()` in `beforeUpdate:layout` to veto a change.
+`update:layout` receives a second `details` argument whose `reason` is `drag`, `keyboard` (arrow keys, Home/End and the Enter collapse toggle), `panel-change` (the initial layout, a restored saved layout, panels being added, removed or reconfigured, or a controlled layout corrected to fit the constraints), `group-resize` (`px` panels keeping their size while the group resizes) or `imperative-action` (the panel `collapse()`, `expand()` and `resize()` methods). It fires only when the layout changes.
+
+Only `drag`, `keyboard` and `imperative-action` are cancellable: call `details.cancel()` in `beforeUpdate:layout` to veto them. `panel-change` and `group-resize` are structural: they skip `beforeUpdate:layout`, are always applied, and are emitted so the model follows, because the group must always hold a valid layout.
+
+The layout you pass is a request:
+
+- It must fill the group. Sizes that break a panel's constraints, or do not add up to the whole group, are corrected; the group applies the corrected layout and emits it once with reason `panel-change`. With mixed units the `px` entries are converted first, so `[200, 50]` (a 200px panel and a 50% panel) in a 1000px group is 20% + 50% and is rescaled to fill the group.
+- An array whose length differs from the number of panels is ignored, with a warning in development.
+- In controlled mode a drag, key press or panel method emits `update:layout` and waits: the group, `@layout`, the panel `@resize` / `@collapse` / `@expand` events and `getSize()` reflect the change only after the parent passes the new layout back. Without an `update:layout` handler the panels do not move.
 
 ```vue line=2,6-9,15-16
 <script setup lang="ts">
@@ -328,7 +336,7 @@ const main = useSplitterPanel(splitter.context, { id: 'main' })
 </template>
 ```
 
-`useSplitter` takes `layout` with `onUpdate` for a controlled layout, `onBeforeUpdate(value, details)` to cancel a change, and `onLayout` for the `@layout` notification. The composables are experimental and register watchers, so call them inside `setup()`. Pass stable `id`s when rendering on the server.
+`useSplitter` takes `layout` with `onUpdate` for a controlled layout, `onBeforeUpdate(value, details)` to cancel a `drag`, `keyboard` or `imperative-action` change, and `onLayout` for the `@layout` notification. The composables are experimental and register watchers, so call them inside `setup()`. Pass stable `id`s when rendering on the server.
 
 ## Accessibility
 

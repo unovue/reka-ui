@@ -7,11 +7,26 @@ import { useAvatar, useAvatarFallback, useAvatarImage } from './useAvatar'
 
 class MockImage {
   static loadDelay = 20
-  src = ''
+  static last: MockImage | undefined
+  referrerPolicy = ''
+  crossOrigin: string | null = null
+  /** The policies in force when `src` was set. */
+  srcSetWith: { referrerPolicy: string, crossOrigin: string | null } | undefined
+  _src = ''
+  get src() {
+    return this._src
+  }
+
+  set src(value: string) {
+    this._src = value
+    this.srcSetWith = { referrerPolicy: this.referrerPolicy, crossOrigin: this.crossOrigin }
+  }
+
   complete = false
   naturalWidth = 0
   listeners: Record<string, Array<() => void>> = {}
   constructor() {
+    MockImage.last = this
     setTimeout(() => {
       this.complete = true
       this.naturalWidth = 10
@@ -37,11 +52,11 @@ afterEach(() => {
   window.Image = originalImage
 })
 
-function mountStandalone(onLoadingStatusChange = vi.fn(), delayMs?: number) {
+function mountStandalone(onLoadingStatusChange = vi.fn(), delayMs?: number, imageProps: Record<string, any> = {}) {
   return mount(defineComponent({
     setup() {
       const { imageLoadingStatus, context } = useAvatar()
-      const image = useAvatarImage(context, { src: '/avatar.png', onLoadingStatusChange })
+      const image = useAvatarImage(context, { src: '/avatar.png', onLoadingStatusChange, ...imageProps })
       const fallback = useAvatarFallback(context, { delayMs })
       return () => h('span', { 'data-status': imageLoadingStatus.value }, [
         withDirectives(h('img', { ...image.root.attrs.value, alt: 'Avatar' }), [[vShow, image.visible.value]]),
@@ -74,6 +89,21 @@ describe('useAvatar', () => {
     await nextTick()
     expect(wrapper.find('.fallback').exists()).toBe(false)
     await vi.waitFor(() => expect(wrapper.find('.fallback').exists()).toBe(true))
+    wrapper.unmount()
+  })
+
+  it('renders the fallback immediately with delayMs 0', async () => {
+    MockImage.loadDelay = 500
+    const wrapper = mountStandalone(vi.fn(), 0)
+    await nextTick()
+    expect(wrapper.find('.fallback').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('sets referrerPolicy and crossOrigin before src on the loading image', async () => {
+    const wrapper = mountStandalone(vi.fn(), undefined, { referrerPolicy: 'no-referrer', crossOrigin: 'anonymous' })
+    await nextTick()
+    expect(MockImage.last!.srcSetWith).toEqual({ referrerPolicy: 'no-referrer', crossOrigin: 'anonymous' })
     wrapper.unmount()
   })
 

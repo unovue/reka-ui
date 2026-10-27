@@ -106,9 +106,11 @@ describe('splitterGroup — layout model', () => {
       'onLayout': () => calls.push('layout'),
     })
     await flush()
-    expect(calls).toEqual(['before', 'update', 'layout'])
+    // The initial layout is structural: no beforeUpdate phase.
+    expect(calls).toEqual(['update', 'layout'])
 
     await fireEvent.keyDown(handle(), { key: 'ArrowLeft' })
+    expect(calls).toEqual(['update', 'layout', 'before', 'update', 'layout'])
     expect(group.emitted('update:layout')!.at(-1)![0]).toEqual([40, 60])
     expect((group.emitted('update:layout')!.at(-1)![1] as any).reason).toBe('keyboard')
     expect(group.emitted('layout')!.at(-1)![0]).toEqual([40, 60])
@@ -203,6 +205,117 @@ describe('splitterGroup — layout model', () => {
     await flush()
     expect(model.value).toEqual([60, 40])
     expect(panelSize('a')).toBe('60.0')
+  })
+})
+
+describe('splitterGroup — the group always holds a valid layout', () => {
+  function mountWith(groupProps: () => Record<string, any>, panels?: () => any[]) {
+    const Test = defineComponent({
+      setup() {
+        return () => h(SplitterGroup, { direction: 'horizontal', ...groupProps() }, panels ?? (() => [
+          h(SplitterPanel, { id: 'a', minSize: 20 }),
+          h(SplitterResizeHandle, { id: 'h' }),
+          h(SplitterPanel, { id: 'b' }),
+        ]))
+      },
+    })
+    wrapper = mount(Test, { attachTo: document.body })
+    return wrapper.findComponent(SplitterGroup)
+  }
+  const handle = () => document.getElementById('h')!
+
+  it('cancelling every beforeUpdate:layout cannot cancel the initial layout', async () => {
+    const before = vi.fn((_v: number[], details: any) => details.cancel())
+    const group = mountWith(() => ({ 'onBeforeUpdate:layout': before }))
+    await flush()
+    expect(before).not.toHaveBeenCalled()
+    expect(panelSize('a')).toBe('50.0')
+    expect((group.emitted('update:layout')![0][1] as any).reason).toBe('panel-change')
+
+    // A user change is still a cancellable request, and the group stays usable.
+    await fireEvent.keyDown(handle(), { key: 'ArrowRight' })
+    await nextTick()
+    expect(before).toHaveBeenCalledTimes(1)
+    expect(panelSize('a')).toBe('50.0')
+  })
+
+  it('a panel added while changes are cancelled still gets its share', async () => {
+    const show = ref(false)
+    mountWith(() => ({ 'onBeforeUpdate:layout': (_v: number[], details: any) => details.cancel() }), () => [
+      h(SplitterPanel, { id: 'a', order: 1 }),
+      h(SplitterResizeHandle, { id: 'h' }),
+      h(SplitterPanel, { id: 'b', order: 2 }),
+      ...(show.value ? [h(SplitterResizeHandle, { id: 'h2' }), h(SplitterPanel, { id: 'c', order: 3 })] : []),
+    ])
+    await flush()
+    show.value = true
+    await flush()
+    expect([panelSize('a'), panelSize('b'), panelSize('c')]).toEqual(['33.3', '33.3', '33.3'])
+  })
+
+  it('a one-way controlled layout that breaks the constraints is applied corrected and emitted once', async () => {
+    const onLayout = vi.fn()
+    const group = mountWith(() => ({ layout: [10, 90], onLayout }))
+    await flush()
+    expect(panelSize('a')).toBe('20.0')
+    expect(onLayout).toHaveBeenLastCalledWith([20, 80])
+    const emitted = group.emitted('update:layout')!
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0][0]).toEqual([20, 80])
+    expect((emitted[0][1] as any).reason).toBe('panel-change')
+
+    // Without an echo the keyboard request waits, but the group stays valid.
+    await fireEvent.keyDown(handle(), { key: 'ArrowRight' })
+    await flush()
+    expect(group.emitted('update:layout')!.at(-1)![0]).toEqual([30, 70])
+    expect(panelSize('a')).toBe('20.0')
+  })
+
+  it('a v-model layout the constraints correct is emitted back to the model', async () => {
+    const model = ref<number[]>([50, 50])
+    const group = mountWith(() => ({ 'layout': model.value, 'onUpdate:layout': (v: number[]) => (model.value = v) }), () => [
+      h(SplitterPanel, { id: 'a', minSize: 20, collapsible: true, collapsedSize: 5 }),
+      h(SplitterResizeHandle, { id: 'h' }),
+      h(SplitterPanel, { id: 'b' }),
+    ])
+    await flush()
+    model.value = [8, 92]
+    await flush()
+    expect(panelSize('a')).toBe('5.0')
+    expect(model.value).toEqual([5, 95])
+    expect((group.emitted('update:layout')!.at(-1)![1] as any).reason).toBe('panel-change')
+  })
+
+  it('warns in dev and ignores a controlled layout of the wrong length', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const model = ref<number[]>([30, 70])
+    mountWith(() => ({ 'layout': model.value, 'onUpdate:layout': (v: number[]) => (model.value = v) }))
+    await flush()
+    model.value = [30, 30, 40]
+    await flush()
+    expect(panelSize('a')).toBe('30.0')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('`layout` has 3 sizes for 2 panels'))
+    warn.mockRestore()
+  })
+
+  it('a controlled layout neither reads nor writes autoSaveId storage', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const data: Record<string, string> = { 'reka:controlled-storage': JSON.stringify({ 'a,b': { expandToSizes: {}, layout: [70, 30] } }) }
+      const storage: PanelGroupStorage = { getItem: name => data[name] ?? null, setItem: vi.fn() }
+      const model = ref<number[]>([30, 70])
+      mountWith(() => ({ 'layout': model.value, 'onUpdate:layout': (v: number[]) => (model.value = v), 'autoSaveId': 'controlled-storage', storage }))
+      await flush()
+      expect(panelSize('a')).toBe('30.0')
+      await fireEvent.keyDown(handle(), { key: 'ArrowRight' })
+      await flush()
+      expect(panelSize('a')).toBe('40.0')
+      vi.advanceTimersByTime(1000)
+      expect(storage.setItem).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 })
 

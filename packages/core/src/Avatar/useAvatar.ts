@@ -78,7 +78,7 @@ export function useAvatarImage(context: AvatarRootContext, props: UseAvatarImage
 }
 
 export interface UseAvatarFallbackProps {
-  /** Delay before the fallback may render, in ms. */
+  /** Delay before the fallback may render, in ms. Unset or `0` renders it immediately. */
   delayMs?: MaybeRefOrGetter<number | undefined>
 }
 
@@ -94,7 +94,8 @@ export interface UseAvatarFallbackReturn {
  * @lifecycle setup — starts a timer effect; call it inside `setup()` or an effect scope.
  */
 export function useAvatarFallback(context: AvatarRootContext, props: UseAvatarFallbackProps = {}): UseAvatarFallbackReturn {
-  const canRender = ref(toValue(props.delayMs) === undefined)
+  // No delay, or `0`, renders straight away.
+  const canRender = ref(!toValue(props.delayMs))
 
   watchEffect((onCleanup) => {
     const delayMs = toValue(props.delayMs)

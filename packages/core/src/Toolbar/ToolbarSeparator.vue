@@ -19,7 +19,7 @@ defineExpose(expose)
 <template>
   <BaseSeparator
     :ref="forwardRef"
-    :orientation="rootContext.orientation.value"
+    :orientation="rootContext.orientation.value === 'horizontal' ? 'vertical' : 'horizontal'"
     :as-child="props.asChild"
     :as="as"
   >

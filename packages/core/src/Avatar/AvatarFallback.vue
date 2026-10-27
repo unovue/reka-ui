@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 
 export interface AvatarFallbackProps extends PrimitiveProps {
-  /** Useful for delaying rendering so it only appears for those with slower connections. */
+  /** Useful for delaying rendering so it only appears for those with slower connections. Unset or `0` renders it immediately. */
   delayMs?: number
 }
 </script>

@@ -457,23 +457,31 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **What changed.**
 - `SplitterGroup` has a `layout` model: a new `layout` prop (`v-model:layout`), a cancellable `beforeUpdate:layout` and `update:layout(value, details)` with `SplitterLayoutChangeReason` (`'drag' | 'keyboard' | 'panel-change' | 'group-resize'`, plus `'imperative-action'` for the panel `collapse()` / `expand()` / `resize()` methods). Values are in each panel's `sizeUnit`, the same as `@layout`. `@layout` is unchanged and still fires for every applied layout, including the initial one.
-- Enter on a `SplitterResizeHandle` (collapse toggle) now emits `@layout` and the panel `collapse` / `expand` / `resize` events. v2 changed the layout silently.
+- Only `drag`, `keyboard` and `imperative-action` are cancellable. `panel-change` (including the initial layout and a controlled layout corrected to fit the constraints) and `group-resize` are structural: they skip `beforeUpdate:layout`, are always applied, and still emit `update:layout`.
+- A controlled `layout` is a request: one that breaks the constraints is applied as corrected and the correction emitted once; one with the wrong length is ignored with a development warning; `autoSaveId` storage is neither read nor written while controlled; and a user change applies (with `@layout`, the panel events and `getSize()`) only after the parent passes it back.
+- Enter on a `SplitterResizeHandle` (collapse toggle) now emits `update:layout` with reason `'keyboard'`, `@layout` and the panel `collapse` / `expand` / `resize` events. v2 changed the layout silently.
 - A focused `SplitterResizeHandle` now has `data-resize-handle-active="keyboard"` (v2 never set it).
-- `ProgressRoot` renders an invalid `modelValue` (negative, above `max`, `NaN`) as indeterminate and an invalid `max` as `100` straight away; v2 rendered the invalid value until the parent applied the correction. The correction emits are unchanged and stay single-argument; `update:modelValue` is now typed `[value: number | null]` (v2: `[value: string[] | undefined]`).
+- `ProgressRoot` renders an invalid `modelValue` (negative, above `max`, `NaN`) as indeterminate and an invalid `max` as `100` straight away; v2 rendered the invalid value until the parent applied the correction. The value is validated against the corrected `max`, so lowering `max` below the value renders indeterminate and emits `update:modelValue(null)`. The correction emits are unchanged and stay single-argument; `update:modelValue` is now typed `[value: number | null]` (v2: `[value: string[] | undefined]`).
+- `ToolbarSeparator` runs perpendicular to its toolbar (Radix parity): `data-orientation` / `aria-orientation` are `vertical` in a horizontal toolbar. v2 used the toolbar's orientation.
+- `AvatarFallback` with `delayMs` `0` renders immediately; v2 never rendered it.
 
 **How to find it.**
 - `@layout` handlers on `SplitterGroup` that write the layout back into the panels (for example through `default-size` and a cookie).
 - `@collapse` / `@expand` / `@resize` handlers on `SplitterPanel`, and `@layout` handlers, that assumed Enter did not trigger them.
 - CSS or tests that select `[data-resize-handle-active]`.
+- `beforeUpdate:layout` handlers that cancel `panel-change` or `group-resize`.
+- `ToolbarSeparator` styles or tests keyed on `[data-orientation]`.
 - Wrapper components that re-declare the `ProgressRoot` emits, or handlers typed against `string[]`.
 
 **Rewrite rules.**
 - Leave `@layout` handlers unchanged. Suggest `v-model:layout` only where the code mirrors the layout into its own state *and* the developer agrees: *ask*.
 - Handlers that must ignore keyboard collapses: *ask*.
 - `[data-resize-handle-active]` styles meant for the pointer only: change the selector to `[data-resize-handle-active="pointer"]`.
+- Cancelling `panel-change` / `group-resize`: the cancel has no effect; *ask* before removing it.
+- `ToolbarSeparator` selectors on `[data-orientation]`: swap `horizontal` and `vertical` in the selector.
 - Progress wrapper emit types: `'update:modelValue': [value: string[] | undefined]` → `'update:modelValue': [value: number | null]`.
 
-**Verify.** The type-check passes, and the Splitter and Progress tests pass.
+**Verify.** The type-check passes, and the Splitter, Progress, Toolbar and Avatar tests pass.
 
 ### Report
 

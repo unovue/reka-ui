@@ -43,12 +43,10 @@ export type { ProgressState }
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { DEFAULT_MAX, isNumber, useProgress } from './useProgress'
+import { DEFAULT_MAX, useProgress } from './useProgress'
 
 const props = withDefaults(defineProps<ProgressRootProps>(), {
   max: DEFAULT_MAX,
-  getValueLabel: (value: number | null | undefined, max: number) =>
-    isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined,
 })
 
 const emit = defineEmits<ProgressRootEmits>()
@@ -66,15 +64,18 @@ defineExpose(expose)
 const { value: modelValue, max, root, context } = useProgress({
   modelValue: () => props.modelValue,
   max: () => props.max,
-  getValueLabel: (value, max) => props.getValueLabel(value, max),
-  getValueText: (value, max) => props.getValueText?.(value, max),
+  // Getters: `useProgress` falls back to its default label when the prop is unset.
+  get getValueLabel() { return props.getValueLabel },
+  get getValueText() { return props.getValueText },
 })
 
 // Progress has no model (the value is display-only). An invalid prop renders
 // corrected straight away; the parent is told once so a `v-model` follows.
+// The value is validated against the corrected `max`, so a `max` that drops
+// below the value also reports `null`.
 watch(
-  () => props.modelValue,
-  async (value) => {
+  () => [props.modelValue, props.max] as const,
+  async ([value]) => {
     if (modelValue.value !== value) {
       await nextTick()
       emit('update:modelValue', null)

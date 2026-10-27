@@ -107,6 +107,11 @@ export function useScrollArea(props: UseScrollAreaProps = {}): UseScrollAreaRetu
     },
   }
 
+  // Built on first read: `ScrollAreaRoot` never reads them (its Viewport part
+  // derives its own), so the component pays for no unused computeds.
+  let viewportSurface: PartSurface | undefined
+  let contentSurface: PartSurface | undefined
+
   return {
     viewportElement: viewport,
     scrollTop,
@@ -120,8 +125,12 @@ export function useScrollArea(props: UseScrollAreaProps = {}): UseScrollAreaRetu
         '--reka-scroll-area-corner-height': `${cornerHeight.value}px`,
       },
     }), () => ({})),
-    viewport: getScrollAreaViewportSurface(context),
-    content: getScrollAreaContentSurface(context),
+    get viewport() {
+      return viewportSurface ??= getScrollAreaViewportSurface(context)
+    },
+    get content() {
+      return contentSurface ??= getScrollAreaContentSurface(context)
+    },
     context,
   }
 }

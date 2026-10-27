@@ -491,19 +491,26 @@ In v2, `TagsInputRoot` and `PinInputRoot` kept a local copy of the model (a pass
 
 ## Splitter layout model
 
-`SplitterGroup` has a `layout` model. Bind `v-model:layout` to read or set every panel size at once, in each panel's `sizeUnit` (the values `@layout` reports). A controlled layout takes precedence over `defaultSize` and `autoSaveId`. `beforeUpdate:layout` can cancel a change, and `update:layout(value, details)` fires only when the layout changes, with one of these reasons:
+`SplitterGroup` has a `layout` model. Bind `v-model:layout` to read or set every panel size at once, in each panel's `sizeUnit` (the values `@layout` reports). A controlled layout takes precedence over `defaultSize`, and `autoSaveId` storage is neither read nor written while it is controlled. `update:layout(value, details)` fires only when the layout changes, with one of these reasons:
 
 - `drag`: a pointer drag on a resize handle;
 - `keyboard`: arrow keys, Home/End, or Enter toggling a collapse;
-- `panel-change`: the initial layout, a layout restored from `storage`, or panels being added, removed or reconfigured;
+- `panel-change`: the initial layout, a layout restored from `storage`, panels being added, removed or reconfigured, or a controlled layout corrected to fit the constraints;
 - `group-resize`: `px` panels keeping their size while the group resizes;
 - `imperative-action`: the panel `collapse()`, `expand()` and `resize()` methods.
+
+Only `drag`, `keyboard` and `imperative-action` run the cancellable `beforeUpdate:layout`. `panel-change` and `group-resize` are structural: the group must always hold a valid layout, so they are always applied and emitted, and cannot be cancelled. A controlled layout that breaks the constraints is applied as corrected and the correction emitted once; one whose length differs from the panel count is ignored, with a development warning. In controlled mode a user change is applied, and `@layout`, the panel events and `getSize()` follow, only once the parent passes it back.
 
 `@layout` is unchanged and still fires for every applied layout. Two Splitter behaviours change:
 
 - **Enter on a resize handle** now emits `@layout` and the panel `collapse` / `expand` / `resize` events. v2 toggled the collapse without them.
 - **`data-resize-handle-active="keyboard"`** is now set while a handle has focus; v2 never set it. Use `[data-resize-handle-active="pointer"]` for drag-only styles.
 
+Two fixes in neighbouring families:
+
+- **`ToolbarSeparator`** now runs perpendicular to its toolbar, as in Radix: a horizontal toolbar renders a vertical separator (`data-orientation="vertical"`, `aria-orientation="vertical"`). v2 passed the toolbar's own orientation.
+- **`AvatarFallback`** with `:delay-ms="0"` now renders immediately; v2 never rendered it.
+
 ## Progress has no change model
 
-`ProgressRoot` displays a value; it never changes it, so it gets no `beforeUpdate:modelValue` or change details. An invalid `modelValue` (negative, above `max`, `NaN`) now renders as indeterminate, and an invalid `max` as `100`, straight away; v2 rendered the invalid value until the parent applied the correction. `ProgressRoot` still emits `update:modelValue(null)` or `update:max(100)` once when it corrects a prop, and `update:modelValue` is now typed `[value: number | null]` (v2 declared `[value: string[] | undefined]`).
+`ProgressRoot` displays a value; it never changes it, so it gets no `beforeUpdate:modelValue` or change details. An invalid `modelValue` (negative, above `max`, `NaN`) now renders as indeterminate, and an invalid `max` as `100`, straight away; v2 rendered the invalid value until the parent applied the correction. The value is validated against the corrected `max`, so lowering `max` below the value also renders indeterminate and emits `update:modelValue(null)`. `ProgressRoot` still emits `update:modelValue(null)` or `update:max(100)` once when it corrects a prop, and `update:modelValue` is now typed `[value: number | null]` (v2 declared `[value: string[] | undefined]`).

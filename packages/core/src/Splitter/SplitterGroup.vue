@@ -10,7 +10,7 @@ import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 export interface SplitterGroupProps extends PrimitiveProps {
   /** Group id; falls back to `useId` when not provided. */
   id?: string | null
-  /** Unique id used to auto-save group arrangement via `localStorage`. */
+  /** Unique id used to auto-save group arrangement via `localStorage`. Ignored while `layout` is controlled. */
   autoSaveId?: string | null
   /** The group orientation of splitter. */
   direction: Direction
@@ -20,7 +20,9 @@ export interface SplitterGroupProps extends PrimitiveProps {
   storage?: PanelGroupStorage
   /**
    * The controlled layout: one size per panel, in each panel's `sizeUnit` (the
-   * values `@layout` reports). Can be bound as `v-model:layout`.
+   * values `@layout` reports). Can be bound as `v-model:layout`. A layout the
+   * constraints reject is applied as corrected and the correction emitted; an
+   * array whose length differs from the panel count is ignored.
    */
   layout?: number[]
 }
@@ -28,7 +30,7 @@ export interface SplitterGroupProps extends PrimitiveProps {
 export type SplitterGroupEmits = {
   /** Event handler called when group layout changes */
   'layout': [val: number[]]
-  /** Event handler called before the layout changes; `details.cancel()` vetoes the change. */
+  /** Event handler called before a `drag`, `keyboard` or `imperative-action` layout change; `details.cancel()` vetoes it. Structural changes (`panel-change`, `group-resize`) skip it. */
   'beforeUpdate:layout': [value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason>]
   /** Event handler called when the layout changes. */
   'update:layout': [value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason>]

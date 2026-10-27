@@ -88,4 +88,19 @@ describe('progressRoot — invalid props', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     expect(wrapper.attributes('data-value')).toBe('60')
   })
+
+  it('emits null when `max` drops below the value', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const wrapper = mount(ProgressRoot, { props: { modelValue: 80, max: 100 } })
+    await nextTick()
+    await wrapper.setProps({ max: 50 })
+    await nextTick()
+    expect(wrapper.attributes('data-state')).toBe('indeterminate')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
+  })
+
+  it('labels the value as a percentage of max by default', () => {
+    const wrapper = mount(ProgressRoot, { props: { modelValue: 25, max: 50 } })
+    expect(wrapper.attributes('aria-label')).toBe('50%')
+  })
 })

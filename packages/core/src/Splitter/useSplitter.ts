@@ -3,7 +3,7 @@ import type { PanelGroupContext, PanelGroupStorage } from './SplitterGroup.vue'
 import type { PanelConstraints, PanelData } from './SplitterPanel.vue'
 import type { Direction, DragState, ResizeEvent } from './utils/types'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
-import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import { areEqual, createPartSurface, useControllableState } from '@/shared'
 import { assert } from './utils/assert'
 import { calculateDeltaPercentage, calculateUnsafeDefaultLayout } from './utils/calculate'
@@ -33,11 +33,16 @@ import { validatePanelGroupLayout } from './utils/validation'
  * - `keyboard`: arrow keys, Home/End or Enter (collapse toggle) on a resize handle;
  * - `panel-change`: the layout was (re)computed because panels registered,
  *   unregistered or changed their constraints (this includes the initial
- *   layout and a layout restored from `storage`);
+ *   layout, a layout restored from `storage`, and a controlled layout corrected
+ *   to fit the constraints);
  * - `group-resize`: the group resized and `px` panels kept their pixel size.
  *
  * The panel `collapse()` / `expand()` / `resize()` methods report the shared
  * `'imperative-action'`.
+ *
+ * Only `drag`, `keyboard` and `imperative-action` are cancellable.
+ * `panel-change` and `group-resize` are structural: they skip
+ * `beforeUpdate:layout` and are always applied.
  */
 export type SplitterLayoutChangeReason = 'drag' | 'keyboard' | 'panel-change' | 'group-resize'
 
@@ -87,7 +92,7 @@ export interface UseSplitterProps {
   layout?: MaybeRefOrGetter<number[] | undefined>
   /** Component `emit`; receives `beforeUpdate:layout` then `update:layout`. */
   emit?: (event: any, ...args: any[]) => void
-  /** Called before a layout change commits; `details.cancel()` vetoes it. */
+  /** Called before a `drag`, `keyboard` or `imperative-action` change commits; `details.cancel()` vetoes it. */
   onBeforeUpdate?: (value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason>) => void
   /** Called after a layout change commits. */
   onUpdate?: (value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason>) => void
@@ -122,10 +127,12 @@ function layoutsFuzzyEqual(a: number[] | undefined, b: number[] | undefined) {
  * Headless Splitter group: the layout model, constraints, storage, drag and
  * keyboard resizing, and the context the panels and resize handles register with.
  *
- * Every layout change goes through one model: a cancellable
- * `beforeUpdate:layout` then `update:layout(value, details)`, emitted only when
- * the layout (in panel units) actually changes. `onLayout` keeps the v2
- * `@layout` contract: it reports every applied layout.
+ * Every layout change goes through one model: `update:layout(value, details)`,
+ * emitted only when the layout (in panel units) actually changes. User changes
+ * run a cancellable `beforeUpdate:layout` first and, when controlled, apply
+ * once the parent echoes them; structural changes are always applied (see
+ * `SplitterLayoutChangeReason`). `onLayout` keeps the v2 `@layout` contract:
+ * it reports every applied layout.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle setup — owns watchers and a ResizeObserver; call it inside `setup()`.
@@ -227,13 +234,28 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
     })
   }
 
+  // Structural changes (`panel-change`, `group-resize`) and constraint
+  // corrections are not requests the parent may refuse: the group must always
+  // hold a valid layout. They skip the `beforeUpdate` phase, so they cannot be
+  // cancelled, and still emit `update:layout` so the model follows.
+  let structural = false
+  const { emit, onBeforeUpdate, onUpdate } = props
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<number[], SplitterLayoutChangeReason>({
     prop: props.layout,
     defaultValue: () => [],
-    name: 'layout',
-    emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    onBeforeUpdate: (value, details) => {
+      if (structural)
+        return
+      onBeforeUpdate?.(value, details)
+      emit?.('beforeUpdate:layout', value, details)
+    },
+    // Only with a listener: a bare writable ref stays the model's single store.
+    onUpdate: emit || onUpdate
+      ? (value, details) => {
+          onUpdate?.(value, details)
+          emit?.('update:layout', value, details)
+        }
+      : undefined,
     isEqual: layoutsFuzzyEqual,
   })
 
@@ -256,30 +278,52 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
   let pendingLayout: number[] | null = null
 
   /**
-   * The single change path. A change in panel units runs the cancellable
-   * model; a change that only moves percentages (a `px` group resizing) is
-   * applied without a model emit, as the model value did not change.
+   * The single change path. A change in panel units runs the model; a change
+   * that only moves percentages (a `px` group resizing) is applied without a
+   * model emit, as the model value did not change.
+   *
+   * `drag`, `keyboard` and `imperative-action` are requests: cancellable, and
+   * in controlled mode applied once the parent echoes them. `panel-change` and
+   * `group-resize` are structural: always applied, never cancellable, and
+   * emitted so the model follows.
    */
   function commitLayout(nextLayout: number[], reason: SplitterLayoutChangeReason | BaseChangeReason, event?: Event) {
     const nativeLayout = convertLayoutToNativeUnits(nextLayout)
     if (!layoutsFuzzyEqual(nativeLayout, modelValue.value)) {
+      const isStructural = reason === 'panel-change' || reason === 'group-resize'
       const controlled = isControlled.value
-      if (!setState(nativeLayout, reason, event))
-        return
-      if (controlled) {
+      structural = isStructural
+      const committed = setState(nativeLayout, reason, event)
+      structural = false
+      if (controlled)
         pendingLayout = nextLayout
+      if (!isStructural && (!committed || controlled))
         return
-      }
     }
     applyLayout(nextLayout)
   }
 
-  // Controlled: apply the layout the parent passes in.
+  // Controlled: apply the layout the parent passes in. A layout the
+  // constraints correct is applied as corrected and the correction emitted.
   watch(() => toValue(props.layout), (value) => {
     const pending = pendingLayout
     pendingLayout = null
-    if (!isControlled.value || !value || value.length !== eagerValuesRef.value.panelDataArray.length)
+    const { panelDataArray } = eagerValuesRef.value
+    if (!isControlled.value || !value || !panelDataArray.length)
       return
+    if (value.length !== panelDataArray.length) {
+      // Re-checked after the flush: a panel added in the same tick as its size
+      // registers only once mounted, and then picks the layout up itself.
+      // eslint-disable-next-line node/prefer-global/process
+      if (process.env.NODE_ENV !== 'production') {
+        nextTick(() => {
+          const count = eagerValuesRef.value.panelDataArray.length
+          if (toValue(props.layout)?.length !== count)
+            console.warn(`[reka-ui] SplitterGroup: \`layout\` has ${value.length} sizes for ${count} panels; it is ignored.`)
+        })
+      }
+      return
+    }
 
     let nextLayout = pending
     if (!pending || !layoutsFuzzyEqual(convertLayoutToNativeUnits(pending), value)) {
@@ -288,7 +332,9 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
         return
       nextLayout = validatePanelGroupLayout({ layout: convertLayoutToPercent(value), panelConstraints })
     }
-    if (!compareLayouts(layout.value, nextLayout!))
+    if (!layoutsFuzzyEqual(convertLayoutToNativeUnits(nextLayout!), value))
+      commitLayout(nextLayout!, 'panel-change')
+    else if (!compareLayouts(layout.value, nextLayout!))
       applyLayout(nextLayout!)
   }, { deep: true })
 
@@ -332,7 +378,8 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
     const { panelDataArray } = eagerValuesRef.value
     const autoSaveId = toValue(props.autoSaveId)
     // If this panel has been configured to persist sizing information, save sizes to local storage.
-    if (autoSaveId) {
+    // A controlled layout is owned by the parent, so storage is neither read nor written.
+    if (autoSaveId && !isControlled.value) {
       if (layout.value.length === 0 || layout.value.length !== panelDataArray.length)
         return
 
@@ -415,7 +462,7 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
 
       // If this panel has been configured to persist sizing information,
       // default size should be restored from local storage if possible.
-      if (unsafeLayout === null && autoSaveId) {
+      if (unsafeLayout === null && autoSaveId && !isControlled.value) {
         const state = loadPanelGroupState(autoSaveId, panelDataArray, storage)
         if (state) {
           panelSizeBeforeCollapseRef.value = new Map(
