@@ -229,7 +229,8 @@
     'name': 'stepSnapping',
     'description': '<p>Whether to enforce snapping the time value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'false'
   },
   {
     'name': 'view',
@@ -278,7 +279,7 @@
   {
     'name': 'beforeUpdate:startValue',
     'description': '<p>Called before <code>update:startValue</code>; <code>details.cancel()</code> suppresses that event (the calendar\'s anchor still moves).</p>\n',
-    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;RangeCalendarChangeReason, Event&gt;]'
   },
   {
     'name': 'beforeUpdate:view',
@@ -303,7 +304,7 @@
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;RangeCalendarChangeReason, Event&gt;]'
   },
   {
     'name': 'update:view',
@@ -367,7 +368,7 @@
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
-| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | - |
+| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | `false` |
 | `view` | The controlled view: the unit the calendar currently shows. Can be bound as v-model:view. | `"day" \| "month" \| "year"` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
@@ -380,12 +381,12 @@
 | `beforeUpdate:modelValue` | Called before the range changes, from the field or the calendar; details.cancel() keeps the current range. | `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
 | `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
-| `beforeUpdate:startValue` | Called before update:startValue; details.cancel() suppresses that event (the calendar's anchor still moves). | `[date: DateValue \| undefined, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
+| `beforeUpdate:startValue` | Called before update:startValue; details.cancel() suppresses that event (the calendar's anchor still moves). | `[date: DateValue \| undefined, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 
 **Slots**

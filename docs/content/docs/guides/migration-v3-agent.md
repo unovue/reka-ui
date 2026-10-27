@@ -412,15 +412,16 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 ### 17. Date and time fields
 
 **What changed.**
-- `DateFieldRoot`, `TimeFieldRoot`, `DateRangeFieldRoot`, `TimeRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot` emit `update:modelValue(value, details)` and `update:placeholder(value, details)`, with a cancellable `beforeUpdate:*` before each (section 2). A picker emits one pair per change, from the root, carrying the field's reason (`segment-*`, `step-snap`) or the calendar's (`cell-press`, `cell-keydown`); `details.cancel()` on the picker root also undoes the typed segments.
+- `DateFieldRoot`, `TimeFieldRoot`, `DateRangeFieldRoot`, `TimeRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot` emit `update:modelValue(value, details)` and `update:placeholder(value, details)`, with a cancellable `beforeUpdate:*` before each (section 2). A picker emits one pair per change, from the root, carrying the field's reason (`segment-*`, `step-snap`) or the calendar's (`cell-press`, `cell-keydown`); `details.cancel()` on the picker root cancels the typed change too. A cancelled change keeps the last committed value, and the segments keep what the user typed, so typing can continue to a value the handler accepts. The segments only follow the model when it actually changes: a controlled parent that ignores an update leaves them showing the typed value, as in v2.
 - `DatePickerRoot` and `DateRangePickerRoot` no longer render a `PopoverRoot` component; they provide the Popover context themselves.
-- `:model-value="null"` is a controlled empty value. A cleared field emits `undefined` (single) or `{ start: undefined, end: undefined }` (range). The range roots' `modelValue` slot prop is typed `DateRange` / `TimeRange` (v2: `DateRange | null` / `TimeRange | undefined`).
+- `:model-value="null"` is a controlled empty value (also on `CalendarRoot`, as in v2; a controlled-empty `DatePickerRoot` keeps its calendar controlled). The root contexts' `modelValue` reads `undefined` for it. A cleared field emits `undefined` (single) or `{ start: undefined, end: undefined }` (range). The range roots' `modelValue` slot prop is typed `DateRange` / `TimeRange` (v2: `DateRange | null` / `TimeRange | undefined`).
 - A model set to a value equal to the current one emits nothing.
 - `update:startValue` on `RangeCalendarRoot` and `DateRangePickerRoot` is `[date, details]`. `beforeUpdate:startValue` on `DateRangePickerRoot` is new; cancelling it suppresses only that `update:startValue`.
 - `TimeFieldRoot` emits `update:placeholder` with a `Time` when the placeholder is a `Time` (v2: a `CalendarDateTime`).
 - Root contexts: `modelValue` / `placeholder` (and `startValue` / `endValue` on the range field contexts) are writable computeds that report `'imperative-action'`. New: `setModelValue(value, reason?, event?)`, `setPlaceholder(value, reason?, event?)`, `setRangeValue(type, value, reason?, event?)` (range fields), all returning a boolean. On the picker contexts, `onDateChange(date, reason?, event?)` and `onPlaceholderChange(date, reason?, event?)` return a boolean, and `onStartValueChange(date, details?)` takes the details.
 - The time zone segment renders `data-readonly=""` (v2: `data-readonly="true"`).
-- Without a `locale` prop, the default placeholder uses the `ConfigProvider` locale.
+- Without a `locale` prop and a `placeholder`, the default placeholder uses the `ConfigProvider` locale, including its calendar system: under a `th-TH`, `fa-IR`, `ar-SA` (or other non-Gregorian) `ConfigProvider` the emitted values are in that calendar, and `.year` is that calendar's year.
+- Rendered attributes can come in a different order; update snapshots.
 - Additive: `isTimeUnavailable` on `TimeFieldRoot`; `stepSnapping` on `DateRangeFieldRoot`, `TimeRangeFieldRoot` and `DateRangePickerRoot`; `stepSnapping` on the picker roots now reaches the field; `useDateField()`, `useTimeField()`, `useDateRangeField()`, `useTimeRangeField()`, `useDatePicker()`, `useDateRangePicker()`.
 
 **How to find it.**
@@ -430,15 +431,18 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `injectDateFieldRootContext(`, `injectTimeFieldRootContext(`, `injectDateRangeFieldRootContext(`, `injectTimeRangeFieldRootContext(`, `injectDatePickerRootContext(`, `injectDateRangePickerRootContext(` in custom parts.
 - `instanceof CalendarDateTime` or `'day' in` checks on a `TimeFieldRoot` `update:placeholder` payload.
 - `data-readonly="true"` in selectors, styles and snapshots.
+- A `ConfigProvider` with a `locale` whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …) above a date or time field or picker that has no `locale` and no `placeholder` prop, and code that reads `.year`, compares, stores or serializes the field's values.
 - `is-date-unavailable` / `isDateUnavailable` on `TimeFieldRoot` (it was never applied there).
 
 **Rewrite rules.**
-- Wrapper emit types: change `[date: DateValue | undefined]` to `[date: DateValue | undefined, details: ChangeEventDetails<DateFieldChangeReason>]` (the matching family union for each root, imported from `reka-ui`), `[date: DateRange]` to `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>]`, and `'update:startValue': [date: DateValue | undefined]` to add `details: ChangeEventDetails<RangeCalendarChangeReason>` (`DateRangePickerChangeReason` on `DateRangePickerRoot`).
+- Wrapper emit types: change `[date: DateValue | undefined]` to `[date: DateValue | undefined, details: ChangeEventDetails<DateFieldChangeReason>]` (the matching family union for each root, imported from `reka-ui`), `[date: DateRange]` to `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>]`, and `'update:startValue': [date: DateValue | undefined]` to add `details: ChangeEventDetails<RangeCalendarChangeReason>` (on both `RangeCalendarRoot` and `DateRangePickerRoot`).
 - `findComponent(PopoverRoot)` under a picker: assert on the picker root's `update:open` or on the rendered `[role=dialog]` instead.
 - A `null` check on a range slot's `modelValue`: replace with a check on `modelValue.start` / `modelValue.end`.
 - Context writes such as `ctx.modelValue.value = date` keep working; leave them. Replace them with `ctx.setModelValue(date, reason, event)` only where a reason is wanted. Code that awaited `onDateChange` or ignored its return value keeps working.
 - A `TimeFieldRoot` placeholder handler that needs a date: convert with `toCalendarDateTime(today(tz), time)` from `@internationalized/date`. *Ask* if the intent is unclear.
 - `[data-readonly="true"]`: replace with `[data-readonly]`; update snapshots.
+- A field under a non-Gregorian `ConfigProvider` locale whose values are consumed as Gregorian (stored, sent to an API, compared with `.year`): *ask* the developer. If they want Gregorian values, add `:placeholder="today(getLocalTimeZone())"` (or `locale="en-US"`) to the root, or convert with `toCalendar(value, new GregorianCalendar())`.
+- A `beforeUpdate:modelValue` guard on a field: leave it. A cancelled typed change keeps the typed segments, so the user can keep typing to an accepted value.
 - `isDateUnavailable` on `TimeFieldRoot`: rename to `isTimeUnavailable` (it receives a date-time). It now applies, so *ask* before keeping it if the matcher's result was never tested.
 - Do not add `stepSnapping` or `beforeUpdate:*` handlers on your own.
 
