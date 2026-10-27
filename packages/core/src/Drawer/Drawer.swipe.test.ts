@@ -1,4 +1,6 @@
-import type { DrawerOpenChangeDetails } from '.'
+import type { DrawerOpenChangeReason, DrawerSnapPointChangeReason } from '.'
+import type { DrawerSnapPoint } from './utils'
+import type { ChangeEventDetails } from '@/shared'
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -11,7 +13,7 @@ import {
 
 /**
  * Swipe dismissal that the consumer rejects, either by calling
- * `details.cancel()` in `update:open` or by never updating a controlled `open`.
+ * `details.cancel()` in `beforeUpdate:open` or by never updating a controlled `open`.
  * The drawer must settle back open instead of staying offset and marked
  * `data-swipe-dismissed` (#2933).
  */
@@ -104,26 +106,36 @@ function expectSettledOpen(el: HTMLElement) {
 function renderDrawer(options: {
   controlled?: 'accept' | 'ignore'
   snapPoints?: number[]
-  onOpenChange?: (open: boolean, details: DrawerOpenChangeDetails) => void
+  defaultSnapPoint?: number
+  onBeforeSnapPoint?: (point: DrawerSnapPoint | null, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void
+  onOpenChange?: (open: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
 }) {
   const onOpenChange = vi.fn(options.onOpenChange)
+  const onBeforeSnapPoint = vi.fn(options.onBeforeSnapPoint)
+  const onSnapPoint = vi.fn()
   const Test = defineComponent({
     components: { DrawerRoot, DrawerPortal, DrawerContent, DrawerTitle },
     setup() {
       const open = ref(true)
-      function onUpdate(value: boolean, details: DrawerOpenChangeDetails) {
+      function onBeforeUpdate(value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) {
         onOpenChange(value, details)
+      }
+      function onUpdate(value: boolean) {
         if (options.controlled === 'accept')
           open.value = value
       }
-      return { open, onUpdate, controlled: options.controlled, snapPoints: options.snapPoints }
+      return { open, onBeforeUpdate, onUpdate, onBeforeSnapPoint, onSnapPoint, defaultSnapPoint: options.defaultSnapPoint, controlled: options.controlled, snapPoints: options.snapPoints }
     },
     template: `
       <DrawerRoot
         :open="controlled ? open : undefined"
         :default-open="true"
         :snap-points="snapPoints"
+        :default-snap-point="defaultSnapPoint"
+        @before-update:open="onBeforeUpdate"
         @update:open="onUpdate"
+        @before-update:snap-point="onBeforeSnapPoint"
+        @update:snap-point="onSnapPoint"
       >
         <DrawerPortal>
           <DrawerContent>
@@ -134,7 +146,7 @@ function renderDrawer(options: {
     `,
   })
   render(Test)
-  return { onOpenChange }
+  return { onOpenChange, onBeforeSnapPoint, onSnapPoint }
 }
 
 describe('drawer swipe dismissal', () => {
@@ -206,6 +218,44 @@ describe('drawer swipe dismissal', () => {
     await swipeDown(content)
 
     expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'swipe', isCanceled: true }))
+    expectSettledOpen(content)
+  })
+
+  // Base UI parity (#2789): a swipe past the last snap point first requests the
+  // `null` snap point (cancellable), then the close; a cancelled close restores
+  // the previous snap point.
+  it('a cancelled null snap point keeps the drawer open without requesting a close', async () => {
+    const { onOpenChange, onBeforeSnapPoint, onSnapPoint } = renderDrawer({
+      snapPoints: [1],
+      defaultSnapPoint: 1,
+      onBeforeSnapPoint: (_point, details) => details.cancel(),
+    })
+    await nextTick()
+    await nextTick()
+    const content = findContent()!
+
+    await swipeDown(content)
+
+    expect(onBeforeSnapPoint).toHaveBeenCalledWith(null, expect.objectContaining({ reason: 'swipe', isCanceled: true }))
+    expect(onSnapPoint).not.toHaveBeenCalled()
+    expect(onOpenChange).not.toHaveBeenCalled()
+    expectSettledOpen(content)
+  })
+
+  it('a cancelled swipe close restores the previous snap point', async () => {
+    const { onOpenChange, onSnapPoint } = renderDrawer({
+      snapPoints: [1],
+      defaultSnapPoint: 1,
+      onOpenChange: (_open, details) => details.cancel(),
+    })
+    await nextTick()
+    await nextTick()
+    const content = findContent()!
+
+    await swipeDown(content)
+
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'swipe', isCanceled: true }))
+    expect(onSnapPoint.mock.calls.map(([point]) => point)).toEqual([null, 1])
     expectSettledOpen(content)
   })
 })

@@ -1,6 +1,6 @@
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { DrawerClose, DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 function drawer(rootProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = {}) {
@@ -107,5 +107,33 @@ describe('drawerContent forceMount focus return (#2789)', () => {
     await nextTick()
     await nextTick()
     expect(document.activeElement).not.toBe(trigger)
+  })
+
+  // Base UI returns focus only while it is inside the popup or on <body>.
+  it('keeps focus the app moved outside before the drawer closes', async () => {
+    const Host = defineComponent({
+      setup() {
+        const open = ref(false)
+        return { open }
+      },
+      render() {
+        return h('div', [
+          h('input', { 'data-testid': 'search', 'aria-label': 'search' }),
+          h(DrawerRoot, { 'open': this.open, 'modal': false, 'onUpdate:open': (v: boolean) => { this.open = v } }, () => [
+            h(DrawerTrigger, null, () => 'Open'),
+            h(DrawerPortal, null, () => h(DrawerContent, { 'forceMount': true, 'aria-describedby': undefined }, () => h(DrawerTitle, null, () => 'Title'))),
+          ]),
+        ])
+      },
+    })
+    const { getByTestId, getByText } = render(Host)
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    const search = getByTestId('search') as HTMLInputElement
+    search.focus()
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    await nextTick()
+    expect(document.activeElement).toBe(search)
   })
 })

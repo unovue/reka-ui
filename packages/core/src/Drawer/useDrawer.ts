@@ -2,18 +2,18 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DrawerProviderContext } from './DrawerProvider.vue'
 import type {
   DrawerModal,
-  DrawerOpenChangeDetails,
   DrawerOpenChangeReason,
   DrawerRootContext,
+  DrawerSnapPointChangeReason,
 } from './DrawerRoot.vue'
 import type { DrawerSnapPoint, SwipeDirection } from './utils'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
-import type { DisclosureState, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
-import { createPartSurface, disclosureState, getElementByIdFrom, isHTMLElement } from '@/shared'
+import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, useControllableState } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import {
@@ -49,7 +49,7 @@ import {
 /** Semantic state of the trigger part; `state` → `data-state="open|closed"`. */
 export type DrawerTriggerState = { state: DisclosureState }
 /** Semantic state of the handle part; `state` → `data-state`. */
-export type DrawerHandleState = { state: DisclosureState }
+export type DrawerGrabberState = { state: DisclosureState }
 /** Semantic state of the viewport part; `state` → `data-state`. */
 export type DrawerViewportState = { state: DisclosureState }
 /** Semantic state of the overlay (backdrop) part → `data-state`, `data-swipe-direction`, `data-swiping`. */
@@ -110,11 +110,11 @@ export function getDrawerDescriptionSurface(
   return createPartSurface<Record<string, never>>(() => ({ id: context.descriptionId }), () => ({}))
 }
 
-/** Handle: decorative (`aria-hidden`) + `data-state`. */
-export function getDrawerHandleSurface(
+/** Grabber (the visual grab bar): decorative (`aria-hidden`) + `data-state`. */
+export function getDrawerGrabberSurface(
   context: Pick<DrawerRootContext, 'open'>,
-): PartSurface<DrawerHandleState> {
-  return createPartSurface<DrawerHandleState>(
+): PartSurface<DrawerGrabberState> {
+  return createPartSurface<DrawerGrabberState>(
     () => ({ 'aria-hidden': 'true' }),
     () => ({ state: disclosureState(context.open.value) }),
   )
@@ -183,12 +183,14 @@ export interface UseDrawerProps {
   /** @defaultValue `false` */
   snapToSequentialPoints?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * The active snap point model, as a writable ref. The SFC hands its
-   * `v-model:snapPoint` ref; standalone calls default to
-   * `ref(defaultSnapPoint ?? null)`.
+   * Controlled active snap point; a getter that has only resolved to `undefined`
+   * is uncontrolled. A writable `Ref` with no `emit` / `onSnapPointUpdate` is
+   * the model's single store (written back).
    */
+  snapPoint?: MaybeRefOrGetter<DrawerSnapPoint | null | undefined>
+  /** @deprecated Use `snapPoint`; a writable ref here is written back as before. */
   activeSnapPoint?: Ref<DrawerSnapPoint | null | undefined>
-  /** Initial snap point for the standalone default `activeSnapPoint`. */
+  /** Initial snap point when uncontrolled. @defaultValue `null` */
   defaultSnapPoint?: DrawerSnapPoint | null
   /**
    * Base id the content/title/description ids derive from. Defaults to
@@ -197,11 +199,25 @@ export interface UseDrawerProps {
    */
   baseId?: string
   /**
-   * Called BEFORE an open change commits (Base UI's `onOpenChange`); calling
-   * `details.cancel()` inside it keeps the current state. The SFC emits
-   * `update:open` from here.
+   * Component `emit`; receives `beforeUpdate:open` then `update:open`, and
+   * `beforeUpdate:snapPoint` then `update:snapPoint`.
    */
-  onOpenChange?: (value: boolean, details: DrawerOpenChangeDetails) => void
+  emit?: (event: any, ...args: any[]) => void
+  /**
+   * Called before an open change commits (Base UI's `onOpenChange`); calling
+   * `details.cancel()` keeps the current state.
+   */
+  onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
+  /** Called after an open change committed. */
+  onUpdate?: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
+  /**
+   * Called before the active snap point changes (Base UI's `onSnapPointChange`);
+   * calling `details.cancel()` keeps the current snap point. Cancelling the
+   * `null` a swipe past the last snap point requests keeps the drawer open.
+   */
+  onBeforeSnapPointUpdate?: (value: DrawerSnapPoint | null, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void
+  /** Called after the active snap point changed. */
+  onSnapPointUpdate?: (value: DrawerSnapPoint | null, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void
   /** Called after the popup's enter/exit transition finishes (`update:openComplete`). */
   onOpenComplete?: (value: boolean) => void
   /** The parent drawer's context, for nested drawers. */
@@ -214,15 +230,17 @@ export interface UseDrawerReturn {
   open: ComputedRef<boolean>
   modal: ComputedRef<DrawerModal>
   swipeDirection: ComputedRef<SwipeDirection>
-  activeSnapPoint: Ref<DrawerSnapPoint | null | undefined>
-  /** Returns `false` when a listener cancelled the change. */
-  onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason) => boolean
+  activeSnapPoint: ComputedRef<DrawerSnapPoint | null | undefined>
+  /** Returns `false` when cancelled via `beforeUpdate:open`; an unchanged value returns `true`. */
+  onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when cancelled via `beforeUpdate:snapPoint`; an unchanged value returns `true`. */
+  setActiveSnapPoint: (point: DrawerSnapPoint | null, reason?: DrawerSnapPointChangeReason | BaseChangeReason, event?: Event) => boolean
   onOpenToggle: () => void
   trigger: PartSurface<DrawerTriggerState>
   close: PartSurface<Record<string, never>>
   title: PartSurface<Record<string, never>>
   description: PartSurface<Record<string, never>>
-  handle: PartSurface<DrawerHandleState>
+  grabber: PartSurface<DrawerGrabberState>
   viewport: PartSurface<DrawerViewportState>
   overlay: PartSurface<DrawerOverlayState>
   content: PartSurface<DrawerContentState>
@@ -249,11 +267,26 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
   const baseId = props.baseId ?? `reka-drawer-${++drawerCount}`
   const { parentContext, providerContext } = props
 
-  // Manual open state management — we need to pass optional details on emit
-  const uncontrolledOpen = ref(props.defaultOpen ?? false)
-  const open = computed<boolean>(() => toValue(props.open) ?? uncontrolledOpen.value)
+  // Base UI's cancellable `onOpenChange` maps onto the v3 contract (#2828):
+  // `beforeUpdate:open` can cancel, `update:open` reports the committed change.
+  const { state: open, setState: setOpen } = useControllableState<boolean, DrawerOpenChangeReason>({
+    prop: props.open,
+    defaultValue: props.defaultOpen ?? false,
+    name: 'open',
+    emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdate,
+    onUpdate: props.onUpdate,
+  })
 
-  const activeSnapPoint = props.activeSnapPoint ?? ref<DrawerSnapPoint | null | undefined>(props.defaultSnapPoint ?? null)
+  // Base UI's `onSnapPointChange(snapPoint, eventDetails)` is cancellable too.
+  const { state: activeSnapPoint, setState: setSnapPoint } = useControllableState<DrawerSnapPoint | null | undefined, DrawerSnapPointChangeReason>({
+    prop: props.snapPoint ?? props.activeSnapPoint,
+    defaultValue: props.defaultSnapPoint ?? null,
+    name: 'snapPoint',
+    emit: props.emit,
+    onBeforeUpdate: props.onBeforeSnapPointUpdate as ((value: DrawerSnapPoint | null | undefined, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void) | undefined,
+    onUpdate: props.onSnapPointUpdate as ((value: DrawerSnapPoint | null | undefined, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void) | undefined,
+  })
 
   const modal = computed<DrawerModal>(() => toValue(props.modal) ?? true)
   const swipeDirection = computed<SwipeDirection>(() => toValue(props.swipeDirection) ?? 'down')
@@ -272,20 +305,25 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
   const isSwiping = ref(false)
   const nestedSwipeProgressStore = createNestedSwipeProgressStore()
 
-  function onOpenChange(value: boolean, reason?: DrawerOpenChangeReason) {
+  // Base UI parity: an unchanged request reports `true` and emits nothing.
+  function onOpenChange(value: boolean, reason?: DrawerOpenChangeReason | BaseChangeReason, event?: Event) {
     if (open.value === value)
       return true
-    let isCanceled = false
-    const details: DrawerOpenChangeDetails = {
-      reason,
-      cancel() { isCanceled = true },
-      get isCanceled() { return isCanceled },
-    }
-    props.onOpenChange?.(value, details)
-    if (isCanceled)
+    if (!setOpen(value, reason, event))
       return false
-    uncontrolledOpen.value = value
+    // Base UI parity (`DrawerRoot` `handleOpenChange`): a close resets the
+    // snap point to the default (`defaultSnapPoint`, else the first snap
+    // point), so the drawer reopens where it started.
+    const points = toValue(props.snapPoints)
+    if (!value && points && points.length > 0)
+      setActiveSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event)
     return true
+  }
+
+  function setActiveSnapPoint(point: DrawerSnapPoint | null, reason?: DrawerSnapPointChangeReason | BaseChangeReason, event?: Event) {
+    if (Object.is(activeSnapPoint.value ?? null, point))
+      return true
+    return setSnapPoint(point, reason, event)
   }
 
   function onOpenToggle() {
@@ -311,7 +349,7 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     notifyOpenComplete(value) {
       props.onOpenComplete?.(value)
     },
-    setActiveSnapPoint(point) { activeSnapPoint.value = point },
+    setActiveSnapPoint,
     onPopupHeightChange(h) {
       popupHeight.value = h
       providerContext?.visualStateStore.set({ frontmostHeight: h })
@@ -356,12 +394,13 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     swipeDirection,
     activeSnapPoint,
     onOpenChange,
+    setActiveSnapPoint,
     onOpenToggle,
     trigger: getDrawerTriggerSurface(context),
     close: getDrawerCloseSurface(context),
     title: getDrawerTitleSurface(context),
     description: getDrawerDescriptionSurface(context),
-    handle: getDrawerHandleSurface(context),
+    grabber: getDrawerGrabberSurface(context),
     viewport: getDrawerViewportSurface(context),
     overlay: getDrawerOverlaySurface(context),
     content: getDrawerContentSurface(context),
@@ -428,10 +467,14 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     popupHeight: rootContext.popupHeight,
     viewportRef: currentElement,
     onSnapPointChange: (point) => {
-      if (point === null)
-        rootContext.onOpenChange(false, 'swipe')
-      else
-        rootContext.setActiveSnapPoint(point)
+      // Base UI parity (`DrawerViewport`): a release past the last snap point
+      // first requests the `null` snap point; cancelling it keeps the drawer
+      // open where it was. A cancelled close then restores the previous point.
+      const previous = rootContext.activeSnapPoint.value ?? null
+      if (!rootContext.setActiveSnapPoint(point, 'swipe'))
+        return
+      if (point === null && !rootContext.onOpenChange(false, 'swipe'))
+        rootContext.setActiveSnapPoint(previous, 'swipe')
     },
   })
 
@@ -879,7 +922,13 @@ export function useDrawerContentModality(options: UseDrawerContentModalityOption
         e.preventDefault()
     },
     onCloseWhileMounted() {
-      if (isFullModal.value || !hasInteractedOutside.value)
+      // Base UI (`FloatingFocusManager`) returns focus only while it is still
+      // inside the popup or was lost to `<body>`; focus the app already moved
+      // elsewhere stays there.
+      const content = toValue(options.contentElement)
+      const active = getActiveElement(content)
+      const focusIsOurs = !active || active === active.ownerDocument.body || !!content?.contains(active)
+      if (focusIsOurs && (isFullModal.value || !hasInteractedOutside.value))
         finalFocusElement()?.focus()
       hasInteractedOutside.value = false
       hasPointerDownOutside.value = false

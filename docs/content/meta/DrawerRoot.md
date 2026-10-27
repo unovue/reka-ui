@@ -58,9 +58,19 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Called before the open state changes (Base UI <code>onOpenChange</code>); <code>details.cancel()</code> keeps the current state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;DrawerOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:snapPoint',
+    'description': '<p>Called before the active snap point changes (Base UI <code>onSnapPointChange</code>); <code>details.cancel()</code> keeps the current\nsnap point. Cancelling the <code>null</code> a swipe past the last snap point requests keeps the drawer open.</p>\n',
+    'type': '[value: DrawerSnapPoint | null, details: ChangeEventDetails&lt;DrawerOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:open',
-    'description': '<p>Called before the open state changes, with why it is changing. Calling <code>details.cancel()</code> keeps the current state (Base UI <code>onOpenChange</code>).</p>\n',
-    'type': '[value: boolean, details: DrawerOpenChangeDetails]'
+    'description': '<p>Called when the open state changed.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;DrawerOpenChangeReason, Event&gt;]'
   },
   {
     'name': 'update:openComplete',
@@ -69,8 +79,8 @@
   },
   {
     'name': 'update:snapPoint',
-    'description': '<p>Called when the active snap point changes.</p>\n',
-    'type': '[value: DrawerSnapPoint | null]'
+    'description': '<p>Called when the active snap point changed.</p>\n',
+    'type': '[value: DrawerSnapPoint | null, details: ChangeEventDetails&lt;DrawerOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -107,9 +117,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Called before the open state changes, with why it is changing. Calling details.cancel() keeps the current state (Base UI onOpenChange). | `[value: boolean, details: DrawerOpenChangeDetails]` |
+| `beforeUpdate:open` | Called before the open state changes (Base UI onOpenChange); details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
+| `beforeUpdate:snapPoint` | Called before the active snap point changes (Base UI onSnapPointChange); details.cancel() keeps the current snap point. Cancelling the null a swipe past the last snap point requests keeps the drawer open. | `[value: DrawerSnapPoint \| null, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
+| `update:open` | Called when the open state changed. | `[value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 | `update:openComplete` | Called once the popup's enter or exit animations and transitions have finished, or right away when it has none. | `[value: boolean]` |
-| `update:snapPoint` | Called when the active snap point changes. | `[value: DrawerSnapPoint \| null]` |
+| `update:snapPoint` | Called when the active snap point changed. | `[value: DrawerSnapPoint \| null, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 
 **Slots**
 

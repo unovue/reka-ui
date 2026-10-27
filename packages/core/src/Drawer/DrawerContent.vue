@@ -1,10 +1,14 @@
 <script lang="ts">
 import type { DrawerContentImplEmits, DrawerContentImplProps } from './DrawerContentImpl.vue'
 
-export type DrawerContentEmits = DrawerContentImplEmits
-export interface DrawerContentProps extends Omit<DrawerContentImplProps, 'trapFocus'> {
+export type DrawerPopupEmits = DrawerContentImplEmits
+export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocus'> {
   forceMount?: boolean
 }
+/** @deprecated Use `DrawerPopupEmits`; `DrawerContent` is a deprecated alias of `DrawerPopup`. */
+export type DrawerContentEmits = DrawerPopupEmits
+/** @deprecated Use `DrawerPopupProps`; `DrawerContent` is a deprecated alias of `DrawerPopup`. */
+export type DrawerContentProps = DrawerPopupProps
 </script>
 
 <script setup lang="ts">
@@ -15,11 +19,11 @@ import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerContentModality } from './useDrawer'
 
-const props = withDefaults(defineProps<DrawerContentProps>(), {
+const props = withDefaults(defineProps<DrawerPopupProps>(), {
   initialFocus: true,
   finalFocus: true,
 })
-const emits = defineEmits<DrawerContentEmits>()
+const emits = defineEmits<DrawerPopupEmits>()
 
 const rootContext = injectDrawerRootContext()
 const emitsAsProps = useEmitAsProps(emits)
