@@ -1,4 +1,5 @@
 import type { UseEditableProps } from './useEditable'
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -140,6 +141,22 @@ describe('useEditable — cancellation', () => {
     e.edit()
     type(e, 'x')
     e.dismiss('focus-outside')
+    expect(e.isEditing.value).toBe(true)
+  })
+
+  it('one outside interaction makes one cancelled attempt, the next interaction tries again', async () => {
+    const onBeforeUpdate = vi.fn((_v: string, details: { cancel: () => void }) => details.cancel())
+    const e = scoped({ onBeforeUpdate })
+    e.edit()
+    type(e, 'x')
+    // A pointer press outside reports outside-press, then the focus move reports focus-outside.
+    e.dismiss('outside-press')
+    e.dismiss('focus-outside')
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdate.mock.calls[0][1]).toMatchObject({ reason: 'outside-press' })
+    await new Promise(resolve => setTimeout(resolve))
+    e.dismiss('focus-outside')
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
     expect(e.isEditing.value).toBe(true)
   })
 })
@@ -312,6 +329,24 @@ describe('editableRoot — change details', () => {
     await fireEvent.keyDown(input, { key: 'Enter' })
     expect(onUpdate).not.toHaveBeenCalled()
     expect(onSubmit).not.toHaveBeenCalled()
+    expect(input.hidden).toBe(false)
+  })
+
+  it('a cancelled outside click runs beforeUpdate:modelValue once', async () => {
+    const onBeforeUpdate = vi.fn((_v: string, details: { cancel: () => void }) => details.cancel())
+    const { getByTestId } = render(defineComponent({
+      setup: () => () => [
+        h(EditableRoot, { 'submitMode': 'blur', 'startWithEditMode': true, 'onBeforeUpdate:modelValue': onBeforeUpdate }, () =>
+          h(EditableArea, () => [h(EditablePreview), h(EditableInput, { 'data-testid': 'input' })])),
+        h('button', { 'data-testid': 'outside' }, 'outside'),
+      ],
+    }), { attachTo: document.body })
+    const input = getByTestId('input') as HTMLInputElement
+    await userEvent.type(input, 'b')
+    expect(document.activeElement).toBe(input)
+    await userEvent.click(getByTestId('outside'))
+    expect(document.activeElement).toBe(getByTestId('outside'))
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
     expect(input.hidden).toBe(false)
   })
 

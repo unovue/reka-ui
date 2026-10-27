@@ -287,13 +287,26 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
     return true
   }
 
+  // One outside interaction reports twice: a pointer press outside also moves focus
+  // outside (`outside-press` then `focus-outside`; on touch the order flips because the
+  // press waits for the click). Both arrive in the same task, so after a cancelled attempt
+  // the rest of that task is ignored — one interaction, one `beforeUpdate:modelValue`.
+  let dismissCancelledInTask = false
+
   function dismiss(reason: 'outside-press' | 'focus-outside', event?: Event) {
-    if (!isEditing.value)
+    if (!isEditing.value || dismissCancelledInTask)
       return
-    if (submitMode.value === 'blur' || submitMode.value === 'both')
-      submit(reason, event)
-    else
+    if (submitMode.value === 'blur' || submitMode.value === 'both') {
+      if (!submit(reason, event)) {
+        dismissCancelledInTask = true
+        setTimeout(() => {
+          dismissCancelledInTask = false
+        })
+      }
+    }
+    else {
       cancel()
+    }
   }
 
   const context: EditableRootContext = {
