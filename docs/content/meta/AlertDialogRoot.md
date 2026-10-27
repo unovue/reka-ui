@@ -10,9 +10,27 @@
     'default': 'false'
   },
   {
+    'name': 'defaultTriggerId',
+    'description': '<p>The id of the trigger that owns a dialog that starts open (with <code>defaultOpen</code> and a <code>handle</code>).</p>\n',
+    'type': 'string | null',
+    'required': false
+  },
+  {
+    'name': 'handle',
+    'description': '<p>A handle from <code>createDialogHandle()</code> that connects detached\n<code>DialogTrigger</code>s rendered anywhere in the app. Focus returns to, and the\ndefault slot\'s <code>payload</code> comes from, the trigger that opened the dialog.</p>\n',
+    'type': 'DialogHandle&lt;Payload&gt;',
+    'required': false
+  },
+  {
     'name': 'open',
     'description': '<p>The controlled open state of the dialog. Can be binded as <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'triggerId',
+    'description': '<p>The id of the trigger that owns the dialog, for a controlled dialog with\ndetached triggers. Use with <code>open</code>.</p>\n',
+    'type': 'string | null',
     'required': false
   },
   {
@@ -47,6 +65,16 @@
     'name': 'close',
     'description': '<p>Close the dialog</p>\n',
     'type': '(): void'
+  },
+  {
+    'name': 'payload',
+    'description': '<p>The <code>payload</code> of the detached trigger that opened the dialog, or from <code>handle.openWithPayload()</code></p>\n',
+    'type': 'Payload'
+  },
+  {
+    'name': 'activeTriggerId',
+    'description': '<p>The id of the detached trigger that opened the dialog</p>\n',
+    'type': 'string | null'
   }
 ]" />
 </llm-exclude>
@@ -58,7 +86,10 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `defaultTriggerId` | The id of the trigger that owns a dialog that starts open (with defaultOpen and a handle). | `string \| null` | No | - |
+| `handle` | A handle from createDialogHandle() that connects detached DialogTriggers rendered anywhere in the app. Focus returns to, and the default slot's payload comes from, the trigger that opened the dialog. | `DialogHandle<Payload>` | No | - |
 | `open` | The controlled open state of the dialog. Can be binded as v-model:open. | `boolean` | No | - |
+| `triggerId` | The id of the trigger that owns the dialog, for a controlled dialog with detached triggers. Use with open. | `string \| null` | No | - |
 | `unmountOnHide` | When set to false, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br> Useful for SEO or when you want to improve performance by not remounting the component on every open. | `boolean` | No | `true` |
 
 **Events**
@@ -74,5 +105,7 @@
 | --- | --- | --- |
 | `open` | Current open state | `boolean` |
 | `close` | Close the dialog | `(): void` |
+| `payload` | The payload of the detached trigger that opened the dialog, or from handle.openWithPayload() | `Payload` |
+| `activeTriggerId` | The id of the detached trigger that opened the dialog | `string \| null` |
 
 </llm-only>

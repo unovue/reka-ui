@@ -2,6 +2,7 @@
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, ref, watch } from 'vue'
 import { useEmitAsProps, useForwardElement } from '@/shared'
+import { getPopupRootStore } from '@/shared/popupHandle'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
@@ -13,6 +14,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectDialogRootContext()
+const handleStore = getPopupRootStore(rootContext)
 const hasInteractedOutsideRef = ref(false)
 const hasPointerDownOutsideRef = ref(false)
 
@@ -67,6 +69,13 @@ watch(() => props.present, (isPresent, wasPresent) => {
       const target = event.target as HTMLElement;
       const targetIsTrigger = rootContext.triggerElement.value?.contains(target);
       if (targetIsTrigger) event.preventDefault();
+
+      // Another detached trigger of the same handle: its click moves the open
+      // dialog there (Base UI), so this press is not a dismissal.
+      if (handleStore?.handle.value && handleStore.containsTrigger(target)) {
+        event.preventDefault();
+        hasInteractedOutsideRef = false;
+      }
 
       // On Safari if the trigger is inside a container with tabIndex={0}, when clicked
       // we will get the pointer down outside event on the trigger, but then a subsequent
