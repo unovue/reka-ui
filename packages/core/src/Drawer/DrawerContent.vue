@@ -8,9 +8,10 @@ export interface DrawerContentProps extends Omit<DrawerContentImplProps, 'trapFo
 </script>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { Presence } from '@/Presence'
-import { isHTMLElement, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
+import { isHTMLElement, useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
@@ -36,6 +37,21 @@ const isTrapFocusOnly = computed(() => rootContext.modal.value === 'trap-focus')
 const shouldTrapFocus = computed(() => (isFullModal.value || isTrapFocusOnly.value) && rootContext.open.value)
 const shouldHideOthers = computed(() => isFullModal.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
+
+// BaseUI parity (`useDialogRoot`): only a fully modal drawer locks page scroll,
+// with or without a `DrawerOverlay`; `'trap-focus'` leaves the page scrollable.
+const scrollLocked = useBodyScrollLock(isFullModal.value && rootContext.open.value)
+watch(() => isFullModal.value && rootContext.open.value, (locked) => {
+  scrollLocked.value = locked
+})
+
+function onPointerDownOutsideModal(e: any) {
+  const orig = e.detail.originalEvent
+  const isRightClick = orig.button === 2 || (orig.button === 0 && orig.ctrlKey)
+  // Only a press on the drawer's own backdrop dismisses it (BaseUI `useDialogRoot`).
+  if (isRightClick || !isOwnBackdropPress(e.target, currentElement.value, rootContext.overlayElement.value))
+    e.preventDefault()
+}
 
 function finalFocusElement() {
   if (props.finalFocus === false)
@@ -85,11 +101,7 @@ function onInteractOutsideNonModal(e: any) {
           finalFocusElement()?.focus()
         }
       }"
-      @pointer-down-outside="(e: any) => {
-        const orig = e.detail.originalEvent
-        const isRightClick = orig.button === 2 || (orig.button === 0 && orig.ctrlKey)
-        if (isRightClick) e.preventDefault()
-      }"
+      @pointer-down-outside="onPointerDownOutsideModal"
       @focus-outside="(e: Event) => e.preventDefault()"
     >
       <slot />

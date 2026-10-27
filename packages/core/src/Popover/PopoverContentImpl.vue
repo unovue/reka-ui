@@ -28,6 +28,8 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
    * @defaultValue false
    */
   trapFocus?: FocusScopeProps['trapped']
+  /** Element left interactive through the modal internal backdrop (the trigger). */
+  backdropCutout?: HTMLElement | null
 }
 </script>
 
@@ -43,7 +45,7 @@ import { getPopoverContentSurface } from './usePopover'
 const props = defineProps<PopoverContentImplPrivateProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
 
-const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
+const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents', 'backdropCutout'))
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -68,6 +70,7 @@ const content = getPopoverContentSurface(rootContext)
     <DismissableLayer
       as-child
       :disable-outside-pointer-events="disableOutsidePointerEvents"
+      :backdrop-cutout="backdropCutout"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
       @escape-key-down="emits('escapeKeyDown', $event)"

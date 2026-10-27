@@ -11,6 +11,7 @@ const emits = defineEmits<PopoverContentImplEmits>()
 const rootContext = injectPopoverRootContext()
 const isRightClickOutsideRef = ref(false)
 
+// Base UI `PopoverPositioner`: a `modal` popover locks page scroll.
 useBodyScrollLock(true)
 
 const forwarded = useForwardPropsEmits(props, emits)
@@ -26,6 +27,7 @@ useHideOthers(currentElement)
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
     disable-outside-pointer-events
+    :backdrop-cutout="rootContext.triggerElement.value"
     @close-auto-focus.prevent="
       (event) => {
         emits('closeAutoFocus', event);
@@ -43,6 +45,11 @@ useHideOthers(currentElement)
         const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
 
         isRightClickOutsideRef = isRightClick;
+
+        // The trigger stays interactive through the backdrop (Base UI cuts it
+        // out) and already toggles the popover closed; dismissing here too
+        // would close it and immediately reopen it.
+        if (rootContext.triggerElement.value?.contains(event.target as Node)) event.preventDefault();
       }
     "
     @focus-outside.prevent

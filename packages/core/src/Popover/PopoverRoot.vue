@@ -21,7 +21,10 @@ export interface PopoverRootProps {
    */
   open?: boolean
   /**
-   * The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers.
+   * The modality of the popover. When `true`, page scroll is locked, the rest of
+   * the page (except the trigger) is covered by an internal backdrop that
+   * closes the popover on press, and only the popover content is visible to
+   * screen readers.
    *
    * @defaultValue false
    */

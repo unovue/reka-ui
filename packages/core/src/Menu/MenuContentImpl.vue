@@ -38,6 +38,15 @@ export interface MenuContentContext {
 export const [injectMenuContentContext, provideMenuContentContext]
   = createContext<MenuContentContext>('MenuContent')
 
+/**
+ * The element a modal root menu keeps interactive through its internal backdrop
+ * (Base UI `MenuPositioner` cuts the trigger out of it): the DropdownMenu
+ * trigger, or the ContextMenu trigger area so a right-click there re-opens the
+ * menu at the new point. Provided by the family's `*Content`.
+ */
+export const [injectMenuBackdropCutoutContext, provideMenuBackdropCutoutContext]
+  = createContext<Ref<HTMLElement | undefined>>('MenuContent', 'MenuBackdropCutoutContext')
+
 export interface MenuContentImplPrivateProps {
   /**
    * When `true`, hover/focus/click interactions will be disabled on elements outside
@@ -91,8 +100,10 @@ export interface MenuRootContentTypeProps
 
 <script setup lang="ts">
 import {
+  computed,
   ref,
   toRefs,
+  watch,
 } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
@@ -117,7 +128,11 @@ const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 // RovingFocusGroup/PopperContent) stay in the SFC; the keyboard/pointer/highlight
 // brain moves into useMenuContent(). `getItems` bridges the one seam the composable
 // can't reach — RovingFocusGroup's template-instance-ref.
-useBodyScrollLock(disableOutsidePointerEvents.value)
+// Base UI `MenuPositioner`: a modal root menu locks page scroll while open.
+const scrollLocked = useBodyScrollLock(!!disableOutsidePointerEvents.value)
+watch(disableOutsidePointerEvents, value => scrollLocked.value = !!value)
+const backdropCutout = injectMenuBackdropCutoutContext(null)
+const backdropCutoutElement = computed(() => backdropCutout?.value)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
@@ -148,6 +163,7 @@ provideMenuContentContext(contentContext)
     <DismissableLayer
       as-child
       :disable-outside-pointer-events="disableOutsidePointerEvents"
+      :backdrop-cutout="backdropCutoutElement"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @focus-outside="emits('focusOutside', $event)"

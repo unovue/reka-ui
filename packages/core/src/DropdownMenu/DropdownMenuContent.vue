@@ -12,6 +12,7 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 <script setup lang="ts">
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
+import { provideMenuBackdropCutoutContext } from '@/Menu/MenuContentImpl.vue'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { useForwardElement, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
@@ -27,6 +28,8 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectDropdownMenuRootContext()
+// The trigger stays interactive through a modal menu's backdrop (Base UI).
+provideMenuBackdropCutoutContext(rootContext.triggerElement)
 
 const hasInteractedOutsideRef = ref(false)
 

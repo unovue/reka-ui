@@ -35,7 +35,10 @@ export interface MenuProps {
   /**
    * The modality of the dropdown menu.
    *
-   * When set to `true`, interaction with outside elements will be disabled and only menu content will be visible to screen readers.
+   * When `true`, page scroll is locked, the rest of the page (except the
+   * trigger) is covered by an internal backdrop that closes the menu on press,
+   * and only the menu content is visible to screen readers.
+   * @defaultValue true
    */
   modal?: boolean
 }

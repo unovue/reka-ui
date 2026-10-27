@@ -253,9 +253,6 @@ provideAutocompleteRootContext({
       ref="primitiveElement"
       v-bind="omitBeforeUpdateModelValue($attrs)"
       v-model="(contextModelValue as any)"
-      :style="{
-        pointerEvents: open ? 'auto' : undefined,
-      }"
       :as="as"
       :as-child="asChild"
       :dir="dir"

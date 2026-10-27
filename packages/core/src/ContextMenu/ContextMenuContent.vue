@@ -21,6 +21,7 @@ export interface ContextMenuContentProps
 <script setup lang="ts">
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
+import { provideMenuBackdropCutoutContext } from '@/Menu/MenuContentImpl.vue'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 
@@ -42,6 +43,9 @@ const forwarded = useForwardPropsEmits(props, emits)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectContextMenuRootContext()
+// A right-click inside the trigger area re-opens a modal menu at the new point,
+// so the area stays interactive through the menu's backdrop.
+provideMenuBackdropCutoutContext(rootContext.triggerElement)
 const hasInteractedOutside = ref(false)
 </script>
 

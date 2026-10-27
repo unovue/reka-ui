@@ -266,9 +266,6 @@ provideComboboxRootContext({
       ref="primitiveElement"
       v-bind="omitBeforeUpdateModelValue($attrs)"
       v-model="modelValue"
-      :style="{
-        pointerEvents: open ? 'auto' : undefined,
-      }"
       :as="as"
       :as-child="asChild"
       :dir="dir"
