@@ -8,7 +8,7 @@ import ts from 'typescript'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { components } from '../constant'
-import { getComponentFamilies, getFamilyTypesVersions, mergeExports, syncPackageJson, toKebabCase } from '../scripts/families'
+import { getComponentFamilies, getTypesVersions, mergeExports, syncPackageJson, toKebabCase } from '../scripts/families'
 import * as RekaUI from './index'
 
 const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -57,7 +57,11 @@ describe('per-family subpath exports', () => {
   })
 
   it('keeps package.json#typesVersions in sync with the barrel (run `pnpm --filter reka-ui gen:exports`)', () => {
-    expect(pkg.typesVersions).toEqual(getFamilyTypesVersions())
+    expect(pkg.typesVersions).toEqual(getTypesVersions(exportsMap))
+    for (const [subpath, [types]] of Object.entries(pkg.typesVersions['*'] as Record<string, string[]>)) {
+      expect(Object.keys(exportsMap)).toContain(`./${subpath}`)
+      expect(types).toMatch(/^\.\/dist\/.+\.d\.m?ts$/)
+    }
     expect(JSON.stringify(syncPackageJson(pkg))).toBe(JSON.stringify(pkg))
   })
 
@@ -232,6 +236,12 @@ describe.skipIf(!hasDist)('built subpaths (dist)', () => {
         `export type Missing = typeof import('reka-ui/select')['DialogRoot']`,
         `// @ts-expect-error the root import keeps its types`,
         `export type MissingRoot = typeof import('reka-ui')['NotAComponent']`,
+        // Hand-written entries (the plugin entries are built by `packages/plugins` and not checked here)
+        `export type Units = typeof import('reka-ui/date')['CALENDAR_UNITS']`,
+        `export type MenuContent = typeof import('reka-ui/internal')['MenuContent']`,
+        `export type Groups = typeof import('reka-ui/constant')['components']`,
+        `// @ts-expect-error hand-written entries keep their own exports`,
+        `export type MissingDate = typeof import('reka-ui/date')['DialogRoot']`,
       ].join('\n'))
 
       const program = ts.createProgram([join(dir, 'index.ts')], {

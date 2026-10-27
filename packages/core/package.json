@@ -436,6 +436,24 @@
   "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
+      "internal": [
+        "./dist/internal.d.ts"
+      ],
+      "constant": [
+        "./dist/constant.d.ts"
+      ],
+      "date": [
+        "./dist/date.d.ts"
+      ],
+      "namespaced": [
+        "./dist/namespaced/index.d.mts"
+      ],
+      "nuxt": [
+        "./dist/nuxt/index.d.mts"
+      ],
+      "resolver": [
+        "./dist/resolver/index.d.mts"
+      ],
       "accordion": [
         "./dist/accordion.d.ts"
       ],

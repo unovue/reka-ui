@@ -229,6 +229,9 @@ export const components = {
     'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
+    'DrawerPopup',
+    'DrawerBackdrop',
+    'DrawerProvider',
   ] as const,
 
   dropdownMenu: [
@@ -401,6 +404,7 @@ export const components = {
     'ScrollAreaScrollbar',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
+    'ScrollAreaScrollbarGlimpse',
   ] as const,
 
   select: [

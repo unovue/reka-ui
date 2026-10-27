@@ -101,14 +101,25 @@ export function getFamilyExports(families = getComponentFamilies()): Record<stri
   ]))
 }
 
+const JS_EXTENSION = /\.(m?)js$/
+
 /**
- * `package.json#typesVersions` for every family subpath. `moduleResolution: node` (node10)
- * ignores `exports`, so without it `reka-ui/dialog` has no types there (the resolver and the
- * Nuxt module write such imports into `components.d.ts`). Paths no pattern matches, the root
- * import included, resolve as before; `node16` and `bundler` read `exports` instead.
+ * `package.json#typesVersions` for every subpath in `exports` (families and the hand-written
+ * `./date`, `./nuxt`, …). `moduleResolution: node` (node10) ignores `exports`, so without it
+ * `reka-ui/dialog` has no types there (the resolver and the Nuxt module write such imports into
+ * `components.d.ts`). Paths no pattern matches, the root import included, resolve as before;
+ * `node16` and `bundler` read `exports` instead.
  */
-export function getFamilyTypesVersions(families = getComponentFamilies()): { '*': Record<string, string[]> } {
-  return { '*': Object.fromEntries(families.map(({ key }) => [key, [`./dist/${key}.d.ts`]])) }
+export function getTypesVersions(exports: Record<string, unknown>): { '*': Record<string, string[]> } {
+  const paths: Record<string, string[]> = {}
+  for (const [key, value] of Object.entries(exports)) {
+    if (key === '.' || key === './package.json')
+      continue
+    const target = (value as { import: string | { types: string } }).import
+    const types = typeof target === 'string' ? target.replace(JS_EXTENSION, '.d.$1ts') : target.types
+    paths[key.slice(2)] = [types]
+  }
+  return { '*': paths }
 }
 
 /**
@@ -117,7 +128,7 @@ export function getFamilyTypesVersions(families = getComponentFamilies()): { '*'
  */
 export function syncPackageJson(pkg: Record<string, any>, families = getComponentFamilies()): Record<string, any> {
   const exports = mergeExports(pkg.exports, families)
-  const typesVersions = getFamilyTypesVersions(families)
+  const typesVersions = getTypesVersions(exports)
   const entries = Object.entries(pkg).filter(([key]) => key !== 'typesVersions')
   const result: Record<string, any> = {}
   for (const [key, value] of entries) {
