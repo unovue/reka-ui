@@ -74,3 +74,14 @@ export {
   default as ContextMenuTrigger,
   type ContextMenuTriggerProps,
 } from './ContextMenuTrigger.vue'
+export {
+  type ContextMenuContentHandlers,
+  type ContextMenuOpenChangeReason,
+  type ContextMenuTriggerOptions,
+  type ContextMenuTriggerState,
+  type ContextMenuTriggerSurface,
+  type ContextMenuVirtualElement,
+  useContextMenu,
+  type UseContextMenuProps,
+  type UseContextMenuReturn,
+} from './useContextMenu'

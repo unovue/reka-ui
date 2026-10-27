@@ -2,9 +2,9 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason, Direction } from '@/shared/types'
-import { createContext, useControllableState, useDirection } from '@/shared'
+import { createContext, useDirection } from '@/shared'
 
-type ContextMenuRootContext = {
+export type ContextMenuRootContext = {
   open: ComputedRef<boolean>
   onOpenChange: (open: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => void
   modal: Ref<boolean>
@@ -28,8 +28,10 @@ export const [injectContextMenuRootContext, provideContextMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
-import { MenuRoot } from '@/Menu'
+import { toRefs } from 'vue'
+import { provideMenuContext, provideMenuRootContext } from '@/Menu/MenuRoot.vue'
+import { PopperRoot } from '@/Popper'
+import { useContextMenu } from './useContextMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -44,36 +46,26 @@ const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
 const dir = useDirection(propDir)
 
-// The trigger opens the menu and the controlled `MenuRoot` below reports closes
-// with their reason; both paths go through one `setState` so `beforeUpdate:open`
-// can cancel either. `open` is optional: without it ContextMenu owns the model.
-const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
-  prop: () => props.open,
-  defaultValue: props.defaultOpen ?? false,
-  name: 'open',
-  emit: emits,
-})
-const triggerElement = ref<HTMLElement>()
-
-provideContextMenuRootContext({
-  open,
-  onOpenChange: (value, reason = 'trigger-press', event) => {
-    setState(value, reason, event)
-  },
+// `useContextMenu` composes `useMenuRoot`: the trigger's open and every Menu
+// close (items, Escape, outside press) go through one `setState`, so
+// `beforeUpdate:open` can cancel either. `open` is optional: without it
+// ContextMenu owns the model.
+const { context, menuContext, menuRootContext } = useContextMenu({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen ?? false,
   dir,
   modal,
-  triggerElement,
   pressOpenDelay,
+  emit: emits,
 })
+
+provideMenuContext(menuContext)
+provideMenuRootContext(menuRootContext)
+provideContextMenuRootContext(context)
 </script>
 
 <template>
-  <MenuRoot
-    :open="open"
-    :dir="dir"
-    :modal="modal"
-    @update:open="(value, details) => setState(value, details.reason, details.event)"
-  >
+  <PopperRoot>
     <slot />
-  </MenuRoot>
+  </PopperRoot>
 </template>

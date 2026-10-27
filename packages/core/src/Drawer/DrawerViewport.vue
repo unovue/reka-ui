@@ -7,8 +7,9 @@ export interface DrawerViewportProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
+import { getDrawerViewportSurface } from './useDrawer'
 
 /**
  * Optional wrapper around `DrawerContent`. Mirrors Base UI's `Drawer.Viewport`
@@ -21,6 +22,7 @@ const props = withDefaults(defineProps<DrawerViewportProps>(), { as: 'div' })
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectDrawerRootContext()
+const viewport = getDrawerViewportSurface(rootContext)
 
 // `currentElement` is already cleared by the time `onUnmounted` runs (Vue
 // nulls the template ref before the unmount hooks), so keep our own handle
@@ -41,10 +43,10 @@ onUnmounted(() => {
 
 <template>
   <Primitive
-    v-bind="props"
     :ref="forwardRef"
-    data-drawer-viewport=""
-    :data-state="disclosureState(rootContext.open.value)"
+    :as="props.as"
+    :as-child="props.asChild"
+    v-bind="viewport.attrs.value"
   >
     <slot />
   </Primitive>

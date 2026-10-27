@@ -1,13 +1,10 @@
 <script lang="ts">
+import type { AlertDialogContentContext } from './useAlertDialog'
 import type {
   DialogContentEmits,
   DialogContentProps,
 } from '@/Dialog'
 import { createContext, useEmitAsProps, useForwardElement } from '@/shared'
-
-interface AlertDialogContentContext {
-  onCancelElementChange: (el: HTMLElement | undefined) => void
-}
 
 export const [injectAlertDialogContentContext, provideAlertDialogContentContext]
   = createContext<AlertDialogContentContext>('AlertDialogContent')
@@ -17,8 +14,8 @@ export interface AlertDialogContentProps extends DialogContentProps {}
 </script>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
 import { DialogContent } from '@/Dialog'
+import { useAlertDialogContent } from './useAlertDialog'
 
 const props = withDefaults(defineProps<AlertDialogContentProps>(), {
   // Keep `undefined` (instead of Vue's boolean coercion to `false`) so
@@ -32,13 +29,10 @@ const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-const cancelElement = ref<HTMLElement | undefined>()
-
-provideAlertDialogContentContext({
-  onCancelElementChange: (el) => {
-    cancelElement.value = el
-  },
-})
+// The outside-press guard and focus-Cancel-on-open live in the composable;
+// `DialogContent` (Presence, FocusScope, DismissableLayer) stays the wrapper.
+const { contentContext, onOpenAutoFocus, onPointerDownOutside, onInteractOutside } = useAlertDialogContent()
+provideAlertDialogContentContext(contentContext)
 </script>
 
 <template>
@@ -46,17 +40,9 @@ provideAlertDialogContentContext({
     :ref="forwardRef"
     v-bind="{ ...props, ...emitsAsProps }"
     role="alertdialog"
-    @pointer-down-outside.prevent
-    @interact-outside.prevent
-    @open-auto-focus="
-      () => {
-        nextTick(() => {
-          cancelElement?.focus({
-            preventScroll: true,
-          });
-        });
-      }
-    "
+    @pointer-down-outside="onPointerDownOutside"
+    @interact-outside="onInteractOutside"
+    @open-auto-focus="onOpenAutoFocus"
   >
     <slot />
   </DialogContent>

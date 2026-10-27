@@ -75,3 +75,23 @@ export {
 export {
   default as DrawerVirtualKeyboardProvider,
 } from './DrawerVirtualKeyboardProvider.vue'
+export {
+  type DrawerContentState,
+  type DrawerHandleState,
+  type DrawerOverlayState,
+  type DrawerSwipeAreaState,
+  type DrawerTriggerState,
+  type DrawerViewportState,
+  useDrawer,
+  useDrawerContent,
+  useDrawerContentModality,
+  type UseDrawerContentModalityOptions,
+  type UseDrawerContentModalityReturn,
+  type UseDrawerContentOptions,
+  type UseDrawerContentReturn,
+  type UseDrawerProps,
+  type UseDrawerReturn,
+  useDrawerSwipeArea,
+  type UseDrawerSwipeAreaOptions,
+  type UseDrawerSwipeAreaReturn,
+} from './useDrawer'

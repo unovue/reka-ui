@@ -79,3 +79,11 @@ export {
   default as DropdownMenuTrigger,
   type DropdownMenuTriggerProps,
 } from './DropdownMenuTrigger.vue'
+export {
+  type DropdownMenuContentSurface,
+  type DropdownMenuOpenChangeReason,
+  type DropdownMenuTriggerState,
+  useDropdownMenu,
+  type UseDropdownMenuProps,
+  type UseDropdownMenuReturn,
+} from './useDropdownMenu'

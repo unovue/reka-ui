@@ -8,12 +8,12 @@ export interface DrawerContentProps extends Omit<DrawerContentImplProps, 'trapFo
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
+import { computed, watch } from 'vue'
 import { Presence } from '@/Presence'
-import { isHTMLElement, useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
+import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
+import { useDrawerContentModality } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerContentProps>(), {
   initialFocus: true,
@@ -25,16 +25,23 @@ const rootContext = injectDrawerRootContext()
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const hasInteractedOutside = ref(false)
-const hasPointerDownOutside = ref(false)
 
-// Modality tiers:
-//   true           → full modal (focus trap + hide others + outside pointer events blocked)
-//   'trap-focus'   → traps focus but does NOT block outside pointer events
-//   false          → non-modal
-const isFullModal = computed(() => rootContext.modal.value === true)
-const isTrapFocusOnly = computed(() => rootContext.modal.value === 'trap-focus')
-const shouldTrapFocus = computed(() => (isFullModal.value || isTrapFocusOnly.value) && rootContext.open.value)
+// Modality tiers (`true` / `'trap-focus'` / `false`) and their focus-return /
+// outside-interaction handlers come from the composable; Presence and
+// `useHideOthers` stay here.
+const {
+  isFullModal,
+  shouldTrapFocus,
+  onCloseAutoFocusModal,
+  onPointerDownOutsideModal,
+  onFocusOutsideModal,
+  onCloseAutoFocusNonModal,
+  onInteractOutsideNonModal,
+} = useDrawerContentModality({
+  rootContext,
+  contentElement: currentElement,
+  finalFocus: () => props.finalFocus,
+})
 const shouldHideOthers = computed(() => isFullModal.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
 
@@ -44,47 +51,6 @@ const scrollLocked = useBodyScrollLock(isFullModal.value && rootContext.open.val
 watch(() => isFullModal.value && rootContext.open.value, (locked) => {
   scrollLocked.value = locked
 })
-
-function onPointerDownOutsideModal(e: any) {
-  const orig = e.detail.originalEvent
-  const isRightClick = orig.button === 2 || (orig.button === 0 && orig.ctrlKey)
-  // Only a press on the drawer's own backdrop dismisses it (BaseUI `useDialogRoot`).
-  if (isRightClick || !isOwnBackdropPress(e.target, currentElement.value, rootContext.overlayElement.value))
-    e.preventDefault()
-}
-
-function finalFocusElement() {
-  if (props.finalFocus === false)
-    return undefined
-  if (isHTMLElement(props.finalFocus))
-    return props.finalFocus
-  return rootContext.triggerElement.value
-}
-
-// Non-modal handlers defined as named functions so the refs are accessed via
-// `.value` explicitly and the reads/writes are unambiguous.
-function onCloseAutoFocusNonModal(e: Event) {
-  if (!e.defaultPrevented) {
-    if (!hasInteractedOutside.value)
-      finalFocusElement()?.focus()
-    e.preventDefault()
-  }
-  hasInteractedOutside.value = false
-  hasPointerDownOutside.value = false
-}
-
-function onInteractOutsideNonModal(e: any) {
-  if (!e.defaultPrevented) {
-    hasInteractedOutside.value = true
-    if (e.detail.originalEvent.type === 'pointerdown')
-      hasPointerDownOutside.value = true
-  }
-  const target = e.target as HTMLElement
-  if (rootContext.triggerElement.value?.contains(target))
-    e.preventDefault()
-  if (e.detail.originalEvent.type === 'focusin' && hasPointerDownOutside.value)
-    e.preventDefault()
-}
 </script>
 
 <template>
@@ -95,14 +61,9 @@ function onInteractOutsideNonModal(e: any) {
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="true"
-      @close-auto-focus="(e: Event) => {
-        if (!e.defaultPrevented) {
-          e.preventDefault()
-          finalFocusElement()?.focus()
-        }
-      }"
+      @close-auto-focus="onCloseAutoFocusModal"
       @pointer-down-outside="onPointerDownOutsideModal"
-      @focus-outside="(e: Event) => e.preventDefault()"
+      @focus-outside="onFocusOutsideModal"
     >
       <slot />
     </DrawerContentImpl>

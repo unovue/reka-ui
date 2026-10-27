@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason } from '@/shared'
-import { createContext, useControllableState, useDirection } from '@/shared'
+import { createContext, useDirection, useId } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
@@ -27,8 +27,10 @@ export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
-import { MenuRoot } from '@/Menu'
+import { toRefs } from 'vue'
+import { provideMenuContext, provideMenuRootContext } from '@/Menu/MenuRoot.vue'
+import { PopperRoot } from '@/Popper'
+import { useDropdownMenu } from './useDropdownMenu'
 
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,
@@ -43,43 +45,29 @@ defineSlots<{
   }) => any
 }>()
 
-// Owns the model so `beforeUpdate:open` can cancel: the trigger opens it and
-// the controlled `MenuRoot` below reports closes with their reason; both paths
-// go through one `setState`.
-const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({
-  prop: () => props.open,
-  defaultValue: props.defaultOpen ?? false,
-  name: 'open',
+// `useDropdownMenu` composes `useMenuRoot`: one open model, so the trigger and
+// every Menu part (items, Escape, outside press) go through the same `setState`
+// and `beforeUpdate:open` can cancel any of them. `useDirection` (ConfigProvider)
+// and `useId` (SSR-stable) stay in the shell.
+const { modal, dir: propDir } = toRefs(props)
+const dir = useDirection(propDir)
+
+const { open, context, menuContext, menuRootContext } = useDropdownMenu({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen ?? false,
+  dir,
+  modal,
+  baseId: useId(undefined, 'reka-dropdown-menu'),
   emit,
 })
 
-const triggerElement = ref<HTMLElement>()
-
-const { modal, dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
-provideDropdownMenuRootContext({
-  open,
-  onOpenChange: (value, reason = 'trigger-press', event) => {
-    setState(value, reason, event)
-  },
-  onOpenToggle: (reason = 'trigger-press', event) => {
-    setState(!open.value, reason, event)
-  },
-  triggerId: '',
-  triggerElement,
-  contentId: '',
-  modal,
-  dir,
-})
+provideMenuContext(menuContext)
+provideMenuRootContext(menuRootContext)
+provideDropdownMenuRootContext(context)
 </script>
 
 <template>
-  <MenuRoot
-    :open="open"
-    :dir="dir"
-    :modal="modal"
-    @update:open="(value, details) => setState(value, details.reason, details.event)"
-  >
+  <PopperRoot>
     <slot :open="open" />
-  </MenuRoot>
+  </PopperRoot>
 </template>

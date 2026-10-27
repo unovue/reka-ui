@@ -19,11 +19,11 @@ export interface ContextMenuContentProps
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
 import { provideMenuBackdropCutoutContext } from '@/Menu/MenuContentImpl.vue'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
+import { createContextMenuContentHandlers } from './useContextMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -46,7 +46,8 @@ const rootContext = injectContextMenuRootContext()
 // A right-click inside the trigger area re-opens a modal menu at the new point,
 // so the area stays interactive through the menu's backdrop.
 provideMenuBackdropCutoutContext(rootContext.triggerElement)
-const hasInteractedOutside = ref(false)
+// Bound after the forwarded emits, so they still see a consumer's `preventDefault()`.
+const { onCloseAutoFocus, onInteractOutside } = createContextMenuContentHandlers(rootContext)
 </script>
 
 <template>
@@ -68,25 +69,8 @@ const hasInteractedOutside = ref(false)
         'var(--reka-popper-anchor-height)',
     }"
     v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
-    @close-auto-focus="
-      (event) => {
-        if (!event.defaultPrevented && hasInteractedOutside) {
-          event.preventDefault();
-        }
-        hasInteractedOutside = false;
-      }
-    "
-    @interact-outside="
-      (event) => {
-        const originalEvent = event.detail.originalEvent as PointerEvent
-        // Prevent closing when right click (button=2) with the trigger element
-        if (originalEvent.button === 2 && event.target === rootContext.triggerElement.value) {
-          event.preventDefault()
-        }
-        if (!event.defaultPrevented && !rootContext.modal.value)
-          hasInteractedOutside = true;
-      }
-    "
+    @close-auto-focus="onCloseAutoFocus"
+    @interact-outside="onInteractOutside"
   >
     <slot />
   </MenuContent>
