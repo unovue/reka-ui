@@ -48,9 +48,13 @@ describe('useMenubar — model', () => {
     expect(m.currentTabStopId.value).toBe('file')
     expect(m.lastChangeDetails.value.reason).toBe('trigger-press')
 
-    // Toggling while any menu is open closes the bar.
+    // Toggling while any menu is open closes the bar; a close does not move the tab stop.
     expect(m.onMenuToggle('edit', 'trigger-press')).toBe(true)
     expect(m.modelValue.value).toBe('')
+    expect(m.currentTabStopId.value).toBe('file')
+
+    expect(m.onMenuToggle('edit', 'trigger-press')).toBe(true)
+    expect(m.modelValue.value).toBe('edit')
     expect(m.currentTabStopId.value).toBe('edit')
 
     m.onMenuOpen('edit')
@@ -188,6 +192,33 @@ describe('useMenubarMenu — trigger surface', () => {
     expect(file.context.wasKeyboardTriggerOpenRef.value).toBe(true)
     file.trigger.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }))
     expect(bar.modelValue.value).toBe('')
+  })
+
+  it('a cancelled or controlled-ignored request moves neither the tab stop nor the keyboard flag', () => {
+    const cancel = { on: true }
+    const bar = useMenubar({ onBeforeUpdate: (_v, d) => cancel.on && d.cancel() })
+    const file = menuHarness(bar.context, { value: 'file' })
+
+    file.trigger.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }))
+    expect(bar.modelValue.value).toBe('')
+    expect(bar.currentTabStopId.value).toBeNull()
+    expect(file.context.wasKeyboardTriggerOpenRef.value).toBe(false)
+
+    // The later pointer open must not get keyboard entry focus.
+    cancel.on = false
+    file.trigger.props.value.onPointerdown(new PointerEvent('pointerdown', { button: 0 }))
+    expect(bar.modelValue.value).toBe('file')
+    expect(bar.currentTabStopId.value).toBe('file')
+    const entry = new Event('entry', { cancelable: true })
+    file.content.onEntryFocus(entry)
+    expect(entry.defaultPrevented).toBe(true)
+
+    // Controlled parent that ignores the request: nothing opens, nothing moves.
+    const controlled = useMenubar({ modelValue: () => '', emit: vi.fn() })
+    const edit = menuHarness(controlled.context, { value: 'edit' })
+    edit.trigger.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
+    expect(controlled.currentTabStopId.value).toBeNull()
+    expect(edit.context.wasKeyboardTriggerOpenRef.value).toBe(false)
   })
 
   it('disabled ignores pointer and keys', () => {

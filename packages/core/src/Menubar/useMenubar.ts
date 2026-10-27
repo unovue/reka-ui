@@ -108,7 +108,10 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
 
   function onMenuOpen(value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
     const changed = setState(value, reason, event)
-    currentTabStopId.value = value
+    // Move the tab stop only when the menu actually opened: a cancelled or
+    // no-op request (or a controlled parent that ignored it) leaves it alone.
+    if (changed && modelValue.value === value)
+      currentTabStopId.value = value
     return changed
   }
   function onMenuClose(reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
@@ -116,9 +119,9 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
   }
   function onMenuToggle(value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
     const changed = setState(modelValue.value ? '' : value, reason, event)
-    // `onMenuOpen` and `onMenuToggle` are called exclusively so we
-    // need to update the id in either case.
-    currentTabStopId.value = value
+    // Same rule as `onMenuOpen`: only an open that went through moves the tab stop.
+    if (changed && modelValue.value === value)
+      currentTabStopId.value = value
     return changed
   }
 
@@ -289,13 +292,16 @@ export function createMenubarTriggerSurface(
           return
         if (isDisabled() || event.defaultPrevented)
           return
-        if (['Enter', ' '].includes(event.key))
-          rootContext.onMenuToggle(menuContext.value, 'trigger-press', event)
-        if (event.key === 'ArrowDown')
-          rootContext.onMenuOpen(menuContext.value, 'trigger-press', event)
+        const changed = event.key === 'ArrowDown'
+          ? rootContext.onMenuOpen(menuContext.value, 'trigger-press', event)
+          : rootContext.onMenuToggle(menuContext.value, 'trigger-press', event)
+        // Mark a keyboard open only when this key actually opened the menu: a
+        // cancelled or no-op request must not leave the flag set for a later
+        // pointer open (which would then get keyboard entry focus).
+        if (changed && open.value)
+          menuContext.wasKeyboardTriggerOpenRef.value = true
         // prevent keydown from scrolling window / first focused item to execute
         // that keydown (inadvertently closing the menu)
-        menuContext.wasKeyboardTriggerOpenRef.value = true
         event.preventDefault()
       },
       'onFocus': () => {
