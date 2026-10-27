@@ -21,7 +21,7 @@ import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardElement, useId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 import { getCollapsibleContentSurface } from './useCollapsible'
 
@@ -36,7 +36,8 @@ const rootContext = injectCollapsibleRootContext()
 rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
 
 const presentRef = ref<InstanceType<typeof Presence>>()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const width = ref(0)
 const height = ref(0)

@@ -4,7 +4,7 @@ import type { AccordionChangeReason, UseAccordionReturn } from './useAccordion'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useForwardElement } from '@/shared'
 
 export interface AccordionRootProps<T = string | string[]>
   extends PrimitiveProps, SingleOrMultipleProps<T> {
@@ -94,7 +94,8 @@ defineSlots<{
 const { dir, disabled, unmountOnHide } = toRefs(props)
 const direction = useDirection(dir)
 
-const { forwardRef, currentElement: parentElement } = useForwardExpose()
+const { forwardRef, currentElement: parentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const { context, modelValue } = useAccordion({
   modelValue: () => props.modelValue,

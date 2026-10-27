@@ -6,7 +6,7 @@ export interface AccordionHeaderProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 import { getAccordionHeaderSurface } from './useAccordion'
@@ -19,11 +19,13 @@ const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
 const surface = getAccordionHeaderSurface(rootContext, itemContext)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
     v-bind="surface.attrs.value"
