@@ -218,12 +218,12 @@ describe('numberFieldRoot — change details', () => {
     const order: string[] = []
     const { getByTestId } = render(() => h(NumberFieldRoot, {
       'defaultValue': 1,
-      'onBeforeUpdate:modelValue': (v: number, d: ChangeEventDetails) => {
+      'onBeforeUpdate:modelValue': (v: number | undefined, d: ChangeEventDetails) => {
         order.push(`before:${d.reason}`)
         if (v === 3)
           d.cancel()
       },
-      'onUpdate:modelValue': (_v: number, d: ChangeEventDetails) => order.push(`update:${d.reason}`),
+      'onUpdate:modelValue': (_v: number | undefined, d: ChangeEventDetails) => order.push(`update:${d.reason}`),
     }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input' })))
     const input = getByTestId('input') as HTMLInputElement
     await fireEvent.keyDown(input, { key: 'ArrowUp' })
@@ -239,11 +239,11 @@ describe('numberFieldRoot — change details', () => {
     const onUpdate = vi.fn()
     const wrapper = render(defineComponent({
       setup() {
-        const value = ref(5)
+        const value = ref<number | undefined>(5)
         return () => h(NumberFieldRoot, {
           'modelValue': value.value,
           'max': 5,
-          'onUpdate:modelValue': (v: number, d: ChangeEventDetails) => {
+          'onUpdate:modelValue': (v: number | undefined, d: ChangeEventDetails) => {
             onUpdate(v, d)
             value.value = v
           },
@@ -268,7 +268,7 @@ describe('numberFieldRoot — cancelled text commit', () => {
     ['blur', (input: HTMLInputElement) => fireEvent.blur(input)],
     ['keyboard', (input: HTMLInputElement) => fireEvent.keyDown(input, { key: 'Enter' })],
   ])('a cancelled %s commit shows the model text, also after a re-render', async (reason, commit) => {
-    const onBeforeUpdate = vi.fn((_v: number, d: ChangeEventDetails) => d.cancel())
+    const onBeforeUpdate = vi.fn((_v: number | undefined, d: ChangeEventDetails) => d.cancel())
     const tick = ref(0)
     const { getByTestId } = render(defineComponent({
       setup() {

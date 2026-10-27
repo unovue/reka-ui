@@ -306,8 +306,8 @@ describe('useRadioGroup — rendered', () => {
     expect(b.getAttribute('aria-checked')).toBe('true')
     expect(b.getAttribute('data-state')).toBe('checked')
     expect(a.getAttribute('data-state')).toBe('unchecked')
-    expect(emitted('update:modelValue')?.[0]?.[0]).toBe('b')
-    expect(emitted('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'item-press' })
+    expect(emitted<unknown[]>('update:modelValue')?.[0]?.[0]).toBe('b')
+    expect(emitted<unknown[]>('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'item-press' })
   })
 
   it('renders disabled="" and data-disabled on every item when the group is disabled', () => {

@@ -57,10 +57,10 @@ describe('useColorSlider', () => {
     expect(owned.thumb.props.value['aria-label']).toBe('Alpha')
     const committed = setup({ channel: 'red', emit })
     committed.setValue([255])
-    committed.sliderProps.value.onValueCommit()
+    committed.sliderProps.value.onValueCommit([255])
     expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', { space: 'rgb', r: 255, g: 0, b: 0, alpha: 1 }])
     // A commit without an accepted change since the last one reports nothing.
-    committed.sliderProps.value.onValueCommit()
+    committed.sliderProps.value.onValueCommit([255])
     expect(emit.mock.calls.filter(call => call[0] === 'changeEnd')).toHaveLength(1)
     await nextTick()
   })

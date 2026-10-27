@@ -1,5 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
-import type vueuse from '@vueuse/core'
+import type * as vueuse from '@vueuse/core'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'

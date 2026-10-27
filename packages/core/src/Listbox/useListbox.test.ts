@@ -1,6 +1,6 @@
 import type { ListboxRootContext } from './ListboxRoot.vue'
 import type { UseListboxRootProps, UseListboxRootReturn } from './useListbox'
-import type { AcceptableValue } from '@/shared/types'
+import type { AcceptableValue, ChangeEventDetails } from '@/shared/types'
 import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
@@ -118,7 +118,7 @@ describe('useListboxRoot — state & selection', () => {
 
   it('controlled getter + emit: emits beforeUpdate/update with details and does not write locally', () => {
     const emit = vi.fn()
-    const api = harness({ modelValue: () => 'a', emit })
+    const api = harness<string>({ modelValue: () => 'a', emit })
     expect(api.isControlled.value).toBe(true)
     api.select('b')
     expect(api.modelValue.value).toBe('a')
@@ -689,15 +689,15 @@ describe('useListboxRoot — rendered', () => {
     expect(banana.getAttribute('data-state')).toBe('checked')
     expect(banana.getAttribute('data-highlighted')).toBe('')
     expect(apple.getAttribute('data-highlighted')).toBeNull()
-    expect(emitted('update:modelValue')?.[0]?.[0]).toBe('Banana')
-    expect(emitted('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'item-press' })
+    expect(emitted<unknown[]>('update:modelValue')?.[0]?.[0]).toBe('Banana')
+    expect(emitted<unknown[]>('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'item-press' })
 
     await fireEvent.keyDown(listbox, { key: 'ArrowDown' })
     expect(cherry.getAttribute('data-highlighted')).toBe('')
     await fireEvent.keyDown(listbox, { key: 'Enter' })
     expect(cherry.getAttribute('data-state')).toBe('checked')
     expect(banana.getAttribute('data-state')).toBe('unchecked')
-    expect(emitted('update:modelValue')?.[1]?.[1]).toMatchObject({ reason: 'item-press' })
+    expect(emitted<unknown[]>('update:modelValue')?.[1]?.[1]).toMatchObject({ reason: 'item-press' })
     expect(await axe(container)).toHaveNoViolations()
   })
 })
@@ -729,7 +729,7 @@ describe('listboxRoot — change details through the SFCs', () => {
     expect(wrapper.emitted('beforeUpdate:modelValue')?.[0]?.[0]).toBe('b')
     expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe('b')
     expect(wrapper.emitted('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'item-press' })
-    expect(wrapper.emitted('update:modelValue')?.[0]?.[1].event).toBeInstanceOf(MouseEvent)
+    expect(wrapper.emitted<[string, ChangeEventDetails]>('update:modelValue')?.[0]?.[1].event).toBeInstanceOf(MouseEvent)
     expect(items[1].attributes('aria-selected')).toBe('true')
     wrapper.unmount()
   })

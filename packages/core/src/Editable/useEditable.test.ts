@@ -363,7 +363,7 @@ describe('editableRoot — change details', () => {
           h(EditableArea, () => [h(EditablePreview), h(EditableInput, { 'data-testid': 'input' })])),
         h('button', { 'data-testid': 'outside' }, 'outside'),
       ],
-    }), { attachTo: document.body })
+    }))
     const input = getByTestId('input') as HTMLInputElement
     await userEvent.type(input, 'b')
     expect(document.activeElement).toBe(input)

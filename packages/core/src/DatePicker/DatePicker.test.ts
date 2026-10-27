@@ -1,4 +1,4 @@
-import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
+import type { DateFields, DateValue, TimeFields, ZonedDateTime } from '@internationalized/date'
 
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
@@ -282,7 +282,7 @@ describe('datePicker', async () => {
         granularity: 'minute',
       },
       emits: {
-        'onUpdate:modelValue': value => emittedValues.push(value),
+        'onUpdate:modelValue': (value: DateValue | undefined) => emittedValues.push(value),
       },
     })
 
@@ -316,14 +316,14 @@ describe('datePicker', async () => {
         granularity: 'second',
       },
       emits: {
-        'onUpdate:modelValue': value => emittedValues.push(value),
+        'onUpdate:modelValue': (value: DateValue | undefined) => emittedValues.push(value),
       },
     })
 
     await user.click(trigger)
     await user.click(getByTestId('date-1-1'))
 
-    const selectedValue = emittedValues.at(-1)
+    const selectedValue = emittedValues.at(-1) as ZonedDateTime | undefined
     expect(selectedValue).toHaveProperty('timeZone', 'America/New_York')
     expect(selectedValue?.hour).toBe(0)
     expect(selectedValue?.minute).toBe(0)
