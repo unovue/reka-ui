@@ -8,10 +8,13 @@ export interface ProgressIndicatorProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { injectProgressRootContext } from './ProgressRoot.vue'
+import { getProgressIndicatorSurface } from './useProgress'
 
 const props = defineProps<ProgressIndicatorProps>()
 
 const rootContext = injectProgressRootContext()
+// Same derivation as `useProgress().indicator`.
+const indicator = getProgressIndicatorSurface(rootContext)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>
@@ -19,10 +22,9 @@ defineExpose(expose)
 <template>
   <Primitive
     :ref="forwardRef"
-    v-bind="props"
-    :data-state="rootContext.progressState.value"
-    :data-value="rootContext.modelValue?.value ?? undefined"
-    :data-max="rootContext.max.value"
+    :as="props.as"
+    :as-child="props.asChild"
+    v-bind="indicator.attrs.value"
   >
     <slot />
   </Primitive>

@@ -1,12 +1,13 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
+import type { ProgressState } from './useProgress'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, isNullish, useForwardElement } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 
 export type ProgressRootEmits = {
-  /** Event handler called when the progress value changes */
-  'update:modelValue': [value: string[] | undefined]
-  /** Event handler called when the max value changes */
+  /** Event handler called when an invalid `modelValue` is corrected to `null`. */
+  'update:modelValue': [value: number | null]
+  /** Event handler called when an invalid `max` is corrected to `100`. */
   'update:max': [value: number]
 }
 
@@ -27,9 +28,7 @@ export interface ProgressRootProps extends PrimitiveProps {
   getValueText?: (value: number | null | undefined, max: number) => string | undefined
 }
 
-const DEFAULT_MAX = 100
-
-interface ProgressRootContext {
+export interface ProgressRootContext {
   modelValue?: Readonly<Ref<ProgressRootProps['modelValue']>>
   max: Readonly<Ref<number>>
   progressState: ComputedRef<ProgressState>
@@ -38,49 +37,16 @@ interface ProgressRootContext {
 export const [injectProgressRootContext, provideProgressRootContext]
   = createContext<ProgressRootContext>('ProgressRoot')
 
-export type ProgressState = 'indeterminate' | 'loading' | 'complete'
-
-const isNumber = (v: any): v is number => typeof v === 'number'
-
-function validateValue(value: any, max: number): number | null {
-  const isValidValueError
-    = isNullish(value)
-      || (isNumber(value) && !Number.isNaN(value) && value <= max && value >= 0)
-
-  if (isValidValueError)
-    return value as null
-
-  console.error(`Invalid prop \`value\` of value \`${value}\` supplied to \`ProgressRoot\`. The \`value\` prop must be:
-  - a positive number
-  - less than the value passed to \`max\` (or ${DEFAULT_MAX} if no \`max\` prop is set)
-  - \`null\`  or \`undefined\` if the progress is indeterminate.
-
-Defaulting to \`null\`.`)
-  return null
-}
-
-function validateMax(max: number): number {
-  const isValidMaxError = isNumber(max) && !Number.isNaN(max) && max > 0
-
-  if (isValidMaxError)
-    return max
-
-  console.error(
-    `Invalid prop \`max\` of value \`${max}\` supplied to \`ProgressRoot\`. Only numbers greater than 0 are valid max values. Defaulting to \`${DEFAULT_MAX}\`.`,
-  )
-  return DEFAULT_MAX
-}
+export type { ProgressState }
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { computed, nextTick, watch } from 'vue'
+import { nextTick, watch } from 'vue'
 import { Primitive } from '@/Primitive'
+import { DEFAULT_MAX, useProgress } from './useProgress'
 
 const props = withDefaults(defineProps<ProgressRootProps>(), {
   max: DEFAULT_MAX,
-  getValueLabel: (value: number | null | undefined, max: number) =>
-    isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined,
 })
 
 const emit = defineEmits<ProgressRootEmits>()
@@ -94,51 +60,39 @@ defineSlots<{
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-const modelValue = useVModel(props, 'modelValue', emit, {
-  passive: (props.modelValue === undefined) as false,
+
+const { value: modelValue, max, root, context } = useProgress({
+  modelValue: () => props.modelValue,
+  max: () => props.max,
+  // Getters: `useProgress` falls back to its default label when the prop is unset.
+  get getValueLabel() { return props.getValueLabel },
+  get getValueText() { return props.getValueText },
 })
 
-const max = useVModel(props, 'max', emit, {
-  passive: (props.max === undefined) as false,
-})
-
-// ------- Watch for correct values -------
+// Progress has no model (the value is display-only). An invalid prop renders
+// corrected straight away; the parent is told once so a `v-model` follows.
+// The value is validated against the corrected `max`, so a `max` that drops
+// below the value also reports `null`.
 watch(
-  () => modelValue.value,
-  async (value) => {
-    const correctedValue = validateValue(value, props.max)
-    if (correctedValue !== value) {
+  () => [props.modelValue, props.max] as const,
+  async ([value]) => {
+    if (modelValue.value !== value) {
       await nextTick()
-      modelValue.value = correctedValue
+      emit('update:modelValue', null)
     }
   },
   { immediate: true },
 )
-
 watch(
   () => props.max,
-  (newMax) => {
-    const correctedMax = validateMax(props.max)
-    if (correctedMax !== newMax)
-      max.value = correctedMax
+  (value) => {
+    if (max.value !== value)
+      emit('update:max', max.value)
   },
   { immediate: true },
 )
-// ------- End of watch for correct values -------
 
-const progressState = computed<ProgressState>(() => {
-  if (isNullish(modelValue.value))
-    return 'indeterminate'
-  if (modelValue.value === max.value)
-    return 'complete'
-  return 'loading'
-})
-
-provideProgressRootContext({
-  modelValue,
-  max,
-  progressState,
-})
+provideProgressRootContext(context)
 </script>
 
 <template>
@@ -146,15 +100,7 @@ provideProgressRootContext({
     :ref="forwardRef"
     :as-child="asChild"
     :as="as"
-    :aria-valuemax="max"
-    :aria-valuemin="0"
-    :aria-valuenow="isNumber(modelValue) ? modelValue : undefined"
-    :aria-valuetext="getValueText?.(modelValue, max)"
-    :aria-label="getValueLabel(modelValue, max)"
-    role="progressbar"
-    :data-state="progressState"
-    :data-value="modelValue ?? undefined"
-    :data-max="max"
+    v-bind="root.attrs.value"
   >
     <slot
       :model-value="modelValue"

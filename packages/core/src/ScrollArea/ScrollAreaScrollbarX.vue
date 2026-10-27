@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarImpl from './ScrollAreaScrollbarImpl.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
-import { getThumbSize } from './utils'
+import { getScrollAreaThumbSizeVar } from './useScrollArea'
 
 const rootContext = injectScrollAreaRootContext()
 const scrollbarVisibleContext = injectScrollAreaScrollbarVisibleContext()
@@ -21,7 +21,6 @@ onMounted(() => {
 onUnmounted(() => {
   rootContext.onScrollbarXChange(null)
 })
-const sizes = computed(() => scrollbarVisibleContext.sizes.value)
 </script>
 
 <template>
@@ -33,7 +32,7 @@ const sizes = computed(() => scrollbarVisibleContext.sizes.value)
       bottom: 0,
       left: rootContext.dir.value === 'rtl' ? 'var(--reka-scroll-area-corner-width)' : 0,
       right: rootContext.dir.value === 'ltr' ? 'var(--reka-scroll-area-corner-width)' : 0,
-      ['--reka-scroll-area-thumb-width' as any]: sizes ? `${getThumbSize(sizes)}px` : undefined,
+      ...getScrollAreaThumbSizeVar(scrollbarVisibleContext, true),
     }"
     @on-drag-scroll="scrollbarVisibleContext.onDragScroll($event.x)"
   >

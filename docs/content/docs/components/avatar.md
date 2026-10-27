@@ -90,3 +90,30 @@ import { AvatarImage, AvatarRoot, TooltipArrow, TooltipRoot, TooltipTrigger } fr
   </TooltipRoot>
 </template>
 ```
+
+## Headless composable
+
+`useAvatar` holds the shared image loading status. `useAvatarImage` loads the image off-DOM, reports each status through `onLoadingStatusChange` and returns the image surface, and `useAvatarFallback` decides when the fallback shows.
+
+```vue
+<script setup lang="ts">
+import { useAvatar, useAvatarFallback, useAvatarImage } from 'reka-ui'
+
+const avatar = useAvatar()
+const image = useAvatarImage(avatar.context, { src: '/avatar.png' })
+const fallback = useAvatarFallback(avatar.context, { delayMs: 600 })
+</script>
+
+<template>
+  <span>
+    <img
+      v-show="image.visible.value"
+      v-bind="image.root.attrs.value"
+      alt="Colm Tuite"
+    >
+    <span v-if="fallback.visible.value">CT</span>
+  </span>
+</template>
+```
+
+`useAvatar` is callable outside component setup; `useAvatarImage` and `useAvatarFallback` register mount hooks and a timer, so call them inside `setup()`. The composables are experimental.

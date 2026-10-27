@@ -15,8 +15,8 @@ export const [injectAvatarRootContext, provideAvatarRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useAvatar } from './useAvatar'
 
 withDefaults(defineProps<AvatarRootProps>(), {
   as: 'span',
@@ -25,9 +25,7 @@ withDefaults(defineProps<AvatarRootProps>(), {
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-provideAvatarRootContext({
-  imageLoadingStatus: ref<ImageLoadingStatus>('idle'),
-})
+provideAvatarRootContext(useAvatar().context)
 </script>
 
 <template>
