@@ -9,6 +9,7 @@ export interface ToastCloseProps extends PrimitiveProps {}
 import { Primitive } from '@/Primitive'
 import ToastAnnounceExclude from './ToastAnnounceExclude.vue'
 import { injectToastRootContext } from './ToastRootImpl.vue'
+import { getToastCloseSurface } from './useToast'
 
 const props = withDefaults(defineProps<ToastCloseProps>(), {
   as: 'button',
@@ -17,15 +18,16 @@ const props = withDefaults(defineProps<ToastCloseProps>(), {
 const rootContext = injectToastRootContext()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+
+const close = getToastCloseSurface(rootContext.onClose)
 </script>
 
 <template>
   <ToastAnnounceExclude as-child>
     <Primitive
-      v-bind="props"
+      v-bind="{ ...props, ...close.attrs.value }"
       :ref="forwardRef"
       :type="as === 'button' ? 'button' : undefined "
-      @click="rootContext.onClose"
     >
       <slot />
     </Primitive>
