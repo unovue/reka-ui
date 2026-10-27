@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 import { Presence } from '.'
 
@@ -144,41 +144,181 @@ describe('given a Presence with animated content', () => {
   })
 })
 
-describe('given a Presence with an animated descendant', () => {
-  it('should ignore bubbled animation events before reading styles', async () => {
-    const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle')
-    const createAnimationEndEvent = () => {
-      const event = new Event('animationend', { bubbles: true })
-      Object.defineProperty(event, 'animationName', { value: 'child-animation' })
-      return event
+describe('given an environment without Web Animations (jsdom)', () => {
+  it('stamps no lifecycle attributes and settles in the same tick', async () => {
+    expect(typeof Element.prototype.getAnimations).toBe('undefined')
+    const open = ref(false)
+    const onComplete = vi.fn()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ open, onComplete }),
+      template: `<Presence :present="open" @complete="onComplete"><div data-testid="box">${CONTENT}</div></Presence>`,
+    }))
+
+    open.value = true
+    await nextTick()
+    const box = wrapper.find('[data-testid="box"]')
+    expect(box.attributes()).not.toHaveProperty('data-starting-style')
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+
+    open.value = false
+    await vi.waitFor(() => expect(wrapper.find('[data-testid="box"]').exists()).toBe(false))
+    expect(onComplete).toHaveBeenLastCalledWith(false)
+    expect(onComplete).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+})
+
+/**
+ * A stand-in for a running CSS transition: `finish()` / `cancel()` settle its
+ * `finished` promise the way the browser does.
+ */
+function createFakeAnimation() {
+  let resolve!: () => void
+  let reject!: (error: Error) => void
+  const animation = {
+    playState: 'running' as AnimationPlayState,
+    effect: { getComputedTiming: () => ({ endTime: 200 }) },
+    finished: new Promise<void>((res, rej) => {
+      resolve = res
+      reject = rej
+    }),
+    finish() {
+      animation.playState = 'finished'
+      resolve()
+    },
+    cancel() {
+      animation.playState = 'idle'
+      reject(new DOMException('The user aborted a request.', 'AbortError'))
+    },
+  }
+  animation.finished.catch(() => {})
+  return animation
+}
+
+describe('given a Presence in an environment with Web Animations', () => {
+  // jsdom has no `getAnimations`; stub it so the lifecycle logic runs. The real
+  // timing (styles, transitions starting from the starting style) is covered by
+  // `Presence.browser.test.ts`.
+  let animations = new Map<Element, ReturnType<typeof createFakeAnimation>[]>()
+
+  beforeEach(() => {
+    animations = new Map()
+    Element.prototype.getAnimations = function (this: Element) {
+      return (animations.get(this) ?? []).filter(animation => animation.playState === 'running') as unknown as Animation[]
     }
-    let wrapper: ReturnType<typeof mount> | undefined
+  })
+  afterEach(() => {
+    // @ts-expect-error restoring jsdom's missing implementation
+    delete Element.prototype.getAnimations
+  })
 
-    try {
-      wrapper = mount(defineComponent({
-        components: { Presence },
-        template: `<Presence :present="true">
-          <div data-testid="presence">
-            <span data-testid="animated-child">Child</span>
-          </div>
-        </Presence>`,
-      }))
+  function mountAnimated() {
+    const open = ref(false)
+    const onComplete = vi.fn()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ open, onComplete }),
+      template: `<Presence :present="open" @complete="onComplete">
+        <div data-testid="box" :data-state="open ? 'open' : 'closed'"><span data-testid="child">${CONTENT}</span></div>
+      </Presence>`,
+    }))
+    const box = () => wrapper.find('[data-testid="box"]')
+    return { open, onComplete, wrapper, box }
+  }
 
-      await nextTick()
-      const presenceElement = wrapper.find('[data-testid="presence"]').element
-      const animatedChild = wrapper.find('[data-testid="animated-child"]').element
-      getComputedStyleSpy.mockClear()
+  it('renders data-starting-style for one frame after opening', async () => {
+    const { open, onComplete, box, wrapper } = mountAnimated()
 
-      presenceElement.dispatchEvent(createAnimationEndEvent())
-      expect(getComputedStyleSpy).toHaveBeenCalledWith(presenceElement)
-      getComputedStyleSpy.mockClear()
+    open.value = true
+    await nextTick()
+    expect(box().attributes('data-starting-style')).toBe('')
 
-      animatedChild.dispatchEvent(createAnimationEndEvent())
-      expect(getComputedStyleSpy).not.toHaveBeenCalledWith(presenceElement)
-    }
-    finally {
-      wrapper?.unmount()
-      getComputedStyleSpy.mockRestore()
-    }
+    await vi.waitFor(() => expect(box().attributes()).not.toHaveProperty('data-starting-style'))
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+    wrapper.unmount()
+  })
+
+  it('keeps the node with data-ending-style until its animations finish', async () => {
+    const { open, onComplete, box, wrapper } = mountAnimated()
+    open.value = true
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+
+    const exit = createFakeAnimation()
+    open.value = false
+    await nextTick()
+    expect(box().attributes('data-ending-style')).toBe('')
+    animations.set(box().element, [exit])
+
+    await nextTick()
+    await nextTick()
+    expect(box().exists()).toBe(true)
+    expect(onComplete).toHaveBeenCalledTimes(1)
+
+    exit.finish()
+    await vi.waitFor(() => expect(box().exists()).toBe(false))
+    expect(onComplete).toHaveBeenLastCalledWith(false)
+    wrapper.unmount()
+  })
+
+  it('waits for a replacement when an exit animation is cancelled', async () => {
+    const { open, onComplete, box, wrapper } = mountAnimated()
+    open.value = true
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+
+    const first = createFakeAnimation()
+    const replacement = createFakeAnimation()
+    open.value = false
+    await nextTick()
+    animations.set(box().element, [first])
+    await nextTick()
+    await nextTick()
+
+    animations.set(box().element, [first, replacement])
+    first.cancel()
+    await nextTick()
+    await nextTick()
+    expect(box().exists()).toBe(true)
+
+    replacement.finish()
+    await vi.waitFor(() => expect(box().exists()).toBe(false))
+    expect(onComplete).toHaveBeenLastCalledWith(false)
+    wrapper.unmount()
+  })
+
+  it('ignores animations running on descendants', async () => {
+    const { open, onComplete, box, wrapper } = mountAnimated()
+    open.value = true
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+    animations.set(wrapper.find('[data-testid="child"]').element, [createFakeAnimation()])
+
+    open.value = false
+    await vi.waitFor(() => expect(box().exists()).toBe(false))
+    expect(onComplete).toHaveBeenLastCalledWith(false)
+    wrapper.unmount()
+  })
+
+  it('does not report an exit that a reopen interrupted', async () => {
+    const { open, onComplete, box, wrapper } = mountAnimated()
+    open.value = true
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+    onComplete.mockClear()
+
+    const exit = createFakeAnimation()
+    open.value = false
+    await nextTick()
+    animations.set(box().element, [exit])
+    await nextTick()
+    await nextTick()
+
+    open.value = true
+    await nextTick()
+    expect(box().attributes()).not.toHaveProperty('data-ending-style')
+    expect(box().attributes()).not.toHaveProperty('data-starting-style')
+    exit.finish()
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+    expect(onComplete).not.toHaveBeenCalledWith(false)
+    expect(box().exists()).toBe(true)
+    wrapper.unmount()
   })
 })

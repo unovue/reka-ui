@@ -1,21 +1,78 @@
 import type { Ref } from 'vue'
-import { defaultWindow } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useStateMachine } from '@/shared'
 
+/**
+ * Where a presence-managed element is in its enter/exit lifecycle (#2827),
+ * mirroring Base UI's `TransitionStatus`:
+ * - `'starting'`: the first frame after the element was mounted (or shown again)
+ *   by an open; rendered as `data-starting-style`, so CSS transitions can start
+ *   from those styles.
+ * - `'ending'`: from the close until every exit transition/animation has
+ *   finished; rendered as `data-ending-style`.
+ * - `undefined`: neither.
+ */
+export type PresenceTransitionStatus = 'starting' | 'ending' | undefined
+
+export interface UsePresenceOptions {
+  /** Stamp the starting style on the initial render when `present` starts `true`. */
+  appear?: boolean
+  /**
+   * Called once the enter (`true`) or exit (`false`) transitions and animations
+   * of the node have finished, right before an exiting node unmounts. Not called
+   * for a change that a later one interrupts (closing while still opening only
+   * reports the close).
+   */
+  onComplete?: (present: boolean) => void
+}
+
+export const STARTING_STYLE_ATTR = 'data-starting-style'
+export const ENDING_STYLE_ATTR = 'data-ending-style'
+
+/**
+ * Whether the environment runs Web Animations (`Element.getAnimations()`).
+ * Without it no CSS transition or animation can be observed (jsdom, very old
+ * browsers), so presence settles immediately and stamps no lifecycle attributes.
+ */
+export function supportsAnimations(node?: Element | null): boolean {
+  if (!isClient)
+    return false
+  const target = node ?? globalThis.document?.documentElement
+  return typeof target?.getAnimations === 'function'
+}
+
+/**
+ * The transitions/animations of `node` itself (not its subtree) that are still
+ * going to finish. Infinite animations never settle, so they do not hold the
+ * node; idle (cancelled) and finished ones are already done.
+ */
+export function getRunningAnimations(node: Element): Animation[] {
+  return node.getAnimations().filter((animation) => {
+    if (animation.playState === 'finished' || animation.playState === 'idle')
+      return false
+    const endTime = animation.effect?.getComputedTiming().endTime
+    return endTime !== Infinity
+  })
+}
+
+/**
+ * Mount/unmount state of a presence-managed node that waits for its CSS
+ * transitions as well as its CSS animations (#2827). A port of Base UI's
+ * `useTransitionStatus` + `useAnimationsFinished`:
+ * - opening an unmounted node renders it with `transitionStatus` `'starting'`
+ *   for one frame, then clears it;
+ * - closing sets `'ending'` and keeps the node mounted until
+ *   `getAnimations()` reports nothing running, then unmounts it;
+ * - with nothing running (no transition, no animation, reduced motion that
+ *   disables them, `display: none`) the node unmounts in the same tick.
+ */
 export function usePresence(
   present: Ref<boolean>,
   node: Ref<HTMLElement | undefined>,
+  options: UsePresenceOptions = {},
 ) {
-  const stylesRef = ref<CSSStyleDeclaration>({} as any)
-  const prevAnimationNameRef = ref<string>('none')
-  const prevPresentRef = ref(present)
-  const initialState = present.value ? 'mounted' : 'unmounted'
-  let timeoutId: number | undefined
-  const ownerWindow = node.value?.ownerDocument.defaultView ?? defaultWindow
-
-  const { state, dispatch } = useStateMachine(initialState, {
+  const { state, dispatch } = useStateMachine(present.value ? 'mounted' : 'unmounted', {
     mounted: {
       UNMOUNT: 'unmounted',
       ANIMATION_OUT: 'unmountSuspended',
@@ -28,6 +85,14 @@ export function usePresence(
       MOUNT: 'mounted',
     },
   })
+  const transitionStatus = ref<PresenceTransitionStatus>()
+
+  // Every `present` change starts a new run; async work from an older run
+  // (a pending frame, a pending `finished` promise) checks it and bails out.
+  let run = 0
+  let frame: number | undefined
+  // A close whose rendered state has not been checked for animations yet.
+  let exitPending = false
 
   const dispatchCustomEvent = (name: 'enter' | 'after-enter' | 'leave' | 'after-leave') => {
     // We only dispatch this event because CustomEvent is not available in Node18
@@ -38,147 +103,145 @@ export function usePresence(
     }
   }
 
+  function cancelPending() {
+    run++
+    if (frame !== undefined) {
+      cancelAnimationFrame(frame)
+      frame = undefined
+    }
+  }
+
+  /**
+   * Calls `done` once the node has no running transition or animation. A
+   * rejected `finished` (an animation cancelled because a property it depends
+   * on changed) re-checks instead of resolving, so a replacement transition is
+   * waited for too (Base UI's `treatAbortedAsFinished = false`).
+   */
+  function whenAnimationsFinish(currentRun: number, done: () => void) {
+    const element = node.value
+    if (!element || !supportsAnimations(element))
+      return done()
+    const running = getRunningAnimations(element)
+    if (!running.length)
+      return done()
+    const recheck = () => {
+      if (currentRun === run)
+        whenAnimationsFinish(currentRun, done)
+    }
+    Promise.all(running.map(animation => animation.finished)).then(recheck, recheck)
+  }
+
+  function finishEnter() {
+    dispatchCustomEvent('after-enter')
+    options.onComplete?.(true)
+  }
+
+  function finishExit() {
+    dispatch(state.value === 'unmountSuspended' ? 'ANIMATION_END' : 'UNMOUNT')
+    transitionStatus.value = undefined
+    dispatchCustomEvent('after-leave')
+    options.onComplete?.(false)
+  }
+
+  /**
+   * Looks at the rendered closed state: with nothing running, the exit is done
+   * right away (returns `true`); otherwise the caller decides what to wait for.
+   */
+  function settlePendingExit() {
+    dispatchCustomEvent('leave')
+    const element = node.value
+    if (element && supportsAnimations(element) && getRunningAnimations(element).length)
+      return false
+    finishExit()
+    return true
+  }
+
   watch(
     present,
     async (currentPresent, prevPresent) => {
-      const hasPresentChanged = prevPresent !== currentPresent
-      await nextTick()
-      if (hasPresentChanged) {
-        const prevAnimationName = prevAnimationNameRef.value
-        const currentAnimationName = getAnimationName(node.value)
+      // Closed and reopened before the closed state was checked for exit
+      // animations: settle that close first, so a node with nothing to wait for
+      // still goes through a full unmount/mount cycle.
+      if (currentPresent && exitPending)
+        settlePendingExit()
+      exitPending = false
+      cancelPending()
+      const currentRun = run
+      const isInitial = prevPresent === undefined
 
-        if (currentPresent) {
-          dispatch('MOUNT')
-          dispatchCustomEvent('enter')
-          if (currentAnimationName === 'none')
-            dispatchCustomEvent('after-enter')
-        }
-        else if (
-          currentAnimationName === 'none' || currentAnimationName === 'undefined'
-          || stylesRef.value?.display === 'none'
-        ) {
-          // If there is no exit animation or the element is hidden, animations won't run
-          // so we unmount instantly rv
-          dispatch('UNMOUNT')
-          dispatchCustomEvent('leave')
-          dispatchCustomEvent('after-leave')
-        }
-        else {
-          /**
-           * When `present` changes to `false`, we check changes to animation-name to
-           * determine whether an animation has started. We chose this approach (reading
-           * computed styles) because there is no `animationrun` event and `animationstart`
-           * fires after `animation-delay` has expired which would be too late.
-           */
-          const isAnimating = prevAnimationName !== currentAnimationName
-          if (prevPresent && isAnimating) {
-            dispatch('ANIMATION_OUT')
-            dispatchCustomEvent('leave')
-          }
-          else {
-            dispatch('UNMOUNT')
-            dispatchCustomEvent('after-leave')
-          }
-        }
-      }
-    },
-    { immediate: true },
-  )
+      if (currentPresent) {
+        // Base UI stamps the starting style only when an unmounted popup opens:
+        // not on the initial render (unless `appear`), and not when reopening
+        // mid-exit (the exit transition reverses from wherever it is).
+        const startsFromUnmounted = isInitial ? !!options.appear : state.value === 'unmounted'
+        transitionStatus.value = startsFromUnmounted && supportsAnimations() ? 'starting' : undefined
 
-  /**
-   * Triggering an ANIMATION_OUT during an ANIMATION_IN will fire an `animationcancel`
-   * event for ANIMATION_IN after we have entered `unmountSuspended` state. So, we
-   * make sure we only trigger ANIMATION_END for the currently active animation.
-   */
-  const handleAnimationEnd = (event: AnimationEvent) => {
-    if (event.target !== node.value)
-      return
+        await nextTick()
+        if (currentRun !== run)
+          return
+        dispatch('MOUNT')
+        dispatchCustomEvent('enter')
 
-    const currentAnimationName = getAnimationName(node.value)
-    const isCurrentAnimation = currentAnimationName.includes(
-      CSS.escape(event.animationName),
-    )
-    const directionName = state.value === 'mounted' ? 'enter' : 'leave'
-    if (isCurrentAnimation) {
-      dispatchCustomEvent(`after-${directionName}`)
-      dispatch('ANIMATION_END')
+        if (transitionStatus.value !== 'starting')
+          return whenAnimationsFinish(currentRun, finishEnter)
 
-      if (!prevPresentRef.value) {
-        const currentFillMode = node.value.style.animationFillMode
-        node.value.style.animationFillMode = 'forwards'
-        // Reset the style after the node had time to unmount (for cases
-        // where the component chooses not to unmount). Doing this any
-        // sooner than `setTimeout` (e.g. with `requestAnimationFrame`)
-        // still causes a flash.
-        timeoutId = ownerWindow?.setTimeout(() => {
-          if (node.value?.style.animationFillMode === 'forwards') {
-            node.value.style.animationFillMode = currentFillMode
-          }
+        frame = requestAnimationFrame(() => {
+          frame = undefined
+          // Resolve styles while the starting style is still applied, so it is
+          // the before-change style of the transitions even if nothing has read
+          // styles since the node was inserted.
+          if (node.value)
+            void getComputedStyle(node.value).transitionProperty
+          transitionStatus.value = undefined
+          nextTick(() => {
+            if (currentRun === run)
+              whenAnimationsFinish(currentRun, finishEnter)
+          })
         })
+        return
       }
-    }
-    // if no animation, immediately trigger 'ANIMATION_END'
-    if (currentAnimationName === 'none')
-      dispatch('ANIMATION_END')
-  }
-  const handleAnimationStart = (event: AnimationEvent) => {
-    if (event.target === node.value) {
-      // if animation occurred, store its name as the previous animation.
-      prevAnimationNameRef.value = getAnimationName(node.value)
-    }
-  }
 
-  const watcher = watch(
-    node,
-    (newNode, oldNode) => {
-      if (newNode) {
-        stylesRef.value = getComputedStyle(newNode)
-        newNode.addEventListener('animationstart', handleAnimationStart)
-        newNode.addEventListener('animationcancel', handleAnimationEnd)
-        newNode.addEventListener('animationend', handleAnimationEnd)
+      if (isInitial || state.value === 'unmounted') {
+        transitionStatus.value = undefined
+        return
       }
-      else {
-        // Transition to the unmounted state if the node is removed prematurely.
-        // We avoid doing so during cleanup as the node may change but still exist.
-        dispatch('ANIMATION_END')
 
-        if (timeoutId !== undefined)
-          ownerWindow?.clearTimeout(timeoutId)
-        oldNode?.removeEventListener('animationstart', handleAnimationStart)
-        oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
-        oldNode?.removeEventListener('animationend', handleAnimationEnd)
-      }
+      if (supportsAnimations())
+        transitionStatus.value = 'ending'
+
+      // Wait for the closed state (`data-state`, `data-ending-style`) to be
+      // rendered: `getAnimations()` flushes styles, so the exit transitions and
+      // animations it starts are already listed.
+      exitPending = true
+      await nextTick()
+      if (currentRun !== run)
+        return
+      exitPending = false
+      if (settlePendingExit())
+        return
+      dispatch('ANIMATION_OUT')
+      whenAnimationsFinish(currentRun, finishExit)
     },
     { immediate: true },
   )
 
-  const stateWatcher = watch(state, () => {
-    const currentAnimationName = getAnimationName(node.value)
-    prevAnimationNameRef.value
-      = state.value === 'mounted' ? currentAnimationName : 'none'
+  // The node can go away while its exit is still suspended (a parent `v-if`,
+  // an `as` swap): there is nothing left to wait for.
+  watch(node, (newNode) => {
+    if (!newNode && state.value === 'unmountSuspended') {
+      cancelPending()
+      finishExit()
+    }
   })
 
-  onUnmounted(() => {
-    watcher()
-    stateWatcher()
-    if (node.value) {
-      node.value.removeEventListener('animationstart', handleAnimationStart)
-      node.value.removeEventListener('animationcancel', handleAnimationEnd)
-      node.value.removeEventListener('animationend', handleAnimationEnd)
-    }
-    if (timeoutId !== undefined)
-      ownerWindow?.clearTimeout(timeoutId)
-  })
+  onScopeDispose(cancelPending)
 
   const isPresent = computed(() =>
-    ['mounted', 'unmountSuspended'].includes(state.value),
+    state.value === 'mounted' || state.value === 'unmountSuspended',
   )
 
   return {
     isPresent,
+    transitionStatus,
   }
-}
-
-function getAnimationName(node?: HTMLElement) {
-  return node ? getComputedStyle(node).animationName || 'none' : 'none'
 }
