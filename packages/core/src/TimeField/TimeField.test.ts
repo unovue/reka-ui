@@ -3,7 +3,7 @@ import type { DateTimeField } from '@/date'
 import type { TimeValue } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { cycleField, getFieldValue } from '@/date'
 import { useTestKbd } from '@/shared'
@@ -1454,5 +1454,42 @@ describe('timeField dayPeriod across locales', () => {
 
     expect(getByTestId('value').textContent).toBe(afternoon.with({ hour: 15 }).toString())
     expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+  })
+})
+
+describe('temporal regressions (#3088 review)', () => {
+  it('steps the hour of a ZonedDateTime over a spring-forward gap', async () => {
+    const onUpdate = vi.fn()
+    // New York springs forward at 02:00 on 2024-03-10: 02:59 does not exist.
+    const { user, hour } = setup({
+      timeFieldProps: { modelValue: Temporal.ZonedDateTime.from('2024-03-10T03:59-04:00[America/New_York]') },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(2))
+    expect(onUpdate.mock.calls.map(([value]) => value.toString())).toEqual([
+      '2024-03-10T01:59:00-05:00[America/New_York]',
+      '2024-03-10T00:59:00-05:00[America/New_York]',
+    ])
+  })
+
+  it('does not stick on the hour a fall-back change repeats', async () => {
+    const onUpdate = vi.fn()
+    // New York falls back at 02:00 on 2024-11-03: 01:30 happens twice.
+    const { user, hour } = setup({
+      timeFieldProps: { modelValue: Temporal.ZonedDateTime.from('2024-11-03T00:30-04:00[America/New_York]') },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(hour)
+    for (let i = 0; i < 3; i++)
+      await user.keyboard(kbd.ARROW_UP)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(3))
+    expect(onUpdate.mock.calls.map(([value]) => value.toString())).toEqual([
+      '2024-11-03T01:30:00-04:00[America/New_York]',
+      '2024-11-03T02:30:00-05:00[America/New_York]',
+      '2024-11-03T03:30:00-05:00[America/New_York]',
+    ])
   })
 })

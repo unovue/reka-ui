@@ -3,7 +3,8 @@
 */
 
 import type { DateValue } from '@/date/types'
-import { getTemporal, today } from '@/date/temporal'
+import { getTemporal } from '@/date/runtime'
+import { today } from '@/date/temporal'
 
 /**
  * A time the time fields accept and emit: a Temporal `PlainTime`, or a
@@ -36,7 +37,40 @@ export function getDefaultCalendar(locale: string): string {
     calendar = new Intl.DateTimeFormat(locale).resolvedOptions().calendar
   }
   catch {}
-  return !calendar || calendar === 'gregory' ? 'iso8601' : calendar
+  if (!calendar || calendar === 'gregory')
+    return 'iso8601'
+  return isCalendarSupported(calendar) ? calendar : 'iso8601'
+}
+
+const calendarSupport = new Map<string, boolean>()
+
+/**
+ * Whether the loaded Temporal implements `calendar`. Polyfill builds without
+ * the full calendar data (`temporal-polyfill-lite/shim`) only know `iso8601`
+ * and `gregory`; a locale defaulting to another calendar then falls back to
+ * ISO dates, with a warning in development, instead of throwing on mount.
+ */
+function isCalendarSupported(calendar: string): boolean {
+  let supported = calendarSupport.get(calendar)
+  if (supported === undefined) {
+    try {
+      getTemporal().PlainDate.from({ year: 2000, month: 1, day: 1 }).withCalendar(calendar)
+      supported = true
+    }
+    catch (error) {
+      if (!(error instanceof RangeError))
+        throw error
+      supported = false
+      // eslint-disable-next-line node/prefer-global/process
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Reka UI] The loaded Temporal implementation does not support the \`${calendar}\` calendar, `
+          + 'so new dates use `iso8601`. Load a polyfill build with every calendar '
+          + '(e.g. `temporal-polyfill-lite/calendars-full/shim`), or pass a `placeholder` in the calendar you want.')
+      }
+    }
+    calendarSupport.set(calendar, supported)
+  }
+  return supported
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { DateValue, Matcher } from './types'
-import { compareDateValues, getDayOfWeek, getTemporal, isPlainDateTime, isZonedDateTime, startOfMonth, startOfYear, toCalendar, toPlainDate } from './temporal'
+import { getTemporal } from './runtime'
+import { compareDateValues, getDayOfWeek, isPlainDateTime, isZonedDateTime, startOfMonth, startOfYear, toCalendar, toPlainDate } from './temporal'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the

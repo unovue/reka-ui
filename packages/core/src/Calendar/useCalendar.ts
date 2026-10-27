@@ -4,7 +4,8 @@ import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnit
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { assertTemporal, clampCalendarView, coarserUnit, compareDateValues, finerUnit, focusedDateValue, getUnitAdapter, isAfter, isBefore, isCoarserUnit, isSameDateSelection, toIsoString } from '@/date'
+import { clampCalendarView, coarserUnit, compareDateValues, finerUnit, focusedDateValue, getUnitAdapter, isAfter, isBefore, isCoarserUnit, isSameDateSelection, toIsoString } from '@/date'
+import { assertTemporal } from '@/date/runtime'
 import { createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
 

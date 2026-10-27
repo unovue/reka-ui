@@ -1,11 +1,7 @@
 /*
- * The Temporal seam of the date components (#2183).
- *
- * Reka does not bundle a Temporal implementation: it reads the global
- * `Temporal` the app provides (native, or a polyfill the app loads), and types
- * against TypeScript 6's built-in `Temporal` lib. Every static `Temporal.*`
- * access goes through `getTemporal()` so a missing global fails with a clear
- * message in development instead of a bare `ReferenceError`.
+ * The Temporal helpers of the date components (#2183), public through
+ * `reka-ui/date`. The global itself is read through `getTemporal()` in
+ * `./runtime`, which is internal.
  *
  * Values are recognised by their `Symbol.toStringTag` brand rather than with
  * `instanceof`, so values created by another polyfill instance, another realm,
@@ -13,41 +9,7 @@
  */
 
 import type { DateValue } from './types'
-
-type TemporalNamespace = typeof Temporal
-
-const MISSING_TEMPORAL_MESSAGE = '[Reka UI] The date components need the Temporal API, but `globalThis.Temporal` is not defined. '
-  + 'Load a polyfill before mounting them on runtimes without native Temporal, e.g. '
-  + '`import { install } from \'temporal-polyfill-lite/shim\'; install(false)` '
-  + '(`temporal-polyfill-lite/calendars-full/shim` for non-Gregorian calendars). See https://reka-ui.com/docs/guides/dates'
-
-/**
- * The global `Temporal` namespace. In development, throws a descriptive error
- * when the runtime has none (no native support and no polyfill loaded).
- *
- * @internal
- */
-export function getTemporal(): TemporalNamespace {
-  const temporal = (globalThis as { Temporal?: TemporalNamespace }).Temporal
-  // `process.env.NODE_ENV`, not `import.meta.env.DEV`, which is neutered in dist.
-  // eslint-disable-next-line node/prefer-global/process
-  if (process.env.NODE_ENV !== 'production' && !temporal)
-    throw new Error(MISSING_TEMPORAL_MESSAGE)
-  return temporal as TemporalNamespace
-}
-
-/**
- * Throws the "Temporal is missing" error in development. The date composables
- * call it on setup so the failure points at the component, not at the first
- * date computation.
- *
- * @internal
- */
-export function assertTemporal() {
-  // eslint-disable-next-line node/prefer-global/process
-  if (process.env.NODE_ENV !== 'production')
-    getTemporal()
-}
+import { getTemporal } from './runtime'
 
 // =============================================================================
 // Brand checks
@@ -72,6 +34,9 @@ export function isZonedDateTime(value: unknown): value is Temporal.ZonedDateTime
 export function isPlainTime(value: unknown): value is Temporal.PlainTime {
   return brand(value) === '[object Temporal.PlainTime]'
 }
+
+/** @deprecated Use `isPlainDateTime`: `CalendarDateTime` is `Temporal.PlainDateTime` in v3. */
+export const isCalendarDateTime = isPlainDateTime
 
 /** `true` for the three Temporal types a `DateValue` can be. */
 export function isDateValue(value: unknown): value is DateValue {
@@ -168,11 +133,6 @@ export function isSameMonth(a: DateValue, b: DateValue): boolean {
   return a.year === other.year && a.month === other.month
 }
 
-/** Whether `b` falls in the same year as `a`, read in `a`'s calendar. */
-export function isSameYearOf(a: DateValue, b: DateValue): boolean {
-  return a.year === toCalendar(toPlainDate(b), a.calendarId).year
-}
-
 /** Whether `value` is today in `timeZone` (the local zone by default). */
 export function isToday(value: DateValue, timeZone: string = getLocalTimeZone()): boolean {
   return isSameDay(value, today(timeZone))
@@ -229,56 +189,78 @@ export type DayOfWeekName = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat
 const DAY_INDEX: Record<DayOfWeekName, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
 
 /*
- * First day of the week per region, for runtimes without
- * `Intl.Locale#getWeekInfo()` (or the older `weekInfo` getter).
- * Data from CLDR (cldr-core/supplemental/weekData.json), as compressed in
- * @internationalized/date (Apache-2.0, Copyright 2020 Adobe): regions that
- * start on Sunday are left out, with AE moved to Monday as in CLDR 42+.
- * 1 = Monday, 5 = Friday, 6 = Saturday.
+ * Week data per region, for runtimes without `Intl.Locale#getWeekInfo()` (or
+ * the older `weekInfo` getter). From CLDR 48 (cldr-core/supplemental/weekData),
+ * as ICU 78 reports it: only the regions that differ from the world default
+ * (`001`: the week starts on Monday, the weekend is Saturday and Sunday) are
+ * listed. Days are Temporal's: Monday = 1 … Sunday = 7.
  */
+function regions<T>(list: string, value: T) {
+  return list.split(' ').map(region => [region, value] as const)
+}
+
 const WEEK_START_BY_REGION: Record<string, number> = Object.fromEntries([
-  ...'001 AD AE AI AL AM AN AR AT AU AX AZ BA BE BG BM BN BY CH CL CM CN CR CY CZ DE DK EC EE ES FI FJ FO FR GB GE GF GP GR HR HU IE IS IT KG KZ LB LI LK LT LU LV MC MD ME MK MN MQ MY NL NO NZ PL RE RO RS RU SE SI SK SM TJ TM TR UA UY UZ VA VN XK'
-    .split(' ')
-    .map(region => [region, 1]),
-  ...'AF BH DJ DZ EG IQ IR JO KW LY OM QA SD SY'.split(' ').map(region => [region, 6]),
-  ['MV', 5],
+  ...regions('AG AS BD BR BS BT BW BZ CA CO DM DO ET GT GU HK HN ID IL IN IS JM JP KE KH KR LA MH MM MO MT MX MZ NI NP PA PE PH PK PR PT PY SA SG SV TH TT TW UM US VE VI WS YE ZA ZW', 7),
+  ...regions('AF BH DJ DZ EG IQ IR JO KW LY OM QA SD SY', 6),
+  ...regions('MV', 5),
 ])
 
-const weekStartCache = new Map<string, number>()
+const WEEKEND_BY_REGION: Record<string, number[]> = Object.fromEntries([
+  ...regions('BH DZ EG IL IQ JO KW LY OM QA SA SD SY YE', [5, 6]),
+  ...regions('AF', [4, 5]),
+  ...regions('IR', [5]),
+  ...regions('IN UG', [7]),
+])
+
+interface WeekInfo { firstDay: number, weekend: number[] }
 
 type WeekInfoLocale = Intl.Locale & {
-  getWeekInfo?: () => { firstDay: number }
-  weekInfo?: { firstDay: number }
+  getWeekInfo?: () => Partial<WeekInfo>
+  weekInfo?: Partial<WeekInfo>
+}
+
+const weekInfoCache = new Map<string, WeekInfo>()
+
+/**
+ * The week of `locale`, in Temporal's day numbers (Monday = 1 … Sunday = 7).
+ * Reads `Intl.Locale#getWeekInfo()` (which honours a `-u-fw-` extension), then
+ * the older `weekInfo` getter, then the CLDR tables above keyed by the
+ * locale's likely region.
+ */
+function getWeekInfo(locale: string): WeekInfo {
+  let info = weekInfoCache.get(locale)
+  if (info)
+    return info
+
+  let intlLocale: WeekInfoLocale | undefined
+  try {
+    intlLocale = new Intl.Locale(locale) as WeekInfoLocale
+  }
+  catch {
+    // An invalid locale tag: use the world default.
+  }
+  const fromIntl = typeof intlLocale?.getWeekInfo === 'function' ? intlLocale.getWeekInfo() : intlLocale?.weekInfo
+  const region = intlLocale?.maximize().region ?? '001'
+  info = {
+    firstDay: typeof fromIntl?.firstDay === 'number' ? fromIntl.firstDay : (WEEK_START_BY_REGION[region] ?? 1),
+    weekend: Array.isArray(fromIntl?.weekend) ? fromIntl.weekend : (WEEKEND_BY_REGION[region] ?? [6, 7]),
+  }
+  weekInfoCache.set(locale, info)
+  return info
+}
+
+/** The first day of the week for `locale`: 0 = Sunday … 6 = Saturday. */
+export function getLocaleWeekStart(locale: string): number {
+  return getWeekInfo(locale).firstDay % 7
 }
 
 /**
- * The first day of the week for `locale`: 0 = Sunday … 6 = Saturday.
- * Reads `Intl.Locale#getWeekInfo()` (which honours a `-u-fw-` extension), then
- * the older `weekInfo` getter, then a CLDR table keyed by the locale's region.
+ * Whether `value` falls on a weekend day in `locale`: Saturday and Sunday in
+ * most regions, Friday and Saturday in `he-IL`, `ar-SA` or `ar-EG`, Friday
+ * alone in `fa-IR`. Reads `Intl.Locale#getWeekInfo()`, with a CLDR fallback.
  */
-export function getLocaleWeekStart(locale: string): number {
-  const cached = weekStartCache.get(locale)
-  if (cached !== undefined)
-    return cached
-
-  let weekStart = 0
-  try {
-    const intlLocale = new Intl.Locale(locale) as WeekInfoLocale
-    const info = typeof intlLocale.getWeekInfo === 'function' ? intlLocale.getWeekInfo() : intlLocale.weekInfo
-    if (info && typeof info.firstDay === 'number') {
-      weekStart = info.firstDay % 7
-    }
-    else {
-      const region = intlLocale.maximize().region
-      weekStart = (region && WEEK_START_BY_REGION[region]) || 0
-    }
-  }
-  catch {
-    // An invalid locale tag: keep Sunday.
-  }
-
-  weekStartCache.set(locale, weekStart)
-  return weekStart
+export function isWeekend(value: DateValue, locale: string): boolean {
+  return getWeekInfo(locale).weekend.includes(value.dayOfWeek)
 }
 
 /**
@@ -348,22 +330,96 @@ function cycleValue(value: number, amount: number, min: number, max: number) {
   return value
 }
 
+const MAX_ISO_YEAR = 9999
+
+/** Whether the year `eraYear` of `era` exists in `date`'s calendar, within the ISO years ±9999. */
+function eraHasYear(date: Temporal.PlainDate, era: string, eraYear: number): boolean {
+  const temporal = getTemporal()
+  const first = temporal.PlainDate.from({ calendar: date.calendarId, era, eraYear, month: 1, day: 1 })
+  const firstOfNext = temporal.PlainDate.from({ calendar: date.calendarId, era, eraYear: eraYear + 1, month: 1, day: 1 })
+  const last = firstOfNext.subtract({ days: 1 })
+  if (first.era !== era && last.era !== era)
+    return false
+  return Math.abs(first.withCalendar('iso8601').year) <= MAX_ISO_YEAR
+}
+
+/** The last year of `era` (or of the ISO range, for an era that has not ended). */
+function lastYearOfEra(date: Temporal.PlainDate, era: string): number {
+  let low = 1
+  let high = MAX_ISO_YEAR
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (eraHasYear(date, era, mid))
+      low = mid
+    else
+      high = mid - 1
+  }
+  return low
+}
+
+/**
+ * `value` in year `eraYear` of its era, with the month and day kept. In the
+ * first or last year of an era the day is clamped into the era: Heisei 31
+ * ends on 30 April, so Heisei 31-05-01 becomes Heisei 31-04-30.
+ */
+function withEraYear<T extends DateValue>(value: T, era: string, eraYear: number): T {
+  let next = (value as Temporal.PlainDate).with({ era, eraYear }) as T
+  const step = compareDateValues(next, value) > 0 ? -1 : 1
+  for (let guard = 0; next.era !== era && guard < 400; guard++)
+    next = next.add({ days: step }) as T
+  return next
+}
+
+/**
+ * The hour of a `ZonedDateTime` moved by `amount` elapsed hours, wrapping
+ * within its day. Elapsed rather than wall-clock hours, as
+ * `@internationalized/date` did: the hour skipped by a spring-forward change
+ * is stepped over (03:30 EDT, then 01:30 EST), and the hour a fall-back change
+ * repeats is visited once.
+ */
+function cycleZonedHour(value: Temporal.ZonedDateTime, amount: number): Temporal.ZonedDateTime {
+  const HOUR_MS = 3_600_000
+  const dayStart = value.startOfDay()
+  const hoursInDay = Math.ceil(value.hoursInDay)
+  const elapsed = Math.floor((value.epochMilliseconds - dayStart.epochMilliseconds) / HOUR_MS)
+
+  let target = elapsed
+  let next = value
+  // A fall-back day repeats a wall-clock hour; skip the repeat so the hour segment moves.
+  for (let guard = 0; guard < 3 && next.hour === value.hour; guard++) {
+    target = cycleValue(target, amount, 0, hoursInDay - 1)
+    next = value.add({ hours: target - elapsed })
+  }
+  return next
+}
+
 /**
  * `value` with one field moved by `amount`, wrapping within the field's range
  * instead of carrying into the next one: day 31 + 1 is day 1 of the same
  * month, 23:00 + 1 hour is 00:00 of the same day. `year` moves through the
- * years of the era (1 … 9999).
+ * years of the current era and wraps within it (Heisei 1 - 1 is Heisei 31);
+ * calendars without eras wrap within the ISO years 1 … 9999. A
+ * `ZonedDateTime`'s hour moves by elapsed time (see `cycleZonedHour`).
  */
 export function cycleField<T extends DateValue | Temporal.PlainTime>(value: T, field: DateTimeField, amount: number): T {
   const v = value as Temporal.PlainDateTime
   switch (field) {
-    case 'year':
-      return setFields(value, { year: cycleValue(getFieldValue(value, 'year'), amount, 1, 9999) })
+    case 'year': {
+      const date = value as DateValue
+      const era = date.era
+      if (era === undefined)
+        return setFields(value, { year: cycleValue(date.year, amount, 1, MAX_ISO_YEAR) })
+      const plain = toPlainDate(date)
+      const eraYear = cycleValue(date.eraYear!, amount, 1, lastYearOfEra(plain, era))
+      return withEraYear(date, era, eraYear) as T
+    }
     case 'month':
       return v.with({ month: cycleValue(v.month, amount, 1, v.monthsInYear) }) as unknown as T
     case 'day':
       return v.with({ day: cycleValue(v.day, amount, 1, v.daysInMonth) }) as unknown as T
     case 'hour':
+      if (isZonedDateTime(value))
+        return cycleZonedHour(value, amount) as T
       return v.with({ hour: cycleValue(v.hour, amount, 0, 23) }) as unknown as T
     case 'minute':
       return v.with({ minute: cycleValue(v.minute, amount, 0, 59) }) as unknown as T

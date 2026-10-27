@@ -1297,3 +1297,94 @@ describe('temporal calendar systems', () => {
     expect(decremented.toString({ calendarName: 'never' })).toBe('2023-05-01')
   })
 })
+
+describe('temporal regressions (#3088 review)', () => {
+  it('steps the hour of a ZonedDateTime over a spring-forward gap', async () => {
+    const onUpdate = vi.fn()
+    // New York springs forward at 02:00 on 2024-03-10: 02:30 does not exist.
+    const { user, getByTestId } = setup({
+      dateFieldProps: { modelValue: Temporal.ZonedDateTime.from('2024-03-10T03:30-04:00[America/New_York]'), granularity: 'minute' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(getByTestId('hour'))
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2024-03-10T01:30:00-05:00[America/New_York]')
+
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(2))
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2024-03-10T00:30:00-05:00[America/New_York]')
+  })
+
+  it('steps the hour of a ZonedDateTime forward over a spring-forward gap', async () => {
+    const onUpdate = vi.fn()
+    const { user, getByTestId } = setup({
+      dateFieldProps: { modelValue: Temporal.ZonedDateTime.from('2024-03-10T01:30-05:00[America/New_York]'), granularity: 'minute' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(getByTestId('hour'))
+    await user.keyboard(kbd.ARROW_UP)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(1))
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2024-03-10T03:30:00-04:00[America/New_York]')
+  })
+
+  it('wraps the year within a Japanese era', async () => {
+    const onUpdate = vi.fn()
+    const heisei1 = Temporal.PlainDate.from('1989-04-30').withCalendar('japanese')
+    const { user, year } = setup({
+      dateFieldProps: { modelValue: heisei1, locale: 'ja-JP-u-ca-japanese' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(year)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled())
+    // Heisei 31 is the era's last year: it ends on 30 April 2019.
+    const wrapped = onUpdate.mock.lastCall![0] as Temporal.PlainDate
+    expect([wrapped.era, wrapped.eraYear]).toEqual(['heisei', 31])
+    expect(wrapped.toString({ calendarName: 'never' })).toBe('2019-04-30')
+  })
+
+  it('keeps the years of the current era within the ISO years 1 to 9999', async () => {
+    const onUpdate = vi.fn()
+    const { user, year } = setup({
+      dateFieldProps: { modelValue: Temporal.PlainDate.from('2019-05-01').withCalendar('japanese'), locale: 'ja-JP-u-ca-japanese' },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(year)
+    await user.keyboard(kbd.ARROW_DOWN)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled())
+    const wrapped = onUpdate.mock.lastCall![0] as Temporal.PlainDate
+    expect(wrapped.era).toBe('reiwa')
+    expect(wrapped.withCalendar('iso8601').year).toBe(9999)
+  })
+
+  it('reads the era segment\'s value as its label, not its Temporal code', () => {
+    const reiwa6 = Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })
+    const { getByTestId } = setup({ dateFieldProps: { modelValue: reiwa6, locale: 'en-US' } })
+    expect(getByTestId('era')).toHaveAttribute('aria-valuetext', 'Reiwa')
+  })
+
+  it('ignores keys on the era segment', async () => {
+    const reiwa6 = Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })
+    const { getByTestId } = setup({ dateFieldProps: { modelValue: reiwa6, locale: 'en-US' } })
+    const era = getByTestId('era')
+    // Vue reports a throwing event handler instead of rethrowing it.
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      await fireEvent.keyDown(era, { key: kbd.ARROW_UP })
+      expect([...error.mock.calls, ...warn.mock.calls]).toEqual([])
+      expect(era).toHaveTextContent('R')
+    }
+    finally {
+      error.mockRestore()
+      warn.mockRestore()
+    }
+  })
+
+  it('shows an ISO value in the Gregorian calendar, whatever the locale\'s default calendar', () => {
+    const { year, queryByTestId } = setup({ dateFieldProps: { modelValue: Temporal.PlainDate.from('2024-05-01'), locale: 'ja-JP-u-ca-japanese' } })
+    expect(year).toHaveTextContent('2024')
+    expect(queryByTestId('era')).toBeNull()
+  })
+})

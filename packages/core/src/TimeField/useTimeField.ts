@@ -5,7 +5,8 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { assertTemporal, compareDateValues, getTemporal, isBefore, isSameDay, today, toPlainDate } from '@/date'
+import { compareDateValues, isBefore, isSameDay, today, toPlainDate } from '@/date'
+import { assertTemporal, getTemporal } from '@/date/runtime'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
   createContent,

@@ -6,7 +6,8 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { areAllDaysBetweenValid, assertTemporal, compareDateValues, isBefore, isBeforeOrSame } from '@/date'
+import { areAllDaysBetweenValid, compareDateValues, isBefore, isBeforeOrSame } from '@/date'
+import { assertTemporal } from '@/date/runtime'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {

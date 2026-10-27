@@ -1,18 +1,21 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { Temporal as BasicTemporal } from 'temporal-polyfill-lite'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getDefaultCalendar, getDefaultDate } from '@/shared/date/comparators'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 import { createMonth, getWeekStartsOn } from './calendar'
+import * as dateEntry from './index'
+import { getTemporal } from './runtime'
 import {
   compareDateValues,
   cycleField,
   getFieldValue,
   getLocaleWeekStart,
-  getTemporal,
   isDateValue,
   isPlainDate,
   isPlainDateTime,
   isPlainTime,
   isSameDateValue,
+  isWeekend,
   isZonedDateTime,
   setFields,
   toDate,
@@ -35,6 +38,18 @@ describe('the Temporal global', () => {
     // @ts-expect-error simulate a runtime without Temporal and without a polyfill
     delete globalThis.Temporal
     expect(() => getTemporal()).toThrow(/need the Temporal API.*temporal-polyfill-lite/)
+  })
+
+  it('throws a one-line error in production when it is missing', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    try {
+      // @ts-expect-error simulate a runtime without Temporal and without a polyfill
+      delete globalThis.Temporal
+      expect(() => getTemporal()).toThrow('[Reka UI] Temporal is not defined: load a polyfill. https://reka-ui.com/docs/guides/dates')
+    }
+    finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 
@@ -227,12 +242,147 @@ describe('week info', () => {
       expect(getLocaleWeekStart('fa')).toBe(6)
     }
     finally {
-      for (const [key, descriptor] of saved) {
-        if (descriptor)
-          Object.defineProperty(proto, key, descriptor)
-        else
-          delete (proto as unknown as Record<string, unknown>)[key]
-      }
+      restoreWeekInfo(saved)
     }
+  })
+
+  // Locales whose region the fallback table does not list, or a macro-region:
+  // the table must match Intl's CLDR data so server and browser grids agree.
+  const fallbackLocales = ['es-419', 'en-150', 'pt-BR', 'en-001', 'he-IL', 'ar-SA', 'fa-IR', 'ar-EG', 'ps-AF', 'ar-AE', 'hi-IN', 'en-UG']
+
+  it('falls back to week data that agrees with Intl', () => {
+    const fromIntl = fallbackLocales.map((locale) => {
+      const info = (new Intl.Locale(locale) as Intl.Locale & { getWeekInfo: () => { firstDay: number, weekend: number[] } }).getWeekInfo()
+      return [locale, info.firstDay % 7, info.weekend] as const
+    })
+    const saved = removeWeekInfo()
+    try {
+      const fromTable = fallbackLocales.map(locale => [
+        locale,
+        getLocaleWeekStart(locale),
+        [1, 2, 3, 4, 5, 6, 7].filter(day => isWeekend(Temporal.PlainDate.from('2024-05-13').add({ days: day - 1 }), locale)),
+      ] as const)
+      expect(fromTable).toEqual(fromIntl)
+    }
+    finally {
+      restoreWeekInfo(saved)
+    }
+  })
+
+  it('reads the weekend from the locale', () => {
+    const friday = Temporal.PlainDate.from('2024-05-17')
+    const saturday = friday.add({ days: 1 })
+    const sunday = friday.add({ days: 2 })
+    const thursday = friday.subtract({ days: 1 })
+    expect([isWeekend(friday, 'en-US'), isWeekend(saturday, 'en-US'), isWeekend(sunday, 'en-US')]).toEqual([false, true, true])
+    for (const locale of ['he-IL', 'ar-SA', 'ar-EG'])
+      expect([locale, isWeekend(friday, locale), isWeekend(saturday, locale), isWeekend(sunday, locale)]).toEqual([locale, true, true, false])
+    expect([isWeekend(friday, 'fa-IR'), isWeekend(saturday, 'fa-IR')]).toEqual([true, false])
+    expect([isWeekend(thursday, 'ps-AF'), isWeekend(friday, 'ps-AF'), isWeekend(saturday, 'ps-AF')]).toEqual([true, true, false])
+    expect([isWeekend(friday, 'ar-AE'), isWeekend(saturday, 'ar-AE'), isWeekend(sunday, 'ar-AE')]).toEqual([false, true, true])
+    // Any calendar: the weekday is the same.
+    expect(isWeekend(friday.withCalendar('persian'), 'fa-IR')).toBe(true)
+  })
+})
+
+function removeWeekInfo() {
+  const proto = Intl.Locale.prototype
+  const saved = (['getWeekInfo', 'weekInfo'] as const).map(key => [key, Object.getOwnPropertyDescriptor(proto, key)] as const)
+  for (const [key] of saved)
+    Object.defineProperty(proto, key, { value: undefined, configurable: true, writable: true })
+  return saved
+}
+
+function restoreWeekInfo(saved: ReturnType<typeof removeWeekInfo>) {
+  const proto = Intl.Locale.prototype
+  for (const [key, descriptor] of saved) {
+    if (descriptor)
+      Object.defineProperty(proto, key, descriptor)
+    else
+      delete (proto as unknown as Record<string, unknown>)[key]
+  }
+}
+
+describe('cycling the year of an era', () => {
+  const japanese = (era: string, eraYear: number, month: number, day: number) => Temporal.PlainDate.from({ calendar: 'japanese', era, eraYear, month, day })
+
+  it('wraps from the first year of an ended era to its last', () => {
+    const wrapped = cycleField(japanese('heisei', 1, 4, 30), 'year', -1)
+    expect([wrapped.era, wrapped.eraYear, wrapped.toString({ calendarName: 'never' })]).toEqual(['heisei', 31, '2019-04-30'])
+  })
+
+  it('clamps a day past the end of the era into it', () => {
+    // Heisei 31 ended on 30 April 2019.
+    const wrapped = cycleField(japanese('heisei', 1, 12, 31), 'year', -1)
+    expect([wrapped.era, wrapped.eraYear, wrapped.toString({ calendarName: 'never' })]).toEqual(['heisei', 31, '2019-04-30'])
+    const up = cycleField(japanese('heisei', 30, 6, 1), 'year', 1)
+    expect([up.era, up.eraYear, up.toString({ calendarName: 'never' })]).toEqual(['heisei', 31, '2019-04-30'])
+  })
+
+  it('wraps from the last year of an era to its first, clamped to its start', () => {
+    // Heisei began on 8 January 1989.
+    const wrapped = cycleField(japanese('heisei', 31, 1, 2), 'year', 1)
+    expect([wrapped.era, wrapped.eraYear, wrapped.toString({ calendarName: 'never' })]).toEqual(['heisei', 1, '1989-01-08'])
+  })
+
+  it('keeps an open era within the ISO year 9999', () => {
+    const wrapped = cycleField(japanese('reiwa', 1, 5, 1), 'year', -1)
+    expect(wrapped.era).toBe('reiwa')
+    expect(wrapped.withCalendar('iso8601').year).toBe(9999)
+    expect(cycleField(wrapped, 'year', 1).eraYear).toBe(1)
+  })
+
+  it('wraps a Gregorian year within 1 and 9999', () => {
+    expect(cycleField(Temporal.PlainDate.from('0001-06-01'), 'year', -1).year).toBe(9999)
+    expect(cycleField(Temporal.PlainDate.from('9999-06-01'), 'year', 1).year).toBe(1)
+  })
+})
+
+describe('cycling the hour of a ZonedDateTime', () => {
+  const ny = (iso: string) => Temporal.ZonedDateTime.from(`${iso}[America/New_York]`)
+
+  it('steps over the hour a spring-forward change skips', () => {
+    expect(cycleField(ny('2024-03-10T03:30-04:00'), 'hour', -1).toString()).toBe('2024-03-10T01:30:00-05:00[America/New_York]')
+    expect(cycleField(ny('2024-03-10T01:30-05:00'), 'hour', 1).toString()).toBe('2024-03-10T03:30:00-04:00[America/New_York]')
+  })
+
+  it('moves the wall-clock hour on a fall-back day', () => {
+    expect(cycleField(ny('2024-11-03T00:30-04:00'), 'hour', 1).toString()).toBe('2024-11-03T01:30:00-04:00[America/New_York]')
+    expect(cycleField(ny('2024-11-03T01:30-04:00'), 'hour', 1).toString()).toBe('2024-11-03T02:30:00-05:00[America/New_York]')
+    expect(cycleField(ny('2024-11-03T02:30-05:00'), 'hour', -1).hour).toBe(1)
+  })
+
+  it('wraps within the day', () => {
+    expect(cycleField(ny('2024-03-10T23:30-04:00'), 'hour', 1).toString()).toBe('2024-03-10T00:30:00-05:00[America/New_York]')
+    expect(cycleField(ny('2024-03-10T00:30-05:00'), 'hour', -1).toString()).toBe('2024-03-10T23:30:00-04:00[America/New_York]')
+  })
+})
+
+describe('calendar support of the loaded Temporal', () => {
+  it('falls back to iso8601 with a warning when the locale\'s calendar is not supported', () => {
+    const temporal = globalThis.Temporal
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      globalThis.Temporal = BasicTemporal as unknown as typeof Temporal
+      // A calendar no other test asked about, so the support cache is cold.
+      expect(getDefaultCalendar('en-US-u-ca-coptic')).toBe('iso8601')
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('`coptic` calendar'))
+    }
+    finally {
+      globalThis.Temporal = temporal
+      warn.mockRestore()
+    }
+  })
+})
+
+describe('public surface of reka-ui/date', () => {
+  it('keeps the runtime helpers internal', () => {
+    for (const name of ['getTemporal', 'assertTemporal', 'isSameYearOf'])
+      expect(dateEntry).not.toHaveProperty(name)
+  })
+
+  it('keeps `isCalendarDateTime` as a deprecated alias', () => {
+    expect(dateEntry.isCalendarDateTime).toBe(dateEntry.isPlainDateTime)
+    expect(dateEntry.isWeekend).toBeTypeOf('function')
   })
 })

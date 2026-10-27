@@ -79,17 +79,19 @@ function getDateTimeFormat(locale: string, options: DateFormatterOptions): Intl.
  * directly: only a native Temporal guarantees that `Intl` accepts them, and
  * `Intl` rejects a value whose calendar differs from the formatter's. A plain
  * value is read as its wall-clock fields in UTC (no local-zone or DST shift),
- * a zoned value keeps its zone, and a value in a non-ISO calendar sets
- * `calendar` so its fields are shown in that calendar.
+ * a zoned value keeps its zone, and a value always sets `calendar` so its
+ * fields are shown in its own calendar (`gregory` for an `iso8601` value).
  */
 function toFormatInput(date: FormattableDate, options: DateFormatterOptions): [Date, DateFormatterOptions] {
-  // `iso8601` is not a display calendar: leave the locale's default (Gregorian in most locales).
-  const resolved = options.calendar === 'iso8601' ? { ...options, calendar: undefined } : options
+  // `iso8601` is not a display calendar, but its fields are Gregorian ones: show
+  // them as such, never in the locale's default calendar (Persian in `fa-IR`,
+  // Buddhist in `th-TH`), which would label a Gregorian grid with other months.
+  const resolved = options.calendar === 'iso8601' ? { ...options, calendar: 'gregory' } : options
   if (date instanceof Date)
     return [date, resolved]
 
   const calendarId = isPlainTime(date) ? 'iso8601' : date.calendarId
-  const calendar = resolved.calendar ?? (calendarId === 'iso8601' ? undefined : calendarId)
+  const calendar = resolved.calendar ?? (calendarId === 'iso8601' ? 'gregory' : calendarId)
 
   if (isZonedDateTime(date))
     return [new Date(date.epochMilliseconds), { ...resolved, calendar, timeZone: date.timeZoneId }]

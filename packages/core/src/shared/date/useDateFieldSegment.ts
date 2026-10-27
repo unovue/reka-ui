@@ -219,12 +219,14 @@ function timeZoneSegmentAttrs(props: SegmentAttrProps) {
 }
 
 function eraSegmentAttrs(props: SegmentAttrProps) {
-  const { segmentValues, placeholder } = props
+  const { placeholder, formatter } = props
 
   const valueMin = 0
   const valueMax = 0
   const valueNow = 0
-  const valueText = 'era' in segmentValues ? segmentValues.era : placeholder.era
+  // The era as the segment shows it ("R", "Heisei", "AD"), not Temporal's era
+  // code (`reiwa`, `ce`), which is an identifier rather than a label.
+  const valueText = formatter.part(placeholder, 'era', { era: 'short' }) || placeholder.era
 
   return {
     ...commonSegmentAttrs(props),
@@ -923,6 +925,8 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
       second: handleSecondSegmentKeydown,
       dayPeriod: handleDayPeriodSegmentKeydown,
       timeZoneName: () => { },
+      // The era follows the year: it has no keys of its own.
+      era: () => { },
     } as const
 
     segmentKeydownHandlers[toValue(props.part) as keyof typeof segmentKeydownHandlers](e)

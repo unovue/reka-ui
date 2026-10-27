@@ -2,6 +2,7 @@ import type { CalendarRootProps } from './CalendarRoot.vue'
 import type { DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { Temporal as BasicTemporal } from 'temporal-polyfill-lite'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
@@ -1597,6 +1598,37 @@ describe('temporal values', () => {
       // @ts-expect-error simulate a runtime without Temporal and without a polyfill
       delete globalThis.Temporal
       expect(() => render(Calendar)).toThrow(/need the Temporal API/)
+    }
+    finally {
+      globalThis.Temporal = temporal
+      warn.mockRestore()
+    }
+  })
+})
+
+describe('temporal regressions (#3088 review)', () => {
+  it('names the months of an ISO value in the Gregorian calendar, whatever the locale\'s default calendar', () => {
+    // fa-IR defaults to the Persian calendar and th-TH to the Buddhist one; an
+    // ISO grid of December 2024 must still be headed "December 2024".
+    const december = Temporal.PlainDate.from('2024-12-15')
+    const persian = setup({ calendarProps: { placeholder: december, locale: 'fa-IR' } })
+    expect(persian.getByTestId('heading')).toHaveTextContent('دسامبر')
+    persian.unmount()
+
+    const thai = setup({ calendarProps: { placeholder: december, locale: 'th-TH' } })
+    expect(thai.getByTestId('heading')).toHaveTextContent('ธันวาคม 2024')
+  })
+
+  it('mounts without a value with a polyfill that only knows the ISO and Gregorian calendars', () => {
+    const temporal = globalThis.Temporal
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      globalThis.Temporal = BasicTemporal as unknown as typeof Temporal
+      for (const locale of ['th-TH', 'fa-IR', 'ja-JP-u-ca-japanese']) {
+        const { calendar, unmount } = setup({ calendarProps: { locale } })
+        expect(calendar.querySelector('[data-value]')).toBeTruthy()
+        unmount()
+      }
     }
     finally {
       globalThis.Temporal = temporal
