@@ -568,12 +568,11 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     props.emit?.('update:startValue', start, details)
   })
 
-  watch([startValue, endValue], ([start, end], [previousStart]) => {
-    // Only the end moved: the start watcher will not run to consume its copy.
-    if (start === previousStart) {
-      pendingStartReason = 'imperative-action'
-      pendingStartEvent = undefined
-    }
+  watch([startValue, endValue], ([start, end]) => {
+    const reason = pendingReason
+    const event = pendingEvent
+    pendingReason = 'imperative-action'
+    pendingEvent = undefined
     const a = granularityAdapter.value
     const current = modelValue.value
     if (current.start && current.end && start && end && a.isSame(current.start, start) && a.isSame(current.end, end))
@@ -589,11 +588,6 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     else {
       next = start ? { start: start.copy(), end: undefined } : { start: end?.copy(), end: undefined }
     }
-
-    const reason = pendingReason
-    const event = pendingEvent
-    pendingReason = 'imperative-action'
-    pendingEvent = undefined
 
     setModelValue(next, reason, event)
     if (lastChangeDetails.value.isCanceled) {
@@ -650,8 +644,24 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
       return
     }
 
-    const a = granularityAdapter.value
+    const previousStart = startValue.value
+    const previousEnd = endValue.value
     setPending(reason, event)
+    pressCell(date, reason, event)
+    // Only a press that moves an end consumes the pending reason; leave none
+    // behind for a later programmatic change to report.
+    if (startValue.value === previousStart) {
+      pendingStartReason = 'imperative-action'
+      pendingStartEvent = undefined
+      if (endValue.value === previousEnd) {
+        pendingReason = 'imperative-action'
+        pendingEvent = undefined
+      }
+    }
+  }
+
+  function pressCell(date: DateValue, reason: RangeCalendarChangeReason | BaseChangeReason, event?: Event) {
+    const a = granularityAdapter.value
 
     if (startValue.value && highlightedRange.value === null) {
       if (a.isSame(date, startValue.value) && !preventDeselect.value && !endValue.value) {

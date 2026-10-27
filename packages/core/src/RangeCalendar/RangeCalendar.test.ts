@@ -6,9 +6,11 @@ import { fireEvent, render, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { effectScope, nextTick, ref } from 'vue'
 import { useTestKbd } from '@/shared'
 import { RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 import RangeCalendar from './story/_RangeCalendar.vue'
+import { useRangeCalendar } from './useRangeCalendar'
 
 it('should pass axe accessibility tests', async () => {
   const wrapper = mount(RangeCalendar)
@@ -1657,5 +1659,20 @@ describe('update:startValue details', () => {
     expect(details.reason).toBe('cell-press')
     expect(details.event).toBeInstanceOf(MouseEvent)
     expect(onPlaceholder).toHaveBeenLastCalledWith(new CalendarDate(1980, 1, 5), expect.objectContaining({ reason: 'cell-press' }))
+  })
+
+  it('a press that changes nothing leaves no reason behind for a later programmatic change', async () => {
+    const onStart = vi.fn()
+    const model = ref<{ start: DateValue | undefined, end: DateValue | undefined }>({ start: new CalendarDate(1980, 1, 20), end: undefined })
+    const calendar = effectScope().run(() => useRangeCalendar({ modelValue: () => model.value, locale: 'en-US', onUpdateStartValue: onStart }))!
+    // A start without an end and no hovered day: the press only records itself.
+    calendar.select(new CalendarDate(1980, 1, 22), 'cell-press')
+    await nextTick()
+    expect(onStart).not.toHaveBeenCalled()
+
+    model.value = { start: new CalendarDate(1980, 1, 5), end: new CalendarDate(1980, 1, 9) }
+    await nextTick()
+    await nextTick()
+    expect(onStart).toHaveBeenLastCalledWith(new CalendarDate(1980, 1, 5), expect.objectContaining({ reason: 'imperative-action' }))
   })
 })
