@@ -16,12 +16,6 @@
     'required': false
   },
   {
-    'name': 'disableOutsidePointerEvents',
-    'description': '<p>When <code>true</code>, hover/focus/click interactions will be disabled on elements outside\nthe <code>DismissableLayer</code>. Users will need to click twice on outside elements to\ninteract with them: once to close the <code>DismissableLayer</code>, and again to trigger the element.</p>\n<p>Outside elements are covered by a transparent internal backdrop\n(<code>[data-reka-internal-backdrop]</code>) rendered right below the layer; <code>&lt;body&gt;</code>\nstyles are never touched.</p>\n',
-    'type': 'boolean',
-    'required': false
-  },
-  {
     'name': 'finalFocus',
     'description': '<p>Final focus target when the drawer closes.</p>\n<ul>\n<li><code>true</code> / default: focus the trigger</li>\n<li><code>false</code>: do not restore focus</li>\n<li>element ref: focus that specific element</li>\n</ul>\n',
     'type': 'boolean | HTMLElement | null',
@@ -46,7 +40,7 @@
 <EmitsTable :data="[
   {
     'name': 'closeAutoFocus',
-    'description': '<p>Event handler called when auto-focusing on close.\nCan be prevented.</p>\n',
+    'description': '<p>Event handler called when focus moves back on close (to the trigger, or <code>finalFocus</code>). Can be prevented. Not\nemitted for a <code>forceMount</code> popup, which stays mounted: it returns focus itself on close, while focus is still\ninside it or on <code>&lt;body&gt;</code>; use <code>finalFocus</code> to change or turn off that return.</p>\n',
     'type': '[event: Event]'
   },
   {
@@ -85,7 +79,6 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disableOutsidePointerEvents` | When true, hover/focus/click interactions will be disabled on elements outside the DismissableLayer. Users will need to click twice on outside elements to interact with them: once to close the DismissableLayer, and again to trigger the element. Outside elements are covered by a transparent internal backdrop ([data-reka-internal-backdrop]) rendered right below the layer; <body> styles are never touched. | `boolean` | No | - |
 | `finalFocus` | Final focus target when the drawer closes.  true / default: focus the trigger false: do not restore focus element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 | `forceMount` |  | `boolean` | No | - |
 | `initialFocus` | Initial focus target when the drawer opens.  true / default: focus the first focusable element inside false: do not focus anything element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
@@ -94,7 +87,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `closeAutoFocus` | Event handler called when auto-focusing on close. Can be prevented. | `[event: Event]` |
+| `closeAutoFocus` | Event handler called when focus moves back on close (to the trigger, or finalFocus). Can be prevented. Not emitted for a forceMount popup, which stays mounted: it returns focus itself on close, while focus is still inside it or on <body>; use finalFocus to change or turn off that return. | `[event: Event]` |
 | `escapeKeyDown` | Event handler called when the escape key is down. Can be prevented. | `[event: KeyboardEvent]` |
 | `focusOutside` | Event handler called when the focus moves outside of the DismissableLayer. Can be prevented. | `[event: FocusOutsideEvent]` |
 | `interactOutside` | Event handler called when an interaction happens outside the DismissableLayer. Specifically, when a pointerdown event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |

@@ -317,10 +317,20 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
       return false
     // Base UI parity (`DrawerRoot` `handleOpenChange`): a close resets the
     // snap point to the default (`defaultSnapPoint`, else the first snap
-    // point), so the drawer reopens where it started.
+    // point), so the drawer reopens where it started. A controlled parent
+    // applies the close on its next render, and may ignore it: reset only once
+    // the drawer is really closed.
     const points = toValue(props.snapPoints)
-    if (!value && points && points.length > 0)
-      setActiveSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event)
+    if (!value && points && points.length > 0) {
+      const resetSnapPoint = () => {
+        if (!open.value)
+          setActiveSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event)
+      }
+      if (open.value)
+        nextTick(resetSnapPoint)
+      else
+        resetSnapPoint()
+    }
     return true
   }
 
@@ -474,11 +484,19 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
       // Base UI parity (`DrawerViewport`): a release past the last snap point
       // first requests the `null` snap point; cancelling it keeps the drawer
       // open where it was. A cancelled close then restores the previous point.
+      // A controlled parent that ignores the close leaves the drawer open: it
+      // settles back to the previous point too.
       const previous = rootContext.activeSnapPoint.value ?? null
-      if (!rootContext.setActiveSnapPoint(point, 'swipe'))
+      if (!rootContext.setActiveSnapPoint(point, 'swipe') || point !== null)
         return
-      if (point === null && !rootContext.onOpenChange(false, 'swipe'))
+      if (!rootContext.onOpenChange(false, 'swipe')) {
         rootContext.setActiveSnapPoint(previous, 'swipe')
+        return
+      }
+      nextTick(() => {
+        if (rootContext.open.value)
+          rootContext.setActiveSnapPoint(previous, 'swipe')
+      })
     },
   })
 

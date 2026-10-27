@@ -104,6 +104,17 @@ describe('useDrawer — state', () => {
     expect(d.activeSnapPoint.value).toBe(0.5)
   })
 
+  it('a close a controlled parent ignores keeps the snap point', async () => {
+    const onSnapPointUpdate = vi.fn()
+    const d = useDrawer({ open: () => true, snapPoints: [0.5, 1], defaultSnapPoint: 0.5, onSnapPointUpdate })
+    d.setActiveSnapPoint(1, 'swipe')
+    expect(d.onOpenChange(false, 'escape-key')).toBe(true)
+    await nextTick()
+    expect(d.open.value).toBe(true)
+    expect(d.activeSnapPoint.value).toBe(1)
+    expect(onSnapPointUpdate).toHaveBeenCalledTimes(1)
+  })
+
   it('a close resets the snap point to the default, as Base UI does', () => {
     const onSnapPointUpdate = vi.fn()
     const d = useDrawer({ defaultOpen: true, snapPoints: [0.5, 1], defaultSnapPoint: 0.5, onSnapPointUpdate })

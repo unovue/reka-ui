@@ -258,4 +258,18 @@ describe('drawer swipe dismissal', () => {
     expect(onSnapPoint.mock.calls.map(([point]) => point)).toEqual([null, 1])
     expectSettledOpen(content)
   })
+
+  it('a snap-point swipe close a controlled parent ignores settles back to the previous point', async () => {
+    const { onOpenChange, onSnapPoint } = renderDrawer({ controlled: 'ignore', snapPoints: [1], defaultSnapPoint: 1 })
+    await nextTick()
+    await nextTick()
+    const content = findContent()!
+
+    await swipeDown(content)
+    await nextTick()
+
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'swipe' }))
+    expect(onSnapPoint.mock.calls.map(([point]) => point)).toEqual([null, 1])
+    expectSettledOpen(content)
+  })
 })

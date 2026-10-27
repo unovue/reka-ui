@@ -81,7 +81,7 @@ the names and units below are stable.
 | `--drawer-swipe-movement-x` | `DrawerPopup` | Horizontal drag offset while swiping a left/right drawer (length). `0px` at rest. |
 | `--drawer-swipe-movement-y` | `DrawerPopup` | Vertical drag offset while swiping a top/bottom drawer (length). `0px` at rest. |
 | `--drawer-snap-point-offset` | `DrawerPopup` | Offset of the active snap point (length, negative for `up`/`left` drawers). `0px` without snap points. |
-| `--drawer-swipe-strength` | `DrawerPopup`, `DrawerBackdrop` | A `0.1`–`1` scalar from the release velocity: multiply your transition duration by it so a fast flick closes faster. `1` until a swipe is released. |
+| `--drawer-swipe-strength` | `DrawerPopup` | A `0.1`–`1` scalar from the release velocity: multiply your transition duration by it so a fast flick closes faster. `1` until a swipe is released. `DrawerBackdrop` also declares it, but always as `1`. |
 | `--drawer-height` | `DrawerPopup`, `DrawerIndent` | The measured height of the popup (length). On `DrawerIndent`, the height of the frontmost open drawer. |
 | `--drawer-frontmost-height` | `DrawerPopup` | The height of the frontmost open drawer in a nested stack (length). |
 | `--nested-drawers` | `DrawerPopup` | The number of nested drawers open above this one. |

@@ -1,8 +1,17 @@
 <script lang="ts">
 import type { DrawerContentImplEmits, DrawerContentImplProps } from './DrawerContentImpl.vue'
 
-export type DrawerPopupEmits = DrawerContentImplEmits
-export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocus'> {
+export type DrawerPopupEmits = Omit<DrawerContentImplEmits, 'closeAutoFocus'> & {
+  /**
+   * Event handler called when focus moves back on close (to the trigger, or `finalFocus`). Can be prevented. Not
+   * emitted for a `forceMount` popup, which stays mounted: it returns focus itself on close, while focus is still
+   * inside it or on `<body>`; use `finalFocus` to change or turn off that return.
+   */
+  closeAutoFocus: [event: Event]
+}
+// `trapFocus` and `disableOutsidePointerEvents` follow `modal` on the root; the
+// popup sets both itself.
+export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocus' | 'disableOutsidePointerEvents'> {
   forceMount?: boolean
 }
 /** @deprecated Use `DrawerPopupEmits`; `DrawerContent` is a deprecated alias of `DrawerPopup`. */

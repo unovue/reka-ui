@@ -55,13 +55,15 @@ describe('given a Drawer, in a real browser', () => {
     `)
     const { get, onOpenComplete } = mountDrawer()
 
-    await userEvent.click(get('trigger')!)
+    // Timestamps from before the click: the animation starts during it, so a
+    // slow click cannot eat into the measured duration.
     const openedAt = performance.now()
+    await userEvent.click(get('trigger')!)
     await expect.poll(() => onOpenComplete.mock.calls, { timeout: 2000 }).toEqual([[true]])
     expect(performance.now() - openedAt).toBeGreaterThan(200)
 
-    await userEvent.click(get('close')!)
     const closedAt = performance.now()
+    await userEvent.click(get('close')!)
     await expect.poll(() => onOpenComplete.mock.calls, { timeout: 2000 }).toEqual([[true], [false]])
     expect(performance.now() - closedAt).toBeGreaterThan(200)
     await expect.poll(() => get('content')).toBeNull()
