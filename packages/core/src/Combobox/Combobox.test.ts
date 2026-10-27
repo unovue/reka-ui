@@ -1696,3 +1696,49 @@ describe('given a Combobox with a `beforeUpdate:modelValue` listener', () => {
     wrapper.unmount()
   })
 })
+
+// #2789: the deferred `resetSearchTermOnBlur` reset must not wipe text typed
+// right after a close, even when `beforeUpdate:open` cancels the reopen.
+describe('combobox blur reset with a cancelled reopen', () => {
+  const Host = defineComponent({
+    components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+    setup() {
+      const value = ref('Apple')
+      const allowOpen = ref(true)
+      function onBeforeOpen(open: boolean, details: { cancel: () => void }) {
+        if (open && !allowOpen.value)
+          details.cancel()
+      }
+      return { value, allowOpen, onBeforeOpen }
+    },
+    template: `<ComboboxRoot v-model="value" @before-update:open="onBeforeOpen">
+  <ComboboxAnchor>
+    <ComboboxInput />
+    <ComboboxTrigger data-testid="trigger">Open</ComboboxTrigger>
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+  })
+
+  it('keeps text typed right after Escape when the reopen is cancelled', async () => {
+    const wrapper = mount(Host, { attachTo: document.body })
+    const input = wrapper.find('input')
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await nextTick()
+    ;(wrapper.vm as unknown as { allowOpen: boolean }).allowOpen = false
+    await input.trigger('keydown', { key: 'Escape' })
+    input.element.value = 'Ban'
+    await input.trigger('input')
+    await sleep(10)
+    await nextTick()
+    expect(input.element.value).toBe('Ban')
+    wrapper.unmount()
+  })
+})

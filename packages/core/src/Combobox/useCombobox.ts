@@ -453,9 +453,12 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   function onOpenChange(value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) {
     // v2 ran the open/close side effects even for a no-op write (a controlled
     // `open` the parent keeps); only a cancelled change skips them.
+    // Any open request (typing reopens) drops a pending blur reset, even one
+    // a `beforeUpdate:open` listener then cancels: the reset would wipe the
+    // text being typed.
+    clearResetSearchTermTimer()
     if (value !== open.value && !setOpen(value, reason, event))
       return false
-    clearResetSearchTermTimer()
     filterSearch.value = value ? (props.openSearchTerm?.() ?? '') : ''
     if (value) {
       // make sure the DOM is ready, then highlight the selected item
