@@ -82,7 +82,7 @@ Because both values are now always emitted, any styles that relied on the attrib
 
 `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. The details tell you *why* the state changed (`details.reason`) and which native event caused it (`details.event`), and `details.cancel()` inside `beforeUpdate:*` keeps the current state.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`), `ComboboxRoot` and `AutocompleteRoot` (`modelValue`, `open`), and `NumberFieldRoot`, `PinInputRoot`, `RatingRoot`, `SliderRoot`, `TagsInputRoot`, `TagGroupRoot` and `EditableRoot` (`modelValue`). The remaining families follow as they move to their headless composables.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`), `ComboboxRoot` and `AutocompleteRoot` (`modelValue`, `open`), and `NumberFieldRoot`, `PinInputRoot`, `RatingRoot`, `SliderRoot`, `TagsInputRoot`, `TagGroupRoot` and `EditableRoot` (`modelValue`), and `SplitterGroup` (`layout`). The remaining families follow as they move to their headless composables.
 
 `DrawerRoot` keeps the contract it was ported with from Base UI. Its `update:open` already carried `(value, details)` and still fires before the change, so `details.cancel()` inside `update:open` keeps the drawer as it is. It has no `beforeUpdate:open`, and `update:snapPoint` stays single-argument.
 
@@ -101,6 +101,8 @@ The form-input families report these reasons:
 - `TagsInputChangeReason`: `'enter-key' | 'tab-key' | 'blur' | 'delimiter' | 'paste' | 'backspace-key' | 'delete-key' | 'item-delete-press' | 'clear-press'`.
 - `TagGroupChangeReason`: `'item-press' | 'item-keydown' | 'escape-key' | 'delete-press' | 'delete-key'`. Removing a selected tag deselects it with `delete-press` (its delete button) or `delete-key` (Backspace or Delete).
 - `EditableChangeReason`: `'submit-press' | 'enter-key' | 'outside-press' | 'focus-outside'`. Typing does not change the model; only a submit does. `update:state` stays a single-argument event.
+
+`SplitterLayoutChangeReason` is `'drag' | 'keyboard' | 'panel-change' | 'group-resize'` (see [Splitter layout model](#splitter-layout-model)).
 
 Wrapper families reuse the union of the family they wrap. `AlertDialogOpenChangeReason` is `DialogOpenChangeReason`. `DropdownMenuOpenChangeReason`, `ContextMenuOpenChangeReason` and `MenubarChangeReason` are `MenuOpenChangeReason` (`'trigger-press' | 'trigger-hover' | 'item-press' | 'list-navigation' | 'sibling-open' | 'escape-key' | 'outside-press' | 'focus-outside'`). On `MenubarRoot`:
 
@@ -486,3 +488,22 @@ In v2, `TagsInputRoot` and `PinInputRoot` kept a local copy of the model (a pass
 - **In-place changes.** Calling `push` or `splice` on an array bound to `TagsInputRoot` or `PinInputRoot` no longer emits `update:modelValue`. Assign a new array instead.
 - **Controlled TagsInput and PinInput.** With `:model-value` and no `update:model-value` handler, the tags or digits no longer change locally. Update the bound value in the handler, or use `v-model`. When the parent does not apply a change, TagsInput keeps the typed text in the input, and PinInput puts the digit back and does not move focus.
 - **Uncontrolled Editable.** On a submit that changes the value, the order is now `beforeUpdate:modelValue`, `update:modelValue`, `update:state` (`'submit'`), `submit`; v2 emitted `update:modelValue` on the next tick, after the other two. A controlled Editable already emitted in this order. For both, a submit cancelled in `beforeUpdate:modelValue` keeps the field in edit mode, and neither `update:state` nor `submit` fires. A submit with an unchanged value emits no `update:modelValue` but still leaves edit mode and fires `update:state` and `submit`.
+
+## Splitter layout model
+
+`SplitterGroup` has a `layout` model. Bind `v-model:layout` to read or set every panel size at once, in each panel's `sizeUnit` (the values `@layout` reports). A controlled layout takes precedence over `defaultSize` and `autoSaveId`. `beforeUpdate:layout` can cancel a change, and `update:layout(value, details)` fires only when the layout changes, with one of these reasons:
+
+- `drag`: a pointer drag on a resize handle;
+- `keyboard`: arrow keys, Home/End, or Enter toggling a collapse;
+- `panel-change`: the initial layout, a layout restored from `storage`, or panels being added, removed or reconfigured;
+- `group-resize`: `px` panels keeping their size while the group resizes;
+- `imperative-action`: the panel `collapse()`, `expand()` and `resize()` methods.
+
+`@layout` is unchanged and still fires for every applied layout. Two Splitter behaviours change:
+
+- **Enter on a resize handle** now emits `@layout` and the panel `collapse` / `expand` / `resize` events. v2 toggled the collapse without them.
+- **`data-resize-handle-active="keyboard"`** is now set while a handle has focus; v2 never set it. Use `[data-resize-handle-active="pointer"]` for drag-only styles.
+
+## Progress has no change model
+
+`ProgressRoot` displays a value; it never changes it, so it gets no `beforeUpdate:modelValue` or change details. An invalid `modelValue` (negative, above `max`, `NaN`) now renders as indeterminate, and an invalid `max` as `100`, straight away; v2 rendered the invalid value until the parent applied the correction. `ProgressRoot` still emits `update:modelValue(null)` or `update:max(100)` once when it corrects a prop, and `update:modelValue` is now typed `[value: number | null]` (v2 declared `[value: string[] | undefined]`).
