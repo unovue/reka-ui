@@ -60,7 +60,8 @@ export interface NumberFieldRootContext {
   inputMode: Ref<HTMLAttributes['inputmode']>
   textValue: Ref<string>
   validate: (val: string) => boolean
-  applyInputValue: (val: string, reason?: NumberFieldReason, event?: Event) => void
+  /** Returns `false` when the change was cancelled or did not change the value. */
+  applyInputValue: (val: string, reason?: NumberFieldReason, event?: Event) => boolean
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   disableWheelChange: Ref<boolean>

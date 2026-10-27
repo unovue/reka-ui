@@ -74,8 +74,8 @@ export interface UseNumberFieldReturn {
   increment: (multiplier?: number, reason?: Reason, event?: Event) => void
   /** One step down (or `multiplier` steps), clamped and snapped like a decrement press. */
   decrement: (multiplier?: number, reason?: Reason, event?: Event) => void
-  /** Parses typed text and commits it (clamped/snapped unless `allowInvalid`). */
-  applyInputValue: (value: string, reason?: Reason, event?: Event) => void
+  /** Parses typed text and commits it (clamped/snapped unless `allowInvalid`). Returns `false` when cancelled or unchanged. */
+  applyInputValue: (value: string, reason?: Reason, event?: Event) => boolean
   /** Registers the input element; a standalone consumer binds it as the input's `ref`. */
   setInputElement: (el: HTMLInputElement | undefined | null) => void
   /** The `role="group"` surface. */
@@ -268,21 +268,24 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
       inputEl.value.value = val
   }
 
-  function applyInputValue(val: string, reason: Reason = 'imperative-action', event?: Event) {
+  function applyInputValue(val: string, reason: Reason = 'imperative-action', event?: Event): boolean {
     const parsedValue = numberParser.parse(val)
+    let applied: boolean
     if (isNaN(parsedValue))
-      setState(undefined, reason, event)
+      applied = setState(undefined, reason, event)
     else if (allowInvalid.value)
       // Keep the typed value as-is, only normalize formatting precision
-      setState(numberParser.parse(numberFormatter.format(parsedValue)), reason, event)
+      applied = setState(numberParser.parse(numberFormatter.format(parsedValue)), reason, event)
     else
-      setState(clampInputValue(parsedValue), reason, event)
-    // Set to empty state if input value is empty
-    if (!val.length)
-      return setInputValue(val)
-
+      applied = setState(clampInputValue(parsedValue), reason, event)
+    // Keep the input empty when the clear went through (or the model was already empty); a
+    // cancelled clear falls through and shows the current number again.
+    if (!val.length && (applied || modelValue.value === undefined))
+      setInputValue(val)
     // Otherwise (including a failed parse or a cancelled change) show the formatted current number.
-    return setInputValue(textValue.value)
+    else
+      setInputValue(textValue.value)
+    return applied
   }
 
   // A writable view for the context: custom parts that assign `modelValue.value`
@@ -465,8 +468,9 @@ export function createNumberFieldInputSurface(rootContext: NumberFieldRootContex
    */
   function commitText(event: Event, reason: 'keyboard' | 'blur') {
     const text = ((event.target as HTMLInputElement | null)?.value ?? '') as string
-    rootContext.applyInputValue(text, reason, event)
-    inputValue.value = text.length ? rootContext.textValue.value : text
+    const applied = rootContext.applyInputValue(text, reason, event)
+    const showEmpty = !text.length && (applied || rootContext.modelValue.value === undefined)
+    inputValue.value = showEmpty ? '' : rootContext.textValue.value
   }
 
   function handleBlur(event: FocusEvent) {

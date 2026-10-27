@@ -291,6 +291,50 @@ describe('numberFieldRoot — cancelled text commit', () => {
   })
 })
 
+describe('numberFieldRoot — cancelled clear', () => {
+  it('a cancelled clear restores the model text, and the next step increments the model', async () => {
+    const onBeforeUpdate = vi.fn((v: number | undefined, d: ChangeEventDetails) => {
+      if (v === undefined)
+        d.cancel()
+    })
+    const onUpdate = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, {
+          'defaultValue': 1,
+          'onBeforeUpdate:modelValue': onBeforeUpdate,
+          'onUpdate:modelValue': onUpdate,
+        }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input' }))
+      },
+    }))
+    const input = getByTestId('input') as HTMLInputElement
+    input.focus()
+    await fireEvent.update(input, '')
+    await fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdate.mock.calls[0][0]).toBeUndefined()
+    expect(input.value).toBe('1')
+    await fireEvent.keyDown(input, { key: 'ArrowUp' })
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdate.mock.calls[0][0]).toBe(2)
+    expect(input.value).toBe('2')
+  })
+
+  it('an accepted clear keeps the input empty', async () => {
+    const onUpdate = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, { 'defaultValue': 1, 'onUpdate:modelValue': onUpdate }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input' }))
+      },
+    }))
+    const input = getByTestId('input') as HTMLInputElement
+    await fireEvent.update(input, '')
+    await fireEvent.blur(input)
+    expect(onUpdate.mock.calls[0][0]).toBeUndefined()
+    expect(input.value).toBe('')
+  })
+})
+
 describe('useNumberField — public export', () => {
   it('is exported from the barrel; builders are internal', () => {
     expect(typeof Reka.useNumberField).toBe('function')
