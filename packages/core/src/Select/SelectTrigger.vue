@@ -78,13 +78,12 @@ onMounted(() => {
 onBeforeUnmount(() => unregisterControl?.())
 
 const { getItems } = useCollection()
-// The trigger only has focus while the content is closed, so there is no item to
-// focus. The search is only collected here; `selectTypeaheadMatch` selects the match.
+// A closed select has no item to focus, so the search is only collected here and
+// `selectTypeaheadMatch` selects the match instead.
 const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead(() => {})
 
-// Selects the next enabled item matching the search, as a native `select` and
-// Radix do. It goes through the item, so its cancellable `select` event fires and
-// the emitted value is the item's own, as on click or Enter.
+// Selecting through the item fires its cancellable `select` event and emits the
+// item's own value, as a click or Enter does.
 function selectTypeaheadMatch(event: KeyboardEvent) {
   if (isDisabled.value || rootContext.multiple.value)
     return
