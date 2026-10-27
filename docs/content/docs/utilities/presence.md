@@ -24,7 +24,7 @@ It renders two attributes on its child element, so CSS transitions can animate b
 - `data-starting-style` for the first frame after the element is mounted (or shown again) by `present` turning `true`.
 - `data-ending-style` from `present` turning `false` until every transition and animation of the element has finished (read with `element.getAnimations()`); the element then unmounts.
 
-When nothing is running (no transition or animation, or `prefers-reduced-motion` styles that remove them), the element unmounts right away. Infinite animations and animations of descendants are not waited for. In environments without Web Animations (jsdom), no attribute is rendered and changes settle right away.
+When nothing is running (no transition or animation, or `prefers-reduced-motion` styles that remove them), the element unmounts right away. Infinite animations and animations of descendants are not waited for. Everything else running on the element when it closes is: an unrelated transition (a hover colour change) delays the unmount until it ends, a paused animation holds the element mounted, and a close in a background tab completes when the browser runs the tab's animations again. There is no timeout. In environments without Web Animations (jsdom), no attribute is rendered and changes settle right away.
 
 ## API Reference
 
@@ -44,7 +44,7 @@ When nothing is running (no transition or animation, or `prefers-reduced-motion`
   },
   {
     'name': 'appear',
-    'description': '<p>Treat an initial <code>present</code> of <code>true</code> as an open: render the child with <code>data-starting-style</code> on its first frame, like Vue <code>Transition</code> with <code>appear</code>. Without it only a later change to <code>present</code> does.</p>\n',
+    'description': '<p>Treat an initial <code>present</code> of <code>true</code> as an open: render the child with <code>data-starting-style</code> on its first frame, like Vue <code>Transition</code> with <code>appear</code>. Without it only a later change to <code>present</code> does. Read once, when the component is set up.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': false

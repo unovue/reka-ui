@@ -69,6 +69,11 @@ Collapsible and Accordion content measure the panel into `--reka-collapsible-con
 
 Presence waits for the transitions and animations of the managed element itself (read with [`element.getAnimations()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAnimations)), not for those of its descendants. Infinite animations are not waited for. When nothing is running, for example when a `prefers-reduced-motion` media query turns the transition off, the element unmounts right away.
 
+Everything running on the element when it closes is waited for, as in Base UI:
+
+- **Unrelated transitions count too.** A hover `transition: background-color 600ms` still running when the content closes delays the unmount until it ends. Scope such transitions to the hovered state, or list only the properties the enter and exit animate.
+- **There is no timeout.** A paused animation (`animation-play-state: paused`) holds the element mounted until it resumes, and browsers throttle animations in background tabs, so a close in a hidden tab completes when the tab is visible again.
+
 ## Animating with CSS animation
 
 You can also use CSS animation to animate both mount and unmount phases. The latter is possible because the Reka UI will suspend unmount while your animation plays out.
@@ -193,7 +198,7 @@ Check out this [Stackblitz Demo](https://stackblitz.com/edit/x7y44ngl?file=src%2
 
 ## Knowing when an animation finished
 
-Every root with an `open` model (`DialogRoot`, `AlertDialogRoot`, `DrawerRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DropdownMenuRoot`, `ContextMenuRoot`, the `*Sub` menus, `SelectRoot`, `ComboboxRoot`, `AutocompleteRoot`, `DatePickerRoot`, `DateRangePickerRoot`, `CollapsibleRoot` and `ToastRoot`) emits `update:openComplete` once the content's open or close transitions and animations have finished: `true` after opening, `false` after closing (right before the content unmounts). An interrupted change is not reported: closing while still opening only emits `false`.
+Every root with an `open` model (`DialogRoot`, `AlertDialogRoot`, `DrawerRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DropdownMenuRoot`, `ContextMenuRoot`, `MenubarMenu`, the `*Sub` menus, `SelectRoot`, `ComboboxRoot`, `AutocompleteRoot`, `DatePickerRoot`, `DateRangePickerRoot`, `CollapsibleRoot`, `AccordionItem` and `ToastRoot`) emits `update:openComplete` once the content's open or close transitions and animations have finished: `true` after opening, `false` after closing (right before the content unmounts). An interrupted change is not reported: closing while still opening only emits `false`. `NavigationMenuRoot` emits it too, from its `NavigationMenuViewport`: when a viewport opens and closes, not when the open item switches. A menu without a viewport does not emit it.
 
 ```vue
 <DialogRoot v-model:open="open" @update:open-complete="(open) => !open && resetForm()">
