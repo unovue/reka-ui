@@ -1,7 +1,7 @@
-import type { ComponentOptionsBase, DefineComponent, VNodeProps } from 'vue'
+import type { ComponentOptionsBase, ComponentPublicInstance, DefineComponent, VNodeProps } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { h, mergeProps } from 'vue'
-import { useForwardExpose } from './useForwardExpose'
+import { h, mergeProps, shallowRef } from 'vue'
+import { useForwardElement } from './useForwardElement'
 
 // TODO: TEST
 
@@ -49,12 +49,24 @@ export function withDefault<T extends ComponentOptionsBase<{}, {}, {}, any, any,
     inheritAttrs: false,
     name: `${WrappedComponent.__name ?? ''}Wrapper`,
     setup(_, ctx) {
+      const inner = shallowRef<Record<PropertyKey, unknown> | null>(null)
+      const { forwardRef, expose } = useForwardElement()
+      // The wrapper IS the wrapped part with other defaults, so its ref is the
+      // wrapped part's ref: own `element` / `$el`, then the part's documented
+      // exposed API (read live from its expose proxy — nothing is copied).
+      ctx.expose(new Proxy(expose, {
+        get: (target, key, receiver) => key in target ? Reflect.get(target, key, receiver) : inner.value?.[key],
+        has: (target, key) => key in target || (inner.value != null && key in inner.value),
+      }))
+      function setRef(el: unknown) {
+        inner.value = el as Record<PropertyKey, unknown> | null
+        forwardRef(el as ComponentPublicInstance | null)
+      }
+
       return () => {
         const optionProps = typeof options?.props === 'function' ? options?.props(ctx.attrs) : options?.props
-        const { forwardRef } = useForwardExpose()
-
         const mergedProps = mergeProps(optionProps, ctx.attrs)
-        return h(WrappedComponent, { ...mergedProps, ref: forwardRef }, ctx.slots)
+        return h(WrappedComponent, { ...mergedProps, ref: setRef }, ctx.slots)
       }
     },
   }) as T

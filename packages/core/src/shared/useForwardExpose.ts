@@ -4,8 +4,24 @@ import type { ComponentPublicInstance } from 'vue'
 import { unrefElement } from '@vueuse/core'
 import { computed, getCurrentInstance, onUpdated, ref, triggerRef } from 'vue'
 
+let warnedDeprecation = false
+
+/**
+ * @deprecated since v3 — reka parts no longer use it. Use the element-first
+ * contract instead: `const { forwardRef, expose } = useForwardElement()` +
+ * `defineExpose(expose)` (exposes `element` and a reactive `$el`), and
+ * `useMergedRefs` to merge refs. This legacy implementation still mutates
+ * `instance.exposed` (prop getters, `$el` snapshot, child-expose chaining) and
+ * will be removed in a future major.
+ */
 export function useForwardExpose<T extends ComponentPublicInstance>() {
   const instance = getCurrentInstance()!
+
+  // eslint-disable-next-line node/prefer-global/process
+  if (process.env.NODE_ENV !== 'production' && !warnedDeprecation) {
+    warnedDeprecation = true
+    console.warn('[reka-ui] `useForwardExpose` is deprecated. Use `useForwardElement()` + `defineExpose(expose)` instead. See https://reka-ui.com/docs/utilities/use-forward-expose')
+  }
 
   const currentRef = ref<Element | T | null>()
   const currentElement = computed(() => resolveCurrentElement())
