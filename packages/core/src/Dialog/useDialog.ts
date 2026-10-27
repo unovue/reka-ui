@@ -220,7 +220,7 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
     handle: () => toValue(props.handle),
     open,
     setState,
-    contentId: `${baseId}-content`,
+    baseId,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })

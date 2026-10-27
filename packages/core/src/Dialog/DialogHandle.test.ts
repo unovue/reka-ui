@@ -1,8 +1,9 @@
 import type { DialogHandle } from '.'
+import type { AlertDialogHandle } from '@/AlertDialog'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, KeepAlive, nextTick, ref, shallowRef } from 'vue'
 import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger, createAlertDialogHandle } from '@/AlertDialog'
 import { createDialogHandle, DialogClose, DialogContent, DialogDescription, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
@@ -150,6 +151,50 @@ describe('dialog detached triggers (#2826)', () => {
     expect(t.onUpdate).toHaveBeenCalledTimes(1)
     expect(t.onUpdate).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press' }))
   })
+  it('a KeepAlive-deactivated Root (and trigger) detaches until re-activated', async () => {
+    const handle = createDialogHandle<Item>()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const PageA = defineComponent({
+      name: 'PageA',
+      setup: () => () => h('section', [
+        h(DialogTrigger, { id: 'page-trigger', handle, payload: { name: 'Page' } }, () => 'Page'),
+        h(DialogRoot, { handle }, {
+          default: ({ payload }: { payload?: Item }) => h(DialogPortal, null, () => h(DialogContent, null, () => [
+            h(DialogTitle, null, () => `Edit ${payload?.name}`),
+            h(DialogDescription, null, () => 'Details.'),
+          ])),
+        }),
+      ]),
+    })
+    const PageB = defineComponent({ name: 'PageB', setup: () => () => h('p', 'page b') })
+    const page = shallowRef<typeof PageA | typeof PageB>(PageA)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h('header', [h(DialogTrigger, { id: 'global', handle, payload: { name: 'Global' } }, () => 'Global')]),
+        h(KeepAlive, null, [h(page.value)]),
+      ]),
+    }), { attachTo: document.body })
+    cleanup = () => {
+      wrapper.unmount()
+      warn.mockRestore()
+    }
+    const dialog = () => document.querySelector('[role="dialog"]')
+
+    page.value = PageB
+    await vi.waitFor(() => expect(document.querySelector('section')).toBeNull())
+    expect(handle.store).toBeNull()
+    expect(handle.triggers.has('page-trigger')).toBe(false)
+    document.getElementById('global')!.click()
+    await nextTick()
+    expect(handle.isOpen).toBe(false)
+    expect(dialog()).toBeNull()
+
+    page.value = PageA
+    await vi.waitFor(() => expect(handle.store).not.toBeNull())
+    expect(handle.triggers.has('page-trigger')).toBe(true)
+    document.getElementById('global')!.click()
+    await vi.waitFor(() => expect(dialog()?.querySelector('h2')?.textContent).toBe('Edit Global'))
+  })
 })
 
 describe('alertDialog detached triggers (#2826)', () => {
@@ -184,5 +229,19 @@ describe('alertDialog detached triggers (#2826)', () => {
     await vi.waitFor(() => expect(document.querySelector('[role="alertdialog"]')).toBeNull())
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     wrapper.unmount()
+  })
+  it('is branded separately from DialogHandle, and its dev messages name AlertDialogRoot', () => {
+    const handle = createAlertDialogHandle<Item>()
+    // An AlertDialogHandle works wherever a DialogHandle does, not the reverse.
+    const asDialog: DialogHandle<Item> = handle
+    // @ts-expect-error a plain DialogHandle is not an AlertDialogHandle
+    const asAlert: AlertDialogHandle<Item> = createDialogHandle<Item>()
+    expect(asDialog).toBe(handle)
+    expect(asAlert).toBeDefined()
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    handle.close()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('no AlertDialogRoot using this handle is mounted'))
+    warn.mockRestore()
   })
 })

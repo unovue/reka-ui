@@ -14,7 +14,7 @@ export interface DialogTriggerProps<Payload = unknown> extends PrimitiveProps {
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUpdate, onMounted, shallowRef, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement, useId } from '@/shared'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
@@ -32,15 +32,19 @@ defineExpose(expose)
 // Detached triggers (#2826): this trigger registers with the handle (its own,
 // or its Root's) and derives its own open state, so only the trigger that
 // opened the dialog reports `aria-expanded` / `aria-controls`. Only such a
-// trigger draws an id (an extra `useId()` would shift later generated ids).
+// trigger draws an id (an extra `useId()` would shift later generated ids);
+// one whose Root gets a `handle` later uses the Root's trigger id. An `id`
+// attribute wins and is tracked across renders.
 const attrs = useAttrs()
-const triggerId = props.handle || getPopupRootStore(rootContext)?.handle.value
-  ? useId(attrs.id as string | undefined, 'reka-dialog-trigger')
-  : ''
+const attrId = shallowRef(attrs.id as string | undefined)
+onBeforeUpdate(() => {
+  attrId.value = attrs.id as string | undefined
+})
 const detached = usePopupHandleTrigger<Payload>({
   handle: () => props.handle,
   rootContext,
-  id: triggerId,
+  attrId,
+  generatedId: props.handle || getPopupRootStore(rootContext)?.handle.value ? useId(undefined, 'reka-dialog-trigger') : undefined,
   element: currentElement,
   payload: () => props.payload,
 })
@@ -49,7 +53,7 @@ const detachedTrigger = getDialogTriggerSurface({
     return detached.contentId.value!
   },
   open: detached.open,
-  onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(triggerId, 'toggle', reason, event) ?? false,
+  onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event) ?? false,
 })
 
 // aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
@@ -58,7 +62,7 @@ const detachedTrigger = getDialogTriggerSurface({
 // `$attrs` AFTER the surface's handler, so they chain instead of clobbering it.
 const trigger = rootContext ? getDialogTriggerSurface(rootContext) : detachedTrigger
 const triggerAttrs = computed(() => detached.enabled.value
-  ? { ...detachedTrigger.attrs.value, id: triggerId }
+  ? { ...detachedTrigger.attrs.value, id: detached.id.value }
   : trigger.attrs.value)
 
 onMounted(() => {

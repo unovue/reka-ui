@@ -1,11 +1,18 @@
 <script lang="ts">
+import type { AlertDialogHandle } from './handle'
 import type {
   DialogRootEmits,
   DialogRootProps,
 } from '@/Dialog'
 
 export type AlertDialogEmits = DialogRootEmits
-export interface AlertDialogProps<Payload = unknown> extends Omit<DialogRootProps<Payload>, 'modal'> {}
+export interface AlertDialogProps<Payload = unknown> extends Omit<DialogRootProps<Payload>, 'modal' | 'handle'> {
+  /**
+   * A handle from `createAlertDialogHandle()` that connects detached
+   * `AlertDialogTrigger`s to this Root and controls it imperatively.
+   */
+  handle?: AlertDialogHandle<Payload>
+}
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">

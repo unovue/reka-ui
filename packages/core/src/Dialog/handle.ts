@@ -3,7 +3,7 @@ import { PopupHandle } from '@/shared/popupHandle'
 /**
  * Controls a Dialog imperatively and connects detached `DialogTrigger`s
  * (rendered anywhere, outside the Root's subtree or a portal) to a
- * `DialogRoot` (or an `AlertDialogRoot`). Create one with
+ * `DialogRoot`. Create one with
  * `createDialogHandle()` and pass it to the `handle` prop of the Root and of
  * every Trigger (#2826).
  *
@@ -13,8 +13,9 @@ import { PopupHandle } from '@/shared/popupHandle'
 export class DialogHandle<Payload = unknown> extends PopupHandle<Payload> {
   declare protected readonly family: 'Dialog'
 
-  constructor() {
-    super('Dialog', false)
+  /** @param componentName Family name used in dev warnings (`AlertDialog` for `AlertDialogHandle`). */
+  constructor(componentName: 'Dialog' | 'AlertDialog' = 'Dialog') {
+    super(componentName, false)
   }
 
   /**

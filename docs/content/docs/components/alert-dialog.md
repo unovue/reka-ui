@@ -227,14 +227,18 @@ const container = ref(null)
 
 ### Detached triggers
 
-A `AlertDialogTrigger` does not have to be inside its `AlertDialogRoot`. Create a handle with `createAlertDialogHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here every file opens the same confirmation with its own data.
+An `AlertDialogTrigger` does not have to be inside its `AlertDialogRoot`. Create a handle with `createAlertDialogHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here every file opens the same confirmation with its own data.
 
 The alert dialog returns focus to the trigger that opened it on close. Only that trigger gets `aria-expanded="true"` and `aria-controls`. Its `payload` reaches the root's default slot as `payload`, next to `activeTriggerId`.
+
+Deleting a file also removes the trigger that focus would return to, so the example moves focus to the list in `@close-auto-focus` instead of letting it fall to `<body>`.
+
+`createAlertDialogHandle()` returns an `AlertDialogHandle`. It has the same API as a `DialogHandle` but is a separate type, so a handle from `createDialogHandle()` cannot be passed to the AlertDialog parts by mistake.
 
 ```vue
 <script setup lang="ts">
 import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger, createAlertDialogHandle } from 'reka-ui'
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 interface Attachment { id: number, name: string }
 
@@ -244,14 +248,30 @@ const files = ref<Attachment[]>([
 ])
 
 const deleteDialog = createAlertDialogHandle<Attachment>()
+const list = useTemplateRef('list')
+let deleted = false
 
 function remove(file?: Attachment) {
   files.value = files.value.filter(f => f.id !== file?.id)
+  deleted = true
+}
+
+// The trigger that opened the dialog is gone after a delete: focus the list instead.
+function onCloseAutoFocus(event: Event) {
+  if (!deleted)
+    return
+  deleted = false
+  event.preventDefault()
+  list.value?.focus()
 }
 </script>
 
 <template>
-  <ul>
+  <ul
+    ref="list"
+    tabindex="-1"
+    aria-label="Attachments"
+  >
     <li
       v-for="file in files"
       :key="file.id"
@@ -272,7 +292,7 @@ function remove(file?: Attachment) {
   >
     <AlertDialogPortal>
       <AlertDialogOverlay />
-      <AlertDialogContent>
+      <AlertDialogContent @close-auto-focus="onCloseAutoFocus">
         <AlertDialogTitle>Delete {{ payload?.name }}?</AlertDialogTitle>
         <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
         <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -287,7 +307,7 @@ function remove(file?: Attachment) {
 
 `handle.open(triggerId?)` opens the alert dialog for the trigger with that `id`, or without a trigger. `handle.openWithPayload(payload)` opens it without a trigger and with that payload. `handle.close()` closes it. `handle.isOpen` is reactive. These calls report the reason `'imperative-action'` through `beforeUpdate:open` and `update:open`, so `details.cancel()` can veto them. They do nothing while no root with the handle is mounted. When a trigger owns a change, `details.trigger` is its element.
 
-The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app.
+The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
 ## Accessibility
 
