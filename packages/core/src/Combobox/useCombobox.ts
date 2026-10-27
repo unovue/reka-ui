@@ -459,12 +459,15 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   function onOpenChange(value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) {
     // v2 ran the open/close side effects even for a no-op write (a controlled
     // `open` the parent keeps); only a cancelled change skips them.
-    // Any open request (typing reopens) drops a pending blur reset, even one
-    // a `beforeUpdate:open` listener then cancels: the reset would wipe the
-    // text being typed.
-    clearResetSearchTermTimer()
+    // Typing drops a pending blur reset even when `beforeUpdate:open` cancels
+    // the reopen it requests: the reset would wipe the text being typed. Any
+    // other request drops it only once it went through, so a cancelled trigger
+    // press or focus still restores the input text.
+    if (reason === 'input-change')
+      clearResetSearchTermTimer()
     if (value !== open.value && !setOpen(value, reason, event))
       return false
+    clearResetSearchTermTimer()
     filterSearch.value = value ? (props.openSearchTerm?.() ?? '') : ''
     if (value) {
       // make sure the DOM is ready, then highlight the selected item
@@ -478,7 +481,9 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
       isUserInputted.value = false
       resetSearchTermTimer = setTimeout(() => {
         resetSearchTermTimer = undefined
-        if (toValue(props.resetSearchTermOnBlur) ?? true)
+        // A controlled parent may have reopened the popup through `open`
+        // (or kept it open) without going through `onOpenChange`.
+        if (!open.value && (toValue(props.resetSearchTermOnBlur) ?? true))
           resetSearchTerm.trigger()
       }, 1)
     }
