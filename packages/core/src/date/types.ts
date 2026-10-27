@@ -6,7 +6,26 @@ import type { DateValue } from '@internationalized/date'
 
 export type { DateValue }
 
-export type Matcher = (date: DateValue) => boolean
+/**
+ * The unit a calendar cell represents. Also the unit a calendar `view`
+ * shows and the unit a `granularity` selects.
+ */
+export type CalendarUnit = 'day' | 'month' | 'year'
+
+/**
+ * A predicate over a `DateValue`. In v3 the calendar also passes the unit of
+ * the cell being tested as an additive second argument. `Calendar` and
+ * `RangeCalendar` call their matchers only for cells at the `granularity`, so
+ * the unit is the granularity (`'month'` in a month picker); the coarser
+ * navigation views never call them.
+ */
+export type Matcher = (date: DateValue, unit?: CalendarUnit) => boolean
+
+/**
+ * One page of calendar cells: a month of days, a year of months, or a run
+ * of years. `Calendar` always exposes an array of these, whatever the view.
+ */
+export type CalendarGridData<T = DateValue> = Grid<T>
 
 export type Grid<T> = {
   /**

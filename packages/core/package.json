@@ -237,18 +237,6 @@
         "default": "./dist/menubar.js"
       }
     },
-    "./month-picker": {
-      "import": {
-        "types": "./dist/month-picker.d.ts",
-        "default": "./dist/month-picker.js"
-      }
-    },
-    "./month-range-picker": {
-      "import": {
-        "types": "./dist/month-range-picker.d.ts",
-        "default": "./dist/month-range-picker.js"
-      }
-    },
     "./navigation-menu": {
       "import": {
         "types": "./dist/navigation-menu.d.ts",
@@ -439,18 +427,6 @@
       "import": {
         "types": "./dist/visually-hidden.d.ts",
         "default": "./dist/visually-hidden.js"
-      }
-    },
-    "./year-picker": {
-      "import": {
-        "types": "./dist/year-picker.d.ts",
-        "default": "./dist/year-picker.js"
-      }
-    },
-    "./year-range-picker": {
-      "import": {
-        "types": "./dist/year-range-picker.d.ts",
-        "default": "./dist/year-range-picker.js"
       }
     },
     "./package.json": "./package.json"

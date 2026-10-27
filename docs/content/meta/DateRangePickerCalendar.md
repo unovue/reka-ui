@@ -11,7 +11,7 @@
   {
     'name': 'grid',
     'description': '',
-    'type': 'Grid&lt;DateValue&gt;[]'
+    'type': 'CalendarGridData[]'
   },
   {
     'name': 'weekDays',
@@ -32,6 +32,11 @@
     'name': 'fixedWeeks',
     'description': '',
     'type': 'boolean'
+  },
+  {
+    'name': 'view',
+    'description': '',
+    'type': '\'day\' | \'month\' | \'year\''
   }
 ]" />
 </llm-exclude>
@@ -43,10 +48,11 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `date` |  | `DateValue` |
-| `grid` |  | `Grid<DateValue>[]` |
+| `grid` |  | `CalendarGridData[]` |
 | `weekDays` |  | `string[]` |
 | `weekStartsOn` |  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
 | `locale` |  | `string` |
 | `fixedWeeks` |  | `boolean` |
+| `view` |  | `"day" \| "month" \| "year"` |
 
 </llm-only>
