@@ -361,3 +361,44 @@ defineExpose(expose) // [!code ++]
 ```
 
 If the component already calls `defineExpose({ ... })`, wrap the object in `mergeExpose(expose, { ... })`.
+
+## Modal layers no longer touch `<body>`
+
+Modal overlays follow [Base UI](https://base-ui.com)'s model in v3. A modal layer (a modal `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `DropdownMenu` or `ContextMenu`, an open `Select`, and any content with `disableOutsidePointerEvents`) no longer sets `pointer-events: none` on `<body>`, and the page scroll lock no longer adds `padding-right` or a `--scrollbar-width` variable.
+
+### Outside pointer interaction
+
+The page is now blocked by a transparent internal backdrop that the layer renders right below itself: a `position: fixed` `<div data-reka-internal-backdrop role="presentation">` covering the viewport. A press on it is an outside press, so it closes the layer, as before. `<body>` keeps its own `pointer-events`.
+
+- **Content stacked above the backdrop stays interactive.** An element with a higher `z-index` than the backdrop (a chat launcher, a cookie banner, a toast) can be clicked while a modal layer is open. In v2 the whole page was unclickable.
+- **A modal `Dialog` or `Drawer` closes only on its own backdrop.** A press on the internal backdrop, on `DialogOverlay` / `DrawerOverlay`, or on a container around the content closes it; a press on an element stacked above the backdrop does not. Popovers and menus close on any outside press, as before.
+- **A modal `Popover` or `DropdownMenu` keeps its trigger reachable.** The trigger is cut out of the backdrop, so pressing it toggles the layer closed instead of hitting the backdrop. The `ContextMenu` trigger area and the `Combobox` input are cut out in the same way.
+- **Layers below a modal layer stay inert.** A non-modal popover that is open under a modal dialog still gets `pointer-events: none` (and so does its positioning wrapper) until the dialog closes, whatever its `z-index`.
+
+What to check in your code:
+
+- **Styles or tests that read `body.style.pointerEvents`.** Nothing sets it any more. To detect an open modal layer, query `[data-reka-internal-backdrop]`, or check the component's `data-state="open"`. A test that asserted `document.body.style.pointerEvents === 'none'` now asserts that the backdrop exists.
+- **Workarounds that restored `pointer-events: auto`** on `<body>` or on a third-party widget so it stayed clickable next to a dialog: remove them. If the widget sits *below* the backdrop in the stacking order, give it a higher `z-index` than your overlay content.
+- **Tests that click an arbitrary element to dismiss a modal `Dialog`.** Press the overlay, the backdrop (`[data-reka-internal-backdrop]`) or `document.body` instead. In a real browser, a click "on" an element under a modal layer lands on the backdrop; with Playwright, pass `force: true` to click through the actionability check.
+- **CSS that targets the overlay's direct sibling** (`.overlay + .content`): the backdrop now sits between them. Use `~` or a class.
+
+### Page scroll lock
+
+`useBodyScrollLock` (and every modal layer that uses it) is now an overflow-based lock ported from Base UI's `useScrollLock`:
+
+- It hides the overflow of the element that scrolls the page (`<html>` when it is its own scroll container, `<body>` otherwise) instead of always `<body>`, and restores the original inline styles exactly when the last lock releases.
+- It keeps the layout from shifting with `scrollbar-gutter: stable`. Where that is unsupported it pins `<body>`'s size and sets `data-reka-scroll-locked` on `<html>` instead. With overlay scrollbars (macOS, mobile) and on iOS it only hides the overflow. It never adds `padding-right` to `<body>`, never sets `--scrollbar-width` on `<html>`, and no longer intercepts `touchmove` on iOS.
+- Nested and stacked overlays share one reference-counted lock. It applies and releases a macrotask after the change, so a hand-off between two overlays in the same tick does not unlock in between, and it waits for a lock that another library still holds instead of saving it as the page's original state.
+- The lock only engages once the component has mounted, so server rendering never touches the page.
+- A modal `Dialog`, `AlertDialog` or `Drawer` locks scroll whenever it is open, with or without an overlay part. In v2 only `DialogOverlay` / `DrawerOverlay` locked it, so a modal dialog without an overlay left the page scrollable and a `Drawer` with `modal="trap-focus"` and an overlay locked it. A `Drawer` with `modal="trap-focus"` no longer locks scroll.
+
+What to check in your code:
+
+- **`var(--scrollbar-width)`** in your styles: the variable is gone. Fixed-position elements no longer need the compensation that the variable fed, because the gutter stays reserved. Remove the `padding-right: var(--scrollbar-width)` / `right: var(--scrollbar-width)` rules.
+- **Styles or tests that read `body.style.overflow` or `body.style.paddingRight`** while an overlay is open: read `getComputedStyle(document.body).overflowY` (or the `<html>` one when `<html>` scrolls), and expect no padding. In tests, the lock applies a macrotask after the overlay opens: wait with `vi.waitFor` or a short timeout before asserting.
+- **`ConfigProvider`'s `scrollBody`**: `true` (the default) uses the behaviour above. `false` only hides the overflow, as before. `{ padding, margin }` still offsets `<body>` by the given amounts (`true` meaning the scrollbar width) and is the escape hatch if your layout relied on the v2 padding.
+- **A modal dialog that should leave the page scrollable**: set `:modal="false"` (or `modal="trap-focus"` on a `Drawer`). Omitting the overlay no longer does it.
+
+### `modal` defaults
+
+The defaults already match Base UI and do not change: `Dialog`, `AlertDialog`, `Drawer`, `DropdownMenu` and `ContextMenu` are modal, `Popover` is not, `Select` locks scroll and blocks outside pointer events (`bodyLock` and `disableOutsidePointerEvents` default to `true`) and `Combobox` does neither. `Menubar` menus stay non-modal.

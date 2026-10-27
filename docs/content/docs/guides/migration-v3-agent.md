@@ -325,10 +325,39 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The type-check passes. No `reading the prop` warnings remain in development. Every `$el` / `element` read from a part ref still returns the expected element.
 
+### 14. Modal layers no longer touch `<body>`
+
+**What changed.**
+- Modal layers (modal `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `DropdownMenu`, `ContextMenu`, an open `Select`, any content with `disableOutsidePointerEvents`) no longer set `pointer-events: none` on `<body>`. Each renders a transparent `position: fixed` `<div data-reka-internal-backdrop role="presentation">` right below itself instead. A press on it closes the layer. Elements stacked above it (higher `z-index`) stay clickable.
+- A modal `Dialog` / `Drawer` closes only on a press on its internal backdrop, its `DialogOverlay` / `DrawerOverlay`, or a container around its content, not on a press on an element stacked above the backdrop.
+- A modal `Popover` / `DropdownMenu` trigger, the `ContextMenu` trigger area and the `Combobox` input are cut out of the backdrop and stay interactive.
+- The scroll lock hides the overflow of the page's scroll container and keeps the gutter with `scrollbar-gutter: stable` (or pins `<body>`'s size and sets `data-reka-scroll-locked` on `<html>` where that is unsupported). It no longer sets `padding-right` / `margin-right` on `<body>` or `--scrollbar-width` on `<html>`, no longer intercepts `touchmove` on iOS, and applies a macrotask after the overlay opens.
+- A modal `Dialog` / `AlertDialog` / `Drawer` locks scroll whenever it is open, with or without its overlay part. In v2 only the overlay part locked it. A `Drawer` with `modal="trap-focus"` no longer locks scroll.
+- `modal` defaults are unchanged.
+
+**How to find it.**
+- `pointerEvents` / `pointer-events` together with `document.body` or `body.style` in tests, styles and scripts.
+- `--scrollbar-width` in CSS, SCSS, Tailwind arbitrary values (`[--scrollbar-width]`, `var(--scrollbar-width)`) and inline styles.
+- `body.style.overflow`, `body.style.paddingRight`, `body.style.marginRight` in tests.
+- `scrollBody` on `ConfigProvider`.
+- Modal `DialogRoot` / `AlertDialogRoot` / `DrawerRoot` usages that render no `DialogOverlay` / `AlertDialogOverlay` / `DrawerOverlay`.
+- Tests that dismiss a modal dialog by firing `pointerdown` / clicking on an element other than the overlay or `document.body`.
+
+**Rewrite rules.**
+- An assertion that `document.body.style.pointerEvents` is `'none'` while a layer is open: assert `document.querySelector('[data-reka-internal-backdrop]')` is not `null`. An assertion that it is restored after close: assert the backdrop is `null`. Remove code that resets `document.body.style.pointerEvents` between tests.
+- Code that sets `pointer-events: auto` on `<body>` or on a third-party element to keep it clickable next to a reka overlay: remove it.
+- `var(--scrollbar-width)` used to offset fixed elements while an overlay is open: remove the declaration. *Ask* if the variable is used for anything else.
+- Test assertions on `document.body.style.overflow === 'hidden'`: replace with `getComputedStyle(document.body).overflowY === 'hidden'`, waited for with `vi.waitFor` (or the test framework's equivalent). Assertions on `paddingRight` / `marginRight` of `<body>`: remove, unless `ConfigProvider` sets `scrollBody` to an object.
+- A test that dismisses a modal `Dialog` / `Drawer` by pressing an arbitrary outside element: press the overlay, `[data-reka-internal-backdrop]` or `document.body` instead. Playwright / Vitest browser clicks on an element under a modal layer need `force: true`.
+- A modal `Dialog` / `AlertDialog` / `Drawer` with no overlay part: leave it unchanged, and *ask* whether the page should stay scrollable while it is open. If yes, set `:modal="false"` (or `modal="trap-focus"` on a `Drawer`).
+- `scrollBody` on `ConfigProvider`: leave unchanged.
+
+**Verify.** Open each modal layer: the page does not scroll, does not shift horizontally, and `<body>` has no `pointer-events` inline style. Close it: `<html>` and `<body>` inline styles are back to what they were. The search for `--scrollbar-width` returns nothing.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call and every prop read off a part ref that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use and every overlay-less modal dialog that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.
