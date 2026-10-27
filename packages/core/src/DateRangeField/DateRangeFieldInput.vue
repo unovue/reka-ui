@@ -2,10 +2,9 @@
 import type { DateRangeType } from './DateRangeFieldRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
-import { computed, ref } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useDateField } from '@/shared/date/useDateField'
 import { injectDateRangeFieldRootContext } from './DateRangeFieldRoot.vue'
+import { createDateRangeFieldInputSurface } from './useDateRangeField'
 
 export interface DateRangeFieldInputProps extends PrimitiveProps {
   /** The part of the date to render */
@@ -22,34 +21,8 @@ const props = defineProps<DateRangeFieldInputProps>()
 
 const rootContext = injectDateRangeFieldRootContext()
 
-const hasLeftFocus = ref(true)
-const lastKeyZero = ref(false)
-
-const {
-  handleSegmentClick,
-  handleSegmentKeydown,
-  handleSegmentBeforeInput,
-  handleSegmentCompositionStart,
-  handleSegmentCompositionEnd,
-  attributes,
-} = useDateField({
-  hasLeftFocus,
-  lastKeyZero,
-  placeholder: rootContext.placeholder,
-  hourCycle: rootContext.hourCycle,
-  step: rootContext.step,
-  segmentValues: rootContext.segmentValues[props.type],
-  formatter: rootContext.formatter,
-  part: props.part,
-  disabled: rootContext.disabled,
-  readonly: rootContext.readonly,
-  focusNext: rootContext.focusNext,
-  modelValue: props.type === 'start' ? rootContext.startValue : rootContext.endValue,
-})
-
-const disabled = computed(() => rootContext.disabled.value)
-const readonly = computed(() => rootContext.readonly.value)
-const isInvalid = computed(() => rootContext.isInvalid.value)
+// Once per segment: the surface holds this segment's typing state.
+const input = createDateRangeFieldInputSurface(rootContext, () => props.part, () => props.type)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -60,26 +33,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    v-bind="attributes"
-    :contenteditable="disabled || readonly ? false : part !== 'literal'"
-    :data-reka-date-field-segment="part"
-    :aria-disabled="disabled ? true : undefined"
-    :aria-readonly="readonly ? true : undefined"
-    :data-disabled="disabled ? '' : undefined"
-    :data-reka-date-range-field-segment-type="type"
-    :data-invalid="isInvalid ? '' : undefined"
-    :aria-invalid="isInvalid ? true : undefined"
-    v-on="part !== 'literal' ? {
-      mousedown: handleSegmentClick,
-      keydown: handleSegmentKeydown,
-      beforeinput: handleSegmentBeforeInput,
-      compositionstart: handleSegmentCompositionStart,
-      compositionend: handleSegmentCompositionEnd,
-      focusout: () => { hasLeftFocus = true },
-      focusin: (e: FocusEvent) => {
-        rootContext.setFocusedElement(e.target as HTMLElement)
-      },
-    } : {}"
+    v-bind="input.attrs.value"
   >
     <slot />
   </Primitive>
