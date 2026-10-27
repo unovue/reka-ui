@@ -131,7 +131,7 @@ An item in the group.
 
 ### Separator
 
-Used to visually separate items in the toolbar
+Used to visually separate items in the toolbar. It runs perpendicular to the toolbar: a horizontal toolbar renders a vertical separator (`data-orientation="vertical"`, `aria-orientation="vertical"`), and a vertical toolbar a horizontal one.
 
 <!-- @include: @/meta/ToolbarSeparator.md -->
 

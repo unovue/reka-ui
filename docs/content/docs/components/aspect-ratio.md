@@ -48,3 +48,27 @@ import { AspectRatio } from 'reka-ui'
 Contains the content you want to constrain to a given ratio.
 
 <!-- @include: @/meta/AspectRatio.md -->
+
+## Headless composable
+
+`useAspectRatio` returns the `aspect` percentage, the `wrapper` surface that reserves the space and the `root` surface that fills it.
+
+```vue
+<script setup lang="ts">
+import { useAspectRatio } from 'reka-ui'
+
+const ratio = useAspectRatio({ ratio: 16 / 9 })
+</script>
+
+<template>
+  <div v-bind="ratio.wrapper.attrs.value">
+    <img
+      v-bind="ratio.root.attrs.value"
+      src="/landscape.jpg"
+      alt="Landscape"
+    >
+  </div>
+</template>
+```
+
+The composable is experimental and callable outside component setup.

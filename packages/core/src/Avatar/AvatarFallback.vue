@@ -1,45 +1,31 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { isClient } from '@vueuse/shared'
 import { useForwardElement } from '@/shared'
 
 export interface AvatarFallbackProps extends PrimitiveProps {
-  /** Useful for delaying rendering so it only appears for those with slower connections. */
+  /** Useful for delaying rendering so it only appears for those with slower connections. Unset or `0` renders it immediately. */
   delayMs?: number
 }
 </script>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
+import { useAvatarFallback } from './useAvatar'
 
 const props = withDefaults(defineProps<AvatarFallbackProps>(), {
   as: 'span',
 })
 
-const rootContext = injectAvatarRootContext()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-const canRender = ref(props.delayMs === undefined)
-
-watchEffect((onCleanup) => {
-  if (props.delayMs && isClient) {
-    const timerId = window.setTimeout(() => {
-      canRender.value = true
-    }, props.delayMs)
-
-    onCleanup(() => {
-      window.clearTimeout(timerId)
-    })
-  }
-})
+const { visible } = useAvatarFallback(injectAvatarRootContext(), { delayMs: () => props.delayMs })
 </script>
 
 <template>
   <Primitive
-    v-if="canRender && rootContext.imageLoadingStatus.value !== 'loaded'"
+    v-if="visible"
     :ref="forwardRef"
     :as-child="asChild"
     :as="as"

@@ -19,8 +19,7 @@
     'name': 'getValueLabel',
     'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
     'type': '((value: number | null, max: number) =&gt; string)',
-    'required': false,
-    'default': 'isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined'
+    'required': false
   },
   {
     'name': 'getValueText',
@@ -46,13 +45,13 @@
 <EmitsTable :data="[
   {
     'name': 'update:max',
-    'description': '<p>Event handler called when the max value changes</p>\n',
+    'description': '<p>Event handler called when an invalid <code>max</code> is corrected to <code>100</code>.</p>\n',
     'type': '[value: number]'
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the progress value changes</p>\n',
-    'type': '[value: string[] | undefined]'
+    'description': '<p>Event handler called when an invalid <code>modelValue</code> is corrected to <code>null</code>.</p>\n',
+    'type': '[value: number | null]'
   }
 ]" />
 
@@ -73,7 +72,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `((value: number \| null, max: number) => string)` | No | `isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined` |
+| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `((value: number \| null, max: number) => string)` | No | - |
 | `getValueText` | A function to get the accessible value text representing the current value in a human-readable format. | `((value: number \| null, max: number) => string)` | No | - |
 | `max` | The maximum progress value. | `number` | No | `DEFAULT_MAX` |
 | `modelValue` | The progress value. Can be bind as v-model. | `number \| null` | No | - |
@@ -82,8 +81,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:max` | Event handler called when the max value changes | `[value: number]` |
-| `update:modelValue` | Event handler called when the progress value changes | `[value: string[] \| undefined]` |
+| `update:max` | Event handler called when an invalid max is corrected to 100. | `[value: number]` |
+| `update:modelValue` | Event handler called when an invalid modelValue is corrected to null. | `[value: number \| null]` |
 
 **Slots**
 
