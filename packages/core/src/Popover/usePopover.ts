@@ -174,11 +174,18 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
   const modal = computed<boolean>(() => toValue(props.modal) ?? false)
   const hasCustomAnchor = ref(false)
 
+  // Writable: a `PopoverTrigger` / `PopoverContent` `id` replaces the generated
+  // one here, so the content's `aria-labelledby` and the trigger's
+  // `aria-controls` follow it.
+  const ownTriggerId = ref(`${baseId}-trigger`)
+  const contentId = ref(`${baseId}-content`)
+
   const handleStore = createPopupRootStore<Payload>({
     handle: () => toValue(props.handle),
     open,
     setState,
     baseId,
+    contentId: () => contentId.value,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -202,7 +209,6 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     return setState(!open.value, reason, event)
   }
 
-  const ownTriggerId = `${baseId}-trigger`
   const context: PopoverRootContext = {
     triggerElement,
     // With a `handle`, the content's `aria-labelledby` follows the active
@@ -210,10 +216,13 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     // trigger owns the popover, so it never points at a missing id.
     get triggerId() {
       if (!handleStore.handle.value)
-        return ownTriggerId
+        return ownTriggerId.value
       return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
     },
-    contentId: `${baseId}-content`,
+    // Sets the handle-less trigger's id; with a `handle`, each trigger's own id is used.
+    set triggerId(value) { ownTriggerId.value = value },
+    get contentId() { return contentId.value },
+    set contentId(value) { contentId.value = value },
     open,
     modal: modal as Ref<boolean>,
     onOpenChange,

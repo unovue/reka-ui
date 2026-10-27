@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PopoverHandle } from './handle'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement, useId } from '@/shared'
+import { useForwardElement, useId, usePartId } from '@/shared'
 
 export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
   /**
@@ -11,11 +11,17 @@ export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
   handle?: PopoverHandle<Payload>
   /** Passed to the Root's default slot while this trigger owns the popover. Requires a `handle`. */
   payload?: Payload
+  /**
+   * Id of the element, which the content's `aria-labelledby` points at. With a
+   * `handle`, also the id the Root's `triggerId` refers to. Auto-generated when
+   * not provided.
+   */
+  id?: string
 }
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
@@ -38,17 +44,12 @@ defineExpose(expose)
 // surface builder runs against that per-trigger view of the context.
 // Only a trigger that joins a handle at setup draws its own id (an extra
 // `useId()` call would shift every later generated id in handle-less trees);
-// one whose Root gets a `handle` later uses the Root's trigger id. An `id`
-// attribute wins and is tracked across renders.
-const attrs$ = useAttrs()
-const attrId = shallowRef(attrs$.id as string | undefined)
-onBeforeUpdate(() => {
-  attrId.value = attrs$.id as string | undefined
-})
+// one whose Root gets a `handle` later uses the Root's trigger id. The `id`
+// prop wins.
 const detached = usePopupHandleTrigger<Payload>({
   handle: () => props.handle,
   rootContext,
-  attrId,
+  attrId: () => props.id,
   generatedId: props.handle || getPopupRootStore(rootContext)?.handle.value ? useId(undefined, 'reka-popover-trigger') : undefined,
   element: triggerElement,
   payload: () => props.payload,
@@ -72,6 +73,16 @@ const detachedTrigger = getPopoverTriggerSurface({
 // element's own props, so a consumer `@click` still runs before the surface's
 // `onClick`.
 const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : detachedTrigger
+
+// Without a `handle`, the trigger renders the Root's trigger id; an `id` prop
+// replaces it there, so the content's `aria-labelledby` follows.
+if (rootContext) {
+  usePartId(
+    () => props.id,
+    getPopupRootStore(rootContext)?.fallbackTriggerId ?? rootContext.triggerId,
+    (id) => { rootContext.triggerId = id },
+  )
+}
 const attrs = computed(() => detached.enabled.value ? detachedTrigger.attrs.value : trigger.attrs.value)
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
