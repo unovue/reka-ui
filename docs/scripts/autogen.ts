@@ -213,6 +213,47 @@ function parseTypeFromSchema(schema: PropertyMetaSchema): string {
 }
 
 // Utilities
+
+// Drops the `| undefined` an optional prop adds to its type, and only that one:
+// an `undefined` nested in the type, such as a callback's `T[] | undefined`
+// return, is part of the contract and stays.
+function stripOptionalUndefined(type: string): string {
+  const members: string[] = []
+  let depth = 0
+  let quote = ''
+  let start = 0
+  for (let i = 0; i < type.length; i++) {
+    const char = type[i]
+    if (quote) {
+      if (char === quote && type[i - 1] !== '\\')
+        quote = ''
+      continue
+    }
+    if (char === '\'' || char === '"' || char === '`') {
+      quote = char
+    }
+    else if (char === '=' && type[i + 1] === '>') {
+      // A top-level arrow: the union after it is the return type, keep it whole.
+      if (depth === 0)
+        return type.trim()
+      i++
+    }
+    else if ('([{<'.includes(char)) {
+      depth++
+    }
+    else if (')]}>'.includes(char)) {
+      depth--
+    }
+    else if (char === '|' && depth === 0) {
+      members.push(type.slice(start, i))
+      start = i + 1
+    }
+  }
+  members.push(type.slice(start))
+  const kept = members.map(m => m.trim()).filter(m => m && m !== 'undefined')
+  return kept.length ? kept.join(' | ') : type.trim()
+}
+
 function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined) {
   const props = meta.props
   // Exclude global props
@@ -240,7 +281,7 @@ function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => s
       return ({
         name,
         description: md.render(description),
-        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        type: stripOptionalUndefined(type).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         required,
         default: defaultValue ?? undefined,
       })

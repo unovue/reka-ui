@@ -54,7 +54,7 @@
   {
     'name': 'getNavigationIntent',
     'description': '<p>Resolves what a keydown in the input means for keyboard navigation. Return <code>undefined</code> to fall back to the default\nmapping, <code>null</code> to opt the key out (for Enter this also skips the selection), or <code>\'select\'</code> to select the\nhighlighted item as Enter does. A <code>\'next\'</code> or <code>\'prev\'</code> intent also opens a closed popup. Unmodified printable keys,\nArrowLeft and ArrowRight always stay text input.</p>\n',
-    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null | undefined)',
     'required': false
   },
   {
@@ -184,7 +184,7 @@
 | `disabled` | When true, prevents the user from interacting with autocomplete | `boolean` | No | - |
 | `displayValue` | The text a selected item writes into the value (the input text), from the item's value. Defaults to String(value). | `((value: T) => string)` | No | - |
 | `filter` | Whether an item matches the typed text: called as filter(text, search, value) with the item's textValue (or its text content). Omitted, items are matched with useFilter's contains (base sensitivity). null turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<T> \| null` | No | - |
-| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return undefined to fall back to the default mapping, null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. A 'next' or 'prev' intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return undefined to fall back to the default mapping, null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. A 'next' or 'prev' intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | Deprecated alias for :filter="null": when true, turns client filtering off. Wins over filter. | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |

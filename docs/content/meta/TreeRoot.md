@@ -54,7 +54,7 @@
   {
     'name': 'getChildren',
     'description': '<p>Returns an item\'s children. <code>undefined</code> marks a leaf. An array, even an empty one, marks a branch that can be expanded: return <code>[]</code> for children that are loaded when the item expands.</p>\n',
-    'type': '((val: T) =&gt; T[])',
+    'type': '((val: T) =&gt; T[] | undefined)',
     'required': false,
     'default': 'val.children'
   },
@@ -159,7 +159,7 @@
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with tree | `boolean` | No | - |
 | `expanded` | The controlled value of the expanded item. Can be binded with v-model. | `string[]` | No | - |
-| `getChildren` | Returns an item's children. undefined marks a leaf. An array, even an empty one, marks a branch that can be expanded: return [] for children that are loaded when the item expands. | `((val: T) => T[])` | No | `val.children` |
+| `getChildren` | Returns an item's children. undefined marks a leaf. An array, even an empty one, marks a branch that can be expanded: return [] for children that are loaded when the item expands. | `((val: T) => T[] \| undefined)` | No | `val.children` |
 | `getKey` | Returns a unique key for an item. Keys identify items in the selection and in expanded, so they must be strings: convert a numeric id with String(item.id). | `(val: T): string` | Yes | - |
 | `items` | List of items | `T[]` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |

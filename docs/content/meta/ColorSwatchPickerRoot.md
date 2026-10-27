@@ -38,7 +38,7 @@
   {
     'name': 'getNavigationIntent',
     'description': '<p>Resolves what a keydown means for keyboard navigation. Return <code>undefined</code> to fall back to the default mapping\n(arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), <code>null</code> to opt the key out (for\nEnter this also skips the selection), or <code>\'select\'</code> to select the highlighted item as Enter does. <code>ListboxFilter</code>\nnever passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a\n<code>\'select\'</code> intent for Space does not select it twice.</p>\n',
-    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null | undefined)',
     'required': false
   },
   {
@@ -141,7 +141,7 @@
 | `defaultValue` | The selected color, or colors with multiple, as color strings or Color objects (uncontrolled). Compared structurally with the item values. | `ColorSwatchPickerValue \| ColorSwatchPickerValue[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | `"ltr"` |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | `false` |
-| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. ListboxFilter never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a 'select' intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. ListboxFilter never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a 'select' intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
 | `modelValue` | The selected color, or colors with multiple, as color strings or Color objects (controlled). Compared structurally with the item values. | `ColorSwatchPickerValue \| ColorSwatchPickerValue[]` | No | - |

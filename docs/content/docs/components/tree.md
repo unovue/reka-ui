@@ -335,11 +335,19 @@ const loading = ref(new Set<string>())
 
 async function loadChildren(event: TreeItemToggleEvent<Node>) {
   const node = event.detail.value
-  if (event.detail.isExpanded || !node.children || node.children.length > 0)
+  if (!node || event.detail.isExpanded || !node.children || node.children.length > 0)
+    return
+  if (loading.value.has(node.id)) // already loading
     return
   loading.value.add(node.id)
-  node.children = await fetchChildren(node.id) // your API
-  loading.value.delete(node.id)
+  try {
+    const children = await fetchChildren(node.id) // your API
+    // No children: drop the empty array so the item becomes a leaf
+    node.children = children.length ? children : undefined
+  }
+  finally {
+    loading.value.delete(node.id)
+  }
 }
 </script>
 
