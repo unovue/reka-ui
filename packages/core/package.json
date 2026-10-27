@@ -707,6 +707,7 @@
     "playwright": "^1.63.0",
     "size-limit": "^12.0.1",
     "tsdown": "^0.12.9",
+    "typescript": "5.8.3",
     "vite": "^8.3.1",
     "vitest": "^5.0.3",
     "vitest-axe": "0.1.0",
