@@ -653,10 +653,11 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 **What changed.**
 - A portal (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, any `*Portal` or `Teleport` part) rendered inside a shadow root teleports into that shadow root by default. v2 teleported to `document.body`, outside the shadow root.
 - A string `to` on a portal, or `teleportTo` on `ConfigProvider`, is looked up inside the shadow root first and then in the document. An explicit `to="body"` still targets the document body.
-- A modal layer also sets `aria-hidden` on its siblings inside the shadow root, not only on the page around the shadow host.
+- A modal layer also sets `aria-hidden` on its siblings inside the shadow root, not only on the page around the shadow host. With modals open in two shadow roots, the most recently opened one stays exposed.
+- Pointer, focus and dismissal checks follow the rendered (flat) tree: a press inside a web component nested in a trigger, Splitter handle or popup counts as a press on that element, and light-DOM content slotted into a popup counts as inside it.
 - `TooltipContent` and `HoverCardContent` close when a scroll container inside the shadow root, or the page, scrolls their trigger.
 - Combobox mouse selection, focus trapping and focus guards, outside-press and focus-outside dismissal, and `aria-*` id references work inside an open shadow root without workarounds.
-- Light DOM too: a portal with `forceMount` that renders during the app's first client render mounts its content right after the portal mounts (a microtask later), as a portal without `forceMount` does, instead of during that first render. Server rendering, hydration and portals created after the app mounted are unchanged.
+- Light DOM too: a portal with `forceMount` and the default target (no `to`, or a selector) that renders during the app's first client render mounts its content right after the portal mounts (a microtask later), as a portal without `forceMount` does, instead of during that first render. A parent's template ref to that content is `undefined` in the parent's `onMounted`. Portals with `disabled` or an element `to`, server rendering, hydration and portals created after the app mounted are unchanged.
 
 **How to find it.**
 - `attachShadow(`, `defineCustomElement(` and custom-element registration that mounts a Vue app using Reka UI.
@@ -664,6 +665,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - Stylesheets for portalled content (dialogs, popovers, menus, tooltips, toasts) of a shadow-mounted app that are loaded into the document rather than the shadow root.
 - Tests of a shadow-mounted app that query portalled content with `document.querySelector`, `document.getElementById` or testing-library `screen` queries.
 - Tests that mount an app whose `*Portal` has `forceMount` and query the portalled content synchronously right after `mount()`.
+- `onMounted` hooks that read a template ref placed inside force-mounted portal content (a `*Portal` with `forceMount` and no element `to`) rendered by the same component or a child.
 - Workarounds for shadow DOM bugs: patches of `reka-ui` (for example `patches/reka-ui@*.patch` touching `ComboboxInput` or `getElementById`), `touchstart` / `touchmove` `stopPropagation()` on dialog content, or code that re-parents portalled content into a shadow root.
 
 **Rewrite rules.**
@@ -672,6 +674,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - A test that finds portalled content of a shadow-mounted app through `document`: when the portal has no `to` / `teleportTo`, or one that resolves inside the shadow root, query the shadow root instead (`host.shadowRoot.querySelector(...)`). Leave document queries for content teleported to `body` or another element outside the shadow root.
 - A workaround or patch for one of the fixes listed under *What changed*: *ask* before removing it, and remove it only after the verify step passes without it.
 - A test that reads force-mounted portal content synchronously after `mount()`: add `await nextTick()` (or `await flushPromises()`) before the query.
+- An `onMounted` that reads a template ref into force-mounted portal content: read it after `await nextTick()` inside the hook, or move the code into a `watch` on the ref (`{ once: true }` when it should run once). Do not add `to` or `disabled` only to restore the old timing unless the developer asks.
 
 **Verify.** In each shadow-mounted app, portalled content without an explicit target outside the shadow root renders inside the shadow root with its styles applied; dialogs trap focus and close on Escape and outside press; a combobox item can be selected with the mouse; the tests pass.
 

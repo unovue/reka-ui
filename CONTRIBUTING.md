@@ -128,10 +128,15 @@ a trigger/content ref, …):
 | `window.…` | `getOwnerWindow(anchorEl)` |
 | `event.target` in a listener above a shadow boundary | `getEventTarget(event)` — `composedPath()[0]`, read **synchronously** (empty after dispatch) |
 | Injecting a `<style>` into `document.head` | `injectStyle(getRootNode(anchorEl), css, { nonce })` — adopted stylesheets + `<style>` fallback |
-| `container.contains(target)` for a composed target | `containsComposed(container, target)` (walks up through shadow hosts) |
+| `container.contains(target)` for a composed target | `containsComposed(container, target)` (walks the flat tree: through shadow hosts and the slots light-DOM children are assigned to) |
+| `target.closest(selector)` / `el.parentElement` walks on a composed target | `closestComposed(target, selector)` / `getFlatTreeParentElement(el)` (`getComposedParentElement(el)` skips slots) |
 | `window.addEventListener('scroll', …, { capture: true })` | `useAncestorScroll(anchorEl, onScroll)` — `scroll` is not composed, so it also listens on each shadow root around the anchor |
-| `hideOthers(el)` from `aria-hidden` | `useHideOthers(el)` — hides siblings inside every shadow root around `el`, then around the outermost host |
+| `hideOthers(el)` from `aria-hidden` | `useHideOthers(el)` — hides siblings inside every shadow root around `el`, then around the outermost host, and lifts another modal's hold on the hosts around `el` while it holds |
 
+- **A composed target also matters in the light DOM:** a press inside a web component
+  (an icon element in a trigger or handle) has its deep target inside that component's
+  shadow root. Once you read `getEventTarget(event)`, every `contains` / `closest` /
+  parent walk on it must be one of the composed helpers above.
 - **Anchor on a real element ref**, not the global document — every part already
   exposes `currentElement` via `useForwardExpose()`.
 - `for`/`id` associations never cross shadow boundaries, so root-scoping label
@@ -147,6 +152,9 @@ a trigger/content ref, …):
 - **Teleport:** a portal rendered inside a shadow root teleports into that shadow
   root by default (`resolveTeleportTarget`), so its content shares the root's styles
   and aria idrefs. A string `to` / `teleportTo` is looked up in the shadow root first.
+  With the default target, a `forceMount` portal rendered during the app's first client
+  render mounts its content once the portal has mounted (the root is unknown before
+  then); `disabled` and element targets still render during that render.
 - **Known limits (browser-only or genuinely unfixable):** closed shadow roots
   (`composedPath()` returns the host); aria idrefs for content explicitly Teleported
   out of the root; FocusScope's tabbable walk does not descend into shadow roots
