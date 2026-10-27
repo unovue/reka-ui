@@ -283,6 +283,7 @@ provideComboboxRootContext({
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
       :loop="loop"
+      :filter="null"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >
