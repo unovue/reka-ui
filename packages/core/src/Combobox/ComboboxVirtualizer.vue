@@ -8,7 +8,6 @@ import type { ListboxVirtualizerProps } from '@/Listbox/ListboxVirtualizer.vue'
 import type { AcceptableValue } from '@/shared/types'
 import ListboxVirtualizer from '@/Listbox/ListboxVirtualizer.vue'
 import { useForwardElement } from '@/shared'
-import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = defineProps<ComboboxVirtualizerProps<T>>()
 
@@ -20,10 +19,9 @@ defineSlots<{
   }) => any
 }>()
 
-const rootContext = injectComboboxRootContext()
-// set virtual true when this component mounted
-rootContext.isVirtual.value = true
-
+// The root's `filter` applies to `options` (the Listbox virtualizer path):
+// an option that does not match takes no row, no `aria-setsize` slot and is
+// skipped by navigation. `ListboxVirtualizer` also flags the root as virtual.
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>

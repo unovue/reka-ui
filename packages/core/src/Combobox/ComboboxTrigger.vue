@@ -8,10 +8,11 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
+import { getComboboxTriggerSurface } from './useCombobox'
 
 const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
   as: 'button',
@@ -20,7 +21,7 @@ const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectComboboxRootContext()
-const disabled = computed(() => props.disabled || rootContext.disabled.value || false)
+const surface = getComboboxTriggerSurface(rootContext, () => props.disabled)
 
 onMounted(() => {
   if (currentElement.value)
@@ -30,19 +31,11 @@ onMounted(() => {
 
 <template>
   <Primitive
-    v-bind="props"
     :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
-    tabindex="-1"
-    aria-label="Show popup"
-    aria-haspopup="listbox"
-    :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
-    :data-state="disclosureState(rootContext.open.value)"
-    :disabled="disabled"
-    :data-disabled="disabled ? '' : undefined"
-    :aria-disabled="disabled ?? undefined"
-    @click="rootContext.onOpenChange(!rootContext.open.value)"
+    v-bind="surface.attrs.value"
   >
     <slot />
   </Primitive>

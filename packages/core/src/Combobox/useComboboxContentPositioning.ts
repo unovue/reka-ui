@@ -1,7 +1,12 @@
 import type { Ref } from 'vue'
+import type { ListboxHighlightScroll } from '@/Listbox/useListbox'
 import { computed, ref } from 'vue'
-import { provideListboxHighlightScrollContext } from '@/Listbox/ListboxRoot.vue'
 
+/**
+ * Holds the highlight scroll of the combobox listbox back while popper content
+ * is still being placed, and flushes the deferred scroll once it is.
+ * `highlightScroll` goes to `useListboxRoot()`; the three callbacks go on the context.
+ */
 export function useComboboxContentPositioning(
   open: Readonly<Ref<boolean>>,
 ) {
@@ -11,12 +16,12 @@ export function useComboboxContentPositioning(
   const suppressHighlightScroll = computed(() => contentPosition.value === 'popper' && !contentPlaced.value)
   let pendingHighlightScroll: (() => void) | undefined
 
-  provideListboxHighlightScrollContext({
+  const highlightScroll: ListboxHighlightScroll = {
     suppressHighlightScroll,
     onHighlightScrollRequest(scroll) {
       pendingHighlightScroll = scroll
     },
-  })
+  }
 
   function onContentPositionChange(content: symbol, position: 'inline' | 'popper') {
     if (currentContent.value !== content || contentPosition.value !== position) {
@@ -49,6 +54,7 @@ export function useComboboxContentPositioning(
   }
 
   return {
+    highlightScroll,
     onContentPositionChange,
     onContentPlaced,
     onContentUnmount,

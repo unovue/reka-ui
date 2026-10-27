@@ -4,7 +4,9 @@ export {
   type AutocompleteInputProps,
 } from './AutocompleteInput.vue'
 export {
+  type AutocompleteChangeReason,
   default as AutocompleteRoot,
+  type AutocompleteRootContext,
   type AutocompleteRootEmits,
   type AutocompleteRootProps,
   injectAutocompleteRootContext,

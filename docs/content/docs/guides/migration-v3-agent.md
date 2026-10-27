@@ -81,7 +81,7 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 
 **What changed.** `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object with `reason`, `event`, `isCanceled` and `cancel()`, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick, and a component that mounts uncontrolled and later receives a defined model value becomes controlled from then on, even if the model is later cleared to `undefined`.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release; both carry a `Color` object (section 10). Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert. `DrawerRoot` is not on this contract: its `update:open(value, details)` is unchanged from v2 (it fires before the change and `details.cancel()` inside it vetoes the change), it has no `beforeUpdate:open`, and `update:snapPoint` stays single-argument. Leave Drawer listeners unchanged.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`), and `ComboboxRoot` and `AutocompleteRoot` (`modelValue`, `open`; section 15). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release; both carry a `Color` object (section 10). Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert. `DrawerRoot` is not on this contract: its `update:open(value, details)` is unchanged from v2 (it fires before the change and `details.cancel()` inside it vetoes the change), it has no `beforeUpdate:open`, and `update:snapPoint` stays single-argument. Leave Drawer listeners unchanged.
 
 **How to find it.** Search for listeners and emit declarations on those roots: `@update:open`, `@update:model-value`, `@update:modelValue`, `@update:placeholder`, `'update:open'`, `'update:modelValue'`, `'update:placeholder'`, `onUpdate:open`, `onUpdate:modelValue`, `onUpdate:placeholder`, `defineEmits` in components that wrap one of the roots, `useForwardPropsEmits`, `emitted('update:open')` and `toHaveBeenCalledWith` in tests, and `watch(` calls that react to these models.
 
@@ -97,7 +97,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
   }
   ```
 
-  The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason` (also exported as `AlertDialogOpenChangeReason`), `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts, and also exported as `DropdownMenuOpenChangeReason`, `ContextMenuOpenChangeReason` and `MenubarChangeReason`), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `ListboxChangeReason`, `AccordionChangeReason`, `CollapsibleChangeReason`, `DatePickerOpenChangeReason`, `DateRangePickerOpenChangeReason`, `CalendarChangeReason`, `RangeCalendarChangeReason`, `ColorAreaChangeReason`, `ColorFieldChangeReason`, `ColorSliderChangeReason` and `ColorSwatchPickerChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.
+  The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason` (also exported as `AlertDialogOpenChangeReason`), `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts, and also exported as `DropdownMenuOpenChangeReason`, `ContextMenuOpenChangeReason` and `MenubarChangeReason`), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `ListboxChangeReason`, `AccordionChangeReason`, `CollapsibleChangeReason`, `DatePickerOpenChangeReason`, `DateRangePickerOpenChangeReason`, `CalendarChangeReason`, `RangeCalendarChangeReason`, `ColorAreaChangeReason`, `ColorFieldChangeReason`, `ColorSliderChangeReason`, `ColorSwatchPickerChangeReason`, `ComboboxChangeReason`, `ComboboxOpenChangeReason` (the `open` reasons of both `ComboboxRoot` and `AutocompleteRoot`) and `AutocompleteChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.
 - Wrappers that forward with `useForwardPropsEmits` need no change.
 - Custom parts built on `injectAccordionRootContext()` or `injectCollapsibleRootContext()`: the Accordion root context's `modelValue` is now a readonly `ComputedRef`, so call `changeModelValue` instead of assigning it, and `changeModelValue(value, reason?, event?)` now takes an optional reason and native event and returns a boolean (`false` when the change was cancelled or did not change the value). On the Collapsible root context, `onOpenToggle(event?)` accepts the native event, `onContentFound(event)` is new, and `contentId` is backed by a ref, so assigning it also updates the trigger's `aria-controls`.
 - Tests: an assertion such as `expect(emit).toHaveBeenCalledWith(true)` or `expect(wrapper.emitted('update:open')[0]).toEqual([true])` now fails because of the extra argument. Assert on the first element (`[0][0]`) or use `expect.objectContaining({ reason: '…' })` for the details. Tests that awaited a tick for an uncontrolled emit may now see it synchronously; remove waits only if the test's intent is unchanged.
@@ -201,11 +201,11 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 ### 8. Listbox keyboard handling
 
-**What changed.** `ListboxContent` and `ListboxFilter` (rendered by `ComboboxInput` and `AutocompleteInput`) resolve every keydown through one navigation intent.
+**What changed.** `ListboxContent`, `ListboxFilter`, `ComboboxInput` and `AutocompleteInput` resolve every keydown through one navigation intent.
 - PageUp and PageDown now move the highlight to the first or last item and prevent the default, both in the content and in the filter input. In v2 they scrolled the container natively.
 - While a filter has focus, ArrowLeft and ArrowRight always stay with the text input, even in a `horizontal` listbox. ArrowUp, ArrowDown, Home and End still navigate from the filter. `ListboxContent` no longer prevents the default of arrow keys while a filter owns the keyboard.
 - Typeahead no longer receives navigation keys.
-- New and additive: `getNavigationIntent` on `ListboxRoot` returns `'first' | 'last' | 'prev' | 'next' | 'select'`, `null` (opt the key out, Enter's selection included) or `undefined` (default mapping). The filter never passes it unmodified printable keys, and a `'select'` intent for Space on a focused item does not select twice. `ComboboxRoot` does not accept it yet. `textValue` on `ListboxItem` sets the label-registry text and defaults to the text content.
+- New and additive: `getNavigationIntent` on `ListboxRoot` returns `'first' | 'last' | 'prev' | 'next' | 'select'`, `null` (opt the key out, Enter's selection included) or `undefined` (default mapping). The filter never passes it unmodified printable keys, and a `'select'` intent for Space on a focused item does not select twice. `ComboboxRoot` and `AutocompleteRoot` accept it too; there a `'next'` / `'prev'` intent also opens a closed popup. `textValue` on `ListboxItem` sets the label-registry text and defaults to the text content.
 - `ListboxRoot`'s `update:modelValue` and `beforeUpdate:modelValue` are typed `T | T[] | undefined` (type-only).
 
 **How to find it.**
@@ -216,7 +216,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Rewrite rules.**
 - A custom PageUp/PageDown handler on these parts that only jumped to the first/last item: remove it. If the app needs the native scroll, pass `:get-navigation-intent="e => (e.key === 'PageUp' || e.key === 'PageDown') ? null : undefined"` on `ListboxRoot`.
-- A `@keydown` handler that maps extra keys to moves (Ctrl+N/P, vim keys): replace it with `getNavigationIntent` on `ListboxRoot` returning the intent; return `undefined` for every other key. Leave such handlers on `ComboboxRoot` unchanged, since it does not take the prop yet.
+- A `@keydown` handler that maps extra keys to moves (Ctrl+N/P, vim keys): replace it with `getNavigationIntent` on `ListboxRoot`, `ComboboxRoot` or `AutocompleteRoot` returning the intent; return `undefined` for every other key.
 - An item whose visible content is not plain text and that is shown elsewhere by label: add `text-value="…"`. Otherwise no change.
 - A `ListboxRoot` model handler typed for a single value: widen it to `T | T[] | undefined`, or narrow inside (`Array.isArray(v)`). Do not change runtime logic.
 - Tests: update an expectation that ArrowLeft/ArrowRight in a horizontal filter is prevented, or that PageUp/PageDown is not. Ask the developer before changing any other keyboard assertion.
@@ -225,7 +225,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 ### 9. Listbox filtering (no rewrite)
 
-**What changed.** Nothing for existing code. `ListboxRoot` gained an opt-in `filter` prop: with `:filter="contains"` (from `useFilter`), the items whose text does not match the `ListboxFilter` value are not rendered, and keyboard navigation, typeahead and select-all skip them. Without `filter` (or with `null`) the listbox filters nothing, exactly as in v2. `ComboboxRoot` and `AutocompleteRoot` keep their own filtering and `ignoreFilter`; they do not accept `filter` yet.
+**What changed.** Nothing for existing code. `ListboxRoot` gained an opt-in `filter` prop: with `:filter="contains"` (from `useFilter`), the items whose text does not match the `ListboxFilter` value are not rendered, and keyboard navigation, typeahead and select-all skip them. Without `filter` (or with `null`) the listbox filters nothing, exactly as in v2. `ComboboxRoot` and `AutocompleteRoot` now filter through the same mechanism by default (section 15).
 
 **Rewrite rules.** Do not add `filter` to an existing listbox: one whose items are already filtered by hand keeps working unchanged. Mention listboxes that compute a filtered item list from the `ListboxFilter` value in the report as optional candidates; switching one over means passing `filter` and rendering the full list.
 
@@ -376,6 +376,38 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - An assignment to `triggerId` / `contentId` on the dropdown context: remove it. If the custom part needs a specific id, pass `id` to the part instead, and *ask* if other code reads the old id.
 
 **Verify.** The type-check passes, and the menubar and dropdown tests pass.
+
+### 15. Combobox and Autocomplete
+
+**What changed.**
+- Filtering moved onto the shared Listbox filter. `filter` on `ComboboxRoot` / `AutocompleteRoot` takes `(text, search, value) => boolean` or `null`; omitted, items match with `useFilter`'s `contains` (v2 behavior). `ignoreFilter` is a deprecated alias for `:filter="null"`.
+- A `ComboboxVirtualizer` / `AutocompleteVirtualizer` now filters its `options` with the root's filter, matching `textContent(option)` or the option's string form. In v2 filtering was off in a virtualized combobox.
+- A filtered-out item stays mounted and renders nothing (v2 unmounted it).
+- The root ref's `filtered` is `{ search, active, count }` (v2: `{ count, items, groups }`).
+- No nested `ListboxRoot` component and no `ListboxFilter` inside the input. One object is provided as both the Combobox and the Listbox root context. Removed from the Combobox root context: `allItems`, `allGroups`, `ignoreFilter`. Changed: `filterState` shape, `onOpenChange(value, reason?, event?)` returns a boolean, `highlightedElement` is `null` when empty. New: `setModelValue`, `selectItem`, `pressItem`, `clearModelValue`, `filter`, `baseId`. The Autocomplete root context's `modelValue` is read-only; `onModelValueChange(value, reason?, event?)` writes it.
+- Content ids are `<root id>-content` (`reka-combobox-v-0-content`, `reka-autocomplete-v-0-content`; v2 `reka-combobox-content-v-1`), and `aria-controls` is set from the first render.
+- `update:modelValue` is typed `T[]` when `multiple` is set and `T | null` otherwise (type-only; a clear emits `null`). `beforeUpdate:modelValue` and `beforeUpdate:open` are new (section 2).
+- New and additive: `displayValue` on both roots, `getNavigationIntent` on both roots (section 8), `useComboboxRoot()`.
+
+**How to find it.**
+- `ignore-filter`, `:ignore-filter`, `ignoreFilter` on `ComboboxRoot` / `AutocompleteRoot`.
+- `ComboboxVirtualizer` / `AutocompleteVirtualizer` usages. For each, note whether its `options` are computed from the input text (a `computed` that filters on the `ComboboxInput` `v-model`) and whether it passes `text-content`.
+- `.filtered` read off a `ComboboxRoot` / `AutocompleteRoot` template ref.
+- `injectComboboxRootContext(` / `injectAutocompleteRootContext(` in custom parts; within them, `allItems`, `allGroups`, `ignoreFilter`, `filterState`, `await` on `onOpenChange`, writes to `modelValue.value`.
+- `reka-combobox-content` in selectors, snapshots and tests; `findComponent(ListboxRoot)` / `findComponent(ListboxFilter)` in combobox tests.
+- Handlers on `@update:model-value` of a `multiple` combobox typed for a single value.
+
+**Rewrite rules.**
+- `ignore-filter` / `:ignore-filter="true"`: replace with `:filter="null"`. `:ignore-filter="flag"`: replace with `:filter="flag ? null : undefined"`.
+- A virtualized combobox whose `options` are filtered by hand from the input text: add `:filter="null"` to its root (keeps the v2 behavior exactly). Do not remove the hand-written filtering unless the developer asks.
+- A virtualized combobox whose `options` are NOT filtered by hand: it now filters. If the options are objects and there is no `text-content`, add `:text-content` returning the option's label. *Ask* if no label property is obvious.
+- `rootRef.value.filtered.count`: leave unchanged. Reads of `filtered.items` or `filtered.groups`: *ask*; there is no per-item equivalent.
+- Custom parts: replace `allItems.value.size` with `filterState.value.count`, `ignoreFilter.value` with `filter.value === null`, and drop `await` before `onOpenChange(...)`. Writes to `modelValue.value` keep working; leave them unless a reason is wanted.
+- Old content ids in selectors or snapshots: select by `role="listbox"` or the input's `aria-controls` instead of the literal id; update snapshots.
+- `findComponent(ListboxRoot)` / `findComponent(ListboxFilter)` in combobox tests: query the rendered element instead (`[role=listbox]`'s parent for the root, `input[role=combobox]` for the input).
+- A single-value handler on a `multiple` combobox: type it as an array. Do not change runtime logic.
+
+**Verify.** Typing in each combobox still narrows the options as before, a virtualized combobox shows its options with an empty input and narrows them when typing, the type-check passes, and tests that assert on content ids or inner components pass after the updates above.
 
 ### Report
 

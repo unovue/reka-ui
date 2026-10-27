@@ -524,12 +524,14 @@ describe('given a Listbox with a non-empty search during SSR', () => {
   })
 })
 
-describe('given a Combobox or Autocomplete with a `filter` attribute', () => {
+// #2824 item 7: Combobox and Autocomplete declare `filter` themselves and run it
+// through this shared Listbox filter (v3 #3063 kept it off behind `:filter="null"`).
+describe('given a Combobox or Autocomplete with a `filter` prop', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
 
-  it('keeps the inner Listbox filter off in Combobox', async () => {
+  it('runs the shared filter in Combobox', async () => {
     const wrapper = mount(defineComponent({
       setup() {
         return () => h(ComboboxRoot, { open: true, filter: (text: string) => text === 'Apple' } as any, () => [
@@ -540,11 +542,10 @@ describe('given a Combobox or Autocomplete with a `filter` attribute', () => {
     }), { attachTo: document.body })
     await settle()
     await type(wrapper.find('input'), 'a')
-    // Combobox's own `contains` filter only.
-    expect(optionTexts(wrapper)).toEqual(['Apple', 'Banana', 'Grape', 'Mango'])
+    expect(optionTexts(wrapper)).toEqual(['Apple'])
   })
 
-  it('keeps the inner Listbox filter off in Autocomplete', async () => {
+  it('runs the shared filter in Autocomplete', async () => {
     const wrapper = mount(defineComponent({
       setup() {
         return () => h(AutocompleteRoot, { open: true, filter: (text: string) => text === 'Apple' } as any, () => [
@@ -555,7 +556,7 @@ describe('given a Combobox or Autocomplete with a `filter` attribute', () => {
     }), { attachTo: document.body })
     await settle()
     await type(wrapper.find('input'), 'a')
-    expect(optionTexts(wrapper)).toEqual(['Apple', 'Banana', 'Grape', 'Mango'])
+    expect(optionTexts(wrapper)).toEqual(['Apple'])
   })
 })
 

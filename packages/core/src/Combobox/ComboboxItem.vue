@@ -1,10 +1,8 @@
 <script lang="ts">
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
+import type { SelectEvent } from '@/Listbox/ListboxItem.vue'
 import type { AcceptableValue } from '@/shared/types'
-import { computed, onMounted, onUnmounted } from 'vue'
-import { usePrimitiveElement } from '@/Primitive'
-import { useId } from '@/shared'
-import { injectComboboxGroupContext } from './ComboboxGroup.vue'
+import { useForwardElement, useId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 export { injectListboxItemContext as injectComboboxItemContext } from '@/Listbox'
@@ -35,9 +33,8 @@ defineSlots<{
 
 const id = useId(undefined, 'reka-combobox-item')
 const rootContext = injectComboboxRootContext()
-const groupContext = injectComboboxGroupContext(null)
 
-const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 if (props.value === '') {
@@ -46,65 +43,35 @@ if (props.value === '') {
   )
 }
 
-const isRender = computed(() => {
-  if (rootContext.isVirtual.value || rootContext.ignoreFilter.value || !rootContext.filterSearch.value) {
-    return true
+// Matching (the shared Listbox `filter` over `textValue` or the rendered
+// text), the label registry and the select protocol live in `ListboxItem`. A
+// single combobox replaces its value and closes; a multiple one lets the
+// Listbox toggle it and keeps the focus in the input.
+function onSelect(event: SelectEvent<T>) {
+  emits('select', event)
+  if (event.defaultPrevented)
+    return
+
+  if (!rootContext.multiple.value) {
+    event.preventDefault()
+    if (!props.disabled && !rootContext.disabled.value) {
+      rootContext.pressItem(props.value, event.detail.originalEvent)
+    }
   }
   else {
-    const filteredCurrentItem = rootContext.filterState.value.items.get(id)
-    // If the filtered items is undefined means not in the all times map yet
-    // Do the first render to add into the map
-    if (filteredCurrentItem === undefined) {
-      return true
-    }
-
-    // Check with filter
-    return filteredCurrentItem > 0
+    rootContext.inputElement.value?.focus()
   }
-})
-
-onMounted(() => {
-  // textValue to perform filter
-  rootContext.allItems.value.set(id, props.textValue || currentElement.value.textContent || currentElement.value.innerText)
-
-  const groupId = groupContext?.id
-  if (groupId) {
-    if (!rootContext.allGroups.value.has(groupId)) {
-      rootContext.allGroups.value.set(groupId, new Set([id]))
-    }
-    else {
-      rootContext.allGroups.value.get(groupId)?.add(id)
-    }
-  }
-})
-onUnmounted(() => {
-  rootContext.allItems.value.delete(id)
-})
+}
 </script>
 
 <template>
   <ListboxItem
-    v-if="isRender"
     v-bind="props"
     :id="id"
-    ref="primitiveElement"
+    :ref="forwardRef"
     v-slot="slotProps"
-    v-memo="[isRender, rootContext.filterSearch.value, rootContext.disabled.value, disabled, props.value, props.as, props.asChild, ...Object.values($attrs)]"
     :disabled="rootContext.disabled.value || disabled"
-    @select="(event) => {
-      emits('select', event as any)
-      if (event.defaultPrevented)
-        return
-
-      if (!rootContext.multiple.value && !disabled && !rootContext.disabled.value) {
-        event.preventDefault()
-        rootContext.onOpenChange(false)
-        rootContext.modelValue.value = props.value
-      }
-      else if (rootContext.multiple.value) {
-        rootContext.inputElement.value?.focus()
-      }
-    }"
+    @select="onSelect"
   >
     <slot v-bind="slotProps">
       {{ value }}

@@ -273,7 +273,7 @@ An optional arrow element to render alongside the content. This can be used to h
 
 ### Virtualizer
 
-Virtual container to achieve list virtualization.
+Virtual container to achieve list virtualization. The root's `filter` runs over `options`, matching `textContent(option)` (or the option's string form). Set `:filter="null"` on `AutocompleteRoot` when you filter `options` yourself.
 
 See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
 
@@ -311,6 +311,33 @@ const fruits = ['Apple', 'Banana', 'Orange', 'Grapes', 'Pineapple']
   </AutocompleteRoot>
 </template>
 ```
+
+### Custom filtering
+
+Items are matched against the typed text with `useFilter`'s `contains` (case and accent insensitive). Pass a `filter(text, search, value)` function to change how they match, or `:filter="null"` to filter the items yourself, for example on a server. `ignore-filter` is a deprecated alias for `:filter="null"`.
+
+```vue
+<script setup lang="ts">
+import { useFilter } from 'reka-ui'
+
+const { startsWith } = useFilter({ sensitivity: 'base' })
+</script>
+
+<template>
+  <AutocompleteRoot
+    v-model="searchText"
+    :filter="startsWith"
+  >
+    <!-- ... -->
+  </AutocompleteRoot>
+</template>
+```
+
+### Reacting to changes
+
+`update:modelValue` receives a second argument with the `reason` (`'input-change'`, `'item-press'` or `'clear-press'`, exported as `AutocompleteChangeReason`) and the native `event`. `update:open` reports a `ComboboxOpenChangeReason`. The matching `beforeUpdate:modelValue` and `beforeUpdate:open` events fire first, and `details.cancel()` keeps the current state.
+
+Set `display-value` on `AutocompleteRoot` to control the text a selected item writes into the value, for example a label for an item whose value is an id.
 
 ### Hide menu when empty
 

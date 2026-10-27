@@ -41,7 +41,7 @@ watchDebounced(searchTerm, runSearch, { debounce: 300, immediate: true })
     class="relative w-[280px]"
     open-on-focus
     open-on-click
-    ignore-filter
+    :filter="null"
   >
     <ComboboxAnchor class="w-full inline-flex items-center justify-between gap-2 rounded-lg border border-muted bg-card px-3 h-10 text-sm text-foreground focus-within:ring-2 focus-within:ring-primary/40">
       <Icon
@@ -70,7 +70,7 @@ watchDebounced(searchTerm, runSearch, { debounce: 300, immediate: true })
 
     <ComboboxContent class="absolute z-10 w-full mt-1 rounded-lg border border-muted bg-card shadow-lg overflow-hidden data-[side=bottom]:animate-slideUpAndFade data-[side=top]:animate-slideDownAndFade">
       <ComboboxViewport class="max-h-[240px] p-1">
-        <!-- `ignore-filter` hands filtering to the server, so the empty state has
+        <!-- `:filter="null"` hands filtering to the server, so the empty state has
              to distinguish "still loading" from "the server found nothing". -->
         <div
           v-if="isPending && !results.length"

@@ -40,6 +40,24 @@
     'required': false
   },
   {
+    'name': 'displayValue',
+    'description': '<p>The text a selected item writes into the value (the input text). Defaults to the item\'s value.</p>\n',
+    'type': '((value: string) =&gt; string)',
+    'required': false
+  },
+  {
+    'name': 'filter',
+    'description': '<p>Whether an item matches the typed text: called as <code>filter(text, search, value)</code> with the item\'s <code>textValue</code> (or\nits text content). Omitted, items are matched with <code>useFilter</code>\'s <code>contains</code> (base sensitivity). <code>null</code> turns client\nfiltering off: filter the items yourself, or on a server.</p>\n',
+    'type': 'ListboxFilterFunction&lt;string&gt; | null',
+    'required': false
+  },
+  {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown in the input means for keyboard navigation. Return <code>undefined</code> to fall back to the default\nmapping, <code>null</code> to opt the key out (for Enter this also skips the selection), or <code>\'select\'</code> to select the\nhighlighted item as Enter does. A <code>\'next\'</code> or <code>\'prev\'</code> intent also opens a closed popup. Unmodified printable keys,\nArrowLeft and ArrowRight always stay text input.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'required': false
+  },
+  {
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
@@ -48,7 +66,7 @@
   },
   {
     'name': 'ignoreFilter',
-    'description': '<p>When <code>true</code>, disable the default filters</p>\n',
+    'description': '<p>Deprecated alias for <code>:filter=&quot;null&quot;</code>: when <code>true</code>, turns client filtering off. Wins over <code>filter</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -107,6 +125,16 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;AutocompleteChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Event handler called before the open state changes; call <code>details.cancel()</code> to keep it.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;ComboboxOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
     'type': '[payload: { ref: HTMLElement; value: string; } | undefined]'
@@ -114,12 +142,12 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: string]'
+    'type': '[value: string, details: ChangeEventDetails&lt;AutocompleteChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the autocomplete changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;ComboboxOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -140,17 +168,17 @@
   {
     'name': 'highlightItem',
     'description': '',
-    'type': '(value: AcceptableValue) =&gt; void | undefined'
+    'type': '(value: string) =&gt; void'
   },
   {
     'name': 'highlightFirstItem',
     'description': '',
-    'type': '() =&gt; void | undefined'
+    'type': '() =&gt; void'
   },
   {
     'name': 'highlightSelected',
     'description': '',
-    'type': '(event?: Event | undefined, scroll?: boolean | undefined) =&gt; Promise&lt;void&gt; | undefined'
+    'type': '(event?: Event | undefined, scroll?: boolean | undefined) =&gt; Promise&lt;void&gt;'
   }
 ]" />
 </llm-exclude>
@@ -167,8 +195,11 @@
 | `defaultValue` | The value of the autocomplete when initially rendered. Use when you do not need to control the state. | `string` | No | - |
 | `dir` | The reading direction of the autocomplete when applicable. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with autocomplete | `boolean` | No | - |
+| `displayValue` | The text a selected item writes into the value (the input text). Defaults to the item's value. | `((value: string) => string)` | No | - |
+| `filter` | Whether an item matches the typed text: called as filter(text, search, value) with the item's textValue (or its text content). Omitted, items are matched with useFilter's contains (base sensitivity). null turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<string> \| null` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return undefined to fall back to the default mapping, null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. A 'next' or 'prev' intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
-| `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `ignoreFilter` | Deprecated alias for :filter="null": when true, turns client filtering off. Wins over filter. | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the Autocomplete (the input text). Can be bound with v-model. | `string` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -182,9 +213,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
+| `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; } \| undefined]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: string]` |
-| `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 
 **Slots**
 
@@ -197,8 +230,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `highlightItem` |  | `(value: AcceptableValue) => void \| undefined` |
-| `highlightFirstItem` |  | `() => void \| undefined` |
-| `highlightSelected` |  | `(event?: Event \| undefined, scroll?: boolean \| undefined) => Promise<void> \| undefined` |
+| `highlightItem` |  | `(value: string) => void` |
+| `highlightFirstItem` |  | `() => void` |
+| `highlightSelected` |  | `(event?: Event \| undefined, scroll?: boolean \| undefined) => Promise<void>` |
 
 </llm-only>

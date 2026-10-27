@@ -2,20 +2,19 @@
 import type { Host } from './hosts'
 import { Icon } from '@iconify/vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from 'reka-ui'
-import { computed, ref, shallowRef } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { hosts } from './hosts'
 
 const selected = shallowRef<Host | undefined>()
 const searchTerm = ref('')
 
-// `ignore-filter` turns off the built-in filter: the virtualizer renders from
-// `options`, so the list it is given has to be the already-filtered one.
-const filtered = computed(() => {
-  const query = searchTerm.value.trim().toLowerCase()
-  if (!query)
-    return hosts
-  return hosts.filter(host => host.name.includes(query))
-})
+// The root's `filter` runs over the virtualizer's `options`, matching
+// `text-content`: pass the full list and only the matching hosts get a row.
+// Host names are lowercase ASCII, so a plain `includes` is enough (and cheaper
+// over 10,000 options than the default collator-based `contains`).
+function filter(text: string, search: string) {
+  return text.includes(search.trim().toLowerCase())
+}
 </script>
 
 <template>
@@ -24,7 +23,7 @@ const filtered = computed(() => {
     class="relative w-[280px]"
     open-on-focus
     open-on-click
-    ignore-filter
+    :filter="filter"
   >
     <ComboboxAnchor class="w-full inline-flex items-center justify-between gap-2 rounded-lg border border-muted bg-card px-3 h-10 text-sm text-foreground focus-within:ring-2 focus-within:ring-primary/40">
       <ComboboxInput
@@ -51,7 +50,7 @@ const filtered = computed(() => {
 
         <ComboboxVirtualizer
           v-slot="{ option }"
-          :options="filtered"
+          :options="hosts"
           :estimate-size="32"
           :overscan="8"
           :text-content="(host: Host) => host.name"

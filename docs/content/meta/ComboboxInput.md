@@ -48,6 +48,14 @@
     'type': '[string]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'modelValue',
+    'description': '<p>Current input values</p>\n',
+    'type': 'string | undefined'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -68,5 +76,11 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:modelValue` | Event handler called when the value changes. | `[string]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current input values | `string \| undefined` |
 
 </llm-only>
