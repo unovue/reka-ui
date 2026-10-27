@@ -26,7 +26,7 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
-import { getRootNode, useControllableState, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { getRootNode, useControllableState, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getRadioSurface } from './useRadioGroup'
 
@@ -58,7 +58,8 @@ const { state: checked, setState: setChecked } = useControllableState<boolean, R
   emit: emits,
 })
 
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 const isFormControl = useFormControl(triggerElement)
 // Hidden form input is a sibling (not nested) of the control to avoid the
 // `nested-interactive` a11y violation; forward the parent scope id for scoped styles.

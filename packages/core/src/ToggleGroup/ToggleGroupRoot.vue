@@ -4,7 +4,7 @@ import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, Singl
 import type { ToggleGroupChangeReason } from './useToggleGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
@@ -67,7 +67,8 @@ defineSlots<{
 // owns the single/multiple model (`useControllableState`) and the emits.
 const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const { modelValue, root, context } = useToggleGroup({
   type: () => props.type,

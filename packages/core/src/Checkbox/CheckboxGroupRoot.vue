@@ -62,7 +62,8 @@ const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 const { disabled, max, rovingFocus, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the

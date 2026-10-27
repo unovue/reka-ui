@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface CheckboxIndicatorProps extends PrimitiveProps {
   /**
@@ -22,7 +22,8 @@ import { isIndeterminate } from './utils'
 withDefaults(defineProps<CheckboxIndicatorProps>(), {
   as: 'span',
 })
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectCheckboxRootContext()
 // Same derivation as `useCheckbox().indicator` — one source for `data-state` / `data-disabled`.

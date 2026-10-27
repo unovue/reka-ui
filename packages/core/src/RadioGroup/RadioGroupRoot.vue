@@ -4,7 +4,7 @@ import type { RadioGroupChangeReason } from './useRadioGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the radio item to check. Can be binded as `v-model`. */
@@ -69,7 +69,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the controlled/uncontrolled model (`useControllableState`) and emits.

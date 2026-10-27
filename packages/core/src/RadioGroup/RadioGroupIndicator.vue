@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface RadioGroupIndicatorProps extends PrimitiveProps {
   /**
@@ -22,7 +22,8 @@ withDefaults(defineProps<RadioGroupIndicatorProps>(), {
   as: 'span',
 })
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const itemContext = injectRadioGroupItemContext()
 // Same derivation as a standalone consumer — one source for `data-state` / `data-disabled`.
 const indicator = getRadioGroupIndicatorSurface(itemContext)
