@@ -225,6 +225,35 @@ describe('useGraceArea', () => {
     otherTrigger.remove()
   })
 
+  it('tracks the pointer in an iframe document, whose elements come from another realm', async () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const frameDoc = iframe.contentDocument!
+    const frameWindow = iframe.contentWindow as unknown as typeof globalThis
+    trigger = frameDoc.createElement('div')
+    container = frameDoc.createElement('div')
+    frameDoc.body.append(trigger, container)
+    expect(trigger instanceof Element).toBe(false)
+    trigger.getBoundingClientRect = () =>
+      makeRect({ top: 0, left: 0, right: 100, bottom: 100, width: 100, height: 100, x: 0, y: 0 })
+    container.getBoundingClientRect = () =>
+      makeRect({ top: 0, left: 200, right: 300, bottom: 100, width: 100, height: 100, x: 200, y: 0 })
+
+    const mounted = mountGraceArea(trigger, container)
+    wrapper = mounted.wrapper
+    const exitSpy = vi.fn()
+    mounted.api.onPointerExit(exitSpy)
+
+    const Ctor = frameWindow.PointerEvent ?? frameWindow.MouseEvent
+    trigger.dispatchEvent(new Ctor('pointerleave', { bubbles: true, clientX: 100, clientY: 50 }))
+    await nextTick()
+    frameDoc.body.dispatchEvent(new Ctor('pointermove', { bubbles: true, clientX: 150, clientY: 500 }))
+
+    expect(exitSpy).toHaveBeenCalledTimes(1)
+    expect(mounted.api.isPointerInTransit.value).toBe(false)
+    iframe.remove()
+  })
+
   it('auto-resets isPointerInTransit after 300ms', () => {
     vi.useFakeTimers()
     const api = setup()

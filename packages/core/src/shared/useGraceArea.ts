@@ -58,7 +58,9 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
         // The listener sits on the document, where `event.target` is retargeted
         // to the shadow host for a menu rendered in a shadow root.
         const target = getEventTarget<Element>(event)
-        if (!pointerGraceArea.value || !(target instanceof Element))
+        // `nodeType`, not `instanceof Element`: the document can be an iframe's,
+        // whose elements come from another realm.
+        if (!pointerGraceArea.value || target?.nodeType !== Node.ELEMENT_NODE)
           return
 
         const pointerPosition = { x: event.clientX, y: event.clientY }
