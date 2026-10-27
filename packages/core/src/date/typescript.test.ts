@@ -43,7 +43,11 @@ const NON_DATE_CONSUMER = [
   `export const parts = [CheckboxRoot, DialogRoot, SelectRoot]`,
 ].join('\n')
 
-function typeCheck(ts: typeof ts6, source: string, { lib, temporalTypes }: { lib: string[], temporalTypes: boolean }) {
+// The two compiler versions share the API used here, but not their declared types.
+type Compiler = typeof ts6
+
+function typeCheck(anyTs: typeof ts6 | typeof ts5, source: string, { lib, temporalTypes }: { lib: string[], temporalTypes: boolean }) {
+  const ts = anyTs as Compiler
   const dir = mkdtempSync(join(tmpdir(), 'reka-ui-temporal-types-'))
   try {
     mkdirSync(join(dir, 'node_modules'))
