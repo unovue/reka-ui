@@ -27,10 +27,7 @@ if (isClient) {
 </script>
 
 <template>
-  <VisuallyHidden
-    v-if="isAnnounced || renderAnnounceText"
-    feature="fully-hidden"
-  >
+  <VisuallyHidden v-if="isAnnounced || renderAnnounceText">
     {{ providerContext.label.value }}
     <slot />
   </VisuallyHidden>
