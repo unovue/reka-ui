@@ -872,6 +872,61 @@ const filteredItems = computed(() =>
 </template>
 ```
 
+### Detached triggers
+
+A `DropdownMenuTrigger` does not have to be inside its `DropdownMenuRoot`. Create a handle with `createDropdownMenuHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here every row of a list opens the same actions menu with its own data.
+
+The menu anchors to the trigger that opened it and returns focus to it on close. Only that trigger gets `aria-expanded="true"` and `aria-controls`. Its `payload` reaches the root's default slot as `payload`, next to `activeTriggerId`. While a non-modal menu is open, pressing another of its triggers moves it to that trigger without closing it. A modal menu covers the other triggers, so the same press closes it instead.
+
+```vue
+<script setup lang="ts">
+import { createDropdownMenuHandle, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
+
+interface Member { id: number, name: string }
+
+const members: Member[] = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Alan' },
+]
+
+const rowMenu = createDropdownMenuHandle<Member>()
+</script>
+
+<template>
+  <ul>
+    <li
+      v-for="member in members"
+      :key="member.id"
+    >
+      {{ member.name }}
+      <DropdownMenuTrigger
+        :handle="rowMenu"
+        :payload="member"
+        :aria-label="`Actions for ${member.name}`"
+      >
+        …
+      </DropdownMenuTrigger>
+    </li>
+  </ul>
+
+  <DropdownMenuRoot
+    v-slot="{ payload }"
+    :handle="rowMenu"
+  >
+    <DropdownMenuPortal>
+      <DropdownMenuContent>
+        <DropdownMenuItem>Message {{ payload?.name }}</DropdownMenuItem>
+        <DropdownMenuItem>Remove {{ payload?.name }}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
+</template>
+```
+
+`handle.open(triggerId)` opens the menu for the trigger with that `id`. It throws if no such trigger uses the handle, because a menu needs a trigger to anchor to. `handle.close()` closes it. `handle.isOpen` is reactive. These calls report the reason `'imperative-action'` through `beforeUpdate:open` and `update:open`, so `details.cancel()` can veto them. They do nothing while no root with the handle is mounted. When a trigger owns a change, `details.trigger` is its element.
+
+The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app.
+
 ## Accessibility
 
 Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex) to manage focus movement among menu items.

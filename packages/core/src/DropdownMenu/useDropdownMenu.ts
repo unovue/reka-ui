@@ -1,12 +1,15 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DropdownMenuRootContext } from './DropdownMenuRoot.vue'
+import type { DropdownMenuHandle } from './handle'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { MenuOpenChangeReason, UseMenuRootProps } from '@/Menu'
 import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { nextTick, ref, toValue } from 'vue'
+import type { PopupRootStore } from '@/shared/popupHandle'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { createPartSurface, disclosureState } from '@/shared'
+import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the DropdownMenu family — issue #2723.
@@ -128,6 +131,13 @@ export function createDropdownMenuContentSurface(
     const originalEvent = event.detail.originalEvent as PointerEvent
     const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true
     const isRightClick = originalEvent.button === 2 || ctrlLeftClick
+    // Another detached trigger of the same handle: its press moves the open
+    // menu there (Base UI), so it is not a dismissal.
+    const handleStore = getPopupRootStore(context)
+    if (handleStore?.handle.value && handleStore.containsTrigger(event.target as Node)) {
+      event.preventDefault()
+      return
+    }
     if (!context.modal.value || isRightClick)
       hasInteractedOutside.value = true
     if (context.triggerElement.value?.contains(event.target as HTMLElement))
@@ -137,7 +147,16 @@ export function createDropdownMenuContentSurface(
   return { ...surface, onCloseAutoFocus, onInteractOutside }
 }
 
-export interface UseDropdownMenuProps extends Omit<UseMenuRootProps, 'onBeforeUpdate' | 'onUpdate'> {
+export interface UseDropdownMenuProps<Payload = unknown> extends Omit<UseMenuRootProps, 'onBeforeUpdate' | 'onUpdate'> {
+  /**
+   * Connects detached `DropdownMenuTrigger`s (#2826): the menu anchors to,
+   * returns focus to and exposes the `payload` of whichever trigger opened it.
+   */
+  handle?: MaybeRefOrGetter<DropdownMenuHandle<Payload> | undefined>
+  /** Controlled id of the trigger that owns the menu (with a `handle`). */
+  triggerId?: MaybeRefOrGetter<string | null | undefined>
+  /** Id of the trigger that owns a menu that starts open (with a `handle`). */
+  defaultTriggerId?: string | null
   /**
    * Base id the trigger/content ids derive from (`<baseId>-trigger`,
    * `<baseId>-content`). Defaults to `reka-dropdown-menu-<n>` from a per-call
@@ -153,8 +172,14 @@ export interface UseDropdownMenuProps extends Omit<UseMenuRootProps, 'onBeforeUp
   onUpdate?: (value: boolean, details: ChangeEventDetails<DropdownMenuOpenChangeReason>) => void
 }
 
-export interface UseDropdownMenuReturn {
+export interface UseDropdownMenuReturn<Payload = unknown> {
   open: ComputedRef<boolean>
+  /** The `payload` of the trigger that opened the menu (with a `handle`). */
+  payload: ComputedRef<Payload | undefined>
+  /** The id of the trigger that opened the menu (with a `handle`), kept after close. */
+  activeTriggerId: ComputedRef<string | null>
+  /** The detached-trigger store the Root attaches to its `handle`. */
+  handleStore: PopupRootStore<Payload>
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: DropdownMenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
@@ -183,13 +208,32 @@ export interface UseDropdownMenuReturn {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle setup
  */
-export function useDropdownMenu(props: UseDropdownMenuProps = {}): UseDropdownMenuReturn {
+export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<Payload> = {}): UseDropdownMenuReturn<Payload> {
   const baseId = props.baseId ?? `reka-dropdown-menu-${++dropdownMenuCount}`
   const { open, onOpenChange, lastChangeDetails, isControlled, menuContext, menuRootContext } = useMenuRoot(props)
 
   function onOpenToggle(reason?: DropdownMenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     return onOpenChange(!open.value, reason, event)
   }
+
+  const handleStore = createPopupRootStore<Payload>({
+    handle: () => toValue(props.handle),
+    open,
+    setState: onOpenChange,
+    contentId: `${baseId}-content`,
+    triggerId: props.triggerId,
+    defaultTriggerId: props.defaultTriggerId,
+  })
+  // With a `handle`, focus returns to (and the modal backdrop cuts out)
+  // whichever detached trigger opened the menu.
+  const ownTriggerElement = ref<HTMLElement>()
+  const triggerElement = computed<HTMLElement | undefined>({
+    get: () => (handleStore.handle.value && handleStore.activeTriggerElement.value) || ownTriggerElement.value,
+    set: (element) => {
+      ownTriggerElement.value = element
+    },
+  })
+  const ownTriggerId = `${baseId}-trigger`
 
   const context: DropdownMenuRootContext = {
     open,
@@ -199,15 +243,23 @@ export function useDropdownMenu(props: UseDropdownMenuProps = {}): UseDropdownMe
     onOpenToggle: (reason = 'trigger-press', event) => {
       onOpenToggle(reason, event)
     },
-    triggerId: `${baseId}-trigger`,
-    triggerElement: ref<HTMLElement>(),
+    // The content's `aria-labelledby` follows the active detached trigger.
+    get triggerId() {
+      return (handleStore.handle.value && handleStore.activeTriggerId.value) || ownTriggerId
+    },
+    triggerElement,
     contentId: `${baseId}-content`,
     modal: menuRootContext.modal,
     dir: menuRootContext.dir,
   }
 
+  setPopupRootStore(context, handleStore)
+
   return {
     open,
+    payload: handleStore.payload,
+    activeTriggerId: handleStore.activeTriggerId,
+    handleStore,
     onOpenChange,
     onOpenToggle,
     lastChangeDetails,
