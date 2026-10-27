@@ -288,17 +288,31 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   }
 
   // One outside interaction reports twice: a pointer press outside also moves focus
-  // outside (`outside-press` then `focus-outside`; on touch the order flips because the
-  // press waits for the click). Both arrive in the same task, so after a cancelled attempt
-  // the rest of that task is ignored — one interaction, one `beforeUpdate:modelValue`.
+  // outside. With a mouse, `outside-press` comes first and the focus move follows in the
+  // same task, so after a cancelled attempt the rest of that task is ignored. On touch the
+  // press is deferred to the click, which can arrive in a later task after `focus-outside`;
+  // that press is recognised by its originating `pointerdown`, which happened before the
+  // cancelled attempt. One interaction, one `beforeUpdate:modelValue`.
   let dismissCancelledInTask = false
+  let lastCancelledDismissAt = Number.NEGATIVE_INFINITY
+
+  /** When the interaction behind a dismiss started: the press's `pointerdown`, else the event itself. */
+  function interactionStart(event?: Event): number | undefined {
+    const original = (event as CustomEvent<{ originalEvent?: Event }> | undefined)?.detail?.originalEvent
+    return (original ?? event)?.timeStamp
+  }
 
   function dismiss(reason: 'outside-press' | 'focus-outside', event?: Event) {
     if (!isEditing.value || dismissCancelledInTask)
       return
+    const startedAt = interactionStart(event)
+    // A deferred touch press whose pointerdown predates the cancelled attempt is that same interaction.
+    if (reason === 'outside-press' && startedAt !== undefined && startedAt <= lastCancelledDismissAt)
+      return
     if (submitMode.value === 'blur' || submitMode.value === 'both') {
       if (!submit(reason, event)) {
         dismissCancelledInTask = true
+        lastCancelledDismissAt = startedAt ?? lastCancelledDismissAt
         setTimeout(() => {
           dismissCancelledInTask = false
         })

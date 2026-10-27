@@ -161,6 +161,29 @@ describe('useEditable — cancellation', () => {
   })
 })
 
+describe('useEditable — touch outside dismiss', () => {
+  it('a deferred touch press after a cancelled focus-outside is the same interaction', async () => {
+    const onBeforeUpdate = vi.fn((_v: string, details: { cancel: () => void }) => details.cancel())
+    const e = scoped({ onBeforeUpdate })
+    e.edit()
+    type(e, 'x')
+    const touchDown = new Event('pointerdown')
+    await new Promise(resolve => setTimeout(resolve, 5))
+    // Focus moves outside first and is vetoed …
+    e.dismiss('focus-outside', new CustomEvent('focus.outside', { detail: { originalEvent: new FocusEvent('focusin') } }))
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    // … then the click that releases the deferred touch press lands in a later task.
+    await new Promise(resolve => setTimeout(resolve))
+    e.dismiss('outside-press', new CustomEvent('pointerdown.outside', { detail: { originalEvent: touchDown } }))
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(e.isEditing.value).toBe(true)
+    // A new press starts a new interaction and tries again.
+    await new Promise(resolve => setTimeout(resolve, 5))
+    e.dismiss('outside-press', new CustomEvent('pointerdown.outside', { detail: { originalEvent: new Event('pointerdown') } }))
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('useEditable — reasons', () => {
   it('submit trigger click reports "submit-press" with the event', () => {
     const onUpdate = vi.fn()
