@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
 import { computed, ref, toRefs } from 'vue'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import SliderImpl from './SliderImpl.vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'
@@ -12,7 +12,8 @@ const emits = defineEmits<SliderOrientationPrivateEmits>()
 const { max, min, inverted } = toRefs(props)
 
 const rootContext = injectSliderRootContext()
-const { forwardRef, currentElement: sliderElement } = useForwardExpose()
+const { forwardRef, currentElement: sliderElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const offsetPosition = ref<number>()
 const rectRef = ref<DOMRect>()

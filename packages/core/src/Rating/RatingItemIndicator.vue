@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useActiveElement } from '@vueuse/core'
 import { computed } from 'vue'
 import { RadioGroupIndicator, RadioGroupItem } from '@/RadioGroup'
-import { selectionState, useForwardExpose } from '@/shared'
+import { selectionState, useForwardElement } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
@@ -17,7 +17,8 @@ export interface RatingItemIndicatorProps extends PrimitiveProps {
 const props = defineProps<RatingItemIndicatorProps>()
 
 const rootContext = injectRatingRootContext()
-const { currentElement, forwardRef } = useForwardExpose()
+const { currentElement, forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const activeElement = useActiveElement()
 const itemContext = injectRatingItemContext()
 

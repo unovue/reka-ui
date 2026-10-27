@@ -95,7 +95,8 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<number | undefined>
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 
 const locale = useLocale(propLocale)
 const isFormControl = useFormControl(currentElement)

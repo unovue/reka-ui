@@ -10,7 +10,7 @@ export interface FieldDescriptionProps extends PrimitiveProps {
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardElement, useId } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldDescriptionProps>(), {
@@ -19,7 +19,8 @@ const props = withDefaults(defineProps<FieldDescriptionProps>(), {
 
 const fieldContext = injectFieldRootContext()
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const descriptionId = ref(useId(props.id))
 
@@ -34,6 +35,7 @@ onBeforeUnmount(() => unregister?.())
   <Primitive
     v-bind="fieldContext.dataAttributes.value"
     :id="descriptionId"
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
   >

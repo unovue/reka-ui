@@ -17,7 +17,7 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
-import { disclosureState, getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
+import { disclosureState, getActiveElement, useArrowNavigation, useForwardElement } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
@@ -32,7 +32,8 @@ const props = defineProps<NavigationMenuContentImplProps>()
 const emits = defineEmits<NavigationMenuContentImplEmits>()
 
 const { getItems } = useCollection({ key: 'NavigationMenu' })
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()

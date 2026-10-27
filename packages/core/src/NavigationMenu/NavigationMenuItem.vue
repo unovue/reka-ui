@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, getElementByIdFrom, useArrowNavigation, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, getElementByIdFrom, useArrowNavigation, useForwardElement, useId } from '@/shared'
 
 export interface NavigationMenuItemProps extends PrimitiveProps {
   /**
@@ -44,7 +44,8 @@ const props = withDefaults(defineProps<NavigationMenuItemProps>(), {
   as: 'li',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const { getItems } = useCollection({ key: 'NavigationMenu' })
 
 const context = injectNavigationMenuContext()
@@ -132,6 +133,7 @@ function handleKeydown(ev: KeyboardEvent) {
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as-child="asChild"
     :as="as"
     data-menu-item

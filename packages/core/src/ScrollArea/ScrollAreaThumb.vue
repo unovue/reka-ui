@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 
 export interface ScrollAreaThumbProps extends PrimitiveProps {}
 </script>
@@ -30,7 +30,8 @@ function handlePointerUp(event: MouseEvent) {
   scrollbarContextVisible.handleThumbUp(event)
 }
 
-const { forwardRef, currentElement: thumbElement } = useForwardExpose()
+const { forwardRef, currentElement: thumbElement, expose } = useForwardElement()
+defineExpose(expose)
 const removeUnlinkedScrollListenerRef = ref<() => void>()
 const viewport = computed(() => rootContext.viewport.value)
 

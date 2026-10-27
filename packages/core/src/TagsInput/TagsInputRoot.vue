@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { computed, ref, toRefs } from 'vue'
-import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
@@ -99,7 +99,8 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   deep: true,
 }) as Ref<Array<AcceptableInputValue>>
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { focused } = useFocusWithin(currentElement)
 const isFormControl = useFormControl(currentElement)
 

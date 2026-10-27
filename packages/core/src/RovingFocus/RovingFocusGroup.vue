@@ -5,7 +5,7 @@ import type {
   Orientation,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection } from '@/shared'
+import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
   /**
@@ -122,9 +122,10 @@ function handleMouseUp() {
   }, 1)
 }
 
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   getItems,
-})
+}))
 
 provideRovingFocusGroupContext({
   loop,
@@ -147,7 +148,9 @@ provideRovingFocusGroupContext({
 </script>
 
 <template>
-  <CollectionSlot>
+  <CollectionSlot
+    :ref="forwardRef"
+  >
     <Primitive
       :tabindex="isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0"
       :data-orientation="orientation"

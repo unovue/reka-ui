@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, onMounted, onUnmounted } from 'vue'
-import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
+import { getActiveElement, useArrowNavigation, useForwardElement, useKbd } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
 }
@@ -64,7 +64,8 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 let registeredElement: HTMLElement | null = null
 

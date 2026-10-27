@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
-import { createContext, selectionState, useForwardExpose } from '@/shared'
+import { createContext, selectionState, useForwardElement } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
@@ -33,7 +33,8 @@ const props = defineProps<TagsInputItemProps>()
 const { value } = toRefs(props)
 
 const context = injectTagsInputRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionItem } = useCollection()
 
 const isSelected = computed(() => context.selectedElement.value === currentElement.value)

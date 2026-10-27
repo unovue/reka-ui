@@ -6,11 +6,12 @@ export interface DrawerDescriptionProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const props = withDefaults(defineProps<DrawerDescriptionProps>(), { as: 'p' })
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectDrawerRootContext()
 </script>
 
@@ -18,6 +19,7 @@ const rootContext = injectDrawerRootContext()
   <Primitive
     v-bind="props"
     :id="rootContext.descriptionId"
+    :ref="forwardRef"
   >
     <slot />
   </Primitive>

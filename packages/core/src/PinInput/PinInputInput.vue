@@ -31,7 +31,8 @@ const isPasswordMode = computed(() => context.mask.value)
 const NUMBER_REG = /^\d*$/
 const NON_NUMBER_REG = /\D/g
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 
 const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
   const target = event.target as HTMLInputElement

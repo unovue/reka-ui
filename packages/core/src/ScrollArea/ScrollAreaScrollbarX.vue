@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarImpl from './ScrollAreaScrollbarImpl.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
@@ -9,7 +9,8 @@ import { getThumbSize } from './utils'
 const rootContext = injectScrollAreaRootContext()
 const scrollbarVisibleContext = injectScrollAreaScrollbarVisibleContext()
 
-const { forwardRef, currentElement: scrollbarElement } = useForwardExpose()
+const { forwardRef, currentElement: scrollbarElement, expose } = useForwardElement()
+defineExpose(expose)
 
 onMounted(() => {
   if (scrollbarElement.value)

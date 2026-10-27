@@ -5,7 +5,7 @@ import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
 import { useCollection } from '@/Collection'
-import { createContext, disclosureState, getActiveElement, useForwardExpose } from '@/shared'
+import { createContext, disclosureState, getActiveElement, useForwardElement } from '@/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -72,7 +72,8 @@ const props = withDefaults(defineProps<ToastRootImplProps>(), {
 
 const emits = defineEmits<ToastRootImplEmits>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionItem } = useCollection()
 
 const providerContext = injectToastProviderContext()

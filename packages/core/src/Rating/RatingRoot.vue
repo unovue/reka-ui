@@ -2,7 +2,7 @@
 import type { RadioGroupRootProps } from '@/RadioGroup'
 import { reactiveOmit, useVModel } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 
 export interface RatingRootContext {
   modelValue: Ref<number>
@@ -59,7 +59,8 @@ defineSlots<{
 
 const { length, disabled, clearable, hoverable, step } = toRefs(props)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -111,6 +112,7 @@ provideRatingRootContext({
 
 <template>
   <RadioGroupRoot
+    :ref="forwardRef"
     v-bind="reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step')"
     :disabled="disabled"
     @mouseleave="resetHoveredRating"

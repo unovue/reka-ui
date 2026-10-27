@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction, ScrollType } from './types'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
 
 export interface ScrollAreaRootContext {
   type: Ref<ScrollType>
@@ -79,16 +79,15 @@ function scrollTopLeft() {
   })
 }
 
-defineExpose({
+const { forwardRef, currentElement: scrollArea, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   /** Viewport element within ScrollArea */
   viewport,
   /** Scroll viewport to top */
   scrollTop,
   /** Scroll viewport to top-left */
   scrollTopLeft,
-})
-
-const { forwardRef, currentElement: scrollArea } = useForwardExpose()
+}))
 
 provideScrollAreaRootContext({
   type,

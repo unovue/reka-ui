@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
 </script>
 
@@ -11,7 +11,8 @@ export interface StepperDescriptionProps extends PrimitiveProps { }
 
 const props = withDefaults(defineProps<StepperDescriptionProps>(), { as: 'p' })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const itemContext = injectStepperItemContext()
 </script>
 
@@ -19,6 +20,7 @@ const itemContext = injectStepperItemContext()
   <Primitive
     v-bind="props"
     :id="itemContext.descriptionId"
+    :ref="forwardRef"
   >
     <slot />
   </Primitive>

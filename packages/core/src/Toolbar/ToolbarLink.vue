@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface ToolbarLinkProps extends PrimitiveProps {}
 </script>
@@ -10,7 +10,8 @@ import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 
 const props = withDefaults(defineProps<ToolbarLinkProps>(), { as: 'a' })
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>

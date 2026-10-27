@@ -15,6 +15,7 @@ export interface SliderImplProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { ARROW_KEYS, PAGE_KEYS } from './utils'
 
@@ -23,10 +24,14 @@ const props = withDefaults(defineProps<SliderImplProps>(), {
 })
 const emits = defineEmits<SliderImplEmits>()
 const rootContext = injectSliderRootContext()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     data-slider-impl
     v-bind="props"
     @keydown="(event: KeyboardEvent) => {

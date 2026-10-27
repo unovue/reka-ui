@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '../useForwardExpose'
+import { useForwardElement } from '../useForwardElement'
 
 export interface ArrowProps extends PrimitiveProps {
   /**
@@ -33,11 +33,13 @@ const props = withDefaults(defineProps<ArrowProps>(), {
   as: 'svg',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     v-bind="props"
     :width="width"
     :height="height"

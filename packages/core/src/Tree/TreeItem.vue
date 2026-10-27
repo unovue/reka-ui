@@ -28,7 +28,7 @@ import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
-import { getActiveElement, handleAndDispatchCustomEvent } from '@/shared'
+import { getActiveElement, handleAndDispatchCustomEvent, mergeExpose, useForwardElement } from '@/shared'
 import { injectTreeRootContext } from './TreeRoot.vue'
 import { flatten } from './utils'
 
@@ -164,18 +164,20 @@ async function handleToggleCustomEvent(ev?: PointerEvent | KeyboardEvent) {
   handleAndDispatchCustomEvent(TREE_TOGGLE, handleToggle, eventDetail)
 }
 
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   isExpanded,
   isSelected,
   isIndeterminate,
   isDisabled,
   handleToggle: () => rootContext.onToggle(props.value),
   handleSelect: () => rootContext.onSelect(props.value),
-})
+}))
 </script>
 
 <template>
   <RovingFocusItem
+    :ref="forwardRef"
     as-child
     :value="value"
     allow-shift-key

@@ -2,6 +2,7 @@
 import { useResizeObserver } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 
 const rootContext = injectScrollAreaRootContext()
@@ -28,11 +29,15 @@ useResizeObserver(rootContext.scrollbarY.value, setCornerWidth)
 // because we are not remounting the component, useResizeObserver doesn't trigger, thus using watcher here
 watch(() => rootContext.scrollbarX.value, setCornerHeight)
 watch(() => rootContext.scrollbarY.value, setCornerWidth)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
     v-if="hasSize"
+    :ref="forwardRef"
     :style="{
       width: `${width}px`,
       height: `${height}px`,

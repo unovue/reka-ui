@@ -7,7 +7,7 @@ export interface DrawerViewportProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 /**
@@ -18,7 +18,8 @@ import { injectDrawerRootContext } from './DrawerRoot.vue'
  * `DrawerVirtualKeyboardProvider`.
  */
 const props = withDefaults(defineProps<DrawerViewportProps>(), { as: 'div' })
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectDrawerRootContext()
 
 // `currentElement` is already cleared by the time `onUnmounted` runs (Vue

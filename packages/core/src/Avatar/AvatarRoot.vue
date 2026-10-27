@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { ImageLoadingStatus } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 
 export interface AvatarRootProps extends PrimitiveProps {}
 
@@ -22,7 +22,8 @@ withDefaults(defineProps<AvatarRootProps>(), {
   as: 'span',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 provideAvatarRootContext({
   imageLoadingStatus: ref<ImageLoadingStatus>('idle'),
@@ -31,6 +32,7 @@ provideAvatarRootContext({
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as-child="asChild"
     :as="as"
   >

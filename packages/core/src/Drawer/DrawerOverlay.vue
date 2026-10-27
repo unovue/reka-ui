@@ -11,7 +11,7 @@ export interface DrawerOverlayProps extends DrawerOverlayImplProps {
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import DrawerOverlayImpl from './DrawerOverlayImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
@@ -22,7 +22,8 @@ const props = withDefaults(defineProps<DrawerOverlayProps>(), {
 
 const rootContext = injectDrawerRootContext()
 const isNested = !!rootContext.notifyParentHasNestedDrawer
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>

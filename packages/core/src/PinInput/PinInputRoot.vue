@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { computed, ref, toRefs, watch } from 'vue'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useForwardElement } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export type PinInputType = 'text' | 'number'
@@ -88,7 +88,8 @@ defineSlots<{
 }>()
 
 const { mask, otp, placeholder, type, disabled, dir: propDir } = toRefs(props)
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {

@@ -7,7 +7,7 @@ export interface DrawerOverlayImplProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useBodyScrollLock, useForwardExpose } from '@/shared'
+import { disclosureState, useBodyScrollLock, useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { DRAWER_CSS_VARS } from './utils'
 
@@ -22,7 +22,8 @@ watch(() => rootContext.open.value, (open) => {
   locked.value = open
 }, { immediate: true })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 // BaseUI parity: the backdrop carries data-swiping / data-swipe-direction so
 // downstream CSS can target `[data-swiping] [data-slot="drawer-backdrop"]`.
@@ -39,6 +40,7 @@ const dataAttributes = computed(() => {
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="dataAttributes"

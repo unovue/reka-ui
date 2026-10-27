@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FieldValidateFn, FieldValidationMode, FieldValidityState } from './useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, mergeExpose, useForwardElement, useId } from '@/shared'
 
 export interface FieldRootProps extends PrimitiveProps {
   /**
@@ -432,11 +432,11 @@ function validate(): boolean {
   return valid.value !== false
 }
 
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   /** Validates the field immediately, regardless of `validationMode`. Returns whether it's valid. */
   validate,
-})
-useForwardExpose()
+}))
 
 function resetField() {
   touchedState.value = false
@@ -503,6 +503,7 @@ provideFieldRootContext({
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="dataAttributes"

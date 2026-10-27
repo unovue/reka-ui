@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Direction } from '@/shared/types'
-import { createContext, getActiveElement, useDirection, useSelectionBehavior, useTypeahead } from '@/shared'
+import { createContext, getActiveElement, useDirection, useForwardElement, useSelectionBehavior, useTypeahead } from '@/shared'
 import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
@@ -80,7 +80,7 @@ export const [injectTreeRootContext, provideTreeRootContext] = createContext<Tre
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
 import type { EventHook } from '@vueuse/core'
-import type { Ref } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, toRefs } from 'vue'
@@ -107,6 +107,12 @@ const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect, 
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
+function setRovingFocusGroupRef(el: Element | ComponentPublicInstance | null) {
+  rovingFocusGroupRef.value = (el ?? undefined) as InstanceType<typeof RovingFocusGroup> | undefined
+  forwardRef(el)
+}
 
 // Virtualizer
 const isVirtual = ref(false)
@@ -299,7 +305,7 @@ provideTreeRootContext({
 
 <template>
   <RovingFocusGroup
-    ref="rovingFocusGroupRef"
+    :ref="setRovingFocusGroupRef"
     as-child
     orientation="vertical"
     :dir="dir"

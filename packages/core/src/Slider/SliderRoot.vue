@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { clamp, createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -101,7 +101,8 @@ defineSlots<{
 
 const { min, max, step, minStepsBetweenThumbs, orientation, disabled, thumbAlignment, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 
 const { CollectionSlot } = useCollection({ isProvider: true })

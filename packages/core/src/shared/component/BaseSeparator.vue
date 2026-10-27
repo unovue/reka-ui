@@ -20,6 +20,7 @@ export interface BaseSeparatorProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 
 const props = withDefaults(defineProps<BaseSeparatorProps>(), {
   orientation: 'horizontal',
@@ -43,10 +44,14 @@ const semanticProps = computed(() =>
     ? { role: 'none' }
     : { 'aria-orientation': ariaOrientation.value, 'role': 'separator' },
 )
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     :data-orientation="computedOrientation"

@@ -15,7 +15,8 @@ const props = withDefaults(defineProps<NumberFieldInputProps>(), {
   as: 'input',
 })
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 const rootContext = injectNumberFieldRootContext()
 const kbd = useKbd()
 const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()

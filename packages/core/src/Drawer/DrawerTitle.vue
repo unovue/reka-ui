@@ -6,18 +6,20 @@ export interface DrawerTitleProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const props = withDefaults(defineProps<DrawerTitleProps>(), { as: 'h2' })
 const rootContext = injectDrawerRootContext()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
     v-bind="props"
     :id="rootContext.titleId"
+    :ref="forwardRef"
   >
     <slot />
   </Primitive>

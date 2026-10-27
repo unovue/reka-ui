@@ -15,7 +15,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, ref, watchEffect } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 defineOptions({
@@ -24,7 +24,8 @@ defineOptions({
 
 const props = defineProps<NavigationMenuIndicatorProps>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const menuContext = injectNavigationMenuContext()
 
 const indicatorStyle = ref<{ size: number, position: number }>()

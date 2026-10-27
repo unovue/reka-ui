@@ -16,7 +16,7 @@ export interface NavigationMenuContentProps extends NavigationMenuContentImplPro
 import { isClient, reactiveOmit } from '@vueuse/shared'
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
-import { disclosureState, useForwardExpose, useForwardPropsEmits } from '@/shared'
+import { disclosureState, useForwardElement, useForwardPropsEmits } from '@/shared'
 import NavigationMenuContentImpl from './NavigationMenuContentImpl.vue'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -30,7 +30,8 @@ const props = defineProps<NavigationMenuContentProps>()
 const emits = defineEmits<NavigationMenuContentEmits>()
 
 const forwarded = useForwardPropsEmits(reactiveOmit(props, 'forceMount'), emits)
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()

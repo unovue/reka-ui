@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 
 type PaginationRootContext = {
   page: Ref<number>
@@ -67,7 +67,8 @@ defineSlots<{
 
 const { siblingCount, disabled, showEdges } = toRefs(props)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const page = useVModel(props, 'page', emits, {
   defaultValue: props.defaultPage,
   passive: (props.page === undefined) as false,
@@ -89,6 +90,7 @@ providePaginationRootContext({
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
   >

@@ -7,14 +7,19 @@ export interface EditableAreaProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 
 const props = withDefaults(defineProps<EditableAreaProps>(), { as: 'div' })
 
 const context = injectEditableRootContext()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     v-bind="props"
     :data-placeholder-shown="context.isEditing.value ? undefined : ''"
     :data-focus="context.isEditing.value ? '' : undefined"

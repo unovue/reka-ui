@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface NavigationMenuListProps extends PrimitiveProps {}
 </script>
@@ -21,7 +21,8 @@ const props = withDefaults(defineProps<NavigationMenuListProps>(), {
 })
 
 const menuContext = injectNavigationMenuContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 onMounted(() => {
   menuContext.onIndicatorTrackChange(currentElement.value)

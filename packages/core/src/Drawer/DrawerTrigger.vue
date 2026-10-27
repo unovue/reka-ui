@@ -7,14 +7,15 @@ export interface DrawerTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const props = withDefaults(defineProps<DrawerTriggerProps>(), { as: 'button' })
 const rootContext = injectDrawerRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
-// Keep triggerElement in sync with the rendered element — useForwardExpose's
+// Keep triggerElement in sync with the rendered element — useForwardElement's
 // currentElement is a reactive computed ref, and v-if / conditional rendering
 // can swap the underlying DOM node, so a one-shot onMounted assignment would
 // go stale and break finalFocus restoration in DrawerContent.

@@ -23,7 +23,8 @@ const disabled = computed(() => context.disabled.value)
 
 const placeholder = computed(() => context.placeholder.value?.edit)
 
-const { primitiveElement, currentElement: inputRef } = usePrimitiveElement()
+const { primitiveElement, currentElement: inputRef, expose } = usePrimitiveElement()
+defineExpose(expose)
 
 onMounted(() => {
   context.inputRef.value = inputRef.value as HTMLInputElement

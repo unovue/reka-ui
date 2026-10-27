@@ -20,7 +20,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardElement, useId } from '@/shared'
 import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
 import { focusFirst, getFocusIntent, wrapArray } from './utils'
 
@@ -104,7 +104,8 @@ function handleKeydown(event: KeyboardEvent) {
 // item's own handlers. An `asChild` item (e.g. a `DropdownMenuTrigger` inside a
 // `ToolbarButton`) or a consumer can then claim a key with `preventDefault()`,
 // matching Radix, where the wrapped child's handler runs first.
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const itemElement = shallowRef<HTMLElement>()
 watch(currentElement, (element) => {
   itemElement.value = element
