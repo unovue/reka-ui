@@ -39,7 +39,7 @@ interface FixtureOptions {
 
 function mountMenu(options: FixtureOptions = {}) {
   const updates: Array<[string, Details]> = []
-  const befores: Array<[string, Details]> = []
+  const beforeUpdates: Array<[string, Details]> = []
   const Fixture = defineComponent({
     setup() {
       return () => h('div', [
@@ -48,7 +48,7 @@ function mountMenu(options: FixtureOptions = {}) {
           'defaultValue': options.defaultValue,
           ...(options.model ? { modelValue: options.model.value } : {}),
           'onBeforeUpdate:modelValue': (value: string, details: Details) => {
-            befores.push([value, details])
+            beforeUpdates.push([value, details])
             options.onBeforeUpdate?.(value, details)
           },
           'onUpdate:modelValue': (value: string, details: Details) => {
@@ -82,7 +82,7 @@ function mountMenu(options: FixtureOptions = {}) {
   })
   const wrapper = mount(Fixture, { attachTo: document.body })
   const byTestId = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
-  return { wrapper, updates, befores, byTestId, reasons: () => updates.map(([, d]) => d.reason) }
+  return { wrapper, updates, beforeUpdates, byTestId, reasons: () => updates.map(([, d]) => d.reason) }
 }
 
 beforeEach(() => {
@@ -212,25 +212,25 @@ describe('navigationMenuRoot — reasons', () => {
   })
 
   it('reports escape-key and returns focus to the trigger', async () => {
-    const { byTestId, reasons, befores } = mountMenu()
+    const { byTestId, reasons, beforeUpdates } = mountMenu()
     byTestId('trigger-one')!.click()
     await nextTick()
     byTestId('link-one')!.focus()
     await fireEvent.keyDown(byTestId('content-one')!, { key: 'Escape' })
     expect(reasons()).toEqual(['trigger-press', 'escape-key'])
-    expect(befores).toHaveLength(2)
+    expect(beforeUpdates).toHaveLength(2)
     expect(document.activeElement).toBe(byTestId('trigger-one'))
   })
 
   it('reports link-press for a link in the content and for a top-level link', async () => {
-    const { byTestId, reasons, befores } = mountMenu()
+    const { byTestId, reasons, beforeUpdates } = mountMenu()
     byTestId('trigger-one')!.click()
     await nextTick()
     byTestId('link-one')!.click()
     await nextTick()
     expect(reasons()).toEqual(['trigger-press', 'link-press'])
     // The content and the root both hear the dismiss event; only one close is asked.
-    expect(befores).toHaveLength(2)
+    expect(beforeUpdates).toHaveLength(2)
 
     byTestId('trigger-two')!.click()
     await nextTick()
@@ -265,17 +265,17 @@ describe('navigationMenuRoot — reasons', () => {
 
 describe('navigationMenuRoot — cancellation', () => {
   it('keeps the menu closed when an open is cancelled', async () => {
-    const { byTestId, updates, befores } = mountMenu({ onBeforeUpdate: (_, d) => d.cancel() })
+    const { byTestId, updates, beforeUpdates } = mountMenu({ onBeforeUpdate: (_, d) => d.cancel() })
     byTestId('trigger-one')!.click()
     await nextTick()
-    expect(befores).toHaveLength(1)
+    expect(beforeUpdates).toHaveLength(1)
     expect(updates).toHaveLength(0)
     expect(byTestId('trigger-one')!.getAttribute('data-state')).toBe('closed')
     expect(byTestId('content-one')).toBeNull()
   })
 
   it('keeps the menu open and focus in place when an Escape close is cancelled, asking once', async () => {
-    const { byTestId, updates, befores } = mountMenu({
+    const { byTestId, updates, beforeUpdates } = mountMenu({
       onBeforeUpdate: (value, d) => {
         if (value === '')
           d.cancel()
@@ -285,14 +285,14 @@ describe('navigationMenuRoot — cancellation', () => {
     await nextTick()
     byTestId('link-one')!.focus()
     await fireEvent.keyDown(byTestId('content-one')!, { key: 'Escape' })
-    expect(befores.map(([, d]) => d.reason)).toEqual(['trigger-press', 'escape-key'])
+    expect(beforeUpdates.map(([, d]) => d.reason)).toEqual(['trigger-press', 'escape-key'])
     expect(updates).toHaveLength(1)
     expect(document.activeElement).toBe(byTestId('link-one'))
     expect(byTestId('content-one')!.getAttribute('data-state')).toBe('open')
   })
 
   it('asks once when a link close is cancelled', async () => {
-    const { byTestId, befores } = mountMenu({
+    const { byTestId, beforeUpdates } = mountMenu({
       onBeforeUpdate: (value, d) => {
         if (value === '')
           d.cancel()
@@ -302,7 +302,7 @@ describe('navigationMenuRoot — cancellation', () => {
     await nextTick()
     byTestId('link-one')!.click()
     await nextTick()
-    expect(befores.map(([, d]) => d.reason)).toEqual(['trigger-press', 'link-press'])
+    expect(beforeUpdates.map(([, d]) => d.reason)).toEqual(['trigger-press', 'link-press'])
     expect(byTestId('content-one')).not.toBeNull()
   })
 

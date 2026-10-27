@@ -245,7 +245,7 @@ interface ToastFixtureOptions {
 function mountToast(options: ToastFixtureOptions = {}) {
   // Third entry: `Date.now()` when emitted (faked along with the timers).
   const updates: Array<[boolean, Details, number]> = []
-  const befores: Array<[boolean, Details, number]> = []
+  const beforeUpdates: Array<[boolean, Details, number]> = []
   const slot = { remaining: -1 }
   const wrapper = mount(defineComponent({
     setup: () => () => h(ToastProvider, { duration: options.duration ?? 1000 }, () => [
@@ -253,7 +253,7 @@ function mountToast(options: ToastFixtureOptions = {}) {
         ...(options.open ? { open: options.open.value } : {}),
         'data-testid': 'toast',
         'onBeforeUpdate:open': (value: boolean, details: Details) => {
-          befores.push([value, details, Date.now()])
+          beforeUpdates.push([value, details, Date.now()])
           options.onBeforeUpdate?.(value, details)
         },
         'onUpdate:open': (value: boolean, details: Details) => {
@@ -276,7 +276,7 @@ function mountToast(options: ToastFixtureOptions = {}) {
     ]),
   }), { attachTo: document.body })
   const byTestId = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
-  return { wrapper, updates, befores, slot, byTestId, reasons: () => updates.map(([, d]) => d.reason) }
+  return { wrapper, updates, beforeUpdates, slot, byTestId, reasons: () => updates.map(([, d]) => d.reason) }
 }
 
 describe('toastRoot — reasons', () => {
@@ -344,30 +344,30 @@ describe('toastRoot — reasons', () => {
 describe('toastRoot — cancellation', () => {
   it('keeps the toast open when its timeout close is cancelled, and asks again a full duration later', async () => {
     vi.useFakeTimers()
-    const { byTestId, updates, befores, slot } = mountToast({ onBeforeUpdate: (_, d) => d.cancel() })
+    const { byTestId, updates, beforeUpdates, slot } = mountToast({ onBeforeUpdate: (_, d) => d.cancel() })
     await vi.waitFor(() => expect(byTestId('toast')).not.toBeNull())
     await vi.advanceTimersByTimeAsync(1000)
-    expect(befores.map(([, d]) => d.reason)).toEqual(['timeout'])
+    expect(beforeUpdates.map(([, d]) => d.reason)).toEqual(['timeout'])
     expect(updates).toHaveLength(0)
     expect(byTestId('toast')!.getAttribute('data-state')).toBe('open')
 
     // The timer re-armed with the full duration, counted from the first timeout.
-    const sinceTimeout = Date.now() - befores[0][2]
+    const sinceTimeout = Date.now() - beforeUpdates[0][2]
     await vi.advanceTimersByTimeAsync(999 - sinceTimeout)
     expect(slot.remaining).toBeGreaterThan(0)
-    expect(befores).toHaveLength(1)
+    expect(beforeUpdates).toHaveLength(1)
     await vi.advanceTimersByTimeAsync(1)
-    expect(befores.map(([, d]) => d.reason)).toEqual(['timeout', 'timeout'])
+    expect(beforeUpdates.map(([, d]) => d.reason)).toEqual(['timeout', 'timeout'])
 
     // A manual close still works.
     byTestId('close')!.click()
-    expect(befores.map(([, d]) => d.reason)).toEqual(['timeout', 'timeout', 'close-press'])
+    expect(beforeUpdates.map(([, d]) => d.reason)).toEqual(['timeout', 'timeout', 'close-press'])
   })
 
   it('[docs: keeping a toast open] closes on the first timeout after the upload finishes, with pause/resume', async () => {
     vi.useFakeTimers()
     const uploading = ref(true)
-    const { byTestId, updates, befores } = mountToast({
+    const { byTestId, updates, beforeUpdates } = mountToast({
       onBeforeUpdate: (value, d) => {
         if (!value && d.reason === 'timeout' && uploading.value)
           d.cancel()
@@ -375,13 +375,13 @@ describe('toastRoot — cancellation', () => {
     })
     await vi.waitFor(() => expect(byTestId('toast')).not.toBeNull())
     await vi.advanceTimersByTimeAsync(1000)
-    expect(befores).toHaveLength(1)
+    expect(beforeUpdates).toHaveLength(1)
     expect(updates).toHaveLength(0)
 
     uploading.value = false
     // Hovering the viewport pauses the re-armed timer; leaving resumes it.
     const viewport = byTestId('viewport')!
-    await vi.advanceTimersByTimeAsync(400 - (Date.now() - befores[0][2]))
+    await vi.advanceTimersByTimeAsync(400 - (Date.now() - beforeUpdates[0][2]))
     viewport.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }))
     await vi.advanceTimersByTimeAsync(5000)
     expect(updates).toHaveLength(0)
