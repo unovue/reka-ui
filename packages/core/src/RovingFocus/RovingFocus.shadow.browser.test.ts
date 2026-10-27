@@ -14,7 +14,7 @@ describe('given roving focus inside a shadow root, in a real browser', () => {
     const { get, activeElement } = mountInShadowRoot(defineComponent({
       setup: () => () => h('div', [
         h('button', { 'data-testid': 'before' }, 'Before'),
-        h(TabsRoot, { 'modelValue': tab.value, 'onUpdate:modelValue': (v: string) => { tab.value = v } }, () => [
+        h(TabsRoot, { 'modelValue': tab.value, 'onUpdate:modelValue': (v: unknown) => { tab.value = v as string } }, () => [
           h(TabsList, { 'aria-label': 'Tabs' }, () => ['one', 'two', 'three'].map(value =>
             h(TabsTrigger, { 'value': value, 'data-testid': `tab-${value}` }, () => value))),
           ...['one', 'two', 'three'].map(value => h(TabsContent, { 'value': value, 'data-testid': `panel-${value}` }, () => value)),
@@ -45,7 +45,7 @@ describe('given roving focus inside a shadow root, in a real browser', () => {
     const { get, activeElement } = mountInShadowRoot(defineComponent({
       setup: () => () => h('div', [
         h('button', { 'data-testid': 'before' }, 'Before'),
-        h(RadioGroupRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (v: string) => { value.value = v } }, () =>
+        h(RadioGroupRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (v: unknown) => { value.value = v as string } }, () =>
           ['a', 'b', 'c'].map(item => h(RadioGroupItem, { 'value': item, 'data-testid': `radio-${item}`, 'aria-label': item }))),
         h('button', { 'data-testid': 'after' }, 'After'),
       ]),

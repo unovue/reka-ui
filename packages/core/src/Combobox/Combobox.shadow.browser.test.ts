@@ -12,7 +12,7 @@ function mountCombobox() {
     setup() {
       return () => h('div', { style: 'padding: 40px;' }, [
         h('button', { 'data-testid': 'outside' }, 'Outside'),
-        h(ComboboxRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (v: string) => { value.value = v } }, () => [
+        h(ComboboxRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (v: unknown) => { value.value = v as string } }, () => [
           h(ComboboxAnchor, { style: 'display: inline-flex;' }, () => [
             h(ComboboxInput, { 'data-testid': 'input', 'placeholder': 'Fruit' }),
             h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'v'),
