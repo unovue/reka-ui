@@ -42,13 +42,14 @@ export function getAreaGradient(
   xChannel: ColorChannel,
   yChannel: ColorChannel,
   colorSpace: ColorSpace = color.space as ColorSpace,
+  dir: 'ltr' | 'rtl' = 'ltr',
 ): { background: string, gradientX: string, gradientY: string } {
   const hsl = convertToHsl(color)
   const hsb = convertToHsb(color)
 
   // Determine which gradient layers to apply based on channels
-  const gradientX = getChannelGradientForArea(color, xChannel, colorSpace, 'x')
-  const gradientY = getChannelGradientForArea(color, yChannel, colorSpace, 'y')
+  const gradientX = getChannelGradientForArea(color, xChannel, colorSpace, dir === 'rtl' ? 'to left' : 'to right')
+  const gradientY = getChannelGradientForArea(color, yChannel, colorSpace, 'to top')
 
   // Background is the color with both channels at max
   const bgColor = getAreaBackgroundColor(color, xChannel, yChannel, colorSpace)
@@ -84,21 +85,21 @@ function getBrightnessGradient(hsb: { h: number, s: number, b: number, alpha: nu
 }
 
 function getRedGradient(color: Color): string {
-  const { g, b, alpha } = color.space === 'rgb' ? color : { g: 128, b: 128, alpha: 1 }
+  const { g, b } = convertToRgb(color)
   const start = colorToString({ space: 'rgb', r: 0, g, b, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'rgb', r: 255, g, b, alpha: 1 }, 'rgb')
   return `linear-gradient(to right, ${start}, ${end})`
 }
 
 function getGreenGradient(color: Color): string {
-  const { r, b, alpha } = color.space === 'rgb' ? color : { r: 128, b: 128, alpha: 1 }
+  const { r, b } = convertToRgb(color)
   const start = colorToString({ space: 'rgb', r, g: 0, b, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'rgb', r, g: 255, b, alpha: 1 }, 'rgb')
   return `linear-gradient(to right, ${start}, ${end})`
 }
 
 function getBlueGradient(color: Color): string {
-  const { r, g, alpha } = color.space === 'rgb' ? color : { r: 128, g: 128, alpha: 1 }
+  const { r, g } = convertToRgb(color)
   const start = colorToString({ space: 'rgb', r, g, b: 0, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'rgb', r, g, b: 255, alpha: 1 }, 'rgb')
   return `linear-gradient(to right, ${start}, ${end})`
@@ -122,9 +123,8 @@ function getChannelGradientForArea(
   color: Color,
   channel: ColorChannel,
   colorSpace: ColorSpace,
-  axis: 'x' | 'y',
+  direction: string,
 ): string {
-  const direction = axis === 'x' ? 'to right' : 'to top'
   const hsl = convertToHsl(color)
   const hsb = convertToHsb(color)
 
@@ -178,22 +178,25 @@ function getAreaBackgroundColor(
 }
 
 /**
- * Gets the CSS background style for a color area.
+ * Gets the CSS background style for a color area. With `dir: 'rtl'` the horizontal
+ * gradients run right to left, matching a mirrored x axis.
  */
 export function getAreaBackgroundStyle(
   color: Color,
   xChannel: ColorChannel,
   yChannel: ColorChannel,
   colorSpace: ColorSpace = color.space as ColorSpace,
+  dir: 'ltr' | 'rtl' = 'ltr',
 ): Record<string, string> {
   const hsl = convertToHsl(color)
   const hsb = convertToHsb(color)
+  const toX = dir === 'rtl' ? 'to left' : 'to right'
 
   // Hue-based color picker (Hue/Saturation, Hue/Lightness, Hue/Brightness)
   // Shows full rainbow spectrum horizontally
   if (xChannel === 'hue') {
     // Full hue gradient as background (rainbow spectrum)
-    const hueGradient = 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+    const hueGradient = `linear-gradient(${toX}, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)`
 
     if (yChannel === 'saturation') {
       // Vertical: gray at bottom (0% sat) fading to transparent at top (100% sat shows hue)
@@ -227,7 +230,7 @@ export function getAreaBackgroundStyle(
       // Lightness y-axis: black at bottom (L=0), transparent at middle (L=50), white at top (L=100)
       const hueColor = colorToString({ space: 'hsl', h: hsl.h, s: 100, l: 50, alpha: 1 }, 'rgb')
       const grayColor = colorToString({ space: 'hsl', h: hsl.h, s: 0, l: 50, alpha: 1 }, 'rgb')
-      const satGradient = `linear-gradient(to right, ${grayColor}, transparent)`
+      const satGradient = `linear-gradient(${toX}, ${grayColor}, transparent)`
       const lightGradient = `linear-gradient(to top, #000000, transparent, #ffffff)`
 
       return {
@@ -242,7 +245,7 @@ export function getAreaBackgroundStyle(
       // Bottom edge: always black (0% brightness)
       const hueColor = colorToString({ space: 'hsb', h: hsb.h, s: 100, b: 100, alpha: 1 }, 'rgb')
       // White to transparent (left to right)
-      const satGradient = `linear-gradient(to right, #ffffff, transparent)`
+      const satGradient = `linear-gradient(${toX}, #ffffff, transparent)`
       // Black gradient from bottom up
       const brightGradient = `linear-gradient(to top, #000000, transparent)`
 
@@ -281,7 +284,7 @@ export function getAreaBackgroundStyle(
       b: xChannel === 'blue' ? 255 : 0,
       alpha: 1,
     }
-    const xGradient = `linear-gradient(to right, ${colorToString(xColorStart, 'rgb')}, ${colorToString(xColorEnd, 'rgb')})`
+    const xGradient = `linear-gradient(${toX}, ${colorToString(xColorStart, 'rgb')}, ${colorToString(xColorEnd, 'rgb')})`
 
     // Y gradient: black (0,0,0) → full Y (0,255,0) for green, etc.
     const yColorEnd: RGBColor = {
@@ -310,7 +313,7 @@ export function getAreaBackgroundStyle(
   }
 
   // Fallback for other combinations
-  const { background, gradientX, gradientY } = getAreaGradient(color, xChannel, yChannel, colorSpace)
+  const { background, gradientX, gradientY } = getAreaGradient(color, xChannel, yChannel, colorSpace, dir)
   const gradients: string[] = []
   if (gradientY)
     gradients.push(gradientY)

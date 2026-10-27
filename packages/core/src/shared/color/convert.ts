@@ -1,4 +1,4 @@
-import type { Color, ColorFormat, HSBColor, HSLColor, RGBColor } from './types'
+import type { Color, ColorFormat, ColorSpace, HSBColor, HSLColor, RGBColor } from './types'
 
 /**
  * Converts a Color object to a string representation.
@@ -95,7 +95,11 @@ export function convertToHsl(color: Color): HSLColor {
   if (color.space === 'hsl') {
     return color
   }
-  return rgbToHsl(convertToRgb(color))
+  // HSB and HSL share the hue axis: convert directly so a grey keeps its hue.
+  if (color.space === 'hsb') {
+    return hsbToHsl(color)
+  }
+  return rgbToHsl(color)
 }
 
 /**
@@ -105,7 +109,60 @@ export function convertToHsb(color: Color): HSBColor {
   if (color.space === 'hsb') {
     return color
   }
-  return rgbToHsb(convertToRgb(color))
+  if (color.space === 'hsl') {
+    return hslToHsb(color)
+  }
+  return rgbToHsb(color)
+}
+
+/**
+ * Converts HSL to HSB, keeping the hue.
+ */
+function hslToHsb(hsl: HSLColor): HSBColor {
+  const s = hsl.s / 100
+  const l = hsl.l / 100
+  const v = l + s * Math.min(l, 1 - l)
+  return {
+    space: 'hsb',
+    h: hsl.h,
+    s: v === 0 ? 0 : 2 * (1 - l / v) * 100,
+    b: v * 100,
+    alpha: hsl.alpha,
+  }
+}
+
+/**
+ * Converts HSB to HSL, keeping the hue.
+ */
+function hsbToHsl(hsb: HSBColor): HSLColor {
+  const s = hsb.s / 100
+  const v = hsb.b / 100
+  const l = v * (1 - s / 2)
+  return {
+    space: 'hsl',
+    h: hsb.h,
+    s: l === 0 || l === 1 ? 0 : (v - l) / Math.min(l, 1 - l) * 100,
+    l: l * 100,
+    alpha: hsb.alpha,
+  }
+}
+
+/**
+ * Converts any color to the given color space. Returns the same object when the
+ * color is already in that space, so a hue held by an HSL/HSB grey is kept.
+ */
+export function convertToSpace(color: Color, space: 'rgb'): RGBColor
+export function convertToSpace(color: Color, space: 'hsl'): HSLColor
+export function convertToSpace(color: Color, space: 'hsb'): HSBColor
+export function convertToSpace(color: Color, space: ColorSpace): Color
+export function convertToSpace(color: Color, space: ColorSpace): Color {
+  if (space === 'rgb')
+    return convertToRgb(color)
+  if (space === 'hsl')
+    return convertToHsl(color)
+  if (space === 'hsb')
+    return convertToHsb(color)
+  throw new Error(`Unknown color space: ${space}`)
 }
 
 /**
