@@ -1,7 +1,7 @@
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
@@ -28,8 +28,15 @@ afterEach(() => {
   document.documentElement.removeAttribute('style')
 })
 
-/** Waits for the deferred scroll lock and the outside-press arming macrotask. */
-const settle = () => sleep(20)
+/**
+ * Waits for the deferred scroll lock and the outside-press arming macrotask. Vue's
+ * flush schedules both first, so a slow flush (coverage, CI load) can't outlast the sleep.
+ */
+async function settle() {
+  await nextTick()
+  await nextTick()
+  await sleep(20)
+}
 const isScrollLocked = () => getComputedStyle(document.body).overflowY === 'hidden'
 const backdrops = () => [...document.querySelectorAll<HTMLElement>('[data-reka-internal-backdrop]')]
 const byTestId = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)

@@ -22,8 +22,16 @@ vi.mock('@vueuse/shared', async (importOriginal) => {
 const html = document.documentElement
 const body = document.body
 
-/** The lock (and unlock) is applied a macrotask after the share changes. */
-const flush = () => sleep(10)
+/**
+ * The lock (and unlock) is applied a macrotask after the share changes. Let Vue's
+ * flush schedule that macrotask first, so a slow flush (coverage, CI load) can't
+ * outlast the sleep.
+ */
+async function flush() {
+  await nextTick()
+  await nextTick()
+  await sleep(10)
+}
 const inlineStyle = (el: HTMLElement) => el.getAttribute('style') ?? ''
 const isLocked = () => getComputedStyle(body).overflowY === 'hidden' || getComputedStyle(html).overflowY === 'hidden'
 

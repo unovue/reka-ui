@@ -116,6 +116,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before a submitted value is committed; <code>details.cancel()</code> vetoes it and keeps edit mode on.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;EditableChangeReason, Event&gt;]'
+  },
+  {
     'name': 'submit',
     'description': '<p>Event handler called when a value is submitted</p>\n',
     'type': '[value: string | null | undefined]'
@@ -123,12 +128,12 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[value: string]'
+    'type': '[value: string, details: ChangeEventDetails&lt;EditableChangeReason, Event&gt;]'
   },
   {
     'name': 'update:state',
     'description': '<p>Event handler called when the editable field changes state</p>\n',
-    'type': '[state: \'cancel\' | \'submit\' | \'edit\']'
+    'type': '[state: EditableState]'
   }
 ]" />
 
@@ -212,9 +217,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before a submitted value is committed; details.cancel() vetoes it and keeps edit mode on. | `[value: string, details: ChangeEventDetails<EditableChangeReason, Event>]` |
 | `submit` | Event handler called when a value is submitted | `[value: string \| null \| undefined]` |
-| `update:modelValue` | Event handler called whenever the model value changes | `[value: string]` |
-| `update:state` | Event handler called when the editable field changes state | `[state: "cancel" \| "submit" \| "edit"]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[value: string, details: ChangeEventDetails<EditableChangeReason, Event>]` |
+| `update:state` | Event handler called when the editable field changes state | `[state: EditableState]` |
 
 **Slots**
 

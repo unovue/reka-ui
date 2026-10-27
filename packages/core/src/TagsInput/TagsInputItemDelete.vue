@@ -1,10 +1,9 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { isEqual } from 'ohash'
-import { computed } from 'vue'
-import { selectionState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
+import { getTagsInputItemDeleteSurface } from './useTagsInput'
 
 export interface TagsInputItemDeleteProps extends PrimitiveProps {}
 </script>
@@ -12,7 +11,7 @@ export interface TagsInputItemDeleteProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 
-const props = withDefaults(defineProps<TagsInputItemDeleteProps>(), {
+withDefaults(defineProps<TagsInputItemDeleteProps>(), {
   as: 'button',
 })
 
@@ -20,28 +19,16 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const context = injectTagsInputRootContext()
 const itemContext = injectTagsInputItemContext()
-
-const disabled = computed(() => itemContext.disabled?.value || context.disabled.value)
-
-function handleDelete() {
-  if (disabled.value)
-    return
-  const index = context.modelValue.value.findIndex(i => isEqual(i, itemContext.value.value))
-  context.onRemoveValue(index)
-}
+const itemDelete = getTagsInputItemDeleteSurface(context, itemContext)
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
-    tabindex="-1"
-    v-bind="props"
-    :aria-labelledby="itemContext.textId"
-    :aria-current="itemContext.isSelected.value"
-    :data-state="selectionState(itemContext.isSelected.value)"
-    :data-disabled="disabled ? '' : undefined"
+    :as="as"
+    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
-    @click="handleDelete"
+    v-bind="itemDelete.attrs.value"
   >
     <slot />
   </Primitive>

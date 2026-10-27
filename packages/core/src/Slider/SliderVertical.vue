@@ -4,20 +4,22 @@ import { computed, ref, toRefs } from 'vue'
 import { useForwardElement } from '@/shared'
 import SliderImpl from './SliderImpl.vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
-import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'
+import { injectSliderOrientationContext, linearScale } from './utils'
 
 interface SliderVerticalProps extends SliderOrientationPrivateProps {}
 const props = defineProps<SliderVerticalProps>()
 const emits = defineEmits<SliderOrientationPrivateEmits>()
-const { max, min, inverted } = toRefs(props)
+const { max, min } = toRefs(props)
 
 const rootContext = injectSliderRootContext()
+// Provided by SliderRoot from `useSlider()`: the one orientation geometry derivation.
+const orientation = injectSliderOrientationContext()
 const { forwardRef, currentElement: sliderElement, expose } = useForwardElement()
 defineExpose(expose)
 
 const offsetPosition = ref<number>()
 const rectRef = ref<DOMRect>()
-const isSlidingFromBottom = computed(() => !inverted.value)
+const isSlidingFromBottom = computed(() => orientation.direction.value === 1)
 
 function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
   const rect = rectRef.value || sliderElement.value!.getBoundingClientRect()
@@ -43,47 +45,25 @@ function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
   rectRef.value = rect
   return value(position)
 }
-
-const startEdge = computed(() => isSlidingFromBottom.value ? 'bottom' : 'top')
-const endEdge = computed(() => isSlidingFromBottom.value ? 'top' : 'bottom')
-const direction = computed(() => isSlidingFromBottom.value ? 1 : -1)
-
-provideSliderOrientationContext({
-  startEdge,
-  endEdge,
-  direction,
-  size: 'height',
-})
 </script>
 
 <template>
   <SliderImpl
     :ref="forwardRef"
     data-orientation="vertical"
-    :style="{
-      ['--reka-slider-thumb-transform' as any]:
-        !isSlidingFromBottom && rootContext.thumbAlignment.value === 'overflow' ? 'translateY(-50%)' : 'translateY(50%)',
-    }"
     @slide-start="(event) => {
       const value = getValueFromPointerEvent(event, true);
-      emits('slideStart', value)
+      emits('slideStart', value, event)
     }"
     @slide-move="(event) => {
       const value = getValueFromPointerEvent(event);
-      emits('slideMove', value)
+      emits('slideMove', value, event)
     }"
-    @slide-end="() => {
+    @slide-end="(event) => {
       rectRef = undefined;
       offsetPosition = undefined
-      emits('slideEnd')
+      emits('slideEnd', event)
     }"
-    @step-key-down="(event) => {
-      const slideDirection = isSlidingFromBottom ? 'from-bottom' : 'from-top';
-      const isBackKey = BACK_KEYS[slideDirection].includes(event.key);
-      emits('stepKeyDown', event, isBackKey ? -1 : 1)
-    }"
-    @end-key-down="emits('endKeyDown', $event)"
-    @home-key-down="emits('homeKeyDown', $event)"
   >
     <slot />
   </SliderImpl>

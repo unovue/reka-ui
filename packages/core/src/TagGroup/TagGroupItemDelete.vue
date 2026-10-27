@@ -9,9 +9,9 @@ export interface TagGroupItemDeleteProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectTagGroupItemContext } from './TagGroupItem.vue'
+import { getTagGroupItemDeleteSurface } from './useTagGroup'
 
 const props = withDefaults(defineProps<TagGroupItemDeleteProps>(), {
   as: 'button',
@@ -21,38 +21,22 @@ const itemContext = injectTagGroupItemContext()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-const id = useId(undefined, 'reka-tag-group-item-delete')
-const disabled = computed(() => itemContext.disabled.value || props.disabled)
-
-// Only the focused tag's button is tabbable, so Tab moves from a tag to its
-// delete button and then out of the group, like React Aria.
-const tabindex = computed(() => itemContext.isTabStop.value ? 0 : -1)
-
-function handleClick(event: MouseEvent) {
-  // The tag itself toggles selection on click.
-  event.stopPropagation()
-  if (disabled.value) {
-    event.preventDefault()
-    return
-  }
-
-  itemContext.remove()
-}
+// Same derivation as `useTagGroup().getItemDeleteSurface`; the tag-dependent
+// `type` / `disabled` attributes stay here.
+const button = getTagGroupItemDeleteSurface(itemContext, {
+  id: useId(undefined, 'reka-tag-group-item-delete'),
+  disabled: () => props.disabled,
+})
 </script>
 
 <template>
   <Primitive
-    :id="id"
     :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
-    aria-label="Remove"
-    :aria-labelledby="`${id} ${itemContext.id}`"
-    :tabindex="tabindex"
-    :data-disabled="disabled ? '' : undefined"
-    :disabled="props.as === 'button' ? disabled : undefined"
-    @click="handleClick"
+    v-bind="button.attrs.value"
+    :disabled="props.as === 'button' ? button.state.value.disabled : undefined"
   >
     <slot />
   </Primitive>
