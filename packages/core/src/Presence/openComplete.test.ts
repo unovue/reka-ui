@@ -1,6 +1,15 @@
 import type { Component, Ref, VNodeChild } from 'vue'
+import type { CollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
+import type { ComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
+import type { DialogRootContext } from '@/Dialog/DialogRoot.vue'
+import type { HoverCardRootContext } from '@/HoverCard/HoverCardRoot.vue'
+import type { MenuContext } from '@/Menu/MenuRoot.vue'
+import type { NavigationMenuContext } from '@/NavigationMenu/NavigationMenuRoot.vue'
+import type { PopoverRootContext } from '@/Popover/PopoverRoot.vue'
+import type { SelectRootContext } from '@/Select/SelectRoot.vue'
+import type { TooltipContext } from '@/Tooltip/TooltipRoot.vue'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   AccordionContent,
@@ -58,6 +67,12 @@ import {
   MenubarSubContent,
   MenubarSubTrigger,
   MenubarTrigger,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuRoot,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
   PopoverContent,
   PopoverRoot,
   PopoverTrigger,
@@ -179,6 +194,23 @@ const cases: Case[] = [
     ])),
   },
   {
+    name: 'MenubarMenu',
+    render: (open, onOpenComplete) => h(MenubarRoot, { modelValue: open ? 'file' : '' }, () => h(MenubarMenu, { 'value': 'file', 'onUpdate:openComplete': onOpenComplete }, () => [
+      h(MenubarTrigger, () => 'File'),
+      h(MenubarContent, content, () => 'Content'),
+    ])),
+  },
+  {
+    name: 'NavigationMenu',
+    render: (open, onOpenComplete) => h(NavigationMenuRoot, { 'modelValue': open ? 'a' : '', 'onUpdate:openComplete': onOpenComplete }, () => [
+      h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'a' }, () => [
+        h(NavigationMenuTrigger, () => 'A'),
+        h(NavigationMenuContent, () => 'Content'),
+      ])),
+      h(NavigationMenuViewport, content),
+    ]),
+  },
+  {
     name: 'Select',
     render: (open, onOpenComplete) => h(SelectRoot, { open, 'onUpdate:openComplete': onOpenComplete }, () => [
       h(SelectTrigger, () => 'Open'),
@@ -203,6 +235,14 @@ const cases: Case[] = [
     name: 'Collapsible',
     render: (open, onOpenComplete) => h(CollapsibleRoot, { open, 'onUpdate:openComplete': onOpenComplete }, () =>
       h(CollapsibleContent, content, () => 'Content')),
+  },
+  {
+    name: 'AccordionItem',
+    render: (open, onOpenComplete) => h(AccordionRoot, { type: 'single', modelValue: open ? 'a' : undefined }, () =>
+      h(AccordionItem, { 'value': 'a', 'onUpdate:openComplete': onOpenComplete }, () => [
+        h(AccordionHeader, () => h(AccordionTrigger, () => 'A')),
+        h(AccordionContent, content, () => 'Content'),
+      ])),
   },
   {
     name: 'Toast',
@@ -240,7 +280,7 @@ function watchStartingStyle() {
 const getContent = () => document.querySelector<HTMLElement>('[data-testid="content"]')
 /** The element to check for presence: Collapsible keeps its content mounted (hidden) when closed. */
 function isShown(name: string) {
-  return name === 'Collapsible'
+  return name === 'Collapsible' || name === 'AccordionItem'
     ? !getContent()?.hasAttribute('hidden')
     : getContent() !== null
 }
@@ -303,5 +343,20 @@ describe('update:openComplete and the lifecycle attributes (#2827)', () => {
     expect(getContent()!.hasAttribute('data-starting-style')).toBe(true)
     await vi.waitFor(() => expect(getContent()!.hasAttribute('data-starting-style')).toBe(false))
     wrapper.unmount()
+  })
+})
+
+describe('the root contexts', () => {
+  it('take notifyOpenComplete as optional, so hand-written contexts keep compiling', () => {
+    type Notify = ((value: boolean) => void) | undefined
+    expectTypeOf<DialogRootContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<PopoverRootContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<TooltipContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<HoverCardRootContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<MenuContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<SelectRootContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<ComboboxRootContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<CollapsibleRootContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
+    expectTypeOf<NavigationMenuContext['notifyOpenComplete']>().toEqualTypeOf<Notify>()
   })
 })

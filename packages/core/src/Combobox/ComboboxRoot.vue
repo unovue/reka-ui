@@ -56,7 +56,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   /** The root's `displayValue` resolver, if any. */
   displayValue?: (value: T) => string
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
-  notifyOpenComplete: (value: boolean) => void
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]

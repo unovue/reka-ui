@@ -99,7 +99,7 @@ export interface SelectRootContext<T = AcceptableValue> {
   /** The root's `getNavigationIntent` over the default mapping. */
   getNavigationIntent: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
-  notifyOpenComplete: (value: boolean) => void
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]

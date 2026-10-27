@@ -34,7 +34,7 @@ export interface CollapsibleRootContext {
   onOpenToggle: (event?: Event) => void
   onContentFound?: (event: Event) => void
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
-  notifyOpenComplete: (value: boolean) => void
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]

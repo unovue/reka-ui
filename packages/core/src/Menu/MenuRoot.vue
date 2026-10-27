@@ -12,7 +12,7 @@ export interface MenuContext {
   content: Ref<HTMLElement | undefined>
   onContentChange: (content: HTMLElement | undefined) => void
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
-  notifyOpenComplete: (value: boolean) => void
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export interface MenuRootContext {

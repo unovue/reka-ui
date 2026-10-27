@@ -209,11 +209,11 @@ describe('useDialog — context', () => {
   it('routes notifyOpenComplete to onOpenComplete (#2827)', () => {
     const onOpenComplete = vi.fn()
     const d = useDialog({ baseId: 'x', onOpenComplete })
-    d.context.notifyOpenComplete(true)
-    d.context.notifyOpenComplete(false)
+    d.context.notifyOpenComplete?.(true)
+    d.context.notifyOpenComplete?.(false)
     expect(onOpenComplete.mock.calls).toEqual([[true], [false]])
     // Without a listener it is a no-op.
-    expect(() => useDialog({ baseId: 'y' }).context.notifyOpenComplete(true)).not.toThrow()
+    expect(() => useDialog({ baseId: 'y' }).context.notifyOpenComplete?.(true)).not.toThrow()
   })
 })
 

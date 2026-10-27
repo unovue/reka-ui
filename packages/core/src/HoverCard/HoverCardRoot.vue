@@ -59,7 +59,7 @@ export interface HoverCardRootContext {
   triggerElement: Ref<HTMLElement | undefined>
   enableTouch: Ref<boolean>
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
-  notifyOpenComplete: (value: boolean) => void
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
