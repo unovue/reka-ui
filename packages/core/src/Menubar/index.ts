@@ -79,3 +79,15 @@ export {
   default as MenubarTrigger,
   type MenubarTriggerProps,
 } from './MenubarTrigger.vue'
+export {
+  type MenubarChangeReason,
+  type MenubarCollectionItem,
+  type MenubarContentSurface,
+  type MenubarTriggerState,
+  useMenubar,
+  useMenubarMenu,
+  type UseMenubarMenuOptions,
+  type UseMenubarMenuReturn,
+  type UseMenubarProps,
+  type UseMenubarReturn,
+} from './useMenubar'

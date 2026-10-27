@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -10,7 +10,7 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
@@ -18,8 +18,9 @@ import {
 import { RovingFocusItem } from '@/RovingFocus'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
+import { createMenubarTriggerSurface } from './useMenubar'
 
-withDefaults(defineProps<MenubarTriggerProps>(), {
+const props = withDefaults(defineProps<MenubarTriggerProps>(), {
   as: 'button',
 })
 const rootContext = injectMenubarRootContext()
@@ -29,9 +30,13 @@ const { forwardRef, currentElement: triggerElement, expose } = useForwardElement
 defineExpose(expose)
 const { CollectionItem } = useCollection({ key: 'Menubar' })
 
-const isFocused = ref(false)
-
-const open = computed(() => rootContext.modelValue.value === menuContext.value)
+// role/aria, `data-highlighted`/`data-state`/`data-disabled`, the `data-value`
+// selector and the pointer/keyboard handlers come from the composable;
+// RovingFocusItem/CollectionItem/MenuAnchor stay the wrappers.
+const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
+  disabled: () => props.disabled,
+  triggerElement,
+})
 
 onMounted(() => {
   menuContext.triggerElement = triggerElement
@@ -47,51 +52,11 @@ onMounted(() => {
     <CollectionItem>
       <MenuAnchor as-child>
         <Primitive
-          :id="menuContext.triggerId"
           :ref="forwardRef"
           :as="as"
           :as-child="asChild"
           :type="as === 'button' ? 'button' : undefined"
-          role="menuitem"
-          aria-haspopup="menu"
-          :aria-expanded="open"
-          :aria-controls="open ? menuContext.contentId : undefined"
-          :data-highlighted="isFocused ? '' : undefined"
-          :data-state="disclosureState(open)"
-          :data-disabled="disabled ? '' : undefined"
-          :disabled="disabled"
-          :data-value="menuContext.value"
-          @pointerdown="(event: PointerEvent) => {
-            if (event.defaultPrevented) return;
-            // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
-            // but not when the control key is pressed (avoiding MacOS right click)
-            if (!disabled && event.button === 0 && event.ctrlKey === false) {
-              rootContext.onMenuOpen(menuContext.value);
-              // prevent trigger focusing when opening
-              // this allows the content to be given focus without competition
-              if (!open) event.preventDefault();
-            }
-          }"
-          @pointerenter="() => {
-            const menubarOpen = Boolean(rootContext.modelValue.value);
-            if (menubarOpen && !open) {
-              rootContext.onMenuOpen(menuContext.value);
-              triggerElement?.focus()
-            }
-          }"
-          @keydown.enter.space.arrow-down="(event: KeyboardEvent) => {
-            if (disabled || event.defaultPrevented) return;
-            if (['Enter', ' '].includes(event.key)) rootContext.onMenuToggle(menuContext.value);
-            if (event.key === 'ArrowDown') rootContext.onMenuOpen(menuContext.value);
-            // prevent keydown from scrolling window / first focused item to execute
-            // that keydown (inadvertently closing the menu)
-            if (['Enter', ' ', 'ArrowDown'].includes(event.key)) {
-              menuContext.wasKeyboardTriggerOpenRef.value = true;
-              event.preventDefault();
-            }
-          }"
-          @focus="isFocused = true"
-          @blur="isFocused = false"
+          v-bind="trigger.attrs.value"
         >
           <slot />
         </Primitive>

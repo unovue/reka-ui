@@ -8,13 +8,12 @@ export interface MenubarContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardElement, useForwardPropsEmits, useId } from '@/shared'
-import { wrapArray } from '@/shared/useTypeahead'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
+import { createMenubarContentSurface } from './useMenubar'
 
 defineOptions({
   inheritAttrs: false,
@@ -31,48 +30,18 @@ defineExpose(expose)
 const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
 
-menuContext.contentId ||= useId(undefined, 'reka-menubar-content')
-
 const { getItems } = useCollection({ key: 'Menubar' })
 
-const hasInteractedOutsideRef = ref(false)
-
-function handleArrowNavigation(event: KeyboardEvent) {
-  const target = event.target as HTMLElement
-  const targetIsSubTrigger = target.hasAttribute(
-    'data-reka-menubar-subtrigger',
-  )
-
-  const prevMenuKey = rootContext.dir.value === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
-  const isPrevKey = prevMenuKey === event.key
-  const isNextKey = !isPrevKey
-
-  // Prevent navigation when we're opening a submenu
-  if (isNextKey && targetIsSubTrigger)
-    return
-
-  let candidateValues = getItems().filter(i => i.ref.dataset.disabled !== '').map(i => i.ref.dataset.value)
-  if (isPrevKey)
-    candidateValues.reverse()
-
-  const currentIndex = candidateValues.indexOf(menuContext.value)
-
-  candidateValues = rootContext.loop.value
-    ? wrapArray(candidateValues, currentIndex + 1)
-    : candidateValues.slice(currentIndex + 1)
-
-  const [nextValue] = candidateValues
-  if (nextValue)
-    rootContext.onMenuOpen(nextValue)
-}
+// `id`/`aria-labelledby`/the content selector, the focus handlers and the
+// ArrowLeft/Right menu switching come from the composable. The surface's attrs
+// (no handlers) spread BEFORE the forwarded props and `$attrs`, so a consumer
+// `id` still wins; its handlers bind AFTER the forwarded emits, as before.
+const content = createMenubarContentSurface(rootContext, menuContext, { getItems })
 </script>
 
 <template>
   <MenuContent
-    :id="menuContext.contentId"
     :ref="forwardRef"
-    data-reka-menubar-content=""
-    :aria-labelledby="menuContext.triggerId"
     :style="{
       '--reka-menubar-content-transform-origin':
         'var(--reka-popper-transform-origin)',
@@ -83,31 +52,12 @@ function handleArrowNavigation(event: KeyboardEvent) {
       '--reka-menubar-trigger-width': 'var(--reka-popper-anchor-width)',
       '--reka-menubar-trigger-height': 'var(--reka-popper-anchor-height)',
     }"
-    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
-    @close-auto-focus="(event) => {
-      const menubarOpen = Boolean(rootContext.modelValue.value);
-      if (!menubarOpen && !hasInteractedOutsideRef) {
-        menuContext.triggerElement.value?.focus();
-      }
-
-      hasInteractedOutsideRef = false;
-      // Always prevent auto focus because we either focus manually or want user agent focus
-      event.preventDefault();
-    }"
-    @focus-outside="(event) => {
-      const target = event.target as HTMLElement;
-      const isMenubarTrigger = getItems().filter(i => i.ref.dataset.disabled !== '').some((i) => i.ref.contains(target));
-      if (isMenubarTrigger) event.preventDefault();
-    }"
-    @interact-outside="
-      (event) => {
-        hasInteractedOutsideRef = true;
-      }
-    "
-    @entry-focus="(event) => {
-      if (!menuContext.wasKeyboardTriggerOpenRef.value) event.preventDefault()
-    }"
-    @keydown.arrow-right.arrow-left="handleArrowNavigation"
+    v-bind="{ ...content.attrs.value, ...forwarded, ...omitEntryFocusListener($attrs) }"
+    @close-auto-focus="content.onCloseAutoFocus"
+    @focus-outside="content.onFocusOutside"
+    @interact-outside="content.onInteractOutside"
+    @entry-focus="content.onEntryFocus"
+    @keydown="content.onKeydown"
   >
     <slot />
   </MenuContent>

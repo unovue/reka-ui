@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
+import type { MenubarChangeReason } from './useMenubar'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { useCollection } from '@/Collection'
 import { createContext, useDirection, useForwardElement } from '@/shared'
 
@@ -19,17 +21,22 @@ export interface MenubarRootProps {
   loop?: boolean
 }
 export type MenubarRootEmits = {
+  /** Called before the value changes; `details.cancel()` keeps the current value. */
+  'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<MenubarChangeReason>]
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: boolean]
+  'update:modelValue': [value: string, details: ChangeEventDetails<MenubarChangeReason>]
 }
 
 export interface MenubarRootContext {
-  modelValue: Ref<string>
+  modelValue: Readonly<Ref<string>>
   dir: Ref<Direction>
   loop: Ref<boolean>
-  onMenuOpen: (value: string) => void
-  onMenuClose: () => void
-  onMenuToggle: (value: string) => void
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:modelValue`. */
+  onMenuOpen: (value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:modelValue`. */
+  onMenuClose: (reason?: MenubarChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:modelValue`. */
+  onMenuToggle: (value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
 export const [injectMenubarRootContext, provideMenubarRootContext]
@@ -37,10 +44,10 @@ export const [injectMenubarRootContext, provideMenubarRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { useMenubar } from './useMenubar'
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
@@ -58,33 +65,21 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const { CollectionSlot } = useCollection({ key: 'Menubar', isProvider: true })
 
-const modelValue = useVModel(props, 'modelValue', emit, {
-  defaultValue: props.defaultValue ?? '',
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<string>
-
-const currentTabStopId = ref<string | null>(null)
-
+// The composable owns the open-menu model: every open, close and switch goes
+// through one `setState`, so `beforeUpdate:modelValue` can cancel it.
+// `useDirection` (ConfigProvider-aware) stays in the shell.
 const { dir: propDir, loop } = toRefs(props)
 const dir = useDirection(propDir)
-provideMenubarRootContext({
-  modelValue,
+
+const { modelValue, currentTabStopId, root, context } = useMenubar({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
   dir,
   loop,
-  onMenuOpen: (value) => {
-    modelValue.value = value
-    currentTabStopId.value = value
-  },
-  onMenuClose: () => {
-    modelValue.value = ''
-  },
-  onMenuToggle: (value) => {
-    modelValue.value = modelValue.value ? '' : value
-    // `openMenuOpen` and `onMenuToggle` are called exclusively so we
-    // need to update the id in either case.
-    currentTabStopId.value = value
-  },
+  emit,
 })
+
+provideMenubarRootContext(context)
 </script>
 
 <template>
@@ -98,7 +93,7 @@ provideMenubarRootContext({
     >
       <Primitive
         :ref="forwardRef"
-        role="menubar"
+        v-bind="root.attrs.value"
       >
         <slot :model-value="modelValue" />
       </Primitive>

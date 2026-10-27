@@ -6,21 +6,23 @@ export interface DrawerHandleProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
+import { getDrawerHandleSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerHandleProps>(), { as: 'div' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectDrawerRootContext()
+const handle = getDrawerHandleSurface(rootContext)
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
-    v-bind="props"
-    aria-hidden="true"
-    :data-state="disclosureState(rootContext.open.value)"
+    :as="props.as"
+    :as-child="props.asChild"
+    v-bind="handle.attrs.value"
   >
     <slot />
   </Primitive>

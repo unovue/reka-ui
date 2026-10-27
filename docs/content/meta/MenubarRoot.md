@@ -31,9 +31,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;MenuOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: string, details: ChangeEventDetails&lt;MenuOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -61,7 +66,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[value: boolean]` |
+| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[value: string, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: string, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
 
 **Slots**
 
