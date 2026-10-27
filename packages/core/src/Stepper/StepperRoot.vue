@@ -1,19 +1,29 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { DataOrientation, Direction } from '../shared/types'
+import type { StepperChangeReason } from './useStepper'
 import type { PrimitiveProps } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs, watch } from 'vue'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
+import { useStepper } from './useStepper'
 
 export interface StepperRootContext {
-  modelValue: Ref<number | undefined>
-  changeModelValue: (value: number) => void
+  /** Read-only: call `changeModelValue` to change the step. */
+  modelValue: Readonly<Ref<number | undefined>>
+  /** Returns `false` when the step is unchanged or the change was cancelled. */
+  changeModelValue: (value: number, reason?: StepperChangeReason | BaseChangeReason, event?: Event) => boolean
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   linear: Ref<boolean>
   totalStepperItems: Ref<Set<HTMLElement>>
+  /**
+   * The item's own `disabled` state for each registered trigger, read by
+   * `goToStep` at call time. A trigger registered without an entry falls back
+   * to its rendered `disabled` attribute.
+   */
+  itemDisabled: WeakMap<HTMLElement, () => boolean>
 }
 
 export interface StepperRootProps extends PrimitiveProps {
@@ -37,8 +47,10 @@ export interface StepperRootProps extends PrimitiveProps {
   linear?: boolean
 }
 export type StepperRootEmits = {
+  /** Event handler called before the step changes; call `details.cancel()` to keep the current step. */
+  'beforeUpdate:modelValue': [payload: number | undefined, details: ChangeEventDetails<StepperChangeReason>]
   /** Event handler called when the value changes */
-  'update:modelValue': [payload: number | undefined]
+  'update:modelValue': [payload: number | undefined, details: ChangeEventDetails<StepperChangeReason>]
 }
 
 export const [injectStepperRootContext, provideStepperRootContext]
@@ -68,11 +80,11 @@ defineSlots<{
     /** Whether or not the last step is active */
     isLastStep: boolean
     /** Go to a specific step */
-    goToStep: (step: number) => void
+    goToStep: (step: number) => boolean
     /** Go to the next step */
-    nextStep: () => void
+    nextStep: () => boolean
     /** Go to the previous step */
-    prevStep: () => void
+    prevStep: () => boolean
     /** Whether or not there is a next step */
     hasNext: () => boolean
     /** Whether or not there is a previous step */
@@ -80,85 +92,36 @@ defineSlots<{
   }) => any
 }>()
 
-const { dir: propDir, orientation: propOrientation, linear } = toRefs(props)
+// `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
+// owns the step model (`useControllableState`), the step navigation and the
+// next/previous-trigger watchers.
+const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
-const totalStepperItems = ref<Set<HTMLElement>>(new Set())
-
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue,
-  passive: (props.modelValue === undefined) as false,
-})
-
-const totalStepperItemsArray = computed(() => Array.from(totalStepperItems.value))
-
-const isFirstStep = computed(() => modelValue.value === 1)
-const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)
-
-const totalSteps = computed(() => totalStepperItems.value.size)
-
-function goToStep(step: number) {
-  if (step > totalSteps.value)
-    return
-
-  if (step < 1)
-    return
-
-  if (totalStepperItems.value.size && !!totalStepperItemsArray.value[step] && !!totalStepperItemsArray.value[step].getAttribute('disabled'))
-    return
-
-  if (linear.value) {
-    if (step > (modelValue.value ?? 1) + 1)
-      return
-  }
-
-  modelValue.value = step
-}
-
-function nextStep() {
-  goToStep((modelValue.value ?? 1) + 1)
-}
-
-function prevStep() {
-  goToStep((modelValue.value ?? 1) - 1)
-}
-
-function hasNext() {
-  return (modelValue.value ?? 1) < totalSteps.value
-}
-
-function hasPrev() {
-  return (modelValue.value ?? 1) > 1
-}
-
-const nextStepperItem = ref<HTMLElement | null>(null)
-const prevStepperItem = ref<HTMLElement | null>(null)
-const isNextDisabled = computed(() => nextStepperItem.value ? nextStepperItem.value.getAttribute('disabled') === '' : true)
-const isPrevDisabled = computed(() => prevStepperItem.value ? prevStepperItem.value.getAttribute('disabled') === '' : true)
-
-watch(modelValue, async () => {
-  await nextTick(() => {
-    nextStepperItem.value = totalStepperItemsArray.value.length && modelValue.value! < totalStepperItemsArray.value.length ? totalStepperItemsArray.value[modelValue.value!] : null
-    prevStepperItem.value = totalStepperItemsArray.value.length && modelValue.value! > 1 ? totalStepperItemsArray.value[modelValue.value! - 2] : null
-  })
-})
-watch(totalStepperItemsArray, async () => {
-  await nextTick(() => {
-    nextStepperItem.value = totalStepperItemsArray.value.length && modelValue.value! < totalStepperItemsArray.value.length ? totalStepperItemsArray.value[modelValue.value!] : null
-    prevStepperItem.value = totalStepperItemsArray.value.length && modelValue.value! > 1 ? totalStepperItemsArray.value[modelValue.value! - 2] : null
-  })
-})
-
-provideStepperRootContext({
+const {
   modelValue,
-  changeModelValue: (value: number) => {
-    modelValue.value = value
-  },
-  orientation: propOrientation,
+  totalSteps,
+  isFirstStep,
+  isLastStep,
+  isNextDisabled,
+  isPrevDisabled,
+  goToStep,
+  nextStep,
+  prevStep,
+  hasNext,
+  hasPrev,
+  root,
+  context,
+} = useStepper({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  orientation: () => props.orientation,
   dir,
-  linear,
-  totalStepperItems,
+  linear: () => props.linear,
+  emit: emits,
 })
+
+provideStepperRootContext(context)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(mergeExpose(expose, {
@@ -179,16 +142,13 @@ defineExpose(mergeExpose(expose, {
 <template>
   <Primitive
     :ref="forwardRef"
-    role="group"
-    aria-label="progress"
     :as="as"
     :as-child="asChild"
-    :data-linear="linear ? '' : undefined"
-    :data-orientation="orientation"
+    v-bind="root.attrs.value"
   >
     <slot
       :model-value="modelValue"
-      :total-steps="totalStepperItems.size"
+      :total-steps="totalSteps"
       :is-next-disabled="isNextDisabled"
       :is-prev-disabled="isPrevDisabled"
       :is-first-step="isFirstStep"
@@ -212,7 +172,7 @@ defineExpose(mergeExpose(expose, {
         margin: 0,
       }"
     >
-      Step {{ modelValue }} of {{ totalStepperItems.size }}
+      Step {{ modelValue }} of {{ totalSteps }}
     </div>
   </Primitive>
 </template>

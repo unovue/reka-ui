@@ -1,11 +1,15 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { PaginationChangeReason } from './usePagination'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { createContext, useForwardElement } from '@/shared'
 
-type PaginationRootContext = {
-  page: Ref<number>
-  onPageChange: (value: number) => void
+export type PaginationRootContext = {
+  /** Read-only: call `onPageChange` to change the page. */
+  page: Readonly<Ref<number>>
+  /** Returns `false` when the page is unchanged or the change was cancelled. */
+  onPageChange: (value: number, reason?: PaginationChangeReason | BaseChangeReason, event?: Event) => boolean
   pageCount: Ref<number>
   siblingCount: Ref<number>
   disabled: Ref<boolean>
@@ -34,8 +38,10 @@ export interface PaginationRootProps extends PrimitiveProps {
 }
 
 export type PaginationRootEmits = {
+  /** Event handler called before the page changes; call `details.cancel()` to keep the current page. */
+  'beforeUpdate:page': [value: number, details: ChangeEventDetails<PaginationChangeReason>]
   /** Event handler called when the page value changes */
-  'update:page': [value: number]
+  'update:page': [value: number, details: ChangeEventDetails<PaginationChangeReason>]
 }
 
 export const [injectPaginationRootContext, providePaginationRootContext]
@@ -43,9 +49,8 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { usePagination } from './usePagination'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
   as: 'nav',
@@ -59,33 +64,28 @@ const emits = defineEmits<PaginationRootEmits>()
 defineSlots<{
   default?: (props: {
     /** Current page state */
-    page: typeof page.value
+    page: number
     /** Number of pages */
-    pageCount: typeof pageCount.value
+    pageCount: number
   }) => any
 }>()
 
-const { siblingCount, disabled, showEdges } = toRefs(props)
-
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-const page = useVModel(props, 'page', emits, {
-  defaultValue: props.defaultPage,
-  passive: (props.page === undefined) as false,
-}) as Ref<number>
 
-const pageCount = computed(() => Math.max(1, Math.ceil(props.total / (props.itemsPerPage || 1))))
-
-providePaginationRootContext({
-  page,
-  onPageChange(value) {
-    page.value = value
-  },
-  pageCount,
-  siblingCount,
-  disabled,
-  showEdges,
+// The composable owns the page model (`useControllableState`) and its emits.
+const { page, pageCount, context } = usePagination({
+  page: () => props.page,
+  defaultPage: props.defaultPage,
+  itemsPerPage: () => props.itemsPerPage,
+  total: () => props.total,
+  siblingCount: () => props.siblingCount,
+  disabled: () => props.disabled,
+  showEdges: () => props.showEdges,
+  emit: emits,
 })
+
+providePaginationRootContext(context)
 </script>
 
 <template>

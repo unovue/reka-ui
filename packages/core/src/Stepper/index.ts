@@ -35,3 +35,13 @@ export {
   default as StepperTrigger,
   type StepperTriggerProps,
 } from './StepperTrigger.vue'
+
+export {
+  type StepperChangeReason,
+  type StepperItemParts,
+  type StepperItemState,
+  type StepperRootState,
+  useStepper,
+  type UseStepperProps,
+  type UseStepperReturn,
+} from './useStepper'

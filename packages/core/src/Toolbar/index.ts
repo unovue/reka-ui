@@ -24,3 +24,9 @@ export {
   default as ToolbarToggleItem,
   type ToolbarToggleItemProps,
 } from './ToolbarToggleItem.vue'
+export {
+  type ToolbarButtonState,
+  useToolbar,
+  type UseToolbarProps,
+  type UseToolbarReturn,
+} from './useToolbar'

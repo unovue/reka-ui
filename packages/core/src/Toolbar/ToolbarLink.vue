@@ -8,10 +8,12 @@ export interface ToolbarLinkProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { getToolbarLinkSurface } from './useToolbar'
 
-const props = withDefaults(defineProps<ToolbarLinkProps>(), { as: 'a' })
+withDefaults(defineProps<ToolbarLinkProps>(), { as: 'a' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+const surface = getToolbarLinkSurface()
 </script>
 
 <template>
@@ -20,11 +22,10 @@ defineExpose(expose)
     focusable
   >
     <Primitive
-      v-bind="props"
       :ref="forwardRef"
-      @keydown="(event: KeyboardEvent) => {
-        if (event.key === ' ') (event.currentTarget as HTMLElement)?.click()
-      }"
+      :as="as"
+      :as-child="asChild"
+      v-bind="surface.attrs.value"
     >
       <slot />
     </Primitive>

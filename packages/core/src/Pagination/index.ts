@@ -6,3 +6,14 @@ export { default as PaginationListItem, type PaginationListItemProps } from './P
 export { default as PaginationNext, type PaginationNextProps } from './PaginationNext.vue'
 export { default as PaginationPrev, type PaginationPrevProps } from './PaginationPrev.vue'
 export { injectPaginationRootContext, default as PaginationRoot, type PaginationRootEmits, type PaginationRootProps } from './PaginationRoot.vue'
+export {
+  type PaginationChangeReason,
+  type PaginationEllipsisState,
+  type PaginationItem,
+  type PaginationListItemState,
+  type PaginationNavigation,
+  type PaginationNavigationState,
+  usePagination,
+  type UsePaginationProps,
+  type UsePaginationReturn,
+} from './usePagination'

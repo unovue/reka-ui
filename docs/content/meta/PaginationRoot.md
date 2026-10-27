@@ -65,9 +65,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:page',
+    'description': '<p>Event handler called before the page changes; call <code>details.cancel()</code> to keep the current page.</p>\n',
+    'type': '[value: number, details: ChangeEventDetails&lt;PaginationChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:page',
     'description': '<p>Event handler called when the page value changes</p>\n',
-    'type': '[value: number]'
+    'type': '[value: number, details: ChangeEventDetails&lt;PaginationChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -105,7 +110,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:page` | Event handler called when the page value changes | `[value: number]` |
+| `beforeUpdate:page` | Event handler called before the page changes; call details.cancel() to keep the current page. | `[value: number, details: ChangeEventDetails<PaginationChangeReason, Event>]` |
+| `update:page` | Event handler called when the page value changes | `[value: number, details: ChangeEventDetails<PaginationChangeReason, Event>]` |
 
 **Slots**
 
