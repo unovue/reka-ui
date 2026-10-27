@@ -58,22 +58,22 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"form"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"form"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `errors` | A map of field name to server-side error message(s). Displayed by the matching FieldRoot's FieldError until the user edits that field, or a new value for that key is provided. | `Record<string, string \| string[]>` | No | - |
-| `validationMode` | When fields validate. The validationMode of a FieldRoot takes precedence over this.  onSubmit: when the form is submitted, then on every change after that. onBlur: when a control loses focus. onChange: on every change to a control's value. | `"onBlur" \| "onChange" \| "onSubmit"` | No | `"onSubmit"` |
+| `errors` | A map of field `name` to server-side error message(s). Displayed by the matching `FieldRoot`'s `FieldError` until the user edits that field, or a new value for that key is provided. | `Record<string, string \| string[]>` | No | - |
+| `validationMode` | When fields validate. The `validationMode` of a `FieldRoot` takes precedence over this.  `onSubmit`: when the form is submitted, then on every change after that. `onBlur`: when a control loses focus. `onChange`: on every change to a control's value. | `"onBlur" \| "onChange" \| "onSubmit"` | No | `"onSubmit"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `formSubmit` | Emitted after submit with the values of every named field. Listening to it prevents the native submission. | `[values: Record<string, unknown>, event: SubmitEvent]` |
-| `submit` | Emitted with the native submit event once every field has validated successfully. When any field is invalid, the native submission is prevented and this isn't emitted. Otherwise the form submits natively (e.g. to its action) unless you call event.preventDefault(), or listen to formSubmit. | `[event: SubmitEvent]` |
+| `formSubmit` | Emitted after `submit` with the values of every named field. Listening to it prevents the native submission. | `[values: Record<string, unknown>, event: SubmitEvent]` |
+| `submit` | Emitted with the native submit event once every field has validated successfully. When any field is invalid, the native submission is prevented and this isn't emitted. Otherwise the form submits natively (e.g. to its `action`) unless you call `event.preventDefault()`, or listen to `formSubmit`. | `[event: SubmitEvent]` |
 
 **Methods**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `validate` | Validates every field, or only the field with the given name. Returns whether they're all valid. | `(fieldName?: string \| undefined) => boolean` |
+| `validate` | Validates every field, or only the field with the given `name`. Returns whether they're all valid. | `(fieldName?: string \| undefined) => boolean` |
 
 </llm-only>

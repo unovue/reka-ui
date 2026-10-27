@@ -89,20 +89,20 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `autoSaveId` | Unique id used to auto-save group arrangement via localStorage. Ignored while layout is controlled. | `string \| null` | No | `null` |
+| `autoSaveId` | Unique id used to auto-save group arrangement via `localStorage`. Ignored while `layout` is controlled. | `string \| null` | No | `null` |
 | `direction` | The group orientation of splitter. | `"vertical" \| "horizontal"` | Yes | - |
-| `id` | Group id; falls back to useId when not provided. | `string \| null` | No | - |
+| `id` | Group id; falls back to `useId` when not provided. | `string \| null` | No | - |
 | `keyboardResizeBy` | Step size when arrow key was pressed. | `number \| null` | No | `10` |
-| `layout` | The controlled layout: one size per panel, in each panel's sizeUnit (the values @layout reports). Can be bound as v-model:layout. A layout the constraints reject is applied as corrected and the correction emitted; an array whose length differs from the panel count is ignored. | `number[]` | No | - |
+| `layout` | The controlled layout: one size per panel, in each panel's `sizeUnit` (the values `@layout` reports). Can be bound as `v-model:layout`. A layout the constraints reject is applied as corrected and the correction emitted; an array whose length differs from the panel count is ignored. | `number[]` | No | - |
 | `storage` | Custom storage API; defaults to localStorage | `PanelGroupStorage` | No | `defaultStorage` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:layout` | Event handler called before a drag, keyboard or imperative-action layout change; details.cancel() vetoes it. Structural changes (panel-change, group-resize) skip it. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
+| `beforeUpdate:layout` | Event handler called before a `drag`, `keyboard` or `imperative-action` layout change; `details.cancel()` vetoes it. Structural changes (`panel-change`, `group-resize`) skip it. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
 | `layout` | Event handler called when group layout changes | `[val: number[]]` |
 | `update:layout` | Event handler called when the layout changes. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
 

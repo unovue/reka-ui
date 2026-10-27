@@ -60,9 +60,9 @@
 | `disableSwipe` | Whether to disable the ability to swipe to close the toast. | `boolean` | No | - |
 | `duration` | Time in milliseconds that each toast should remain visible for. | `number` | No | `5000` |
 | `label` | An author-localized label for each toast. Used to help screen reader users associate the interruption with a toast. | `string` | No | `"Notification"` |
-| `limit` | The maximum number of toasts shown at once. Older toasts beyond the limit get data-limited and inert rather than being removed, so they can be hidden or animated. No limit is applied when unset. | `number` | No | - |
+| `limit` | The maximum number of toasts shown at once. Older toasts beyond the limit get `data-limited` and `inert` rather than being removed, so they can be hidden or animated. No limit is applied when unset. | `number` | No | - |
 | `swipeDirection` | Direction of pointer swipe that should close the toast. | `"right" \| "left" \| "down" \| "up"` | No | `"right"` |
 | `swipeThreshold` | Distance in pixels that the swipe must pass before a close is triggered. | `number` | No | `50` |
-| `toastManager` | A manager created with createToastManager(), to add toasts from outside components. Its toasts are listed by useToastManager(). | `GlobalToastManager<any>` | No | - |
+| `toastManager` | A manager created with `createToastManager()`, to add toasts from outside components. Its toasts are listed by `useToastManager()`. | `GlobalToastManager<any>` | No | - |
 
 </llm-only>

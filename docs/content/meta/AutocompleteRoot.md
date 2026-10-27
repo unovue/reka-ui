@@ -176,34 +176,34 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultOpen` | The open state of the autocomplete when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the autocomplete when initially rendered. Use when you do not need to control the state. | `string` | No | - |
 | `dir` | The reading direction of the autocomplete when applicable. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with autocomplete | `boolean` | No | - |
-| `displayValue` | The text a selected item writes into the value (the input text), from the item's value. Defaults to String(value). | `((value: T) => string)` | No | - |
-| `filter` | Whether an item matches the typed text: called as filter(text, search, value) with the item's textValue (or its text content). Omitted, items are matched with useFilter's contains (base sensitivity). null turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<T> \| null` | No | - |
-| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return undefined to fall back to the default mapping, null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. A 'next' or 'prev' intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
-| `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
-| `ignoreFilter` | Deprecated alias for :filter="null": when true, turns client filtering off. Wins over filter. | `boolean` | No | - |
-| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
-| `modelValue` | The controlled value of the Autocomplete (the input text). Can be bound with v-model. | `string` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with autocomplete | `boolean` | No | - |
+| `displayValue` | The text a selected item writes into the value (the input text), from the item's value. Defaults to `String(value)`. | `((value: T) => string)` | No | - |
+| `filter` | Whether an item matches the typed text: called as `filter(text, search, value)` with the item's `textValue` (or its text content). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<T> \| null` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return `undefined` to fall back to the default mapping, `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. A `'next'` or `'prev'` intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
+| `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | `true` |
+| `ignoreFilter` | Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`. | `boolean` | No | - |
+| `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `modelValue` | The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. | `string` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `open` | The controlled open state of the Autocomplete. Can be bound with v-model:open. | `boolean` | No | - |
+| `open` | The controlled open state of the Autocomplete. Can be bound with `v-model:open`. | `boolean` | No | - |
 | `openOnClick` | Whether to open the autocomplete when the input is clicked | `boolean` | No | `false` |
 | `openOnFocus` | Whether to open the autocomplete when the input is focused | `boolean` | No | `false` |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Autocomplete input blurred | `boolean` | No | `false` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value (the input text) changes; call details.cancel() to keep the current value. The value is '' when AutocompleteCancel clears it. Only a controlled (v-model) value can be kept: an uncontrolled one ignores cancel(), as in Base UI. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
-| `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value (the input text) changes; call `details.cancel()` to keep the current value. The value is `''` when `AutocompleteCancel` clears it. Only a controlled (`v-model`) value can be kept: an uncontrolled one ignores `cancel()`, as in Base UI. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
+| `beforeUpdate:open` | Event handler called before the open state changes; call `details.cancel()` to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; } \| undefined]` |
-| `update:modelValue` | Event handler called when the value (the input text) changes. The value is '' when AutocompleteCancel clears it. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value (the input text) changes. The value is `''` when `AutocompleteCancel` clears it. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 

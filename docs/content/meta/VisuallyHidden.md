@@ -31,8 +31,8 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"span"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `feature` | How the content is hidden.  focusable (default): hidden visually only. The content stays in the accessibility tree, so slotted text is announced and can label its parent, and it keeps whatever focusability it has. fully-hidden: also removed from the accessibility tree (aria-hidden="true") and the tab order (tabindex="-1"). Use for hidden form inputs. | `"focusable" \| "fully-hidden"` | No | `"focusable"` |
+| `feature` | How the content is hidden.  `focusable` (default): hidden visually only. The content stays in the accessibility tree, so slotted text is announced and can label its parent, and it keeps whatever focusability it has. `fully-hidden`: also removed from the accessibility tree (`aria-hidden="true"`) and the tab order (`tabindex="-1"`). Use for hidden form inputs. | `"focusable" \| "fully-hidden"` | No | `"focusable"` |
 
 </llm-only>

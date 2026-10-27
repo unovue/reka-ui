@@ -190,11 +190,11 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultPlaceholder` | The default placeholder time | `TimeValue` | No | - |
 | `defaultValue` | The default value for the field | `TimeRange` | No | - |
-| `dir` | The reading direction of the time field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `dir` | The reading direction of the time field when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the time field is disabled | `boolean` | No | `false` |
 | `granularity` | The granularity to use for formatting times. Defaults to minute. The field will render segments for each part of the time up to and including the specified granularity | `"hour" \| "minute" \| "second"` | No | - |
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
@@ -204,20 +204,20 @@
 | `locale` | The locale to use for formatting times | `string` | No | - |
 | `maxValue` | The maximum time that can be selected | `TimeValue` | No | - |
 | `minValue` | The minimum time that can be selected | `TimeValue` | No | - |
-| `modelValue` | The controlled checked state of the field. Can be bound as v-model. null is a controlled empty range. | `TimeRange \| null` | No | - |
+| `modelValue` | The controlled checked state of the field. Can be bound as `v-model`. `null` is a controlled empty range. | `TimeRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | The placeholder time, which is used to determine what time to display when no time is selected. This updates as the user navigates the field | `TimeValue` | No | - |
 | `readonly` | Whether or not the time field is readonly | `boolean` | No | `false` |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
-| `stepSnapping` | Whether to enforce snapping the value to the nearest step increment after input. Defaults to false. | `boolean` | No | `false` |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `step` | The stepping interval for the time fields. Defaults to `1`. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. | `boolean` | No | `false` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Called before the range changes; details.cancel() keeps the current range. | `[date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
-| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Called before the range changes; `details.cancel()` keeps the current range. | `[date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; `details.cancel()` keeps the current placeholder. | `[date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
 

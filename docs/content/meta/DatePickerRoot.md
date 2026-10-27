@@ -287,33 +287,33 @@
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
 | `defaultValue` | The default value for the calendar | `DateValue` | No | - |
-| `defaultView` | The calendar view shown when the picker opens. Defaults to day. | `"day" \| "month" \| "year"` | No | - |
-| `dir` | The reading direction of the date field when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `defaultView` | The calendar view shown when the picker opens. Defaults to `day`. | `"day" \| "month" \| "year"` | No | - |
+| `dir` | The reading direction of the date field when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
 | `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
-| `granularity` | The granularity to use for formatting times. Defaults to day if a Temporal.PlainDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
+| `granularity` | The granularity to use for formatting times. Defaults to day if a `Temporal.PlainDate` is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isDateDisabled` | A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with 'day' as its second argument); the month and year views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable. The field marks an unavailable value invalid. The picker's calendar always commits days, so it is called there only for day-view cells (with 'day' as its second argument); the month and year views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable. The field marks an unavailable value invalid. The picker's calendar always commits days, so it is called there only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `maxView` | The coarsest view DatePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
+| `maxView` | The coarsest view `DatePickerViewTrigger` can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modal` | The modality of the popover. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
-| `modelValue` | The controlled value of the field. Can be bound as v-model. null is a controlled empty field. | `DateValue \| null` | No | - |
+| `modal` | The modality of the popover. When `true`, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
+| `modelValue` | The controlled value of the field. Can be bound as `v-model`. `null` is a controlled empty field. | `DateValue \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
-| `pagedNavigation` | In the day view, makes the previous and next buttons move by the number of months displayed at once (numberOfMonths) rather than one month. The month view always pages by one year and the year view by yearsPerPage years. | `boolean` | No | `false` |
+| `pagedNavigation` | In the day view, makes the previous and next buttons move by the number of months displayed at once (`numberOfMonths`) rather than one month. The month view always pages by one year and the year view by `yearsPerPage` years. | `boolean` | No | `false` |
 | `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
-| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | - |
-| `view` | The controlled view: the unit the calendar currently shows. Can be bound as v-model:view. | `"day" \| "month" \| "year"` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `step` | The stepping interval for the time fields. Defaults to `1`. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to `false`. | `boolean` | No | - |
+| `view` | The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. | `"day" \| "month" \| "year"` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
 | `yearsPerPage` | The number of years to display per page in the year view | `number` | No | `12` |
@@ -322,10 +322,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Called before the value changes, from the field or the calendar; details.cancel() keeps the current value. | `[date: DateValue \| undefined, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
-| `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
-| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
-| `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Called before the value changes, from the field or the calendar; `details.cancel()` keeps the current value. | `[date: DateValue \| undefined, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
+| `beforeUpdate:open` | Called before the open state changes; `details.cancel()` keeps the current state. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; `details.cancel()` keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
+| `beforeUpdate:view` | Called before the calendar view changes; `details.cancel()` keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |

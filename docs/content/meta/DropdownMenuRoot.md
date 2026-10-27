@@ -91,18 +91,18 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
-| `defaultTriggerId` | The id of the trigger that owns a menu that starts open (with defaultOpen and a handle). | `string \| null` | No | - |
-| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `handle` | A handle from createDropdownMenuHandle() that connects detached DropdownMenuTriggers rendered anywhere in the app. The menu anchors to, returns focus to and exposes the payload of the trigger that opened it. | `DropdownMenuHandle<Payload>` | No | - |
-| `modal` | The modality of the dropdown menu. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the menu on press, and only the menu content is visible to screen readers. | `boolean` | No | `true` |
-| `open` | The controlled open state of the menu. Can be used as v-model:open. | `boolean` | No | - |
-| `triggerId` | The id of the trigger that owns the menu, for a controlled menu with detached triggers. Use with open. | `string \| null` | No | - |
+| `defaultTriggerId` | The id of the trigger that owns a menu that starts open (with `defaultOpen` and a `handle`). | `string \| null` | No | - |
+| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `handle` | A handle from `createDropdownMenuHandle()` that connects detached `DropdownMenuTrigger`s rendered anywhere in the app. The menu anchors to, returns focus to and exposes the `payload` of the trigger that opened it. | `DropdownMenuHandle<Payload>` | No | - |
+| `modal` | The modality of the dropdown menu. When `true`, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the menu on press, and only the menu content is visible to screen readers. | `boolean` | No | `true` |
+| `open` | The controlled open state of the menu. Can be used as `v-model:open`. | `boolean` | No | - |
+| `triggerId` | The id of the trigger that owns the menu, for a controlled menu with detached triggers. Use with `open`. | `string \| null` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:open` | Called before the open state of the submenu changes; details.cancel() vetoes the change. | `[payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
+| `beforeUpdate:open` | Called before the open state of the submenu changes; `details.cancel()` vetoes the change. | `[payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the submenu changes. | `[payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the submenu content have finished. | `[value: boolean]` |
 
@@ -111,7 +111,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `open` | Current open state | `boolean` |
-| `payload` | The payload of the detached trigger that opened the menu | `Payload` |
+| `payload` | The `payload` of the detached trigger that opened the menu | `Payload` |
 | `activeTriggerId` | The id of the detached trigger that opened the menu | `string \| null` |
 
 </llm-only>

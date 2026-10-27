@@ -42,15 +42,15 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `headingValue` | Heading of the active view (September 2026, 2026, 2020 - 2031) | `string` |
+| `headingValue` | Heading of the active view (`September 2026`, `2026`, `2020 - 2031`) | `string` |
 | `view` | The active view | `"day" \| "month" \| "year"` |
-| `disabled` | Whether the trigger is disabled (at maxView, or the calendar is disabled) | `boolean` |
+| `disabled` | Whether the trigger is disabled (at `maxView`, or the calendar is disabled) | `boolean` |
 
 </llm-only>

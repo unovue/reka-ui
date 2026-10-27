@@ -37,7 +37,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `validity` | The field's validity. valid is null until the field has a validity to report. | `FieldValidityState` |
+| `validity` | The field's validity. `valid` is `null` until the field has a validity to report. | `FieldValidityState` |
 | `errors` | All current error messages. | `string[]` |
 | `error` | The first error message, or an empty string. | `string` |
 | `value` | The value validity was last computed for. | `unknown` |

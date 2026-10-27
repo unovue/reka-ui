@@ -50,9 +50,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `color` | The color to display in the swatch as a hex string or Color object. Example: #16a372, #ff5733, or { space: 'hsl', h: 120, s: 100, l: 50, alpha: 1 }. | `string \| Color` | No | `""` |
+| `color` | The color to display in the swatch as a hex string or Color object. Example: `#16a372`, `#ff5733`, or `{ space: 'hsl', h: 120, s: 100, l: 50, alpha: 1 }`. | `string \| Color` | No | `""` |
 | `label` | Optional accessible label for the color. If omitted, the color name will be derived from the color value. | `string` | No | - |
 
 **Slots**

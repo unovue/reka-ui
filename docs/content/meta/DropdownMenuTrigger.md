@@ -42,10 +42,10 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
-| `handle` | A handle from createDropdownMenuHandle() that connects this trigger to a DropdownMenuRoot rendered elsewhere (outside this trigger's tree or portal). | `DropdownMenuHandle<Payload>` | No | - |
-| `payload` | Passed to the Root's default slot while this trigger owns the menu. Requires a handle. | `Payload` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with item | `boolean` | No | - |
+| `handle` | A handle from `createDropdownMenuHandle()` that connects this trigger to a `DropdownMenuRoot` rendered elsewhere (outside this trigger's tree or portal). | `DropdownMenuHandle<Payload>` | No | - |
+| `payload` | Passed to the Root's default slot while this trigger owns the menu. Requires a `handle`. | `Payload` | No | - |
 
 </llm-only>

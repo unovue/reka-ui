@@ -58,11 +58,11 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `loop` | When true, tabbing from last item will focus first tabbable and shift+tab from first item will focus last tababble. | `boolean` | No | `false` |
-| `present` | Whether the scope is currently visible. Lets a consumer keep the scope mounted but hidden (e.g. display: none) and still get correct auto-focus: the mount auto-focus is skipped while not present, and re-runs when it becomes present again. Defaults to true so consumers that mount the scope only while visible are unaffected. | `boolean` | No | `true` |
-| `trapped` | When true, focus cannot escape the focus scope via keyboard, pointer, or a programmatic focus. | `boolean` | No | `false` |
+| `loop` | When `true`, tabbing from last item will focus first tabbable and shift+tab from first item will focus last tababble. | `boolean` | No | `false` |
+| `present` | Whether the scope is currently visible. Lets a consumer keep the scope mounted but hidden (e.g. `display: none`) and still get correct auto-focus: the mount auto-focus is skipped while not present, and re-runs when it becomes present again. Defaults to `true` so consumers that mount the scope only while visible are unaffected. | `boolean` | No | `true` |
+| `trapped` | When `true`, focus cannot escape the focus scope via keyboard, pointer, or a programmatic focus. | `boolean` | No | `false` |
 
 **Events**
 

@@ -59,9 +59,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disableOutsidePointerEvents` | When true, hover/focus/click interactions will be disabled on elements outside the DismissableLayer. Users will need to click twice on outside elements to interact with them: once to close the DismissableLayer, and again to trigger the element. Outside elements are covered by a transparent internal backdrop ([data-reka-internal-backdrop]) rendered right below the layer; <body> styles are never touched. | `boolean` | No | - |
+| `disableOutsidePointerEvents` | When `true`, hover/focus/click interactions will be disabled on elements outside the `DismissableLayer`. Users will need to click twice on outside elements to interact with them: once to close the `DismissableLayer`, and again to trigger the element. Outside elements are covered by a transparent internal backdrop (`[data-reka-internal-backdrop]`) rendered right below the layer; `<body>` styles are never touched. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 
 **Events**
@@ -69,8 +69,8 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `escapeKeyDown` | Event handler called when the escape key is down. Can be prevented. | `[event: KeyboardEvent]` |
-| `focusOutside` | Event handler called when the focus moves outside of the DismissableLayer. Can be prevented. | `[event: FocusOutsideEvent]` |
-| `interactOutside` | Event handler called when an interaction happens outside the DismissableLayer. Specifically, when a pointerdown event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
-| `pointerDownOutside` | Event handler called when a pointerdown event happens outside of the DismissableLayer. Can be prevented. | `[event: PointerDownOutsideEvent]` |
+| `focusOutside` | Event handler called when the focus moves outside of the `DismissableLayer`. Can be prevented. | `[event: FocusOutsideEvent]` |
+| `interactOutside` | Event handler called when an interaction happens outside the `DismissableLayer`. Specifically, when a `pointerdown` event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
+| `pointerDownOutside` | Event handler called when a `pointerdown` event happens outside of the `DismissableLayer`. Can be prevented. | `[event: PointerDownOutsideEvent]` |
 
 </llm-only>
