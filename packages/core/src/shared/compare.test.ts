@@ -9,6 +9,16 @@ describe('compare', () => {
     expect(compare(undefined, undefined)).toBe(false)
   })
 
+  it('never passes null to a comparison function or key comparator', () => {
+    const byId = (a: { id: number }, b: { id: number }) => a.id === b.id
+    expect(() => compare<{ id: number }>(null as any, { id: 1 }, byId)).not.toThrow()
+    expect(compare<{ id: number }>(null as any, { id: 1 }, byId)).toBe(false)
+    expect(compare<{ id: number }>({ id: 1 }, null as any, byId)).toBe(false)
+    expect(compare<{ id: number }>(null as any, { id: 1 }, 'id')).toBe(false)
+    expect(compare(null, null)).toBe(true)
+    expect(valueComparator<{ id: number }>(null as any, { id: 1 }, byId)).toBe(false)
+  })
+
   it('compares strings strictly, ignoring a key comparator', () => {
     expect(compare('a', 'a', 'id')).toBe(true)
     expect(compare('a', 'b')).toBe(false)

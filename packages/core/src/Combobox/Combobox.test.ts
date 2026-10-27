@@ -1040,6 +1040,32 @@ describe('given a Combobox with popper content', () => {
   })
 })
 
+describe('given a single Combobox with a null model and an object comparator', () => {
+  it('renders items without passing null to `by`', async () => {
+    const items = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
+    const by = vi.fn((a: { id: number }, b: { id: number }) => a.id === b.id)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ComboboxRoot<{ id: number, name: string }>, { modelValue: null, by, open: true }, {
+          default: () => [
+            h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
+            h(ComboboxContent, null, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => items.map(item => h(ComboboxItem, { key: item.id, value: item }, { default: () => item.name })),
+              }),
+            }),
+          ],
+        })
+      },
+    }), { attachTo: document.body })
+
+    await vi.waitFor(() => expect(document.querySelectorAll('[role="option"]').length).toBe(2))
+    expect(document.querySelector('[role="option"][data-state="checked"]')).toBeNull()
+    expect(by.mock.calls.every(args => args.every(arg => arg !== null))).toBe(true)
+    wrapper.unmount()
+  })
+})
+
 describe('comboboxContent with popper positioning', () => {
   const getSlotRenderCount = vi.fn(() => ({ value: 0 }))
 
