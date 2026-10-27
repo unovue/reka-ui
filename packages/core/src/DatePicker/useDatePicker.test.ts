@@ -125,7 +125,7 @@ describe('useDatePicker', () => {
     expect(api().calendar.modelValue.value?.toString()).toBe('2024-01-21')
   })
 
-  it('cancelling the picker change cancels the typed change and resyncs the segments', async () => {
+  it('cancelling the picker change cancels the typed change and keeps the typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setupStandalone({
       defaultValue: jan20,
@@ -138,7 +138,7 @@ describe('useDatePicker', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(api().picker.modelValue.value?.toString()).toBe('2024-01-20')
-    expect(getByTestId('day').textContent).toBe('20')
+    expect(getByTestId('day').textContent).toBe('21')
   })
 
   it('cancelling a calendar pick keeps the value', () => {
@@ -216,7 +216,7 @@ describe('useDatePicker', () => {
       expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 5), expect.objectContaining({ reason: 'cell-press' }))
     })
 
-    it('a cancelled change keeps the field segments', async () => {
+    it('a cancelled change keeps the value and the typed segments', async () => {
       const onUpdate = vi.fn()
       const user = userEvent.setup()
       const { getByTestId } = render(DatePicker, {
@@ -226,7 +226,7 @@ describe('useDatePicker', () => {
       await user.keyboard('{ArrowUp}')
       await nextTick()
       expect(onUpdate).not.toHaveBeenCalled()
-      expect(getByTestId('day').textContent?.trim()).toBe('20')
+      expect(getByTestId('day').textContent?.trim()).toBe('21')
     })
 
     it('renders on the server', async () => {
@@ -240,6 +240,70 @@ describe('useDatePicker', () => {
       const html = await renderToString(createSSRApp(createStandalonePicker({ defaultValue: jan20, defaultOpen: true, locale: 'en-US' })))
       expect(html).toContain('role="dialog"')
       expect(html).toContain('data-testid="date-1-20"')
+    })
+  })
+})
+
+describe('useDatePicker review fixes', () => {
+  const minDate = new CalendarDate(2000, 1, 1)
+  const noPastDates = (value: DateValue | undefined, details: { cancel: () => void }) => {
+    if (value && value.compare(minDate) < 0)
+      details.cancel()
+  }
+
+  it('a picker-root guard lets an empty field be typed to a valid date', async () => {
+    const value = ref<DateValue | undefined>()
+    const user = userEvent.setup()
+    const { getByTestId } = render(DatePicker, {
+      props: { datePickerProps: { 'granularity': 'day', 'locale': 'en-US', 'onBeforeUpdate:modelValue': noPastDates, 'onUpdate:modelValue': (v: DateValue | undefined) => (value.value = v) } as any },
+    })
+    await user.click(getByTestId('month'))
+    await user.keyboard('01152024')
+    await nextTick()
+    expect(value.value?.toString()).toBe('2024-01-15')
+  })
+
+  it('a picker-root guard lets 2025 be typed over 2024', async () => {
+    const onUpdate = vi.fn()
+    const user = userEvent.setup()
+    const { getByTestId } = render(DatePicker, {
+      props: { datePickerProps: { 'defaultValue': new CalendarDate(2024, 1, 15), 'granularity': 'day', 'locale': 'en-US', 'onBeforeUpdate:modelValue': noPastDates, 'onUpdate:modelValue': onUpdate } as any },
+    })
+    await user.click(getByTestId('year'))
+    await user.keyboard('2025')
+    await nextTick()
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('2025-01-15')
+    expect(getByTestId('year').textContent?.trim()).toBe('2025')
+  })
+
+  it('a controlled-empty (null) picker keeps its calendar controlled', async () => {
+    const user = userEvent.setup()
+    const { getByTestId } = render(DatePicker, {
+      props: {
+        datePickerProps: { modelValue: null, defaultOpen: true, placeholder: new CalendarDate(2024, 1, 1), granularity: 'day' } as any,
+        emits: { 'onUpdate:modelValue': () => {} },
+      },
+    })
+    await nextTick()
+    const cell = getByTestId('date-1-10')
+    await user.click(cell)
+    await nextTick()
+    expect(cell.hasAttribute('data-selected')).toBe(false)
+  })
+
+  it('cancels a placeholder change through onBeforeUpdatePlaceholder', () => {
+    withScope(() => {
+      const onUpdatePlaceholder = vi.fn()
+      const picker = useDatePicker({
+        defaultPlaceholder: jan20,
+        locale: 'en-US',
+        onBeforeUpdatePlaceholder: (_value, details) => details.cancel(),
+        onUpdatePlaceholder,
+      })
+      expect(picker.setPlaceholder(new CalendarDate(2024, 5, 1))).toBe(false)
+      expect(onUpdatePlaceholder).not.toHaveBeenCalled()
+      expect(picker.placeholder.value.toString()).toBe('2024-01-20')
     })
   })
 })

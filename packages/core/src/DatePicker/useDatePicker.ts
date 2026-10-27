@@ -68,6 +68,7 @@ export interface UseDatePickerProps {
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: DateValue | undefined, details: ChangeEventDetails<DatePickerChangeReason>) => void
   onUpdate?: (value: DateValue | undefined, details: ChangeEventDetails<DatePickerChangeReason>) => void
+  onBeforeUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DatePickerChangeReason>) => void
   onUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DatePickerChangeReason>) => void
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason>) => void
   onUpdateView?: (value: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>) => void
@@ -145,6 +146,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
     }).copy(),
     name: 'placeholder',
     emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdatePlaceholder,
     onUpdate: props.onUpdatePlaceholder,
     isEqual: isSameTemporalValue,
   })
@@ -305,7 +307,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
 
   function getCalendarProps(): UseCalendarProps {
     return {
-      modelValue: () => modelValue.value,
+      modelValue: () => modelValue.value ?? null,
       placeholder: () => placeholder.value,
       view: () => view.value,
       maxView: () => context.maxView.value,

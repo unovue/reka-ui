@@ -10,14 +10,13 @@ const rootContext = injectDatePickerRootContext()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+
+// The calendar is controlled by the picker. Its `beforeUpdate:modelValue`
+// runs the picker's change, so a pick emits once, from the picker, with the
+// calendar's reason (`cell-press`, `cell-keydown`).
 </script>
 
 <template>
-  <!--
-    The calendar is controlled by the picker. Its `beforeUpdate:modelValue`
-    runs the picker's change, so a pick emits once, from the picker, with the
-    calendar's reason (`cell-press`, `cell-keydown`).
-  -->
   <CalendarRoot
     :ref="forwardRef"
     v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"
@@ -40,7 +39,7 @@ defineExpose(expose)
       yearsPerPage: rootContext.yearsPerPage.value,
       columns: rootContext.columns.value,
     }"
-    :model-value="rootContext.modelValue.value"
+    :model-value="rootContext.modelValue.value ?? null"
     :placeholder="rootContext.placeholder.value"
     :view="rootContext.view.value"
     :multiple="false"
