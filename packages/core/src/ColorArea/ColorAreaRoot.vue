@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
@@ -87,7 +87,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)

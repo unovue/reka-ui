@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { ColorSwatchPickerValue } from './useColorSwatchPicker'
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
-import { createContext, useForwardPropsEmits } from '@/shared'
+import { createContext, useForwardElement, useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerItemProps extends ListboxItemProps<ColorSwatchPickerValue> {
   /**
@@ -48,10 +48,14 @@ const item = getColorSwatchPickerItemSurface(value)
 provideColorSwatchPickerItemContext({
   color: value,
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <ListboxItem
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="mergeProps(forwarded, item.attrs.value)"
     :value="value"

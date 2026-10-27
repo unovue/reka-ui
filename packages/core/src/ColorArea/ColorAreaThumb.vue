@@ -15,7 +15,8 @@ const props = withDefaults(defineProps<ColorAreaThumbProps>(), {
 })
 
 const rootContext = injectColorAreaRootContext()
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 onMounted(() => {
   rootContext.thumbRef.value = currentElement.value
 })
