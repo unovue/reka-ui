@@ -11,12 +11,12 @@ export interface NavigationMenuIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
-import { computed, ref, watchEffect } from 'vue'
+import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { useNavigationMenuIndicator } from './useNavigationMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -28,35 +28,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const menuContext = injectNavigationMenuContext()
 
-const indicatorStyle = ref<{ size: number, position: number }>()
-const isHorizontal = computed(() => menuContext.orientation === 'horizontal')
-const isVisible = computed(() => !!menuContext.modelValue.value)
-const { activeTrigger } = menuContext
-
-function handlePositionChange() {
-  if (!activeTrigger.value) {
-    return
-  }
-
-  indicatorStyle.value = {
-    size: isHorizontal.value
-      ? activeTrigger.value.offsetWidth
-      : activeTrigger.value.offsetHeight,
-    position: isHorizontal.value
-      ? activeTrigger.value.offsetLeft
-      : activeTrigger.value.offsetTop,
-  }
-}
-
-watchEffect(() => {
-  if (!menuContext.modelValue.value) {
-    return
-  }
-  handlePositionChange()
-})
-
-useResizeObserver(activeTrigger, handlePositionChange)
-useResizeObserver(menuContext.indicatorTrack, handlePositionChange)
+const { isVisible, indicator } = useNavigationMenuIndicator({ context: menuContext })
 </script>
 
 <template>
@@ -66,19 +38,10 @@ useResizeObserver(menuContext.indicatorTrack, handlePositionChange)
   >
     <Presence :present="forceMount || isVisible">
       <Primitive
+        v-bind="mergeProps(indicator.attrs.value, $attrs)"
         :ref="forwardRef"
-        aria-hidden="true"
-        :data-state="disclosureState(isVisible)"
-        :data-orientation="menuContext.orientation"
         :as-child="props.asChild"
         :as="as"
-        :style="{
-          ...(indicatorStyle ? {
-            '--reka-navigation-menu-indicator-size': `${indicatorStyle.size}px`,
-            '--reka-navigation-menu-indicator-position': `${indicatorStyle.position}px`,
-          } : {}),
-        }"
-        v-bind="$attrs"
       >
         <slot />
       </Primitive>

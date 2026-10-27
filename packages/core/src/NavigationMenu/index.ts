@@ -10,6 +10,7 @@ export {
 export {
   injectNavigationMenuItemContext,
   default as NavigationMenuItem,
+  type NavigationMenuItemContext,
   type NavigationMenuItemProps,
 } from './NavigationMenuItem.vue'
 export {
@@ -23,6 +24,7 @@ export {
 } from './NavigationMenuList.vue'
 export {
   injectNavigationMenuContext,
+  type NavigationMenuContext,
   default as NavigationMenuRoot,
   type NavigationMenuRootEmits,
   type NavigationMenuRootProps,
@@ -40,3 +42,39 @@ export {
   default as NavigationMenuViewport,
   type NavigationMenuViewportProps,
 } from './NavigationMenuViewport.vue'
+export {
+  type NavigationMenuChangeReason,
+  type NavigationMenuContentState,
+  type NavigationMenuDismissDetail,
+  type NavigationMenuIndicatorState,
+  type NavigationMenuLinkState,
+  type NavigationMenuListState,
+  type NavigationMenuMotion,
+  type NavigationMenuRootState,
+  type NavigationMenuTriggerState,
+  type NavigationMenuViewportState,
+  useNavigationMenu,
+  useNavigationMenuContent,
+  type UseNavigationMenuContentOptions,
+  type UseNavigationMenuContentReturn,
+  useNavigationMenuIndicator,
+  type UseNavigationMenuIndicatorOptions,
+  type UseNavigationMenuIndicatorReturn,
+  useNavigationMenuItem,
+  type UseNavigationMenuItemOptions,
+  type UseNavigationMenuItemReturn,
+  useNavigationMenuLink,
+  type UseNavigationMenuLinkOptions,
+  type UseNavigationMenuLinkReturn,
+  type UseNavigationMenuProps,
+  type UseNavigationMenuReturn,
+  useNavigationMenuSub,
+  type UseNavigationMenuSubProps,
+  type UseNavigationMenuSubReturn,
+  useNavigationMenuTrigger,
+  type UseNavigationMenuTriggerOptions,
+  type UseNavigationMenuTriggerReturn,
+  useNavigationMenuViewport,
+  type UseNavigationMenuViewportOptions,
+  type UseNavigationMenuViewportReturn,
+} from './useNavigationMenu'
