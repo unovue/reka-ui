@@ -598,3 +598,12 @@ Two fixes in neighbouring families:
 - **Root context.** `injectToastRootContext().onClose(event?, reason?)` takes an optional reason (`'imperative-action'` by default) and returns `false` when the toast was already closed or the close was cancelled. `ToastClose` closes with `close-press` and `ToastAction` with `action-press`.
 - **Provider context.** The `ToastProviderContext` type is exported. Its `label`, `duration`, `disableSwipe`, `swipeDirection` and `swipeThreshold` are read-only refs, and the unused `isFocusedToastEscapeKeyDownRef` is gone.
 - **New and additive:** the composables.
+
+## Shadow DOM
+
+Components rendered inside an open shadow root (a custom element, a micro-frontend mounted with `attachShadow()`) work there without workarounds. See the [Shadow DOM](./shadow-dom) guide. Nothing changes in the light DOM. What changed for apps in a shadow root:
+
+- **Portals stay in the shadow root.** A portal rendered inside a shadow root teleports into that shadow root by default instead of into `document.body`, so the shadow root's styles apply to the content and its `aria-*` id references resolve. A string `to` (or `ConfigProvider`'s `teleportTo`) is looked up inside the shadow root first, then in the document; `to="body"` still targets the document body. Move styles for portalled content that you loaded into the document into the shadow root, or keep the old placement with `teleportTo="body"`. Tests that found that content through `document` should query the shadow root.
+- **`aria-hidden` inside the shadow root.** A modal layer also hides its siblings inside the shadow root from assistive technology, not only the page around the shadow host.
+- **Scroll dismissal.** `TooltipContent` and `HoverCardContent` close when a scroll container inside the shadow root, or the page, scrolls their trigger.
+- **Fixed in the shadow DOM:** Combobox mouse selection, focus trapping and focus guards, outside-press and focus-outside dismissal, and `aria-*` id lookups. Workarounds for these (patches, `stopPropagation()` on touch events, re-parenting portalled content) can be removed.

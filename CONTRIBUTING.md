@@ -128,6 +128,9 @@ a trigger/content ref, …):
 | `window.…` | `getOwnerWindow(anchorEl)` |
 | `event.target` in a listener above a shadow boundary | `getEventTarget(event)` — `composedPath()[0]`, read **synchronously** (empty after dispatch) |
 | Injecting a `<style>` into `document.head` | `injectStyle(getRootNode(anchorEl), css, { nonce })` — adopted stylesheets + `<style>` fallback |
+| `container.contains(target)` for a composed target | `containsComposed(container, target)` (walks up through shadow hosts) |
+| `window.addEventListener('scroll', …, { capture: true })` | `useAncestorScroll(anchorEl, onScroll)` — `scroll` is not composed, so it also listens on each shadow root around the anchor |
+| `hideOthers(el)` from `aria-hidden` | `useHideOthers(el)` — hides siblings inside every shadow root around `el`, then around the outermost host |
 
 - **Anchor on a real element ref**, not the global document — every part already
   exposes `currentElement` via `useForwardExpose()`.
@@ -135,21 +138,22 @@ a trigger/content ref, …):
   lookups is semantically correct, not just a shadow workaround.
 - **Guard for SSR at the caller** (`isClient` / inside `watchEffect`/`onMounted`),
   as the existing code does — the helpers assume a client context.
-- **Test in a shadow root** with `createShadowHost()` (`src/shared/test/shadowDom.ts`);
-  query via `shadowRoot.querySelector` — testing-library queries don't pierce shadow roots.
-- **Teleport:** portalled content (Dialog/Popover/Combobox/Select content) defaults
-  to `body`, which is OUTSIDE the shadow root. To keep it in the root, point
-  `ConfigProvider`'s `teleportTo` at a node inside the shadow root — otherwise the
-  content renders in light DOM and its cross-boundary aria idrefs won't resolve at
-  the AT level.
+- **Test in a shadow root** in a real browser: `mountInShadowRoot(Component, options)`
+  (`src/shared/test/shadowDom.ts`) mounts into an open shadow root and returns
+  `get(testId)` / `query(selector)` scoped to the shadow root and a deep
+  `activeElement()`; see the colocated `*.shadow.browser.test.ts` files. jsdom's shadow
+  DOM support is partial (no layout, focus or hit testing), so use `createShadowHost()`
+  there only for lookup-level checks. Testing-library queries don't pierce shadow roots.
+- **Teleport:** a portal rendered inside a shadow root teleports into that shadow
+  root by default (`resolveTeleportTarget`), so its content shares the root's styles
+  and aria idrefs. A string `to` / `teleportTo` is looked up in the shadow root first.
 - **Known limits (browser-only or genuinely unfixable):** closed shadow roots
-  (`composedPath()` returns the host); aria idrefs for content Teleported out of the
-  root; `HoverCard` text-selection containment (`document.getSelection`) and
-  dismiss-on-scroll (`scroll` is `composed: false`); `useHideOthers` (walks
-  `document.body`); the iOS `useBodyScrollLock` `touchmove` overflow check (walks the
-  host chain, not the shadow subtree). `useBodyScrollLock` itself is correct as-is —
-  a shadow root shares the host `document.body`, which is the right scroll surface.
-  Plain `setTimeout`/`window.innerWidth`-style reads don't need scoping — leave them.
+  (`composedPath()` returns the host); aria idrefs for content explicitly Teleported
+  out of the root; FocusScope's tabbable walk does not descend into shadow roots
+  nested inside the scope; the Splitter drag cursor is injected into the document
+  and reaches shadow content only through inheritance. `useBodyScrollLock` is correct
+  as-is — a shadow root shares the host `document.body`, which is the right scroll
+  surface. Plain `setTimeout`/`window.innerWidth`-style reads don't need scoping — leave them.
 
 ## Testing
 

@@ -622,10 +622,36 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before; the type-check passes.
 
+### 27. Shadow DOM
+
+Skip this section when the project never renders Reka UI inside a shadow root (no `attachShadow(`, no `defineCustomElement(`, no web-component or micro-frontend mounting). Nothing changes in the light DOM.
+
+**What changed.**
+- A portal (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, any `*Portal` or `Teleport` part) rendered inside a shadow root teleports into that shadow root by default. v2 teleported to `document.body`, outside the shadow root.
+- A string `to` on a portal, or `teleportTo` on `ConfigProvider`, is looked up inside the shadow root first and then in the document. An explicit `to="body"` still targets the document body.
+- A modal layer also sets `aria-hidden` on its siblings inside the shadow root, not only on the page around the shadow host.
+- `TooltipContent` and `HoverCardContent` close when a scroll container inside the shadow root, or the page, scrolls their trigger.
+- Combobox mouse selection, focus trapping and focus guards, outside-press and focus-outside dismissal, and `aria-*` id references work inside an open shadow root without workarounds.
+
+**How to find it.**
+- `attachShadow(`, `defineCustomElement(` and custom-element registration that mounts a Vue app using Reka UI.
+- `teleportTo` on `ConfigProvider`, or `to` on `*Portal` parts, in those apps, especially a target element created only to keep portalled content inside the shadow root.
+- Stylesheets for portalled content (dialogs, popovers, menus, tooltips, toasts) of a shadow-mounted app that are loaded into the document rather than the shadow root.
+- Tests of a shadow-mounted app that query portalled content with `document.querySelector`, `document.getElementById` or testing-library `screen` queries.
+- Workarounds for shadow DOM bugs: patches of `reka-ui` (for example `patches/reka-ui@*.patch` touching `ComboboxInput` or `getElementById`), `touchstart` / `touchmove` `stopPropagation()` on dialog content, or code that re-parents portalled content into a shadow root.
+
+**Rewrite rules.**
+- A `teleportTo` / `to` that points at an element inside the shadow root: leave it unchanged; it keeps working. If the target element exists only to keep content inside the shadow root, *ask* whether to remove it together with the prop.
+- Styles for portalled content of a shadow-mounted app that live in the document: *ask* whether to move them into the shadow root (recommended) or to keep the content in the document with `teleportTo="body"`.
+- A test that finds portalled content of a shadow-mounted app through `document`: query the shadow root instead (`host.shadowRoot.querySelector(...)`).
+- A workaround or patch for one of the fixes listed under *What changed*: *ask* before removing it, and remove it only after the verify step passes without it.
+
+**Verify.** In each shadow-mounted app, portalled content renders inside the shadow root with its styles applied; dialogs trap focus and close on Escape and outside press; a combobox item can be selected with the mouse; the tests pass.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, and every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, and every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, and every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, and every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, and every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, and every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, and every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.
