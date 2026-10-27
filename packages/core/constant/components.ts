@@ -229,6 +229,9 @@ export const components = {
     'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
+    'DrawerPopup',
+    'DrawerBackdrop',
+    'DrawerProvider',
   ] as const,
 
   dropdownMenu: [

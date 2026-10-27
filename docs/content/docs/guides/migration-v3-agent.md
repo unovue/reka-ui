@@ -623,10 +623,33 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before; the type-check passes.
 
+### 24. Auto-imports use per-component entry points
+
+**What changed.**
+- Every component family has its own entry point that exports the same objects as the package root. The name is the family in kebab-case: `reka-ui/dialog`, `reka-ui/alert-dialog`, ….
+- The Nuxt module (`reka-ui/nuxt`) now imports each auto-imported component from its entry point instead of from `reka-ui`. It adds `reka-ui` and those entry points to the client `optimizeDeps.include`, skipping any the app excludes.
+- The `unplugin-vue-components` resolver (`reka-ui/resolver`) is unchanged: it imports from `reka-ui` unless the project opts in with `RekaResolver({ subpaths: true })`.
+- `import { X } from 'reka-ui'` is unchanged and keeps working, also mixed with entry-point imports.
+
+**How to find it.**
+- `reka-ui/nuxt` in `nuxt.config.*` (or in a Nuxt layer's config).
+- In a project that uses the Nuxt module, configuration that matches the exact specifier `reka-ui`:
+  - an `alias` / `vite.resolve.alias` entry;
+  - `vite.optimizeDeps` or `vite.ssr.noExternal` entries written as regular expressions that end at `reka-ui` (`/^reka-ui$/`);
+  - a Vitest or Jest mapping keyed on `^reka-ui$`.
+
+**Rewrite rules.**
+- Do not rewrite the project's own `import … from 'reka-ui'` statements; root imports stay valid.
+- Exact-specifier configuration: extend the pattern to the subpaths (`/^reka-ui(\/.*)?$/`).
+- If an alias redirects `reka-ui` to a local copy or a fork that has no per-component entry points, *ask* whether to set `reka: { subpaths: false }` in `nuxt.config.ts` instead.
+- Do not add `subpaths: false` to the Nuxt module, or `subpaths: true` to the resolver, on your own.
+
+**Verify.** The type-check passes. The dev server and the build start without `Failed to resolve import "reka-ui/…"` or `Cannot find module 'reka-ui/…'` errors.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, and every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, and every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, and every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, and every alias to a copy without per-component entry points from section 24 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

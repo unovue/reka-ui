@@ -287,6 +287,9 @@ importers:
       tsdown:
         specifier: ^0.12.9
         version: 0.12.9(typescript@5.8.3)(vue-tsc@3.3.11(typescript@5.8.3))
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
       vite:
         specifier: ^8.3.1
         version: 8.3.1(@types/node@24.0.13)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
@@ -326,6 +329,10 @@ importers:
       unplugin-vue-components:
         specifier: ^32.0.0
         version: 32.0.0(@nuxt/kit@4.1.2(magicast@0.3.5))(vue@3.5.43(typescript@5.8.3))
+    devDependencies:
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@24.0.13)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-istanbul@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.1)(vite@8.3.1(@types/node@24.0.13)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0))
 
 packages:
 

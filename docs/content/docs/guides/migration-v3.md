@@ -163,6 +163,17 @@ What to check in your code:
 - Vite, Nuxt and Vitest need no change.
 - Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
 
+## Auto-imports use per-component entry points
+
+Every component family now has its own entry point, named after it in kebab-case (`reka-ui/dialog`, `reka-ui/alert-dialog`, …). It exports the very same components as the package root, so `import { DialogRoot } from 'reka-ui'` keeps working, and parts from both can be mixed in one component tree. See [Importing components](../overview/installation#importing-components).
+
+The [Nuxt module](../overview/installation#nuxt-modules) now imports each component from its entry point instead of from `reka-ui`. It also adds `reka-ui` and those entry points to Vite's `optimizeDeps.include`, so layers and libraries that import from `reka-ui` share the same components. Most apps need no change. Check:
+
+- Configuration that matches the exact specifier `reka-ui` does not match `reka-ui/dialog`. Examples are an `alias` entry, a regular expression in `vite.optimizeDeps` or `vite.ssr.noExternal` that ends at `reka-ui`, and a Vitest or Jest mapping keyed on `^reka-ui$`. Extend these to the subpaths.
+- To keep the v2 imports, set `reka: { subpaths: false }` in `nuxt.config.ts`.
+
+The [`unplugin-vue-components` resolver](../overview/installation#unplugin-vue-components) still imports from `reka-ui` by default. `RekaResolver({ subpaths: true })` switches it to the entry points. That option also needs `reka-ui` and the entry points in Vite's `optimizeDeps.include`; see [Per-component entry points](../overview/installation#per-component-entry-points).
+
 ## Generated ids
 
 The ids Reka UI generates for overlay parts are now derived from the root. This covers the Dialog and AlertDialog content, title and description, the Drawer content, title and description, the Popover trigger and content, the DropdownMenu trigger and content, and the Tooltip label that the trigger's `aria-describedby` points at. Their shape differs from v2, for example `reka-tooltip-<n>-content` instead of `reka-tooltip-content-<n>`. A `MenubarMenu` now allocates its content id when the menu is set up instead of when its content first renders.
