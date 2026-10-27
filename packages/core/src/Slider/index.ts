@@ -16,3 +16,14 @@ export {
   default as SliderTrack,
   type SliderTrackProps,
 } from './SliderTrack.vue'
+export {
+  type SliderChangeReason,
+  type SliderRangeState,
+  type SliderRootState,
+  type SliderThumbState,
+  type SliderThumbSurfaceOptions,
+  type SliderTrackState,
+  useSlider,
+  type UseSliderProps,
+  type UseSliderReturn,
+} from './useSlider'
