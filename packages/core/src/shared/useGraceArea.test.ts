@@ -156,6 +156,35 @@ describe('useGraceArea', () => {
     expect(api.isPointerInTransit.value).toBe(false)
   })
 
+  it('recognizes the pointer entering a container inside a shadow root (#2725)', async () => {
+    // The `pointermove` listener lives on the document, where `event.target` is
+    // retargeted to the shadow host; the composed target is the container.
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadowRoot = host.attachShadow({ mode: 'open' })
+    trigger = document.createElement('div')
+    container = document.createElement('div')
+    shadowRoot.append(trigger, container)
+    trigger.getBoundingClientRect = () =>
+      makeRect({ top: 0, left: 0, right: 100, bottom: 100, width: 100, height: 100, x: 0, y: 0 })
+    container.getBoundingClientRect = () =>
+      makeRect({ top: 0, left: 200, right: 300, bottom: 100, width: 100, height: 100, x: 200, y: 0 })
+    const mounted = mountGraceArea(trigger, container)
+    wrapper = mounted.wrapper
+    const exitSpy = vi.fn()
+    mounted.api.onPointerExit(exitSpy)
+
+    trigger.dispatchEvent(pointerEvent('pointerleave', { clientX: 100, clientY: 50 }))
+    await nextTick()
+    const Ctor = typeof PointerEvent !== 'undefined' ? PointerEvent : MouseEvent
+    // Outside the hull, so only the "entered the container" branch keeps it from exiting.
+    container.dispatchEvent(new Ctor('pointermove', { bubbles: true, composed: true, clientX: 150, clientY: 500 }))
+
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(mounted.api.isPointerInTransit.value).toBe(false)
+    host.remove()
+  })
+
   it('auto-resets isPointerInTransit after 300ms', () => {
     vi.useFakeTimers()
     const api = setup()

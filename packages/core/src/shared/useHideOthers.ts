@@ -4,6 +4,32 @@ import { hideOthers } from 'aria-hidden'
 import { onUnmounted, watch } from 'vue'
 
 /**
+ * `aria-hidden`'s `hideOthers`, across shadow boundaries. The library only
+ * walks light-DOM children from `document.body` (a target inside a shadow root
+ * is kept by keeping its host), so siblings that share the target's shadow root
+ * would stay exposed. Hide them per tree: the target's siblings within each
+ * shadow root it is nested in, then the outermost host's siblings in the
+ * document.
+ */
+export function hideOthersAcrossShadowRoots(target: Element): () => void {
+  const undos: Array<() => void> = []
+  let current = target
+  let root = current.getRootNode() as Node
+  while ((root as ShadowRoot).host) {
+    // A ShadowRoot walks like an element here: it has `children`, `contains`
+    // and `querySelectorAll` (for the `aria-live` regions the library keeps).
+    undos.push(hideOthers(current, root as unknown as HTMLElement))
+    current = (root as ShadowRoot).host
+    root = current.getRootNode()
+  }
+  undos.push(hideOthers(current))
+  return () => {
+    for (const undo of undos.reverse())
+      undo()
+  }
+}
+
+/**
  * The `useHideOthers` function is a TypeScript function that takes a target element reference and
  * hides all other elements in ARIA when the target element is present, and restores the visibility of the
  * hidden elements when the target element is removed.
@@ -35,7 +61,7 @@ export function useHideOthers(target: MaybeElementRef) {
     }
     catch {}
     if (el && !isInsideClosedPopover)
-      undo = hideOthers(el)
+      undo = hideOthersAcrossShadowRoots(el)
   })
 
   onUnmounted(release)

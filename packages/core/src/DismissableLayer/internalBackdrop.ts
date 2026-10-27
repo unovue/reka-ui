@@ -10,6 +10,8 @@
 // while content with a higher one (e.g. a third-party launcher) stays
 // interactive, which `pointer-events: none` on `<body>` made impossible.
 
+import { containsComposed } from '@/shared/getRootNode'
+
 export const INTERNAL_BACKDROP_ATTRIBUTE = 'data-reka-internal-backdrop'
 
 // Floating content is positioned by a wrapper (with a `transform`). A `fixed`
@@ -92,11 +94,17 @@ interface BackdropPlacement {
   inBody: boolean
 }
 
+function composedParentElement(el: Element): Element | null {
+  return el.parentElement ?? ((el.parentNode as ShadowRoot | null)?.host ?? null)
+}
+
 function resolveBackdropPlacement(layer: HTMLElement, view: Window): BackdropPlacement {
   let anchor: Element = layer.closest(POSITIONING_WRAPPER_SELECTOR) ?? layer
   const doc = layer.ownerDocument
   let inBody = false
-  for (let el = anchor.parentElement; el && el !== doc.body && el !== doc.documentElement; el = el.parentElement) {
+  // Composed walk: a shadow host (or one of its ancestors) can be the
+  // containing block too, for a layer rendered inside a shadow root.
+  for (let el = composedParentElement(anchor); el && el !== doc.body && el !== doc.documentElement; el = composedParentElement(el)) {
     const style = view.getComputedStyle(el)
     if (isFixedContainingBlock(style))
       inBody = true
@@ -214,5 +222,5 @@ export function isOwnBackdropPress(
     return true
   // A press on an ancestor of the layer (a viewport-style wrapper, `<body>`
   // when nothing covers the point) is no element stacked above the backdrop.
-  return !!layer && target.contains(layer)
+  return !!layer && containsComposed(target, layer)
 }

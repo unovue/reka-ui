@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getElementByIdFrom, getEventTarget, getOwnerDocument, getRootNode } from './getRootNode'
+import { getElementByIdFrom, getEventTarget, getOwnerDocument, getRootNode, resolveTeleportTarget } from './getRootNode'
 
 function makeShadow() {
   const host = document.createElement('div')
@@ -61,5 +61,22 @@ describe('getEventTarget', () => {
     inner.dispatchEvent(new Event('pointerdown', { bubbles: true, composed: true }))
     expect(captured).toBe(inner)
     expect(captured).not.toBe(host)
+  })
+})
+
+describe('resolveTeleportTarget', () => {
+  it('keeps Vue semantics in the light DOM', () => {
+    expect(resolveTeleportTarget(undefined, document)).toBe('body')
+    expect(resolveTeleportTarget('#x', document)).toBe('#x')
+    const el = document.createElement('div')
+    expect(resolveTeleportTarget(el, document)).toBe(el)
+  })
+
+  it('targets the shadow root by default and resolves selectors inside it first', () => {
+    const { shadowRoot, inner } = makeShadow()
+    inner.className = 'portal'
+    expect(resolveTeleportTarget(undefined, shadowRoot)).toBe(shadowRoot)
+    expect(resolveTeleportTarget('.portal', shadowRoot)).toBe(inner)
+    expect(resolveTeleportTarget('body', shadowRoot)).toBe('body')
   })
 })

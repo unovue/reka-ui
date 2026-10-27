@@ -62,4 +62,28 @@ describe('useHideOthers', () => {
     expect(undos[0]).toHaveBeenCalledTimes(1)
     expect(undos[1]).toHaveBeenCalledTimes(1)
   })
+
+  it('hides siblings in every shadow root around the target, then around the outermost host (#2725)', async () => {
+    const outerHost = document.createElement('div')
+    document.body.appendChild(outerHost)
+    const outerRoot = outerHost.attachShadow({ mode: 'open' })
+    const innerHost = document.createElement('div')
+    outerRoot.appendChild(innerHost)
+    const innerRoot = innerHost.attachShadow({ mode: 'open' })
+    const element = document.createElement('div')
+    innerRoot.appendChild(element)
+
+    const { target, wrapper } = setup()
+    target.value = element
+    await nextTick()
+    expect(vi.mocked(hideOthers).mock.calls).toEqual([
+      [element, innerRoot],
+      [innerHost, outerRoot],
+      [outerHost],
+    ])
+
+    wrapper.unmount()
+    expect(undos.every(undo => undo.mock.calls.length === 1)).toBe(true)
+    outerHost.remove()
+  })
 })

@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import type { Side } from '@/Popper/utils'
 import { createEventHook, refAutoReset, tryOnScopeDispose } from '@vueuse/shared'
 import { ref, watchEffect } from 'vue'
+import { getEventTarget } from './getRootNode'
 
 export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, containerElement: Ref<HTMLElement | undefined>) {
 // Reset the inTransit state if idle/scrolled.
@@ -54,10 +55,12 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
   watchEffect((cleanupFn) => {
     if (pointerGraceArea.value) {
       const handleTrackPointerGrace = (event: PointerEvent) => {
-        if (!pointerGraceArea.value || !(event.target instanceof Element))
+        // The listener sits on the document, where `event.target` is retargeted
+        // to the shadow host for a menu rendered in a shadow root.
+        const target = getEventTarget<Element>(event)
+        if (!pointerGraceArea.value || !(target instanceof Element))
           return
 
-        const target = event.target
         const pointerPosition = { x: event.clientX, y: event.clientY }
         const hasEnteredTarget = triggerElement.value?.contains(target) || containerElement.value?.contains(target)
         const isPointerOutsideGraceArea = !isPointInPolygon(pointerPosition, pointerGraceArea.value)

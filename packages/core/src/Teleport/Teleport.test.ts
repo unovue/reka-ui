@@ -139,3 +139,62 @@ describe('given default Teleport', () => {
     explicitContainer.remove()
   })
 })
+
+describe('given a Teleport inside a shadow root (#2725)', () => {
+  function shadowHost() {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadowRoot = host.attachShadow({ mode: 'open' })
+    const mountTarget = document.createElement('div')
+    shadowRoot.appendChild(mountTarget)
+    return { host, shadowRoot, mountTarget }
+  }
+
+  it.each([false, true])('keeps the content in the shadow root by default (forceMount: %s)', async (forceMount) => {
+    const { host, shadowRoot, mountTarget } = shadowHost()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', { id: 'app' }, h(Teleport, { forceMount }, {
+        default: () => h('span', { id: 'in-shadow' }, 'content'),
+      })),
+    }), { attachTo: mountTarget })
+    await nextTick()
+
+    const content = shadowRoot.getElementById('in-shadow')
+    expect(content?.parentNode).toBe(shadowRoot)
+    expect(shadowRoot.getElementById('app')!.contains(content)).toBe(false)
+    expect(document.getElementById('in-shadow')).toBeNull()
+
+    wrapper.unmount()
+    expect(shadowRoot.getElementById('in-shadow')).toBeNull()
+    host.remove()
+  })
+
+  it('resolves a ConfigProvider `teleportTo` selector inside the shadow root first', async () => {
+    const { host, shadowRoot, mountTarget } = shadowHost()
+    const portalRoot = document.createElement('div')
+    portalRoot.id = 'portal-root'
+    shadowRoot.appendChild(portalRoot)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ConfigProvider, { teleportTo: '#portal-root' }, {
+        default: () => h(Teleport, null, { default: () => h('span', { id: 'in-portal-root' }, 'content') }),
+      }),
+    }), { attachTo: mountTarget })
+    await nextTick()
+
+    expect(portalRoot.contains(shadowRoot.getElementById('in-portal-root'))).toBe(true)
+    wrapper.unmount()
+    host.remove()
+  })
+
+  it('still honours an explicit `to="body"`', async () => {
+    const { host, mountTarget } = shadowHost()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Teleport, { to: 'body' }, { default: () => h('span', { id: 'in-body' }, 'content') }),
+    }), { attachTo: mountTarget })
+    await nextTick()
+
+    expect(document.getElementById('in-body')?.parentNode).toBe(document.body)
+    wrapper.unmount()
+    host.remove()
+  })
+})

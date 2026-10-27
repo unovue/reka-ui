@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { Direction, ResizeEvent } from './types'
+import { getEventTarget } from '@/shared/getRootNode'
 import { getResizeEventCoordinates } from './events'
 import { intersects } from './rects'
 import { compare } from './stackingOrder'
@@ -85,7 +86,7 @@ export function registerResizeHandle(
 }
 
 function handlePointerDown(event: ResizeEvent) {
-  const { target } = event
+  const target = getEventTarget(event)
   const { x, y } = getResizeEventCoordinates(event)
 
   isPointerDown = true
@@ -104,7 +105,7 @@ function handlePointerMove(event: ResizeEvent) {
   const { x, y } = getResizeEventCoordinates(event)
 
   if (!isPointerDown) {
-    const { target } = event
+    const target = getEventTarget(event)
     // While transitioning into an iframe, the browser may still dispatch a
     // few trailing "mousemove" events in the parent document whose target
     // resolves to the iframe itself. Ignore those so they don't trigger a
@@ -149,7 +150,7 @@ function isIframeElement(target: EventTarget | null): boolean {
 }
 
 function handlePointerUp(event: ResizeEvent) {
-  const { target } = event
+  const target = getEventTarget(event)
   const { x, y } = getResizeEventCoordinates(event)
 
   panelConstraintFlags.clear()

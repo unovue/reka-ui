@@ -57,3 +57,28 @@ export function containsComposed(container: Node, node: Node | null): boolean {
   }
   return false
 }
+
+function isShadowRoot(node: RootNode | undefined): node is ShadowRoot {
+  return !!node && (node as ShadowRoot).host !== undefined
+}
+
+/**
+ * The Teleport target for a portal rendered in `root`. Light DOM keeps Vue's
+ * semantics (`to`, defaulting to `'body'`). Inside a shadow root:
+ * - no `to` → the shadow root itself, so the content stays in the root (shadow
+ *   styles still apply, and ids/`aria-*` references, `aria-hidden` and focus
+ *   containment all resolve within one tree);
+ * - a selector → matched inside the shadow root first, then in the document.
+ */
+export function resolveTeleportTarget(
+  to: string | HTMLElement | undefined,
+  root: RootNode | undefined,
+): string | HTMLElement | ShadowRoot {
+  if (to && typeof to !== 'string')
+    return to
+  if (!isShadowRoot(root))
+    return to ?? 'body'
+  if (!to)
+    return root
+  return root.querySelector<HTMLElement>(to) ?? to
+}
