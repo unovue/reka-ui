@@ -6,7 +6,7 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
   overscan?: number
   /** Estimated size (in px) of each item */
   estimateSize?: number | ((index: number) => number)
-  /** Text content for each item to achieve type-ahead feature */
+  /** Text content for each item, used by typeahead and by a `ListboxRoot` `filter` (which otherwise matches the option's string form) */
   textContent?: (option: T) => string
 }
 </script>
@@ -18,7 +18,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, useSlots } from 'vue'
+import { cloneVNode, computed, Fragment, onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { findValuesBetween, getActiveElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
@@ -43,6 +43,36 @@ const { getItems } = useCollection<{ value: T }>()
 // set virtual true when this component mounted
 rootContext.isVirtual.value = true
 
+// The root's `filter` (#2824 item 7) applies to `options`, not to the rendered
+// rows: a filtered-out option takes no virtual index, is not counted in
+// `aria-setsize`, and is skipped by navigation, typeahead and select-all.
+let hasWarnedTextContent = false
+const options = computed(() => {
+  if (!rootContext.isFilterActive.value)
+    return props.options
+
+  if (process.env.NODE_ENV !== 'production' && !props.textContent && !hasWarnedTextContent && props.options.some(option => option !== null && typeof option === 'object')) {
+    hasWarnedTextContent = true
+    console.warn('[reka-ui] ListboxVirtualizer: pass `textContent` to filter object options.')
+  }
+  return props.options.filter(option => rootContext.filterOption(option, props.textContent ? props.textContent(option) : String(option)))
+})
+// Rows are keyed by index, so a highlighted row is reused for another option
+// once the list is filtered. Before the rows re-render, drop the highlight if
+// its option no longer matches.
+watch(options, (current) => {
+  const element = rootContext.highlightedElement.value
+  const highlighted = element && getItems(true).find(i => i.ref === element)
+  if (highlighted && !current.some(option => compare(option, highlighted.value, rootContext.by)))
+    rootContext.highlightedElement.value = null
+})
+watchSyncEffect(() => {
+  rootContext.virtualFilterCount.value = options.value.length
+})
+onUnmounted(() => {
+  rootContext.virtualFilterCount.value = undefined
+})
+
 const padding = computed(() => {
   const el = parentEl.value
   if (!el) {
@@ -61,7 +91,7 @@ const virtualizer = useVirtualizer(
   {
     get scrollPaddingStart() { return padding.value.start },
     get scrollPaddingEnd() { return padding.value.end },
-    get count() { return props.options.length },
+    get count() { return options.value.length },
     get horizontal() { return rootContext.orientation.value === 'horizontal' },
     estimateSize(index) {
       if (typeof props.estimateSize === 'function')
@@ -76,7 +106,7 @@ const virtualizer = useVirtualizer(
 
 const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
   const defaultNode = slots.default!({
-    option: props.options[item.index],
+    option: options.value[item.index],
     virtualizer: virtualizer.value,
     virtualItem: item,
   })[0]
@@ -90,7 +120,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
     is: cloneVNode(targetNode, {
       'key': `${item.key}`,
       'data-index': item.index,
-      'aria-setsize': props.options.length,
+      'aria-setsize': options.value.length,
       'aria-posinset': item.index + 1,
       'style': {
         position: 'absolute',
@@ -108,7 +138,7 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
   // roving-tabindex target without focusing or scrolling, so a virtualized
   // Listbox below the fold doesn't pull the page to it on load. User-driven
   // highlights (keyboard, typeahead, select) keep scrolling as before.
-  const index = props.options.findIndex((option) => {
+  const index = options.value.findIndex((option) => {
     if (Array.isArray(rootContext.modelValue.value))
       return compare(option, rootContext.modelValue.value[0], rootContext.by)
     else
@@ -144,7 +174,7 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
 })
 
 rootContext.virtualHighlightHook.on((value) => {
-  const index = props.options.findIndex((option) => {
+  const index = options.value.findIndex((option) => {
     return compare(option, value, rootContext.by)
   })
   virtualizer.value.scrollToIndex(index, { align: 'start' })
@@ -165,7 +195,7 @@ const optionsWithMetadata = computed(() => {
       return option?.toString().toLowerCase()
   }
 
-  return props.options.map((option, index) => ({
+  return options.value.map((option, index) => ({
     index,
     textContent: parseTextContent(option),
   }))
@@ -184,15 +214,15 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
   switch (intent) {
     case 'prev':
     case 'next': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, lastValue)
+      value = findValuesBetween(options.value, rootContext.firstValue.value as T, lastValue)
       break
     }
     case 'first': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options?.[0])
+      value = findValuesBetween(options.value, rootContext.firstValue.value as T, options.value?.[0])
       break
     }
     case 'last': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options.at(-1)!)
+      value = findValuesBetween(options.value, rootContext.firstValue.value as T, options.value.at(-1)!)
       break
     }
   }
@@ -213,7 +243,7 @@ rootContext.virtualKeydownHook.on(({ event, intent: resolvedIntent }) => {
   // Meta + A, select all feature
   if (isMetaKey && event.key === 'a' && rootContext.multiple.value) {
     event.preventDefault()
-    rootContext.modelValue.value = [...props.options]
+    rootContext.modelValue.value = [...options.value]
     // purposely make the focus to last
     intent = 'last'
   }
@@ -224,7 +254,7 @@ rootContext.virtualKeydownHook.on(({ event, intent: resolvedIntent }) => {
   if (intent === 'first' || intent === 'last') {
     event.preventDefault()
 
-    const index = intent === 'first' ? 0 : props.options.length - 1
+    const index = intent === 'first' ? 0 : options.value.length - 1
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
       const items = getItems()

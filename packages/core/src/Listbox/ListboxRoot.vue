@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref } from 'vue'
-import type { ListboxChangeReason, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
+import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
@@ -50,6 +50,23 @@ export type ListboxRootContext<T> = {
    * `null` when the override opted the key out, `undefined` when no mapping knows it.
    */
   getNavigationIntent: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
+
+  /** The search term the `filter` runs against (#2824 item 7). */
+  filterSearch: Readonly<Ref<string>>
+  /** What `ListboxFilter` calls with its value. */
+  setFilterSearch: (search: string) => void
+  /** `true` while a `filter` is set and the search term is not empty. */
+  isFilterActive: Readonly<Ref<boolean>>
+  /** Whether a value with this text matches; always `true` while filtering is inactive. */
+  filterOption: (value: T, text: string) => boolean
+  /** A mounted item registers here (keyed by an internal id); the returned function unregisters it. */
+  registerFilterItem: (id: string, item: ListboxFilterItem<T>) => () => void
+  /** Whether the registered item is filtered out (never in virtual mode, where the virtualizer filters its options). */
+  isFilteredOut: (id: string) => boolean
+  /** Whether every registered item of the group is filtered out. */
+  isGroupFilteredOut: (groupId: string) => boolean
+  /** Set by `ListboxVirtualizer` to its number of matching options. */
+  virtualFilterCount: Ref<number | undefined>
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
@@ -90,6 +107,13 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
    * `'select'` intent for Space does not select it twice.
    */
   getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
+  /**
+   * Filters the items by the `ListboxFilter` search term: called as `filter(text, search, value)` with the item's
+   * `textValue` (or text content; in a `ListboxVirtualizer`, `textContent(option)`), it returns whether the item
+   * matches. Items that do not match are not rendered, so keyboard navigation, typeahead and select-all skip them.
+   * Omitted or `null`, the listbox does not filter (filter the items yourself, or on a server).
+   */
+  filter?: ListboxFilterFunction<T> | null
 }
 
 export type ListboxRootEmits<T = AcceptableValue> = {
@@ -107,7 +131,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { ref, toRefs } from 'vue'
+import { ref, toRef, toRefs } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -154,6 +178,7 @@ const listbox = useListboxRoot<AcceptableValue>({
   loop: () => props.loop,
   by: props.by,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
+  filter: toRef(props, 'filter'),
   // `useCollection` (the item registry) stays in the shell — injected as the collection seam.
   getItems,
   getItem,
@@ -164,7 +189,7 @@ const listbox = useListboxRoot<AcceptableValue>({
   onEntryFocus: event => emits('entryFocus', event),
   onLeave: event => emits('leave', event),
 })
-const { root, context, highlightedElement, highlightFirstItem, highlightSelected } = listbox
+const { root, context, highlightedElement, highlightFirstItem, highlightSelected, filterState } = listbox
 
 // The composable is typed over `AcceptableValue` (the props are); narrow once
 // here for the slot payload and the exposed `highlightItem`, as before.
@@ -177,6 +202,8 @@ defineExpose({
   highlightFirstItem,
   highlightSelected,
   getItems,
+  /** The filtering result: `{ search, active, count }`. */
+  filtered: filterState,
 })
 
 provideListboxRootContext(context)

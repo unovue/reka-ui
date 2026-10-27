@@ -269,6 +269,7 @@ provideAutocompleteRootContext({
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
       :loop="loop"
+      :filter="null"
       @highlight="emits('highlight', $event as any)"
     >
       <slot

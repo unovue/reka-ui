@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useFilter } from '@/shared'
 import { countryList } from '@/shared/constant'
-import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from '..'
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '..'
 
 const searchTerm = ref('')
+const { contains } = useFilter({ sensitivity: 'base' })
 const options = computed(() => searchTerm.value.trim() ? countryList.slice(0, 20).filter(i => i.toLowerCase().includes(searchTerm.value.toLowerCase().trim())) : countryList.slice(0, 20))
 </script>
 
@@ -49,6 +51,47 @@ const options = computed(() => searchTerm.value.trim() ? countryList.slice(0, 20
           >
             {{ i }}
           </ListboxItem>
+        </ListboxContent>
+      </ListboxRoot>
+    </Variant>
+
+    <Variant title="Built-in filter">
+      <ListboxRoot
+        :filter="contains"
+        class="w-48  flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto "
+      >
+        <ListboxFilter class="border rounded" />
+        <ListboxContent class="h-72 overflow-auto">
+          <ListboxItem
+            v-for="i in countryList.slice(0, 20)"
+            :key="i"
+            :value="i"
+            class="w-full py-1 px-2 text-green9 select-none text-sm focus:ring-0 data-[highlighted]:outline-green9 data-[highlighted]:outline-1 data-[highlighted]:outline focus:outline-green9 data-[state=checked]:bg-green9 data-[state=checked]:text-white data-[disabled]:opacity-50 rounded"
+          >
+            {{ i }}
+          </ListboxItem>
+        </ListboxContent>
+      </ListboxRoot>
+    </Variant>
+
+    <Variant title="Built-in filter (Virtualized)">
+      <ListboxRoot
+        :filter="contains"
+        class="w-48  flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto "
+      >
+        <ListboxFilter class="border rounded" />
+        <ListboxContent class="h-72 overflow-auto">
+          <ListboxVirtualizer
+            v-slot="{ option }"
+            :options="countryList"
+          >
+            <ListboxItem
+              :value="option"
+              class="w-full py-1 px-2 text-green9 select-none text-sm focus:ring-0 data-[highlighted]:outline-green9 data-[highlighted]:outline-1 data-[highlighted]:outline focus:outline-green9 data-[state=checked]:bg-green9 data-[state=checked]:text-white data-[disabled]:opacity-50 rounded"
+            >
+              {{ option }}
+            </ListboxItem>
+          </ListboxVirtualizer>
         </ListboxContent>
       </ListboxRoot>
     </Variant>

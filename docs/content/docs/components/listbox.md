@@ -89,7 +89,7 @@ Contains all the parts of a listbox. An `input` will also render when used withi
 
 ### Filter
 
-Input element to perform filtering.
+Input element to perform filtering. Its value is the search term the root's `filter` runs against; without a `filter` on the root it only moves the highlight, and you filter the items yourself (see [Filtering](#filtering)).
 
 <!-- @include: @/meta/ListboxFilter.md -->
 
@@ -221,12 +221,80 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
+### Filtering
+
+Pass a `filter` function to `ListboxRoot` to filter the items by the `ListboxFilter` value. It is called as `filter(text, search, value)` with the item's `textValue` (or its text content) and returns whether the item matches. `useFilter` provides locale-aware `contains`, `startsWith` and `endsWith` matchers that fit this signature.
+
+Items that do not match are not rendered, so keyboard navigation, typeahead and select-all skip them, and a `ListboxGroup` whose items all fail to match is hidden. Filtering is opt-in: without `filter` (or with `null`) the listbox renders every item.
+
+```vue line=5,10
+<script setup lang="ts">
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, useFilter } from 'reka-ui'
+
+const fruits = ['Apple', 'Banana', 'Blueberry', 'Cherry', 'Grape', 'Mango']
+const { contains } = useFilter({ sensitivity: 'base' })
+</script>
+
+<template>
+  <ListboxRoot
+    :filter="contains"
+  >
+    <ListboxFilter />
+    <ListboxContent>
+      <ListboxItem
+        v-for="fruit in fruits"
+        :key="fruit"
+        :value="fruit"
+      >
+        {{ fruit }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
+Set `textValue` on an item whose content is not plain text, so the filter matches the text you want. The root exposes the result as `filtered` (`{ search, active, count }`, read it through a template ref), which you can use to render an empty state.
+
+Each item stays a mounted component while it is filtered out, and clearing or widening the search renders every item that matches again. For a large list (thousands of items) use a `ListboxVirtualizer`, which only renders the visible window of the matching options.
+
+With a `ListboxVirtualizer`, the filter runs over its `options` before they are virtualized: it matches `textContent(option)` (or the option's string form, so pass `textContent` for object options), and a filtered-out option takes no virtual index and does not count in `aria-setsize`.
+
+```vue line=10,14
+<script setup lang="ts">
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer, useFilter } from 'reka-ui'
+
+const people = Array.from({ length: 1000 }, (_, i) => ({ id: i, name: `Person ${i}` }))
+const { contains } = useFilter({ sensitivity: 'base' })
+</script>
+
+<template>
+  <ListboxRoot
+    :filter="contains"
+  >
+    <ListboxFilter />
+    <ListboxContent class="h-72 overflow-auto">
+      <ListboxVirtualizer
+        v-slot="{ option }"
+        :options="people"
+        :text-content="(person) => person.name"
+      >
+        <ListboxItem :value="option">
+          {{ option.name }}
+        </ListboxItem>
+      </ListboxVirtualizer>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
 ### Custom filtering
+
+To filter on a server, or to control the list yourself, leave `filter` unset, bind the `ListboxFilter` value and render only the items you want.
 
 ```vue line=13,15-16,21,24
 <script setup lang="ts">
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, useFilter } from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },

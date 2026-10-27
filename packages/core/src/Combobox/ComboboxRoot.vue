@@ -49,8 +49,9 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
 }
 
 // `getNavigationIntent` is omitted until the Combobox PR routes `ComboboxInput` through the intent resolution (#2824 item 8);
-// today the root would declare it without forwarding it.
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'getNavigationIntent'> {
+// today the root would declare it without forwarding it. `filter` likewise waits for the Combobox PR (#2824 item 7), which
+// moves this root's own filter engine onto it with `ignoreFilter` as the deprecated alias.
+export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'getNavigationIntent' | 'filter'> {
   /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -282,6 +283,7 @@ provideComboboxRootContext({
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
       :loop="loop"
+      :filter="null"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >
