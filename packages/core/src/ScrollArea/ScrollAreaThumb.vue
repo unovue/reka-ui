@@ -6,8 +6,8 @@ export interface ScrollAreaThumbProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { useTimeoutFn, watchOnce } from '@vueuse/core'
-import { computed, onUnmounted, ref } from 'vue'
+import { watchOnce } from '@vueuse/core'
+import { computed, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
@@ -31,54 +31,30 @@ function handlePointerUp(event: MouseEvent) {
 }
 
 const { forwardRef, currentElement: thumbElement } = useForwardExpose()
-const removeUnlinkedScrollListenerRef = ref<() => void>()
 const viewport = computed(() => rootContext.viewport.value)
 
-const { start: scheduleScrollEnd, stop: cancelScrollEnd } = useTimeoutFn(() => {
-  removeUnlinkedScrollListenerRef.value?.()
-  removeUnlinkedScrollListenerRef.value = undefined
-}, 100, { immediate: false })
+watch(viewport, (element, _, onCleanup) => {
+  if (!element)
+    return
 
-function handleScroll() {
-  scheduleScrollEnd()
-  if (!removeUnlinkedScrollListenerRef.value) {
-    const listener = addUnlinkedScrollListener(
-      viewport.value!,
-      scrollbarContextVisible.onThumbPositionChange,
-    )
-    removeUnlinkedScrollListenerRef.value = listener
-    scrollbarContextVisible.onThumbPositionChange()
-  }
-}
+  // Native events start the loop; position changes keep it alive during momentum scrolling.
+  const cleanup = addUnlinkedScrollListener(element, scrollbarContextVisible.onThumbPositionChange)
+  scrollbarContextVisible.onThumbPositionChange()
+  onCleanup(cleanup)
+}, { immediate: true, flush: 'post' })
 
 const sizes = computed(() => scrollbarContextVisible.sizes.value)
 
 watchOnce(sizes, () => {
   scrollbarContextVisible.onThumbChange(thumbElement.value!)
-  if (viewport.value) {
-    /**
-     * We only bind to native scroll event so we know when scroll starts and ends.
-     * When scroll starts we start a requestAnimationFrame loop that checks for
-     * changes to scroll position. That rAF loop triggers our thumb position change
-     * when relevant to avoid scroll-linked effects. We cancel the loop when scroll ends.
-     * https://developer.mozilla.org/en-US/docs/Mozilla/Performance/Scroll-linked_effects
-     */
-    scrollbarContextVisible.onThumbPositionChange()
-    viewport.value.addEventListener('scroll', handleScroll)
-  }
-})
-
-onUnmounted(() => {
-  cancelScrollEnd()
-  viewport.value?.removeEventListener('scroll', handleScroll)
-  removeUnlinkedScrollListenerRef.value?.()
+  scrollbarContextVisible.onThumbPositionChange()
 })
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
-    :data-state="scrollbarContextVisible.hasThumb ? 'visible' : 'hidden'"
+    :data-state="scrollbarContextVisible.hasThumb.value ? 'visible' : 'hidden'"
     :style="{
       width: 'var(--reka-scroll-area-thumb-width)',
       height: 'var(--reka-scroll-area-thumb-height)',
