@@ -11,7 +11,7 @@ Render Reka UI inside a shadow root, for web components, micro-frontends and emb
 
 ## Overview
 
-Every Reka UI component works when it is rendered inside an open shadow root: a Vue app mounted on a node inside `element.attachShadow({ mode: 'open' })`, or a component rendered by a custom element. Focus management, keyboard navigation, outside-press and focus-outside dismissal, `aria-*` id references, `aria-hidden` for modal layers, page scroll lock and positioning all resolve within the shadow tree. No configuration is needed.
+Every Reka UI component works when it is rendered inside an open shadow root: a Vue app mounted on a node inside `element.attachShadow({ mode: 'open' })`, or a component rendered by a custom element. Focus management, keyboard navigation, outside-press and focus-outside dismissal, `aria-*` id references, `aria-hidden` for modal layers and positioning all resolve within the shadow tree. Page scroll lock applies to the document, which the shadow root shares with the page. No configuration is needed.
 
 ```ts
 import { createApp } from 'vue'
