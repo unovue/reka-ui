@@ -27,7 +27,7 @@ interface SingleOrMultipleProps<T = AcceptableValue | AcceptableValue[]> {
 
 /**
  * if padding or margin is number, it will be in px
- * if padding or margin is true, it will be var(--scrollbar-width)
+ * if padding or margin is true, it will be the measured scrollbar width
  * otherwise, it will be passed string
  */
 type ScrollBodyOption = {

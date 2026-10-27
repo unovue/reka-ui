@@ -27,7 +27,11 @@ export interface ConfigProviderProps {
    */
   locale?: string
   /**
-   * The global scroll body behavior of your application. This will be inherited by the related primitives.
+   * How modal primitives lock page scroll. `true` keeps the layout stable with
+   * `scrollbar-gutter: stable` (or by pinning `<body>`'s size where that is
+   * unsupported), `false` only hides the overflow, and `{ padding, margin }`
+   * hides the overflow and offsets `<body>` by the given amounts (`true` = the
+   * scrollbar width). The lock never touches `pointer-events`.
    * @type boolean | ScrollBodyOption
    */
   scrollBody?: boolean | ScrollBodyOption
