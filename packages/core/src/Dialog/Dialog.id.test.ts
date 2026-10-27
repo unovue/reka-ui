@@ -143,4 +143,25 @@ describe('dialog part ids', () => {
     expect(utils.getByText('One').id).toBe('d1')
     expect(utils.getByText('Two').id).toBe('d2')
   })
+
+  it('hands the slot back to a remaining part\'s id when the latest one unmounts', async () => {
+    const showSecond = ref(true)
+    const utils = render(defineComponent({
+      components: { DialogRoot, DialogContent, DialogTitle, DialogDescription },
+      setup: () => ({ showSecond }),
+      template: `
+        <DialogRoot :open="true">
+          <DialogContent>
+            <DialogTitle>T</DialogTitle>
+            <DialogDescription id="d1">One</DialogDescription>
+            <DialogDescription v-if="showSecond" id="d2">Two</DialogDescription>
+          </DialogContent>
+        </DialogRoot>`,
+    }))
+    await nextTick()
+    expect(utils.getByRole('dialog').getAttribute('aria-describedby')).toBe('d2')
+    showSecond.value = false
+    await nextTick()
+    expect(utils.getByRole('dialog').getAttribute('aria-describedby')).toBe('d1')
+  })
 })

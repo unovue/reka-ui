@@ -27,7 +27,7 @@ import { ENDING_STYLE_ATTR, getRunningAnimations, STARTING_STYLE_ATTR, supportsA
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardElement, useId, usePartId } from '@/shared'
+import { getGeneratedId, setGeneratedIds, useForwardElement, useId, usePartId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 import { getCollapsibleContentSurface } from './useCollapsible'
 
@@ -39,7 +39,14 @@ const props = defineProps<CollapsibleContentProps>()
 const emits = defineEmits<CollapsibleContentEmits>()
 
 const rootContext = injectCollapsibleRootContext()
-rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
+// The first content allocates the generated id (the Root leaves the slot empty
+// to keep the v2 allocation order for SSR) and records it, so a later content
+// never takes another content's custom id for its fallback.
+if (!getGeneratedId(rootContext, 'contentId')) {
+  const generatedId = rootContext.contentId || useId(undefined, 'reka-collapsible-content')
+  setGeneratedIds(rootContext, { contentId: generatedId })
+  rootContext.contentId ||= generatedId
+}
 // Rendered on the element; mirrored into the context for the trigger's `aria-controls`.
 const contentId = usePartId(() => props.id, rootContext, 'contentId')
 

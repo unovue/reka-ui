@@ -81,4 +81,20 @@ describe('collapsible part ids', () => {
     expect(utils.getByText('One').id).toBe('c1')
     expect(utils.getByText('Two').id).toBe('c2')
   })
+
+  it('gives an id-less content the generated id, not an earlier content\'s custom id', async () => {
+    const utils = render(defineComponent({
+      components: { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent },
+      template: `
+        <CollapsibleRoot default-open>
+          <CollapsibleTrigger>Toggle</CollapsibleTrigger>
+          <CollapsibleContent id="custom">One</CollapsibleContent>
+          <CollapsibleContent>Two</CollapsibleContent>
+        </CollapsibleRoot>`,
+    }))
+    await nextTick()
+    expect(utils.getByText('One').id).toBe('custom')
+    expect(utils.getByText('Two').id).toMatch(/^reka-collapsible-content-/)
+    expect(utils.getByRole('button').getAttribute('aria-controls')).toBe('custom')
+  })
 })
