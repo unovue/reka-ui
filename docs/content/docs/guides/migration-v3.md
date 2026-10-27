@@ -544,3 +544,10 @@ New and additive:
 - **`isTimeUnavailable` on `TimeFieldRoot`**, as on `TimeRangeFieldRoot`. It receives the time as a date-time (a `Time` is placed on today's date) and marks the field invalid when it returns `true`.
 - **`stepSnapping` on `DateRangeFieldRoot`, `TimeRangeFieldRoot` and `DateRangePickerRoot`**, as on the single fields. `DatePickerRoot` and `DateRangePickerRoot` now pass `stepSnapping` on to their field; v2 accepted it on `DatePickerRoot` but never applied it.
 - **The composables.** A field built without the components binds `root.attrs` on a container and one `createInputSurface(part)` per segment. `useDatePicker()` / `useDateRangePicker()` return `getFieldProps()` and `getCalendarProps()`, which make a `useDateField()` / `useCalendar()` (or the range ones) the picker's field and calendar.
+
+## Detached triggers
+
+New and additive, so nothing to migrate. `PopoverTrigger`, `DialogTrigger`, `AlertDialogTrigger` and `DropdownMenuTrigger` can render outside their root: create a handle with `createPopoverHandle()`, `createDialogHandle()`, `createAlertDialogHandle()` or `createDropdownMenuHandle()` and pass it to the `handle` prop of the root and of each trigger. A trigger's `payload` reaches the root's default slot, and the popup anchors to and returns focus to the trigger that opened it. The handle also opens and closes the popup from code, reporting `'imperative-action'`. Without a `handle` the components behave as before. See the Detached triggers section on the [Popover](../components/popover#detached-triggers), [Dialog](../components/dialog#detached-triggers), [AlertDialog](../components/alert-dialog#detached-triggers) and [DropdownMenu](../components/dropdown-menu#detached-triggers) pages.
+
+`ChangeEventDetails` gains an optional `trigger` element, set when a detached trigger owns the change. Code that builds details with `createChangeEventDetails()` or reads them is unaffected.
+

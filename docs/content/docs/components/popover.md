@@ -343,6 +343,65 @@ import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot
 </template>
 ```
 
+### Detached triggers
+
+A `PopoverTrigger` does not have to be inside its `PopoverRoot`. Create a handle with `createPopoverHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here each user in a list opens the same popover with their own data, and a separate button opens it from code for one of the triggers.
+
+The popover anchors to the trigger that opened it and returns focus to it on close. Only that trigger gets `aria-expanded="true"` and `aria-controls`. Its `payload` reaches the root's default slot as `payload`, next to `activeTriggerId`. While a non-modal popover is open, pressing another of its triggers moves it to that trigger without closing it. A modal popover covers the other triggers, so the same press closes it instead.
+
+```vue
+<script setup lang="ts">
+import { createPopoverHandle, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+
+interface User { id: string, name: string, email: string }
+
+const users: User[] = [
+  { id: 'ada', name: 'Ada Lovelace', email: 'ada@example.com' },
+  { id: 'alan', name: 'Alan Turing', email: 'alan@example.com' },
+]
+
+const userPopover = createPopoverHandle<User>()
+</script>
+
+<template>
+  <ul>
+    <li
+      v-for="user in users"
+      :key="user.id"
+    >
+      {{ user.name }}
+      <PopoverTrigger
+        :id="`user-${user.id}`"
+        :handle="userPopover"
+        :payload="user"
+      >
+        Details
+      </PopoverTrigger>
+    </li>
+  </ul>
+
+  <button @click="userPopover.open('user-alan')">
+    Show Alan
+  </button>
+
+  <PopoverRoot
+    v-slot="{ payload }"
+    :handle="userPopover"
+  >
+    <PopoverPortal>
+      <PopoverContent :aria-label="payload?.name">
+        <p>{{ payload?.email }}</p>
+        <PopoverArrow />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
+```
+
+`handle.open(triggerId)` opens the popover for the trigger with that `id`. It throws if no such trigger uses the handle, because a popover needs a trigger to anchor to. `handle.close()` closes it. `handle.isOpen` is reactive. These calls report the reason `'imperative-action'` through `beforeUpdate:open` and `update:open`, so `details.cancel()` can veto them. They do nothing while no root with the handle is mounted. When a trigger owns a change, `details.trigger` is its element.
+
+The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app.
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
