@@ -12,3 +12,7 @@ export {
   default as ColorSliderTrack,
   type ColorSliderTrackProps,
 } from './ColorSliderTrack.vue'
+
+export { useColorSlider } from './useColorSlider'
+export type { ColorSliderChangeReason, ColorSliderRootState, UseColorSliderProps, UseColorSliderReturn } from './useColorSlider'
+export type { ColorSliderThumbState, ColorSliderTrackState } from './useColorSlider'
