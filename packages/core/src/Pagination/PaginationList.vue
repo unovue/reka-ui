@@ -6,10 +6,9 @@ export interface PaginationListProps extends PrimitiveProps { }
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectPaginationRootContext } from './PaginationRoot.vue'
-import { getRange, transform } from './utils'
+import { getPaginationItems } from './usePagination'
 
 const props = defineProps<PaginationListProps>()
 
@@ -24,16 +23,8 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectPaginationRootContext()
 
-const transformedRange = computed(() => {
-  return transform(
-    getRange(
-      rootContext.page.value,
-      rootContext.pageCount.value,
-      rootContext.siblingCount.value,
-      rootContext.showEdges.value,
-    ),
-  )
-})
+// The visible range comes from the same derivation as `usePagination().items`.
+const transformedRange = getPaginationItems(rootContext)
 </script>
 
 <template>

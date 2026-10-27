@@ -6,27 +6,27 @@ export interface PaginationLastProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectPaginationRootContext } from './PaginationRoot.vue'
+import { getPaginationNavigationSurface } from './usePagination'
 
-const props = withDefaults(defineProps<PaginationLastProps>(), { as: 'button' })
+withDefaults(defineProps<PaginationLastProps>(), { as: 'button' })
 
 const rootContext = injectPaginationRootContext()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-const disabled = computed((): boolean => rootContext.page.value === rootContext.pageCount.value || rootContext.disabled.value)
+// aria-label, disabled and the click handler come from the shared surface builder.
+const surface = getPaginationNavigationSurface(rootContext, 'last')
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
-    v-bind="props"
-    aria-label="Last Page"
+    :as="as"
+    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
-    :disabled
-    @click="!disabled && rootContext.onPageChange(rootContext.pageCount.value)"
+    v-bind="surface.attrs.value"
   >
     <slot>Last page</slot>
   </Primitive>
