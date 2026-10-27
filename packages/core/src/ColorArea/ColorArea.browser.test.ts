@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'vue'
+import type { Color } from '@/shared/color'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
@@ -6,21 +8,23 @@ import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb } from '.'
 
 function mountInForm() {
   const onSubmit = vi.fn((event: Event) => event.preventDefault())
-  const color = ref<unknown>({ space: 'hsl', h: 300, s: 50, l: 50, alpha: 1 })
+  const color = ref<Color>({ space: 'hsl', h: 300, s: 50, l: 50, alpha: 1 })
   const Form = defineComponent({
     setup() {
       return () => h('form', { onSubmit }, [
         h(ColorAreaRoot, {
-          'modelValue': color.value as any,
-          'onUpdate:modelValue': (value: unknown) => { color.value = value },
+          'modelValue': color.value,
+          'onUpdate:modelValue': (value: Color) => { color.value = value },
           'colorSpace': 'hsl',
           'xChannel': 'saturation',
           'yChannel': 'lightness',
           'xName': 'saturation',
           'yName': 'lightness',
-        }, ({ style }: { style: Record<string, string> }) => h(ColorAreaArea, {
-          style: { ...style, position: 'relative', width: '200px', height: '200px' },
-        }, () => h(ColorAreaThumb, { style: { display: 'block', width: '16px', height: '16px' } }))),
+        }, {
+          default: ({ style }: { style: CSSProperties }) => h(ColorAreaArea, {
+            style: { ...style, position: 'relative', width: '200px', height: '200px' },
+          }, () => h(ColorAreaThumb, { style: { display: 'block', width: '16px', height: '16px' } })),
+        }),
         h('button', { type: 'submit' }, 'Save'),
       ])
     },

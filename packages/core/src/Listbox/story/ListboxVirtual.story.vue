@@ -23,7 +23,7 @@ const groupedOptions = Array.from(byLetter, ([letter, countries]) => ({
 <template>
   <Story
     title="Listbox/Virtual"
-    :layout="{ type: 'grid', iframe: false, width: '50%' }"
+    :layout="{ type: 'grid', width: '50%' }"
   >
     <Variant title="Basic">
       <ListboxRoot class="w-48 p-1 rounded-lg border bg-white text-green9 mx-auto">

@@ -2,7 +2,7 @@
  * Compile-time type tests for `useEmitAsProps` and `useForwardPropsEmits`.
  *
  * These assertions are validated by `vue-tsc` (the `type-check` / `build` step):
- * `tsconfig.check.json` includes `src/**` and only excludes `*.test.ts`, so this
+ * `tsconfig.check.json` includes all of `src/**`, so this
  * `*.test-d.ts` file is type-checked but is neither executed by Vitest (its glob
  * is `*.test.{ts,js}`) nor bundled (nothing imports it). A regression in the emit
  * type inference therefore fails the build.

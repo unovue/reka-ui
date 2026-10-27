@@ -1,4 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { Mock } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -175,13 +176,13 @@ describe('given a Listbox with hover highlighting', () => {
 
 describe('given a Listbox on initial mount', () => {
   let wrapper: VueWrapper<InstanceType<typeof Listbox>>
-  let scrollSpy: ReturnType<typeof vi.fn>
+  let scrollSpy: Mock<HTMLElement['scrollIntoView']>
 
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()
   window.HTMLElement.prototype.hasPointerCapture = vi.fn()
 
   beforeEach(async () => {
-    scrollSpy = vi.fn()
+    scrollSpy = vi.fn<HTMLElement['scrollIntoView']>()
     window.HTMLElement.prototype.scrollIntoView = scrollSpy
     document.body.innerHTML = ''
     wrapper = mount(Listbox, { attachTo: document.body })
@@ -209,7 +210,7 @@ describe('given a Listbox on initial mount', () => {
 })
 
 describe('given a virtualized Listbox on initial mount', () => {
-  let scrollSpy: ReturnType<typeof vi.fn>
+  let scrollSpy: Mock<HTMLElement['scrollIntoView']>
 
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()
   window.HTMLElement.prototype.hasPointerCapture = vi.fn()
@@ -253,7 +254,7 @@ describe('given a virtualized Listbox on initial mount', () => {
   }
 
   beforeEach(() => {
-    scrollSpy = vi.fn()
+    scrollSpy = vi.fn<HTMLElement['scrollIntoView']>()
     window.HTMLElement.prototype.scrollIntoView = scrollSpy
     document.body.innerHTML = ''
   })

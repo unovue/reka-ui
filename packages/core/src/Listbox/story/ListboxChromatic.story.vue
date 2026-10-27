@@ -14,7 +14,7 @@ const listboxRef = ref<GenericComponentInstance<typeof ListboxRoot>>()
 <template>
   <Story
     title="Listbox/Chromatic"
-    :layout="{ type: 'grid', iframe: false, width: '50%' }"
+    :layout="{ type: 'grid', width: '50%' }"
   >
     <Variant title="Uncontrolled (Single)">
       <ListboxRoot class="w-48 h-72 flex flex-col p-1 rounded-lg border bg-white text-green9 mx-auto overflow-auto">

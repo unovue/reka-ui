@@ -8,7 +8,7 @@ export interface Measurable {
 }
 
 interface PopperRootContext {
-  anchor: Ref<ReferenceElement | undefined>
+  anchor: Readonly<Ref<ReferenceElement | undefined>>
   onAnchorChange: (element: ReferenceElement | undefined) => void
 }
 
@@ -17,17 +17,26 @@ export const [injectPopperRootContext, providePopperRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const anchor = ref<ReferenceElement>()
+const props = defineProps<{
+  /**
+   * Anchor used while no `PopperAnchor` registers one: the active detached
+   * trigger of a Root with a `handle` (#2826).
+   */
+  reference?: ReferenceElement
+}>()
+
+const anchorPart = ref<ReferenceElement>()
+const anchor = computed(() => anchorPart.value ?? props.reference)
 
 providePopperRootContext({
   anchor,
-  onAnchorChange: element => anchor.value = element,
+  onAnchorChange: element => anchorPart.value = element,
 })
 </script>
 

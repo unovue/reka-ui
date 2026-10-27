@@ -85,7 +85,14 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
  */
 export type ComboboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | null : M extends true ? T[] : T | null
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent'> {
+export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
+  /**
+   * The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty
+   * single selection, the value `ComboboxCancel` emits when it clears one.
+   */
+  modelValue?: T | Array<T> | null
+  /** The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox. */
+  defaultValue?: T | Array<T> | null
   /**
    * Resolves what a keydown in the input means for keyboard navigation. Return `undefined` to fall back to the default
    * mapping, `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the

@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { MenuContentContext } from './MenuContentImpl.vue'
 import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
-import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
 import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, getActiveElement, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
@@ -71,7 +71,7 @@ export interface UseMenuRootProps {
 export interface UseMenuRootReturn {
   open: ComputedRef<boolean>
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
-  onOpenChange: (value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+  onOpenChange: (value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event, options?: SetStateOptions) => boolean
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onClose: (reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<MenuOpenChangeReason>>>
@@ -107,8 +107,8 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
   const content = ref<HTMLElement>()
   const isUsingKeyboardRef = useIsUsingKeyboard()
 
-  function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
-    return setState(value, reason, event)
+  function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event, options?: SetStateOptions): boolean {
+    return setState(value, reason, event, options)
   }
   function onClose(reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     return setState(false, reason, event)

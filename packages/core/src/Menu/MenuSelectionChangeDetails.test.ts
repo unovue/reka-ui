@@ -63,7 +63,7 @@ describe('dropdownMenu checkbox item and radio group change details', () => {
           }, () => 'Check'),
           h(DropdownMenuRadioGroup, {
             'modelValue': radio.value,
-            'onUpdate:modelValue': (value: string) => { radio.value = value },
+            'onUpdate:modelValue': (value: unknown) => { radio.value = value as string },
             ...options.radioListeners,
           }, () => [
             h(DropdownMenuRadioItem, { value: 'a' }, () => 'A'),
@@ -139,7 +139,7 @@ describe('dropdownMenu checkbox item and radio group change details', () => {
     const onBefore = vi.fn()
     const onUpdate = vi.fn()
     const { wrapper, radio, radioItem } = mountMenu({
-      radioListeners: { 'onBeforeUpdate:modelValue': onBefore, 'onUpdate:modelValue': [(v: string) => { radio.value = v }, onUpdate] },
+      radioListeners: { 'onBeforeUpdate:modelValue': onBefore, 'onUpdate:modelValue': [(v: unknown) => { radio.value = v as string }, onUpdate] },
     })
     await nextTick()
     radioItem(1).click()
@@ -171,7 +171,7 @@ describe('dropdownMenu checkbox item and radio group change details', () => {
     const onUpdate = vi.fn()
     const { wrapper, radio, radioItem } = mountMenu({
       radioListeners: {
-        'onBeforeUpdate:modelValue': (_v: string, details: Details) => details.cancel(),
+        'onBeforeUpdate:modelValue': (_v: unknown, details: Details) => details.cancel(),
         'onUpdate:modelValue': onUpdate,
       },
     })
@@ -226,7 +226,7 @@ describe('contextMenu and Menubar forward the checkbox and radio change details'
   })
 
   it('contextMenu radio group, cancelled', async () => {
-    const onRadioBefore = vi.fn((_v: string, details: Details) => details.cancel())
+    const onRadioBefore = vi.fn((_v: unknown, details: Details) => details.cancel())
     const onRadio = vi.fn()
     mount(defineComponent({
       setup: () => () => h(ContextMenuRoot, null, () => [

@@ -323,7 +323,7 @@ describe('scroll locks and modal layers are independent (#2784, #2867, #2822)', 
   it.each([
     ['the lock', 'the layer'],
     ['the layer', 'the lock'],
-  ] as const)('should restore the page once %s and then %s release', async (first) => {
+  ] as const)('should restore the page once %s and then %s release', async (first, _then) => {
     const { wrapper, lockOpen, layerOpen } = mountLockAndLayer()
     lockOpen.value = true
     layerOpen.value = true
@@ -407,7 +407,7 @@ describe('given a DismissableLayer inside a positioned popper wrapper', () => {
 
       observe() {}
     })
-    onTestFinished(() => vi.unstubAllGlobals())
+    onTestFinished(() => { vi.unstubAllGlobals() })
 
     const cutout = document.createElement('button')
     document.body.append(cutout)

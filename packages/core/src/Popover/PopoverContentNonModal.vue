@@ -2,12 +2,14 @@
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { getPopupRootStore } from '@/shared/popupHandle'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = defineProps<PopoverContentImplProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
 const rootContext = injectPopoverRootContext()
+const handleStore = getPopupRootStore(rootContext)
 const hasInteractedOutsideRef = ref(false)
 const hasPointerDownOutsideRef = ref(false)
 
@@ -54,6 +56,13 @@ defineExpose(expose)
         const target = event.target as HTMLElement;
         const targetIsTrigger = rootContext.triggerElement.value?.contains(target);
         if (targetIsTrigger) event.preventDefault();
+
+        // Another detached trigger of the same handle: its click moves the open
+        // popover there (Base UI), so this press is not a dismissal.
+        if (handleStore?.handle.value && handleStore.containsTrigger(target)) {
+          event.preventDefault();
+          hasInteractedOutsideRef = false;
+        }
 
         // On Safari if the trigger is inside a container with tabIndex={0}, when clicked
         // we will get the pointer down outside event on the trigger, but then a subsequent

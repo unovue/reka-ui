@@ -3,7 +3,7 @@ import type { PopoverTriggerProps } from '..'
 import { PopoverTrigger } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 
-export interface DatePickerTriggerProps extends PopoverTriggerProps {}
+export interface DatePickerTriggerProps extends Omit<PopoverTriggerProps, 'handle' | 'payload'> {}
 </script>
 
 <script setup lang="ts">

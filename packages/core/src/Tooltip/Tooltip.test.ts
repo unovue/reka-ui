@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -56,7 +57,7 @@ describe('given default Tooltip', () => {
 
   describe('disabled tooltip', () => {
     it('should not be open when focus', async () => {
-      await wrapper.setProps({ disabled: true })
+      await wrapper.setProps({ tooltipProvider: { disabled: true } })
 
       await wrapper.find('button').trigger('focus')
 
@@ -253,15 +254,15 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
 
     expect(root.emitted('beforeUpdate:open')).toHaveLength(1)
     expect(root.emitted('update:open')).toHaveLength(1)
-    const [beforeValue, beforeDetails] = root.emitted('beforeUpdate:open')![0]
-    const [value, details] = root.emitted('update:open')![0]
+    const [beforeValue, beforeDetails] = root.emitted<[boolean, ChangeEventDetails]>('beforeUpdate:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(beforeValue).toBe(true)
     expect(beforeDetails).toMatchObject({ reason: 'trigger-hover' })
     expect(value).toBe(true)
     expect(details).toMatchObject({ reason: 'trigger-hover', isCanceled: false })
     // The `pointermove` that armed the timer travels with the delayed open.
     expect(details.event).toBeInstanceOf(Event)
-    expect(details.event.type).toBe('pointermove')
+    expect(details.event?.type).toBe('pointermove')
     expect(typeof details.cancel).toBe('function')
     expect(trigger().attributes('data-state')).toBe('open')
     expect(trigger().attributes('data-delayed')).toBe('')
@@ -272,11 +273,11 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     await trigger().trigger('focus')
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(value).toBe(true)
     expect(details).toMatchObject({ reason: 'trigger-focus', isCanceled: false })
     expect(details.event).toBeInstanceOf(Event)
-    expect(details.event.type).toBe('focus')
+    expect(details.event?.type).toBe('focus')
     expect(vm.open).toBe(true)
     expect(trigger().attributes('data-delayed')).toBeUndefined()
   })
@@ -290,7 +291,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     await trigger().trigger('click')
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'trigger-press' })
     expect(details.event).toBeInstanceOf(MouseEvent)
@@ -305,10 +306,10 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     await trigger().trigger('blur')
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'trigger-blur' })
-    expect(details.event.type).toBe('blur')
+    expect(details.event?.type).toBe('blur')
     expect(vm.open).toBe(false)
   })
 
@@ -323,11 +324,11 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     await trigger().trigger('pointerleave')
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'trigger-leave' })
     expect(details.event).toBeInstanceOf(Event)
-    expect(details.event.type).toBe('pointerleave')
+    expect(details.event?.type).toBe('pointerleave')
     expect(vm.open).toBe(false)
   })
 
@@ -353,7 +354,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     await trigger().trigger('keydown', { key: 'Escape' })
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'escape-key' })
     expect(details.event).toBeInstanceOf(KeyboardEvent)
@@ -446,7 +447,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
 })
 
 describe('given a tooltip trigger whose element is replaced after mount', () => {
-  let wrapper: VueWrapper
+  let wrapper: VueWrapper<InstanceType<typeof SwappableTrigger>>
 
   const AnchorProbe = defineComponent({
     setup() {

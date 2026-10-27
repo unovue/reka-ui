@@ -1,8 +1,11 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { PopoverHandle } from './handle'
 import type { PopoverOpenChangeReason, PopoverRootContext } from './PopoverRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
+import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the Popover (overlay) family — issue #2723.
@@ -67,13 +70,22 @@ export function getPopoverContentSurface(context: PopoverRootContext): PartSurfa
     () => ({
       'id': context.contentId,
       'role': 'dialog',
-      'aria-labelledby': context.triggerId,
+      'aria-labelledby': context.triggerId || undefined,
     }),
     () => ({ state: disclosureState(context.open.value) }),
   )
 }
 
-export interface UsePopoverProps {
+export interface UsePopoverProps<Payload = unknown> {
+  /**
+   * Connects detached `PopoverTrigger`s (#2826): the popover anchors to,
+   * returns focus to and exposes the `payload` of whichever trigger opened it.
+   */
+  handle?: MaybeRefOrGetter<PopoverHandle<Payload> | undefined>
+  /** Controlled id of the trigger that owns the popover (with a `handle`). */
+  triggerId?: MaybeRefOrGetter<string | null | undefined>
+  /** Id of the trigger that owns a popover that starts open (with a `handle`). */
+  defaultTriggerId?: string | null
   /**
    * Controlled open state. A getter/ref resolving to `undefined` is uncontrolled;
    * a writable `Ref` (with no `emit`/`onUpdate`) is written back ("ref-owned").
@@ -101,8 +113,14 @@ export interface UsePopoverProps {
   onUpdate?: (value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>) => void
 }
 
-export interface UsePopoverReturn {
+export interface UsePopoverReturn<Payload = unknown> {
   open: ComputedRef<boolean>
+  /** The `payload` of the trigger that opened the popover (with a `handle`). */
+  payload: ComputedRef<Payload | undefined>
+  /** The id of the trigger that opened the popover (with a `handle`), kept after close. */
+  activeTriggerId: ComputedRef<string | null>
+  /** The detached-trigger store the Root attaches to its `handle`. */
+  handleStore: PopupRootStore<Payload>
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: PopoverOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
@@ -136,7 +154,7 @@ export interface UsePopoverReturn {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
-export function usePopover(props: UsePopoverProps = {}): UsePopoverReturn {
+export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = {}): UsePopoverReturn<Payload> {
   const baseId = props.baseId ?? `reka-popover-${++popoverCount}`
 
   const { state: open, setState, lastChangeDetails, isControlled } = useControllableState<boolean, PopoverOpenChangeReason>({
@@ -148,8 +166,25 @@ export function usePopover(props: UsePopoverProps = {}): UsePopoverReturn {
     onUpdate: props.onUpdate,
   })
   const modal = computed<boolean>(() => toValue(props.modal) ?? false)
-  const triggerElement = ref<HTMLElement>()
   const hasCustomAnchor = ref(false)
+
+  const handleStore = createPopupRootStore<Payload>({
+    handle: () => toValue(props.handle),
+    open,
+    setState,
+    baseId,
+    triggerId: props.triggerId,
+    defaultTriggerId: props.defaultTriggerId,
+  })
+  // With a `handle`, the trigger that focus returns to (and that the modal
+  // backdrop cuts out) is whichever detached trigger opened the popover.
+  const ownTriggerElement = ref<HTMLElement>()
+  const triggerElement = computed<HTMLElement | undefined>({
+    get: () => (handleStore.handle.value && handleStore.activeTriggerElement.value) || ownTriggerElement.value,
+    set: (element) => {
+      ownTriggerElement.value = element
+    },
+  })
 
   // Every write to `open` — trigger, close button, dismiss, slot `close` — goes
   // through one `setState`, so `beforeUpdate:open` can cancel any of them and
@@ -161,9 +196,17 @@ export function usePopover(props: UsePopoverProps = {}): UsePopoverReturn {
     return setState(!open.value, reason, event)
   }
 
+  const ownTriggerId = `${baseId}-trigger`
   const context: PopoverRootContext = {
     triggerElement,
-    triggerId: `${baseId}-trigger`,
+    // With a `handle`, the content's `aria-labelledby` follows the active
+    // trigger while it is mounted, and is dropped (`''`) while no mounted
+    // trigger owns the popover, so it never points at a missing id.
+    get triggerId() {
+      if (!handleStore.handle.value)
+        return ownTriggerId
+      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
+    },
     contentId: `${baseId}-content`,
     open,
     modal: modal as Ref<boolean>,
@@ -171,9 +214,13 @@ export function usePopover(props: UsePopoverProps = {}): UsePopoverReturn {
     onOpenToggle,
     hasCustomAnchor,
   }
+  setPopupRootStore(context, handleStore)
 
   return {
     open,
+    payload: handleStore.payload,
+    activeTriggerId: handleStore.activeTriggerId,
+    handleStore,
     onOpenChange,
     onOpenToggle,
     lastChangeDetails,
