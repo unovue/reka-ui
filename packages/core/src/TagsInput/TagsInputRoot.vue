@@ -99,7 +99,7 @@ const emits = defineEmits<TagsInputRootEmits<T>>()
 defineSlots<{
   default?: (props: {
     /** Current input values */
-    modelValue: typeof modelValue.value
+    modelValue: Array<T>
   }) => any
 }>()
 

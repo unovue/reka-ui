@@ -191,6 +191,43 @@ describe('useTagsInput — reasons from the part surfaces', () => {
     expect(reasons).toEqual(['backspace-key', 'delete-key'])
   })
 
+  it('a cancelled backspace/delete removal keeps the current tag selected', () => {
+    const items = ['a', 'b'].map((value) => {
+      const ref = document.createElement('span')
+      return { ref, value }
+    })
+    const el = document.createElement('input')
+    const t = useTagsInput({
+      defaultValue: ['a', 'b'],
+      getItems: () => items,
+      onBeforeUpdate: (_value, details) => details.cancel(),
+    })
+    const input = t.input
+    input.props.value.onKeydown(keydown(el, 'Backspace')) // selects the last tag
+    expect(t.selectedElement.value).toBe(items[1].ref)
+    input.props.value.onKeydown(keydown(el, 'Backspace'))
+    expect(t.modelValue.value).toEqual(['a', 'b'])
+    expect(t.selectedElement.value).toBe(items[1].ref)
+    t.selectedElement.value = items[0].ref
+    input.props.value.onKeydown(keydown(el, 'Delete'))
+    expect(t.selectedElement.value).toBe(items[0].ref)
+  })
+
+  it('invalid fires per rejected tag before beforeUpdate, and also when the change is cancelled', () => {
+    const order: string[] = []
+    const t = useTagsInput({
+      defaultValue: ['a'],
+      onInvalid: value => order.push(`invalid:${value}`),
+      onBeforeUpdate: (_value, details) => {
+        order.push('beforeUpdate')
+        details.cancel()
+      },
+      onAddTag: value => order.push(`add:${value}`),
+    })
+    expect(t.addTags(['a', 'b'], 'paste')).toBe(false)
+    expect(order).toEqual(['invalid:a', 'beforeUpdate'])
+  })
+
   it('item-delete-press / clear-press', () => {
     const { t, reasons } = setup({ defaultValue: ['a', 'b'] })
     const { delete: itemDelete } = t.getItemSurfaces('a')
@@ -328,6 +365,43 @@ describe('tagsInputRoot — change details', () => {
     expect(root.emitted('update:modelValue')?.[0][0]).toEqual([])
     expect(root.emitted('removeTag')?.[0][0]).toBe('a')
     expect(wrapper.findAll('[data-reka-collection-item]')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('controlled with an update handler that ignores the change keeps the typed text', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mountRoot({ 'modelValue': ['a'], 'onUpdate:modelValue': onUpdate })
+    const input = wrapper.get('input')
+    input.element.value = 'b'
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(input.element.value).toBe('b')
+    expect(wrapper.findAll('[data-reka-collection-item]')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('v-model clears the typed text once the tag is added', async () => {
+    const model = ref<string[]>(['a'])
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(TagsInputRoot, {
+          'modelValue': model.value,
+          'onUpdate:modelValue': (value: string[]) => { model.value = value },
+        }, {
+          default: ({ modelValue }: { modelValue: string[] }) => [
+            ...modelValue.map(item => h(TagsInputItem, { key: item, value: item }, () => h(TagsInputItemText))),
+            h(TagsInputInput, { 'aria-label': 'Add tag' }),
+          ],
+        })
+      },
+    }), { attachTo: document.body })
+    const input = wrapper.get('input')
+    input.element.value = 'b'
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(model.value).toEqual(['a', 'b'])
+    expect(input.element.value).toBe('')
     wrapper.unmount()
   })
 

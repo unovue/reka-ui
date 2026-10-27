@@ -239,8 +239,9 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
           const index = collection.findIndex(i => i === selectedElement.value)
           const selectedItem = getItems().find(i => i.ref === selectedElement.value)
           const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
-          removeTag(modelIndex, event.key === 'Delete' ? 'delete-key' : 'backspace-key', event)
-          selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
+          // A cancelled (or no-op) removal keeps the current tag selected.
+          if (removeTag(modelIndex, event.key === 'Delete' ? 'delete-key' : 'backspace-key', event))
+            selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }
         else if (event.key === 'Backspace') {
@@ -451,6 +452,28 @@ export function createTagsInputInputSurface(
 ): PartSurface<TagsInputInputState> {
   const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
 
+  /**
+   * Adds the typed text as a tag and clears the input once the model actually
+   * changed. A controlled parent that ignores `update:modelValue` leaves the
+   * model as it was, so the typed text stays. A controlled prop arrives on the
+   * next tick, hence the deferred check; the text is only cleared if the user
+   * has not typed since.
+   */
+  function addTypedText(target: HTMLInputElement, reason: TagsInputChangeReason, event: Event) {
+    const text = target.value
+    const before = context.modelValue.value
+    if (!context.onAddValue(text, reason, event))
+      return
+    if (context.modelValue.value !== before) {
+      target.value = ''
+      return
+    }
+    nextTick(() => {
+      if (context.modelValue.value !== before && target.value === text)
+        target.value = ''
+    })
+  }
+
   function handleBlur(event: FocusEvent) {
     context.selectedElement.value = undefined
 
@@ -470,9 +493,7 @@ export function createTagsInputInputSurface(
     if (!target.value)
       return
 
-    const isAdded = context.onAddValue(target.value, 'blur', event)
-    if (isAdded)
-      target.value = ''
+    addTypedText(target, 'blur', event)
   }
 
   async function handleCustomKeydown(event: KeyboardEvent, reason: TagsInputChangeReason, { preventImplicitSubmit = false } = {}) {
@@ -503,9 +524,7 @@ export function createTagsInputInputSurface(
     if (!target.value)
       return
 
-    const isAdded = context.onAddValue(target.value, reason, event)
-    if (isAdded)
-      target.value = ''
+    addTypedText(target, reason, event)
 
     // Keep focus in the input after `Tab` adds a tag. A browser still honours this
     // from a microtask of the keydown dispatch; `Enter` was already cancelled above.
@@ -530,9 +549,7 @@ export function createTagsInputInputSurface(
         return
       }
 
-      const isAdded = context.onAddValue(target.value, 'delimiter', event)
-      if (isAdded)
-        target.value = ''
+      addTypedText(target, 'delimiter', event)
     }
   }
 
