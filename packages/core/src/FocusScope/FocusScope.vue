@@ -104,7 +104,7 @@ watchEffect((cleanupFn) => {
     if (focusScope.paused || !container)
       return
     const target = event.target as HTMLElement | null
-    if (container.contains(target))
+    if (containsComposed(container, target))
       lastFocusedElementRef.value = target
     else focus(lastFocusedElementRef.value, { select: true })
   }
@@ -129,7 +129,7 @@ watchEffect((cleanupFn) => {
 
     // If the focus has moved to an actual legitimate element (`relatedTarget !== null`)
     // that is outside the container, we move focus to the last valid focused element inside.
-    if (!container.contains(relatedTarget))
+    if (!containsComposed(container, relatedTarget))
       focus(lastFocusedElementRef.value, { select: true })
   }
 
@@ -167,7 +167,7 @@ watchEffect((cleanupFn) => {
     if (activeElement && containsComposed(container, activeElement))
       return
 
-    const isLastFocusedElementExist = container.contains(lastFocusedElement)
+    const isLastFocusedElementExist = containsComposed(container, lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
   }
@@ -233,7 +233,7 @@ watchEffect(async (cleanupFn) => {
   if (props.present !== false)
     focusScopesStack.add(focusScope)
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-  const hasFocusedCandidate = container.contains(previouslyFocusedElement)
+  const hasFocusedCandidate = containsComposed(container, previouslyFocusedElement)
 
   // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
   // consumer keeps the scope mounted but flags it as not present. Skip the
@@ -299,7 +299,7 @@ watch(() => props.present, async (present, prevPresent) => {
     return
 
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
-  if (!container.contains(previouslyFocusedElement))
+  if (!containsComposed(container, previouslyFocusedElement))
     dispatchMountAutoFocus(container, previouslyFocusedElement)
 })
 

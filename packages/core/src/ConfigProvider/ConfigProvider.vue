@@ -43,7 +43,8 @@ export interface ConfigProviderProps {
   /**
    * The global default teleport target for all portalled primitives (e.g. `Dialog`, `Popover`, `Tooltip`).
    * Individual `*Portal` components can still override this via their own `to` prop.
-   * Useful when rendering inside a custom element / shadow DOM.
+   * Without it, portals render into `body`, or into the shadow root they are rendered in.
+   * Inside a shadow root, a selector is looked up in the shadow root first, then in the document.
    * @type string | HTMLElement
    */
   teleportTo?: string | HTMLElement

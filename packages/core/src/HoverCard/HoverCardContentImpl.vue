@@ -2,14 +2,13 @@
 import type { DismissableLayerDismissDetails, DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { useForwardElement, useGraceArea } from '@/shared'
+import { useAncestorScroll, useForwardElement, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
 </script>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { mergeProps, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
@@ -109,13 +108,10 @@ onMounted(() => {
     const tabbables = getTabbableNodes(contentElement.value)
     tabbables.forEach(tabbable => tabbable.setAttribute('tabindex', '-1'))
   }
-
-  useEventListener(window, 'scroll', (event: Event) => {
-    const target = event.target as HTMLElement
-    if (target?.contains(rootContext.triggerElement.value!))
-      rootContext.onDismiss()
-  }, { capture: true })
 })
+
+// Dismiss when the trigger is scrolled (also inside a shadow root)
+useAncestorScroll(rootContext.triggerElement, () => rootContext.onDismiss())
 
 onUnmounted(() => {
   document.removeEventListener('pointerup', handlePointerUp)

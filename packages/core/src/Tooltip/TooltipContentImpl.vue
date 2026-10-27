@@ -2,7 +2,7 @@
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
 import { defu } from 'defu'
-import { useForwardElement } from '@/shared'
+import { useAncestorScroll, useForwardElement } from '@/shared'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
@@ -91,13 +91,10 @@ const popperContentProps = computed(() => {
   } satisfies TooltipContentImplProps)
 })
 
+// Close the tooltip if the trigger is scrolled (also inside a shadow root)
+useAncestorScroll(rootContext.trigger, () => rootContext.onClose())
+
 onMounted(() => {
-  // Close the tooltip if the trigger is scrolled
-  useEventListener(window, 'scroll', (event) => {
-    const target = event.target as HTMLElement
-    if (target?.contains(rootContext.trigger.value!))
-      rootContext.onClose()
-  }, { capture: true })
   // Close this tooltip if another one opens
   useEventListener(document, TOOLTIP_OPEN, () => rootContext.onClose())
 })

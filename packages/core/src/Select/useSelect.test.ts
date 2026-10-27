@@ -561,6 +561,23 @@ describe('review fixes (#3072)', () => {
     expect(onUpdate).toHaveBeenCalledWith('Banana', expect.objectContaining({ reason: 'item-press' }))
   })
 
+  it('a drag released inside a web component in the content does not close it', async () => {
+    mountSelect()
+    await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false, pageX: 5, pageY: 5 })
+    await flushPromises()
+    // An icon web component in the content (outside any item): the composed
+    // target is inside its shadow root.
+    const icon = document.createElement('x-select-icon')
+    const inner = document.createElement('span')
+    icon.attachShadow({ mode: 'open' }).appendChild(inner)
+    document.querySelector('[role=listbox]')!.appendChild(icon)
+
+    document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 200, clientY: 200 }))
+    inner.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, composed: true, clientX: 200, clientY: 200 }))
+    await flushPromises()
+    expect(isOpen()).toBe(true)
+  })
+
   it('re-pressing the selected value matched with by does not emit', async () => {
     const items = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
     const onUpdate = vi.fn()
