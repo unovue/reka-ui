@@ -9,21 +9,15 @@ export interface EditablePreviewProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
+import { getEditablePreviewSurface } from './useEditable'
 
 const props = withDefaults(defineProps<EditablePreviewProps>(), { as: 'span' })
 
 const context = injectEditableRootContext()
+// Same derivation as `useEditable().preview`.
+const preview = getEditablePreviewSurface(context)
 
 const placeholder = computed(() => context.placeholder.value?.preview)
-
-function handleFocus() {
-  if (context.activationMode.value === 'focus')
-    context.edit()
-}
-function handleDoubleClick() {
-  if (context.activationMode.value === 'dblclick')
-    context.edit()
-}
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -32,20 +26,9 @@ defineExpose(expose)
 <template>
   <Primitive
     :ref="forwardRef"
-    v-bind="props"
-    tabindex="0"
-    :data-placeholder-shown="context.isEditing.value ? undefined : ''"
-    :hidden="context.autoResize.value ? undefined : context.isEditing.value"
-    :style="context.autoResize.value ? {
-      whiteSpace: 'pre',
-      userSelect: 'none',
-      gridArea: '1 / 1 / auto / auto',
-      visibility: context.isEditing.value ? 'hidden' : undefined,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    } : undefined"
-    @focusin="handleFocus"
-    @dblclick="handleDoubleClick"
+    v-bind="preview.attrs.value"
+    :as="props.as"
+    :as-child="props.asChild"
   >
     <slot>
       {{ context.modelValue.value || placeholder }}

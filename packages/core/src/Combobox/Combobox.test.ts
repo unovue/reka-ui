@@ -110,16 +110,13 @@ describe('given a Combobox with unmountOnHide=false', () => {
 
     expect(document.body.style.overflowY).not.toBe('hidden')
     await trigger.trigger('click')
-    await sleep(10)
-    expect(document.body.style.overflowY).toBe('hidden')
+    await vi.waitFor(() => expect(document.body.style.overflowY).toBe('hidden'))
 
     await wrapper.setProps({ bodyLock: false })
-    await sleep(10)
-    expect(document.body.style.overflowY).not.toBe('hidden')
+    await vi.waitFor(() => expect(document.body.style.overflowY).not.toBe('hidden'))
 
     await wrapper.setProps({ bodyLock: true })
-    await sleep(10)
-    expect(document.body.style.overflowY).toBe('hidden')
+    await vi.waitFor(() => expect(document.body.style.overflowY).toBe('hidden'))
 
     document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await vi.waitFor(() => expect(document.body.style.overflowY).not.toBe('hidden'))

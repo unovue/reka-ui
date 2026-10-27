@@ -94,9 +94,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the radio group value changes; call <code>details.cancel()</code> to keep the current value</p>\n',
+    'type': '[payload: number, details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the radio group value changes</p>\n',
-    'type': '[payload: number]'
+    'type': '[payload: number, details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
   }
 ]" />
 
@@ -139,7 +144,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the radio group value changes | `[payload: number]` |
+| `beforeUpdate:modelValue` | Event handler called before the radio group value changes; call details.cancel() to keep the current value | `[payload: number, details: ChangeEventDetails<"item-press", Event>]` |
+| `update:modelValue` | Event handler called when the radio group value changes | `[payload: number, details: ChangeEventDetails<"item-press", Event>]` |
 
 **Slots**
 

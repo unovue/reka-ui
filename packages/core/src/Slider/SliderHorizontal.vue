@@ -4,7 +4,7 @@ import { computed, ref, toRefs } from 'vue'
 import { useForwardElement } from '@/shared'
 import SliderImpl from './SliderImpl.vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
-import { BACK_KEYS, linearScale, provideSliderOrientationContext } from './utils'
+import { injectSliderOrientationContext, linearScale } from './utils'
 
 interface SliderHorizontalProps extends SliderOrientationPrivateProps {
   dir?: Direction
@@ -12,15 +12,17 @@ interface SliderHorizontalProps extends SliderOrientationPrivateProps {
 
 const props = defineProps<SliderHorizontalProps>()
 const emits = defineEmits<SliderOrientationPrivateEmits>()
-const { max, min, dir, inverted } = toRefs(props)
+const { max, min, dir } = toRefs(props)
 
 const { forwardRef, currentElement: sliderElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectSliderRootContext()
+// Provided by SliderRoot from `useSlider()`: the one orientation geometry derivation.
+const orientation = injectSliderOrientationContext()
 
 const offsetPosition = ref<number>()
 const rectRef = ref<DOMRect>()
-const isSlidingFromLeft = computed(() => (dir?.value !== 'rtl' && !inverted.value) || (dir?.value !== 'ltr' && inverted.value))
+const isSlidingFromLeft = computed(() => orientation.direction.value === 1)
 
 function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
   const rect = rectRef.value || sliderElement.value!.getBoundingClientRect()
@@ -46,17 +48,6 @@ function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
 
   return value(position)
 }
-
-const startEdge = computed(() => isSlidingFromLeft.value ? 'left' : 'right')
-const endEdge = computed(() => isSlidingFromLeft.value ? 'right' : 'left')
-const direction = computed(() => isSlidingFromLeft.value ? 1 : -1)
-
-provideSliderOrientationContext({
-  startEdge,
-  endEdge,
-  direction,
-  size: 'width',
-})
 </script>
 
 <template>
@@ -64,30 +55,19 @@ provideSliderOrientationContext({
     :ref="forwardRef"
     :dir="dir"
     data-orientation="horizontal"
-    :style="{
-      ['--reka-slider-thumb-transform' as any]:
-        !isSlidingFromLeft && rootContext.thumbAlignment.value === 'overflow' ? 'translateX(50%)' : 'translateX(-50%)',
-    }"
     @slide-start="(event) => {
       const value = getValueFromPointerEvent(event, true);
-      emits('slideStart', value)
+      emits('slideStart', value, event)
     }"
     @slide-move="(event) => {
       const value = getValueFromPointerEvent(event);
-      emits('slideMove', value)
+      emits('slideMove', value, event)
     }"
-    @slide-end="() => {
+    @slide-end="(event) => {
       rectRef = undefined;
       offsetPosition = undefined
-      emits('slideEnd')
+      emits('slideEnd', event)
     }"
-    @step-key-down="(event) => {
-      const slideDirection = isSlidingFromLeft ? 'from-left' : 'from-right';
-      const isBackKey = BACK_KEYS[slideDirection].includes(event.key);
-      emits('stepKeyDown', event, isBackKey ? -1 : 1)
-    }"
-    @end-key-down="emits('endKeyDown', $event)"
-    @home-key-down="emits('homeKeyDown', $event)"
   >
     <slot />
   </SliderImpl>

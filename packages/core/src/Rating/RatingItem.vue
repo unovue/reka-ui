@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, useForwardElement } from '@/shared'
 import { injectRatingRootContext } from './RatingRoot.vue'
+import { getRatingItemSteps } from './useRating'
 
 interface RatingItemContext {
   steps: ComputedRef<number[]>
@@ -29,16 +30,7 @@ defineSlots<{
 
 const rootContext = injectRatingRootContext()
 
-const steps = computed(() => {
-  const groupStartValue = (props.item - 1)
-  const groupEndValue = props.item
-  const stepSize = rootContext.step.value
-
-  const numberOfSteps = Math.ceil((groupEndValue - groupStartValue) / stepSize)
-
-  return Array.from({ length: numberOfSteps }, (_, index) =>
-    Number((groupStartValue + (index + 1) * stepSize).toFixed(2)))
-})
+const steps = computed(() => getRatingItemSteps(props.item, rootContext.step.value))
 
 provideRatingItemContext({ steps })
 

@@ -1,18 +1,22 @@
 <script lang="ts">
+import type { Ref } from 'vue'
+import type { EditableChangeReason } from './useEditable'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
-import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
+import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement } from '@/shared'
 
-type ActivationMode = 'focus' | 'dblclick' | 'none'
-type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
+export type ActivationMode = 'focus' | 'dblclick' | 'none'
+export type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
+export type EditableState = 'edit' | 'submit' | 'cancel'
 
-type EditableRootContext = {
+export type EditableRootContext = {
   id: Ref<string | undefined>
   name: Ref<string | undefined>
   maxLength: Ref<number | undefined>
   disabled: Ref<boolean>
-  modelValue: Ref<string | null | undefined>
+  /** Read-only: commit a value through `submit()`. */
+  modelValue: Readonly<Ref<string | null | undefined>>
   inputValue: Ref<string | null | undefined>
   placeholder: Ref<{ edit: string, preview: string }>
   isEditing: Ref<boolean>
@@ -21,7 +25,8 @@ type EditableRootContext = {
   selectOnFocus: Ref<boolean>
   edit: () => void
   cancel: () => void
-  submit: () => void
+  /** Commits the draft. Returns `false` when `beforeUpdate:modelValue` cancelled it (edit mode stays on). */
+  submit: (reason?: EditableChangeReason | BaseChangeReason, event?: Event) => boolean
   inputRef: Ref<HTMLInputElement | undefined>
   startWithEditMode: Ref<boolean>
   isEmpty: Ref<boolean>
@@ -59,12 +64,14 @@ export interface EditableRootProps extends PrimitiveProps, FormFieldProps {
 }
 
 export type EditableRootEmits = {
+  /** Event handler called before a submitted value is committed; `details.cancel()` vetoes it and keeps edit mode on. */
+  'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<EditableChangeReason>]
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: string, details: ChangeEventDetails<EditableChangeReason>]
   /** Event handler called when a value is submitted */
   'submit': [value: string | null | undefined]
   /** Event handler called when the editable field changes state */
-  'update:state': [state: 'edit' | 'submit' | 'cancel']
+  'update:state': [state: EditableState]
 }
 
 export const [injectEditableRootContext, provideEditableRootContext]
@@ -72,11 +79,11 @@ export const [injectEditableRootContext, provideEditableRootContext]
 </script>
 
 <script setup lang="ts">
-import type { Ref } from 'vue'
-import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs, watch } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { mergeProps, toRef } from 'vue'
+import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
+import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useEditable } from './useEditable'
 
 defineOptions({
   inheritAttrs: false,
@@ -111,119 +118,56 @@ defineSlots<{
   }) => any
 }>()
 
-const {
-  id,
-  name,
-  defaultValue,
-  startWithEditMode,
-  placeholder: propPlaceholder,
-  maxLength,
-  disabled,
-  dir: propDir,
-  submitMode,
-  activationMode,
-  selectOnFocus,
-  readonly,
-  autoResize,
-  required,
-} = toRefs(props)
-
-const inputRef = ref<HTMLInputElement | undefined>()
-const dir = useDirection(propDir)
-const isEditing = ref(startWithEditMode.value ?? false)
-
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: defaultValue.value ?? '',
-  passive: (props.modelValue === undefined) as false,
-})
-
-const { primitiveElement, currentElement, expose } = usePrimitiveElement()
-
+// `dir` resolution (ConfigProvider-aware) stays in the shell.
+const dir = useDirection(toRef(props, 'dir'))
+const { forwardRef, currentElement, expose } = useForwardElement()
 const isFormControl = useFormControl(currentElement)
 
-const placeholder = computed(() => {
-  return typeof propPlaceholder.value === 'string' ? { edit: propPlaceholder.value, preview: propPlaceholder.value } : propPlaceholder.value
+const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, context } = useEditable({
+  modelValue: () => props.modelValue,
+  defaultValue: () => props.defaultValue,
+  placeholder: () => props.placeholder,
+  dir,
+  disabled: () => props.disabled,
+  readonly: () => props.readonly,
+  activationMode: () => props.activationMode,
+  selectOnFocus: () => props.selectOnFocus,
+  submitMode: () => props.submitMode,
+  startWithEditMode: () => props.startWithEditMode,
+  maxLength: () => props.maxLength,
+  autoResize: () => props.autoResize,
+  id: () => props.id,
+  name: () => props.name,
+  emit: emits,
 })
 
-const inputValue = ref(modelValue.value)
+// Outside detection is DOM-bound (DismissableLayer utilities), so it stays in the shell.
+const pointerDownOutside = usePointerDownOutside(event => dismiss('outside-press', event), currentElement, isEditing)
+const focusOutside = useFocusOutside(event => dismiss('focus-outside', event), currentElement, isEditing)
 
-watch(() => modelValue.value, () => {
-  inputValue.value = modelValue.value
-}, { immediate: true, deep: true })
-
-function cancel() {
-  isEditing.value = false
-  emits('update:state', 'cancel')
+// Zero-argument wrappers: a slot or template-ref caller binding `@click="submit"` reports `imperative-action`.
+function submitImperative() {
+  submit()
 }
-
-function edit() {
-  isEditing.value = true
-  inputValue.value = modelValue.value
-
-  emits('update:state', 'edit')
-}
-
-function submit() {
-  modelValue.value = inputValue.value
-  isEditing.value = false
-
-  emits('update:state', 'submit')
-  emits('submit', inputValue.value)
-}
-
-function handleDismiss() {
-  if (isEditing.value) {
-    if (submitMode.value === 'blur' || submitMode.value === 'both')
-      submit()
-    else
-      cancel()
-  }
-}
-
-const pointerDownOutside = usePointerDownOutside(() => handleDismiss(), currentElement, isEditing)
-const focusOutside = useFocusOutside(() => handleDismiss(), currentElement, isEditing)
-
-const isEmpty = computed(() => modelValue.value === '')
 
 defineExpose(mergeExpose(expose, {
   /** Function to submit the value of the editable */
-  submit,
+  submit: submitImperative,
   /** Function to cancel the value of the editable */
   cancel,
   /** Function to set the editable in edit mode */
   edit,
 }))
 
-provideEditableRootContext({
-  id,
-  name,
-  disabled,
-  isEditing,
-  maxLength,
-  modelValue,
-  inputValue,
-  placeholder,
-  edit,
-  cancel,
-  submit,
-  activationMode,
-  submitMode,
-  selectOnFocus,
-  inputRef,
-  startWithEditMode,
-  isEmpty,
-  readonly,
-  autoResize,
-})
+provideEditableRootContext(context)
 </script>
 
 <template>
   <Primitive
-    v-bind="$attrs"
-    ref="primitiveElement"
+    v-bind="mergeProps(root.attrs.value, $attrs)"
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :dir="dir"
     data-dismissable-layer
     @focus.capture="focusOutside.onFocusCapture"
     @blur.capture="focusOutside.onBlurCapture"
@@ -233,7 +177,7 @@ provideEditableRootContext({
       :model-value="modelValue"
       :is-editing="isEditing"
       :is-empty="isEmpty"
-      :submit="submit"
+      :submit="submitImperative"
       :cancel="cancel"
       :edit="edit"
     />

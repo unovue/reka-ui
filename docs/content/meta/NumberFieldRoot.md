@@ -130,9 +130,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[val: number | undefined, details: ChangeEventDetails&lt;NumberFieldChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[val: number | undefined]'
+    'type': '[val: number | undefined, details: ChangeEventDetails&lt;NumberFieldChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -186,7 +191,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[val: number \| undefined]` |
+| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
 
 **Slots**
 
