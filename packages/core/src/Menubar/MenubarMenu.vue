@@ -11,6 +11,11 @@ export interface MenubarMenuProps {
   value?: string
 }
 
+export type MenubarMenuEmits = {
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
+}
+
 export type MenubarMenuContext = {
   value: string
   triggerId: string
@@ -30,6 +35,7 @@ import { injectMenubarRootContext } from './MenubarRoot.vue'
 import { useMenubarMenu } from './useMenubar'
 
 const props = defineProps<MenubarMenuProps>()
+const emits = defineEmits<MenubarMenuEmits>()
 
 const value = useId(props.value)
 const rootContext = injectMenubarRootContext()
@@ -40,6 +46,7 @@ const rootContext = injectMenubarRootContext()
 const { context, menuContext, menuRootContext } = useMenubarMenu(rootContext, {
   value,
   contentId: useId(undefined, 'reka-menubar-content'),
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 
 provideMenuContext(menuContext)

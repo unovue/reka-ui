@@ -359,6 +359,12 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   onBeforeUpdateOpen?: (value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>) => void
   /** Called after the open state changed. */
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseListboxRootReturn<T>, 'isSelected' | 'highlightedElement' | 'highlightItem' | 'highlightFirstItem' | 'highlightSelected' | 'labels' | 'filterState' | 'isControlled' | 'lastChangeDetails' | 'getItemSurface'> {
@@ -530,6 +536,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     resetModelValueOnClear: bool(props.resetModelValueOnClear),
     unmountOnHide: bool(props.unmountOnHide, true),
     displayValue: props.displayValue,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
   const root = createPartSurface<ComboboxState>(

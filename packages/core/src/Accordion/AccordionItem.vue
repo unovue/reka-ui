@@ -20,6 +20,11 @@ export interface AccordionItemProps
   value: string
 }
 
+export type AccordionItemEmits = {
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
+}
+
 interface AccordionItemContext {
   open: ComputedRef<boolean>
   dataState: ComputedRef<DisclosureState>
@@ -46,6 +51,8 @@ const props = withDefaults(
     unmountOnHide: undefined,
   },
 )
+
+const emits = defineEmits<AccordionItemEmits>()
 
 defineSlots<{
   default?: (props: {
@@ -96,6 +103,7 @@ provideAccordionItemContext({
     :disabled="disabled"
     :unmount-on-hide="unmountOnHide"
     v-bind="surface.item.attrs.value"
+    @update:open-complete="emits('update:openComplete', $event)"
   >
     <slot :open="open" />
   </CollapsibleRoot>

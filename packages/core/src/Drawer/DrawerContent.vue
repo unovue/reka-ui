@@ -69,7 +69,11 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    :present="rootContext.open.value"
+    :force-mount="forceMount"
+    @complete="rootContext.notifyOpenComplete"
+  >
     <DrawerContentImpl
       v-if="isFullModal"
       :ref="forwardRef"

@@ -46,6 +46,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the submenu changes.</p>\n',
     'type': '[payload: boolean, details: ChangeEventDetails&lt;MenuOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the submenu content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 </llm-exclude>
@@ -68,5 +73,6 @@
 | --- | --- | --- |
 | `beforeUpdate:open` | Called before the open state of the submenu changes; details.cancel() vetoes the change. | `[payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the submenu changes. | `[payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the submenu content have finished. | `[value: boolean]` |
 
 </llm-only>

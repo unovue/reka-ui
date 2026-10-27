@@ -9,6 +9,10 @@
  */
 import type { ComputedRef, EmitFn } from 'vue'
 import type { EmitAsProps } from './useEmitAsProps'
+import type { ComboboxRootEmits } from '@/Combobox/ComboboxRoot.vue'
+import type { DateRangePickerRootEmits } from '@/DateRangePicker/DateRangePickerRoot.vue'
+import type { DialogRootEmits } from '@/Dialog/DialogRoot.vue'
+import type { SelectRootEmits } from '@/Select/SelectRoot.vue'
 import { useEmitAsProps } from './useEmitAsProps'
 import { useForwardPropsEmits } from './useForwardPropsEmits'
 
@@ -79,6 +83,23 @@ declare const mixedVoidEmit: MixedVoidEmit
 
 // EmitAsProps utility — emit signature to handler props
 type _emitAsProps = Expect<Equal<keyof EmitAsProps<OverloadedEmit>, 'onUpdate:modelValue' | 'onChange'>>
+
+// EmitAsProps on real roots: every event maps to its handler, including roots
+// with many emits (DateRangePickerRoot has 11), which used to hit TS2589
+// ("Type instantiation is excessively deep") and fall back to the loose signature.
+type HandlerKeys<E> = { [K in keyof E & string]: `on${Capitalize<K>}` }[keyof E & string]
+type _dialogKeys = Expect<Equal<keyof EmitAsProps<EmitFn<DialogRootEmits>>, HandlerKeys<DialogRootEmits>>>
+type _selectKeys = Expect<Equal<keyof EmitAsProps<EmitFn<SelectRootEmits>>, HandlerKeys<SelectRootEmits>>>
+type _comboboxKeys = Expect<Equal<keyof EmitAsProps<EmitFn<ComboboxRootEmits>>, HandlerKeys<ComboboxRootEmits>>>
+type DateRangePickerHandlers = EmitAsProps<EmitFn<DateRangePickerRootEmits>>
+type _dateRangePickerKeys = Expect<Equal<keyof DateRangePickerHandlers, HandlerKeys<DateRangePickerRootEmits>>>
+type _dateRangePickerOpenComplete = Expect<Equal<Parameters<NonNullable<DateRangePickerHandlers['onUpdate:openComplete']>>, [value: boolean]>>
+
+// Headroom: twenty emits still resolve.
+type ManyEmits = { [K in `e${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20}`]: [a: number, b: string] }
+type ManyHandlers = EmitAsProps<EmitFn<ManyEmits>>
+type _manyKeys = Expect<Equal<keyof ManyHandlers, HandlerKeys<ManyEmits>>>
+type _manyArgs = Expect<Equal<Parameters<NonNullable<ManyHandlers['onE20']>>, [a: number, b: string]>>
 
 // useForwardPropsEmits — fixtures
 interface DemoProps { foo: string, bar: boolean }

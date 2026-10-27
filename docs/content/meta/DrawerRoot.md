@@ -74,7 +74,7 @@
   },
   {
     'name': 'update:openComplete',
-    'description': '<p>Called once the popup\'s enter or exit animations and transitions have finished, or right away when it has none.</p>\n',
+    'description': '<p>Called once the popup\'s open (<code>true</code>) or close (<code>false</code>) transitions and animations have finished; on close, right\nbefore the popup unmounts. Infinite and cancelled animations are not waited for, and with none running it fires\nwithout waiting. A newer open change supersedes a pending one.</p>\n',
     'type': '[value: boolean]'
   },
   {
@@ -120,7 +120,7 @@
 | `beforeUpdate:open` | Called before the open state changes (Base UI onOpenChange); details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 | `beforeUpdate:snapPoint` | Called before the active snap point changes (Base UI onSnapPointChange); details.cancel() keeps the current snap point. Cancelling the null a swipe past the last snap point requests keeps the drawer open. | `[value: DrawerSnapPoint \| null, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 | `update:open` | Called when the open state changed. | `[value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
-| `update:openComplete` | Called once the popup's enter or exit animations and transitions have finished, or right away when it has none. | `[value: boolean]` |
+| `update:openComplete` | Called once the popup's open (true) or close (false) transitions and animations have finished; on close, right before the popup unmounts. Infinite and cancelled animations are not waited for, and with none running it fires without waiting. A newer open change supersedes a pending one. | `[value: boolean]` |
 | `update:snapPoint` | Called when the active snap point changed. | `[value: DrawerSnapPoint \| null, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 
 **Slots**

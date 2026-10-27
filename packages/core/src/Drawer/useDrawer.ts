@@ -37,8 +37,8 @@ import {
 //   It is deliberately NOT `useControllableState` (whose cancel window is
 //   `beforeUpdate:*` and whose controlled mode latches).
 // - `useDrawerContent()` is the popup brain (snap points, swipe dismiss, dismiss
-//   reasons, `openComplete` wiring, nested-drawer CSS vars). FocusScope /
-//   DismissableLayer / Presence / `useHideOthers` stay in the SFCs.
+//   reasons, nested-drawer CSS vars). FocusScope / DismissableLayer / Presence
+//   (which reports `openComplete`) / `useHideOthers` stay in the SFCs.
 // - `useDrawerSwipeArea()` is the swipe-to-open area.
 //
 // The DrawerProvider coupling (`watch(open)` → `setDrawerOpen`, `removeDrawer`
@@ -218,7 +218,11 @@ export interface UseDrawerProps {
   onBeforeSnapPointUpdate?: (value: DrawerSnapPoint | null, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void
   /** Called after the active snap point changed. */
   onSnapPointUpdate?: (value: DrawerSnapPoint | null, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void
-  /** Called after the popup's enter/exit transition finishes (`update:openComplete`). */
+  /**
+   * Called once the popup's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by
+   * `DrawerContent`'s `Presence` through `context.notifyOpenComplete`.
+   */
   onOpenComplete?: (value: boolean) => void
   /** The parent drawer's context, for nested drawers. */
   parentContext?: DrawerRootContext | null
@@ -449,8 +453,8 @@ export interface UseDrawerContentReturn {
 }
 
 /**
- * Headless Drawer popup — snap points, swipe-to-dismiss, dismiss reasons, the
- * `openComplete` transition wiring and the nested-drawer CSS variables, moved
+ * Headless Drawer popup — snap points, swipe-to-dismiss, dismiss reasons and
+ * the nested-drawer CSS variables, moved
  * verbatim from `DrawerContentImpl`. Owns watchers, a resize observer and
  * mount hooks, so it runs inside the mounted popup's `setup()`.
  *
@@ -693,44 +697,6 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     }
   }
 
-  // --- update:openComplete wiring ---
-  // Base UI `useOpenChangeComplete` / `useAnimationsFinished`: one frame after
-  // the open state changes (and when the popup mounts open), wait for every
-  // animation and transition running on the popup itself, then report. With
-  // none running, or without `getAnimations` (jsdom), it reports right away, so
-  // a popup with no CSS animation still completes. A newer change supersedes a
-  // pending one; an aborted animation counts as finished.
-  let openCompleteRun = 0
-  let pendingCloseComplete = false
-
-  function scheduleOpenComplete(isOpen: boolean) {
-    const run = ++openCompleteRun
-    pendingCloseComplete = !isOpen
-    const complete = () => {
-      if (run !== openCompleteRun)
-        return
-      pendingCloseComplete = false
-      rootContext.notifyOpenComplete(isOpen)
-    }
-    const el = currentElement.value
-    if (!el || typeof el.getAnimations !== 'function') {
-      complete()
-      return
-    }
-    requestAnimationFrame(() => {
-      if (run !== openCompleteRun)
-        return
-      const animations = el.getAnimations()
-      if (!animations.length) {
-        complete()
-        return
-      }
-      Promise.all(animations.map(animation => animation.finished)).then(complete, complete)
-    })
-  }
-
-  watch(() => rootContext.open.value, scheduleOpenComplete)
-
   // Sync nestedOpenDrawerCount onto the popup CSS var so nested scale effects
   // can read it. BaseUI uses a running count, not a boolean.
   watch(() => rootContext.nestedOpenDrawerCount.value, (n) => {
@@ -763,23 +729,11 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
       const progress = rootContext.nestedSwipeProgressStore.getSnapshot()
       currentElement.value?.style.setProperty(DRAWER_CSS_VARS.swipeProgress, `${progress}`)
     })
-
-    // The popup mounts when the drawer opens (or mounted open): its enter
-    // animation is the one `openComplete(true)` waits for.
-    if (rootContext.open.value)
-      scheduleOpenComplete(true)
   })
 
   onUnmounted(() => {
     rootContext.notifyParentHasNestedDrawer?.(false)
     unsubscribeNestedProgress?.()
-    // `Presence` unmounts the popup once its exit animation ends; a close still
-    // waiting on the next frame completes now instead of being dropped.
-    const closePending = pendingCloseComplete
-    openCompleteRun++
-    pendingCloseComplete = false
-    if (closePending)
-      rootContext.notifyOpenComplete(false)
   })
 
   // Dev warning for missing DrawerTitle

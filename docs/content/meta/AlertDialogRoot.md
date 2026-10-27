@@ -52,6 +52,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the dialog changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;DialogOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -98,6 +103,7 @@
 | --- | --- | --- |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DialogOpenChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: ChangeEventDetails<DialogOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

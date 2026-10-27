@@ -70,7 +70,11 @@ export type DrawerRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>]
   /** Called when the open state changed. */
   'update:open': [value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>]
-  /** Called once the popup's enter or exit animations and transitions have finished, or right away when it has none. */
+  /**
+   * Called once the popup's open (`true`) or close (`false`) transitions and animations have finished; on close, right
+   * before the popup unmounts. Infinite and cancelled animations are not waited for, and with none running it fires
+   * without waiting. A newer open change supersedes a pending one.
+   */
   'update:openComplete': [value: boolean]
   /**
    * Called before the active snap point changes (Base UI `onSnapPointChange`); `details.cancel()` keeps the current
@@ -98,7 +102,8 @@ export interface DrawerRootContext {
   /** Returns `false` when cancelled via `beforeUpdate:open`; an unchanged value returns `true`. */
   onOpenChange: (value: boolean, reason?: DrawerOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   onOpenToggle: () => void
-  notifyOpenComplete: (value: boolean) => void
+  /** Called by the popup once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
   /** Returns `false` when cancelled via `beforeUpdate:snapPoint`; an unchanged value returns `true`. */
   setActiveSnapPoint: (point: DrawerSnapPoint | null, reason?: DrawerSnapPointChangeReason | BaseChangeReason, event?: Event) => boolean
   onPopupHeightChange: (height: number) => void
@@ -187,9 +192,8 @@ watch(open, (isOpen) => {
   }
 }, { immediate: true })
 
-// `update:openComplete` is emitted by `useDrawerContent` once the popup's
-// enter/exit animations finish (Base UI `useOpenChangeComplete`). DrawerRoot
-// just exposes the notify hook through context.
+// `update:openComplete` is emitted once `DrawerContent`'s `Presence` reports
+// that the popup's enter/exit transitions and animations finished (#2827).
 
 onUnmounted(() => {
   providerContext?.removeDrawer(context.contentId)

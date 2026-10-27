@@ -9,6 +9,8 @@ export type ToastRootEmits = ToastRootImplEmits & {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ToastOpenChangeReason>]
   /** Event handler called when the open state changes */
   'update:open': [value: boolean, details: ChangeEventDetails<ToastOpenChangeReason>]
+  /** Event handler called after the open or close animations of the toast have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface ToastRootProps extends ToastRootImplProps {
@@ -78,7 +80,13 @@ watch([() => props.toast, isContentMounted], ([toast, mounted]) => {
 </script>
 
 <template>
-  <Presence :present="forceMount || isOpen">
+  <!-- A toast mounts open: `appear` stamps `data-starting-style` on its first frame (#2827). -->
+  <Presence
+    :present="isOpen"
+    :force-mount="forceMount"
+    appear
+    @complete="(value) => emits('update:openComplete', value)"
+  >
     <ToastRootImpl
       :ref="forwardRef"
       v-slot="{ remaining, duration: _duration }"

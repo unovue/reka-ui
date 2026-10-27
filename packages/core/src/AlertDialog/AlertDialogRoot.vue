@@ -55,6 +55,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
   unmountOnHide: () => props.unmountOnHide,
   baseId: useId(undefined, 'reka-alert-dialog'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
   handle: () => props.handle,
   triggerId: () => props.triggerId,
   defaultTriggerId: props.defaultTriggerId,

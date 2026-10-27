@@ -26,6 +26,8 @@ export type MenuSubEmits = {
   'beforeUpdate:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
   /** Event handler called when the open state of the submenu changes. */
   'update:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
+  /** Event handler called after the open or close animations of the submenu content have finished. */
+  'update:openComplete': [value: boolean]
 }
 </script>
 
@@ -69,6 +71,7 @@ provideMenuContext({
   onContentChange: (element) => {
     content.value = element
   },
+  notifyOpenComplete: value => emits('update:openComplete', value),
 })
 
 provideMenuSubContext({

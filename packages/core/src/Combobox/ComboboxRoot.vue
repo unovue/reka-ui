@@ -55,6 +55,8 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   unmountOnHide: Ref<boolean>
   /** The root's `displayValue` resolver, if any. */
   displayValue?: (value: T) => string
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
@@ -77,6 +79,8 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 /**
@@ -217,6 +221,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   element: currentElement,
   emit: emits,
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
 const modelValue = combobox.modelValue as unknown as Ref<ComboboxModelValue<T, M>>

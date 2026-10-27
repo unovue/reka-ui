@@ -88,8 +88,6 @@ type HandlerKey<Name extends string> = Camelize<`on-${Name}`>
 
 // Overload-walking types, adapted from the package-private helpers in @vue/shared
 
-type OverloadProps<TOverload> = Pick<TOverload, keyof TOverload>
-
 type Signature<TArgs extends any[], TReturn> = (...args: TArgs) => TReturn
 
 type IsEqual<A, B>
@@ -140,9 +138,11 @@ type OverloadUnionRecursive<
       ? [TSignature] extends [never]
           // The last signature cannot be removed: stop instead of recursing forever and fall back to a loose signature.
           ? (name: string, ...args: any[]) => void
+          // Unlike @vue/shared, the accumulator carries only signatures (no `Pick` of the overload's
+          // properties): the extra mapped type per step hit TS2589 on roots with 11+ emits.
           : | OverloadUnionRecursive<
               TPartialOverload & TOverload,
-              TPartialOverload & TSignature & OverloadProps<TOverload>
+              TPartialOverload & TSignature
           >
           | TSignature
       : never

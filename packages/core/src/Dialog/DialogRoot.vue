@@ -51,6 +51,8 @@ export type DialogRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>]
   /** Event handler called when the open state of the dialog changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface DialogRootContext {
@@ -68,6 +70,8 @@ export interface DialogRootContext {
   contentId: string
   titleId: string
   descriptionId: string
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
@@ -126,6 +130,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
   unmountOnHide: () => props.unmountOnHide,
   baseId: useId(undefined, 'reka-dialog'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
   handle: () => props.handle,
   triggerId: () => props.triggerId,
   defaultTriggerId: props.defaultTriggerId,

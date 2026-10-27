@@ -52,7 +52,9 @@ describe('drawerRoot update:openComplete (#2789)', () => {
     const finished = new Promise<void>((resolve) => {
       finish = resolve
     })
-    const getAnimations = vi.fn(() => [{ finished }] as unknown as Animation[])
+    const anim = { finished, playState: 'running' }
+    finished.then(() => { anim.playState = 'finished' })
+    const getAnimations = vi.fn(() => [anim] as unknown as Animation[])
     HTMLElement.prototype.getAnimations = getAnimations
     const onOpenComplete = vi.fn()
     const { getByText } = render(drawer({ 'onUpdate:openComplete': onOpenComplete }))
@@ -74,9 +76,9 @@ describe('drawerRoot update:openComplete (#2789)', () => {
     const { getByText } = render(drawer({ 'forceMount': true, 'onUpdate:openComplete': onOpenComplete }, { forceMount: true }))
 
     await fireEvent.click(getByText('Open'))
-    await fireEvent.click(getByText('Close'))
     // The open's animations never settle; the close is now the pending change.
     HTMLElement.prototype.getAnimations = vi.fn(() => [])
+    await fireEvent.click(getByText('Close'))
     await vi.waitFor(() => expect(onOpenComplete).toHaveBeenCalledWith(false))
     expect(onOpenComplete).not.toHaveBeenCalledWith(true)
   })

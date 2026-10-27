@@ -95,6 +95,8 @@ export type AutocompleteRootEmits<T extends AcceptableValue = string> = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called when the open state of the autocomplete changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export type AutocompleteRootContext = {
@@ -177,6 +179,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   element: currentElement,
   emit: emits,
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
 const modelValue = combobox.modelValue as ComputedRef<string>

@@ -53,6 +53,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the collapsible changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;CollapsibleChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -84,6 +89,7 @@
 | --- | --- | --- |
 | `beforeUpdate:open` | Called before a change; call details.cancel() to keep the current state. | `[value: boolean, details: ChangeEventDetails<CollapsibleChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the collapsible changes. | `[value: boolean, details: ChangeEventDetails<CollapsibleChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

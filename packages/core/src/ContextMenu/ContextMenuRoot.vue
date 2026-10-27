@@ -57,6 +57,7 @@ const { context, menuContext, menuRootContext } = useContextMenu({
   modal,
   pressOpenDelay,
   emit: emits,
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 
 provideMenuContext(menuContext)

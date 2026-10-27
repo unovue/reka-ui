@@ -78,6 +78,8 @@ export interface UseDateRangePickerProps {
   onUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason>) => void
   onUpdateStartValue?: (value: DateValue | undefined, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>) => void
+  /** Called once the popover content's open/close animations have finished (`update:openComplete`). */
+  onOpenComplete?: (value: boolean) => void
   onUpdateView?: (value: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
 }
 
@@ -169,6 +171,7 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     baseId: props.baseId,
     emit: props.emit,
     onUpdate: props.onUpdateOpen as ((value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>) => void) | undefined,
+    onOpenComplete: props.onOpenComplete,
   })
 
   const { state: view, setState: setViewState, isControlled: isViewControlled } = useControllableState<CalendarUnit, RangeCalendarChangeReason>({
