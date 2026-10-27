@@ -31,8 +31,11 @@ import { useComboboxContentPositioning } from './useComboboxContentPositioning'
  * - `'item-press'`: an item was clicked, or Enter selected the highlighted item
  *   (Enter clicks it).
  * - `'clear-press'`: `ComboboxCancel` reset the value (`resetModelValueOnClear`).
+ * - `'item-keydown'`, `'select-all'`, `'range-select'`: the Listbox selection
+ *   gestures (Space on a focused item, Ctrl/Cmd+A and Shift+click or
+ *   Shift+arrow in a `multiple` combobox).
  */
-export type ComboboxChangeReason = 'item-press' | 'clear-press'
+export type ComboboxChangeReason = 'clear-press' | ListboxChangeReason
 
 /**
  * Why the combobox opened or closed; carried as `details.reason` (#2828).
@@ -133,8 +136,12 @@ export interface ComboboxInputSurfaceOptions {
   modelValue: Ref<string | undefined>
   /** @defaultValue `false` */
   disabled?: MaybeRefOrGetter<boolean | undefined>
-  /** Called with every committed text change after the search term was updated (Autocomplete writes its model here). */
-  onTextChange?: (value: string, event?: Event) => void
+  /**
+   * Called with every committed text change before the input text and the
+   * search term are updated (Autocomplete writes its model here). Returning
+   * `false` vetoes the change: the input is restored to `modelValue`.
+   */
+  onTextChange?: (value: string, event?: Event) => boolean | void
   /**
    * Close when focus moves from the input to an element outside the combobox
    * and its content. Autocomplete leaves it to the dismissable layer.
@@ -159,6 +166,16 @@ export function createComboboxInputSurface(
   const isDisabled = computed(() => toValue(options.disabled) || context.disabled.value || false)
 
   function onTextChange(value: string, event?: Event) {
+    if (options.onTextChange?.(value, event) === false) {
+      // Vetoed (a cancelled Autocomplete `beforeUpdate:modelValue`): the DOM
+      // already shows the typed text and the bound value did not change, so
+      // Vue would not patch it back.
+      const input = event?.target as HTMLInputElement | null
+      const text = options.modelValue.value ?? ''
+      if (input && input.value !== text)
+        input.value = text
+      return
+    }
     options.modelValue.value = value
     context.highlightFirstItem()
     if (!context.open.value) {
@@ -173,7 +190,6 @@ export function createComboboxInputSurface(
     else {
       context.filterSearch.value = value
     }
-    options.onTextChange?.(value, event)
   }
 
   const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
@@ -232,7 +248,9 @@ export function createComboboxInputSurface(
       'aria-autocomplete': 'list',
       'aria-expanded': context.open.value,
       'aria-controls': context.contentId,
-      'aria-activedescendant': context.highlightedElement.value?.id,
+      // Only while open: once the popup closes (Escape, Enter) the items unmount
+      // and the id would dangle (#3026).
+      'aria-activedescendant': context.open.value ? context.highlightedElement.value?.id : undefined,
       'aria-disabled': isDisabled.value,
       'value': options.modelValue.value,
       'disabled': isDisabled.value ? '' : undefined,
@@ -337,7 +355,7 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
 
 export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseListboxRootReturn<T>, 'modelValue' | 'isSelected' | 'highlightedElement' | 'highlightItem' | 'highlightFirstItem' | 'highlightSelected' | 'labels' | 'filterState' | 'isControlled' | 'lastChangeDetails' | 'getItemSurface'> {
   /** Select an item's value: a single selection is replaced, a multiple one toggled. Returns `false` when unchanged or cancelled. */
-  select: (value: T, reason?: ComboboxChangeReason | ListboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  select: (value: T, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Write the whole model; returns `false` when unchanged or cancelled. */
   setModelValue: (value: T | T[] | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
   open: ComputedRef<boolean>
@@ -437,11 +455,23 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     return listbox.setModelValue(value, reason as ListboxChangeReason, event)
   }
 
-  function select(value: T, reason: ComboboxChangeReason | ListboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+  function select(value: T, reason: ComboboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     // A single selection is replaced (re-selecting keeps it); a multiple one toggles through the Listbox model.
     return listbox.context.multiple.value
       ? listbox.select(value, reason as ListboxChangeReason, event)
       : setModelValue(props.toModelValue ? props.toModelValue(value) : value, reason as ComboboxChangeReason, event)
+  }
+
+  // A press on an item of a single combobox: select, then close. A cancelled
+  // `beforeUpdate:modelValue` keeps the popup open; re-pressing the selected
+  // item (a no-op write) still closes it. A cancelled `beforeUpdate:open` only
+  // keeps the popup open, the selection is already committed.
+  function pressItem(value: T, event?: Event) {
+    const before = listbox.lastChangeDetails.value
+    if (!select(value, 'item-press', event) && listbox.lastChangeDetails.value !== before && listbox.lastChangeDetails.value.isCanceled)
+      return false
+    onOpenChange(false, 'item-press', event)
+    return true
   }
 
   const context: ComboboxRootContext<T> = {
@@ -452,6 +482,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     onOpenChange,
     setModelValue,
     selectItem: select,
+    pressItem,
     clearModelValue: event => setModelValue((listbox.context.multiple.value ? [] : props.emptyValue ?? null) as T, 'clear-press', event),
     ...positioning,
     isUserInputted,

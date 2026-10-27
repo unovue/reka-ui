@@ -177,6 +177,12 @@ function parseMeta(meta: ComponentMeta) {
       if (!type.includes('AcceptableValue'))
         type = parseTypeFromSchema(prop.schema) || type
 
+      // ComboboxRoot types `multiple` by its `M extends boolean` generic (it
+      // narrows the `update:modelValue` payload); the bare param means nothing
+      // in a props table, so show its constraint.
+      if (name === 'multiple' && type.trim() === 'M')
+        type = 'boolean'
+
       return ({
         name,
         description: md.render(description),

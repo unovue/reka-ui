@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ComboboxChangeReason, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxRootProps } from '@/Listbox'
 import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
-import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
+import type { ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
 import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
@@ -24,7 +24,12 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   /** Writes the whole model; returns `false` when unchanged or cancelled. */
   setModelValue: (value: T | T[] | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
   /** What an item press selects: replaces a single value, toggles a multiple one. */
-  selectItem: (value: T, reason?: ComboboxChangeReason | ListboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  selectItem: (value: T, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  /**
+   * An item press in a single combobox: selects with `'item-press'`, then closes unless the selection was cancelled.
+   * Returns `false` when it was.
+   */
+  pressItem: (value: T, event?: Event) => boolean
   /** Resets the value (`[]` when multiple) with `'clear-press'`. */
   clearModelValue: (event?: Event) => boolean
   onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
@@ -56,9 +61,15 @@ export const [injectComboboxRootContext, provideComboboxRootContext]
   = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
 export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> = {
-  /** Event handler called before the value changes; call `details.cancel()` to keep the current value. */
+  /**
+   * Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is
+   * an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection.
+   */
   'beforeUpdate:modelValue': [value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason>]
-  /** Event handler called when the value changes. */
+  /**
+   * Event handler called when the value changes. The value is an array when `multiple`, and `null` when
+   * `ComboboxCancel` clears a single selection.
+   */
   'update:modelValue': [value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason>]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
@@ -68,8 +79,11 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
   'update:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
 }
 
-/** The model of a combobox: an array when `multiple` is `true`, a single value when it is absent or `false`, either while it is a plain `boolean`. */
-export type ComboboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] : M extends true ? T[] : T
+/**
+ * The model of a combobox: an array when `multiple` is `true`, a single value (or `null` once cleared) when it is
+ * absent or `false`, either while it is a plain `boolean`.
+ */
+export type ComboboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | null : M extends true ? T[] : T | null
 
 export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent'> {
   /**

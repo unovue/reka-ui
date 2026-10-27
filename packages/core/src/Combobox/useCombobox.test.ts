@@ -268,11 +268,44 @@ describe('comboboxRoot — cancellation', () => {
     ;(document.querySelectorAll('[role=option]')[3] as HTMLElement).click()
     await settle()
     expect(onUpdate).not.toHaveBeenCalled()
-    await wrapper.find('[data-testid=trigger]').trigger('click')
-    await settle()
+    // A cancelled selection keeps the popup open.
+    expect(document.querySelector('[role=listbox]')).not.toBeNull()
     expect(document.querySelector('[role=option][data-state=checked]')?.textContent).toBe('Apple')
     ;(document.querySelectorAll('[role=option]')[1] as HTMLElement).click()
+    await settle()
     expect(onUpdate).toHaveBeenCalledWith('Banana', expect.objectContaining({ reason: 'item-press' }))
+    expect(document.querySelector('[role=listbox]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('commits an item press but stays open when `beforeUpdate:open` cancels the close', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({
+      'onBeforeUpdate:open': (value: boolean, details: { reason: string, cancel: () => void }) => {
+        if (!value && details.reason === 'item-press')
+          details.cancel()
+      },
+      'onUpdate:modelValue': onUpdate,
+    }), { attachTo: document.body })
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await settle()
+    ;(document.querySelectorAll('[role=option]')[1] as HTMLElement).click()
+    await settle()
+    expect(onUpdate).toHaveBeenCalledWith('Banana', expect.objectContaining({ reason: 'item-press' }))
+    expect(document.querySelector('[role=listbox]')).not.toBeNull()
+    expect(document.querySelector('[role=option][data-state=checked]')?.textContent).toBe('Banana')
+    wrapper.unmount()
+  })
+
+  it('closes when the selected item is pressed again (a no-op write, not a cancel)', async () => {
+    const onOpen = vi.fn()
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'onUpdate:open': onOpen }), { attachTo: document.body })
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await settle()
+    ;(document.querySelectorAll('[role=option]')[0] as HTMLElement).click()
+    await settle()
+    expect(onOpen).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'item-press' }))
+    expect(document.querySelector('[role=listbox]')).toBeNull()
     wrapper.unmount()
   })
 
@@ -475,6 +508,30 @@ describe('comboboxRoot — navigation intent, display value and context', () => 
     wrapper.unmount()
   })
 
+  it('drops a highlight whose item was replaced (async list with `:filter="null"`)', async () => {
+    const items = ref(['Apple', 'Banana'])
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { filter: null }, () => [
+        h(ComboboxInput, { 'aria-label': 'Fruit' }),
+        h(ComboboxContent, null, () => items.value.map(value => h(ComboboxItem, { key: value, value }, () => value))),
+      ]),
+    }), { attachTo: document.body })
+    const input = wrapper.find('input')
+    await input.setValue('a')
+    await settle()
+    keydown(input.element, 'ArrowDown')
+    await settle()
+    const highlighted = input.attributes('aria-activedescendant')
+    expect(highlighted && document.getElementById(highlighted)).toBeTruthy()
+    // The server answers with a new list while the search is active.
+    items.value = ['Cherry', 'Date']
+    await settle()
+    const after = input.attributes('aria-activedescendant')
+    expect(after === undefined || !!document.getElementById(after)).toBe(true)
+    expect(after).not.toBe(highlighted)
+    wrapper.unmount()
+  })
+
   it('provides one object as the Combobox and the Listbox root context', async () => {
     let comboboxContext: any
     let listboxContext: any
@@ -526,7 +583,11 @@ describe('autocompleteRoot — change details', () => {
     }), { attachTo: document.body })
     await wrapper.find('input').setValue('bl')
     await wrapper.find('input').setValue('blu')
+    await settle()
     expect(onUpdate.mock.calls.map(call => call[0])).toEqual(['bl'])
+    // The vetoed text is taken back out of the input, and the filter keeps the accepted search.
+    expect(wrapper.find('input').element.value).toBe('bl')
+    expect(optionTexts()).toEqual(['Blueberry'])
     wrapper.unmount()
   })
 

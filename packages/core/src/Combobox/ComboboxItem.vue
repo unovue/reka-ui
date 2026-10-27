@@ -55,8 +55,7 @@ function onSelect(event: SelectEvent<T>) {
   if (!rootContext.multiple.value) {
     event.preventDefault()
     if (!props.disabled && !rootContext.disabled.value) {
-      rootContext.onOpenChange(false, 'item-press', event.detail.originalEvent)
-      rootContext.selectItem(props.value, 'item-press', event.detail.originalEvent)
+      rootContext.pressItem(props.value, event.detail.originalEvent)
     }
   }
   else {

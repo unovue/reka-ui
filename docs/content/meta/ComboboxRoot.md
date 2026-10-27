@@ -91,7 +91,7 @@
   {
     'name': 'multiple',
     'description': '<p>Whether multiple options can be selected or not.</p>\n',
-    'type': 'M',
+    'type': 'boolean',
     'required': false
   },
   {
@@ -218,7 +218,7 @@
 | `ignoreFilter` | Deprecated alias for :filter="null": when true, turns client filtering off. Wins over filter. | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
-| `multiple` | Whether multiple options can be selected or not. | `M` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `open` | The controlled open state of the Combobox. Can be binded with v-model:open. | `boolean` | No | - |
 | `openOnClick` | Whether to open the combobox when the input is clicked | `boolean` | No | `false` |

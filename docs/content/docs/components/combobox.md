@@ -593,7 +593,7 @@ import { ref } from 'vue'
 
 ### Reacting to changes
 
-`update:modelValue` and `update:open` receive a second argument with the `reason` for the change and the native `event`. `beforeUpdate:modelValue` and `beforeUpdate:open` fire first, and `details.cancel()` keeps the current state. The reasons are exported as `ComboboxChangeReason` (`'item-press' | 'clear-press'`) and `ComboboxOpenChangeReason` (`'trigger-press' | 'input-change' | 'input-press' | 'input-focus' | 'list-navigation' | 'item-press' | 'escape-key' | 'outside-press' | 'focus-outside'`), plus `'imperative-action'` for programmatic changes.
+`update:modelValue` and `update:open` receive a second argument with the `reason` for the change and the native `event`. `beforeUpdate:modelValue` and `beforeUpdate:open` fire first, and `details.cancel()` keeps the current state. Cancelling the value of an item press keeps the popup open; cancelling only the close keeps it open with the new value. The reasons are exported as `ComboboxChangeReason` (`'item-press' | 'clear-press'`, plus `'item-keydown' | 'select-all' | 'range-select'` in a `multiple` combobox) and `ComboboxOpenChangeReason` (`'trigger-press' | 'input-change' | 'input-press' | 'input-focus' | 'list-navigation' | 'item-press' | 'escape-key' | 'outside-press' | 'focus-outside'`), plus `'imperative-action'` for programmatic changes.
 
 ```vue
 <template>
