@@ -159,7 +159,7 @@ if (props.type && !['foreground', 'background'].includes(props.type)) {
 
 // The auto-dismiss timer (re)starts when the toast opens, its duration changes
 // or a managed toast is added again with the same id. A timeout whose close is
-// cancelled expires the timer instead of asking again every `duration`.
+// cancelled re-arms a full `duration`, so the toast asks again later.
 const restartKey = computed(() => props.toast ? providerContext.toastStore.getRestartKey(props.toast.id) : 0)
 const { remaining: remainingTime, pause, resume } = useToastTimer({
   open: () => props.open,
@@ -201,8 +201,8 @@ const toastSurface = getToastSurface({
 
 onKeyStroke('Escape', (event) => {
   emits('escapeKeyDown', event)
-  if (!event.defaultPrevented && handleClose(event, 'escape-key'))
-    providerContext.isFocusedToastEscapeKeyDownRef.value = true
+  if (!event.defaultPrevented)
+    handleClose(event, 'escape-key')
 })
 
 let unregisterToast: (() => void) | undefined

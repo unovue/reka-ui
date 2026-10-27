@@ -119,7 +119,6 @@ export function useToastProvider(props: UseToastProviderProps = {}): UseToastPro
 
   const viewport = ref<HTMLElement>()
   const toastCount = ref(0)
-  const isFocusedToastEscapeKeyDownRef = ref(false)
   const isClosePausedRef = ref(false)
 
   const toastStore = useToastStore()
@@ -185,7 +184,6 @@ export function useToastProvider(props: UseToastProviderProps = {}): UseToastPro
     onToastRemove() {
       toastCount.value--
     },
-    isFocusedToastEscapeKeyDownRef,
     isClosePausedRef,
     toastStore,
     hovering,
@@ -231,7 +229,7 @@ export interface UseToastRootProps {
    */
   toast?: MaybeRefOrGetter<ToastObject | undefined>
   /** The manager's store (`injectToastProviderContext().toastStore`); required for `toast`. */
-  toastStore?: Pick<ToastStore, 'close'>
+  toastStore?: Pick<ToastStore, 'commitClose' | 'registerCloseRequest'>
   /** `type` of the toast when it has no `toast.type`. @defaultValue `'foreground'` */
   type?: MaybeRefOrGetter<'foreground' | 'background' | undefined>
   /** `duration` of the toast when it has no `toast.duration`; `undefined` uses the provider's. */
@@ -264,10 +262,13 @@ export interface UseToastRootReturn {
  * Headless ToastRoot model: the controllable `open` state and the close every
  * dismissal goes through. A managed toast is controlled by the manager's
  * store: `beforeUpdate:open` / `update:open` still fire, and a committed close
- * is written back with `toastStore.close(id)` (which calls `toast.onClose`).
+ * is written back with `toastStore.commitClose(id, details)` (which calls
+ * `toast.onClose(details)`). Called inside a scope, it also registers with the
+ * store so `manager.close(id)` closes through this model with
+ * `'imperative-action'` (cancellable via `beforeUpdate:open`).
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle pure
+ * @lifecycle setup — the store registration of a managed toast is bound to the calling scope; callable outside a scope without it.
  */
 export function useToastRoot(props: UseToastRootProps = {}): UseToastRootReturn {
   const toast = computed(() => toValue(props.toast))
@@ -290,8 +291,17 @@ export function useToastRoot(props: UseToastRootProps = {}): UseToastRootReturn 
     const managed = toast.value
     const changed = setState(value, reason, event)
     if (changed && managed && !value)
-      props.toastStore?.close(managed.id)
+      props.toastStore?.commitClose(managed.id, lastChangeDetails.value)
     return changed
+  }
+
+  // `manager.close(id)` asks this root, so an imperative close of a rendered
+  // toast runs `beforeUpdate:open` / `update:open` like every other close.
+  if (getCurrentScope()) {
+    watch(() => toast.value?.id, (id, _, onCleanup) => {
+      if (id && props.toastStore)
+        onCleanup(props.toastStore.registerCloseRequest(id, reason => onOpenChange(false, reason)))
+    }, { immediate: true })
   }
 
   return {
@@ -319,12 +329,12 @@ export interface UseToastTimerOptions {
   /** Whether the timer starts paused (the viewport is hovered or focused). */
   isPaused?: () => boolean
   /**
-   * Called when the time is up. Return `false` when the toast stayed open (its
-   * close was cancelled): the timer then expires — `remaining` reads `0`, and
-   * pause / resume no longer restart it — until the toast reopens, its
-   * `duration` changes or `restartKey` changes.
+   * Called when the time is up. If the toast is still open afterwards (its
+   * close was cancelled, or a controlled parent ignored it), the timer re-arms
+   * with the full `duration`, so the toast asks again later; pause and resume
+   * work on the re-armed timer as before.
    */
-  onTimeout: () => boolean
+  onTimeout: () => unknown
   /** Called when the timer pauses. */
   onPause?: () => void
   /** Called when the timer resumes. */
@@ -334,8 +344,6 @@ export interface UseToastTimerOptions {
 export interface UseToastTimerReturn {
   /** Time left (ms), updated every frame while running. */
   remaining: Ref<number>
-  /** `true` once the time ran out and the toast stayed open. */
-  expired: Ref<boolean>
   /** Stops the timer and keeps the time left. */
   pause: () => void
   /** Restarts the timer with the time left. */
@@ -356,7 +364,6 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   const closeTimerRemainingTimeRef = ref(duration.value)
   let closeTimer = 0
   const remainingTime = ref(duration.value)
-  const expired = ref(false)
 
   const remainingRaf = useRafFn(() => {
     const elapsedTime = Date.now() - closeTimerStartTimeRef.value
@@ -364,15 +371,15 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   }, { fpsLimit: 60 })
 
   function handleTimeout() {
-    if (options.onTimeout())
-      return
-    // The close was cancelled (or the toast had already closed): stop here
-    // instead of re-arming, so a vetoed timeout does not ask again every
-    // `duration`, and pause / resume do not restart a timer with no time left.
-    expired.value = true
-    closeTimerRemainingTimeRef.value = 0
-    remainingTime.value = 0
-    remainingRaf.pause()
+    options.onTimeout()
+    // Still open: the close was cancelled, or a controlled parent has not
+    // closed it (yet). Re-arm a full `duration` so the toast asks again later;
+    // a controlled close that lands on the next flush clears it in the watch
+    // below. A committed uncontrolled close is already reflected in `open`.
+    if (toValue(options.open)) {
+      closeTimerRemainingTimeRef.value = duration.value
+      startTimer(duration.value)
+    }
   }
 
   function startTimer(duration: number) {
@@ -389,20 +396,16 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   }
 
   function resume() {
-    if (!expired.value) {
-      startTimer(closeTimerRemainingTimeRef.value)
-      remainingRaf.resume()
-    }
+    startTimer(closeTimerRemainingTimeRef.value)
+    remainingRaf.resume()
     options.onResume?.()
   }
 
   function pause() {
-    if (!expired.value) {
-      const elapsedTime = Date.now() - closeTimerStartTimeRef.value
-      closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
-      window.clearTimeout(closeTimer)
-      remainingRaf.pause()
-    }
+    const elapsedTime = Date.now() - closeTimerStartTimeRef.value
+    closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
+    window.clearTimeout(closeTimer)
+    remainingRaf.pause()
     options.onPause?.()
   }
 
@@ -410,8 +413,9 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   // we include `open` in deps because closed !== unmounted when animating
   // so it could reopen before being completely unmounted
   watch([() => toValue(options.open), duration, () => toValue(options.restartKey)], () => {
-    // Reset the timer when the toast is rerendered with the new duration
-    expired.value = false
+    // Reset the timer when the toast is rerendered with the new duration; a
+    // closed toast keeps no pending timeout.
+    window.clearTimeout(closeTimer)
     closeTimerRemainingTimeRef.value = duration.value
 
     if (toValue(options.open) && !options.isPaused?.()) {
@@ -423,7 +427,7 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   if (getCurrentScope())
     onScopeDispose(() => window.clearTimeout(closeTimer))
 
-  return { remaining: remainingTime, expired, pause, resume }
+  return { remaining: remainingTime, pause, resume }
 }
 
 // -----------------------------------------------------------------------------
@@ -623,8 +627,9 @@ export function getToastSurface(options: {
 }
 
 /**
- * The close button surface: closes the toast with `close-press`. A keyboard
- * activation (`pointerType === ''`) moves focus to the viewport.
+ * The close button surface: a click calls `onClose(event, 'close-press')`.
+ * It does not move focus itself; `ToastRootContext.onClose` moves focus to
+ * the viewport after a committed keyboard close.
  * @internal
  */
 export function getToastCloseSurface(onClose: (event?: Event, reason?: ChangeReason) => void): PartSurface<Record<string, never>> {

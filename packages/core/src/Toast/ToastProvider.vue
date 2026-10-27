@@ -17,7 +17,6 @@ export interface ToastProviderContext {
   onViewportChange: (viewport: HTMLElement) => void
   onToastAdd: () => void
   onToastRemove: () => void
-  isFocusedToastEscapeKeyDownRef: Ref<boolean>
   isClosePausedRef: Ref<boolean>
   toastStore: ToastStore
   hovering: Ref<boolean>
