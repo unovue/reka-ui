@@ -177,14 +177,11 @@ export default defineConfig({
           {
             text: 'Color',
             items: [
-              { text: `Color Area ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-area' },
-              { text: `Color Field ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-field' },
-              { text: `Color Slider ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-slider' },
-              { text: `Color Swatch ${BadgeHTML('Alpha', true)}`, link: '/docs/components/color-swatch' },
-              {
-                text: `Color Swatch Picker ${BadgeHTML('Alpha', true)}`,
-                link: '/docs/components/color-swatch-picker',
-              },
+              { text: 'Color Area', link: '/docs/components/color-area' },
+              { text: 'Color Field', link: '/docs/components/color-field' },
+              { text: 'Color Slider', link: '/docs/components/color-slider' },
+              { text: 'Color Swatch', link: '/docs/components/color-swatch' },
+              { text: 'Color Swatch Picker', link: '/docs/components/color-swatch-picker' },
             ],
           },
           {

@@ -71,7 +71,7 @@ describe('color model: regressions fixed by the Color object model (#2789)', () 
   })
 
   it.each([
-    ['area', ColorAreaRoot, { colorSpace: 'hsb', xChannel: 'saturation', yChannel: 'brightness' }, () => h(ColorAreaArea, {}, () => h(ColorAreaThumb)), '[role=application]', 'ArrowRight'],
+    ['area', ColorAreaRoot, { colorSpace: 'hsb', xChannel: 'saturation', yChannel: 'brightness' }, () => h(ColorAreaArea, { 'data-testid': 'area' }, () => h(ColorAreaThumb, { 'data-testid': 'thumb' })), '[data-testid=area]', 'ArrowRight'],
     ['field', ColorFieldRoot, { colorSpace: 'hsb', channel: 'brightness' }, () => h(ColorFieldInput), 'input', 'ArrowUp'],
     ['slider', ColorSliderRoot, { colorSpace: 'hsb', channel: 'saturation' }, () => [h(ColorSliderTrack), h(ColorSliderThumb)], '[role=slider]', 'ArrowRight'],
   ] as const)('%s: a controlled Color model is emitted as a Color, not a hex string', async (_, component, props, children, selector, key) => {
@@ -92,31 +92,32 @@ describe('color model: regressions fixed by the Color object model (#2789)', () 
     const wrapper = track(mount(() => h(ColorAreaRoot, {
       'modelValue': { space: 'hsl', h: 100, s: 50, l: 50, alpha: 1 },
       'onUpdate:modelValue': update,
-    }, () => h(ColorAreaArea, {}, () => h(ColorAreaThumb)))))
-    const thumb = wrapper.find('[role=slider]')
-    const area = wrapper.find('[role=application]')
+    }, () => h(ColorAreaArea, { 'data-testid': 'area' }, () => h(ColorAreaThumb, { 'data-testid': 'thumb' })))))
+    const thumb = wrapper.find('[data-testid=thumb]')
+    const area = wrapper.find('[data-testid=area]')
+    const hue = wrapper.find<HTMLInputElement>('input[aria-orientation=horizontal]')
     const before = thumb.attributes('style')
-    expect(thumb.attributes('aria-valuenow')).toBe('100')
+    expect(hue.element.value).toBe('100')
 
     await area.trigger('keydown', { key: 'ArrowRight' })
     await area.trigger('keydown', { key: 'ArrowUp', shiftKey: true })
     await nextTick()
 
     expect(update).toHaveBeenCalledTimes(2)
-    expect(thumb.attributes('aria-valuenow')).toBe('100')
-    expect(thumb.attributes('aria-valuetext')).toBe('Hue 100, Saturation 50')
+    expect(hue.element.value).toBe('100')
+    expect(hue.attributes('aria-valuetext')).toBe('100, Saturation 50')
     expect(thumb.attributes('style')).toBe(before)
   })
 
   it('colorArea: a hue-only change on a grey emits a distinct Color, never a repeated hex', async () => {
-    const { wrapper, updates } = mountControlled(ColorAreaRoot, { space: 'hsl', h: 0, s: 0, l: 50, alpha: 1 }, { xChannel: 'hue', yChannel: 'saturation' }, () => h(ColorAreaArea, {}, () => h(ColorAreaThumb)))
-    const area = wrapper.find('[role=application]')
+    const { wrapper, updates } = mountControlled(ColorAreaRoot, { space: 'hsl', h: 0, s: 0, l: 50, alpha: 1 }, { xChannel: 'hue', yChannel: 'saturation' }, () => h(ColorAreaArea, { 'data-testid': 'area' }, () => h(ColorAreaThumb, { 'data-testid': 'thumb' })))
+    const area = wrapper.find('[data-testid=area]')
     await area.trigger('keydown', { key: 'ArrowRight' })
     await nextTick()
     await area.trigger('keydown', { key: 'ArrowRight' })
     await nextTick()
     expect(updates.map(u => (u as { h: number }).h)).toEqual([1, 2])
-    expect(wrapper.find('[role=slider]').attributes('aria-valuenow')).toBe('2')
+    expect(wrapper.find<HTMLInputElement>('input[aria-orientation=horizontal]').element.value).toBe('2')
   })
 
   it('colorSlider: a hue slider keeps the hue of a grey across a controlled round trip', async () => {
@@ -131,7 +132,7 @@ describe('color model: regressions fixed by the Color object model (#2789)', () 
 
 describe('color model: change and changeEnd across the family', () => {
   it.each([
-    ['area', ColorAreaRoot, { xChannel: 'red', yChannel: 'green' }, () => h(ColorAreaArea, {}, () => h(ColorAreaThumb)), '[role=application]', 'ArrowRight'],
+    ['area', ColorAreaRoot, { xChannel: 'red', yChannel: 'green' }, () => h(ColorAreaArea, { 'data-testid': 'area' }, () => h(ColorAreaThumb, { 'data-testid': 'thumb' })), '[data-testid=area]', 'ArrowRight'],
     ['field', ColorFieldRoot, { channel: 'red' }, () => h(ColorFieldInput), 'input', 'ArrowUp'],
     ['slider', ColorSliderRoot, { channel: 'red' }, () => [h(ColorSliderTrack), h(ColorSliderThumb)], '[role=slider]', 'ArrowRight'],
   ] as const)('%s emits the same Color through every event of a keyboard step', async (_, component, props, children, selector, key) => {
@@ -165,33 +166,33 @@ describe('colorArea right-to-left', () => {
       'defaultValue': { space: 'hsl', h: 90, s: 50, l: 50, alpha: 1 },
       'onUpdate:modelValue': update,
       ...props,
-    }, { default: ({ style }: { style: Record<string, string> }) => h(ColorAreaArea, { style }, () => h(ColorAreaThumb)) }))))
+    }, { default: ({ style }: { style: Record<string, string> }) => h(ColorAreaArea, { style, 'data-testid': 'area' }, () => h(ColorAreaThumb, { 'data-testid': 'thumb' })) }))))
     return { wrapper, update }
   }
 
   it('swaps ArrowLeft and ArrowRight', async () => {
     const { wrapper } = mountArea({ dir: 'rtl' })
-    const area = wrapper.find('[role=application]')
+    const area = wrapper.find('[data-testid=area]')
     await area.trigger('keydown', { key: 'ArrowLeft' })
-    expect(wrapper.find('[role=slider]').attributes('aria-valuenow')).toBe('91')
+    expect(wrapper.find<HTMLInputElement>('input[aria-orientation=horizontal]').element.value).toBe('91')
     await area.trigger('keydown', { key: 'ArrowRight' })
     await area.trigger('keydown', { key: 'ArrowRight' })
-    expect(wrapper.find('[role=slider]').attributes('aria-valuenow')).toBe('89')
+    expect(wrapper.find<HTMLInputElement>('input[aria-orientation=horizontal]').element.value).toBe('89')
   })
 
   it('mirrors the thumb position and the horizontal gradient', () => {
     const { wrapper } = mountArea({ dir: 'rtl' })
-    expect(wrapper.find('[role=slider]').attributes('style')).toContain('left: 75%')
-    expect(wrapper.find('[role=application]').attributes('style')).toContain('linear-gradient(to left, rgb(255, 0, 0)')
+    expect(wrapper.find('[data-testid=thumb]').attributes('style')).toContain('left: 75%')
+    expect(wrapper.find('[data-testid=area]').attributes('style')).toContain('linear-gradient(to left, rgb(255, 0, 0)')
     expect(wrapper.find('[role=group]').attributes('dir')).toBe('rtl')
     const ltr = mountArea({}).wrapper
-    expect(ltr.find('[role=slider]').attributes('style')).toContain('left: 25%')
-    expect(ltr.find('[role=application]').attributes('style')).toContain('linear-gradient(to right, rgb(255, 0, 0)')
+    expect(ltr.find('[data-testid=thumb]').attributes('style')).toContain('left: 25%')
+    expect(ltr.find('[data-testid=area]').attributes('style')).toContain('linear-gradient(to right, rgb(255, 0, 0)')
   })
 
   it('mirrors pointer x', async () => {
     const { wrapper, update } = mountArea({ dir: 'rtl' })
-    const area = wrapper.find('[role=application]')
+    const area = wrapper.find('[data-testid=area]')
     area.element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect
     await fireEvent.pointerDown(area.element, { pointerId: 1, clientX: 10, clientY: 50 })
     // 10px from the left edge is 90% of the way along a right-to-left axis.
@@ -200,8 +201,8 @@ describe('colorArea right-to-left', () => {
 
   it('inherits the direction from ConfigProvider', async () => {
     const { wrapper } = mountArea({}, node => h(ConfigProvider, { dir: 'rtl' }, () => node))
-    await wrapper.find('[role=application]').trigger('keydown', { key: 'ArrowLeft' })
-    expect(wrapper.find('[role=slider]').attributes('aria-valuenow')).toBe('91')
+    await wrapper.find('[data-testid=area]').trigger('keydown', { key: 'ArrowLeft' })
+    expect(wrapper.find<HTMLInputElement>('input[aria-orientation=horizontal]').element.value).toBe('91')
   })
 })
 

@@ -7,8 +7,6 @@ name: color-slider
 
 # Color Slider
 
-<Badge>Alpha</Badge>
-
 <Description>
 A slider component for adjusting individual color channels. Supports all color channels including hue, saturation, lightness, brightness, red, green, blue, and alpha with automatic gradient backgrounds.
 </Description>
@@ -76,17 +74,20 @@ import { SliderRoot, SliderThumb, SliderTrack, useColorSlider } from 'reka-ui'
 const { sliderProps, track, thumb, setValue } = useColorSlider({
   channel: 'hue',
   defaultValue: '#ff0000',
+  dir: 'rtl',
 })
 setValue([120])
 </script>
 
 <template>
-  <SliderRoot v-bind="sliderProps">
+  <SliderRoot v-bind="sliderProps" dir="rtl">
     <SliderTrack v-bind="track.attrs.value" />
     <SliderThumb v-bind="thumb.attrs.value" />
   </SliderRoot>
 </template>
 ```
+
+Pass the slider's reading direction as `dir` (`'ltr'` by default) along with `orientation` and `inverted`, so the track gradient runs the same way as the slider. `sliderProps` carries `orientation` and `inverted` but not the direction, so set `dir` on `SliderRoot` too, as above. The component reads it from `ConfigProvider` for you.
 
 Binding these surfaces to plain elements does not supply Slider interactions. Delegated updates have the `slider` reason; Slider's model event does not supply a native event. Hidden color form inputs remain in `ColorSliderRoot`.
 
@@ -133,7 +134,7 @@ The root component that provides the slider functionality and context.
 
 ### ColorSliderTrack
 
-The track component that displays the color gradient background.
+The track component that displays the color gradient background. The gradient runs from the slider's minimum to its maximum: left to right on a horizontal slider, or right to left when exactly one of `inverted` and right-to-left (`dir`, or inherited from `ConfigProvider`) is set; bottom to top on a vertical slider, or top to bottom when `inverted`.
 
 <!-- @include: @/meta/ColorSliderTrack.md -->
 
@@ -202,7 +203,7 @@ const color = ref('#3b82f6')
 
 ### Vertical Orientation
 
-A vertical slider for space-constrained layouts.
+A vertical slider for space-constrained layouts. The track gradient runs from bottom to top, or top to bottom with `inverted`; the reading direction does not affect a vertical slider.
 
 ```vue
 <script setup>

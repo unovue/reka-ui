@@ -378,3 +378,94 @@ describe('keyboard interactions', () => {
     expect(input.element.value).toBe('1')
   })
 })
+
+describe('invalid input (validated on commit)', () => {
+  it('does not flag partial input while typing', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    for (const text of ['', '#', '#3b', '#3b82', '#3b82f', '#3b82f6']) {
+      await input.setValue(text)
+      expect(input.attributes('aria-invalid')).toBeUndefined()
+      expect(input.attributes('data-invalid')).toBeUndefined()
+    }
+  })
+
+  it('marks text a blur rejects as aria-invalid and reverts it', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    const root = wrapper.find('[role="group"]')
+    await input.setValue('#ff00')
+    await input.trigger('blur')
+    expect(input.element.value).toBe('#ff0000')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    expect(input.attributes('data-invalid')).toBe('')
+    expect(root.attributes('data-invalid')).toBe('')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('marks text Enter rejects as aria-invalid and keeps the color', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    await input.setValue('#zzzzzz')
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(input.element.value).toBe('#ff0000')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('keeps the flag through partial edits and clears it on the next edit that parses', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    await input.setValue('nope')
+    await input.trigger('blur')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.setValue('#3b')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.setValue('hsl(120, 100%, 50%)')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+  })
+
+  it('clears the flag on the next committed change', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    await input.setValue('nope')
+    await input.trigger('blur')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    await input.trigger('keydown', { key: 'ArrowUp' })
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(wrapper.find('[role="group"]').attributes('data-invalid')).toBeUndefined()
+  })
+
+  it('marks a channel value that is not a number on commit, and reverts it', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000', channel: 'hue', colorSpace: 'hsl' } })
+    const input = wrapper.find('input')
+    await input.setValue('-')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    await input.setValue('')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    await input.trigger('blur')
+    expect(input.element.value).toBe('0')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    await input.setValue('12')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+  })
+
+  it('does not mark an out-of-range channel number as invalid; it is clamped on commit', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000', channel: 'saturation', colorSpace: 'hsl' } })
+    const input = wrapper.find('input')
+    await input.setValue('250')
+    await input.trigger('blur')
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+    expect(input.element.value).toBe('100')
+  })
+
+  it('passes axe while invalid', async () => {
+    const wrapper = mount(ColorField, { props: { defaultValue: '#ff0000' } })
+    const input = wrapper.find('input')
+    await input.setValue('#ff00')
+    await input.trigger('blur')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    expect(await axe(wrapper.element, { rules: { label: { enabled: false } } })).toHaveNoViolations()
+  })
+})

@@ -80,27 +80,18 @@ export {
   useStateMachine,
   withDefault,
 } from './shared'
-// Color utilities
+// Color utilities: parsing, comparison, conversion and formatting. Channel and
+// gradient helpers are internal to the Color components.
 export {
   type Color,
   type ColorChannel,
   type ColorFormat,
   type ColorSpace,
   colorToHex,
-  colorToHsb,
-  colorToHsl,
-  colorToRgb,
   colorToString,
   convertToHsb,
   convertToHsl,
   convertToRgb,
-  getAreaBackgroundStyle,
-  getAreaGradient,
-  getChannelName,
-  getChannelRange,
-  getChannelValue,
-  getSliderBackgroundStyle,
-  getSliderGradient,
   type HSBColor,
   type HSLColor,
   isEqualColor,
@@ -108,8 +99,6 @@ export {
   normalizeColor,
   parseColor,
   type RGBColor,
-  setChannelValue,
-  setChannelValues,
 } from './shared/color'
 export {
   type AcceptableValue,

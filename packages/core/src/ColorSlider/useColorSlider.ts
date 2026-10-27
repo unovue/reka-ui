@@ -8,7 +8,7 @@ import { createPartSurface, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
 
-type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
+type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'dir' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorSliderChangeReason = 'slider'
 export type UseColorSliderProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
   /** Called with every accepted color; same payload as `onUpdate`. */
@@ -61,6 +61,7 @@ export interface UseColorSliderReturn {
  */
 export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn {
   const orientation = computed(() => toValue(props.orientation) ?? 'horizontal')
+  const dir = computed(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const inverted = computed(() => toValue(props.inverted) ?? false)
   const channel = computed(() => toValue(props.channel))
@@ -151,6 +152,7 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
     channel,
     colorSpace,
     orientation,
+    dir,
     disabled,
     inverted,
     min,
@@ -198,7 +200,8 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
 export type ColorSliderTrackState = Record<string, never>
 
 /**
- * Context-pure track gradient, layered over SliderTrack.
+ * Context-pure track gradient, layered over SliderTrack. The gradient follows the
+ * slider's orientation, `inverted` and reading direction.
  * @internal
  */
 export function getColorSliderTrackSurface(rootContext: ColorSliderRootContext) {
@@ -207,6 +210,11 @@ export function getColorSliderTrackSurface(rootContext: ColorSliderRootContext) 
       rootContext.color.value,
       rootContext.channel.value,
       rootContext.colorSpace.value,
+      {
+        orientation: rootContext.orientation.value,
+        dir: rootContext.dir.value,
+        inverted: rootContext.inverted.value,
+      },
     )
   })
   return createPartSurface<ColorSliderTrackState>(() => ({ style: backgroundStyle.value }), () => ({}))

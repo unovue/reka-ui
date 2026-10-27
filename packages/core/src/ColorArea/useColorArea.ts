@@ -2,7 +2,7 @@ import type { ComputedRef, CSSProperties, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
-import { computed, ref, toValue } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
@@ -10,6 +10,8 @@ import { convertValueToPercentage, linearScale } from './utils'
 
 type Inputs = Pick<ColorAreaRootProps, 'colorSpace' | 'xChannel' | 'yChannel' | 'disabled' | 'modelValue' | 'defaultValue' | 'dir'>
 export type ColorAreaChangeReason = 'pointer' | 'keyboard'
+/** One of the area's two axes; each has its own hidden range input. */
+export type ColorAreaAxis = 'x' | 'y'
 export type UseColorAreaProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
   /** Called with every accepted color; same payload as `onUpdate`. */
   onColorUpdate?: (color: Color) => void
@@ -40,6 +42,12 @@ export interface UseColorAreaReturn {
   readonly thumbRef: ComputedRef<HTMLElement | undefined>
   setThumbElement: (element: HTMLElement | null | undefined) => void
   readonly thumb: PartSurface<ColorAreaThumbState>
+  /** The visually hidden `input type="range"` for the x channel; render it inside the thumb. */
+  readonly xInput: PartSurface<ColorAreaInputState>
+  /** The visually hidden `input type="range"` for the y channel; render it inside the thumb. */
+  readonly yInput: PartSurface<ColorAreaInputState>
+  /** Binds an axis input element, so pointer interaction and the arrow keys can focus it. */
+  setInputElement: (axis: ColorAreaAxis, element: HTMLInputElement | null | undefined) => void
   createAreaSurface: (element: Ref<HTMLElement | undefined>) => PartSurface<ColorAreaAreaState>
   updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
   commitValues: () => void
@@ -133,6 +141,17 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
   }
 
   const thumbRef = ref<HTMLElement>()
+  const xInputRef = ref<HTMLInputElement>()
+  const yInputRef = ref<HTMLInputElement>()
+  const focusedAxis = ref<ColorAreaAxis>('x')
+
+  function focusInput(axis: ColorAreaAxis = focusedAxis.value) {
+    const input = (axis === 'y' ? yInputRef.value : xInputRef.value) ?? xInputRef.value
+    if (input)
+      input.focus()
+    else
+      thumbRef.value?.focus()
+  }
 
   const context: ColorAreaRootContext = {
     color: workingColor,
@@ -146,6 +165,10 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     xRange,
     yRange,
     thumbRef,
+    xInputRef,
+    yInputRef,
+    focusedAxis,
+    focusInput,
     updateValues,
     commitValues,
   }
@@ -161,6 +184,8 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     root,
     context,
     thumb: getColorAreaThumbSurface(context),
+    xInput: getColorAreaInputSurface(context, 'x'),
+    yInput: getColorAreaInputSurface(context, 'y'),
     createAreaSurface: (element: Ref<HTMLElement | undefined>) => createColorAreaAreaSurface(context, element),
     areaStyles,
     xValue,
@@ -169,11 +194,13 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     commitValues,
     thumbRef: computed(() => thumbRef.value),
     setThumbElement: (element) => { thumbRef.value = element ?? undefined },
+    setInputElement: (axis, element) => { (axis === 'y' ? yInputRef : xInputRef).value = element ?? undefined },
   }
 }
 
 export type ColorAreaAreaState = { disabled: boolean }
 export type ColorAreaThumbState = { disabled: boolean }
+export type ColorAreaInputState = { disabled: boolean }
 
 function snapToStep(value: number, step: number) {
   return Math.round(value / step) * step
@@ -218,8 +245,8 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     const { x, y } = getValuesFromPointer(event)
     rootContext.updateValues(x, y, 'pointer', event)
 
-    // Focus the thumb when dragging starts
-    rootContext.thumbRef.value?.focus()
+    // Focus the input of the last focused axis when dragging starts
+    rootContext.focusInput()
   }
 
   function handlePointerMove(event: PointerEvent) {
@@ -260,6 +287,12 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     let yDelta = 0
 
     switch (event.key) {
+      case 'Enter':
+        // A range input submits its form on Enter; the v2 thumb (a span) did not, and
+        // ColorSlider's thumb does not.
+        if (event.target === rootContext.xInputRef.value || event.target === rootContext.yInputRef.value)
+          event.preventDefault()
+        return
       case 'ArrowLeft':
         xDelta = -xStepSize * xForward
         break
@@ -289,6 +322,11 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     }
 
     event.preventDefault()
+    // Keep focus on the input of the axis the key moves, so a screen reader announces
+    // that channel's new value.
+    const target = event.target
+    if (target && (target === rootContext.xInputRef.value || target === rootContext.yInputRef.value))
+      rootContext.focusInput(yDelta ? 'y' : 'x')
     const x = rootContext.xValue.value
     const y = rootContext.yValue.value
     const changed = rootContext.updateValues(
@@ -301,62 +339,127 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     if (changed)
       rootContext.commitValues()
   }
+  // No role: the area is the pointer surface. Each channel is exposed by its own range
+  // input in the thumb, and arrow keys pressed there bubble up to this handler.
   return createPartSurface<ColorAreaAreaState>(() => ({
-    'role': 'application',
-    'aria-roledescription': 'Color picker',
-    'aria-disabled': rootContext.disabled.value ? 'true' : undefined,
-    'style': { touchAction: 'none' },
-    'onKeydown': handleKeyDown,
-    'onPointerdown': handlePointerDown,
-    'onPointermove': handlePointerMove,
-    'onPointerup': handlePointerUp,
+    style: { touchAction: 'none' },
+    onKeydown: handleKeyDown,
+    onPointerdown: handlePointerDown,
+    onPointermove: handlePointerMove,
+    onPointerup: handlePointerUp,
   }), () => ({ disabled: rootContext.disabled.value }))
 }
 
 /**
- * Context-pure thumb surface shared by the shell and standalone consumers.
+ * Context-pure thumb surface shared by the shell and standalone consumers. The thumb
+ * is the visual marker only: its two hidden range inputs carry focus and semantics.
  * @internal
  */
 export function getColorAreaThumbSurface(rootContext: ColorAreaRootContext) {
-  const xPercent = computed(() =>
-    convertValueToPercentage(
-      rootContext.xValue.value,
-      rootContext.xRange.value.min,
-      rootContext.xRange.value.max,
-    ),
-  )
-
-  const yPercent = computed(() =>
-    convertValueToPercentage(
-      rootContext.yValue.value,
-      rootContext.yRange.value.min,
-      rootContext.yRange.value.max,
-    ),
-  )
-
-  const ariaLabel = computed(() => {
-    return `${getChannelName(rootContext.xChannel.value)}, ${getChannelName(rootContext.yChannel.value)}`
-  })
-
-  const ariaValueText = computed(() => {
-    return `${getChannelName(rootContext.xChannel.value)} ${Math.round(rootContext.xValue.value)}, ${getChannelName(rootContext.yChannel.value)} ${Math.round(rootContext.yValue.value)}`
-  })
+  const position = getColorAreaThumbPosition(rootContext)
   return createPartSurface<ColorAreaThumbState>(() => ({
-    'role': 'slider',
-    'tabindex': rootContext.disabled.value ? undefined : 0,
-    'aria-label': ariaLabel.value,
-    'aria-roledescription': 'Color thumb',
-    'aria-valuemin': rootContext.xRange.value.min,
-    'aria-valuemax': rootContext.xRange.value.max,
-    'aria-valuenow': Math.round(rootContext.xValue.value),
-    'aria-valuetext': ariaValueText.value,
-    'aria-orientation': 'horizontal',
-    'style': {
+    style: {
       position: 'absolute',
-      left: `${rootContext.dir.value === 'rtl' ? 100 - xPercent.value : xPercent.value}%`,
-      top: `${100 - yPercent.value}%`,
+      left: position.value.left,
+      top: position.value.top,
       transform: 'translate(-50%, -50%)',
       touchAction: 'none',
     },
+  }), () => ({ disabled: rootContext.disabled.value }))
+}
+
+/** The thumb's `left` / `top` within the area, mirrored in RTL. */
+function getColorAreaThumbPosition(rootContext: ColorAreaRootContext) {
+  return computed(() => {
+    const x = convertValueToPercentage(rootContext.xValue.value, rootContext.xRange.value.min, rootContext.xRange.value.max)
+    const y = convertValueToPercentage(rootContext.yValue.value, rootContext.yRange.value.min, rootContext.yRange.value.max)
+    return {
+      left: `${rootContext.dir.value === 'rtl' ? 100 - x : x}%`,
+      top: `${100 - y}%`,
+    }
+  })
+}
+
+/**
+ * Where a channel input sits. `'thumb'`: inside the thumb element, at its center.
+ * `'area'`: next to the thumb (an `asChild` thumb, which cannot hold the inputs), at the
+ * thumb's position in the area. Either way a screen reader's focus rect lands on the thumb.
+ */
+export type ColorAreaInputAnchor = 'thumb' | 'area'
+
+// Same rules as `VisuallyHidden`: out of sight, still focusable and in the accessibility tree.
+const VISUALLY_HIDDEN_STYLE = {
+  position: 'absolute',
+  border: 0,
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  clipPath: 'inset(50%)',
+  whiteSpace: 'nowrap',
+  wordWrap: 'normal',
+} as const
+
+/**
+ * Context-pure surface for one axis's visually hidden `input type="range"`.
+ *
+ * Each channel is a native range input with its own name, value and orientation, as in
+ * React Aria's ColorArea, so it reads like any slider and stays adjustable with a mobile
+ * screen reader's swipe gestures. Arrow keys bubble to the area's handler, which keeps the
+ * existing step, RTL and focus rules; an `input` event (assistive technology setting the
+ * value) writes that one channel. One input is in the tab order at a time.
+ * @internal
+ */
+export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis: ColorAreaAxis, anchor: MaybeRefOrGetter<ColorAreaInputAnchor> = 'thumb') {
+  const position = getColorAreaThumbPosition(rootContext)
+  const isX = axis === 'x'
+  const channel = computed(() => isX ? rootContext.xChannel.value : rootContext.yChannel.value)
+  const otherChannel = computed(() => isX ? rootContext.yChannel.value : rootContext.xChannel.value)
+  const range = computed(() => isX ? rootContext.xRange.value : rootContext.yRange.value)
+  const value = computed(() => isX ? rootContext.xValue.value : rootContext.yValue.value)
+  const otherValue = computed(() => isX ? rootContext.yValue.value : rootContext.xValue.value)
+  // Every channel steps by 1, and a browser snaps a range input's value to its step anyway:
+  // round it here so the value assistive technology reads is the same everywhere.
+  const inputValue = computed(() => Math.round(value.value))
+
+  function handleInput(event: Event) {
+    const input = event.target as HTMLInputElement
+    const next = Number(input.value)
+    const changed = !Number.isNaN(next) && rootContext.updateValues(
+      isX ? next : rootContext.xValue.value,
+      isX ? rootContext.yValue.value : next,
+      'keyboard',
+      event,
+    )
+    if (changed)
+      rootContext.commitValues()
+    // Once a controlled parent has applied (or rejected) the update, show the model's
+    // value: a rejected update does not re-render, so the input would keep the new value.
+    nextTick(() => {
+      input.value = String(inputValue.value)
+    })
+  }
+
+  return createPartSurface<ColorAreaInputState>(() => ({
+    'type': 'range',
+    'min': range.value.min,
+    'max': range.value.max,
+    'step': range.value.step,
+    'value': inputValue.value,
+    'disabled': rootContext.disabled.value,
+    'tabindex': rootContext.focusedAxis.value === axis ? 0 : -1,
+    'aria-label': getChannelName(channel.value),
+    'aria-roledescription': '2D slider',
+    'aria-orientation': isX ? 'horizontal' : 'vertical',
+    // The channel's own value, then the other channel for context.
+    'aria-valuetext': `${inputValue.value}, ${getChannelName(otherChannel.value)} ${Math.round(otherValue.value)}`,
+    'style': {
+      ...VISUALLY_HIDDEN_STYLE,
+      ...(toValue(anchor) === 'area' ? position.value : { left: '50%', top: '50%' }),
+    },
+    'onFocus': () => { rootContext.focusedAxis.value = axis },
+    'onInput': handleInput,
   }), () => ({ disabled: rootContext.disabled.value }))
 }
