@@ -19,6 +19,7 @@ export {
 export {
   injectSelectItemContext,
   default as SelectItem,
+  type SelectItemContext,
   type SelectItemEmits,
   type SelectItemProps,
   type SelectEvent as SelectItemSelectEvent,
@@ -41,7 +42,9 @@ export {
 } from './SelectPortal.vue'
 export {
   injectSelectRootContext,
+  type SelectLabelRegistry,
   default as SelectRoot,
+  type SelectRootContext,
   type SelectRootEmits,
   type SelectRootProps,
 } from './SelectRoot.vue'
@@ -69,3 +72,33 @@ export {
   default as SelectViewport,
   type SelectViewportProps,
 } from './SelectViewport.vue'
+export {
+  type SelectChangeReason,
+  type SelectContentState,
+  type SelectItemIndicatorState,
+  type SelectItemState,
+  type SelectModelValue,
+  type SelectNavigationIntent,
+  type SelectOpenChangeReason,
+  type SelectTriggerState,
+  type SelectTypeaheadItem,
+  type SelectValueState,
+  useSelectContent,
+  type UseSelectContentOptions,
+  type UseSelectContentReturn,
+  useSelectItem,
+  useSelectItemIndicator,
+  type UseSelectItemOptions,
+  type UseSelectItemReturn,
+  useSelectItemText,
+  type UseSelectItemTextOptions,
+  useSelectRoot,
+  type UseSelectRootProps,
+  type UseSelectRootReturn,
+  useSelectTrigger,
+  type UseSelectTriggerOptions,
+  type UseSelectTriggerReturn,
+  useSelectValue,
+  type UseSelectValueOptions,
+  type UseSelectValueReturn,
+} from './useSelect'

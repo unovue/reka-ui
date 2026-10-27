@@ -35,6 +35,9 @@ const forwarded = useForwardPropsEmits(props, emits)
 
 const rootContext = injectSelectRootContext()
 
+// Closed: the items render into a detached fragment so each `SelectItemText`
+// registers its text for `SelectValue` and the native select. Skipped when the
+// root has a `displayValue`, which resolves the text without the items.
 const fragment = ref<DocumentFragment>()
 onMounted(() => {
   fragment.value = new DocumentFragment()
@@ -89,7 +92,7 @@ onUnmounted(clearRenderPresenceTimeout)
     </SelectContentImpl>
   </Presence>
 
-  <div v-else-if="fragment">
+  <div v-else-if="fragment && !rootContext.displayValue">
     <Teleport :to="fragment">
       <SelectProvider :context="rootContext">
         <slot />
