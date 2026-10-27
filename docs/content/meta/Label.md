@@ -48,7 +48,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"label"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"label"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `for` | The id of the element the label is associated with. | `string` | No | - |
 

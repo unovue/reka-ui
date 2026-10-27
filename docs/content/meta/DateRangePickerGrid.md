@@ -30,8 +30,8 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `value` | The page this grid renders (page.value from the grid slot prop): a month in the day view, a year in the month view. Cells outside it are marked data-outside-view. | `DateValue` | No | - |
+| `value` | The page this grid renders (`page.value` from the `grid` slot prop): a month in the day view, a year in the month view. Cells outside it are marked `data-outside-view`. | `DateValue` | No | - |
 
 </llm-only>

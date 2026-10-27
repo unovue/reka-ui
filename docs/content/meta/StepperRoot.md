@@ -156,19 +156,19 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the step that should be active when initially rendered. Use when you do not need to control the state of the steps. | `number` | No | `1` |
-| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `linear` | Whether or not the steps must be completed in order. | `boolean` | No | `true` |
-| `modelValue` | The controlled value of the step to activate. Can be bound as v-model. | `number` | No | - |
+| `modelValue` | The controlled value of the step to activate. Can be bound as `v-model`. | `number` | No | - |
 | `orientation` | The orientation the steps are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down). | `"vertical" \| "horizontal"` | No | `"horizontal"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the step changes; call details.cancel() to keep the current step. | `[payload: number \| undefined, details: ChangeEventDetails<StepperChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the step changes; call `details.cancel()` to keep the current step. | `[payload: number \| undefined, details: ChangeEventDetails<StepperChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the value changes | `[payload: number \| undefined, details: ChangeEventDetails<StepperChangeReason, Event>]` |
 
 **Slots**

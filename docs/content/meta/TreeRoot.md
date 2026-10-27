@@ -151,29 +151,29 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"ul"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"ul"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `bubbleSelect` | When true, selecting children will update the parent state. Requires multiple to be true. | `boolean` | No | - |
+| `bubbleSelect` | When `true`, selecting children will update the parent state. Requires `multiple` to be `true`. | `boolean` | No | - |
 | `defaultExpanded` | The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree | `string[]` | No | - |
 | `defaultValue` | The value of the tree when initially rendered. Use when you do not need to control the state of the tree | `(M extends true ? U[] : U)` | No | - |
-| `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with tree | `boolean` | No | - |
-| `expanded` | The controlled value of the expanded item. Can be binded with v-model. | `string[]` | No | - |
-| `getChildren` | Returns an item's children. undefined marks a leaf. An array, even an empty one, marks a branch that can be expanded: return [] for children that are loaded when the item expands. | `((val: T) => T[] \| undefined)` | No | `val.children` |
-| `getKey` | Returns a unique key for an item. Keys identify items in the selection and in expanded, so they must be strings: convert a numeric id with String(item.id). | `(val: T): string` | Yes | - |
+| `dir` | The reading direction of the listbox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with tree | `boolean` | No | - |
+| `expanded` | The controlled value of the expanded item. Can be binded with `v-model`. | `string[]` | No | - |
+| `getChildren` | Returns an item's children. `undefined` marks a leaf. An array, even an empty one, marks a branch that can be expanded: return `[]` for children that are loaded when the item expands. | `((val: T) => T[] \| undefined)` | No | `val.children` |
+| `getKey` | Returns a unique key for an item. Keys identify items in the selection and in `expanded`, so they must be strings: convert a numeric id with `String(item.id)`. | `(val: T): string` | Yes | - |
 | `items` | List of items | `T[]` | No | - |
-| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
-| `modelValue` | The controlled value of the tree. Can be binded with v-model. | `(M extends true ? U[] : U)` | No | - |
+| `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `modelValue` | The controlled value of the tree. Can be binded with `v-model`. | `(M extends true ? U[] : U)` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean \| M` | No | - |
-| `propagateSelect` | When true, selecting parent will select the descendants. Requires multiple to be true. | `boolean` | No | - |
+| `propagateSelect` | When `true`, selecting parent will select the descendants. Requires `multiple` to be `true`. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:expanded` | Event handler called before the expanded items change; call details.cancel() to keep them. | `[val: string[], details: ChangeEventDetails<TreeExpandedChangeReason, Event>]` |
-| `beforeUpdate:modelValue` | Event handler called before the selection changes; call details.cancel() to keep the current selection. | `[val: M extends true ? U[] : U, details: ChangeEventDetails<TreeChangeReason, Event>]` |
+| `beforeUpdate:expanded` | Event handler called before the expanded items change; call `details.cancel()` to keep them. | `[val: string[], details: ChangeEventDetails<TreeExpandedChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the selection changes; call `details.cancel()` to keep the current selection. | `[val: M extends true ? U[] : U, details: ChangeEventDetails<TreeChangeReason, Event>]` |
 | `update:expanded` | Event handler called when the expanded items change. | `[val: string[], details: ChangeEventDetails<TreeExpandedChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the selection changes. | `[val: M extends true ? U[] : U, details: ChangeEventDetails<TreeChangeReason, Event>]` |
 

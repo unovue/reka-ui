@@ -76,12 +76,12 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultOpen` | The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | `false` |
-| `disabled` | When true, prevents the user from interacting with the collapsible. | `boolean` | No | - |
-| `open` | The controlled open state of the collapsible. Can be binded with v-model. | `boolean` | No | - |
-| `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | `true` |
+| `defaultOpen` | The open state of the collapsible when it is initially rendered. \<br> Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `disabled` | When `true`, prevents the user from interacting with the collapsible. | `boolean` | No | - |
+| `open` | The controlled open state of the collapsible. Can be binded with `v-model`. | `boolean` | No | - |
+| `unmountOnHide` | When `true`, the element will be unmounted on closed state. | `boolean` | No | `true` |
 
 **Events**
 

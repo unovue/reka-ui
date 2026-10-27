@@ -134,30 +134,30 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `channel` | The color channel to display. If not provided, displays hex value. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | - |
 | `colorSpace` | The color space to operate in when displaying a channel. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
 | `defaultValue` | The default color value (uncontrolled). A string is parsed once. | `string \| Color` | No | `"#000000"` |
-| `disabled` | When true, prevents the user from interacting with the field. | `boolean` | No | `false` |
-| `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | `false` |
+| `disabled` | When `true`, prevents the user from interacting with the field. | `boolean` | No | `false` |
+| `disableWheelChange` | When `true`, prevents the value from changing on wheel scroll. | `boolean` | No | `false` |
 | `locale` | The locale to use for number formatting. | `string` | No | - |
-| `modelValue` | The color value (controlled). A string is parsed once; emitted values are always Color objects. | `string \| Color` | No | - |
+| `modelValue` | The color value (controlled). A string is parsed once; emitted values are always `Color` objects. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | Placeholder text when the field is empty. | `string` | No | - |
-| `readonly` | When true, the field is read-only. | `boolean` | No | `false` |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `readonly` | When `true`, the field is read-only. | `boolean` | No | `false` |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | Custom step value for increment/decrement. Defaults to channel step or 1 for hex. | `number` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; `details.cancel()` vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
 | `change` | Event handler called when a committed edit, step or wheel change changes the color. Typing does not change the color until it is committed. | `[value: Color]` |
-| `changeEnd` | Event handler called after each committed change once the model holds it: every field change is a complete interaction. With a controlled modelValue it fires after the parent applies the update, and not at all if the parent rejects it. | `[value: Color]` |
-| `update:color` | Event handler called with the same Color as update:modelValue, after it. | `[value: Color]` |
-| `update:hex` | Event handler called with the hex serialization of the new color, after update:modelValue. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
+| `changeEnd` | Event handler called after each committed change once the model holds it: every field change is a complete interaction. With a controlled `modelValue` it fires after the parent applies the update, and not at all if the parent rejects it. | `[value: Color]` |
+| `update:color` | Event handler called with the same `Color` as `update:modelValue`, after it. | `[value: Color]` |
+| `update:hex` | Event handler called with the hex serialization of the new color, after `update:modelValue`. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
 | `update:modelValue` | Event handler called when the color value changes. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
 
 </llm-only>

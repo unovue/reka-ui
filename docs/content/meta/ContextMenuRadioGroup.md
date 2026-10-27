@@ -43,7 +43,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `modelValue` | The value of the selected item in the group. | `AcceptableValue` | No | - |
 
@@ -51,7 +51,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[payload: AcceptableValue, details: ChangeEventDetails<"item-press", Event>]` |
+| `beforeUpdate:modelValue` | Called before the value changes; `details.cancel()` keeps the current value. | `[payload: AcceptableValue, details: ChangeEventDetails<"item-press", Event>]` |
 | `update:modelValue` | Event handler called when the value changes. | `[payload: AcceptableValue, details: ChangeEventDetails<"item-press", Event>]` |
 
 </llm-only>

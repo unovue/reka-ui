@@ -30,8 +30,8 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with item | `boolean` | No | - |
 
 </llm-only>

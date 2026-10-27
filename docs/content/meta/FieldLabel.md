@@ -37,9 +37,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `for` | The id of the element the label is associated with. | `string` | No | - |
-| `nativeLabel` | Whether the label renders a native label element. Set to false when rendering another element (e.g. as="div"): it then drops for, focuses the control on click, and relies on the control's aria-labelledby. Useful for button controls like SelectTrigger, where a native label would forward clicks and :hover to the button. | `boolean` | No | `true` |
+| `nativeLabel` | Whether the label renders a native `label` element. Set to `false` when rendering another element (e.g. `as="div"`): it then drops `for`, focuses the control on click, and relies on the control's `aria-labelledby`. Useful for button controls like `SelectTrigger`, where a native label would forward clicks and `:hover` to the button. | `boolean` | No | `true` |
 
 </llm-only>

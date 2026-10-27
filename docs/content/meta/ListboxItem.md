@@ -58,17 +58,17 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | Text used for the label registry; defaults to the rendered text content. | `string` | No | - |
-| `value` | The value given as data when submitted with a name. | `T` | Yes | - |
+| `value` | The value given as data when submitted with a `name`. | `T` | Yes | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<T>]` |
+| `select` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: SelectEvent<T>]` |
 
 **Slots**
 

@@ -59,10 +59,10 @@
 | --- | --- | --- | --- | --- |
 | `content` | Default settings that will be used by all tooltip components. | `TooltipContentProps` | No | - |
 | `delayDuration` | The duration from when the pointer enters the trigger until the tooltip gets opened. | `number` | No | `700` |
-| `disableClosingTrigger` | When true, clicking on trigger will not close the content. | `boolean` | No | - |
-| `disabled` | When true, disable tooltip | `boolean` | No | - |
-| `disableHoverableContent` | When true, trying to hover the content will result in the tooltip closing as the pointer leaves the trigger. | `boolean` | No | `false` |
-| `ignoreNonKeyboardFocus` | Prevent the tooltip from opening if the focus did not come from the keyboard by matching against the :focus-visible selector. This is useful if you want to avoid opening it when switching browser tabs or closing a dialog. | `boolean` | No | `false` |
+| `disableClosingTrigger` | When `true`, clicking on trigger will not close the content. | `boolean` | No | - |
+| `disabled` | When `true`, disable tooltip | `boolean` | No | - |
+| `disableHoverableContent` | When `true`, trying to hover the content will result in the tooltip closing as the pointer leaves the trigger. | `boolean` | No | `false` |
+| `ignoreNonKeyboardFocus` | Prevent the tooltip from opening if the focus did not come from the keyboard by matching against the `:focus-visible` selector. This is useful if you want to avoid opening it when switching browser tabs or closing a dialog. | `boolean` | No | `false` |
 | `skipDelayDuration` | How much time a user has to enter another trigger without incurring a delay again. | `number` | No | `300` |
 
 </llm-only>

@@ -73,7 +73,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `value` | The date value of the cell: a day, the first day of a month, or the first day of a year | `DateValue` | Yes | - |
 
@@ -81,7 +81,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `cellValue` | Formatted cell text: 5, Sep, 2026 | `string` |
+| `cellValue` | Formatted cell text: `5`, `Sep`, `2026` | `string` |
 | `disabled` | Current disable state | `boolean` |
 | `selected` | Current selected state | `boolean` |
 | `today` | Whether the cell is today / the current month / the current year | `boolean` |

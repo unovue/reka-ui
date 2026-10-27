@@ -77,21 +77,21 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `finalFocus` | Final focus target when the drawer closes.  true / default: focus the trigger false: do not restore focus element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
+| `finalFocus` | Final focus target when the drawer closes.  `true` / default: focus the trigger `false`: do not restore focus element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 | `forceMount` |  | `boolean` | No | - |
-| `initialFocus` | Initial focus target when the drawer opens.  true / default: focus the first focusable element inside false: do not focus anything element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
+| `initialFocus` | Initial focus target when the drawer opens.  `true` / default: focus the first focusable element inside `false`: do not focus anything element ref: focus that specific element | `boolean \| HTMLElement \| null` | No | `true` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `closeAutoFocus` | Event handler called when focus moves back on close (to the trigger, or finalFocus). Can be prevented. Not emitted for a forceMount popup, which stays mounted: it returns focus itself on close, while focus is still inside it or on <body>; use finalFocus to change or turn off that return. | `[event: Event]` |
+| `closeAutoFocus` | Event handler called when focus moves back on close (to the trigger, or `finalFocus`). Can be prevented. Not emitted for a `forceMount` popup, which stays mounted: it returns focus itself on close, while focus is still inside it or on `<body>`; use `finalFocus` to change or turn off that return. | `[event: Event]` |
 | `escapeKeyDown` | Event handler called when the escape key is down. Can be prevented. | `[event: KeyboardEvent]` |
-| `focusOutside` | Event handler called when the focus moves outside of the DismissableLayer. Can be prevented. | `[event: FocusOutsideEvent]` |
-| `interactOutside` | Event handler called when an interaction happens outside the DismissableLayer. Specifically, when a pointerdown event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
+| `focusOutside` | Event handler called when the focus moves outside of the `DismissableLayer`. Can be prevented. | `[event: FocusOutsideEvent]` |
+| `interactOutside` | Event handler called when an interaction happens outside the `DismissableLayer`. Specifically, when a `pointerdown` event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
 | `openAutoFocus` | Event handler called when auto-focusing on open. Can be prevented. | `[event: Event]` |
-| `pointerDownOutside` | Event handler called when a pointerdown event happens outside of the DismissableLayer. Can be prevented. | `[event: PointerDownOutsideEvent]` |
+| `pointerDownOutside` | Event handler called when a `pointerdown` event happens outside of the `DismissableLayer`. Can be prevented. | `[event: PointerDownOutsideEvent]` |
 
 </llm-only>
