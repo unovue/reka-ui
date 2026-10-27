@@ -14,7 +14,12 @@ import { useForwardExpose } from './useForwardExpose'
 //   `instance.exposed` mutation, and an `onUpdated` resync on every re-render.
 // - `useForwardElement` + `expose(api.expose)`: a shallowRef + computed, plain
 //   `expose()`; nothing on update. Measured with the dev-only prop-read proxy
-//   (what vitest runs) and without it (what production ships).
+//   (what vitest runs) and with reka's production branch (no proxy) — still on
+//   Vue's dev runtime, so this is not a production-build number.
+// - `useForwardElement(extraRef)`: the same, plus one extra object ref, which
+//   adds the sync `watch` + `useMergedRefs` path (`useRender({ ref })`).
+//
+// Run-to-run variance is about 9%; compare ratios within one run.
 // - baseline: the same element, no ref machinery at all.
 //
 // Run: `pnpm --filter reka-ui exec vitest bench src/shared/useForwardElement.bench.ts`
@@ -43,6 +48,16 @@ const ElementPart = defineComponent({
   props: partProps,
   setup(props, { expose }) {
     const { forwardRef, expose: elementExpose } = useForwardElement()
+    expose(elementExpose)
+    return () => h(props.as, { 'ref': forwardRef, 'data-tick': tick.value })
+  },
+})
+
+const extraRef = ref<HTMLElement | null>(null)
+const ExtraRefPart = defineComponent({
+  props: partProps,
+  setup(props, { expose }) {
+    const { forwardRef, expose: elementExpose } = useForwardElement(extraRef)
     expose(elementExpose)
     return () => h(props.as, { 'ref': forwardRef, 'data-tick': tick.value })
   },
@@ -82,7 +97,8 @@ type Flavour = [name: string, Part: Component, production: boolean]
 const FLAVOURS: Flavour[] = [
   ['useForwardExpose (legacy)', LegacyPart, false],
   ['useForwardElement (dev proxy)', ElementPart, false],
-  ['useForwardElement (production)', ElementPart, true],
+  ['useForwardElement (reka prod branch, Vue dev runtime)', ElementPart, true],
+  ['useForwardElement + extra ref (watch path)', ExtraRefPart, false],
   ['baseline (no machinery)', BaselinePart, false],
 ]
 
