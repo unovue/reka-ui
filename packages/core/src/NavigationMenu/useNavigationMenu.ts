@@ -182,6 +182,13 @@ export interface UseNavigationMenuProps extends ModelCallbacks {
   rootElement?: Ref<HTMLElement | undefined>
   /** The triggers and links in DOM order (the SFC hands its collection), used to track the active trigger. */
   getItems?: () => HTMLElement[]
+  /**
+   * Called once the viewport's open (`true`) or close (`false`) transitions
+   * and animations have finished. The SFC emits `update:openComplete`.
+   * `NavigationMenuViewport`'s `Presence` reports it through
+   * `context.notifyOpenComplete`, so a menu without a viewport never calls it.
+   */
+  onOpenComplete?: (open: boolean) => void
 }
 
 export interface UseNavigationMenuReturn {
@@ -340,6 +347,7 @@ export function useNavigationMenu(props: UseNavigationMenuProps = {}): UseNaviga
     // When selecting item we trigger update immediately
     onItemSelect,
     onItemDismiss,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
   return {

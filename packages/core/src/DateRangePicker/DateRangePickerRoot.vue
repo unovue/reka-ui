@@ -102,6 +102,8 @@ export type DateRangePickerRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>]
   /** Event handler called when the open state of the popover changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
   /** Called before the range changes, from the field or the calendar; `details.cancel()` keeps the current range. */
   'beforeUpdate:modelValue': [date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>]
   /** Event handler called whenever the model value changes */
@@ -220,6 +222,7 @@ const { context, popover, modelValue, open } = useDateRangePicker({
   columns: () => props.columns,
   baseId: useId(undefined, 'reka-popover'),
   emit: emits,
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 
 providePopoverRootContext(popover.context)

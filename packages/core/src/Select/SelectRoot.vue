@@ -54,6 +54,8 @@ export type SelectRootEmits<T = AcceptableValue, M extends boolean = boolean> = 
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<SelectOpenChangeReason>]
   /** Event handler called when the open state of the select changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<SelectOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 /** The sticky label registry on the Select root context, matched with `by`. */
@@ -96,6 +98,8 @@ export interface SelectRootContext<T = AcceptableValue> {
   displayValue: Ref<((value: T) => string) | undefined>
   /** The root's `getNavigationIntent` over the default mapping. */
   getNavigationIntent: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]
@@ -168,6 +172,7 @@ const select = useSelectRoot<AcceptableValue>({
   // selection explicitly: a controlled `modelValue` only updates once the
   // parent re-renders.
   onUpdate: value => fieldContext?.handleControlInput({ value }),
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 const { context, open, isEmptyModelValue, isSelected } = select
 const modelValue = select.modelValue as unknown as Ref<M extends true ? T[] : T | undefined>

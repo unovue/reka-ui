@@ -54,6 +54,7 @@ const staysMounted = computed(
     v-slot="{ present }"
     :present="rootContext.open.value"
     :force-mount="staysMounted"
+    @complete="rootContext.notifyOpenComplete"
   >
     <DialogContentModal
       v-if="rootContext.modal.value"

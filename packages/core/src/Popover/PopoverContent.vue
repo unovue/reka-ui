@@ -33,7 +33,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    :present="rootContext.open.value"
+    :force-mount="forceMount"
+    @complete="rootContext.notifyOpenComplete"
+  >
     <PopoverContentModal
       v-if="rootContext.modal.value"
       v-bind="forwarded"

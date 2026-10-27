@@ -93,6 +93,11 @@
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
     'type': '[value: string, details: ChangeEventDetails&lt;NavigationMenuChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the viewport\'s open (<code>true</code>) or close (<code>false</code>) transitions and animations have finished. Requires a <code>NavigationMenuViewport</code>.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -130,6 +135,7 @@
 | --- | --- | --- |
 | `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[value: string, details: ChangeEventDetails<NavigationMenuChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: string, details: ChangeEventDetails<NavigationMenuChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the viewport's open (true) or close (false) transitions and animations have finished. Requires a NavigationMenuViewport. | `[value: boolean]` |
 
 **Slots**
 

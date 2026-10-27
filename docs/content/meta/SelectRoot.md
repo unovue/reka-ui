@@ -109,6 +109,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the select changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;SelectOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -155,6 +160,7 @@
 | `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the value changes. The value is an array when multiple. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the select changes. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

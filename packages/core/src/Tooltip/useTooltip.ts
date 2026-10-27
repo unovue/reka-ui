@@ -224,6 +224,12 @@ export interface UseTooltipProps {
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason>) => void
   /** Called after a change commits. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseTooltipReturn {
@@ -372,6 +378,7 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     disableClosingTrigger,
     disabled,
     ignoreNonKeyboardFocus,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
   return {

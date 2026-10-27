@@ -171,9 +171,8 @@ watch(open, (isOpen) => {
   }
 }, { immediate: true })
 
-// `update:openComplete` is emitted by DrawerContentImpl after the popup's
-// enter/exit transition actually finishes (via transitionend/animationend on
-// the popup element). DrawerRoot just exposes the notify hook through context.
+// `update:openComplete` is emitted once `DrawerContent`'s `Presence` reports
+// that the popup's enter/exit transitions and animations finished (#2827).
 
 onUnmounted(() => {
   providerContext?.removeDrawer(context.contentId)
