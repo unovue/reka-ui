@@ -29,13 +29,14 @@ function onMousedown(event: MouseEvent) {
     event.preventDefault()
 }
 
-const { tag, renderProps, state, elementRef } = useRender({
+const { tag, renderProps, state, elementRef, expose } = useRender({
   defaultTagName: 'label',
   as: () => props.as,
   asChild: () => props.asChild,
   // Consumer attrs merge last so their listeners chain after Label's own.
   props: () => mergeProps({ for: props.for, onMousedown }, attrs),
 })
+defineExpose(expose)
 </script>
 
 <template>

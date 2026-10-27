@@ -4,7 +4,7 @@ import type { DataOrientation, Direction, StringOrNumber } from '../shared/types
 import type { TabsChangeReason } from './useTabs'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: ComputedRef<StringOrNumber | undefined>
@@ -84,7 +84,8 @@ defineSlots<{
 // owns the controlled/uncontrolled model (`useControllableState`) and emits.
 const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const { root, context, modelValue } = useTabs({
   modelValue: () => props.modelValue,
@@ -107,6 +108,7 @@ const slotModelValue = modelValue as ComputedRef<T | undefined>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="root.attrs.value"

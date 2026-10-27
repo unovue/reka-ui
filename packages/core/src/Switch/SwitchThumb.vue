@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface SwitchThumbProps extends PrimitiveProps {}
 </script>
@@ -16,11 +16,13 @@ const rootContext = injectSwitchRootContext()
 // Same derivation as `useSwitch().thumb` — one source for `data-state` / `data-disabled`.
 const thumb = getSwitchThumbSurface(rootContext)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     v-bind="thumb.attrs.value"
     :as-child="asChild"
     :as="as"

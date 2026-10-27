@@ -4,7 +4,7 @@ import type { SwitchChangeReason } from './useSwitch'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -71,7 +71,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const scopeIdAttrs = useForwardScopeId()
 const isFormControl = useFormControl(currentElement)
 // DOM-bound: resolves the associated `[for]` label text through the element's

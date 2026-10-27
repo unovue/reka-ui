@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, watch, watchPostEffect } from 'vue'
-import { useForwardExpose } from '@/shared'
+import { mergeExpose, useForwardElement } from '@/shared'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
 export interface TabsIndicatorProps extends PrimitiveProps {}
@@ -13,10 +13,10 @@ import { Primitive } from '@/Primitive'
 
 const props = defineProps<TabsIndicatorProps>()
 const context = injectTabsRootContext()
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   updateIndicatorStyle,
-})
-useForwardExpose()
+}))
 
 const isMounted = useMounted()
 
@@ -68,6 +68,7 @@ function updateIndicatorStyle() {
 <template>
   <Primitive
     v-if="isMounted && typeof indicatorStyle.size === 'number'"
+    :ref="forwardRef"
     v-bind="props"
     :style="{
       '--reka-tabs-indicator-size': `${indicatorStyle.size}px`,

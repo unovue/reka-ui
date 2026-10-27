@@ -11,10 +11,11 @@ import { registerBranch } from './layerStack'
 
 const props = defineProps<DismissableLayerBranchProps>()
 
-const { tag, currentElement, elementRef } = useRender({
+const { tag, currentElement, elementRef, expose } = useRender({
   as: () => props.as,
   asChild: () => props.asChild,
 })
+defineExpose(expose)
 let unregisterBranch: (() => void) | undefined
 onMounted(() => {
   if (currentElement.value)
