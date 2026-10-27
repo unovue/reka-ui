@@ -237,7 +237,11 @@ export interface UseStepperReturn {
   /**
    * The item/trigger/title/description surfaces of one step. Bind
    * `trigger.attrs` on an element and add it to `context.totalStepperItems`
-   * (in DOM order) for arrow navigation and the step count.
+   * (in DOM order) for arrow navigation and the step count. Also call
+   * `context.itemDisabled.set(el, () => parts.context.disabled.value)` so
+   * `goToStep` reads the item's current disabled state; without it, a linear
+   * stepper falls back to the rendered `disabled` attribute, which lags a
+   * render, so a second synchronous `nextStep()` can return `false`.
    */
   getItem: (step: MaybeRefOrGetter<number>, options?: { disabled?: MaybeRefOrGetter<boolean | undefined>, completed?: MaybeRefOrGetter<boolean | undefined> }) => StepperItemParts
   context: StepperRootContext
