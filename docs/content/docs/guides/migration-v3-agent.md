@@ -122,7 +122,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **How to find it.** Search for `reka-dialog-`, `reka-alert-dialog-`, `reka-drawer-`, `reka-popover-`, `reka-dropdown-menu-`, `reka-menubar-content-`, `reka-tooltip-` and for `aria-describedby` / `aria-labelledby` / `aria-controls` values in tests and selectors.
 
-**Rewrite rules.** Never depend on the shape of a generated id. In tests, select by role, label or text (`getByRole('dialog')`, `getByRole('tooltip')`) or compare the attribute to the id read from the other element. In CSS, style by data attribute or class, not by generated id. Code that passes its own `id` to a part is unaffected.
+**Rewrite rules.** Never depend on the shape of a generated id. In tests, select by role, label or text (`getByRole('dialog')`, `getByRole('tooltip')`) or compare the attribute to the id read from the other element. In CSS, style by data attribute or class, not by generated id. Code that passes its own `id` to a part is unaffected, except that the paired attribute now follows it: the trigger and content of Collapsible, Accordion, Popover and Tabs, and the trigger, content, title and description of Dialog, AlertDialog and Drawer, take an `id` prop that `aria-controls` / `aria-labelledby` / `aria-describedby` point at (in Tabs, per `value`). `CollapsibleContent` and `AccordionContent` used to drop a passed `id`; they now render it. Remove code that copied a custom id into those attributes by hand.
 
 ### 5. Disabled triggers rendered `asChild`
 

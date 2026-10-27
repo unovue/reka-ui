@@ -180,6 +180,12 @@ The ids Reka UI generates for overlay parts are now derived from the root. This 
 
 Only code that hard-coded the shape of a generated id is affected. In tests, select by role, label or text, or compare the attribute with the id read from the other element. In CSS, style by data attribute or class. An `id` you pass to a part yourself is unchanged.
 
+### Part `id` props
+
+The trigger and content of Collapsible, Accordion, Popover and Tabs, and the trigger, content, title and description of Dialog, AlertDialog and Drawer, take an `id` prop. The part renders it, and the attribute that points at the part (`aria-controls`, `aria-labelledby` or `aria-describedby`) follows it, also when the prop changes. In v2 such an `id` was a plain attribute: the paired attribute kept the generated id, and `CollapsibleContent` and `AccordionContent` dropped it for their generated id. In Tabs, a `TabsTrigger` or `TabsContent` `id` replaces only that part's id; the paired part with the same `value` points at it, and the other values keep the ids derived from the root and `value`.
+
+Remove workarounds that copied a custom id into `aria-controls`, `aria-labelledby` or `aria-describedby` by hand.
+
 ## Disabled triggers rendered `asChild`
 
 A disabled `Toggle`, `ToggleGroupItem` or `CheckboxRoot` now ignores a user click even when it renders `asChild` onto an element that has no native `disabled` behaviour, such as a `div` or a link. In v2 only the native `disabled` attribute blocked the click, so those elements still toggled.
