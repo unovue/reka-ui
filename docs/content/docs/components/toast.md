@@ -317,8 +317,8 @@ The options of a toast:
     },
     {
       name: 'onClose',
-      description: 'Called when the toast closes.',
-      type: '() =&gt; void',
+      description: 'Called when the toast closes, with the details of the close (the same object update:open receives). details.reason is a ToastOpenChangeReason, or imperative-action for close(id).',
+      type: '(details: ChangeEventDetails&lt;ToastOpenChangeReason&gt;) =&gt; void',
     },
     {
       name: 'onRemove',
@@ -330,7 +330,19 @@ The options of a toast:
 
 Each toast in `toasts` also has `open` and an `updateKey` that increments whenever it is updated or added again.
 
-A managed toast closes through the same path as any other `ToastRoot`: its timeout, `ToastClose`, `ToastAction`, a swipe and Escape fire `beforeUpdate:open` and `update:open` on the `ToastRoot` with the [reason](/docs/components/toast#keeping-a-toast-open), then close the toast in the manager (which calls its `onClose`). Calling `close(id)` on the manager closes the toast directly and does not emit on the `ToastRoot`.
+A managed toast closes through the same path as any other `ToastRoot`: its timeout, `ToastClose`, `ToastAction`, a swipe and Escape fire `beforeUpdate:open` and `update:open` on the `ToastRoot` with the [reason](/docs/components/toast#keeping-a-toast-open), then close the toast in the manager, which calls its `onClose(details)` with the same details.
+
+Calling `close(id)` on the manager also closes a rendered toast through its `ToastRoot`, with the reason `'imperative-action'`: `beforeUpdate:open` fires first and can cancel it, as it can for the `close()` of any other component. `close()` with no `id` asks each open toast in turn, so a cancelled one stays open while the others close. A toast that is not rendered by a `ToastRoot` closes directly, and its `onClose` receives `'imperative-action'` too.
+
+```ts
+toast.add({
+  title: 'Uploaded',
+  onClose: ({ reason }) => {
+    if (reason === 'timeout')
+      track('toast-expired')
+  },
+})
+```
 
 ### createToastManager
 
@@ -601,7 +613,7 @@ function onBeforeUpdateOpen(open: boolean, details: ChangeEventDetails<ToastOpen
 </template>
 ```
 
-When a timeout close is cancelled, the toast stays open without a timer: the `remaining` slot prop reads `0`, and hovering or focusing the viewport does not restart it. The timer starts again when the toast reopens or its `duration` changes. A cancelled swipe snaps the toast back with `data-swipe="cancel"`.
+When a timeout close is cancelled, the toast stays open and its timer starts again with the full `duration`, so it asks again later: here it closes on the first timeout after the upload finishes. Hovering or focusing the viewport pauses the restarted timer as usual. The same happens when a controlled parent ignores a timeout's `update:open`. A cancelled swipe snaps the toast back with `data-swipe="cancel"`.
 
 ### Animating swipe gesture
 

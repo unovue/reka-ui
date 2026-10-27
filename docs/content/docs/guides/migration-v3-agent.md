@@ -562,17 +562,21 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 **What changed.**
 - `update:modelValue` on `NavigationMenuRoot` and `NavigationMenuSub`, and `update:open` on `ToastRoot`, carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `NavigationMenuChangeReason` (`'trigger-press' | 'trigger-hover' | 'pointer-leave' | 'escape-key' | 'outside-press' | 'focus-outside' | 'link-press'`) and `ToastOpenChangeReason` (`'timeout' | 'close-press' | 'action-press' | 'swipe' | 'escape-key'`). Toasts from the toast manager emit them too.
 - A controlled `NavigationMenuRoot` no longer emits `update:modelValue` with its current value, and a managed toast no longer emits a second `update:open` when its timer runs out after it closed.
-- `NavigationMenuContent` emits `pointerDownOutside`, `focusOutside` and `interactOutside` once per interaction; v2 emitted each twice.
+- `NavigationMenuContent` emits `pointerDownOutside` and `focusOutside` once per interaction (v2 emitted each twice), and `interactOutside` once for an outside press and once for a focus move outside (v2 emitted it only for the focus move, twice). `preventDefault()` in `interactOutside` keeps the menu open.
+- A press on a trigger whose hover open was cancelled opens the menu with `trigger-press`.
 - Trigger `id` and `aria-controls` render from the first render instead of after mount.
 - NavigationMenu context (`injectNavigationMenuContext()`): `modelValue`, `dir`, `disableClickTrigger`, `disableHoverTrigger` and `unmountOnHide` are read-only refs; `onItemSelect(value, reason?, event?)` and `onItemDismiss(reason?, event?)` return a boolean; `onTriggerEnter`, `onTriggerLeave` and `onContentLeave` take an optional event.
-- Toast root context (`injectToastRootContext()`): `onClose(event?, reason?)` takes an optional reason and returns a boolean. The `ToastProviderContext` settings refs are read-only.
-- A cancelled toast timeout stops the timer (`remaining` reads `0`) until the toast reopens or its `duration` changes; a cancelled swipe snaps back.
+- Toast root context (`injectToastRootContext()`): `onClose(event?, reason?)` takes an optional reason and returns a boolean. The `ToastProviderContext` settings refs are read-only, and `isFocusedToastEscapeKeyDownRef` is removed.
+- A cancelled toast timeout, or one a controlled parent ignores, restarts the timer with the full `duration`, so the toast asks again later; a cancelled swipe snaps back.
+- Toast manager: `ToastObject.onClose(details)` receives the close details (`details.reason` is a `ToastOpenChangeReason` or `'imperative-action'`). `manager.close(id)` closes a rendered toast through its `ToastRoot`: `beforeUpdate:open` (cancellable) and `update:open` fire with `'imperative-action'`.
 - New and additive: `useNavigationMenu()`, `useNavigationMenuSub()` and the NavigationMenu part composables; `useToastProvider()`, `useToastRoot()`, `useToastTimer()`, `useToastSwipe()` and `useToastViewport()`.
 
 **How to find it.**
 - `injectNavigationMenuContext(` in custom parts; within them, assignments to `modelValue.value`.
 - `injectToastRootContext(` in custom parts that call `onClose`.
-- `@pointer-down-outside`, `@focus-outside` or `@interact-outside` handlers on `NavigationMenuContent` that count calls.
+- `@pointer-down-outside`, `@focus-outside` or `@interact-outside` handlers on `NavigationMenuContent` that count calls, or that assume `interactOutside` only follows a focus move.
+- `onClose` callbacks in `toast.add(...)` / `useToastManager()` calls, and `beforeUpdate:open` / `update:open` handlers on managed `ToastRoot`s that switch on `details.reason`.
+- `isFocusedToastEscapeKeyDownRef` in custom Toast parts.
 - Tests that count `update:modelValue` emits on a controlled `NavigationMenuRoot`, or `update:open` emits on a `ToastRoot` with a `toast` prop.
 - Snapshots of `NavigationMenuTrigger` rendered on the server or before mount.
 
@@ -581,6 +585,9 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `toastRootContext.onClose(event)`: leave unchanged. Add a reason only if the custom part should report one other than `'imperative-action'`.
 - A handler on `NavigationMenuContent` that compensated for the double emit (for example, ignoring every second call): remove the compensation. If unsure: *ask*.
 - A test expecting an emit for an unchanged value: assert that nothing was emitted.
+- An `@interact-outside` handler on `NavigationMenuContent` that should only react to focus moves: check `event.type` (or move it to `@focus-outside`). If unsure: *ask*.
+- A `beforeUpdate:open` / `update:open` handler on a managed `ToastRoot` that should not react to `manager.close(id)`: skip `details.reason === 'imperative-action'`.
+- `isFocusedToastEscapeKeyDownRef`: remove the reference; nothing read it.
 - A snapshot that lacked the trigger `id` / `aria-controls`: update the snapshot.
 
 **Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before; the type-check passes.
