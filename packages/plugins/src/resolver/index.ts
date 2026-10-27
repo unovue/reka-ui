@@ -1,6 +1,7 @@
 import type { Components } from 'reka-ui/constant'
 import type { ComponentResolver } from 'unplugin-vue-components'
 import { components } from 'reka-ui/constant'
+import { getComponentSource } from '../shared'
 
 export interface ResolverOptions {
   /**
@@ -9,10 +10,18 @@ export interface ResolverOptions {
    * @defaultValue ""
    */
   prefix?: string
+  /**
+   * Import each component from its own entry point (`reka-ui/dialog`) instead of the
+   * package root (`reka-ui`). Both export the very same components, so this only changes
+   * how much of the library an unbundled dev server or SSR runtime loads.
+   *
+   * @defaultValue true
+   */
+  subpaths?: boolean
 }
 
 export default function (options: ResolverOptions = {}): ComponentResolver {
-  const { prefix = '' } = options
+  const { prefix = '', subpaths = true } = options
 
   return {
     type: 'component',
@@ -25,7 +34,7 @@ export default function (options: ResolverOptions = {}): ComponentResolver {
           if (groupComponents.includes(componentName)) {
             return {
               name: componentName,
-              from: 'reka-ui',
+              from: getComponentSource(groupName, subpaths),
             }
           }
         }

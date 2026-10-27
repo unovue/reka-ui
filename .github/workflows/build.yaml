@@ -56,6 +56,10 @@ jobs:
       - name: Test (with coverage)
         run: pnpm --filter reka-ui test:coverage
 
+      # The resolver and Nuxt module tests import the built `reka-ui/constant` and family entries
+      - name: Test (plugins)
+        run: pnpm --filter plugins test
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7
