@@ -8,8 +8,6 @@ aria: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
 
 # Tree
 
-<Badge>Alpha</Badge>
-
 <Description>
 A tree view widget displays a hierarchical list of items that can be expanded or collapsed to show or hide their child items, such as in a file system navigator.
 </Description>
@@ -83,6 +81,10 @@ The item component.
     {
       attribute: '[data-selected]',
       values: 'Present when selected',
+    },
+    {
+      attribute: '[data-disabled]',
+      values: 'Present when disabled',
     },
   ]"
 />
@@ -280,7 +282,7 @@ By default, `<TreeRoot />` expects you to provide the list of node's children by
 
 <Callout type="info">
 
-If the node doesn't have any children, `getChildren` should return `undefined` instead of an empty array.
+`getChildren` decides which nodes can be expanded. Return `undefined` for a leaf. Any array, including an empty one, marks a branch: the item gets `aria-expanded`, `hasChildren` is `true`, and it can be expanded. Use `[]` only for a branch whose children are [loaded on expand](#loading-children-on-expand).
 
 </Callout>
 
@@ -312,6 +314,67 @@ interface DirectoryNode {
   </TreeRoot>
 </template>
 ```
+
+### Loading children on expand
+
+`Tree` renders the items you pass and has no loading state of its own. To load a branch's children when it is first expanded, give the branch an empty `children` array, so it can be expanded, and fetch in the item's `toggle` event. Mutate or replace `items` once the children arrive.
+
+```vue
+<script setup lang="ts">
+import type { TreeItemToggleEvent } from 'reka-ui'
+import { TreeItem, TreeRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+interface Node { id: string, name: string, children?: Node[] }
+
+const items = ref<Node[]>([
+  { id: 'src', name: 'src', children: [] }, // a branch, children not loaded yet
+  { id: 'readme', name: 'README.md' }, // a leaf
+])
+const loading = ref(new Set<string>())
+
+async function loadChildren(event: TreeItemToggleEvent<Node>) {
+  const node = event.detail.value
+  if (!node || event.detail.isExpanded || !node.children || node.children.length > 0)
+    return
+  if (loading.value.has(node.id)) // already loading
+    return
+  loading.value.add(node.id)
+  try {
+    const children = await fetchChildren(node.id) // your API
+    // No children: drop the empty array so the item becomes a leaf
+    node.children = children.length ? children : undefined
+  }
+  finally {
+    loading.value.delete(node.id)
+  }
+}
+</script>
+
+<template>
+  <TreeRoot
+    v-slot="{ flattenItems }"
+    :items="items"
+    :get-key="(item) => item.id"
+  >
+    <TreeItem
+      v-for="item in flattenItems"
+      :key="item._id"
+      v-bind="item.bind"
+      :aria-busy="loading.has(item.value.id) || undefined"
+      @toggle="loadChildren"
+    >
+      {{ item.value.name }}
+    </TreeItem>
+  </TreeRoot>
+</template>
+```
+
+With `propagateSelect`, selection propagates to the children that exist when the parent is selected. Children loaded later under an already selected parent stay unselected, and the parent then shows as indeterminate. To keep them selected, add the loaded children to your `v-model` when their parent is in it.
+
+### Keys
+
+`getKey` must return a string. Keys identify items in the selection comparison and in `expanded`, which is a `string[]`, so convert numeric ids with `String(item.id)`. Keys must be unique across the whole tree, not only among siblings.
 
 ### Draggable/Sortable Tree
 

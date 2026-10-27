@@ -74,6 +74,7 @@ export {
 export {
   type ComboboxChangeReason,
   type ComboboxContentState,
+  type ComboboxInputChangeReason,
   type ComboboxInputState,
   type ComboboxItemState,
   type ComboboxOpenChangeReason,

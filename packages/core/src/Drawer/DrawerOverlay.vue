@@ -1,12 +1,14 @@
 <script lang="ts">
 import type { DrawerOverlayImplProps } from './DrawerOverlayImpl.vue'
 
-export interface DrawerOverlayProps extends DrawerOverlayImplProps {
+export interface DrawerBackdropProps extends DrawerOverlayImplProps {
   /** Keep mounted for animation control. */
   forceMount?: boolean
   /** Render even when inside a nested drawer. @default false */
   forceRender?: boolean
 }
+/** @deprecated Use `DrawerBackdropProps`; `DrawerOverlay` is a deprecated alias of `DrawerBackdrop`. */
+export type DrawerOverlayProps = DrawerBackdropProps
 </script>
 
 <script setup lang="ts">
@@ -15,7 +17,7 @@ import { useForwardElement } from '@/shared'
 import DrawerOverlayImpl from './DrawerOverlayImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
-const props = withDefaults(defineProps<DrawerOverlayProps>(), {
+const props = withDefaults(defineProps<DrawerBackdropProps>(), {
   forceMount: false,
   forceRender: false,
 })

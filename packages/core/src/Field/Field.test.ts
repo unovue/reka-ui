@@ -1018,6 +1018,27 @@ describe('given a FieldControl with v-model', () => {
     expect(validate).toHaveBeenLastCalledWith('ab', expect.anything())
     expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
   })
+
+  // #2828: Base UI's `FieldControl` reports `'none'` with the native event.
+  it('passes change details with reason `none` and the input event', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount({
+      components,
+      methods: { onUpdate },
+      template: `
+        <FieldRoot>
+          <FieldControl @update:model-value="onUpdate" />
+        </FieldRoot>
+      `,
+    })
+    await wrapper.find('input').setValue('ab')
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    const [value, details] = onUpdate.mock.calls[0]
+    expect(value).toBe('ab')
+    expect(details.reason).toBe('none')
+    expect(details.event).toBeInstanceOf(Event)
+    expect(details.event.type).toBe('input')
+  })
 })
 
 describe('given a FieldValidity', () => {

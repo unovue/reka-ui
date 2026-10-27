@@ -356,3 +356,54 @@ describe('given autocomplete with cancel button and openOnFocus', () => {
     expect(wrapper.findAll('[role=option]').map(i => i.text())).toEqual(options)
   })
 })
+
+// #2789: item values need not be strings. `AutocompleteRoot<T>` types
+// `displayValue`, `filter` and the `highlight` payload with the item value.
+describe('given autocomplete with object item values', () => {
+  interface Fruit { id: number, label: string }
+  const fruits: Fruit[] = [{ id: 1, label: 'Apple' }, { id: 2, label: 'Banana' }]
+
+  it('writes displayValue(item) into the input and passes the item to filter and highlight', async () => {
+    document.body.innerHTML = ''
+    const filter = vi.fn((text: string, search: string, value: Fruit) => value.label.toLowerCase().includes(search.toLowerCase()))
+    const onHighlight = vi.fn()
+    const text = ref('')
+    const wrapper = mount({
+      components: { AutocompleteRoot, AutocompleteAnchor, AutocompleteInput, AutocompleteContent, AutocompleteViewport, AutocompleteItem },
+      setup: () => ({
+        text,
+        fruits,
+        filter,
+        onHighlight,
+        displayValue: (fruit: Fruit) => fruit.label,
+      }),
+      template: `
+        <AutocompleteRoot v-model="text" :filter="filter" :display-value="displayValue" @highlight="onHighlight">
+          <AutocompleteAnchor><AutocompleteInput aria-label="fruit" /></AutocompleteAnchor>
+          <AutocompleteContent>
+            <AutocompleteViewport>
+              <AutocompleteItem v-for="fruit in fruits" :key="fruit.id" :value="fruit" :text-value="fruit.label">{{ fruit.label }}</AutocompleteItem>
+            </AutocompleteViewport>
+          </AutocompleteContent>
+        </AutocompleteRoot>
+      `,
+    }, { attachTo: document.body })
+
+    const input = wrapper.find('input')
+    input.element.value = 'ban'
+    await input.trigger('input')
+    await nextTick()
+    expect(filter).toHaveBeenCalledWith('Banana', 'ban', fruits[1])
+    const options = wrapper.findAll('[role=option]')
+    expect(options).toHaveLength(1)
+
+    await options[0].trigger('pointermove')
+    await vi.waitFor(() => expect(onHighlight).toHaveBeenCalledWith(expect.objectContaining({ value: fruits[1] })))
+
+    await options[0].trigger('click')
+    await sleep(1)
+    expect(text.value).toBe('Banana')
+    expect(input.element.value).toBe('Banana')
+    wrapper.unmount()
+  })
+})

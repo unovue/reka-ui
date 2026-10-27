@@ -38,8 +38,8 @@
 <EmitsTable :data="[
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the control changes.</p>\n',
-    'type': '[value: string]'
+    'description': '<p>Event handler called when the value of the control changes. <code>details.reason</code> is always <code>\'none\'</code> and\n<code>details.event</code> is the native <code>input</code> event (Base UI\'s <code>FieldControl</code>); there is no <code>beforeUpdate</code>.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;BaseChangeReason, Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -60,6 +60,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value of the control changes. | `[value: string]` |
+| `update:modelValue` | Event handler called when the value of the control changes. details.reason is always 'none' and details.event is the native input event (Base UI's FieldControl); there is no beforeUpdate. | `[value: string, details: ChangeEventDetails<BaseChangeReason, Event>]` |
 
 </llm-only>

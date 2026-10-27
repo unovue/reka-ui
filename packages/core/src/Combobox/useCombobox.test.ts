@@ -548,10 +548,112 @@ describe('comboboxRoot — navigation intent, display value and context', () => 
   })
 })
 
-describe('autocompleteRoot — change details', () => {
-  function createAutocomplete(rootProps: Record<string, unknown> = {}) {
+// #2828: the input text carries details too, with Base UI's `onInputValueChange` reasons.
+describe('comboboxInput — change details', () => {
+  function createWithInput(rootProps: Record<string, unknown> | (() => Record<string, unknown>) = {}, inputProps: Record<string, unknown> = {}) {
     return defineComponent({
-      setup: () => () => h(AutocompleteRoot, rootProps, () => [
+      setup: () => () => h(ComboboxRoot, typeof rootProps === 'function' ? rootProps() : rootProps, () => [
+        h(ComboboxAnchor, null, () => [
+          h(ComboboxInput, { 'aria-label': 'Fruit', ...inputProps }),
+          h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+          h(ComboboxCancel, { 'data-testid': 'cancel' }, () => 'Clear'),
+        ]),
+        h(ComboboxContent, null, () => h(ComboboxViewport, null, () => fruits.map(value => h(ComboboxItem, { value }, () => value)))),
+      ]),
+    })
+  }
+  const reasons = (fn: ReturnType<typeof vi.fn>) => fn.mock.calls.map(call => [call[0], call[1].reason])
+
+  it('reports `input-change`, `item-press` and `clear-press`', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
+    await wrapper.find('input').setValue('bl')
+    await settle()
+    ;(document.querySelector('[role=option]') as HTMLElement).click()
+    await sleep(10)
+    await settle()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    expect(reasons(onInput)).toEqual([
+      ['bl', 'input-change'],
+      ['Blueberry', 'item-press'],
+      ['', 'clear-press'],
+    ])
+    expect(onInput.mock.calls[0][1].event).toBeInstanceOf(Event)
+    wrapper.unmount()
+  })
+
+  it('reports `escape-key` when Escape closes the popup and resets the text', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
+    await wrapper.find('input').setValue('ch')
+    await settle()
+    keydown(wrapper.find('input').element, 'Escape')
+    await sleep(10)
+    await settle()
+    expect(reasons(onInput)).toEqual([['ch', 'input-change'], ['', 'escape-key']])
+    wrapper.unmount()
+  })
+
+  it('reports `input-clear` when another close resets the text to empty', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
+    await wrapper.find('input').setValue('ch')
+    await settle()
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await sleep(10)
+    await settle()
+    expect(reasons(onInput)).toEqual([['ch', 'input-change'], ['', 'input-clear']])
+    wrapper.unmount()
+  })
+
+  it('reports `none` when the text follows a value the parent sets', async () => {
+    const onInput = vi.fn()
+    const model = ref<string>()
+    const wrapper = mount(createWithInput(() => ({ modelValue: model.value }), { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
+    model.value = 'Cherry'
+    await settle()
+    expect(reasons(onInput)).toEqual([['Cherry', 'none']])
+    wrapper.unmount()
+  })
+
+  // #3086 review: a cancelled clear must leave the element and the filter alone too.
+  it('keeps the text, the element and the filter when `beforeUpdate:modelValue` cancels a clear', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(createWithInput({}, {
+      'onBeforeUpdate:modelValue': (_value: string, details: { reason: string, cancel: () => void }) => details.reason === 'clear-press' && details.cancel(),
+      'onUpdate:modelValue': onInput,
+    }), { attachTo: document.body })
+    await wrapper.find('input').setValue('bl')
+    await settle()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(reasons(onInput)).toEqual([['bl', 'input-change']])
+    expect(wrapper.find('input').element.value).toBe('bl')
+    expect(optionTexts()).toEqual(['Blueberry'])
+    wrapper.unmount()
+  })
+
+  it('keeps the text when `beforeUpdate:modelValue` cancels typing', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(createWithInput({}, {
+      'onBeforeUpdate:modelValue': (value: string, details: { reason: string, cancel: () => void }) => value.length > 2 && details.cancel(),
+      'onUpdate:modelValue': onInput,
+    }), { attachTo: document.body })
+    await wrapper.find('input').setValue('bl')
+    await wrapper.find('input').setValue('blu')
+    await settle()
+    expect(reasons(onInput)).toEqual([['bl', 'input-change']])
+    // The vetoed text is taken back out of the input, and the filter keeps the accepted search.
+    expect(wrapper.find('input').element.value).toBe('bl')
+    expect(optionTexts()).toEqual(['Blueberry'])
+    wrapper.unmount()
+  })
+})
+
+describe('autocompleteRoot — change details', () => {
+  function createAutocomplete(rootProps: Record<string, unknown> | (() => Record<string, unknown>) = {}) {
+    return defineComponent({
+      setup: () => () => h(AutocompleteRoot, typeof rootProps === 'function' ? rootProps() : rootProps, () => [
         h(AutocompleteInput, { 'aria-label': 'Fruit' }),
         h(AutocompleteCancel, { 'data-testid': 'cancel' }, () => 'Clear'),
         h(AutocompleteContent, null, () => h(AutocompleteViewport, null, () => fruits.map(value => h(AutocompleteItem, { value }, () => value)))),
@@ -575,12 +677,17 @@ describe('autocompleteRoot — change details', () => {
     wrapper.unmount()
   })
 
-  it('cancels typed text from `beforeUpdate:modelValue`', async () => {
+  it('cancels typed text of a controlled value from `beforeUpdate:modelValue`', async () => {
     const onUpdate = vi.fn()
-    const wrapper = mount(createAutocomplete({
+    const model = ref('')
+    const wrapper = mount(createAutocomplete(() => ({
+      'modelValue': model.value,
       'onBeforeUpdate:modelValue': (value: string, details: { cancel: () => void }) => value.length > 2 && details.cancel(),
-      'onUpdate:modelValue': onUpdate,
-    }), { attachTo: document.body })
+      'onUpdate:modelValue': (value: string, details: unknown) => {
+        model.value = value
+        onUpdate(value, details)
+      },
+    })), { attachTo: document.body })
     await wrapper.find('input').setValue('bl')
     await wrapper.find('input').setValue('blu')
     await settle()
@@ -588,6 +695,68 @@ describe('autocompleteRoot — change details', () => {
     // The vetoed text is taken back out of the input, and the filter keeps the accepted search.
     expect(wrapper.find('input').element.value).toBe('bl')
     expect(optionTexts()).toEqual(['Blueberry'])
+    wrapper.unmount()
+  })
+
+  it('keeps the input text when a controlled value cancels a clear', async () => {
+    const onInput = vi.fn()
+    const model = ref('bl')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(AutocompleteRoot, {
+        'modelValue': model.value,
+        'onBeforeUpdate:modelValue': (_value: string, details: { reason: string, cancel: () => void }) => details.reason === 'clear-press' && details.cancel(),
+        'onUpdate:modelValue': (value: string) => { model.value = value },
+      }, () => [
+        h(AutocompleteInput, { 'aria-label': 'Fruit', 'onUpdate:modelValue': onInput }),
+        h(AutocompleteCancel, { 'data-testid': 'cancel' }, () => 'Clear'),
+        h(AutocompleteContent, null, () => h(AutocompleteViewport, null, () => fruits.map(value => h(AutocompleteItem, { value }, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    onInput.mockClear()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onInput).not.toHaveBeenCalled()
+    expect(model.value).toBe('bl')
+    expect(wrapper.find('input').element.value).toBe('bl')
+    wrapper.unmount()
+  })
+
+  // Base UI parity (`AutocompleteRoot.tsx` writes an uncontrolled value before `onValueChange`).
+  it('ignores `cancel()` on an uncontrolled value', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createAutocomplete({
+      'onBeforeUpdate:modelValue': (_value: string, details: { cancel: () => void }) => details.cancel(),
+      'onUpdate:modelValue': onUpdate,
+    }), { attachTo: document.body })
+    await wrapper.find('input').setValue('bl')
+    await settle()
+    expect(onUpdate.mock.calls.map(call => [call[0], call[1].reason])).toEqual([['bl', 'input-change']])
+    expect(wrapper.find('input').element.value).toBe('bl')
+    wrapper.unmount()
+  })
+
+  it('reports the input text changes on `AutocompleteInput`', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(AutocompleteRoot, null, () => [
+        h(AutocompleteInput, { 'aria-label': 'Fruit', 'onUpdate:modelValue': onInput }),
+        h(AutocompleteCancel, { 'data-testid': 'cancel' }, () => 'Clear'),
+        h(AutocompleteContent, null, () => h(AutocompleteViewport, null, () => fruits.map(value => h(AutocompleteItem, { value }, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    await wrapper.find('input').setValue('bl')
+    await settle()
+    ;(document.querySelector('[role=option]') as HTMLElement).click()
+    await settle()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onInput.mock.calls.map(call => [call[0], call[1].reason])).toEqual([
+      ['bl', 'input-change'],
+      ['Blueberry', 'item-press'],
+      ['', 'clear-press'],
+    ])
+    expect(onInput.mock.calls[0][1].event).toBeInstanceOf(Event)
     wrapper.unmount()
   })
 

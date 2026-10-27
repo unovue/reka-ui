@@ -38,7 +38,7 @@
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "14 KB",
+    "limit": "15 KB",
     "name": "Tree"
   },
   {
@@ -74,7 +74,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "185 KB",
+    "limit": "187 KB",
     "name": "Full library"
   }
 ]

@@ -25,9 +25,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[payload: AcceptableValue, details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[payload: AcceptableValue]'
+    'type': '[payload: AcceptableValue, details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -46,6 +51,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[payload: AcceptableValue]` |
+| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[payload: AcceptableValue, details: ChangeEventDetails<"item-press", Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[payload: AcceptableValue, details: ChangeEventDetails<"item-press", Event>]` |
 
 </llm-only>

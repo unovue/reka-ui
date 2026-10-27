@@ -37,6 +37,14 @@ export interface SelectContentContext {
   position?: 'item-aligned' | 'popper'
   isPositioned?: Ref<boolean>
   searchRef?: Ref<string>
+  /**
+   * Set by `SelectVirtualizer`: handles a content keydown whose target row may
+   * not be rendered (typeahead, Home/End, a looping move at the list's end).
+   * Returns `true` when it handled the key.
+   */
+  onVirtualKeydown?: (event: KeyboardEvent, intent: string | null | undefined) => boolean
+  /** Whether keyboard navigation loops (the content's `loop`). */
+  loop?: () => boolean
 }
 
 export const SelectContentDefaultContextValue: SelectContentContext = {

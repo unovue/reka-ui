@@ -4,7 +4,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import {
   DrawerClose,
   DrawerContent,
-  DrawerHandle,
+  DrawerGrabber,
   DrawerOverlay,
   DrawerPortal,
   DrawerRoot,
@@ -172,7 +172,7 @@ function getSwipeMovementY(el: HTMLElement) {
 }
 
 const SnapDrawer = defineComponent({
-  components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerOverlay, DrawerContent, DrawerHandle, DrawerTitle, DrawerClose },
+  components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerOverlay, DrawerContent, DrawerGrabber, DrawerTitle, DrawerClose },
   props: {
     defaultOpen: { type: Boolean, default: false },
     defaultSnapPoint: { type: [Number, String, null] as any, default: 0.5 },
@@ -192,7 +192,7 @@ const SnapDrawer = defineComponent({
       <DrawerPortal>
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerHandle />
+          <DrawerGrabber />
           <DrawerTitle>Snap Drawer</DrawerTitle>
           <DrawerClose>Close</DrawerClose>
         </DrawerContent>

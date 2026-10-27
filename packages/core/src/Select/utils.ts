@@ -7,6 +7,17 @@ export const OPEN_KEYS = [' ', 'Enter', 'ArrowUp', 'ArrowDown']
 export const SELECTION_KEYS = [' ', 'Enter']
 export const CONTENT_MARGIN = 10
 
+/**
+ * How far a scroll button moves: one item. The selected item's height, or the
+ * first rendered option's when that item is detached (a `SelectVirtualizer`
+ * recycles its rows) or missing.
+ */
+export function getScrollStep(viewport: HTMLElement, selectedItem?: HTMLElement) {
+  if (selectedItem?.isConnected)
+    return selectedItem.offsetHeight
+  return viewport.querySelector<HTMLElement>('[role=option]')?.offsetHeight ?? 0
+}
+
 export function shouldShowPlaceholder(value?: AcceptableValue | AcceptableValue[]): boolean {
   return value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)
 }

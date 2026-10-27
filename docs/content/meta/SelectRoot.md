@@ -47,7 +47,7 @@
   {
     'name': 'getNavigationIntent',
     'description': '<p>Resolves what a keydown in the content means for keyboard navigation. Return <code>undefined</code> to fall back to the\ndefault mapping (ArrowUp, ArrowDown, Home, End), <code>null</code> to opt the key out (for Enter and Space this also skips the\nselection), or <code>\'select\'</code> to select the focused item as Enter does.</p>\n',
-    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null | undefined)',
     'required': false
   },
   {
@@ -144,7 +144,7 @@
 | `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with Select | `boolean` | No | - |
 | `displayValue` | The text shown for a selected value. Wins over the text of its SelectItemText, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native select only holds the selected values (so browser autofill cannot pick another one) and the closed trigger's typeahead has no items to match. | `((value: T) => string)` | No | - |
-| `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return undefined to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), null to opt the key out (for Enter and Space this also skips the selection), or 'select' to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return undefined to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), null to opt the key out (for Enter and Space this also skips the selection), or 'select' to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `modelValue` | The controlled value of the Select. Can be bind as v-model. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |

@@ -18,13 +18,13 @@
   {
     'name': 'getValueLabel',
     'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
-    'type': '((value: number | null, max: number) =&gt; string)',
+    'type': '((value: number | null | undefined, max: number) =&gt; string | undefined)',
     'required': false
   },
   {
     'name': 'getValueText',
     'description': '<p>A function to get the accessible value text representing the current value in a human-readable format.</p>\n',
-    'type': '((value: number | null, max: number) =&gt; string)',
+    'type': '((value: number | null | undefined, max: number) =&gt; string | undefined)',
     'required': false
   },
   {
@@ -72,8 +72,8 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `((value: number \| null, max: number) => string)` | No | - |
-| `getValueText` | A function to get the accessible value text representing the current value in a human-readable format. | `((value: number \| null, max: number) => string)` | No | - |
+| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `((value: number \| null \| undefined, max: number) => string \| undefined)` | No | - |
+| `getValueText` | A function to get the accessible value text representing the current value in a human-readable format. | `((value: number \| null \| undefined, max: number) => string \| undefined)` | No | - |
 | `max` | The maximum progress value. | `number` | No | `DEFAULT_MAX` |
 | `modelValue` | The progress value. Can be bind as v-model. | `number \| null` | No | - |
 

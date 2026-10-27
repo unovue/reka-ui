@@ -10,6 +10,25 @@ describe('useListSelection — defaults', () => {
     expect(useListSelection({ multiple: true, defaultValue: ['a'] }).modelValue.value).toEqual(['a'])
   })
 
+  // #3086 review: a multiple selection is always an array, as its emit and slot types promise.
+  it('reads [] when a controlled multiple model is cleared to undefined or null', () => {
+    const model = ref<string[] | null | undefined>(['a'])
+    const s = useListSelection<string>({ multiple: true, modelValue: () => model.value as string[] | undefined, emit: () => {} })
+    expect(s.modelValue.value).toEqual(['a'])
+    model.value = undefined
+    expect(s.modelValue.value).toEqual([])
+    model.value = null
+    expect(s.modelValue.value).toEqual([])
+  })
+
+  it('emits [] for an undefined write to a multiple model', () => {
+    const emit = vi.fn()
+    const s = useListSelection<string>({ multiple: true, defaultValue: ['a'], emit })
+    s.setModelValue(undefined)
+    expect(emit).toHaveBeenCalledWith('update:modelValue', [], expect.anything())
+    expect(s.modelValue.value).toEqual([])
+  })
+
   it('keeps an explicit null default instead of falling back', () => {
     expect(useListSelection<string | null>({ defaultValue: null }).modelValue.value).toBeNull()
   })
