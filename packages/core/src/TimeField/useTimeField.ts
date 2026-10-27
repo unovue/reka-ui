@@ -6,7 +6,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
-import { computed, nextTick, ref, toValue, unref, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { isBefore } from '@/date'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -21,7 +21,6 @@ import {
   normalizeHourCycle,
   syncTimeSegmentValues,
   useSegmentFieldNavigation,
-  wasCanceled,
   watchSegmentFieldLocale,
 } from '@/shared/date'
 
@@ -250,18 +249,10 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
     return setPlaceholderState(value.copy(), reason, event)
   }
 
-  function resyncSegments() {
-    segmentValues.value = convertedModelValue.value
-      ? { ...syncTimeSegmentValues({ value: convertedModelValue.value, formatter }) }
-      : { ...initialSegments }
-  }
-
+  // A cancelled commit rolls back only the model: the segments keep what the
+  // user typed (both ends stay untouched), so typing can continue.
   function setModelValue(value: TimeValue | undefined, reason: TimeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    const before = lastChangeDetails.value
-    const changed = setState(value, reason, event)
-    if (!changed && wasCanceled(lastChangeDetails, before))
-      nextTick(resyncSegments)
-    return changed
+    return setState(value, reason, event)
   }
 
   /** The segments edit a date-time; write it back in the value's own shape. */

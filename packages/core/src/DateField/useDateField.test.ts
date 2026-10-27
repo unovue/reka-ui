@@ -107,7 +107,7 @@ describe('useDateField', () => {
     expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDateTime(2024, 1, 20, 10, 30), expect.objectContaining({ reason: 'step-snap' }))
   })
 
-  it('cancels a typed change and puts the segments back', async () => {
+  it('a cancelled typed change keeps the model and the typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setup({
       defaultValue: jan20,
@@ -120,7 +120,7 @@ describe('useDateField', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(api().modelValue.value?.toString()).toBe('2024-01-20')
-    expect(getByTestId('day').textContent).toBe('20')
+    expect(getByTestId('day').textContent).toBe('21')
   })
 
   it('emits but does not write when controlled; null is a controlled empty field', async () => {
@@ -221,5 +221,66 @@ describe('useDateField', () => {
     expect(html).toContain('role="group"')
     expect(html).toContain('data-reka-date-field-segment="day"')
     expect(html).toContain('>20<')
+  })
+})
+
+describe('useDateField cancel keeps the typed segments', () => {
+  const minDate = new CalendarDate(2000, 1, 1)
+  const noPastDates = (value: DateValue | undefined, details: { cancel: () => void }) => {
+    if (value && value.compare(minDate) < 0)
+      details.cancel()
+  }
+
+  it('an empty field reaches a valid date through cancelled intermediate years', async () => {
+    const value = ref<DateValue | undefined>()
+    const { getByTestId, user } = setup({
+      modelValue: () => value.value ?? null,
+      locale: 'en-US',
+      onBeforeUpdate: noPastDates,
+      onUpdate: v => (value.value = v),
+    })
+    await user.click(getByTestId('month'))
+    await user.keyboard('01152')
+    await nextTick()
+    // Year 0002 is cancelled; the typed segments stay so typing can go on.
+    expect(value.value).toBeUndefined()
+    expect(getByTestId('month').textContent).toBe('1')
+    expect(getByTestId('day').textContent).toBe('15')
+    await user.keyboard('024')
+    await nextTick()
+    expect(value.value?.toString()).toBe('2024-01-15')
+  })
+
+  it('typing 2025 over 2024 ends at 2025', async () => {
+    const value = ref<DateValue>(new CalendarDate(2024, 1, 15))
+    const accepted: string[] = []
+    const { getByTestId, user } = setup({
+      modelValue: () => value.value,
+      locale: 'en-US',
+      onBeforeUpdate: noPastDates,
+      onUpdate: (v) => {
+        accepted.push(v!.toString())
+        value.value = v!
+      },
+    })
+    await user.click(getByTestId('year'))
+    await user.keyboard('2025')
+    await nextTick()
+    expect(value.value.toString()).toBe('2025-01-15')
+    expect(accepted).toEqual(['2025-01-15'])
+    expect(getByTestId('year').textContent).toBe('2025')
+  })
+
+  it('a parent that transforms the value still drives the segments', async () => {
+    const value = ref<DateValue>(new CalendarDate(2024, 1, 15))
+    const { getByTestId, user } = setup({
+      modelValue: () => value.value,
+      locale: 'en-US',
+      onUpdate: v => (value.value = v!.day < 10 ? v!.set({ day: 10 }) : v!),
+    })
+    await user.click(getByTestId('day'))
+    await user.keyboard('3')
+    await nextTick()
+    expect(getByTestId('day').textContent).toBe('10')
   })
 })

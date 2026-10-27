@@ -102,7 +102,7 @@ describe('useTimeField', () => {
     expect(details.reason).toBe('imperative-action')
   })
 
-  it('cancels a typed change and puts the segments back', async () => {
+  it('a cancelled typed change keeps the model and the typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setup({
       defaultValue: t1030,
@@ -115,7 +115,7 @@ describe('useTimeField', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(api().modelValue.value?.toString()).toBe('10:30:00')
-    expect(getByTestId('minute').textContent).toBe('30')
+    expect(getByTestId('minute').textContent).toBe('31')
   })
 
   it('is controllable; null is a controlled empty field', () => {

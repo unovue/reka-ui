@@ -116,7 +116,7 @@ describe('useDateRangeField', () => {
     expect(getByTestId('end-minute').textContent).toBe('30')
   })
 
-  it('cancels a typed change and puts both ends back', async () => {
+  it('a cancelled typed change keeps the model and the typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setup({
       defaultValue: range,
@@ -129,7 +129,7 @@ describe('useDateRangeField', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(api().startValue.value?.toString()).toBe('2024-01-20')
-    expect(getByTestId('start-day').textContent).toBe('20')
+    expect(getByTestId('start-day').textContent).toBe('21')
   })
 
   it('is controllable; null is a controlled empty range', () => {
@@ -185,5 +185,29 @@ describe('useDateRangeField', () => {
     expect(html).toContain('role="group"')
     expect(html).toContain('data-reka-date-range-field-segment-type="end"')
     expect(html).toContain('>25<')
+  })
+})
+
+describe('useDateRangeField cancel', () => {
+  it('a cancelled change on one end never touches the other end\'s typed segments', async () => {
+    const onUpdate = vi.fn()
+    const { getByTestId, user, api } = setup({
+      defaultValue: { start: undefined, end: new CalendarDate(2024, 1, 25) },
+      locale: 'en-US',
+      onBeforeUpdate: (_value, details) => details.cancel(),
+      onUpdate,
+    })
+    // A half-typed start: no commit yet.
+    await user.click(getByTestId('start-month'))
+    await user.keyboard('3')
+    expect(getByTestId('start-month').textContent).toBe('3')
+
+    await user.click(getByTestId('end-day'))
+    await user.keyboard('{ArrowUp}')
+    await nextTick()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(api().endValue.value?.toString()).toBe('2024-01-25')
+    expect(getByTestId('end-day').textContent).toBe('26')
+    expect(getByTestId('start-month').textContent).toBe('3')
   })
 })

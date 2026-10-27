@@ -109,7 +109,7 @@ describe('useTimeRangeField', () => {
     expect(details.reason).toBe('step-snap')
   })
 
-  it('cancels a typed change and puts the segments back', async () => {
+  it('a cancelled typed change keeps the model and the typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setup({
       defaultValue: range,
@@ -122,7 +122,7 @@ describe('useTimeRangeField', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(api().modelValue.value.end?.toString()).toBe('12:30:00')
-    expect(getByTestId('end-minute').textContent).toBe('30')
+    expect(getByTestId('end-minute').textContent).toBe('31')
   })
 
   it('is controllable; null is a controlled empty range', () => {

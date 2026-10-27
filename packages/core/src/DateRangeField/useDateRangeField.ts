@@ -5,7 +5,7 @@ import type { Matcher } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { computed, nextTick, ref, toValue, unref, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { areAllDaysBetweenValid, hasTime, isBefore, isBeforeOrSame } from '@/date'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -19,7 +19,6 @@ import {
   normalizeHourCycle,
   syncSegmentValues,
   useSegmentFieldNavigation,
-  wasCanceled,
   watchSegmentFieldLocale,
 } from '@/shared/date'
 
@@ -249,24 +248,18 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
     return setPlaceholderState(value.copy(), reason, event)
   }
 
-  function syncSegments(type: DateRangeType, value: DateValue | undefined, force = false) {
+  function syncSegments(type: DateRangeType, value: DateValue | undefined) {
     if (value)
       segmentValues[type].value = { ...syncSegmentValues({ value, formatter }) }
     // If segment has null value, means that user modified it, thus do not reset the segmentValues
-    else if (force || Object.values(segmentValues[type].value).every(segment => segment !== null))
+    else if (Object.values(segmentValues[type].value).every(segment => segment !== null))
       segmentValues[type].value = { ...initialSegments }
   }
 
+  // A cancelled commit rolls back only the model: the segments keep what the
+  // user typed (both ends stay untouched), so typing can continue.
   function setModelValue(value: DateRange, reason: DateRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    const before = lastChangeDetails.value
-    const changed = setState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
-    if (!changed && wasCanceled(lastChangeDetails, before)) {
-      nextTick(() => {
-        syncSegments('start', startValue.value, true)
-        syncSegments('end', endValue.value, true)
-      })
-    }
-    return changed
+    return setState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
   }
 
   function setRangeValue(type: DateRangeType, value: DateValue | undefined, reason: DateRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {

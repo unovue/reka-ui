@@ -5,7 +5,7 @@ import type { Matcher } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateStep, Granularity, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { computed, nextTick, ref, toValue, unref, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { hasTime, isBefore, isSameDateSelection } from '@/date'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -20,7 +20,6 @@ import {
   normalizeHourCycle,
   syncSegmentValues,
   useSegmentFieldNavigation,
-  wasCanceled,
   watchSegmentFieldLocale,
 } from '@/shared/date'
 
@@ -227,21 +226,11 @@ export function useDateField(props: UseDateFieldProps = {}): UseDateFieldReturn 
     return setPlaceholderState(value.copy(), reason, event)
   }
 
-  /** Reset the segments to the committed value (after a cancelled change). */
-  function resyncSegments() {
-    segmentValues.value = modelValue.value
-      ? { ...syncSegmentValues({ value: modelValue.value, formatter }) }
-      : { ...initialSegments }
-  }
-
+  // A cancelled commit rolls back only the model: the segments keep what the
+  // user typed, so typing can continue to a value the guard accepts (a year
+  // is typed one digit at a time and commits at every digit).
   function setModelValue(value: DateValue | undefined, reason: DateFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    const before = lastChangeDetails.value
-    const changed = setState(value, reason, event)
-    // The keydown handler writes the segment values in place before it
-    // commits; a cancelled commit puts them back once the handler is done.
-    if (!changed && wasCanceled(lastChangeDetails, before))
-      nextTick(resyncSegments)
-    return changed
+    return setState(value, reason, event)
   }
 
   watch(modelValue, (value, previous) => {

@@ -6,7 +6,7 @@ import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { computed, nextTick, ref, toValue, unref, watch } from 'vue'
+import { computed, ref, toValue, unref, watch } from 'vue'
 import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { useControllableState, useDateFormatter } from '@/shared'
@@ -22,7 +22,6 @@ import {
   syncSegmentValues,
   syncTimeSegmentValues,
   useSegmentFieldNavigation,
-  wasCanceled,
   watchSegmentFieldLocale,
 } from '@/shared/date'
 import { dateTimeToTimeValue, timeValueToDateTime } from '@/TimeField/useTimeField'
@@ -237,24 +236,18 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
     return setPlaceholderState(value.copy(), reason, event)
   }
 
-  function syncSegments(type: DateRangeType, value: DateValue | undefined, force = false) {
+  function syncSegments(type: DateRangeType, value: DateValue | undefined) {
     if (value)
       segmentValues[type].value = { ...syncSegmentValues({ value, formatter }) }
     // If segment has null value, means that user modified it, thus do not reset the segmentValues
-    else if (force || Object.values(segmentValues[type].value).every(segment => segment !== null))
+    else if (Object.values(segmentValues[type].value).every(segment => segment !== null))
       segmentValues[type].value = { ...initialSegments }
   }
 
+  // A cancelled commit rolls back only the model: the segments keep what the
+  // user typed (both ends stay untouched), so typing can continue.
   function setModelValue(value: TimeRange, reason: TimeRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    const before = lastChangeDetails.value
-    const changed = setState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
-    if (!changed && wasCanceled(lastChangeDetails, before)) {
-      nextTick(() => {
-        syncSegments('start', convertedStart.value, true)
-        syncSegments('end', convertedEnd.value, true)
-      })
-    }
-    return changed
+    return setState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
   }
 
   /** The segments edit a date-time; each end is written back in its own shape. */
