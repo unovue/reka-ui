@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
+  DrawerBackdrop,
   DrawerClose,
-  DrawerContent,
   DrawerDescription,
-  DrawerHandle,
-  DrawerOverlay,
+  DrawerGrabber,
+  DrawerPopup,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -20,15 +20,15 @@ import {
       Open Drawer
     </DrawerTrigger>
     <DrawerPortal>
-      <DrawerOverlay class="DrawerOverlay fixed inset-0 z-30 bg-black/40" />
+      <DrawerBackdrop class="DrawerBackdrop fixed inset-0 z-30 bg-black/40" />
       <!-- `--bleed` is extra drawer area hanging below the viewport edge, kept
            off-screen by an equal negative margin. Pulling the drawer away from
            its edge slides the bleed into view instead of exposing the overlay,
            so the drawer stretches rather than detaching while it rubber-bands. -->
-      <DrawerContent
-        class="DrawerContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-w-[500px] flex-col rounded-t-[16px] bg-white outline-none [--bleed:48px] mb-[calc(-1*var(--bleed))] pb-[calc(env(safe-area-inset-bottom,0px)+var(--bleed))]"
+      <DrawerPopup
+        class="DrawerPopup fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-w-[500px] flex-col rounded-t-[16px] bg-white outline-none [--bleed:48px] mb-[calc(-1*var(--bleed))] pb-[calc(env(safe-area-inset-bottom,0px)+var(--bleed))]"
       >
-        <DrawerHandle class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-mauve6" />
+        <DrawerGrabber class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-mauve6" />
         <div class="p-6">
           <DrawerTitle class="text-mauve12 m-0 text-[17px] font-semibold">
             Edit profile
@@ -57,42 +57,42 @@ import {
             </DrawerClose>
           </div>
         </div>
-      </DrawerContent>
+      </DrawerPopup>
     </DrawerPortal>
   </DrawerRoot>
 </template>
 
 <!--
-  These styles are not scoped: DrawerContent / DrawerOverlay are teleported to
+  These styles are not scoped: DrawerPopup / DrawerBackdrop are teleported to
   `body` by DrawerPortal, so a `scoped` block would not reach them. They drive
   the enter/exit animation and the live swipe-to-dismiss transform — behaviour
   Tailwind utility classes alone cannot express.
 -->
 <style>
-.DrawerOverlay[data-state="open"] {
+.DrawerBackdrop[data-state="open"] {
   animation: drawer-overlay-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.DrawerOverlay[data-state="closed"] {
+.DrawerBackdrop[data-state="closed"] {
   animation: drawer-overlay-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.DrawerContent {
-  /* `--drawer-swipe-movement-y` is written by DrawerContent while dragging. */
+.DrawerPopup {
+  /* `--drawer-swipe-movement-y` is written by DrawerPopup while dragging. */
   transform: translateY(var(--drawer-swipe-movement-y, 0px));
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
 /* Enter/exit keyframes animate the independent `translate` property so they
    compose with the inline `transform` carrying the live drag offset. */
-.DrawerContent[data-state="open"] {
+.DrawerPopup[data-state="open"] {
   animation: drawer-slide-bottom-in 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.DrawerContent[data-state="closed"] {
+.DrawerPopup[data-state="closed"] {
   animation: drawer-slide-bottom-out 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 /* Silence the transform transition during an active drag so it tracks the
    pointer in real time. */
-.DrawerContent[data-swiping] {
+.DrawerPopup[data-swiping] {
   transition-duration: 0ms;
   user-select: none;
 }

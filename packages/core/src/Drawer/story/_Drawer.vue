@@ -4,7 +4,7 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerHandle,
+  DrawerGrabber,
   DrawerOverlay,
   DrawerPortal,
   DrawerRoot,
@@ -29,7 +29,7 @@ const open = ref(false)
     <DrawerPortal>
       <DrawerOverlay class="drawer-overlay" />
       <DrawerContent class="drawer-content-bottom">
-        <DrawerHandle class="drawer-handle" />
+        <DrawerGrabber class="drawer-handle" />
         <div class="p-6">
           <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
             Drawer Title

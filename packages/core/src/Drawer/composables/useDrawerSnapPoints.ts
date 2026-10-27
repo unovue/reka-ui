@@ -33,7 +33,7 @@ function parseSnapPoint(value: DrawerSnapPoint, viewportHeight: number, rootFont
 
 export function useDrawerSnapPoints(options: {
   snapPoints: Ref<DrawerSnapPoint[] | undefined>
-  activeSnapPoint: Ref<DrawerSnapPoint | null | undefined>
+  activeSnapPoint: Readonly<Ref<DrawerSnapPoint | null | undefined>>
   popupHeight: Ref<number>
   viewportRef: Ref<HTMLElement | null | undefined>
   onSnapPointChange: (point: DrawerSnapPoint | null) => void

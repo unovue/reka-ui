@@ -13,9 +13,9 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   expanded?: string[]
   /** The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree */
   defaultExpanded?: string[]
-  /** This function is passed the index of each item and should return a unique key for that item */
+  /** Returns a unique key for an item. Keys identify items in the selection and in `expanded`, so they must be strings: convert a numeric id with `String(item.id)`. */
   getKey: (val: T) => string
-  /** This function is passed the index of each item and should return a list of children for that item */
+  /** Returns an item's children. `undefined` marks a leaf. An array, even an empty one, marks a branch that can be expanded: return `[]` for children that are loaded when the item expands. */
   getChildren?: (val: T) => T[] | undefined
   /** How multiple selection should behave in the collection. */
   selectionBehavior?: 'toggle' | 'replace'

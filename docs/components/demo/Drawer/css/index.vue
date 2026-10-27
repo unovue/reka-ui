@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
+  DrawerBackdrop,
   DrawerClose,
-  DrawerContent,
   DrawerDescription,
-  DrawerHandle,
-  DrawerOverlay,
+  DrawerGrabber,
+  DrawerPopup,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -19,9 +19,9 @@ import './styles.css'
       Open Drawer
     </DrawerTrigger>
     <DrawerPortal>
-      <DrawerOverlay class="DrawerOverlay" />
-      <DrawerContent class="DrawerContent">
-        <DrawerHandle class="DrawerHandle" />
+      <DrawerBackdrop class="DrawerBackdrop" />
+      <DrawerPopup class="DrawerPopup">
+        <DrawerGrabber class="DrawerGrabber" />
         <div class="DrawerBody">
           <DrawerTitle class="DrawerTitle">
             Edit profile
@@ -48,7 +48,7 @@ import './styles.css'
             </DrawerClose>
           </div>
         </div>
-      </DrawerContent>
+      </DrawerPopup>
     </DrawerPortal>
   </DrawerRoot>
 </template>

@@ -560,3 +560,50 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     warn.mockRestore()
   })
 })
+
+// #2789: Drawer follows the v3 contract (#2828). `beforeUpdate:open` can cancel
+// a change before `v-model:open` is written; `update:open` reports it after.
+describe('beforeUpdate:open with v-model:open', () => {
+  const VModelDrawer = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle },
+    props: {
+      onBefore: { type: Function, default: undefined },
+      onAfter: { type: Function, default: undefined },
+    },
+    data: () => ({ open: false }),
+    template: `
+      <DrawerRoot v-model:open="open" @before-update:open="(v, d) => onBefore?.(v, d)" @update:open="(v, d) => onAfter?.(v, d)">
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent aria-describedby="x"><DrawerTitle>T</DrawerTitle></DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('a cancelled beforeUpdate:open keeps the v-model ref and the drawer closed', async () => {
+    const onAfter = vi.fn()
+    const { getByText, queryByRole, unmount } = render(VModelDrawer, {
+      props: { onBefore: (_v: boolean, d: { cancel: () => void }) => d.cancel(), onAfter },
+    })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(queryByRole('dialog')).toBeNull()
+    expect(onAfter).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('update:open fires after the change with its details', async () => {
+    const onAfter = vi.fn()
+    const { getByText, getByRole, unmount } = render(VModelDrawer, { props: { onAfter } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(getByRole('dialog')).toBeTruthy()
+    expect(onAfter).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press', isCanceled: false }))
+    unmount()
+  })
+})

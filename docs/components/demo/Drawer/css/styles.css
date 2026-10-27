@@ -10,20 +10,20 @@ input {
   all: unset;
 }
 
-.DrawerOverlay {
+.DrawerBackdrop {
   background-color: var(--black-a9);
   position: fixed;
   inset: 0;
   z-index: 30;
 }
-.DrawerOverlay[data-state='open'] {
+.DrawerBackdrop[data-state='open'] {
   animation: drawerOverlayShow 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.DrawerOverlay[data-state='closed'] {
+.DrawerBackdrop[data-state='closed'] {
   animation: drawerOverlayHide 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.DrawerContent {
+.DrawerPopup {
   /* Extra drawer area that hangs below the viewport edge, kept off-screen by an
      equal negative margin. Pulling the drawer away from its edge slides the
      bleed into view instead of exposing the overlay behind it, so the drawer
@@ -43,27 +43,27 @@ input {
   flex-direction: column;
   outline: none;
   z-index: 100;
-  /* `--drawer-swipe-movement-y` is written by DrawerContent while dragging. */
+  /* `--drawer-swipe-movement-y` is written by DrawerPopup while dragging. */
   transform: translateY(var(--drawer-swipe-movement-y, 0px));
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
 /* Enter/exit keyframes animate the independent `translate` property so they
    compose with the inline `transform` carrying the live drag offset. */
-.DrawerContent[data-state='open'] {
+.DrawerPopup[data-state='open'] {
   animation: drawerSlideBottomIn 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.DrawerContent[data-state='closed'] {
+.DrawerPopup[data-state='closed'] {
   animation: drawerSlideBottomOut 450ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 /* Silence the transform transition during an active drag so it tracks the
    pointer in real time. */
-.DrawerContent[data-swiping] {
+.DrawerPopup[data-swiping] {
   transition-duration: 0ms;
   user-select: none;
 }
 
-.DrawerHandle {
+.DrawerGrabber {
   width: 48px;
   height: 6px;
   margin: 12px auto 0;

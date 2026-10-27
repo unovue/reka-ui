@@ -223,7 +223,7 @@ export const components = {
     'DrawerClose',
     'DrawerTitle',
     'DrawerDescription',
-    'DrawerHandle',
+    'DrawerGrabber',
     'DrawerSwipeArea',
     'DrawerViewport',
     'DrawerVirtualKeyboardProvider',
