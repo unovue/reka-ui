@@ -232,7 +232,7 @@ const color = ref('#3b82f6')
 
 ## Accessibility
 
-While the typed text does not parse (a color string, or a number with a `channel`), the input has `aria-invalid="true"`, and the input and the root have `data-invalid` for styling. Committing the text with Enter or blur reverts it to the current color.
+The field validates on commit. When Enter or blur rejects text that does not parse (a color string, or a number with a `channel`), the text reverts to the current color, the input gets `aria-invalid="true"`, and the input and the root get `data-invalid` for styling. They stay until an edit parses or a later change commits, so partial input while typing is never flagged. `useColorField()` exposes the same state as `invalid`.
 
 ### Keyboard Interactions
 

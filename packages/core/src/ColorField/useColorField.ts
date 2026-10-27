@@ -36,7 +36,7 @@ export interface UseColorFieldReturn {
   readonly root: PartSurface<ColorFieldRootState>
   readonly context: { readonly [K in keyof ColorFieldRootContext]: ColorFieldRootContext[K] extends Ref ? Readonly<ColorFieldRootContext[K]> : ColorFieldRootContext[K] }
   readonly inputValue: ComputedRef<string>
-  /** `true` while the edited text does not parse as a color (or, with a `channel`, a number). Committing it reverts the text. */
+  /** `true` once a commit rejected text that does not parse as a color (or, with a `channel`, a number); the text reverts. Cleared by the next edit that parses or the next committed change. */
   readonly invalid: ComputedRef<boolean>
   createInputSurface: () => PartSurface<ColorFieldInputState>
   updateValue: (value: string) => void
@@ -115,11 +115,18 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     },
   })
 
+  // Validated at commit time, like React Aria's native validation: a commit that rejects
+  // the text marks the field invalid, so partial input while typing never flickers. It
+  // stays invalid until an edit parses or a later change commits.
+  const isInvalid = ref(false)
+  const invalid = computed(() => isInvalid.value)
+
   /** An interactive change: the model update, `change`, and `changeEnd` once the model holds it. */
   function applyChange(newColor: Color, event?: Event) {
     const previous = parsed.value
     if (!setColor(newColor, reasonFromEvent(event), event))
       return false
+    isInvalid.value = false
     props.onChange?.(newColor)
     props.emit?.('change', newColor)
     changeEnd.record(previous, newColor)
@@ -149,9 +156,6 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     return channel.value ? !Number.isNaN(Number.parseFloat(text)) : isValidColor(text.trim())
   }
 
-  // Only text the user is editing can be invalid; the formatted model always parses.
-  const invalid = computed(() => isEditing.value && !isParsable(inputValue.value))
-
   function resetInput() {
     inputValue.value = formatValue(color.value)
   }
@@ -168,6 +172,9 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   function updateValue(value: string) {
     isEditing.value = true
     inputValue.value = value
+    // Only an edit that parses clears a rejected commit; partial input never sets it.
+    if (isInvalid.value && isParsable(value))
+      isInvalid.value = false
   }
 
   function commit(event?: Event) {
@@ -177,8 +184,10 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     if (inputValue.value === formatValue(color.value))
       return
 
-    // Text that does not parse is dropped: the input reverts to the model.
-    if (isParsable(inputValue.value)) {
+    // Text that does not parse is dropped and marks the field invalid; the input reverts
+    // to the model.
+    isInvalid.value = !isParsable(inputValue.value)
+    if (!isInvalid.value) {
       if (channel.value) {
         const range = getChannelRange(channel.value)
         const clamped = Math.max(range.min, Math.min(range.max, Number.parseFloat(inputValue.value)))
@@ -404,7 +413,7 @@ export function createColorFieldInputSurface(rootContext: ColorFieldRootContext)
     'placeholder': rootContext.placeholder.value,
     'disabled': rootContext.disabled.value,
     'readonly': rootContext.readonly.value,
-    // Text that does not parse is announced as invalid until it is fixed or committed (which reverts it).
+    // Set when a commit rejects the text; cleared by an edit that parses or a committed change.
     'aria-invalid': rootContext.invalid.value ? 'true' : undefined,
     'onInput': handleInput,
     'onBlur': handleBlur,
