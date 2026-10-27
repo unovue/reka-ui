@@ -31,6 +31,11 @@
     'type': 'string[]'
   },
   {
+    'name': 'selectedLabels',
+    'description': '',
+    'type': 'string[]'
+  },
+  {
     'name': 'modelValue',
     'description': '',
     'type': 'AcceptableValue | AcceptableValue[] | undefined'
@@ -53,6 +58,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `selectedLabel` |  | `string[]` |
+| `selectedLabels` |  | `string[]` |
 | `modelValue` |  | `AcceptableValue \| AcceptableValue[] \| undefined` |
 
 </llm-only>

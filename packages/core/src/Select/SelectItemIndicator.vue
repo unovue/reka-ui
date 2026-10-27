@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { selectionState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface SelectItemIndicatorProps extends PrimitiveProps {
   /**
@@ -15,6 +15,7 @@ export interface SelectItemIndicatorProps extends PrimitiveProps {
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectSelectItemContext } from './SelectItem.vue'
+import { useSelectItemIndicator } from './useSelect'
 
 withDefaults(defineProps<SelectItemIndicatorProps>(), {
   as: 'span',
@@ -23,14 +24,14 @@ withDefaults(defineProps<SelectItemIndicatorProps>(), {
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const itemContext = injectSelectItemContext()
+const { indicator, present } = useSelectItemIndicator(itemContext)
 </script>
 
 <template>
-  <Presence :present="forceMount || itemContext.isSelected.value">
+  <Presence :present="forceMount || present">
     <Primitive
       :ref="forwardRef"
-      aria-hidden="true"
-      :data-state="selectionState(itemContext.isSelected.value)"
+      v-bind="indicator.attrs.value"
       :as="as"
       :as-child="asChild"
     >

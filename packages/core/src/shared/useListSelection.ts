@@ -3,6 +3,7 @@ import type { By } from './compare'
 import type { BaseChangeReason, ChangeEventDetails } from './types'
 import { ref, toRaw, toValue } from 'vue'
 import { compare, valueComparator } from './compare'
+import { isNullish } from './nullish'
 import { useControllableState } from './useControllableState'
 
 export interface UseListSelectionOptions<T, R extends string = string> {
@@ -55,11 +56,16 @@ export interface UseListSelectionReturn<T, R extends string = string> {
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<R>>>
 }
 
-/** `Object.is`, applied entry by entry to two arrays — the change-only rule for a multiple selection. */
+/** `Object.is` on the raw values (a reactive proxy is its target). */
+function isSameValue(a: unknown, b: unknown) {
+  return Object.is(toRaw(a), toRaw(b))
+}
+
+/** `isSameValue`, applied entry by entry to two arrays — the change-only rule for a multiple selection. */
 function isSameSelection<T>(a: T | T[] | undefined, b: T | T[] | undefined) {
   if (Array.isArray(a) && Array.isArray(b))
-    return a.length === b.length && a.every((value, index) => Object.is(value, b[index]))
-  return Object.is(a, b)
+    return a.length === b.length && a.every((value, index) => isSameValue(value, b[index]))
+  return isSameValue(a, b)
 }
 
 /**
@@ -114,7 +120,17 @@ export function useListSelection<T, R extends string = string>(options: UseListS
         // A no-op write returns before touching `lastChangeDetails`; a cancelled
         // one records its details, which tells the two `false`s apart (a
         // ref-owned `undefined` model treats a write of its default as real).
-        const isCurrent = isSameSelection([val], toRaw(modelValue.value))
+        // Re-pressing the sole selected value through a different instance
+        // that `by` matches is a no-op. `by` sees the same (reactive) entries
+        // `isSelected` compares; the same value (or its proxy) takes the
+        // `setState` path below, where `isSameSelection` compares raw values.
+        const selected = modelValue.value
+        if (Array.isArray(selected) && selected.length === 1 && !isSameValue(selected[0], val) && compare(selected[0], val, by)) {
+          firstValue.value = val
+          return false
+        }
+        const current = toRaw(selected)
+        const isCurrent = isSameSelection([val], current)
         const detailsBefore = lastChangeDetails.value
         const changed = setState([val], reason, event)
         if (changed || (isCurrent && lastChangeDetails.value === detailsBefore))
@@ -130,6 +146,11 @@ export function useListSelection<T, R extends string = string>(options: UseListS
           return setState(val, reason, event)
       }
       else {
+        // A re-press of the selected value is a no-op, matched with `by` (a
+        // different instance of the same object must not emit).
+        const current = modelValue.value as T | undefined
+        if (!isNullish(current) && !isSameValue(current, val) && compare(current, val, by))
+          return false
         return setState(val, reason, event)
       }
     }

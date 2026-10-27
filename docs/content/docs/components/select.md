@@ -569,6 +569,89 @@ const value = ref('france')
 </template>
 ```
 
+### Showing the value before the content renders
+
+`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. To show the value of a select whose items have never rendered (object values, items loaded on open), pass `display-value` to the root. With it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native `<select>` only holds the selected values, so browser autofill cannot pick another one, and typing on the closed trigger has no items to match.
+
+```vue
+<template>
+  <SelectRoot
+    v-model="user"
+    by="id"
+    :display-value="(user) => user.name"
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Pick a user" />
+    </SelectTrigger>
+    <!-- ... -->
+  </SelectRoot>
+</template>
+```
+
+### Selecting multiple values
+
+With `multiple`, an item press toggles its value and the content stays open. `v-model` and `update:modelValue` are typed `T[]`. `SelectValue` joins the selected texts with `, `, and its slot receives them as `selectedLabels`. With a `name`, every selected value is submitted with the form.
+
+```vue
+<template>
+  <SelectRoot
+    v-model="fruits"
+    multiple
+    name="fruits"
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Pick fruits" />
+    </SelectTrigger>
+    <!-- ... -->
+  </SelectRoot>
+</template>
+```
+
+### Reacting to changes
+
+`update:modelValue` and `update:open` receive a second argument with the `reason` for the change and the native `event`. `beforeUpdate:modelValue` and `beforeUpdate:open` fire first, and `details.cancel()` keeps the current state. Cancelling the value of an item press keeps the content open. The reasons are exported as `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press'`), plus `'imperative-action'` for programmatic changes. Pressing the selected item of a single select emits nothing and closes the content, also when `by` matches a different object. In `popper` position the trigger stays clickable above the backdrop, and pressing it closes the content (`'trigger-press'`).
+
+```vue
+<template>
+  <SelectRoot
+    v-model="plan"
+    @before-update:model-value="(value, details) => {
+      // ignore browser autofill
+      if (details.reason === 'autofill')
+        details.cancel()
+    }"
+  >
+    <!-- ... -->
+  </SelectRoot>
+</template>
+```
+
+### Custom keyboard navigation
+
+`get-navigation-intent` maps a keydown in the content to a move (`'first'`, `'last'`, `'prev'`, `'next'`) or to `'select'`. Return `undefined` to keep the default for the key, or `null` to ignore it. Returning `null` for Enter or Space stops them from selecting.
+
+```vue
+<template>
+  <SelectRoot
+    :get-navigation-intent="(event) => {
+      if (event.ctrlKey && event.key === 'n') return 'next'
+      if (event.ctrlKey && event.key === 'p') return 'prev'
+    }"
+  >
+    <!-- ... -->
+  </SelectRoot>
+</template>
+```
+
+### Headless composables
+
+The parts are built on composables you can use on your own elements:
+
+- `useSelectRoot()`: the value and open models, the label registry and the context.
+- `useSelectTrigger()`, `useSelectValue()`, `useSelectContent()`, `useSelectItem()`, `useSelectItemText()` and `useSelectItemIndicator()`: one per part.
+
+Each part composable returns a surface whose `attrs` hold the `role`, `aria-*` and `data-*` attributes and the event handlers to bind. Positioning, presence, focus trapping and dismissal are not part of the composables. Compose `PopperContent`, `Presence` and `DismissableLayer` as the components do, or bring your own. These composables are experimental.
+
 ### With custom scrollbar
 
 The native scrollbar is hidden by default as we recommend using the `ScrollUpButton` and `ScrollDownButton` parts for the best UX. If you do not want to use these parts, compose your select with our [Scroll Area](scroll-area) primitive.
@@ -673,6 +756,10 @@ See the W3C [Select-Only Combobox](https://www.w3.org/TR/wai-aria-practices/exam
     {
       keys: ['Esc'],
       description: '<span> Closes the select and moves focus to <Code>SelectTrigger</Code>. </span>',
+    },
+    {
+      keys: ['A-Z', 'a-z'],
+      description: '<span> When focus is on a closed <Code>SelectTrigger</Code> of a single select, selects the next item whose text starts with the typed characters. <br /> When focus is on an item, moves focus to the next matching item. </span>',
     },
   ]"
 />

@@ -39,6 +39,18 @@
     'required': false
   },
   {
+    'name': 'displayValue',
+    'description': '<p>The text shown for a selected value. Wins over the text of its <code>SelectItemText</code>, so the value can be shown before\nthe content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost:\nuntil the content has been opened once, the hidden native <code>select</code> only holds the selected values (so browser\nautofill cannot pick another one) and the closed trigger\'s typeahead has no items to match.</p>\n',
+    'type': '((value: T) =&gt; string)',
+    'required': false
+  },
+  {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown in the content means for keyboard navigation. Return <code>undefined</code> to fall back to the\ndefault mapping (ArrowUp, ArrowDown, Home, End), <code>null</code> to opt the key out (for Enter and Space this also skips the\nselection), or <code>\'select\'</code> to select the focused item as Enter does.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the Select. Can be bind as <code>v-model</code>.</p>\n',
     'type': 'T | T[]',
@@ -79,22 +91,32 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an\narray when <code>multiple</code>.</p>\n',
+    'type': '[value: SelectModelValue&lt;T, M&gt;, details: ChangeEventDetails&lt;SelectChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Event handler called before the open state changes; call <code>details.cancel()</code> to keep it.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;SelectOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: T]'
+    'description': '<p>Event handler called when the value changes. The value is an array when <code>multiple</code>.</p>\n',
+    'type': '[value: SelectModelValue&lt;T, M&gt;, details: ChangeEventDetails&lt;SelectChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
-    'description': '<p>Event handler called when the open state of the context menu changes.</p>\n',
-    'type': '[value: boolean]'
+    'description': '<p>Event handler called when the open state of the select changes.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;SelectOpenChangeReason, Event&gt;]'
   }
 ]" />
 
 <SlotsTable :data="[
   {
     'name': 'modelValue',
-    'description': '<p>Current input values</p>\n',
-    'type': 'T | T[] | undefined'
+    'description': '<p>Current input values; <code>undefined</code> while a single select is empty</p>\n',
+    'type': 'M extends true ? T[] : T | undefined'
   },
   {
     'name': 'open',
@@ -116,6 +138,8 @@
 | `defaultValue` | The value of the select when initially rendered. Use when you do not need to control the state of the Select | `T \| T[]` | No | - |
 | `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with Select | `boolean` | No | - |
+| `displayValue` | The text shown for a selected value. Wins over the text of its SelectItemText, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native select only holds the selected values (so browser autofill cannot pick another one) and the closed trigger's typeahead has no items to match. | `((value: T) => string)` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return undefined to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), null to opt the key out (for Enter and Space this also skips the selection), or 'select' to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `modelValue` | The controlled value of the Select. Can be bind as v-model. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -127,14 +151,16 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[value: T]` |
-| `update:open` | Event handler called when the open state of the context menu changes. | `[value: boolean]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
+| `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. The value is an array when multiple. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
+| `update:open` | Event handler called when the open state of the select changes. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `T \| T[] \| undefined` |
+| `modelValue` | Current input values; undefined while a single select is empty | `M extends true ? T[] : T \| undefined` |
 | `open` | Current open state | `boolean` |
 
 </llm-only>
