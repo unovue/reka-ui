@@ -6,8 +6,6 @@ name: date-range-field
 
 # Date Range Field
 
-<Badge>Alpha</Badge>
-
 <Description>
 Allows users to input a range of dates within a designated field.
 </Description>

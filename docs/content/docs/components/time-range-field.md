@@ -6,8 +6,6 @@ name: time-range-field
 
 # Time Range Field
 
-<Badge>Alpha</Badge>
-
 <Description>
 Allows users to input a range of times within a designated field.
 </Description>

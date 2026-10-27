@@ -6,8 +6,6 @@ name: time-field
 
 # Time Field
 
-<Badge>Alpha</Badge>
-
 <Description>
 Enables users to input specific times within a designated field.
 </Description>
