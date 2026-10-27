@@ -14,5 +14,5 @@ export {
 } from './ColorAreaThumb.vue'
 
 export { useColorArea } from './useColorArea'
-export type { ColorAreaChangeReason, ColorAreaRootState, UseColorAreaProps, UseColorAreaReturn } from './useColorArea'
-export type { ColorAreaAreaState, ColorAreaThumbState } from './useColorArea'
+export type { ColorAreaAxis, ColorAreaChangeReason, ColorAreaRootState, UseColorAreaProps, UseColorAreaReturn } from './useColorArea'
+export type { ColorAreaAreaState, ColorAreaInputState, ColorAreaThumbState } from './useColorArea'

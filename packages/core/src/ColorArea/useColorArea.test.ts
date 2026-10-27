@@ -20,12 +20,114 @@ describe('useColorArea', () => {
     await nextTick()
     expect(area.xValue.value).toBe(80.45)
     expect(area.yValue.value).toBe(100)
-    expect(area.thumb.props.value['aria-label']).toBe('Saturation, Lightness')
+    expect(area.xInput.props.value['aria-label']).toBe('Saturation')
+    expect(area.yInput.props.value['aria-label']).toBe('Lightness')
+    // The thumb is the visual marker only; the inputs carry the semantics.
+    expect(area.thumb.props.value).not.toHaveProperty('role')
+    expect(area.thumb.props.value).not.toHaveProperty('tabindex')
     expect(area.thumb.props.value.style.left).toBe('80.45%')
     expect(area.root.props.value).not.toHaveProperty('data-disabled')
     disabled.value = true
     expect(area.root.attrs.value['data-disabled']).toBe('')
-    expect(area.thumb.props.value.tabindex).toBeUndefined()
+    expect(area.xInput.props.value.disabled).toBe(true)
+    expect(area.yInput.attrs.value['data-disabled']).toBe('')
+  })
+
+  it('exposes one range input per channel with its own name, value and orientation', () => {
+    const area = setup({ xChannel: 'saturation', yChannel: 'lightness', defaultValue: { space: 'hsl', h: 300, s: 40.4, l: 61.6, alpha: 1 } })
+    expect(area.xInput.props.value).toMatchObject({
+      'type': 'range',
+      'min': 0,
+      'max': 100,
+      'step': 1,
+      'value': 40,
+      'tabindex': 0,
+      'aria-label': 'Saturation',
+      'aria-roledescription': '2D slider',
+      'aria-orientation': 'horizontal',
+      'aria-valuetext': '40, Lightness 62',
+    })
+    expect(area.yInput.props.value).toMatchObject({
+      'type': 'range',
+      'value': 62,
+      'tabindex': -1,
+      'aria-label': 'Lightness',
+      'aria-orientation': 'vertical',
+      'aria-valuetext': '62, Saturation 40',
+    })
+  })
+
+  it('moves the single tab stop to the input that takes focus', () => {
+    const area = setup()
+    area.yInput.props.value.onFocus()
+    expect(area.xInput.props.value.tabindex).toBe(-1)
+    expect(area.yInput.props.value.tabindex).toBe(0)
+    area.xInput.props.value.onFocus()
+    expect(area.xInput.props.value.tabindex).toBe(0)
+    expect(area.yInput.props.value.tabindex).toBe(-1)
+  })
+
+  it('writes one channel and commits when assistive technology sets an input', () => {
+    const onChangeEnd = vi.fn()
+    const area = setup({ xChannel: 'saturation', yChannel: 'lightness', defaultValue: { space: 'hsl', h: 300, s: 40, l: 60, alpha: 1 }, onChangeEnd })
+    const input = document.createElement('input')
+    input.value = '75'
+    area.yInput.props.value.onInput({ target: input } as unknown as Event)
+    expect(area.xValue.value).toBe(40)
+    expect(area.yValue.value).toBe(75)
+    expect(area.lastChangeDetails.value.reason).toBe('keyboard')
+    expect(onChangeEnd).toHaveBeenCalledExactlyOnceWith({ space: 'hsl', h: 300, s: 40, l: 75, alpha: 1 })
+  })
+
+  it('restores an input whose value a controlled parent rejects', async () => {
+    const area = setup({ modelValue: () => '#ff0000', onUpdate: () => {} })
+    const input = document.createElement('input')
+    input.value = '120'
+    area.xInput.props.value.onInput({ target: input } as unknown as Event)
+    await nextTick()
+    expect(area.xValue.value).toBe(0)
+    expect(input.value).toBe('0')
+  })
+
+  it('focuses the input of the axis an arrow key moves', () => {
+    const area = setup()
+    const x = document.createElement('input')
+    const y = document.createElement('input')
+    document.body.append(x, y)
+    area.setInputElement('x', x)
+    area.setInputElement('y', y)
+    const surface = area.createAreaSurface(ref())
+    x.focus()
+    const up = new KeyboardEvent('keydown', { key: 'ArrowUp', cancelable: true })
+    Object.defineProperty(up, 'target', { value: x })
+    surface.props.value.onKeydown(up)
+    expect(document.activeElement).toBe(y)
+    const left = new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true })
+    Object.defineProperty(left, 'target', { value: y })
+    surface.props.value.onKeydown(left)
+    expect(document.activeElement).toBe(x)
+    x.remove()
+    y.remove()
+  })
+
+  it('focuses the last focused input on pointer down', () => {
+    const area = setup()
+    const element = document.createElement('div')
+    element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect
+    element.setPointerCapture = vi.fn()
+    const x = document.createElement('input')
+    const y = document.createElement('input')
+    area.setInputElement('x', x)
+    area.setInputElement('y', y)
+    const focusX = vi.spyOn(x, 'focus')
+    const focusY = vi.spyOn(y, 'focus')
+    const surface = area.createAreaSurface(ref(element))
+    const event = { target: element, pointerId: 1, clientX: 50, clientY: 50, preventDefault: vi.fn() }
+    surface.props.value.onPointerdown(event)
+    expect(focusX).toHaveBeenCalledOnce()
+    area.yInput.props.value.onFocus()
+    surface.props.value.onPointerdown(event)
+    expect(focusY).toHaveBeenCalledOnce()
   })
 
   it('cancels a keyboard change before exact coordinates or color events are written', () => {
@@ -83,7 +185,7 @@ describe('useColorArea', () => {
     expect(onColorUpdate.mock.calls[0][0]).toMatchObject({ space, h: 240, s: 100 })
   })
 
-  it('maps captured pointer coordinates, focuses the thumb, and commits on release', () => {
+  it('maps captured pointer coordinates, focuses the thumb when no input is bound, and commits on release', () => {
     const emit = vi.fn()
     const area = setup({ emit })
     const element = document.createElement('div')

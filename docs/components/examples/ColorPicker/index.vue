@@ -66,7 +66,7 @@ const hexColor = computed(() => colorToString(colorObj.value, 'hex'))
             class="relative"
           >
             <ColorAreaArea
-              class="relative w-full h-[140px] rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary"
+              class="relative w-full h-[140px] rounded-md overflow-hidden focus-within:outline-none focus-within:ring-2 focus-within:ring-primary"
               :style="style"
             >
               <ColorAreaThumb class="block w-4 h-4 rounded-full bg-white border-2 border-white shadow-md cursor-pointer hover:scale-110 transition-transform" />

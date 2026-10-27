@@ -66,7 +66,7 @@ import {
 
 These composables are experimental. Reactive options accept refs or getters. Pass a writable `modelValue` ref for ref-owned state, or use `onUpdate` to handle controlled updates. `onBeforeUpdate(value, details)` can synchronously call `details.cancel()` to prevent a change. Component users can use `@before-update:model-value` for the same behavior.
 
-`useColorArea()` exposes the model, exact channel values, background styles, and shared root and thumb surfaces. The channel values and the thumb position are derived from the model, so a controlled parent that rejects an update keeps the thumb where the model is. Create one area surface per element and bind `setThumbElement` to the thumb so pointer interaction can focus it. Pass `dir: 'rtl'` to mirror the x axis.
+`useColorArea()` exposes the model, exact channel values, background styles, and shared root and thumb surfaces. The channel values and the thumb position are derived from the model, so a controlled parent that rejects an update keeps the thumb where the model is. Create one area surface per element. Render the `xInput` and `yInput` surfaces as two `<input>` elements inside the thumb and bind them with `setInputElement`, so pointer interaction and the arrow keys can focus them; they carry the area's semantics (see [Accessibility](#accessibility)). Pass `dir: 'rtl'` to mirror the x axis.
 
 ```vue
 <script setup>
@@ -74,7 +74,7 @@ import { useColorArea } from 'reka-ui'
 import { ref } from 'vue'
 
 const areaElement = ref()
-const { root, thumb, setThumbElement, areaStyles, createAreaSurface, updateValues } = useColorArea({
+const { root, thumb, xInput, yInput, setInputElement, areaStyles, createAreaSurface, updateValues } = useColorArea({
   defaultValue: '#ff0000',
   xChannel: 'saturation',
   yChannel: 'lightness',
@@ -91,7 +91,10 @@ updateValues(75, 50)
       v-bind="area.attrs.value"
       :style="[areaStyles, { position: 'relative', width: '200px', height: '200px' }]"
     >
-      <span :ref="setThumbElement" v-bind="thumb.attrs.value" />
+      <span v-bind="thumb.attrs.value">
+        <input :ref="el => setInputElement('x', el)" v-bind="xInput.attrs.value">
+        <input :ref="el => setInputElement('y', el)" v-bind="yInput.attrs.value">
+      </span>
     </div>
   </div>
 </template>
@@ -245,6 +248,12 @@ const color = ref('#3b82f6')
 ```
 
 ## Accessibility
+
+Each channel is a native `input type="range"`, visually hidden inside `ColorAreaThumb`, as in React Aria's ColorArea. The x input is named after the x channel (for example "Saturation") with `aria-orientation="horizontal"`, and the y input after the y channel with `aria-orientation="vertical"`. Each reports its own value, with the other channel as context in `aria-valuetext` ("50, Lightness 40"), and is described as a "2D slider". Screen readers read them like any slider, and mobile screen readers can adjust them with their swipe gestures.
+
+Only one input is in the tab order: the x input, or the y input once it has had focus. An arrow key moves focus to the input of the axis it changes, so the screen reader announces that channel. The area itself has no role; it is the pointer surface.
+
+The thumb no longer receives focus itself, so style its focus ring with `:focus-within` (Tailwind: `focus-within:`) on the thumb or the area, or `:has(:focus-visible)` for keyboard focus only.
 
 ### Keyboard Interactions
 

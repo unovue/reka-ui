@@ -8,7 +8,7 @@ export interface ColorAreaThumbProps extends PrimitiveProps {}
 import { onMounted } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
-import { getColorAreaThumbSurface } from './useColorArea'
+import { getColorAreaInputSurface, getColorAreaThumbSurface } from './useColorArea'
 
 const props = withDefaults(defineProps<ColorAreaThumbProps>(), {
   as: 'span',
@@ -20,6 +20,15 @@ onMounted(() => {
   rootContext.thumbRef.value = currentElement.value
 })
 const thumb = getColorAreaThumbSurface(rootContext)
+const xInput = getColorAreaInputSurface(rootContext, 'x')
+const yInput = getColorAreaInputSurface(rootContext, 'y')
+
+function setXInput(el: unknown) {
+  rootContext.xInputRef.value = (el as HTMLInputElement | null) ?? undefined
+}
+function setYInput(el: unknown) {
+  rootContext.yInputRef.value = (el as HTMLInputElement | null) ?? undefined
+}
 </script>
 
 <template>
@@ -30,5 +39,14 @@ const thumb = getColorAreaThumbSurface(rootContext)
     v-bind="thumb.attrs.value"
   >
     <slot />
+    <!-- One visually hidden range input per channel: they hold focus and expose each channel. -->
+    <input
+      :ref="setXInput"
+      v-bind="xInput.attrs.value"
+    >
+    <input
+      :ref="setYInput"
+      v-bind="yInput.attrs.value"
+    >
   </Primitive>
 </template>
