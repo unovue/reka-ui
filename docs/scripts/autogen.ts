@@ -52,8 +52,24 @@ function toSingleQuotedJson(obj: unknown): string {
 }
 
 const coreDir = resolve(__dirname, '../../packages/core')
-// `export {\n  ComboboxItem as AutocompleteItem,\n  type …\n} from '@/Combobox'`
-const REEXPORT_ALIAS_RE = /export \{\s*(\w+) as (\w+),[^}]*\} from '@\/(\w+)'/g
+// An `export { … } from '<source>'` block of a family `index.ts`.
+const EXPORT_BLOCK_RE = /export \{([^}]*)\} from '([^']+)'/g
+// A value specifier inside it that renames: `ComboboxItem as AutocompleteItem`
+// (another family's part) or `default as DrawerPopup` (a second name for an SFC).
+const ALIAS_SPECIFIER_RE = /(?:^|,)\s*(?!type\s)(\w+) as (\w+)/g
+
+/**
+ * Descriptions an alias needs instead of the original's, where the original's
+ * text is wrong for the alias (`AutocompleteItem` is `ComboboxItem`, whose
+ * `value` doc describes form submission, which Autocomplete does not do).
+ */
+const ALIAS_DESCRIPTION_OVERRIDES: Record<string, { props?: Record<string, string> }> = {
+  AutocompleteItem: {
+    props: {
+      value: 'The value of the item, of the root\'s item type `T` (`string` by default). Selecting the item writes `displayValue(value)` into the input, else `String(value)`.',
+    },
+  },
+}
 
 const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
   cwd: coreDir,
@@ -76,15 +92,24 @@ primitiveComponents.forEach((componentPath) => {
   writeComponentMeta(componentPath, parse(componentPath).name)
 })
 
-// 3. A family that re-exports another family's parts under its own names
-// (`ComboboxItem as AutocompleteItem`) gets a meta file per alias, so its page
-// includes tables under its own part names instead of the other family's files.
+// 3. A part exported under another name gets a meta file per alias, so its
+// page includes tables under its own part names: a family re-exporting another
+// family's parts (`ComboboxItem as AutocompleteItem` from '@/Combobox'), or a
+// second name for an SFC (`default as DrawerPopup` from './DrawerContent.vue').
 fg.sync(['src/*/index.ts'], { cwd: coreDir, absolute: true }).forEach((indexPath) => {
   const source = readFileSync(indexPath, 'utf8')
-  for (const [, original, alias, family] of source.matchAll(REEXPORT_ALIAS_RE)) {
-    const originalPath = resolve(coreDir, 'src', family, `${original}.vue`)
-    if (original !== alias && existsSync(originalPath))
+  for (const [, specifiers, from] of source.matchAll(EXPORT_BLOCK_RE)) {
+    for (const [, original, alias] of specifiers.matchAll(ALIAS_SPECIFIER_RE)) {
+      let originalPath: string | undefined
+      if (from.startsWith('@/'))
+        originalPath = resolve(coreDir, 'src', from.slice(2), `${original}.vue`)
+      // Only a second name: the SFC's own name is a documented component too.
+      else if (original === 'default' && from.endsWith('.vue') && (listOfComponents as string[]).includes(parse(from).name))
+        originalPath = resolve(parse(indexPath).dir, from)
+      if (!originalPath || !existsSync(originalPath) || parse(originalPath).name === alias)
+        continue
       writeComponentMeta(originalPath, alias)
+    }
   }
 })
 
@@ -103,6 +128,12 @@ function writeComponentMeta(componentPath: string, componentName: string) {
   // under AutocompleteRoot) must not replace them.
   const ownEventDescriptions = readEventDescriptions(componentPath)
   const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath), name => ownEventDescriptions.get(name) ?? eventDescriptionMap.get(name))
+  const overrides = ALIAS_DESCRIPTION_OVERRIDES[componentName]
+  for (const prop of meta.props) {
+    const description = overrides?.props?.[prop.name]
+    if (description)
+      prop.description = md.render(description)
+  }
 
   const metaDirPath = resolve(__dirname, '../content/meta')
   mkdirSync(metaDirPath, { recursive: true })

@@ -16,7 +16,11 @@ import { createContext, mergeExpose, useDirection, useFormControl, useForwardEle
  */
 export type AutocompleteChangeReason = 'input-change' | 'item-press' | 'clear-press'
 
-export interface AutocompleteRootProps extends PrimitiveProps {
+/**
+ * `T` is the type of the item values (`AutocompleteItem` `value`); it defaults to `string`. The model is always the
+ * input text.
+ */
+export interface AutocompleteRootProps<T extends AcceptableValue = string> extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
   modelValue?: string
   /** The value of the autocomplete when initially rendered. Use when you do not need to control the state. */
@@ -53,7 +57,7 @@ export interface AutocompleteRootProps extends PrimitiveProps {
    * its text content). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client
    * filtering off: filter the items yourself, or on a server.
    */
-  filter?: ListboxFilterFunction<string> | null
+  filter?: ListboxFilterFunction<T> | null
   /**
    * Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`.
    * @deprecated Use `:filter="null"`.
@@ -71,12 +75,13 @@ export interface AutocompleteRootProps extends PrimitiveProps {
    */
   getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
   /**
-   * The text a selected item writes into the value (the input text). Defaults to the item's value.
+   * The text a selected item writes into the value (the input text), from the item's value. Defaults to
+   * `String(value)`.
    */
-  displayValue?: (value: string) => string
+  displayValue?: (value: T) => string
 }
 
-export type AutocompleteRootEmits = {
+export type AutocompleteRootEmits<T extends AcceptableValue = string> = {
   /**
    * Event handler called before the value (the input text) changes; call `details.cancel()` to keep the current
    * value. The value is `''` when `AutocompleteCancel` clears it.
@@ -85,7 +90,7 @@ export type AutocompleteRootEmits = {
   /** Event handler called when the value (the input text) changes. The value is `''` when `AutocompleteCancel` clears it. */
   'update:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler when highlighted element changes. */
-  'highlight': [payload: { ref: HTMLElement, value: string } | undefined]
+  'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called before the open state changes; call `details.cancel()` to keep it. */
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called when the open state of the autocomplete changes. */
@@ -103,7 +108,7 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
   = createContext<AutocompleteRootContext>('AutocompleteRoot')
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends AcceptableValue = string">
 import { mergeProps, toRef } from 'vue'
 import { useCollection } from '@/Collection'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
@@ -115,14 +120,14 @@ import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 defineOptions({ inheritAttrs: false })
 
-const props = withDefaults(defineProps<AutocompleteRootProps>(), {
+const props = withDefaults(defineProps<AutocompleteRootProps<T>>(), {
   open: undefined,
   resetSearchTermOnBlur: false,
   openOnFocus: false,
   openOnClick: false,
   highlightOnHover: true,
 })
-const emits = defineEmits<AutocompleteRootEmits>()
+const emits = defineEmits<AutocompleteRootEmits<T>>()
 
 defineSlots<{
   default?: (props: {
@@ -143,8 +148,8 @@ const isFormControl = useFormControl(currentElement)
 // Typed over every item value, as the Listbox and Combobox contexts it provides
 // are: `AutocompleteItem` is `ComboboxItem`, whose `value` is any
 // `AcceptableValue`. `toModelValue` turns it into the text (`displayValue`, else
-// `String(value)`). The public `filter`, `displayValue` and `highlight` types
-// still say `string`, the documented item value, so they are narrowed here.
+// `String(value)`). The public `filter`, `displayValue`, `highlight` and
+// `highlightItem` types use the root's `T`, so they are narrowed here.
 const combobox = useComboboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue ?? '',
@@ -164,14 +169,14 @@ const combobox = useComboboxRoot<AcceptableValue>({
   openOnClick: () => props.openOnClick,
   resetModelValueOnClear: true,
   emptyValue: '',
-  toModelValue: value => props.displayValue ? props.displayValue(value as string) : String(value),
+  toModelValue: value => props.displayValue ? props.displayValue(value as T) : String(value),
   // Opening filters by the text already in the input.
   openSearchTerm: () => modelValue.value || '',
   getItems,
   getItem,
   element: currentElement,
   emit: emits,
-  onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: string } | undefined),
+  onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
 const modelValue = combobox.modelValue as ComputedRef<string>
@@ -180,7 +185,7 @@ defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */
   filtered: filterState,
   highlightedElement,
-  highlightItem,
+  highlightItem: highlightItem as (value: T) => void,
   highlightFirstItem,
   highlightSelected,
 }))

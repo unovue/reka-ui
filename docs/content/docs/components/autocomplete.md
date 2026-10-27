@@ -8,8 +8,6 @@ aria: https://www.w3.org/WAI/ARIA/apg/patterns/combobox
 
 # Autocomplete
 
-<Badge>Alpha</Badge>
-
 <Description>
 An input with suggestions that allows free-form text entry. Unlike Combobox, the value is the input text itself rather than a selected item.
 </Description>
@@ -226,7 +224,7 @@ The scrolling viewport that contains all of the items.
 
 ### Item
 
-The component that contains the autocomplete items. When selected, the item's string value fills the input.
+The component that contains the autocomplete items. When selected, the item fills the input with `displayValue(value)`, else `String(value)`.
 
 <!-- @include: @/meta/AutocompleteItem.md -->
 
@@ -337,7 +335,41 @@ const { startsWith } = useFilter({ sensitivity: 'base' })
 
 `update:modelValue` receives a second argument with the `reason` (`'input-change'`, `'item-press'` or `'clear-press'`, exported as `AutocompleteChangeReason`) and the native `event`. `update:open` reports a `ComboboxOpenChangeReason`. The matching `beforeUpdate:modelValue` and `beforeUpdate:open` events fire first, and `details.cancel()` keeps the current state.
 
-Set `display-value` on `AutocompleteRoot` to control the text a selected item writes into the value, for example a label for an item whose value is an id.
+Set `display-value` on `AutocompleteRoot` to control the text a selected item writes into the value, for example a label for an item whose value is an object.
+
+`AutocompleteRoot` is generic over the item value type (`string` by default): `display-value`, `filter` and the `highlight` payload receive the item's `value` with its own type.
+
+```vue
+<script setup lang="ts">
+import { AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+interface Fruit { id: number, label: string }
+const fruits: Fruit[] = [{ id: 1, label: 'Apple' }, { id: 2, label: 'Banana' }]
+const searchText = ref('')
+</script>
+
+<template>
+  <AutocompleteRoot
+    v-model="searchText"
+    :display-value="(fruit: Fruit) => fruit.label"
+  >
+    <AutocompleteInput placeholder="Type a fruit..." />
+    <AutocompletePortal>
+      <AutocompleteContent>
+        <AutocompleteItem
+          v-for="fruit in fruits"
+          :key="fruit.id"
+          :value="fruit"
+          :text-value="fruit.label"
+        >
+          {{ fruit.label }}
+        </AutocompleteItem>
+      </AutocompleteContent>
+    </AutocompletePortal>
+  </AutocompleteRoot>
+</template>
+```
 
 ### Hide menu when empty
 
