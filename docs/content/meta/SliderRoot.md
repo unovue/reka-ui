@@ -106,9 +106,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the slider value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[payload: number[] | undefined, details: ChangeEventDetails&lt;SliderChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the slider value changes</p>\n',
-    'type': '[payload: number[] | undefined]'
+    'type': '[payload: number[] | undefined, details: ChangeEventDetails&lt;SliderChangeReason, Event&gt;]'
   },
   {
     'name': 'valueCommit',
@@ -121,7 +126,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current slider values</p>\n',
-    'type': 'number[] | null'
+    'type': 'number[] | null | undefined'
   }
 ]" />
 </llm-exclude>
@@ -152,13 +157,14 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the slider value changes | `[payload: number[] \| undefined]` |
+| `beforeUpdate:modelValue` | Event handler called before the slider value changes; details.cancel() vetoes the change. | `[payload: number[] \| undefined, details: ChangeEventDetails<SliderChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the slider value changes | `[payload: number[] \| undefined, details: ChangeEventDetails<SliderChangeReason, Event>]` |
 | `valueCommit` | Event handler called when the value changes at the end of an interaction. Useful when you only need to capture a final value e.g. to update a backend service. | `[payload: number[]]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current slider values | `number[] \| null` |
+| `modelValue` | Current slider values | `number[] \| null \| undefined` |
 
 </llm-only>

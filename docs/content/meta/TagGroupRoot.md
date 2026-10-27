@@ -76,6 +76,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the selection changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: T | T[] | undefined, details: ChangeEventDetails&lt;TagGroupChangeReason, Event&gt;]'
+  },
+  {
     'name': 'remove',
     'description': '<p>Event handler called when the user removes tags, with the values to remove.\nTags are only removable when this event has a listener; remove the values from your own list to remove the tags.</p>\n',
     'type': '[values: T[]]'
@@ -83,7 +88,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the selection changes.</p>\n',
-    'type': '[value: T | T[] | undefined]'
+    'type': '[value: T | T[] | undefined, details: ChangeEventDetails&lt;TagGroupChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -91,7 +96,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current selected value(s)</p>\n',
-    'type': 'T | T[] | undefined'
+    'type': 'TagGroupValue&lt;T&gt;'
   }
 ]" />
 </llm-exclude>
@@ -118,13 +123,14 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the selection changes; details.cancel() vetoes the change. | `[value: T \| T[] \| undefined, details: ChangeEventDetails<TagGroupChangeReason, Event>]` |
 | `remove` | Event handler called when the user removes tags, with the values to remove. Tags are only removable when this event has a listener; remove the values from your own list to remove the tags. | `[values: T[]]` |
-| `update:modelValue` | Event handler called when the selection changes. | `[value: T \| T[] \| undefined]` |
+| `update:modelValue` | Event handler called when the selection changes. | `[value: T \| T[] \| undefined, details: ChangeEventDetails<TagGroupChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current selected value(s) | `T \| T[] \| undefined` |
+| `modelValue` | Current selected value(s) | `TagGroupValue<T>` |
 
 </llm-only>

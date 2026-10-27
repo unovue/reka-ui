@@ -118,6 +118,11 @@
     'type': '[payload: T]'
   },
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the tags change; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[payload: T[], details: ChangeEventDetails&lt;TagsInputChangeReason, Event&gt;]'
+  },
+  {
     'name': 'invalid',
     'description': '<p>Event handler called when the value is invalid</p>\n',
     'type': '[payload: T]'
@@ -130,7 +135,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes</p>\n',
-    'type': '[payload: T[]]'
+    'type': '[payload: T[], details: ChangeEventDetails&lt;TagsInputChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -138,7 +143,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string | number | bigint | Record&lt;string, any&gt;'
+    'type': 'T'
   }
 ]" />
 </llm-exclude>
@@ -172,14 +177,15 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `addTag` | Event handler called when tag is added | `[payload: T]` |
+| `beforeUpdate:modelValue` | Event handler called before the tags change; details.cancel() vetoes the change. | `[payload: T[], details: ChangeEventDetails<TagsInputChangeReason, Event>]` |
 | `invalid` | Event handler called when the value is invalid | `[payload: T]` |
 | `removeTag` | Event handler called when tag is removed | `[payload: T]` |
-| `update:modelValue` | Event handler called when the value changes | `[payload: T[]]` |
+| `update:modelValue` | Event handler called when the value changes | `[payload: T[], details: ChangeEventDetails<TagsInputChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `string \| number \| bigint \| Record<string, any>` |
+| `modelValue` | Current input values | `T` |
 
 </llm-only>
