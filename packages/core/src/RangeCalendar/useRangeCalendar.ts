@@ -8,7 +8,7 @@ import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { getCalendarGridSurface, getCalendarHeadingSurface, getCalendarNavSurface, getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
 import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createChangeEventDetails, createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
@@ -97,7 +97,8 @@ export interface UseRangeCalendarProps {
   onUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
   onUpdateView?: (value: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
   onUpdateValidModelValue?: (value: DateRange) => void
-  onUpdateStartValue?: (value: DateValue | undefined) => void
+  /** Called after the range's start (the anchor the next press extends from) changes; the details carry the reason but cannot cancel it. */
+  onUpdateStartValue?: (value: DateValue | undefined, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
 }
 
 export interface UseRangeCalendarReturn {
@@ -536,6 +537,14 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
 
   let pendingReason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action'
   let pendingEvent: Event | undefined
+  // The start watcher keeps its own copy: Vue runs the `[startValue, endValue]`
+  // watcher first (it subscribed last), and that one resets `pendingReason`.
+  let pendingStartReason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action'
+  let pendingStartEvent: Event | undefined
+  function setPending(reason: RangeCalendarChangeReason | BaseChangeReason, event?: Event) {
+    pendingReason = pendingStartReason = reason
+    pendingEvent = pendingStartEvent = event
+  }
 
   watch(modelValue, (next) => {
     const a = granularityAdapter.value
@@ -546,13 +555,25 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
   })
 
   watch(startValue, (start) => {
+    const reason = pendingStartReason
+    const event = pendingStartEvent
+    pendingStartReason = 'imperative-action'
+    pendingStartEvent = undefined
     if (start && !granularityAdapter.value.isSame(start, placeholder.value))
-      setPlaceholder(start, pendingReason, pendingEvent)
-    props.onUpdateStartValue?.(start)
-    props.emit?.('update:startValue', start)
+      setPlaceholder(start, reason, event)
+    // A notification of the anchor the next press extends from, after the
+    // fact: the details carry the reason and event, but cannot cancel it.
+    const details = createChangeEventDetails<RangeCalendarChangeReason>(reason, event)
+    props.onUpdateStartValue?.(start, details)
+    props.emit?.('update:startValue', start, details)
   })
 
-  watch([startValue, endValue], ([start, end]) => {
+  watch([startValue, endValue], ([start, end], [previousStart]) => {
+    // Only the end moved: the start watcher will not run to consume its copy.
+    if (start === previousStart) {
+      pendingStartReason = 'imperative-action'
+      pendingStartEvent = undefined
+    }
     const a = granularityAdapter.value
     const current = modelValue.value
     if (current.start && current.end && start && end && a.isSame(current.start, start) && a.isSame(current.end, end))
@@ -596,7 +617,7 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
   function abortEditing() {
     if (!isEditing.value)
       return
-    pendingReason = 'escape-key'
+    setPending('escape-key')
     startValue.value = validModelValue.value.start?.copy()
     endValue.value = validModelValue.value.end?.copy()
   }
@@ -630,8 +651,7 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     }
 
     const a = granularityAdapter.value
-    pendingReason = reason
-    pendingEvent = event
+    setPending(reason, event)
 
     if (startValue.value && highlightedRange.value === null) {
       if (a.isSame(date, startValue.value) && !preventDeselect.value && !endValue.value) {

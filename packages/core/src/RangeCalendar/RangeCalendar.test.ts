@@ -4,7 +4,7 @@ import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import { RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
@@ -1640,5 +1640,22 @@ describe('range calendar - tabindex states', () => {
 
     const firstCanTabSelectedDate = getByTestId('date-1-1')
     expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
+  })
+})
+
+describe('update:startValue details', () => {
+  it('carries the press reason and event, and the placeholder follows with it', async () => {
+    const onStart = vi.fn()
+    const onPlaceholder = vi.fn()
+    const user = userEvent.setup()
+    const { getByTestId } = render(RangeCalendar, {
+      props: { calendarProps: { 'modelValue': calendarDateRange, 'onUpdate:startValue': onStart, 'onUpdate:placeholder': onPlaceholder } as any },
+    })
+    await user.click(getByTestId('date-1-5'))
+    const [value, details] = onStart.mock.lastCall!
+    expect(value.toString()).toBe('1980-01-05')
+    expect(details.reason).toBe('cell-press')
+    expect(details.event).toBeInstanceOf(MouseEvent)
+    expect(onPlaceholder).toHaveBeenLastCalledWith(new CalendarDate(1980, 1, 5), expect.objectContaining({ reason: 'cell-press' }))
   })
 })
