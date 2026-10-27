@@ -2,7 +2,7 @@ import type { TimeRangeFieldRootProps } from './TimeRangeFieldRoot.vue'
 import type { TimeValue } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import TimeField from './story/_TimeRangeField.vue'
@@ -363,5 +363,28 @@ describe('timeField', () => {
     await user.keyboard('{1}{5}')
     // After finishing start minute, focus should move to end hour
     expect(end.hour).toHaveFocus()
+  })
+})
+
+describe('coderabbit review (#3088)', () => {
+  const hiddenInput = (container: Element) => container.querySelector<HTMLInputElement>('input[name="range"]')!
+
+  it('submits an empty endpoint as an empty string, and an empty range as nothing', async () => {
+    const partial = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: new Temporal.PlainTime(9, 15), end: undefined } } } })
+    expect(hiddenInput(partial.container).value).toBe('09:15:00 - ')
+    partial.unmount()
+
+    const empty = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: undefined, end: undefined } } } })
+    expect(hiddenInput(empty.container).value).toBe('')
+  })
+
+  it('follows a same-instant change of time zone of the start', async () => {
+    const start = Temporal.ZonedDateTime.from('2024-07-10T12:30[America/New_York]')
+    const end = start.add({ hours: 2 })
+    const { getByTestId, rerender } = render(TimeField, { props: { timeRangeFieldProps: { modelValue: { start, end }, locale: 'en-US' } } })
+    expect(getByTestId('start-timeZoneName')).toHaveTextContent('EDT')
+
+    await rerender({ timeRangeFieldProps: { modelValue: { start: start.withTimeZone('America/Chicago'), end }, locale: 'en-US' } })
+    await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
   })
 })

@@ -5,7 +5,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { compareDateValues, isBefore, isSameDay, today, toPlainDate } from '@/date'
+import { isBefore, today, toPlainDate } from '@/date'
 import { assertTemporal, getTemporal } from '@/date/runtime'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -64,6 +64,8 @@ export function dateTimeToTimeValue(value: DateValue, like: TimeValue | undefine
     'minute' in value ? value.minute : 0,
     'second' in value ? value.second : 0,
     like?.millisecond ?? 0,
+    like?.microsecond ?? 0,
+    like?.nanosecond ?? 0,
   )
 }
 
@@ -266,7 +268,8 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
 
   watch(convertedModelValue, (value) => {
     const current = convertedPlaceholder.value
-    if (value && (!isSameDay(current, value) || compareDateValues(current, value) !== 0))
+    // Exact equality: a same-instant change of zone must still move the placeholder (its zone is shown).
+    if (value && !isSameTemporalValue(current, value))
       setConvertedPlaceholder(value)
   })
 

@@ -5,7 +5,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateRange, DateStep, Granularity, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { areAllDaysBetweenValid, compareDateValues, hasTime, isBefore, isBeforeOrSame } from '@/date'
+import { areAllDaysBetweenValid, hasTime, isBefore, isBeforeOrSame } from '@/date'
 import { assertTemporal } from '@/date/runtime'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -269,7 +269,8 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
   }
 
   watch(modelValue, (value) => {
-    if (value.start && compareDateValues(placeholder.value, value.start) !== 0)
+    // Exact equality, as in DateField: a same-instant change of zone must still move the placeholder.
+    if (value.start && !isSameTemporalValue(placeholder.value, value.start))
       setPlaceholder(value.start)
   })
 

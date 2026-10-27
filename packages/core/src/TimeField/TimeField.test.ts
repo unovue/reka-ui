@@ -1493,3 +1493,26 @@ describe('temporal regressions (#3088 review)', () => {
     ])
   })
 })
+
+describe('coderabbit review (#3088)', () => {
+  it('keeps the microseconds and nanoseconds of a PlainTime when a segment changes', async () => {
+    const onUpdate = vi.fn()
+    const { user, hour } = setup({
+      timeFieldProps: { modelValue: new Temporal.PlainTime(9, 15, 29, 1, 2, 3) },
+      emits: { 'onUpdate:modelValue': onUpdate },
+    })
+    await user.click(hour)
+    await user.keyboard(kbd.ARROW_UP)
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled())
+    expect(onUpdate.mock.lastCall![0].toString()).toBe('10:15:29.001002003')
+  })
+
+  it('follows a same-instant change of time zone', async () => {
+    const value = Temporal.ZonedDateTime.from('2024-07-10T12:30[America/New_York]')
+    const { getByTestId, rerender } = setup({ timeFieldProps: { modelValue: value, locale: 'en-US' } })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('EDT')
+
+    await rerender({ timeFieldProps: { modelValue: value.withTimeZone('America/Chicago'), locale: 'en-US' } })
+    await vi.waitFor(() => expect(getByTestId('timeZoneName')).toHaveTextContent('CDT'))
+  })
+})

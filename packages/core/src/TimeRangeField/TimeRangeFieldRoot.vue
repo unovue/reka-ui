@@ -91,8 +91,8 @@ export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, toRefs } from 'vue'
-import { toIsoString } from '@/date'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { toRangeFormValue } from '@/shared/date'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeRangeField } from './useTimeRangeField'
 
@@ -174,7 +174,7 @@ defineExpose(mergeExpose(expose, {
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue.start && toIsoString(modelValue.start)} - ${modelValue.end && toIsoString(modelValue.end)}`"
+      :value="toRangeFormValue(modelValue)"
       :name="name"
       :disabled="disabled"
       :required="required"

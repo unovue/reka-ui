@@ -6,7 +6,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { areAllDaysBetweenValid, compareDateValues, isBefore, isBeforeOrSame } from '@/date'
+import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
 import { assertTemporal } from '@/date/runtime'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { useControllableState, useDateFormatter } from '@/shared'
@@ -263,7 +263,8 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
   }
 
   watch(convertedStart, (start) => {
-    if (start && compareDateValues(convertedPlaceholder.value, start) !== 0)
+    // Exact equality: a same-instant change of zone must still move the placeholder (its zone is shown).
+    if (start && !isSameTemporalValue(convertedPlaceholder.value, start))
       setConvertedPlaceholder(start)
   })
 
