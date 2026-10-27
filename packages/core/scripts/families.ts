@@ -102,6 +102,34 @@ export function getFamilyExports(families = getComponentFamilies()): Record<stri
 }
 
 /**
+ * `package.json#typesVersions` for every family subpath. `moduleResolution: node` (node10)
+ * ignores `exports`, so without it `reka-ui/dialog` has no types there (the resolver and the
+ * Nuxt module write such imports into `components.d.ts`). Paths no pattern matches, the root
+ * import included, resolve as before; `node16` and `bundler` read `exports` instead.
+ */
+export function getFamilyTypesVersions(families = getComponentFamilies()): { '*': Record<string, string[]> } {
+  return { '*': Object.fromEntries(families.map(({ key }) => [key, [`./dist/${key}.d.ts`]])) }
+}
+
+/**
+ * Returns `pkg` with the generated `exports` entries and `typesVersions`, keeping every
+ * other field and the key order (`typesVersions` goes right after `types`).
+ */
+export function syncPackageJson(pkg: Record<string, any>, families = getComponentFamilies()): Record<string, any> {
+  const exports = mergeExports(pkg.exports, families)
+  const typesVersions = getFamilyTypesVersions(families)
+  const entries = Object.entries(pkg).filter(([key]) => key !== 'typesVersions')
+  const result: Record<string, any> = {}
+  for (const [key, value] of entries) {
+    result[key] = key === 'exports' ? exports : value
+    if (key === 'types')
+      result.typesVersions = typesVersions
+  }
+  result.typesVersions ??= typesVersions
+  return result
+}
+
+/**
  * Merges the family subpaths into an existing `exports` map: hand-written entries keep
  * their position and value, stale family entries are dropped, `./package.json` stays last.
  */
