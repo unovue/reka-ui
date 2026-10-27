@@ -38,9 +38,24 @@ install(false) // keeps the native Temporal when the browser has one
 createApp(App).mount('#app')
 ```
 
-The `temporal-polyfill-lite/shim` bundle supports the `iso8601` and `gregory` calendars. To use other calendar systems (`hebrew`, `japanese`, `islamic-umalqura`, `persian`, `buddhist`, …) load `temporal-polyfill-lite/calendars-full/shim` instead. You also need it when a user's locale defaults to a non-Gregorian calendar, such as `th-TH` (Buddhist) or `fa-IR` (Persian), because the components show new dates in the locale's calendar. Any other spec-compliant polyfill also works, for example `temporal-polyfill` or `@js-temporal/polyfill`.
+The `temporal-polyfill-lite/shim` bundle supports the `iso8601` and `gregory` calendars. To use other calendar systems (`hebrew`, `japanese`, `islamic-umalqura`, `persian`, `buddhist`, …) load `temporal-polyfill-lite/calendars-full/shim` instead. Users whose locale defaults to a non-Gregorian calendar, such as `th-TH` (Buddhist) or `fa-IR` (Persian), also need it to get new dates in their calendar: with the basic bundle the components fall back to `iso8601` for them, and warn in development. Any other spec-compliant polyfill also works, for example `temporal-polyfill` or `@js-temporal/polyfill`.
 
-During development, a date component that mounts without a global `Temporal` throws an error naming the fix. Production builds skip the check.
+A date component that mounts without a global `Temporal` throws an error. In development the error names the fix; in production it is one line.
+
+### Server-side rendering
+
+Server rendering runs the date components too, so load the polyfill on the server as well as in the browser. Node.js has no native Temporal yet. In Nuxt, a universal plugin (one without a `.client` or `.server` suffix) runs in both:
+
+```ts
+// plugins/temporal.ts
+import { install } from 'temporal-polyfill-lite/shim'
+
+install(false)
+
+export default defineNuxtPlugin(() => {})
+```
+
+The plugin installs the polyfill when the module loads, so it runs before any component renders. In another SSR setup, import the same code first in the server entry and in the client entry.
 
 ### TypeScript
 
@@ -54,7 +69,13 @@ Reka UI's types use the `Temporal` namespace that TypeScript 6 ships in its `esn
 }
 ```
 
+`@vue/tsconfig` (used by `create-vue` and Vite's Vue templates) sets `lib` to `["ES2022", "DOM", "DOM.Iterable"]`, which has no Temporal. Override `lib` in your own `tsconfig.app.json` as above, or add only Temporal with `["ES2022", "ESNext.Temporal", "DOM", "DOM.Iterable"]`.
+
 On TypeScript 5, add the polyfill's global types instead with `import 'temporal-polyfill-lite/types/global'` in a `.d.ts` file. Avoid this on TypeScript 6, where these types clash with the built-in ones.
+
+::: warning Missing Temporal types
+Without Temporal in `lib` or a polyfill's types, `skipLibCheck: true` (the default of most templates) hides the problem: `DateValue` and the date props become `any`, and nothing checks your dates. With `skipLibCheck: false`, Reka UI's declarations fail with `Cannot find namespace 'Temporal'`, even if you use no date component.
+:::
 
 ## Date Objects
 
@@ -166,7 +187,7 @@ const hebrew = new Temporal.PlainDate(2024, 3, 11).withCalendar('hebrew') // 1 A
 
 ## Locale and week
 
-The week starts on the locale's first day (`Intl.Locale.prototype.getWeekInfo()`): Sunday in `en-US`, Monday in `de-DE`, Saturday in `ar-EG`. On runtimes without `getWeekInfo`, Reka UI falls back to a CLDR table by region. Set `weekStartsOn` to override it. The locale also sets the weekday and month names, the order of field segments and the hour cycle (unless you set `hourCycle`).
+The week starts on the locale's first day (`Intl.Locale.prototype.getWeekInfo()`): Sunday in `en-US`, Monday in `de-DE`, Saturday in `ar-EG`. On runtimes without `getWeekInfo`, Reka UI falls back to a CLDR table by region. Set `weekStartsOn` to override it. The weekend also depends on the locale: use `isWeekend(value, locale)` from `reka-ui/date` rather than testing `dayOfWeek`. The locale also sets the weekday and month names, the order of field segments and the hour cycle (unless you set `hourCycle`).
 
 ## Time zones
 
@@ -184,9 +205,11 @@ To show a value in another zone, convert it before passing it in: `value.withTim
 
 ```ts
 import type { DateValue } from 'reka-ui'
+import { isWeekend } from 'reka-ui/date'
 
-// Saturday and Sunday (Temporal numbers Monday 1 to Sunday 7)
-const isWeekend = (date: DateValue) => date.dayOfWeek >= 6
+const locale = 'he-IL'
+// The weekend of the locale: Friday and Saturday in `he-IL`, Saturday and Sunday in `en-US`
+const isDateUnavailable = (date: DateValue) => isWeekend(date, locale)
 ```
 
 ## Formatting
@@ -221,6 +244,7 @@ import {
   isPlainDate,
   isPlainDateTime,
   isSameDay,
+  isWeekend,
   isZonedDateTime,
   parseStringToDateValue,
   toCalendar,
@@ -243,6 +267,8 @@ getDaysInMonth(date) // 31
 getWeekNumber(date, 'en-US', 'sun') // 33
 compareDateValues(date, minDate) // 1
 isSameDay(date, new Temporal.PlainDateTime(1995, 8, 18, 12)) // true
+isWeekend(date, 'en-US') // false: a Friday
+isWeekend(date, 'he-IL') // true: the weekend is Friday and Saturday in Israel
 isAfter(date, minDate) // true
 isBeforeOrSame(date, maxDate) // true
 isAfterOrSame(date, minDate) // true

@@ -709,9 +709,9 @@ import { install } from 'temporal-polyfill-lite/shim'
 install(false) // keeps the native Temporal when the browser has one
 ```
 
-Use `temporal-polyfill-lite/calendars-full/shim` if you use calendars other than `iso8601` and `gregory`, or serve locales whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …). In development, a date component that mounts without a global `Temporal` throws an error saying so.
+Use `temporal-polyfill-lite/calendars-full/shim` if you use calendars other than `iso8601` and `gregory`, or serve locales whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …). A date component that mounts without a global `Temporal` throws an error saying so. With server rendering, load the polyfill on the server too (in Nuxt, a universal plugin): see [Server-side rendering](/docs/guides/dates#server-side-rendering).
 
-The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with `"lib": ["ESNext", "DOM", "DOM.Iterable"]`. On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file.
+The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with `"lib": ["ESNext", "DOM", "DOM.Iterable"]`. `@vue/tsconfig` sets `lib` to `ES2022`, without Temporal, so override it in your own `tsconfig`. On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file. Without either, `skipLibCheck: true` turns `DateValue` into `any` without an error.
 
 ### Types
 
@@ -729,9 +729,10 @@ The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with 
 
 - **Years in calendars with eras.** A Temporal value's `year` is the arithmetic year, and `eraYear` is the year of the era: Reiwa 6 has `year` 2024 and `eraYear` 6, and 1 BCE has `year` 0 and `eraYear` 1. `@internationalized/date`'s `year` was the year of the era. The fields' year segment still shows and edits the year of the era.
 - **ISO, not Gregorian.** New values for Gregorian locales (the default placeholder, today) use the `iso8601` calendar where v2 used `gregory`. They display the same, but `calendarId` is `'iso8601'` and `era` is `undefined`. Locales with another default calendar still get it.
+- **Era codes.** `era` is a lower-case Temporal era code. An `iso8601` value has no era (`undefined`), and the codes of some calendars changed: `gregory` uses `ce` / `bce` (v2: `AD` / `BC`), `roc` uses `roc` / `broc` (v2: `minguo` / `before_minguo`), and `buddhist`, `persian`, `islamic-*` and `hebrew` use `be`, `ap`, `ah` and `am` (v2: upper case). Japanese era names (`reiwa`, `heisei`, …) are unchanged. Compare `era` against the new codes, and show `formatter.part(value, 'era')` rather than the code to users.
 - **First day of the week.** It comes from `Intl.Locale.prototype.getWeekInfo()`, with a CLDR table as fallback. A few regions differ from v2, for example `AE` now starts on Monday. `weekStartsOn` still overrides it.
 - **Not in templates.** Vue templates only see an allow-list of globals, and `Temporal` is not on it. Create values in `<script setup>` and bind them by name instead of writing `:min-value="new Temporal.PlainDate(2024, 1, 1)"`.
-- **No comparison operators.** Temporal values throw on `valueOf()`, so `<`, `>` and `+date` throw, and `===` compares identity. Use `Temporal.PlainDate.compare(a, b)`, `a.equals(b)`, or `compareDateValues(a, b)` from `reka-ui/date` for values of different types.
+- **No comparison operators.** Temporal values throw on `valueOf()`, so `<`, `>` and `+date` throw, and `===` compares identity. Use the `compare` of the values' type (`Temporal.PlainDateTime.compare(a, b)` for two `PlainDateTime`s), `a.equals(b)`, or `compareDateValues(a, b)` from `reka-ui/date` for values of any type. `Temporal.PlainDate.compare` reads only the date of a `PlainDateTime` or `ZonedDateTime`.
 - **Unchanged:** form input values, `data-value` attributes and the `ZonedDateTime` daylight saving handling. Form values and `data-value` are ISO strings without a calendar annotation, as v2's `toString()` produced.
 
 ### Functions and methods
@@ -745,16 +746,18 @@ The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with 
 | `parseAbsolute(s, tz)` | `Temporal.Instant.from(s).toZonedDateTimeISO(tz)` |
 | `today(tz)`, `now(tz)`, `getLocalTimeZone()` | `Temporal.Now.plainDateISO(tz)`, `Temporal.Now.zonedDateTimeISO(tz)`, `Temporal.Now.timeZoneId()` |
 | `value.toDate(tz)` | `toDate(value, tz)` from `reka-ui/date` |
-| `toZoned(value, tz)`, `toCalendarDate(value)`, `toCalendarDateTime(date, time)` | `value.toZonedDateTime(tz)`, `value.toPlainDate()`, `date.toPlainDateTime(time)` |
+| `toZoned(value, tz)` | `value.toZonedDateTime(tz)` for a `PlainDate` (the start of that day) or a `PlainDateTime`; `value.withTimeZone(tz)` for a `ZonedDateTime` |
+| `toCalendarDate(value)` | `toPlainDate(value)` from `reka-ui/date` (Temporal's `PlainDate` has no `toPlainDate()` method) |
+| `toCalendarDateTime(date, time)` | `date.toPlainDateTime(time)` for a `PlainDate`; `toPlainDateTime(value)` from `reka-ui/date` for any `DateValue` |
 | `toCalendar(value, new GregorianCalendar())` | `value.withCalendar('gregory')` |
 | `value.calendar.identifier` | `value.calendarId` |
 | `value.set({ month: 8 })` | `value.with({ month: 8 })` |
 | `value.cycle('month', 1)` | `cycleField(value, 'month', 1)` from `reka-ui/date` |
 | `value.copy()` | not needed: Temporal values are immutable |
-| `a.compare(b)` | `Temporal.PlainDate.compare(a, b)`, or `compareDateValues(a, b)` from `reka-ui/date` |
+| `a.compare(b)` | `compareDateValues(a, b)` from `reka-ui/date`, or the `compare` of both values' type (`Temporal.PlainDateTime.compare(a, b)`). Both return `-1`, `0` or `1`, where v2 returned a difference: test the sign |
 | `isSameDay`, `isSameMonth`, `isToday`, `startOfMonth`, `endOfMonth`, `startOfWeek`, `getDayOfWeek` | the functions of the same names in `reka-ui/date` |
-| `isWeekend(value, locale)` | `value.dayOfWeek >= 6` (Saturday and Sunday) |
+| `isWeekend(value, locale)` | `isWeekend(value, locale)` from `reka-ui/date` (Friday and Saturday in `he-IL`, `ar-SA`, …) |
 | `value.timeZone` | `value.timeZoneId` |
 | `value instanceof CalendarDate` | `isPlainDate(value)` from `reka-ui/date` (also `isPlainDateTime`, `isZonedDateTime`, `isPlainTime`) |
-| `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` |
+| `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name is a deprecated alias) |
 | `formatter.custom(value.toDate(tz), options)` | `formatter.custom(value, options)`: `useDateFormatter` accepts Temporal values |
