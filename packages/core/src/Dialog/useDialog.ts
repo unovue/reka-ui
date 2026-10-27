@@ -222,11 +222,18 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
   const modal = computed<boolean>(() => toValue(props.modal) ?? true)
   const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
 
+  // Writable: a part's `id` prop replaces its generated id here, so the paired
+  // `aria-controls` / `aria-labelledby` / `aria-describedby` follow it.
+  const contentId = ref(`${baseId}-content`)
+  const titleId = ref(`${baseId}-title`)
+  const descriptionId = ref(`${baseId}-description`)
+
   const handleStore = createPopupRootStore<Payload>({
     handle: () => toValue(props.handle),
     open,
     setState,
     baseId,
+    contentId: () => contentId.value,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -261,9 +268,12 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
     onOpenToggle,
     triggerElement,
     contentElement,
-    contentId: `${baseId}-content`,
-    titleId: `${baseId}-title`,
-    descriptionId: `${baseId}-description`,
+    get contentId() { return contentId.value },
+    set contentId(value) { contentId.value = value },
+    get titleId() { return titleId.value },
+    set titleId(value) { titleId.value = value },
+    get descriptionId() { return descriptionId.value },
+    set descriptionId(value) { descriptionId.value = value },
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
   setPopupRootStore(context, handleStore)

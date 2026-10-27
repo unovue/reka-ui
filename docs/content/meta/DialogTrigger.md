@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'id',
+    'description': '<p>Id of the element. With a <code>handle</code>, also the id the Root\'s <code>triggerId</code> refers to.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'payload',
     'description': '<p>Passed to the Root\'s default slot while this trigger owns the dialog. Requires a <code>handle</code>.</p>\n',
     'type': 'Payload',
@@ -39,6 +45,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `handle` | A handle from `createDialogHandle()` that connects this trigger to a `DialogRoot` rendered elsewhere (outside this trigger's tree or portal). | `DialogHandle<Payload>` | No | - |
+| `id` | Id of the element. With a `handle`, also the id the Root's `triggerId` refers to. | `string` | No | - |
 | `payload` | Passed to the Root's default slot while this trigger owns the dialog. Requires a `handle`. | `Payload` | No | - |
 
 </llm-only>

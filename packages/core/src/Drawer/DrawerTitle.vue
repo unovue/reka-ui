@@ -1,17 +1,24 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 
-export interface DrawerTitleProps extends PrimitiveProps {}
+export interface DrawerTitleProps extends PrimitiveProps {
+  /**
+   * Id of the element, which the popup's `aria-labelledby` points at.
+   * Auto-generated when not provided.
+   */
+  id?: string
+}
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, usePartId } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerTitleSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerTitleProps>(), { as: 'h2' })
 const rootContext = injectDrawerRootContext()
+usePartId(() => props.id, rootContext.titleId, (id) => { rootContext.titleId = id })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const title = getDrawerTitleSurface(rootContext)

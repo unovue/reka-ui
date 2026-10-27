@@ -14,6 +14,12 @@
     'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'id',
+    'description': '<p>Id of the element.</p>\n',
+    'type': 'string',
+    'required': false
   }
 ]" />
 </llm-exclude>
@@ -26,5 +32,6 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `id` | Id of the element. | `string` | No | - |
 
 </llm-only>

@@ -269,6 +269,9 @@ export interface UseDrawerReturn {
  */
 export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
   const baseId = props.baseId ?? `reka-drawer-${++drawerCount}`
+  const contentId = ref(`${baseId}-content`)
+  const titleId = ref(`${baseId}-title`)
+  const descriptionId = ref(`${baseId}-description`)
   const { parentContext, providerContext } = props
 
   // Base UI's cancellable `onOpenChange` maps onto the v3 contract (#2828):
@@ -397,9 +400,14 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     contentElement,
     viewportElement,
     overlayElement,
-    contentId: `${baseId}-content`,
-    titleId: `${baseId}-title`,
-    descriptionId: `${baseId}-description`,
+    // Writable: a part's `id` prop replaces its generated id here, so the paired
+    // `aria-controls` / `aria-labelledby` / `aria-describedby` follow it.
+    get contentId() { return contentId.value },
+    set contentId(value) { contentId.value = value },
+    get titleId() { return titleId.value },
+    set titleId(value) { titleId.value = value },
+    get descriptionId() { return descriptionId.value },
+    set descriptionId(value) { descriptionId.value = value },
   }
 
   return {
