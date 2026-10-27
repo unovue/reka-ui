@@ -6,12 +6,12 @@
   {
     'name': 'segments',
     'description': '',
-    'type': '{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }'
+    'type': 'Record&lt;DateRangeType, { part: SegmentPart; value: string; }[]&gt;'
   },
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'DateRange | null'
+    'type': 'DateRange'
   }
 ]" />
 </llm-exclude>
@@ -22,7 +22,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `segments` |  | `{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }` |
-| `modelValue` |  | `DateRange \| null` |
+| `segments` |  | `Record<DateRangeType, { part: SegmentPart; value: string; }[]>` |
+| `modelValue` |  | `DateRange` |
 
 </llm-only>

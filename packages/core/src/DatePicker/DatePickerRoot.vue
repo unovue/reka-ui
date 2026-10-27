@@ -1,20 +1,15 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
-
 import type { ComputedRef, Ref } from 'vue'
-import type { CalendarChangeReason, CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverOpenChangeReason, PopoverRootProps } from '..'
+import type { CalendarChangeReason, CalendarModelValue, CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverOpenChangeReason, PopoverRootProps } from '..'
+import type { DatePickerChangeReason } from './useDatePicker'
 import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
-import type { ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay } from '@internationalized/date'
-import { computed, ref, toRefs, watch } from 'vue'
-import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
-import { createContext, useControllableState, useDirection, useLocale } from '@/shared'
-import { getDefaultDate } from '@/shared/date'
-import { PopoverRoot } from '..'
+import { createContext, useDirection, useId, useLocale } from '@/shared'
 
-type DatePickerRootContext = {
+export type DatePickerRootContext = {
   id: Ref<string | undefined>
   name: Ref<string | undefined>
   minValue: Ref<DateValue | undefined>
@@ -25,7 +20,9 @@ type DatePickerRootContext = {
   required: Ref<boolean>
   locale: Ref<string>
   dateFieldRef: Ref<InstanceType<typeof DateFieldRoot> | undefined>
+  /** Assigning it requests a change with reason `imperative-action`; prefer `setModelValue`. */
   modelValue: Ref<DateValue | undefined>
+  /** Assigning it requests a change with reason `imperative-action`; prefer `setPlaceholder`. */
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
@@ -40,10 +37,12 @@ type DatePickerRootContext = {
   defaultOpen: Ref<boolean>
   open: ComputedRef<boolean>
   modal: Ref<boolean>
-  onDateChange: (date: DateValue | undefined) => void
-  onPlaceholderChange: (date: DateValue) => void
+  /** Select `date`, or clear it when it is the current value (unless `preventDeselect`). */
+  onDateChange: (date: DateValue | undefined, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  onPlaceholderChange: (date: DateValue, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
   dir: Ref<Direction>
   step: Ref<DateStep | undefined>
+  stepSnapping: Ref<boolean>
   closeOnSelect: Ref<boolean>
   /** The calendar view (`day` | `month` | `year`). */
   view: ComputedRef<CalendarUnit>
@@ -51,6 +50,15 @@ type DatePickerRootContext = {
   yearsPerPage: Ref<number>
   columns: Ref<number>
   onViewChange: (view: CalendarUnit, details?: ChangeEventDetails<CalendarChangeReason>) => void
+  /** Request a value change. Returns `false` when unchanged or cancelled. */
+  setModelValue: (value: DateValue | undefined, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  setPlaceholder: (value: DateValue, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Bound to the field's `beforeUpdate:modelValue`: runs the picker's change inside it, and cancels the field's when the picker's is cancelled. */
+  onFieldBeforeUpdate: (value: DateValue | undefined, details: ChangeEventDetails<any>) => void
+  /** Bound to the calendar's `beforeUpdate:modelValue`. */
+  onCalendarBeforeUpdate: (value: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>) => void
+  /** Bound to the calendar's `update:placeholder`. */
+  onCalendarPlaceholderChange: (value: DateValue, details: ChangeEventDetails<CalendarChangeReason>) => void
 }
 
 /**
@@ -87,10 +95,14 @@ export type DatePickerRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason>]
   /** Event handler called when the open state of the popover changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason>]
+  /** Called before the value changes, from the field or the calendar; `details.cancel()` keeps the current value. */
+  'beforeUpdate:modelValue': [date: DateValue | undefined, details: ChangeEventDetails<DatePickerChangeReason>]
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateValue | undefined]
+  'update:modelValue': [date: DateValue | undefined, details: ChangeEventDetails<DatePickerChangeReason>]
+  /** Called before the placeholder changes; `details.cancel()` keeps the current placeholder. */
+  'beforeUpdate:placeholder': [date: DateValue, details: ChangeEventDetails<DatePickerChangeReason>]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: DateValue, details: ChangeEventDetails<DatePickerChangeReason>]
   /** Called before the calendar view changes; `details.cancel()` keeps the current view. */
   'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>]
   /** Event handler called whenever the calendar view changes */
@@ -102,7 +114,10 @@ export const [injectDatePickerRootContext, provideDatePickerRootContext]
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
+import { computed, toRefs } from 'vue'
+import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
+import { PopperRoot } from '@/Popper'
+import { useDatePicker } from './useDatePicker'
 
 defineOptions({
   inheritAttrs: false,
@@ -130,176 +145,61 @@ const props = withDefaults(defineProps<DatePickerRootProps>(), {
   columns: 4,
 })
 const emits = defineEmits<DatePickerRootEmits>()
-const {
-  locale: propLocale,
-  maxView,
-  yearsPerPage,
-  columns,
-  disabled,
-  readonly,
-  pagedNavigation,
-  weekdayFormat,
-  fixedWeeks,
-  numberOfMonths,
-  preventDeselect,
-  isDateDisabled: propsIsDateDisabled,
-  isDateUnavailable: propsIsDateUnavailable,
-  defaultOpen,
-  modal,
-  id,
-  name,
-  required,
-  minValue,
-  maxValue,
-  granularity,
-  hideTimeZone,
-  hourCycle,
-  defaultValue,
-  dir: propDir,
-  step,
-  closeOnSelect,
-} = toRefs(props)
+const { locale: propLocale, dir: propDir } = toRefs(props)
 
 const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
-const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: defaultValue.value,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<DateValue | undefined>
-
-const defaultDate = computed(() => getDefaultDate({
-  defaultPlaceholder: props.placeholder,
-  granularity: props.granularity,
-  defaultValue: modelValue.value,
-  locale: locale.value,
-}))
-
-const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.value.copy(),
-  passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
-
-// The inner `PopoverRoot` is controlled by this model, so a `beforeUpdate:open`
-// cancel here keeps both in sync; the popover's reason and event are forwarded.
-const { state: open, setState: setOpen } = useControllableState<boolean, DatePickerOpenChangeReason>({
-  prop: () => props.open,
-  defaultValue: defaultOpen.value,
-  name: 'open',
-  emit: emits,
-})
-
-// Same contract as `open`: the inner calendar is controlled by this model, so a
-// `beforeUpdate:view` cancel here keeps both in sync; the calendar's reason and
-// event are forwarded.
-const { state: view, setState: setView, isControlled: isViewControlled } = useControllableState<CalendarUnit, CalendarChangeReason>({
-  prop: () => props.view,
-  defaultValue: props.defaultView ?? 'day',
-  name: 'view',
-  emit: emits,
-})
-
-// `defaultView` is the view each time the picker opens: an uncontrolled view
-// left on month / year when the popover closed goes back to it on reopen.
-watch(open, (isOpen) => {
-  if (isOpen && !isViewControlled.value)
-    setView(props.defaultView ?? 'day')
-})
-
-const dateFieldRef = ref<InstanceType<typeof DateFieldRoot> | undefined>()
-
-/**
- * Reset time fields on DateValue instances that support time granularity.
- */
-function resetTime(date: DateValue) {
-  if (!('hour' in date))
-    return date
-
-  return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
-}
-
-watch(modelValue, (value, previous) => {
-  // A new object for the same value is not a new selection. Skip placeholder
-  // reset and closeOnSelect, or paging the calendar is undone. Compare the
-  // exact value, not the day, so a same-day time or zone change still syncs.
-  if (isSameDateSelection(previous, value, isSameDateValue))
-    return
-
-  if (value && !isSameDateValue(value, placeholder.value)) {
-    placeholder.value = value.copy()
-  }
-  else if (!value && 'hour' in placeholder.value) {
-    placeholder.value = resetTime(placeholder.value)
-  }
-  // Only a new day is a pick. A same-day time or zone change leaves the popover open.
-  if (closeOnSelect.value && !isSameDateSelection(previous, value, isEqualDay)) {
-    setOpen(false, 'date-select')
-  }
-})
-
-provideDatePickerRootContext({
-  isDateUnavailable: propsIsDateUnavailable.value,
-  isDateDisabled: propsIsDateDisabled.value,
+// The value, placeholder, open (through the composed `usePopover`) and view
+// models with their `beforeUpdate:` / `update:` emits live in the composable.
+// The root provides the Popover context itself instead of rendering a
+// `PopoverRoot`, so `open` has one model.
+const { context, popover } = useDatePicker({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  placeholder: () => props.placeholder,
+  defaultPlaceholder: props.defaultPlaceholder,
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  modal: () => props.modal,
+  view: () => props.view,
+  defaultView: props.defaultView,
+  maxView: () => props.maxView,
+  closeOnSelect: () => props.closeOnSelect,
   locale,
-  disabled,
-  pagedNavigation,
-  weekStartsOn,
-  weekdayFormat,
-  fixedWeeks,
-  numberOfMonths,
-  readonly,
-  preventDeselect,
-  modelValue,
-  placeholder,
-  defaultOpen,
-  modal,
-  open,
-  id,
-  name,
-  required,
-  minValue,
-  maxValue,
-  granularity,
-  hideTimeZone,
-  hourCycle,
-  dateFieldRef,
   dir,
-  step,
-  onDateChange(date: DateValue | undefined) {
-    if (!date) {
-      modelValue.value = undefined
-    }
-    else if (!modelValue.value) {
-      modelValue.value = date.copy()
-    }
-    else if (!preventDeselect.value && date && modelValue.value.compare(date) === 0) {
-      modelValue.value = undefined
-    }
-    else {
-      modelValue.value = date.copy()
-    }
-  },
-  onPlaceholderChange(date: DateValue) {
-    placeholder.value = date.copy()
-  },
-  closeOnSelect,
-  view,
-  maxView,
-  yearsPerPage,
-  columns,
-  onViewChange(next: CalendarUnit, details?: ChangeEventDetails<CalendarChangeReason>) {
-    setView(next, details?.reason, details?.event)
-  },
+  id: () => props.id,
+  name: () => props.name,
+  required: () => props.required,
+  disabled: () => props.disabled,
+  readonly: () => props.readonly,
+  minValue: () => props.minValue,
+  maxValue: () => props.maxValue,
+  granularity: () => props.granularity,
+  hourCycle: () => props.hourCycle,
+  hideTimeZone: () => props.hideTimeZone,
+  step: () => props.step,
+  stepSnapping: () => props.stepSnapping,
+  isDateDisabled: computed(() => props.isDateDisabled),
+  isDateUnavailable: computed(() => props.isDateUnavailable),
+  weekStartsOn: () => props.weekStartsOn,
+  weekdayFormat: () => props.weekdayFormat,
+  fixedWeeks: () => props.fixedWeeks,
+  numberOfMonths: () => props.numberOfMonths,
+  pagedNavigation: () => props.pagedNavigation,
+  preventDeselect: () => props.preventDeselect,
+  yearsPerPage: () => props.yearsPerPage,
+  columns: () => props.columns,
+  baseId: useId(undefined, 'reka-popover'),
+  emit: emits,
 })
+
+providePopoverRootContext(popover.context)
+provideDatePickerRootContext(context)
 </script>
 
 <template>
-  <PopoverRoot
-    :open="open"
-    :modal="modal"
-    @update:open="(value, details) => setOpen(value, details.reason, details.event)"
-  >
+  <PopperRoot>
     <slot />
-  </PopoverRoot>
+  </PopperRoot>
 </template>

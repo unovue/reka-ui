@@ -90,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>. <code>null</code> is a controlled empty range.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
@@ -124,19 +124,36 @@
     'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
     'type': 'DateStep',
     'required': false
+  },
+  {
+    'name': 'stepSnapping',
+    'description': '<p>Whether to enforce snapping the time value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the range changes; <code>details.cancel()</code> keeps the current range.</p>\n',
+    'type': '[date: DateRange, details: ChangeEventDetails&lt;DateRangeFieldChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:placeholder',
+    'description': '<p>Called before the placeholder changes; <code>details.cancel()</code> keeps the current placeholder.</p>\n',
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DateRangeFieldChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateRange]'
+    'type': '[date: DateRange, details: ChangeEventDetails&lt;DateRangeFieldChangeReason, Event&gt;]'
   },
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DateRangeFieldChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -144,12 +161,12 @@
   {
     'name': 'modelValue',
     'description': '<p>The current date range of the field</p>\n',
-    'type': 'DateRange | null'
+    'type': 'DateRange'
   },
   {
     'name': 'segments',
     'description': '<p>The date field segment contents</p>\n',
-    'type': '{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }'
+    'type': 'Record&lt;DateRangeType, { part: SegmentPart; value: string; }[]&gt;'
   },
   {
     'name': 'isInvalid',
@@ -187,26 +204,29 @@
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
+| `modelValue` | The controlled value of the field. Can be bound as v-model. null is a controlled empty range. | `DateRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | `false` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `beforeUpdate:modelValue` | Called before the range changes; details.cancel() keeps the current range. | `[date: DateRange, details: ChangeEventDetails<DateRangeFieldChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DateRangeFieldChangeReason, Event>]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange, details: ChangeEventDetails<DateRangeFieldChangeReason, Event>]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<DateRangeFieldChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | The current date range of the field | `DateRange \| null` |
-| `segments` | The date field segment contents | `{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }` |
+| `modelValue` | The current date range of the field | `DateRange` |
+| `segments` | The date field segment contents | `Record<DateRangeType, { part: SegmentPart; value: string; }[]>` |
 | `isInvalid` | Value if the input is invalid | `boolean` |
 
 **Methods**

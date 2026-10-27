@@ -65,6 +65,12 @@
     'required': false
   },
   {
+    'name': 'isTimeUnavailable',
+    'description': '<p>A function that returns whether or not a time is unavailable. It receives the time as a date-time (a <code>Time</code> is placed on today\'s date); an unavailable time marks the field invalid.</p>\n',
+    'type': 'Matcher',
+    'required': false
+  },
+  {
     'name': 'locale',
     'description': '<p>The locale to use for formatting dates</p>\n',
     'type': 'string',
@@ -84,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the field. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled checked state of the field. Can be bound as <code>v-model</code>. <code>null</code> is a controlled empty field.</p>\n',
     'type': 'TimeValue | null',
     'required': false
   },
@@ -130,14 +136,24 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[date: TimeValue | undefined, details: ChangeEventDetails&lt;TimeFieldChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:placeholder',
+    'description': '<p>Called before the placeholder changes; <code>details.cancel()</code> keeps the current placeholder.</p>\n',
+    'type': '[date: TimeValue, details: ChangeEventDetails&lt;TimeFieldChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: TimeValue | undefined]'
+    'type': '[date: TimeValue | undefined, details: ChangeEventDetails&lt;TimeFieldChangeReason, Event&gt;]'
   },
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: TimeValue]'
+    'type': '[date: TimeValue, details: ChangeEventDetails&lt;TimeFieldChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -162,7 +178,7 @@
 <MethodsTable :data="[
   {
     'name': 'setFocusedElement',
-    'description': '<p>Helper to set the focused element inside the DateField</p>\n',
+    'description': '<p>Helper to set the focused element inside the TimeField</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
@@ -184,10 +200,11 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
+| `isTimeUnavailable` | A function that returns whether or not a time is unavailable. It receives the time as a date-time (a Time is placed on today's date); an unavailable time marks the field invalid. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `TimeValue` | No | - |
 | `minValue` | The minimum date that can be selected | `TimeValue` | No | - |
-| `modelValue` | The controlled checked state of the field. Can be bound as v-model. | `TimeValue \| null` | No | - |
+| `modelValue` | The controlled checked state of the field. Can be bound as v-model. null is a controlled empty field. | `TimeValue \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | The placeholder date, which is used to determine what time to display when no time is selected. This updates as the user navigates the field | `TimeValue` | No | - |
 | `readonly` | Whether or not the time field is readonly | `boolean` | No | `false` |
@@ -199,8 +216,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeValue \| undefined]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue]` |
+| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[date: TimeValue \| undefined, details: ChangeEventDetails<TimeFieldChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: TimeValue, details: ChangeEventDetails<TimeFieldChangeReason, Event>]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeValue \| undefined, details: ChangeEventDetails<TimeFieldChangeReason, Event>]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue, details: ChangeEventDetails<TimeFieldChangeReason, Event>]` |
 
 **Slots**
 
@@ -214,6 +233,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `setFocusedElement` | Helper to set the focused element inside the DateField | `(el: HTMLElement) => void` |
+| `setFocusedElement` | Helper to set the focused element inside the TimeField | `(el: HTMLElement) => void` |
 
 </llm-only>
