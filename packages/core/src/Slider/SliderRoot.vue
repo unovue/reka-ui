@@ -41,11 +41,11 @@ export interface SliderRootProps extends PrimitiveProps, FormFieldProps {
 
 export type SliderRootEmits = {
   /** Event handler called before the slider value changes; `details.cancel()` vetoes the change. */
-  'beforeUpdate:modelValue': [payload: number[] | undefined, details: ChangeEventDetails<SliderChangeReason>]
+  'beforeUpdate:modelValue': [payload: number[], details: ChangeEventDetails<SliderChangeReason>]
   /**
    * Event handler called when the slider value changes
    */
-  'update:modelValue': [payload: number[] | undefined, details: ChangeEventDetails<SliderChangeReason>]
+  'update:modelValue': [payload: number[], details: ChangeEventDetails<SliderChangeReason>]
   /**
    * Event handler called when the value changes at the end of an interaction.
    *
@@ -99,7 +99,7 @@ const emits = defineEmits<SliderRootEmits>()
 defineSlots<{
   default?: (props: {
     /** Current slider values */
-    modelValue: typeof modelValue.value
+    modelValue: number[] | null
   }) => any
 }>()
 
@@ -131,13 +131,22 @@ const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlid
 provideSliderRootContext(context)
 provideSliderOrientationContext(orientationGeometry)
 
-// Listener order is part of the v2 contract: the slider's own keydown handler
-// runs before a consumer `@keydown`, and its pointerdown bookkeeping runs after
-// a consumer `@pointerdown`; component attributes win over consumer ones.
-// `mergeProps` chains same-named listeners in argument order.
-const keydownAttrs = computed(() => ({ onKeydown: root.props.value.onKeydown }))
+// Precedence is part of the v2 contract. `mergeProps` chains same-named
+// listeners in argument order and lets later plain attributes win, so:
+// - leading (before `$attrs`): the slider's own keydown handler runs before a
+//   consumer `@keydown`; the orientation's `style`
+//   (`--reka-slider-thumb-transform`) and `data-orientation` were set by
+//   SliderHorizontal / SliderVertical in v2, under the root's fall-through
+//   attributes, so a consumer `style` / `data-orientation` still wins;
+// - trailing (after `$attrs`): `aria-disabled`, `data-disabled` and `dir` were
+//   bound by SliderRoot after `v-bind="$attrs"`, so the component wins;
+// - the pointerdown bookkeeping is bound with `@pointerdown`, after a consumer's.
+const leadingAttrs = computed(() => {
+  const { onKeydown, style, 'data-orientation': dataOrientation } = root.attrs.value
+  return { onKeydown, style, 'data-orientation': dataOrientation }
+})
 const rootAttrs = computed(() => {
-  const { onKeydown: _onKeydown, onPointerdown: _onPointerdown, ...attrs } = root.attrs.value
+  const { onKeydown: _onKeydown, onPointerdown: _onPointerdown, style: _style, 'data-orientation': _dataOrientation, ...attrs } = root.attrs.value
   return attrs
 })
 </script>
@@ -146,19 +155,18 @@ const rootAttrs = computed(() => {
   <CollectionSlot>
     <component
       :is="orientation === 'horizontal' ? SliderHorizontal : SliderVertical"
-      v-bind="mergeProps(keydownAttrs, $attrs, rootAttrs)"
+      v-bind="mergeProps(leadingAttrs, $attrs, rootAttrs)"
       :ref="forwardRef"
       :as-child="asChild"
       :as="as"
       :min="min"
       :max="max"
-      :inverted="inverted"
       @pointerdown="root.props.value.onPointerdown"
       @slide-start="(value: number, event: PointerEvent) => startSlide(value, event)"
       @slide-move="(value: number, event: PointerEvent) => moveSlide(value, event)"
       @slide-end="endSlide()"
     >
-      <slot :model-value="modelValue" />
+      <slot :model-value="modelValue ?? null" />
 
       <VisuallyHiddenInput
         v-if="isFormControl && name"

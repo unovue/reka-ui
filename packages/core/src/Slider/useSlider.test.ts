@@ -120,6 +120,45 @@ describe('useSlider — model', () => {
     thumb.remove()
   })
 
+  it('a cancelled keyboard step that would cross another thumb keeps driving the original thumb', () => {
+    let veto = true
+    const s = useSlider({
+      defaultValue: [50, 51],
+      onBeforeUpdate: (_value, details) => {
+        if (veto)
+          details.cancel()
+      },
+    })
+    expect(s.valueIndexToChangeRef.value).toBe(0)
+    // Shift+ArrowRight on thumb 0 would land on 60, past thumb 1 → cancelled.
+    s.root.props.value.onKeydown(key('ArrowRight', { shiftKey: true }))
+    expect(s.modelValue.value).toEqual([50, 51])
+    expect(s.valueIndexToChangeRef.value).toBe(0)
+    veto = false
+    s.root.props.value.onKeydown(key('ArrowLeft'))
+    expect(s.modelValue.value).toEqual([49, 51])
+  })
+
+  it('a cancelled drag that would cross another thumb keeps dragging the original thumb', () => {
+    let veto = false
+    const s = useSlider({
+      defaultValue: [20, 80],
+      onBeforeUpdate: (_value, details) => {
+        if (veto)
+          details.cancel()
+      },
+    })
+    s.startSlide(10) // closest thumb is 0
+    expect(s.modelValue.value).toEqual([10, 80])
+    veto = true
+    s.moveSlide(90) // would cross thumb 1 → cancelled
+    expect(s.modelValue.value).toEqual([10, 80])
+    expect(s.valueIndexToChangeRef.value).toBe(0)
+    veto = false
+    s.moveSlide(30)
+    expect(s.modelValue.value).toEqual([30, 80])
+  })
+
   it('onBeforeUpdate can cancel too', () => {
     const onUpdate = vi.fn()
     const s = useSlider({ defaultValue: [50], onBeforeUpdate: (_value, details) => details.cancel(), onUpdate })
@@ -277,6 +316,16 @@ describe('sliderRoot — change details', () => {
     expect(thumb.attributes('aria-valuenow')).toBe('50')
     expect(onUpdate).not.toHaveBeenCalled()
     expect(onValueCommit).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('a consumer style overrides the thumb-transform variable; component aria-disabled still wins', async () => {
+    const wrapper = render({ 'style': '--reka-slider-thumb-transform: rotate(1deg); color: red', 'aria-disabled': 'nope' })
+    await nextTick()
+    const root = wrapper.find('[data-slider-impl]').element as HTMLElement
+    expect(root.style.getPropertyValue('--reka-slider-thumb-transform')).toBe('rotate(1deg)')
+    expect(root.style.color).toBe('red')
+    expect(root.getAttribute('aria-disabled')).toBe('false')
     wrapper.unmount()
   })
 

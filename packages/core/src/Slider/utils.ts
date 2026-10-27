@@ -4,7 +4,6 @@ import { clamp, createContext } from '@/shared'
 export interface SliderOrientationPrivateProps {
   min: number
   max: number
-  inverted: boolean
 }
 
 export type SliderOrientationPrivateEmits = {

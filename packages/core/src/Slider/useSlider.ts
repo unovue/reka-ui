@@ -23,9 +23,13 @@ import {
 
 /**
  * Why the value changed; carried as `details.reason` on every change (#2828).
- * - `'track-press'`: a pointer press on the track (not on a thumb) moved the closest thumb.
- * - `'drag'`: a pointer move while pressed.
- * - `'keyboard'`: an arrow, Page Up / Page Down, Home or End key on a thumb.
+ * - `'track-press'`: a pointer press anywhere in the slider except on a thumb
+ *   (the track, the range or the root itself) moved the thumb closest to the
+ *   pointer there. A press on a thumb only focuses it and changes nothing.
+ * - `'drag'`: a pointer move while pressed, whether the press started on a thumb
+ *   or on the track.
+ * - `'keyboard'`: an arrow (with or without Shift), Page Up / Page Down, Home or
+ *   End key on a focused thumb.
  */
 export type SliderChangeReason = 'track-press' | 'drag' | 'keyboard'
 
@@ -306,8 +310,15 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
 
     pending = { commit: options.commit ? nextValues : null, focusIndex: valueIndexToChangeRef.value }
     const changed = setState(nextValues, options.reason ?? 'imperative-action', options.event)
-    if (changed)
+    if (changed) {
       flushPending() // no listeners to hook: run the side effects now
+    }
+    else {
+      // Cancelled in `beforeUpdate`: the values did not move, so the thumb
+      // that was driven keeps driving. Without this a cancelled step that would
+      // cross another thumb hands the keyboard/drag over to that thumb.
+      valueIndexToChangeRef.value = atIndex
+    }
     pending = null
     return changed
   }
