@@ -17,7 +17,7 @@ export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitivePr
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUpdate, onMounted, shallowRef, useAttrs } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
@@ -39,29 +39,36 @@ defineExpose(expose)
 // Detached triggers (#2826): this trigger registers with the handle (its own,
 // or its Root's) and derives its own open state, so only the trigger that
 // opened the menu reports `aria-expanded` / `aria-controls`. Only such a
-// trigger draws an id (an extra `useId()` would shift later generated ids).
-const triggerId = props.handle || getPopupRootStore(rootContext)?.handle.value
-  ? useId(useAttrs().id as string | undefined, 'reka-dropdown-menu-trigger')
-  : rootContext!.triggerId
+// trigger draws an id (an extra `useId()` would shift later generated ids);
+// one whose Root gets a `handle` later uses the Root's trigger id. An `id`
+// attribute wins and is tracked across renders.
+const attrs$ = useAttrs()
+const attrId = shallowRef(attrs$.id as string | undefined)
+onBeforeUpdate(() => {
+  attrId.value = attrs$.id as string | undefined
+})
 const detached = usePopupHandleTrigger<Payload>({
   handle: () => props.handle,
   rootContext,
-  id: triggerId,
+  attrId,
+  generatedId: props.handle || getPopupRootStore(rootContext)?.handle.value ? useId(undefined, 'reka-dropdown-menu-trigger') : undefined,
   element: triggerElement,
   payload: () => props.payload,
 })
 const detachedTrigger = getDropdownMenuTriggerSurface({
-  triggerId,
+  get triggerId() {
+    return detached.id.value
+  },
   get contentId() {
     return detached.contentId.value!
   },
   open: detached.open,
   onOpenToggle: (reason, event) => {
-    detached.store.value?.pressTrigger(triggerId, 'toggle', reason, event)
+    detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event)
   },
   onOpenChange: (value, reason, event) => {
     if (value)
-      detached.store.value?.pressTrigger(triggerId, 'open', reason, event)
+      detached.store.value?.pressTrigger(detached.id.value, 'open', reason, event)
     else
       detached.store.value?.closePopup(reason, event)
   },

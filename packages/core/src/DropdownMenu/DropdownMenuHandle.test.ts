@@ -116,9 +116,12 @@ describe('dropdownMenu detached triggers (#2826)', () => {
 
     press(t.byId('row-2'))
     await nextTick()
+    expect(t.menu()!.getAttribute('aria-labelledby')).toBe('row-2')
     t.rows.value = t.rows.value.slice(0, 1)
     await nextTick()
     expect(t.menu()!.textContent).toContain('Rename Bob')
+    // The removed row's id no longer labels the menu.
+    await vi.waitFor(() => expect(t.menu()!.hasAttribute('aria-labelledby')).toBe(false))
     expect(t.byId('row-1').getAttribute('aria-expanded')).toBe('false')
     t.handle.close()
     await vi.waitFor(() => expect(t.menu()).toBeNull())

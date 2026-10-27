@@ -925,7 +925,7 @@ const rowMenu = createDropdownMenuHandle<Member>()
 
 `handle.open(triggerId)` opens the menu for the trigger with that `id`. It throws if no such trigger uses the handle, because a menu needs a trigger to anchor to. `handle.close()` closes it. `handle.isOpen` is reactive. These calls report the reason `'imperative-action'` through `beforeUpdate:open` and `update:open`, so `details.cancel()` can veto them. They do nothing while no root with the handle is mounted. When a trigger owns a change, `details.trigger` is its element.
 
-The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app.
+The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
 ## Accessibility
 

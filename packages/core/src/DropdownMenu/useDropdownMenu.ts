@@ -105,7 +105,7 @@ export function createDropdownMenuContentSurface(
   const surface = createPartSurface<Record<string, never>>(
     () => ({
       'id': context.contentId,
-      'aria-labelledby': context.triggerId,
+      'aria-labelledby': context.triggerId || undefined,
     }),
     () => ({}),
   )
@@ -132,7 +132,10 @@ export function createDropdownMenuContentSurface(
     const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true
     const isRightClick = originalEvent.button === 2 || ctrlLeftClick
     // Another detached trigger of the same handle: its press moves the open
-    // menu there (Base UI), so it is not a dismissal.
+    // menu there (Base UI), so it is not a dismissal. In a browser a modal
+    // menu's backdrop sits over the other triggers and receives the press
+    // instead, so for a modal menu this branch only matters where there is no
+    // hit testing (jsdom, or a programmatic event dispatched on the trigger).
     const handleStore = getPopupRootStore(context)
     if (handleStore?.handle.value && handleStore.containsTrigger(event.target as Node)) {
       event.preventDefault()
@@ -220,7 +223,7 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     handle: () => toValue(props.handle),
     open,
     setState: onOpenChange,
-    contentId: `${baseId}-content`,
+    baseId,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -243,9 +246,13 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     onOpenToggle: (reason = 'trigger-press', event) => {
       onOpenToggle(reason, event)
     },
-    // The content's `aria-labelledby` follows the active detached trigger.
+    // With a `handle`, the content's `aria-labelledby` follows the active
+    // trigger while it is mounted, and is dropped (`''`) while no mounted
+    // trigger owns the menu, so it never points at a missing id.
     get triggerId() {
-      return (handleStore.handle.value && handleStore.activeTriggerId.value) || ownTriggerId
+      if (!handleStore.handle.value)
+        return ownTriggerId
+      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
     },
     triggerElement,
     contentId: `${baseId}-content`,
