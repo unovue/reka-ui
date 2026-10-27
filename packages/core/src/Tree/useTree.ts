@@ -16,10 +16,11 @@ import { flatten } from './utils'
  * - `'item-press'`: an item was clicked.
  * - `'item-keydown'`: Enter or Space on a focused item.
  * - `'range-select'`: Shift+ArrowUp/ArrowDown extending a `multiple` +
- *   `'replace'` selection (also inside a `TreeVirtualizer`).
+ *   `'replace'` selection. Inside a `TreeVirtualizer` also Shift+Home/End,
+ *   Shift+PageUp/PageDown and Shift+ArrowLeft/ArrowRight.
  *
  * `propagateSelect` / `bubbleSelect` fold the descendants and ancestors into
- * the same change, so one interaction emits once with the item's reason.
+ * the same change, which carries the item's reason.
  */
 export type TreeChangeReason = 'item-press' | 'item-keydown' | 'range-select'
 
@@ -403,7 +404,7 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
   const getItems = props.getItems ?? (() => [])
   const { handleTypeaheadSearch } = useTypeahead()
 
-  const items = computed(() => toValue(props.items) as T[])
+  const items = computed<T[] | undefined>(() => toValue(props.items))
   const multiple = computed(() => toValue(props.multiple) ?? false)
   const selectionBehavior = computed(() => toValue(props.selectionBehavior) ?? 'toggle')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -525,18 +526,22 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     if (parentItem == null)
       return model
 
+    const parentKey = getKey(parentItem.value)
     const areAllChildrenOfParentSelected = getChildren(parentItem.value)?.every(i => model.find(v => getKey(v) === getKey(i)))
+    const isParentSelected = model.some(v => getKey(v) === parentKey)
+    // A parent that is already selected is not added a second time (v2 did,
+    // which left a duplicate entry the next press only removed once).
     const next = areAllChildrenOfParentSelected
-      ? [...model, parentItem.value]
-      : model.filter(v => getKey(v) !== getKey(parentItem.value))
+      ? (isParentSelected ? model : [...model, parentItem.value])
+      : model.filter(v => getKey(v) !== parentKey)
 
     return bubble(next, parentItem)
   }
 
   /**
    * One selection, with `bubbleSelect` and `propagateSelect` folded in, so a
-   * single `beforeUpdate` / `update` pair reports the whole change (v2 wrote
-   * the model up to three times per press).
+   * single cancellable `beforeUpdate` / `update` pair reports the whole change.
+   * Keys already in the selection are never added twice.
    */
   function select(val: T, reason: TreeChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     const current = toRaw(modelValue.value)
@@ -553,11 +558,12 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
 
     if (propagateSelect.value && multiple.value && Array.isArray(next)) {
       const children = flatten<T, any>(getChildren(val) ?? [])
+      const selected = next
       next = exist
         // remove all child
-        ? next.filter(i => !children.some(child => getKey(i as any ?? {}) === getKey(child as any)))
-        // select all child
-        : [...next, ...children]
+        ? selected.filter(i => !children.some(child => getKey(i as any ?? {}) === getKey(child as any)))
+        // select all child, skipping the ones already selected
+        : [...selected, ...children.filter(child => !selected.some(i => getKey(i as any ?? {}) === getKey(child as any)))]
     }
 
     // The anchor follows every press that is not cancelled: a committed
@@ -649,8 +655,10 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     modelValue,
     selectedKeys,
     onSelect: select,
+    setModelValue,
     expanded,
     onToggle: toggle,
+    setExpanded,
     getKey,
     getChildren,
     items,

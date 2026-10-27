@@ -50,11 +50,16 @@ export interface TreeRootContext<T = Record<string, any>> {
   selectedKeys: Readonly<Ref<string[]>>
   /** Returns `false` when the selection is unchanged or the change was cancelled. */
   onSelect: (val: T, reason?: TreeChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Writes the whole selection in one change (no toggle rules), e.g. a select-all part. Returns `false` when unchanged or cancelled. */
+  setModelValue: (value: T | T[] | undefined, reason?: TreeChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Read-only: call `onToggle` to expand or collapse an item. */
   expanded: Readonly<Ref<string[]>>
   /** Returns `false` when the item has no children, or the change was cancelled. */
   onToggle: (val: T, reason?: TreeExpandedChangeReason | BaseChangeReason, event?: Event) => boolean
-  items: Readonly<Ref<T[]>>
+  /** Writes the expanded keys in one change, e.g. an expand-all part. Returns `false` when unchanged or cancelled. */
+  setExpanded: (value: string[], reason?: TreeExpandedChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** The `items` prop; `undefined` when none was passed. */
+  items: Readonly<Ref<T[] | undefined>>
   expandedItems: Readonly<Ref<FlattenedItem<T>[]>>
   getKey: (val: T) => string
   getChildren: (val: T) => T[] | undefined

@@ -161,6 +161,49 @@ describe('useTree — multiple selection', () => {
     t.select(fruits.children![0])
     expect(status.isIndeterminate.value).toBe(true)
   })
+
+  // Regression (#3074 review): v2 appended keys that were already selected.
+  it('bubbleSelect does not add an already-selected parent twice', () => {
+    const t = tree({ multiple: true, bubbleSelect: true, defaultExpanded: ['fruits'] })
+    t.select(fruits.children![0])
+    t.select(fruits)
+    t.select(fruits.children![1])
+    expect(t.selectedKeys.value).toEqual(['apple', 'fruits', 'kiwi'])
+    // One press on the parent now deselects it.
+    t.select(fruits)
+    expect(t.selectedKeys.value).toEqual(['apple', 'kiwi'])
+  })
+
+  it('propagateSelect does not add an already-selected child twice', () => {
+    const t = tree({ multiple: true, propagateSelect: true, defaultExpanded: ['fruits'] })
+    t.select(fruits.children![0])
+    t.select(fruits)
+    expect(t.selectedKeys.value).toEqual(['apple', 'fruits', 'kiwi'])
+    // One press on the child now deselects it.
+    t.select(fruits.children![0])
+    expect(t.selectedKeys.value).toEqual(['fruits', 'kiwi'])
+  })
+})
+
+describe('useTree — context writes', () => {
+  it('setModelValue / setExpanded on the context write in one change', () => {
+    const onUpdate = vi.fn()
+    const onUpdateExpanded = vi.fn()
+    const t = tree({ multiple: true, onUpdate, onUpdateExpanded })
+    expect(t.context.setModelValue(items)).toBe(true)
+    expect(t.context.setExpanded(['fruits', 'veg'])).toBe(true)
+    expect(t.selectedKeys.value).toEqual(['index', 'fruits', 'veg'])
+    expect(t.expanded.value).toEqual(['fruits', 'veg'])
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdateExpanded).toHaveBeenCalledTimes(1)
+    expect(t.context.setModelValue([...items])).toBe(false)
+  })
+
+  it('items is undefined on the context when none were passed', () => {
+    const t = useTree<Node>({ getKey: n => n.title })
+    expect(t.context.items.value).toBeUndefined()
+    expect(t.flattenItems.value).toEqual([])
+  })
 })
 
 describe('useTree — surfaces', () => {
