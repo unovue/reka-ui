@@ -89,26 +89,41 @@ export interface UseAvatarFallbackReturn {
 
 /**
  * Fallback visibility: shown after `delayMs` while the image is not loaded.
+ * An unset or `0` delay shows it immediately. When `delayMs` changes, the
+ * pending wait restarts with the new delay; once the fallback has rendered it
+ * stays allowed (no flicker), so only a delay raised before the first render
+ * defers it again.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle setup — starts a timer effect; call it inside `setup()` or an effect scope.
  */
 export function useAvatarFallback(context: AvatarRootContext, props: UseAvatarFallbackProps = {}): UseAvatarFallbackReturn {
-  // No delay, or `0`, renders straight away.
   const canRender = ref(!toValue(props.delayMs))
+  const visible = computed(() => canRender.value && context.imageLoadingStatus.value !== 'loaded')
+  let hasRendered = false
+
+  // Post-flush: set only once the fallback has actually been rendered.
+  watchEffect(() => {
+    if (visible.value)
+      hasRendered = true
+  }, { flush: 'post' })
 
   watchEffect((onCleanup) => {
     const delayMs = toValue(props.delayMs)
-    if (delayMs && isClient) {
-      const timerId = window.setTimeout(() => {
-        canRender.value = true
-      }, delayMs)
-
-      onCleanup(() => {
-        window.clearTimeout(timerId)
-      })
+    if (hasRendered)
+      return
+    if (!delayMs) {
+      canRender.value = true
+      return
     }
+    canRender.value = false
+    if (!isClient)
+      return
+    const timerId = window.setTimeout(() => {
+      canRender.value = true
+    }, delayMs)
+    onCleanup(() => window.clearTimeout(timerId))
   })
 
-  return { visible: computed(() => canRender.value && context.imageLoadingStatus.value !== 'loaded') }
+  return { visible }
 }

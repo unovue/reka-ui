@@ -1,7 +1,8 @@
+import type { MaybeRefOrGetter } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, vShow, withDirectives } from 'vue'
+import { defineComponent, effectScope, h, nextTick, ref, vShow, withDirectives } from 'vue'
 import * as Reka from '../index'
 import { useAvatar, useAvatarFallback, useAvatarImage } from './useAvatar'
 
@@ -52,7 +53,7 @@ afterEach(() => {
   window.Image = originalImage
 })
 
-function mountStandalone(onLoadingStatusChange = vi.fn(), delayMs?: number, imageProps: Record<string, any> = {}) {
+function mountStandalone(onLoadingStatusChange = vi.fn(), delayMs?: MaybeRefOrGetter<number | undefined>, imageProps: Record<string, any> = {}) {
   return mount(defineComponent({
     setup() {
       const { imageLoadingStatus, context } = useAvatar()
@@ -90,6 +91,53 @@ describe('useAvatar', () => {
     expect(wrapper.find('.fallback').exists()).toBe(false)
     await vi.waitFor(() => expect(wrapper.find('.fallback').exists()).toBe(true))
     wrapper.unmount()
+  })
+
+  it('shows the fallback when a pending delay drops to 0', async () => {
+    MockImage.loadDelay = 5000
+    const delayMs = ref<number | undefined>(5000)
+    const wrapper = mountStandalone(vi.fn(), delayMs)
+    await nextTick()
+    expect(wrapper.find('.fallback').exists()).toBe(false)
+    delayMs.value = 0
+    await nextTick()
+    expect(wrapper.find('.fallback').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('restarts a pending wait with the new delay', async () => {
+    MockImage.loadDelay = 5000
+    const delayMs = ref<number | undefined>(5000)
+    const wrapper = mountStandalone(vi.fn(), delayMs)
+    await nextTick()
+    delayMs.value = 10
+    await vi.waitFor(() => expect(wrapper.find('.fallback').exists()).toBe(true))
+    wrapper.unmount()
+  })
+
+  it('keeps a rendered fallback shown when the delay is raised', async () => {
+    MockImage.loadDelay = 5000
+    const delayMs = ref<number | undefined>(undefined)
+    const wrapper = mountStandalone(vi.fn(), delayMs)
+    await nextTick()
+    expect(wrapper.find('.fallback').exists()).toBe(true)
+    delayMs.value = 5000
+    await nextTick()
+    await nextTick()
+    expect(wrapper.find('.fallback').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('defers again when 0 is raised before the fallback first renders', async () => {
+    const scope = effectScope()
+    const delayMs = ref(0)
+    const fallback = scope.run(() => useAvatarFallback({ imageLoadingStatus: ref('loading') } as any, { delayMs }))!
+    expect(fallback.visible.value).toBe(true)
+    delayMs.value = 10 // before any flush, so nothing has rendered yet
+    await nextTick()
+    expect(fallback.visible.value).toBe(false)
+    await vi.waitFor(() => expect(fallback.visible.value).toBe(true))
+    scope.stop()
   })
 
   it('renders the fallback immediately with delayMs 0', async () => {
