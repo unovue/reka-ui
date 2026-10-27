@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
-    "module": "es2020",
-    "moduleResolution": "node"
+    "target": "esnext",
+    "lib": ["esnext", "dom"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true
   },
   "exclude": [
     "node_modules",

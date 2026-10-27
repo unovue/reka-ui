@@ -707,6 +707,7 @@
     "temporal-polyfill-lite": "^0.4.3",
     "tsdown": "^0.12.9",
     "typescript": "6.0.3",
+    "typescript-5": "npm:typescript@5.9.3",
     "vite": "^8.3.1",
     "vitest": "^5.0.3",
     "vitest-axe": "0.1.0",
