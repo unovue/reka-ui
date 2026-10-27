@@ -44,9 +44,10 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   resetSearchTermOnSelect: Ref<boolean>
   /** Called with the close reason when the popup closes and the input text should be reset. */
   onResetSearchTerm: EventHookOn<ComboboxOpenChangeReason | BaseChangeReason | undefined>
-  /** `ComboboxCancel` cleared the input text. */
-  clearInput: (event?: Event) => void
-  onClearInput: EventHookOn<Event | undefined>
+  /** `ComboboxCancel` clears the input text; returns `false` when an input vetoed it. */
+  clearInput: (event?: Event) => boolean
+  /** Registers an input's clear handler (removed with its scope); returning `false` vetoes the clear. */
+  onClearInput: (handler: (event?: Event) => boolean | void) => void
   /** The details of the last value change (or cancelled attempt). */
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxChangeReason>>>
   /** The resolved filter: `null` while client filtering is off (`filter: null` or `ignoreFilter`). */

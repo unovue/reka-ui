@@ -616,6 +616,23 @@ describe('comboboxInput — change details', () => {
     wrapper.unmount()
   })
 
+  // #3086 review: a cancelled clear must leave the element and the filter alone too.
+  it('keeps the text, the element and the filter when `beforeUpdate:modelValue` cancels a clear', async () => {
+    const onInput = vi.fn()
+    const wrapper = mount(createWithInput({}, {
+      'onBeforeUpdate:modelValue': (_value: string, details: { reason: string, cancel: () => void }) => details.reason === 'clear-press' && details.cancel(),
+      'onUpdate:modelValue': onInput,
+    }), { attachTo: document.body })
+    await wrapper.find('input').setValue('bl')
+    await settle()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(reasons(onInput)).toEqual([['bl', 'input-change']])
+    expect(wrapper.find('input').element.value).toBe('bl')
+    expect(optionTexts()).toEqual(['Blueberry'])
+    wrapper.unmount()
+  })
+
   it('keeps the text when `beforeUpdate:modelValue` cancels typing', async () => {
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, {
@@ -678,6 +695,30 @@ describe('autocompleteRoot — change details', () => {
     // The vetoed text is taken back out of the input, and the filter keeps the accepted search.
     expect(wrapper.find('input').element.value).toBe('bl')
     expect(optionTexts()).toEqual(['Blueberry'])
+    wrapper.unmount()
+  })
+
+  it('keeps the input text when a controlled value cancels a clear', async () => {
+    const onInput = vi.fn()
+    const model = ref('bl')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(AutocompleteRoot, {
+        'modelValue': model.value,
+        'onBeforeUpdate:modelValue': (_value: string, details: { reason: string, cancel: () => void }) => details.reason === 'clear-press' && details.cancel(),
+        'onUpdate:modelValue': (value: string) => { model.value = value },
+      }, () => [
+        h(AutocompleteInput, { 'aria-label': 'Fruit', 'onUpdate:modelValue': onInput }),
+        h(AutocompleteCancel, { 'data-testid': 'cancel' }, () => 'Clear'),
+        h(AutocompleteContent, null, () => h(AutocompleteViewport, null, () => fruits.map(value => h(AutocompleteItem, { value }, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    onInput.mockClear()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onInput).not.toHaveBeenCalled()
+    expect(model.value).toBe('bl')
+    expect(wrapper.find('input').element.value).toBe('bl')
     wrapper.unmount()
   })
 

@@ -4,7 +4,7 @@ import type { ListboxChangeReason, ListboxFilterFunction, ListboxItemState, List
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
 import { createEventHook } from '@vueuse/core'
-import { computed, isRef, nextTick, ref, toValue } from 'vue'
+import { computed, getCurrentScope, isRef, nextTick, onScopeDispose, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
 import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
@@ -123,14 +123,22 @@ export function getComboboxCancelSurface(context: ComboboxRootContext<any>): Par
     () => ({
       tabindex: '-1',
       onClick: (event: MouseEvent) => {
+        // A cancelled value clear (`beforeUpdate:modelValue` on the root)
+        // keeps everything: the value, the input text and the filter.
+        if (context.resetModelValueOnClear.value) {
+          const before = context.lastChangeDetails.value
+          if (!context.clearModelValue(event) && context.lastChangeDetails.value !== before && context.lastChangeDetails.value.isCanceled)
+            return
+        }
+        // A cancelled text clear (`beforeUpdate:modelValue` on `ComboboxInput`)
+        // keeps the text and the filter.
+        if (!context.clearInput(event))
+          return
         const input = context.inputElement.value
         if (input) {
           input.value = ''
           input.focus()
         }
-        context.clearInput(event)
-        if (context.resetModelValueOnClear.value)
-          context.clearModelValue(event)
         // Done last: focusing can re-open the popup (`openOnFocus`), which may restore the filter from the previous value.
         context.filterSearch.value = ''
       },
@@ -471,7 +479,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   })
 
   const resetSearchTerm = createEventHook<ComboboxOpenChangeReason | BaseChangeReason | undefined>()
-  const inputCleared = createEventHook<Event | undefined>()
+  const clearInputHandlers = new Set<(event?: Event) => boolean | void>()
   const isUserInputted = ref(false)
   const inputElement = ref<HTMLInputElement>()
   const triggerElement = ref<HTMLElement>()
@@ -545,8 +553,20 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     parentElement: computed(() => toValue(props.element) ?? undefined),
     resetSearchTermOnSelect: bool(props.resetSearchTermOnSelect, true),
     onResetSearchTerm: resetSearchTerm.on,
-    clearInput: event => inputCleared.trigger(event),
-    onClearInput: inputCleared.on,
+    clearInput: (event) => {
+      let accepted = true
+      clearInputHandlers.forEach((handler) => {
+        if (handler(event) === false)
+          accepted = false
+      })
+      return accepted
+    },
+    onClearInput: (handler) => {
+      clearInputHandlers.add(handler)
+      // Off when the registering input unmounts.
+      if (getCurrentScope())
+        onScopeDispose(() => clearInputHandlers.delete(handler))
+    },
     lastChangeDetails: listbox.lastChangeDetails,
     filter,
     filterSearch,

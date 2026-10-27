@@ -92,7 +92,8 @@ rootContext.onResetSearchTerm((closeReason?: ComboboxOpenChangeReason | BaseChan
 })
 
 rootContext.onClearInput((event?: Event) => {
-  setText('', 'clear-press', event)
+  // `false` (a cancelled `beforeUpdate:modelValue`) keeps the text, and `ComboboxCancel` stops.
+  return setText('', 'clear-press', event) || (modelValue.value ?? '') === ''
 })
 
 watch(rootContext.modelValue, () => {
