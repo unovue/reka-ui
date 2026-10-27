@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cdp, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 
 // Real hit testing, pointer events and page scrolling for the #2822 modality
@@ -213,5 +214,110 @@ describe('given a modal Popover, in a real browser', () => {
     await new Promise(resolve => setTimeout(resolve, 50))
     expect(open.value).toBe(false)
     expect(backdrops()).toHaveLength(0)
+  })
+})
+
+describe('given page chrome with its own z-index, in a real browser', () => {
+  function stickyHeader(onClick: () => void, zIndex: number) {
+    return h('header', { style: `position: sticky; top: 0; z-index: ${zIndex}; height: 60px; background: #eee;` }, [
+      h('button', { 'data-testid': 'header-button', 'style': 'margin: 10px;', onClick }, 'Header'),
+    ])
+  }
+
+  it('should cover a sticky z-indexed header under a modal Dialog without an overlay', async () => {
+    const open = ref<boolean>(true)
+    const onHeaderClick = vi.fn()
+    mountFixture(() => h('div', { style: 'height: 2000px' }, [
+      stickyHeader(onHeaderClick, 5),
+      renderDialog(open),
+    ]))
+    await expect.poll(() => backdrops().length).toBe(1)
+    // The backdrop takes the dialog's z-index, so it sits above the header
+    expect(backdrops()[0].style.zIndex).toBe('10')
+
+    const point = center(get('header-button')!)
+    expect(document.elementFromPoint(point.x, point.y)).toBe(backdrops()[0])
+
+    await userEvent.click(get('header-button')!, { force: true })
+    await expect.poll(() => get('dialog')).toBeNull()
+    expect(onHeaderClick).not.toHaveBeenCalled()
+  })
+
+  it('should cover a sticky z-indexed header under a modal DropdownMenu, so one click only closes the menu', async () => {
+    const onHeaderClick = vi.fn()
+    mountFixture(() => h('div', { style: 'height: 2000px' }, [
+      stickyHeader(onHeaderClick, 10),
+      h('div', { style: 'padding: 100px' }, h(DropdownMenuRoot, () => [
+        h(DropdownMenuTrigger, { 'data-testid': 'trigger' }, () => 'Menu'),
+        h(DropdownMenuPortal, () => h(DropdownMenuContent, { 'data-testid': 'menu', 'style': 'z-index: 50; background: white;' }, () => [
+          h(DropdownMenuItem, () => 'Item'),
+        ])),
+      ])),
+    ]))
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => backdrops().length).toBe(1)
+    expect(backdrops()[0].style.zIndex).toBe('50')
+
+    const point = center(get('header-button')!)
+    expect(document.elementFromPoint(point.x, point.y)).toBe(backdrops()[0])
+
+    await userEvent.click(get('header-button')!, { force: true })
+    await expect.poll(() => get('menu')).toBeNull()
+    expect(onHeaderClick).not.toHaveBeenCalled()
+  })
+
+  it('should still leave content above the layer\'s z-index clickable (#1540)', async () => {
+    const open = ref<boolean>(true)
+    const onHeaderClick = vi.fn()
+    mountFixture(() => h('div', [
+      stickyHeader(onHeaderClick, 20),
+      renderDialog(open),
+    ]))
+    await expect.poll(() => backdrops().length).toBe(1)
+
+    await userEvent.click(get('header-button')!)
+    expect(onHeaderClick).toHaveBeenCalledTimes(1)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(get('dialog')).not.toBeNull()
+  })
+})
+
+describe.each([
+  'transform: translateX(0)',
+  'filter: blur(0)',
+  'contain: paint',
+  'will-change: transform',
+  'backdrop-filter: blur(1px)',
+])('given a non-portaled modal Dialog inside an ancestor with `%s`, in a real browser', (ancestorStyle) => {
+  it('should cover the whole viewport, not just the ancestor', async () => {
+    const open = ref<boolean>(true)
+    const onOutsideClick = vi.fn()
+    mountFixture(() => h('div', [
+      h('button', { 'data-testid': 'outside', 'style': 'position: fixed; right: 10px; bottom: 10px;', 'onClick': onOutsideClick }, 'Outside'),
+      h('div', { 'data-testid': 'ancestor', 'style': `${ancestorStyle}; width: 150px; height: 150px; margin: 20px;` }, [
+        h(DialogRoot, {
+          'open': open.value,
+          'onUpdate:open': (value: boolean) => { open.value = value },
+        }, () => h(DialogContent, { 'data-testid': 'dialog', 'aria-describedby': undefined, 'style': 'position: fixed; top: 10px; left: 10px; width: 100px; background: white;' }, () => h(DialogTitle, () => 'Dialog'))),
+      ]),
+    ]))
+    await expect.poll(() => backdrops().length).toBe(1)
+
+    const [backdrop] = backdrops()
+    const rect = backdrop.getBoundingClientRect()
+    expect(rect.width).toBe(window.innerWidth)
+    expect(rect.height).toBe(window.innerHeight)
+
+    // Still below the dialog
+    const dialogPoint = center(get('dialog')!)
+    expect(get('dialog')!.contains(document.elementFromPoint(dialogPoint.x, dialogPoint.y))).toBe(true)
+    // Covers the page outside the ancestor
+    const outsidePoint = center(get('outside')!)
+    expect(document.elementFromPoint(outsidePoint.x, outsidePoint.y)).toBe(backdrop)
+
+    await userEvent.click(get('outside')!, { force: true })
+    await expect.poll(() => get('dialog')).toBeNull()
+    expect(onOutsideClick).not.toHaveBeenCalled()
   })
 })

@@ -24,6 +24,16 @@ All components accept `class` attributes, just like normal component. This class
 
 Some elements, such as modals or popovers, are teleported to the `body`. When using scoped style to apply CSS, you will need to use [deep selectors](https://vuejs.org/api/sfc-css-features.html#deep-selectors) to target them.
 
+#### Stacking modal layers
+
+A modal layer (a modal `Dialog`, a `DropdownMenu`, an open `Select`, …) blocks the page with a transparent `[data-reka-internal-backdrop]` element rendered right below it, with the same `z-index` as the layer. Page content with a lower `z-index` is covered; anything with a higher one stays clickable. To keep page chrome such as a sticky header from rising above teleported overlays, give your app root its own stacking context:
+
+```css
+#app {
+  isolation: isolate;
+}
+```
+
 ### Data attributes
 
 When components are stateful, their state will be exposed in a `data-state` attribute. For example, when an [Accordion Item](../components/accordion) is opened, it includes a `data-state="open"` attribute.

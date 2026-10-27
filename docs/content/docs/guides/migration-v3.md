@@ -368,9 +368,9 @@ Modal overlays follow [Base UI](https://base-ui.com)'s model in v3. A modal laye
 
 ### Outside pointer interaction
 
-The page is now blocked by a transparent internal backdrop that the layer renders right below itself: a `position: fixed` `<div data-reka-internal-backdrop role="presentation">` covering the viewport. A press on it is an outside press, so it closes the layer, as before. `<body>` keeps its own `pointer-events`.
+The page is now blocked by a transparent internal backdrop that the layer renders right below itself: a `position: fixed` `<div data-reka-internal-backdrop role="presentation">` covering the viewport. It takes the `z-index` of the layer (of its positioning wrapper for floating content, or of the fixed container around a scrollable dialog), so it covers page content with a lower `z-index`, such as a sticky header. A press on it is an outside press, so it closes the layer, as before. `<body>` keeps its own `pointer-events`. A non-portaled layer inside an element that contains fixed elements (`transform`, `filter`, `backdrop-filter`, `contain: paint`, `will-change: transform`) gets its backdrop in `<body>` instead, with a hole over the layer.
 
-- **Content stacked above the backdrop stays interactive.** An element with a higher `z-index` than the backdrop (a chat launcher, a cookie banner, a toast) can be clicked while a modal layer is open. In v2 the whole page was unclickable.
+- **Only content above the layer's own `z-index` stays interactive.** An element in the root stacking context whose `z-index` is higher than the layer's (a chat launcher or a cookie banner at `z-index: 2147483647`, a toast viewport above your overlays) can be clicked while a modal layer is open. Page content at or below the layer's `z-index` is covered, as in v2. In v2 the whole page was unclickable, whatever its `z-index`.
 - **A modal `Dialog` or `Drawer` closes only on its own backdrop.** A press on the internal backdrop, on `DialogOverlay` / `DrawerOverlay`, or on a container around the content closes it; a press on an element stacked above the backdrop does not. Popovers and menus close on any outside press, as before.
 - **A modal `Popover` or `DropdownMenu` keeps its trigger reachable.** The trigger is cut out of the backdrop, so pressing it toggles the layer closed instead of hitting the backdrop. The `ContextMenu` trigger area and the `Combobox` input are cut out in the same way.
 - **Layers below a modal layer stay inert.** A non-modal popover that is open under a modal dialog still gets `pointer-events: none` (and so does its positioning wrapper) until the dialog closes, whatever its `z-index`.
@@ -381,6 +381,13 @@ What to check in your code:
 - **Workarounds that restored `pointer-events: auto`** on `<body>` or on a third-party widget so it stayed clickable next to a dialog: remove them. If the widget sits *below* the backdrop in the stacking order, give it a higher `z-index` than your overlay content.
 - **Tests that click an arbitrary element to dismiss a modal `Dialog`.** Press the overlay, the backdrop (`[data-reka-internal-backdrop]`) or `document.body` instead. In a real browser, a click "on" an element under a modal layer lands on the backdrop; with Playwright, pass `force: true` to click through the actionability check.
 - **CSS that targets the overlay's direct sibling** (`.overlay + .content`): the backdrop now sits between them. Use `~` or a class.
+- **Page chrome with a higher `z-index` than your overlays.** A sticky header at `z-index: 50` stays clickable over a dialog whose content has `z-index: 10`. As Base UI recommends, give your app root its own stacking context, so nothing inside it can rise above overlays portaled to `<body>`:
+
+  ```css
+  #app {
+    isolation: isolate;
+  }
+  ```
 
 ### Page scroll lock
 

@@ -395,6 +395,87 @@ describe('given a DismissableLayer inside a positioned popper wrapper', () => {
     expect(backdrops()).toHaveLength(0)
   })
 
+  it('should keep the cutout in place as the cutout or the viewport resizes, and stop tracking on unmount', async () => {
+    const observers: { callback: () => void, disconnect: ReturnType<typeof vi.fn> }[] = []
+    vi.stubGlobal('ResizeObserver', class {
+      disconnect = vi.fn()
+      constructor(public callback: () => void) {
+        observers.push(this)
+      }
+
+      observe() {}
+    })
+    onTestFinished(() => vi.unstubAllGlobals())
+
+    const cutout = document.createElement('button')
+    document.body.append(cutout)
+    let rect = { left: 10, top: 20, right: 110, bottom: 60 }
+    vi.spyOn(cutout, 'getBoundingClientRect').mockImplementation(() => ({ ...rect }) as DOMRect)
+
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true, backdropCutout: cutout }, () => 'Content'),
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const [backdrop] = backdrops()
+    expect(backdrop.style.clipPath).toContain('10px 20px')
+
+    rect = { left: 30, top: 40, right: 130, bottom: 80 }
+    observers[0].callback()
+    expect(backdrop.style.clipPath).toContain('30px 40px')
+
+    rect = { left: 50, top: 60, right: 150, bottom: 100 }
+    window.dispatchEvent(new Event('resize'))
+    expect(backdrop.style.clipPath).toContain('50px 60px')
+
+    wrapper.unmount()
+    expect(observers[0].disconnect).toHaveBeenCalled()
+    rect = { left: 70, top: 80, right: 170, bottom: 120 }
+    window.dispatchEvent(new Event('resize'))
+    expect(backdrop.style.clipPath).toContain('50px 60px')
+  })
+
+  it('should give the backdrop the z-index of the layer, or of the popper wrapper', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'style': 'position: fixed; z-index: 30', 'data-testid': 'fixed' }, () => 'Fixed'),
+          h('div', { 'data-reka-popper-content-wrapper': '', 'style': 'position: fixed' }, [
+            h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'style': 'z-index: 50', 'data-testid': 'popper' }, () => 'Popper'),
+          ]),
+        ]
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const zIndexes = backdrops().map(el => el.style.zIndex)
+    expect(zIndexes).toEqual(['30', '50'])
+    wrapper.unmount()
+  })
+
+  it('should mount the backdrop in body, with a hole over the layer, when a transformed ancestor would contain it', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', { 'data-testid': 'card', 'style': 'transform: translateX(0)' }, [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'style': 'position: fixed; z-index: 50', 'data-testid': 'layer' }, () => 'Content'),
+        ])
+      },
+    }), { attachTo: document.body })
+    const layer = document.querySelector<HTMLElement>('[data-testid="layer"]')!
+    vi.spyOn(layer, 'getBoundingClientRect').mockReturnValue({ left: 5, top: 6, right: 105, bottom: 106 } as DOMRect)
+    await sleep(1)
+    window.dispatchEvent(new Event('resize'))
+
+    const [backdrop] = backdrops()
+    expect(backdrop.parentElement).toBe(document.body)
+    expect(document.querySelector('[data-testid="card"]')!.contains(backdrop)).toBe(false)
+    expect(backdrop.style.zIndex).toBe('50')
+    expect(backdrop.style.clipPath).toContain('5px 6px')
+
+    wrapper.unmount()
+    expect(backdrops()).toHaveLength(0)
+  })
+
   it('should mount the backdrop before a fixed container that wraps the layer (scrollable overlay)', async () => {
     const wrapper = mount(defineComponent({
       setup() {
