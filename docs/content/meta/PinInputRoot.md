@@ -107,7 +107,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': ''
+    'type': 'PinInputValue&lt;Type&gt;'
   }
 ]" />
 </llm-exclude>
@@ -144,6 +144,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `` |
+| `modelValue` | Current input values | `PinInputValue<Type>` |
 
 </llm-only>

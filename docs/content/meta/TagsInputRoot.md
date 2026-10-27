@@ -143,7 +143,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'T'
+    'type': 'T[]'
   }
 ]" />
 </llm-exclude>
@@ -186,6 +186,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `T` |
+| `modelValue` | Current input values | `T[]` |
 
 </llm-only>

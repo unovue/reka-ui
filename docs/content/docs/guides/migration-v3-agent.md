@@ -414,7 +414,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 **What changed.** These changes affect only custom parts built on the form-input root contexts. Code that uses the components and `v-model` is not affected.
 - The `PinInputRoot`, `RatingRoot`, `TagsInputRoot`, `TagGroupRoot` and `EditableRoot` contexts expose `modelValue` as a readonly ref, so assigning `modelValue.value` no longer changes the value.
 - New context methods: `setModelValue(value, reason?, event?)` and `updateModelValueAt(index, value, reason?, event?)` on PinInput, `onAddValues(texts, reason?, event?)` and `onClear(reason?, event?)` on TagsInput.
-- Existing methods take an optional trailing reason and native event: Rating `changeModelValue`, TagsInput `onAddValue` / `onRemoveValue`, TagGroup `toggleSelection` / `removeTags` (and the item context's `remove(event?)`), Editable `submit`, and NumberField `handleIncrease` / `handleDecrease` / `handleMinMaxValue` / `applyInputValue`. The ones that change the model return `false` when the change was cancelled or did not change the value.
+- Existing methods take an optional trailing reason and native event: Rating `changeModelValue`, TagsInput `onAddValue` / `onRemoveValue`, TagGroup `toggleSelection` / `removeTags` (and the item context's `remove(event?)`), Editable `submit`, and NumberField `handleIncrease` / `handleDecrease` / `handleMinMaxValue` / `applyInputValue`. Rating `changeModelValue`, TagsInput `onAddValue` / `onRemoveValue`, TagGroup `toggleSelection`, Editable `submit` and NumberField `applyInputValue` return `false` when the change was cancelled or did not change the value. TagGroup `removeTags` / `remove` and NumberField `handleIncrease` / `handleDecrease` / `handleMinMaxValue` return nothing; do not test their result.
 - The NumberField context's `modelValue` stays writable; an assignment now emits `beforeUpdate:modelValue` / `update:modelValue` with reason `'imperative-action'`.
 
 **How to find it.**
@@ -433,7 +433,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 ### 18. TagsInput, PinInput and Editable events
 
 **What changed.**
-- `TagsInputRoot`: `addTag` and `removeTag` fire after `update:modelValue` (v2: before it), and not at all when `beforeUpdate:modelValue` cancels the change. `invalid` fires for each rejected tag before `beforeUpdate:modelValue`, and also when the change is then cancelled. A paste adds all its tags in one `update:modelValue` (v2: one emit per tag; `invalid` and `addTag` still fire per tag).
+- `TagsInputRoot`: `addTag` and `removeTag` fire after `update:modelValue` (v2: before it), and not at all when `beforeUpdate:modelValue` cancels the change. With `v-model` the bound array is already updated when they run. With `:model-value` and a handler, `update:modelValue` is a request: they still fire if the handler does not apply it, and the bound array then stays unchanged. `invalid` fires for each rejected tag before `beforeUpdate:modelValue`, and also when the change is then cancelled. A paste adds all its tags in one `update:modelValue` (v2: one emit per tag; `invalid` and `addTag` still fire per tag).
 - `TagsInputRoot` and `PinInputRoot`: mutating the bound array in place (`push`, `splice`) no longer emits `update:modelValue`. With `:model-value` and no update handler, the tags or digits no longer change locally (v2 kept a local copy). When the parent does not apply a change, TagsInput keeps the typed text and PinInput restores the digit without moving focus.
 - `EditableRoot`, uncontrolled only: on a submit that changes the value, `update:modelValue` fires before `update:state` and `submit` (v2: on the next tick, after them). A controlled Editable already used this order. In both modes a cancelled submit stays in edit mode and fires neither `update:state` nor `submit`, and an unchanged submit emits no `update:modelValue` but still fires `update:state` and `submit`.
 
@@ -445,7 +445,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `@submit` / `@update:state` handlers on an `EditableRoot` without `v-model` / `:model-value` that read the value.
 
 **Rewrite rules.**
-- An `@add-tag` / `@remove-tag` handler that reads the model now sees the updated array. If it relied on the old value: *ask*.
+- An `@add-tag` / `@remove-tag` handler that reads the model: with `v-model` it now sees the updated array. With `:model-value` and an `@update:model-value` handler that can reject or transform the value, read the tag from the event payload instead of the bound array. If it relied on the old value: *ask*.
 - `:model-value` without an update handler on `TagsInputRoot` or `PinInputRoot`, where the value was expected to change: replace with `v-model`. If it was meant to be read-only: leave it.
 - An in-place mutation that relied on `update:modelValue` firing: assign a new array (`model.value = [...model.value, tag]`).
 - A test expecting one emit per pasted tag: expect one emit whose payload holds all of them.

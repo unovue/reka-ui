@@ -140,7 +140,7 @@ function parseTypeFromSchema(schema: PropertyMetaSchema): string {
     const isFlatEnum = schema.schema?.every(val => typeof val === 'string')
     const enumValue = schema?.schema?.filter(i => i !== 'undefined') ?? []
 
-    if (isFlatEnum && STARTS_WITH_UPPERCASE_RE.test(schema.type))
+    if (schema.kind === 'enum' && isFlatEnum && STARTS_WITH_UPPERCASE_RE.test(schema.type))
       return enumValue.join(' | ')
     else if (typeof schema.schema?.[0] === 'object' && schema.schema?.[0].kind === 'enum')
       return schema.schema.map((s: PropertyMetaSchema) => parseTypeFromSchema(s)).join(' | ')
