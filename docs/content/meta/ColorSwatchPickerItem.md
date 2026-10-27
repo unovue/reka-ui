@@ -29,8 +29,8 @@
   },
   {
     'name': 'value',
-    'description': '<p>The color to display in the swatch as a hex string.\nExample: <code>#16a372</code> or <code>#ff5733</code>.</p>\n',
-    'type': 'string',
+    'description': '<p>The color of the swatch, as a color string or a <code>Color</code> object.\nExample: <code>#16a372</code> or <code>{ space: \'hsl\', h: 158, s: 76, l: 36, alpha: 1 }</code>.\nValues are compared structurally, so <code>#ff0000</code> and the equivalent <code>Color</code> select the same item.</p>\n',
+    'type': 'ColorSwatchPickerValue',
     'required': true
   }
 ]" />
@@ -62,7 +62,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | Text used for the label registry; defaults to the rendered text content. | `string` | No | - |
-| `value` | The color to display in the swatch as a hex string. Example: #16a372 or #ff5733. | `string` | Yes | - |
+| `value` | The color of the swatch, as a color string or a Color object. Example: #16a372 or { space: 'hsl', h: 158, s: 76, l: 36, alpha: 1 }. Values are compared structurally, so #ff0000 and the equivalent Color select the same item. | `ColorSwatchPickerValue` | Yes | - |
 
 **Events**
 

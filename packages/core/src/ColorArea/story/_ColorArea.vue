@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { ColorChannel, ColorSpace } from '@/shared/color'
-import { ref } from 'vue'
+import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
+import { computed, ref } from 'vue'
+import { colorToHex, normalizeColor } from '@/shared/color'
 import {
   ColorAreaArea,
   ColorAreaRoot,
@@ -15,13 +16,15 @@ const props = defineProps<{
   disabled?: boolean
 }>()
 
-const color = ref(props.defaultValue ?? '#ff0000')
+// v-model emits a Color object; the hex is derived for display.
+const color = ref<string | Color>(props.defaultValue ?? '#ff0000')
+const hex = computed(() => colorToHex(normalizeColor(color.value)))
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <div class="text-sm">
-      Current: {{ color }}
+      Current: {{ hex }}
     </div>
 
     <ColorAreaRoot

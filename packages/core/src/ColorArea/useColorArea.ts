@@ -2,27 +2,31 @@ import type { ComputedRef, CSSProperties, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
-import { computed, nextTick, ref, toValue, watch } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
-import { colorToString, convertToHsb, convertToHsl, getAreaBackgroundStyle, getChannelName, getChannelRange, getChannelValue, normalizeColor, setChannelValues } from '@/shared/color'
-import { isEqualColor } from '@/shared/color/isEqualColor'
+import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
+import { createChangeEndTracker } from '@/shared/color/changeEnd'
 import { convertValueToPercentage, linearScale } from './utils'
 
-type Inputs = Pick<ColorAreaRootProps, 'colorSpace' | 'xChannel' | 'yChannel' | 'disabled' | 'modelValue' | 'defaultValue'>
+type Inputs = Pick<ColorAreaRootProps, 'colorSpace' | 'xChannel' | 'yChannel' | 'disabled' | 'modelValue' | 'defaultValue' | 'dir'>
 export type ColorAreaChangeReason = 'pointer' | 'keyboard'
 export type UseColorAreaProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
+  /** Called with every accepted color; same payload as `onUpdate`. */
   onColorUpdate?: (color: Color) => void
-  onChange?: (value: string) => void
-  onChangeEnd?: (value: string) => void
+  /** Called with the hex serialization of every accepted color (lossy: drops hue on greys and sub-byte precision). */
+  onHexUpdate?: (hex: string) => void
+  onChange?: (value: Color) => void
+  onChangeEnd?: (value: Color) => void
   emit?: (event: any, ...args: any[]) => void
-  onBeforeUpdate?: (value: string | Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void
-  onUpdate?: (value: string | Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void
+  onBeforeUpdate?: (value: Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void
+  onUpdate?: (value: Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void
 }
 
 export type ColorAreaRootState = { disabled: boolean }
 export interface UseColorAreaReturn {
-  /** Provisional: the model is written as a hex `string` today; in v3 it becomes a `Color` object (#2789). */
+  /** The model as passed in (`string | Color`); every emitted value is a `Color`. */
   readonly modelValue: ComputedRef<string | Color>
+  /** The model parsed to a `Color`. */
   readonly color: ComputedRef<Readonly<Color>>
   readonly disabled: ComputedRef<boolean>
   readonly isControlled: ComputedRef<boolean>
@@ -42,176 +46,103 @@ export interface UseColorAreaReturn {
 }
 
 /**
- * Headless ColorArea state. Call in setup or an effect scope to dispose synchronization watchers.
+ * Headless ColorArea state. Holds no watchers, so it can be called outside setup.
  *
- * The model types are provisional: `modelValue` and the `change`/`changeEnd` payloads are hex
- * strings today and become `Color` objects in v3 (#2789).
+ * The model accepts `string | Color` and every emit carries a `Color` in the area's
+ * color space. The channel values and the thumb are derived from the model alone.
  *
  * @experimental
- * @lifecycle setup
+ * @lifecycle pure
  */
 export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn {
   const colorSpace = computed(() => toValue(props.colorSpace) ?? 'hsl')
   const xChannel = computed(() => toValue(props.xChannel) ?? 'hue')
   const yChannel = computed(() => toValue(props.yChannel) ?? 'saturation')
   const disabled = computed(() => toValue(props.disabled) ?? false)
+  const dir = computed(() => toValue(props.dir) ?? 'ltr')
 
-  let precisionChanged = false
-
-  // Normalize the model value to a Color object
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorAreaChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? '#ff0000',
-    // Hex equality alone loses hue and fractional channel changes.
-    isEqual: (next, current) => next === current && !precisionChanged,
+    isEqual: isEqualColor,
     name: 'modelValue',
     emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    onBeforeUpdate: props.onBeforeUpdate as ((value: string | Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void) | undefined,
+    onUpdate: props.onUpdate as ((value: string | Color, details: ChangeEventDetails<ColorAreaChangeReason>) => void) | undefined,
   })
 
-  // The actual color object for rendering
+  // A string model is parsed once per change; a Color is used as-is.
   const color = computed(() => normalizeColor(modelValue.value ?? '#000000'))
+  // The space that holds both axes: the `colorSpace` prop unless an axis is outside it.
+  const workingSpace = computed(() => getChannelColorSpace([xChannel.value, yChannel.value], colorSpace.value))
+  const workingColor = computed(() => convertToSpace(color.value, workingSpace.value))
 
-  let precisionColor = color.value
+  // `changeEnd` reports an interaction only once the model holds its last color, so a
+  // drag back to the start or an update a controlled parent rejected reports nothing.
+  const changeEnd = createChangeEndTracker({
+    current: () => color.value,
+    isControlled: () => isControlled.value,
+    onChangeEnd: (value) => {
+      props.onChangeEnd?.(value)
+      props.emit?.('changeEnd', value)
+    },
+  })
 
   function setColor(newColor: Color, reason: ColorAreaChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    precisionChanged = !isEqualColor(precisionColor, newColor)
-    const hexString = colorToString(newColor, 'hex')
-    const changed = setState(hexString, reason, event)
+    const changed = setState(newColor, reason, event)
     if (!changed)
       return false
-
-    precisionColor = newColor
     props.onColorUpdate?.(newColor)
     props.emit?.('update:color', newColor)
+    const hex = colorToHex(newColor)
+    props.onHexUpdate?.(hex)
+    props.emit?.('update:hex', hex)
     return true
   }
 
-  // Get channel ranges
   const xRange = computed(() => getChannelRange(xChannel.value))
   const yRange = computed(() => getChannelRange(yChannel.value))
+  const xValue = computed(() => getChannelValue(workingColor.value, xChannel.value))
+  const yValue = computed(() => getChannelValue(workingColor.value, yChannel.value))
 
-  // Store exact channel values as refs to avoid floating-point drift
-  // Initialize from the color value (rounded to nearest integer)
-  const xValue = ref(Math.round(getChannelValue(color.value, xChannel.value)))
-  const yValue = ref(Math.round(getChannelValue(color.value, yChannel.value)))
-
-  // Store the hue separately to preserve it when saturation is 0 (grayscale)
-  const hueValue = ref(colorSpace.value === 'hsl'
-    ? convertToHsl(color.value).h
-    : colorSpace.value === 'hsb'
-      ? convertToHsb(color.value).h
-      : 0)
-
-  // Track when we're in the middle of an update to prevent circular sync
-  let isUpdating = false
-
-  // Sync channel values when color changes externally
-  watch(() => color.value, (newColor) => {
-    // Skip if we just triggered this update ourselves
-    if (isUpdating)
-      return
-
-    const hasExplicitHue = newColor.space === 'hsl' || newColor.space === 'hsb'
-    if (hasExplicitHue || colorToString(precisionColor, 'hex') !== colorToString(newColor, 'hex'))
-      precisionColor = newColor
-    const newX = Math.round(getChannelValue(newColor, xChannel.value))
-    const newY = Math.round(getChannelValue(newColor, yChannel.value))
-
-    // Only update if the rounded value meaningfully changed.
-    // During drag, xValue/yValue store exact floats (e.g. 80.45).
-    // External updates (e.g. hue slider) should not snap these to integers.
-    if (Math.round(xValue.value) !== newX)
-      xValue.value = newX
-    if (Math.round(yValue.value) !== newY)
-      yValue.value = newY
-
-    // Explicit color objects retain hue even when grayscale; RGB echoes do not.
-    if (colorSpace.value === 'hsl') {
-      const hsl = convertToHsl(newColor)
-      if (hasExplicitHue || hsl.s > 0)
-        hueValue.value = hsl.h
-    }
-    else if (colorSpace.value === 'hsb') {
-      const hsb = convertToHsb(newColor)
-      if (hasExplicitHue || hsb.s > 0)
-        hueValue.value = hsb.h
-    }
-  }, { immediate: true })
-
-  // Background styles for the color area
-  // Use preserved hue to ensure background doesn't change when saturation is 0
-  const areaStyles = computed(() => {
-    // Create a color with the preserved hue for background computation
-    let bgColor = color.value
-    if (colorSpace.value === 'hsl' || colorSpace.value === 'hsb') {
-      if (colorSpace.value === 'hsl') {
-        bgColor = { space: 'hsl', h: hueValue.value, s: 100, l: 50, alpha: 1 }
-      }
-      else {
-        bgColor = { space: 'hsb', h: hueValue.value, s: 100, b: 100, alpha: 1 }
-      }
-    }
-    return getAreaBackgroundStyle(bgColor, xChannel.value, yChannel.value, colorSpace.value)
-  })
+  const areaStyles = computed(() => getAreaBackgroundStyle(workingColor.value, xChannel.value, yChannel.value, colorSpace.value, dir.value))
 
   function updateValues(x: number, y: number, reason: ColorAreaChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     const clampedX = Math.max(xRange.value.min, Math.min(xRange.value.max, x))
     const clampedY = Math.max(yRange.value.min, Math.min(yRange.value.max, y))
-
     if (clampedX === xValue.value && clampedY === yValue.value)
       return false
 
-    // Prevent watch from syncing back to xValue/yValue
-    isUpdating = true
-
-    // Update color from exact values (with preserved hue)
     const channels: Array<{ channel: ColorChannel, value: number }> = [
       { channel: xChannel.value, value: clampedX },
       { channel: yChannel.value, value: clampedY },
     ]
-
-    // Preserve hue only when it is NOT directly controlled by an axis
-    const usesHueAxis = xChannel.value === 'hue' || yChannel.value === 'hue'
-    if (!usesHueAxis && (colorSpace.value === 'hsl' || colorSpace.value === 'hsb')) {
-      channels.push({ channel: 'hue', value: hueValue.value })
-    }
-
-    const changed = setColor(setChannelValues(color.value, channels), reason, event)
+    const previous = color.value
+    const newColor = setChannelValues(workingColor.value, channels)
+    const changed = setColor(newColor, reason, event)
     if (changed) {
-      xValue.value = clampedX
-      yValue.value = clampedY
-      const value = colorToString(precisionColor, 'hex')
-      props.onChange?.(value)
-      props.emit?.('change', value)
+      changeEnd.record(previous, newColor)
+      props.onChange?.(newColor)
+      props.emit?.('change', newColor)
     }
-
-    // Re-enable watch sync after Vue has processed the update
-    nextTick(() => {
-      isUpdating = false
-    })
     return changed
   }
 
   function commitValues() {
-    // `precisionColor` is the last written color; in controlled mode `color` still
-    // reads the previous prop until the parent re-renders.
-    const value = colorToString(precisionColor, 'hex')
-    props.onChangeEnd?.(value)
-    props.emit?.('changeEnd', value)
+    changeEnd.commit()
   }
 
   const thumbRef = ref<HTMLElement>()
 
   const context: ColorAreaRootContext = {
-    color: computed(() => color.value) as Ref<Color>,
+    color: workingColor,
     xValue,
     yValue,
     xChannel,
     yChannel,
     colorSpace,
     disabled,
+    dir,
     xRange,
     yRange,
     thumbRef,
@@ -219,7 +150,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     commitValues,
   }
 
-  const root = createPartSurface<ColorAreaRootState>(() => ({ 'role': 'group', 'aria-disabled': disabled.value ? 'true' : undefined }), () => ({ disabled: disabled.value }))
+  const root = createPartSurface<ColorAreaRootState>(() => ({ 'role': 'group', 'dir': dir.value, 'aria-disabled': disabled.value ? 'true' : undefined }), () => ({ disabled: disabled.value }))
   return {
     modelValue,
     color,
@@ -232,8 +163,8 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     thumb: getColorAreaThumbSurface(context),
     createAreaSurface: (element: Ref<HTMLElement | undefined>) => createColorAreaAreaSurface(context, element),
     areaStyles,
-    xValue: computed(() => xValue.value),
-    yValue: computed(() => yValue.value),
+    xValue,
+    yValue,
     updateValues,
     commitValues,
     thumbRef: computed(() => thumbRef.value),
@@ -243,6 +174,10 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
 
 export type ColorAreaAreaState = { disabled: boolean }
 export type ColorAreaThumbState = { disabled: boolean }
+
+function snapToStep(value: number, step: number) {
+  return Math.round(value / step) * step
+}
 
 /**
  * Once per interactive area; owns pointer capture state.
@@ -254,8 +189,10 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
   // Convert pointer position to channel values
   function getValuesFromPointer(event: PointerEvent) {
     const rect = areaElement.value!.getBoundingClientRect()
+    const isRtl = rootContext.dir.value === 'rtl'
 
-    const xInput: [number, number] = [0, rect.width]
+    // In RTL the x axis is mirrored: the minimum is on the right edge.
+    const xInput: [number, number] = isRtl ? [rect.width, 0] : [0, rect.width]
     const xOutput: [number, number] = [rootContext.xRange.value.min, rootContext.xRange.value.max]
     const xScale = linearScale(xInput, xOutput)
     const xValue = xScale(event.clientX - rect.left)
@@ -312,18 +249,22 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
       return
 
     const stepMultiplier = event.shiftKey ? 10 : 1
-    const xStepSize = rootContext.xRange.value.step * stepMultiplier
-    const yStepSize = rootContext.yRange.value.step * stepMultiplier
+    const xStep = rootContext.xRange.value.step
+    const yStep = rootContext.yRange.value.step
+    const xStepSize = xStep * stepMultiplier
+    const yStepSize = yStep * stepMultiplier
+    // ArrowLeft and ArrowRight follow the visual direction, so they swap in RTL.
+    const xForward = rootContext.dir.value === 'rtl' ? -1 : 1
 
     let xDelta = 0
     let yDelta = 0
 
     switch (event.key) {
       case 'ArrowLeft':
-        xDelta = -xStepSize
+        xDelta = -xStepSize * xForward
         break
       case 'ArrowRight':
-        xDelta = xStepSize
+        xDelta = xStepSize * xForward
         break
       case 'ArrowUp':
         yDelta = yStepSize
@@ -348,9 +289,11 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     }
 
     event.preventDefault()
+    const x = rootContext.xValue.value
+    const y = rootContext.yValue.value
     const changed = rootContext.updateValues(
-      rootContext.xValue.value + xDelta,
-      rootContext.yValue.value + yDelta,
+      xDelta ? snapToStep(x + xDelta, xStep) : x,
+      yDelta ? snapToStep(y + yDelta, yStep) : y,
       'keyboard',
       event,
     )
@@ -405,12 +348,12 @@ export function getColorAreaThumbSurface(rootContext: ColorAreaRootContext) {
     'aria-roledescription': 'Color thumb',
     'aria-valuemin': rootContext.xRange.value.min,
     'aria-valuemax': rootContext.xRange.value.max,
-    'aria-valuenow': rootContext.xValue.value,
+    'aria-valuenow': Math.round(rootContext.xValue.value),
     'aria-valuetext': ariaValueText.value,
     'aria-orientation': 'horizontal',
     'style': {
       position: 'absolute',
-      left: `${xPercent.value}%`,
+      left: `${rootContext.dir.value === 'rtl' ? 100 - xPercent.value : xPercent.value}%`,
       top: `${100 - yPercent.value}%`,
       transform: 'translate(-50%, -50%)',
       touchAction: 'none',

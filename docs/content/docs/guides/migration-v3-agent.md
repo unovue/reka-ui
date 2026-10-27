@@ -29,7 +29,7 @@ Reka UI v3 is still in progress, so this page grows as breaking changes land on 
 
 ## Instructions for the agent
 
-You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 6, component names, props, slots and `v-model` bindings are unchanged in v3.
+You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 6 and the color value type covered in section 10, component names, props, slots and `v-model` bindings are unchanged in v3.
 
 ### Before you start
 
@@ -81,7 +81,7 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 
 **What changed.** `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object with `reason`, `event`, `isCanceled` and `cancel()`, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick, and a component that mounts uncontrolled and later receives a defined model value becomes controlled from then on, even if the model is later cleared to `undefined`.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). Known exception: `ColorAreaRoot` and `ColorSliderRoot` still emit `beforeUpdate:modelValue` and `update:modelValue` with an unchanged hex string when the change is finer than hex precision (the hue of a grey, a fractional step), so that `update:color` can carry the precise `Color`; this lasts until the color model becomes a `Color` object ([#2789](https://github.com/unovue/reka-ui/issues/2789)). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release. Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release; both carry a `Color` object (section 10). Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert.
 
 **How to find it.** Search for listeners and emit declarations on those roots: `@update:open`, `@update:model-value`, `@update:modelValue`, `@update:placeholder`, `'update:open'`, `'update:modelValue'`, `'update:placeholder'`, `onUpdate:open`, `onUpdate:modelValue`, `onUpdate:placeholder`, `defineEmits` in components that wrap one of the roots, `useForwardPropsEmits`, `emitted('update:open')` and `toHaveBeenCalledWith` in tests, and `watch(` calls that react to these models.
 
@@ -229,10 +229,42 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Rewrite rules.** Do not add `filter` to an existing listbox: one whose items are already filtered by hand keeps working unchanged. Mention listboxes that compute a filtered item list from the `ListboxFilter` value in the report as optional candidates; switching one over means passing `filter` and rendering the full list.
 
+### 10. Color values are `Color` objects
+
+**What changed.** `ColorAreaRoot`, `ColorFieldRoot` and `ColorSliderRoot` emit a `Color` object (`{ space: 'hsl', h, s, l, alpha }`, `{ space: 'hsb', h, s, b, alpha }` or `{ space: 'rgb', r, g, b, alpha }`) instead of a hex string.
+- `update:modelValue`, `beforeUpdate:modelValue`, `change` and `changeEnd` carry a `Color`; `update:color` carries the same `Color`. `modelValue` and `defaultValue` still accept strings, so a `v-model` ref that starts as a hex string holds a `Color` after the first change.
+- New `update:hex` event (`onHexUpdate` on `useColorArea`, `useColorField`, `useColorSlider`): the lossy hex string after each change. The hidden form input still submits hex.
+- Updates fire only for a structurally different color (`isEqualColor`, now exported). The v2 repeat of an unchanged hex string on `ColorAreaRoot` and `ColorSliderRoot` is gone.
+- `ColorFieldRoot` now emits `change` and `changeEnd` after each committed change. On every component `changeEnd` fires only when the interaction changed the color and the model holds it: a drag back to its start or an update a controlled parent rejects reports nothing, and with a controlled `modelValue` it fires after the parent re-renders.
+- `ColorAreaRoot` has a `dir` prop and inherits the `ConfigProvider` direction (mirrored x axis, arrow keys, thumb and gradient under `rtl`).
+- `ColorSwatchPickerRoot` / `ColorSwatchPickerItem` accept `string | Color` and compare values structurally; they still emit the item value as declared.
+- `injectColorAreaRootContext()` / `injectColorSliderRootContext()` / `injectColorFieldRootContext()`: `color`, `xValue` and `yValue` are read-only computeds.
+- Utilities: `setChannelValues` returns the color in the space that holds all the channels (preferring the color's own space), and `convertToHsl` / `convertToHsb` keep the hue between HSL and HSB.
+
+**How to find it.**
+- Every `ColorAreaRoot`, `ColorFieldRoot` and `ColorSliderRoot` usage: search for `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot`, `useColorArea`, `useColorField` and `useColorSlider`. For each, find the variable bound with `v-model` / `:model-value` and every listener on `@update:model-value`, `@before-update:model-value`, `@change`, `@change-end`, `onChange`, `onChangeEnd`, `onUpdate` and `onBeforeUpdate`.
+- Uses of those variables as strings: template interpolation (`{{ color }}`), style bindings (`background: color`), string methods (`.startsWith`, `.toUpperCase`, `.slice`), comparisons with string literals, `JSON`/API payloads, and TypeScript types (`ref<string>`, `(value: string) =>`).
+- Workarounds for the v2 repeat: listeners that compared the new hex with the previous one before acting.
+- `ColorSwatchPickerRoot` models that are compared with `===` against a color from another color component.
+- `injectColorAreaRootContext` / `injectColorSliderRootContext` / `injectColorFieldRootContext` in custom parts that assign `xValue.value`, `yValue.value` or `color.value`.
+
+**Rewrite rules.**
+- A `v-model` variable that is only passed between color components (or into `ColorSwatch`, which accepts `Color`): widen its type to `string | Color` (import `type Color` from `reka-ui`) and change nothing else.
+- A variable also used as a string: keep the `v-model` and add `const hex = computed(() => colorToHex(normalizeColor(color.value)))` (import `colorToHex`, `normalizeColor` from `reka-ui`); replace the string uses with `hex`.
+- A variable that must stay a hex string (persisted, sent to an API, typed `string` across module boundaries): replace `v-model="x"` with `:model-value="x" @update:hex="x = $event"`. *Ask* the developer first if the component edits hue or saturation, because a hex round trip loses the hue of greys. `update:hex` can repeat the same string (moves finer than one 8-bit step still emit), so a handler with side effects must compare against the previous string.
+- Listeners typed `(value: string)` on `update:model-value`, `before-update:model-value`, `change` or `change-end`: retype to `(value: Color)` and format with `colorToHex(value)` where a string was used.
+- Remove hex-equality guards that only existed to skip the v2 repeated emit; use `isEqualColor(a, b)` where a guard is still needed.
+- `ColorSwatchPickerRoot` comparisons with `===`: use `isEqualColor`.
+- A custom part that wrote `xValue`/`yValue`/`color` on a color context: call `updateValues(x, y)` on the ColorArea context instead; *ask* for the other contexts.
+- An app wrapped in `ConfigProvider` with `dir="rtl"` that wants a left-to-right color area: add `dir="ltr"` to `ColorAreaRoot`. Otherwise no change.
+- Tests that assert a hex string from these events: assert `colorToHex(payload)` or the `Color` object instead.
+
+**Verify.** The type-check passes. In each migrated picker, drag the area and the sliders and type into the fields: the shared color stays in sync, any hex label updates, and a grey keeps its hue when the hue slider moves. A form containing a color component still submits a hex string.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()` and every hand-built month or year switcher you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher and every color model kept as a hex string that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

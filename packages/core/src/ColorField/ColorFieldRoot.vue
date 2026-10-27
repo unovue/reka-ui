@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { ColorFieldChangeReason } from './useColorField'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
@@ -8,9 +8,9 @@ import type { FormFieldProps } from '@/shared/types'
 import { createContext, useFormControl, useForwardExpose } from '@/shared'
 
 export interface ColorFieldRootProps extends PrimitiveProps, FormFieldProps {
-  /** The color value (controlled). Can be a hex string or Color object. */
+  /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
   modelValue?: string | Color
-  /** The default color value (uncontrolled). */
+  /** The default color value (uncontrolled). A string is parsed once. */
   defaultValue?: string | Color
   /** The color space to operate in when displaying a channel. */
   colorSpace?: ColorSpace
@@ -32,14 +32,21 @@ export interface ColorFieldRootProps extends PrimitiveProps, FormFieldProps {
 
 export type ColorFieldRootEmits = {
   /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
-  'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<ColorFieldChangeReason>]
+  'beforeUpdate:modelValue': [value: Color, details: ChangeEventDetails<ColorFieldChangeReason>]
   /** Event handler called when the color value changes. */
-  'update:modelValue': [value: string, details: ChangeEventDetails<ColorFieldChangeReason>]
+  'update:modelValue': [value: Color, details: ChangeEventDetails<ColorFieldChangeReason>]
+  /** Event handler called with the same `Color` as `update:modelValue`, after it. */
   'update:color': [value: Color]
+  /** Event handler called with the hex serialization of the new color, after `update:modelValue`. Lossy: drops the hue of greys and sub-byte precision. */
+  'update:hex': [value: string]
+  /** Event handler called when a committed edit, step or wheel change changes the color. Typing does not change the color until it is committed. */
+  'change': [value: Color]
+  /** Event handler called after each committed change once the model holds it: every field change is a complete interaction. With a controlled `modelValue` it fires after the parent applies the update, and not at all if the parent rejects it. */
+  'changeEnd': [value: Color]
 }
 
 export interface ColorFieldRootContext {
-  color: Ref<Color>
+  color: ComputedRef<Color>
   inputValue: Ref<string>
   channel: Ref<ColorChannel | undefined>
   colorSpace: Ref<ColorSpace>

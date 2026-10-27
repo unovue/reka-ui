@@ -1,13 +1,29 @@
 import type { Color } from './types'
-import { convertToHsb, convertToHsl, convertToRgb } from './convert'
+import { convertToSpace } from './convert'
+import { normalizeColor } from './parse'
 
-/** Compare in the requested color space, retaining hue and sub-byte precision. */
-export function isEqualColor(current: Color, next: Color): boolean {
-  const converted = next.space === 'hsl' ? convertToHsl(current) : next.space === 'hsb' ? convertToHsb(current) : convertToRgb(current)
-  return Object.entries(next).every(([key, value]) => {
-    const previous = converted[key as keyof typeof converted]
-    return typeof value === 'number' && typeof previous === 'number'
-      ? Math.abs(value - previous) < 1e-10
-      : value === previous
+const EPSILON = 1e-9
+
+function matches(a: Color, b: Color) {
+  const converted = convertToSpace(a, b.space) as unknown as Record<string, unknown>
+  return Object.entries(b).every(([key, value]) => {
+    const other = converted[key]
+    return typeof value === 'number' && typeof other === 'number'
+      ? Math.abs(value - other) < EPSILON
+      : value === other
   })
+}
+
+/**
+ * Structural color equality. Strings are parsed first. Two colors are equal when
+ * each one, converted to the other's space, has the same channels, so `#ff0000`
+ * equals `hsl(0, 100%, 50%)`, but an HSL grey with hue 200 differs from the same
+ * grey in RGB (which has no hue to keep).
+ */
+export function isEqualColor(a: string | Color, b: string | Color): boolean {
+  if (a === b)
+    return true
+  const left = normalizeColor(a)
+  const right = normalizeColor(b)
+  return matches(left, right) && matches(right, left)
 }

@@ -1,19 +1,21 @@
 <script lang="ts">
-import type { ColorSwatchPickerChangeReason } from './useColorSwatchPicker'
+import type { ColorSwatchPickerChangeReason, ColorSwatchPickerValue } from './useColorSwatchPicker'
 import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
 import type { ChangeEventDetails } from '@/shared'
 import { useForwardPropsEmits } from '@/shared'
 
-export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by' | 'filter'> {
-  defaultValue?: string | string[]
-  modelValue?: string | string[]
+export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps<ColorSwatchPickerValue>, 'by' | 'filter' | 'modelValue' | 'defaultValue'> {
+  /** The selected color, or colors with `multiple`, as color strings or `Color` objects (uncontrolled). Compared structurally with the item values. */
+  defaultValue?: ColorSwatchPickerValue | ColorSwatchPickerValue[]
+  /** The selected color, or colors with `multiple`, as color strings or `Color` objects (controlled). Compared structurally with the item values. */
+  modelValue?: ColorSwatchPickerValue | ColorSwatchPickerValue[]
 }
 
 export type ColorSwatchPickerRootEmits = Omit<ListboxRootEmits, 'update:modelValue' | 'beforeUpdate:modelValue'> & {
   /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
-  'beforeUpdate:modelValue': [value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
-  /** Event handler called when the color value changes. */
-  'update:modelValue': [value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
+  'beforeUpdate:modelValue': [value: ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
+  /** Event handler called when the color value changes, with the value of the selected item (or items) as declared. */
+  'update:modelValue': [value: ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>]
 }
 </script>
 

@@ -103,6 +103,7 @@ export {
   getSliderGradient,
   type HSBColor,
   type HSLColor,
+  isEqualColor,
   isValidColor,
   normalizeColor,
   parseColor,

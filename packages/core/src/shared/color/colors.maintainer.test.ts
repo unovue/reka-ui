@@ -1,3 +1,4 @@
+import type { Color } from '@/shared/color'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, h, nextTick, ref } from 'vue'
@@ -15,11 +16,11 @@ describe('maintainer color regressions', () => {
     ['Home', 0],
     ['End', 255],
   ] as const)('keeps a controlled field step on blur after typing (%s)', async (key, expected) => {
-    const model = ref('#100000')
+    const model = ref<string | Color>('#100000')
     const wrapper = mount(() => h(ColorFieldRoot, {
       'modelValue': model.value,
       'channel': 'red',
-      'onUpdate:modelValue': (value: string) => { model.value = value },
+      'onUpdate:modelValue': (value: Color) => { model.value = value },
     }, () => h(ColorFieldInput)))
     try {
       const input = wrapper.find('input')
@@ -75,9 +76,10 @@ describe('maintainer color regressions', () => {
         control.setValue([128])
         control.handleValueCommit()
       }
-      expect(onColorUpdate).toHaveBeenCalledOnce()
-      expect(onChange).toHaveBeenCalledExactlyOnceWith('#800000')
-      expect(onChangeEnd).toHaveBeenCalledExactlyOnceWith('#800000')
+      const written = { space: 'rgb', r: 128, g: 0, b: 0, alpha: 1 }
+      expect(onColorUpdate).toHaveBeenCalledExactlyOnceWith(written)
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(written)
+      expect(onChangeEnd).toHaveBeenCalledExactlyOnceWith(written)
     }
     finally {
       scope.stop()

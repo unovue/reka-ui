@@ -8,9 +8,9 @@ import type { DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
-  /** The color value (controlled). Can be a hex string or Color object. */
+  /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
   modelValue?: string | Color
-  /** The default color value (uncontrolled). */
+  /** The default color value (uncontrolled). A string is parsed once. */
   defaultValue?: string | Color
   /** The color space to operate in. */
   colorSpace?: ColorSpace
@@ -30,18 +30,21 @@ export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
 
 export type ColorSliderRootEmits = {
   /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
-  'beforeUpdate:modelValue': [value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>]
+  'beforeUpdate:modelValue': [value: Color, details: ChangeEventDetails<ColorSliderChangeReason>]
   /** Event handler called when the color value changes. */
-  'update:modelValue': [value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>]
+  'update:modelValue': [value: Color, details: ChangeEventDetails<ColorSliderChangeReason>]
+  /** Event handler called with the same `Color` as `update:modelValue`, after it. */
   'update:color': [value: Color]
-  /** Event handler called with the hex value on every pointer move or keyboard step that changes the color. */
-  'change': [value: string]
-  /** Event handler called with the hex value when a pointer drag that changed the color ends, and after each keyboard step. */
-  'changeEnd': [value: string]
+  /** Event handler called with the hex serialization of the new color, after `update:modelValue`. Lossy: drops the hue of greys and sub-byte precision. */
+  'update:hex': [value: string]
+  /** Event handler called on every pointer move or keyboard step that changes the color. */
+  'change': [value: Color]
+  /** Event handler called when an interaction that changed the color ends: on pointer release and after each keyboard step. */
+  'changeEnd': [value: Color]
 }
 
 export interface ColorSliderRootContext {
-  color: Ref<Color>
+  color: ComputedRef<Color>
   channelValue: ComputedRef<number>
   channel: Ref<ColorChannel>
   colorSpace: Ref<ColorSpace>

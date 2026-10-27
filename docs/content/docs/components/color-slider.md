@@ -24,7 +24,7 @@ A slider component for adjusting individual color channels. Supports all color c
     'Horizontal and vertical orientations.',
     'Full keyboard navigation support.',
     'Configurable step values.',
-    'Preserves color precision during drag operations.',
+    'Emits a lossless Color object, with an opt-in hex output.',
     'Form integration with hidden inputs.',
     'Support for HSL, HSB, and RGB color spaces.',
   ]"
@@ -67,7 +67,7 @@ import {
 
 These composables are experimental. Reactive options accept refs or getters. Pass a writable `modelValue` ref for ref-owned state, or use `onUpdate` to handle controlled updates. `onBeforeUpdate(value, details)` can synchronously call `details.cancel()` to prevent a change. Component users can use `@before-update:model-value` for the same behavior.
 
-`useColorSlider()` exposes precise channel state and root, track, and thumb surfaces. Call it in setup (or an effect scope). The surfaces compose with `SliderRoot`, `SliderTrack`, and `SliderThumb`, which supply pointer interaction, keyboard navigation, and positioning.
+`useColorSlider()` exposes precise channel state and root, track, and thumb surfaces. It holds no watchers and can be called outside setup. The surfaces compose with `SliderRoot`, `SliderTrack`, and `SliderThumb`, which supply pointer interaction, keyboard navigation, and positioning.
 
 ```vue
 <script setup>
@@ -92,7 +92,36 @@ Binding these surfaces to plain elements does not supply Slider interactions. De
 
 `root.attrs` contains only DOM attributes. `sliderProps` contains the bindings for the child component shown above.
 
-`onColorUpdate` receives accepted color objects and `onChange` / `onChangeEnd` receive interaction and commit notifications. These callbacks work without a component `emit` function. Returned state refs are read-only; use the exposed actions to request changes.
+`onUpdate`, `onColorUpdate`, `onChange` and `onChangeEnd` receive `Color` objects, and `onHexUpdate` receives the hex serialization of each accepted color. `onChange` fires for every change, `onChangeEnd` once a drag that changed the color ends and after each keyboard step. These callbacks work without a component `emit` function. Returned state refs are read-only; use the exposed actions to request changes.
+
+## Color model
+
+`v-model` accepts a color string (`'#3b82f6'`, `'hsl(217, 91%, 60%)'`) or a `Color` object, and every emitted value is a `Color` object: a plain `{ space, ... }` object in the component's color space, such as `{ space: 'hsl', h: 217, s: 91, l: 60, alpha: 1 }`. A string is parsed once on the way in. Keeping the object keeps information a hex string cannot hold, such as the hue of a grey and fractional channel values, so several color components can share one `v-model` without drift.
+
+`update:color` carries the same `Color` as `update:modelValue`. Listen to `update:hex` when you need a hex string, for example for an API or a text label. Hex is lossy: it drops the hue of greys and anything finer than one 8-bit step, so feed the `Color` back into `v-model`, not the hex. For the same reason `update:hex` can repeat the same string when the color moves by less than one step. A form submits the hex value through the hidden input either way.
+
+```vue
+<script setup>
+import { ColorSliderRoot, ColorSliderThumb, ColorSliderTrack } from 'reka-ui'
+import { ref } from 'vue'
+
+const color = ref('#3b82f6') // becomes a Color object after the first change
+const hex = ref('#3b82f6')
+</script>
+
+<template>
+  <ColorSliderRoot
+    v-model="color"
+    channel="hue"
+    @update:hex="hex = $event"
+  >
+    <ColorSliderTrack />
+    <ColorSliderThumb />
+  </ColorSliderRoot>
+</template>
+```
+
+Use `isEqualColor(a, b)` to compare two colors (strings or objects) structurally, and `colorToHex` or `colorToString` to format one.
 
 ## API Reference
 

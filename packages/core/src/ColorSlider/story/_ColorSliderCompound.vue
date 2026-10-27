@@ -15,13 +15,9 @@ const props = defineProps<{
   channels: Array<'hue' | 'saturation' | 'lightness' | 'brightness' | 'red' | 'green' | 'blue' | 'alpha'>
 }>()
 
-// Use a Color object as single source of truth to avoid hex round-trip drift.
+// Every part emits a Color object, so one v-model shares the color losslessly.
 const colorObj = ref<Color>(normalizeColor(props.defaultValue ?? '#7f007f'))
 const hexColor = computed(() => colorToString(colorObj.value, 'hex'))
-
-function handleColorUpdate(newColor: Color) {
-  colorObj.value = newColor
-}
 
 const channelLabels: Record<string, string> = {
   hue: 'H',
@@ -57,11 +53,10 @@ const channelLabels: Record<string, string> = {
       >
         <span class="text-xs font-medium text-gray-500 w-3 shrink-0">{{ channelLabels[channel] }}</span>
         <ColorSliderRoot
-          :model-value="colorObj"
+          v-model="colorObj"
           :channel="channel"
           :color-space="colorSpace ?? 'hsl'"
           class="relative flex items-center select-none touch-none w-[220px] h-5"
-          @update:color="handleColorUpdate"
         >
           <ColorSliderTrack
             class="relative flex-1 rounded-full h-3"

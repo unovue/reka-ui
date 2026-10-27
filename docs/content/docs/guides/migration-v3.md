@@ -86,9 +86,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 A change to a value that is already current no longer emits: `update:modelValue` fires only when the value actually changes, so re-pressing the checked radio or the selected single-mode toggle emits nothing (the `select` event on `RadioGroupItem` still fires). A multiple selection follows the same rule, compared entry by entry: a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array when the selected item is pressed again.
 
-`ColorAreaRoot` and `ColorSliderRoot` are a known exception until the color model changes from a hex string to a `Color` object ([#2789](https://github.com/unovue/reka-ui/issues/2789)). A change finer than hex precision, such as moving the hue of a grey or a fractional step, still emits `beforeUpdate:modelValue` and `update:modelValue` with the same hex string as before, so that `update:color` can report the precise `Color`. Compare the hex value yourself if a listener must ignore those repeats.
-
-`ColorAreaRoot` now emits `change`, which v2 declared but never fired, with the hex value on every pointer move and arrow-key step that changes the color. It also emits `changeEnd` after each keyboard step, not only when the pointer is released. A listener on either event that assumed it never fired, or fired only once per drag, runs more often.
+`ColorAreaRoot` now emits `change`, which v2 declared but never fired, on every pointer move and arrow-key step that changes the color. It also emits `changeEnd` after each keyboard step, not only when the pointer is released. A listener on either event that assumed it never fired, or fired only once per drag, runs more often. Both events carry a `Color` object, see [Color values are `Color` objects](#color-values-are-color-objects).
 
 Each family exports its reason union, for example `DialogOpenChangeReason` (`'trigger-press' | 'close-press' | 'escape-key' | 'outside-press' | 'focus-outside'`), `TooltipOpenChangeReason` (`'trigger-hover' | 'trigger-leave' | 'trigger-focus' | 'trigger-blur' | 'trigger-press' | 'content-leave' | 'escape-key' | 'outside-press'`) or `ListboxChangeReason` (`'item-press' | 'item-keydown' | 'select-all' | 'range-select'` — an Enter selection synthesizes a click on the highlighted item, so it reports `'item-press'`). `AccordionChangeReason` and `CollapsibleChangeReason` are both `'trigger-press' | 'content-found'`, where `content-found` is the browser's find-in-page revealing content kept in the DOM with `:unmount-on-hide="false"`. Those unions only list the interaction reasons: `details.reason` is typed as the family union plus the shared `BaseChangeReason`, so every family also reports `'imperative-action'` for programmatic changes such as the slot's `close()`, and a `switch` written against the family union alone misses it. A delayed hover open on Tooltip and HoverCard reports `trigger-hover` with the pointer event that armed the timer.
 
@@ -248,3 +246,45 @@ The `update:modelValue` and `beforeUpdate:modelValue` events of `ListboxRoot` ar
 ## Listbox filtering
 
 `ListboxRoot` has a new, opt-in `filter` prop. Nothing changes until you pass one: without it (or with `null`) the listbox filters nothing, and a list you already filter by hand from the `ListboxFilter` value keeps working as in v2. With a filter function, for example `contains` from `useFilter({ sensitivity: 'base' })`, items whose text does not match the `ListboxFilter` value are not rendered, a group whose items all fail to match is hidden, and keyboard navigation, typeahead and select-all only see the matching items. In a `ListboxVirtualizer`, the filter runs over `options` (matching `textContent(option)`), so a filtered-out option takes no virtual index. See [Filtering](../components/listbox#filtering). `ComboboxRoot` and `AutocompleteRoot` keep their own filtering and `ignoreFilter` for now.
+
+## Color values are `Color` objects
+
+`ColorAreaRoot`, `ColorFieldRoot` and `ColorSliderRoot` now emit a `Color` object instead of a hex string. A `Color` is a plain object in one color space, such as `{ space: 'hsl', h: 217, s: 91, l: 60, alpha: 1 }`. Each component emits it in the space it edits: the `colorSpace` prop, or the space that holds the edited channel (`rgb` for `red`, `hsb` for `brightness`). The hex string could not hold the hue of a grey or anything finer than one 8-bit step, so v2 kept that precision in hidden internal state; in v3 the emitted value carries it, and components that share one `v-model` no longer drift.
+
+What changed:
+
+- `update:modelValue`, `beforeUpdate:modelValue`, `change` and `changeEnd` carry a `Color`. `update:color` is unchanged and carries the same `Color` as `update:modelValue`.
+- `modelValue` and `defaultValue` still accept a color string, so `v-model` on a `ref('#3b82f6')` keeps working, but after the first change the ref holds a `Color`. Code that uses the bound value as a string (template text, a CSS `background`, a string comparison, an API payload) must format it.
+- The new `update:hex` event (and `onHexUpdate` on the composables) emits the hex string after each change. It is lossy, so do not feed it back into `v-model` when you need the hue of greys to survive. Forms still submit hex through the hidden input.
+- An update fires only when the color actually changes, compared structurally with `isEqualColor` (now exported). The v2 exception where `ColorAreaRoot` and `ColorSliderRoot` re-emitted an unchanged hex string for a change finer than hex precision is gone: such a change emits a `Color` that differs from the previous one.
+- `ColorFieldRoot` now emits `change` and `changeEnd` too, both after each committed change. On every component `changeEnd` fires only when the interaction changed the color and the model holds the result: a drag that returns to its start, or an update a controlled parent rejects, reports nothing. With a controlled `modelValue`, `changeEnd` fires once the parent has applied the update, after it re-renders.
+- `ColorAreaRoot` derives its thumb from the model, so a controlled parent that rejects an update keeps the thumb in place. It takes a `dir` prop and inherits the direction from `ConfigProvider`, so under `dir="rtl"` its x axis, arrow keys, thumb and gradient are mirrored.
+- Keyboard steps in `ColorAreaRoot` and channel steps in `ColorFieldRoot` snap to the step grid, so a channel at 11.1 steps to 12. A custom `step` on `ColorFieldRoot` snaps to multiples of that step.
+- `ColorSwatchPickerRoot` and `ColorSwatchPickerItem` accept a `Color` object as well as a string, and compare values structurally: a model of `'#ff0000'` selects an item whose value is `{ space: 'hsl', h: 0, s: 100, l: 50, alpha: 1 }`. The picker still emits the selected item's value as declared.
+- The root contexts expose `color`, `xValue` and `yValue` as read-only computeds.
+
+```vue
+<script setup lang="ts">
+import type { Color } from 'reka-ui' // [!code ++]
+import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb, colorToHex, normalizeColor } from 'reka-ui'
+import { computed, ref } from 'vue'
+
+const color = ref('#3b82f6') // [!code --]
+const color = ref<string | Color>('#3b82f6') // [!code ++]
+const hex = computed(() => colorToHex(normalizeColor(color.value))) // [!code ++]
+</script>
+
+<template>
+  <ColorAreaRoot v-slot="{ style }" v-model="color">
+    <ColorAreaArea :style="style">
+      <ColorAreaThumb />
+    </ColorAreaArea>
+  </ColorAreaRoot>
+  <span>{{ color }}</span> <!-- [!code --] -->
+  <span>{{ hex }}</span> <!-- [!code ++] -->
+</template>
+```
+
+If the app stores a hex string and you accept the precision loss, keep the string and update it from `update:hex`: `:model-value="hex" @update:hex="hex = $event"`. `update:hex` follows every model update, and a move finer than one 8-bit step still updates the model, so it can repeat the same string. Compare against the previous value before doing anything costly with it.
+
+The color utilities changed with the model. `convertToHsl` and `convertToHsb` convert between HSL and HSB directly and keep the hue of a grey, and `getChannelValue` reads `hue` and `saturation` from an HSB color without converting it. `setChannelValues` returns the color in a space that holds every channel it sets, the color's own space when it does: hue and saturation on an HSB color now stay in HSB instead of moving to HSL. The red, green and blue slider gradients use the color's real channel values for HSL and HSB colors instead of a fixed 128, and `parseColor` accepts `hsv()` as documented.
