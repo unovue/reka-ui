@@ -448,6 +448,9 @@
       "date": [
         "./dist/date.d.ts"
       ],
+      "elements": [
+        "./dist/elements.d.ts"
+      ],
       "namespaced": [
         "./dist/namespaced/index.d.mts"
       ],
