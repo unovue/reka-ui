@@ -101,9 +101,9 @@ export const [injectDrawerRootContext, provideDrawerRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, onUnmounted, ref, toRefs, watch } from 'vue'
+import { onUnmounted, watch } from 'vue'
 import { injectDrawerProviderContext } from './DrawerProvider.vue'
-import { createNestedSwipeProgressStore } from './utils'
+import { useDrawer } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerRootProps>(), {
   open: undefined,
@@ -121,31 +121,13 @@ defineSlots<{
   default?: (props: { open: boolean, close: () => void }) => any
 }>()
 
-// Manual open state management — we need to pass optional details on emit
-const uncontrolledOpen = ref(props.defaultOpen)
-const open = computed<boolean>({
-  get: () => props.open ?? uncontrolledOpen.value,
-  set: (value) => { uncontrolledOpen.value = value },
-})
-
+// The snap-point model keeps `useVModel` (its emit timing is part of the Base
+// UI parity contract); the composable takes it as a writable ref.
 const activeSnapPoint = useVModel(props, 'snapPoint', emit, {
   defaultValue: props.defaultSnapPoint ?? null,
   passive: (props.snapPoint === undefined) as false,
   eventName: 'update:snapPoint',
 }) as Ref<DrawerSnapPoint | null | undefined>
-
-const { modal, swipeDirection, snapPoints, snapToSequentialPoints } = toRefs(props)
-
-const triggerElement = ref<HTMLElement>()
-const contentElement = ref<HTMLElement>()
-const viewportElement = ref<HTMLElement>()
-const popupHeight = ref(0)
-const frontmostHeight = ref(0)
-const hasNestedDrawer = ref(false)
-const nestedOpenDrawerCount = ref(0)
-const nestedSwiping = ref(false)
-const isSwiping = ref(false)
-const nestedSwipeProgressStore = createNestedSwipeProgressStore()
 
 // Optional parent context for nested drawer support
 const parentContext = injectDrawerRootContext(null)
@@ -153,98 +135,37 @@ const parentContext = injectDrawerRootContext(null)
 // Optional provider context for drawer state tracking
 const providerContext = injectDrawerProviderContext(null)
 
-const contentId = useId(undefined, 'reka-drawer-content')
-const titleId = useId(undefined, 'reka-drawer-title')
-const descriptionId = useId(undefined, 'reka-drawer-description')
-
-provideDrawerRootContext({
-  open,
-  modal,
-  swipeDirection,
-  snapPoints,
+// The composable owns the open model (Base UI's cancellable `update:open`
+// contract), the nested-drawer bookkeeping and the context value; `useId`
+// (SSR-stable) stays in the shell and seeds the content/title/description ids.
+const { open, onOpenChange, context } = useDrawer({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  modal: () => props.modal,
+  swipeDirection: () => props.swipeDirection,
+  snapPoints: () => props.snapPoints,
+  snapToSequentialPoints: () => props.snapToSequentialPoints,
   activeSnapPoint,
-  snapToSequentialPoints,
-  popupHeight,
-  frontmostHeight,
-  hasNestedDrawer,
-  nestedOpenDrawerCount,
-  nestedSwiping,
-  isSwiping,
-  nestedSwipeProgressStore,
-  onOpenChange: handleOpenChange,
-  onOpenToggle: handleOpenToggle,
-  notifyOpenComplete(value) {
-    emit('update:openComplete', value)
-  },
-  setActiveSnapPoint(point) { activeSnapPoint.value = point },
-  onPopupHeightChange(h) {
-    popupHeight.value = h
-    providerContext?.visualStateStore.set({ frontmostHeight: h })
-  },
-  onNestedFrontmostHeightChange(h) { frontmostHeight.value = h },
-  onNestedDrawerPresenceChange(present) {
-    if (present)
-      nestedOpenDrawerCount.value++
-    else
-      nestedOpenDrawerCount.value = Math.max(0, nestedOpenDrawerCount.value - 1)
-    hasNestedDrawer.value = nestedOpenDrawerCount.value > 0
-    parentContext?.notifyParentHasNestedDrawer?.(present)
-  },
-  onNestedSwipingChange(swiping) {
-    nestedSwiping.value = swiping
-    parentContext?.notifyParentSwipingChange?.(swiping)
-  },
-  onNestedSwipeProgressChange(progress) {
-    nestedSwipeProgressStore.set(progress)
-    parentContext?.notifyParentSwipeProgressChange?.(progress)
-    providerContext?.visualStateStore.set({ swipeProgress: progress })
-  },
-  onSwipingChange(swiping) {
-    isSwiping.value = swiping
-  },
-  notifyParentFrontmostHeight: parentContext?.onNestedFrontmostHeightChange,
-  notifyParentSwipingChange: parentContext?.onNestedSwipingChange,
-  notifyParentSwipeProgressChange: parentContext?.onNestedSwipeProgressChange,
-  notifyParentHasNestedDrawer: parentContext?.onNestedDrawerPresenceChange,
-  triggerElement,
-  contentElement,
-  viewportElement,
-  contentId,
-  titleId,
-  descriptionId,
+  baseId: useId(undefined, 'reka-drawer'),
+  onOpenChange: (value, details) => emit('update:open', value, details),
+  onOpenComplete: value => emit('update:openComplete', value),
+  parentContext,
+  providerContext,
 })
 
+provideDrawerRootContext(context)
+
 function handleClose() {
-  handleOpenChange(false, 'close-press')
+  onOpenChange(false, 'close-press')
 }
 
-function handleOpenChange(value: boolean, reason?: DrawerOpenChangeReason) {
-  if (open.value === value)
-    return true
-  let isCanceled = false
-  const details: DrawerOpenChangeDetails = {
-    reason,
-    cancel() { isCanceled = true },
-    get isCanceled() { return isCanceled },
-  }
-  emit('update:open', value, details)
-  if (isCanceled)
-    return false
-  uncontrolledOpen.value = value
-  return true
-}
-
-function handleOpenToggle() {
-  handleOpenChange(!open.value, 'trigger-press')
-}
-
-// Sync open state with DrawerProvider
+// Sync open state with DrawerProvider (provider coupling stays in the shell).
 watch(open, (isOpen) => {
   if (isOpen) {
-    providerContext?.setDrawerOpen(contentId, true)
+    providerContext?.setDrawerOpen(context.contentId, true)
   }
   else {
-    providerContext?.setDrawerOpen(contentId, false)
+    providerContext?.setDrawerOpen(context.contentId, false)
   }
 }, { immediate: true })
 
@@ -253,7 +174,7 @@ watch(open, (isOpen) => {
 // the popup element). DrawerRoot just exposes the notify hook through context.
 
 onUnmounted(() => {
-  providerContext?.removeDrawer(contentId)
+  providerContext?.removeDrawer(context.contentId)
 })
 </script>
 

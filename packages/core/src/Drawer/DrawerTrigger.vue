@@ -7,13 +7,20 @@ export interface DrawerTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
+import { getDrawerTriggerSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerTriggerProps>(), { as: 'button' })
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+
+// aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
+// from the shared surface builder (single source with `useDrawer()`); the
+// tag-dependent `type` stays here. Consumer listeners fall through as `$attrs`
+// and chain with the surface's handler.
+const trigger = getDrawerTriggerSurface(rootContext)
 
 // Keep triggerElement in sync with the rendered element — useForwardElement's
 // currentElement is a reactive computed ref, and v-if / conditional rendering
@@ -31,14 +38,11 @@ onUnmounted(() => {
 
 <template>
   <Primitive
-    v-bind="props"
     :ref="forwardRef"
+    :as="props.as"
+    :as-child="props.asChild"
     :type="as === 'button' ? 'button' : undefined"
-    aria-haspopup="dialog"
-    :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
-    :data-state="disclosureState(rootContext.open.value)"
-    @click="rootContext.onOpenToggle"
+    v-bind="trigger.attrs.value"
   >
     <slot />
   </Primitive>

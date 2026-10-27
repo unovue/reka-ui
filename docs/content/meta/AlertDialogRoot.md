@@ -6,7 +6,8 @@
     'name': 'defaultOpen',
     'description': '<p>The open state of the dialog when it is initially rendered. Use when you do not need to control its open state.</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'false'
   },
   {
     'name': 'open',
@@ -18,7 +19,8 @@
     'name': 'unmountOnHide',
     'description': '<p>When set to <code>false</code>, the dialog content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful for SEO or when you want to improve performance by not remounting the component on every open.</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -55,9 +57,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
+| `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `open` | The controlled open state of the dialog. Can be binded as v-model:open. | `boolean` | No | - |
-| `unmountOnHide` | When set to false, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br> Useful for SEO or when you want to improve performance by not remounting the component on every open. | `boolean` | No | - |
+| `unmountOnHide` | When set to false, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br> Useful for SEO or when you want to improve performance by not remounting the component on every open. | `boolean` | No | `true` |
 
 **Events**
 
