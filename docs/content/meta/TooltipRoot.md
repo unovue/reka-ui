@@ -81,18 +81,18 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the tooltip when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
-| `delayDuration` | Override the duration given to the Provider to customise the open delay for a specific tooltip. | `number` | No | - |
-| `disableClosingTrigger` | When true, clicking on trigger will not close the content. | `boolean` | No | - |
-| `disabled` | When true, disable tooltip | `boolean` | No | - |
+| `delayDuration` | Override the duration given to the `Provider` to customise the open delay for a specific tooltip. | `number` | No | - |
+| `disableClosingTrigger` | When `true`, clicking on trigger will not close the content. | `boolean` | No | - |
+| `disabled` | When `true`, disable tooltip | `boolean` | No | - |
 | `disableHoverableContent` | Prevents Tooltip.Content from remaining open when hovering. Disabling this has accessibility consequences. Inherits from Tooltip.Provider. | `boolean` | No | - |
-| `ignoreNonKeyboardFocus` | Prevent the tooltip from opening if the focus did not come from the keyboard by matching against the :focus-visible selector. This is useful if you want to avoid opening it when switching browser tabs or closing a dialog. | `boolean` | No | - |
+| `ignoreNonKeyboardFocus` | Prevent the tooltip from opening if the focus did not come from the keyboard by matching against the `:focus-visible` selector. This is useful if you want to avoid opening it when switching browser tabs or closing a dialog. | `boolean` | No | - |
 | `open` | The controlled open state of the tooltip. | `boolean` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:open` | Event handler called before the open state of the tooltip changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason, Event>]` |
+| `beforeUpdate:open` | Event handler called before the open state of the tooltip changes; `details.cancel()` keeps the current state. | `[value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the tooltip changes. | `[value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 

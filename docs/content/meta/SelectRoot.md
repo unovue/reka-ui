@@ -137,28 +137,28 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `autocomplete` | Native html input autocomplete attribute. | `string` | No | - |
+| `autocomplete` | Native html input `autocomplete` attribute. | `string` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
 | `defaultOpen` | The open state of the select when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the select when initially rendered. Use when you do not need to control the state of the Select | `T \| T[]` | No | - |
-| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with Select | `boolean` | No | - |
-| `displayValue` | The text shown for a selected value. Wins over the text of its SelectItemText, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native select only holds the selected values (so browser autofill cannot pick another one) and the closed trigger's typeahead has no items to match. | `((value: T) => string)` | No | - |
-| `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return undefined to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), null to opt the key out (for Enter and Space this also skips the selection), or 'select' to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
-| `modelValue` | The controlled value of the Select. Can be bind as v-model. | `T \| T[]` | No | - |
+| `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with Select | `boolean` | No | - |
+| `displayValue` | The text shown for a selected value. Wins over the text of its `SelectItemText`, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native `select` only holds the selected values (so browser autofill cannot pick another one) and the closed trigger's typeahead has no items to match. | `((value: T) => string)` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return `undefined` to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), `null` to opt the key out (for Enter and Space this also skips the selection), or `'select'` to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
+| `modelValue` | The controlled value of the Select. Can be bind as `v-model`. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `nullableValue` | The value of the hidden native select option when the model value is nullish. | `string` | No | `""` |
-| `open` | The controlled open state of the Select. Can be bind as v-model:open. | `boolean` | No | - |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `open` | The controlled open state of the Select. Can be bind as `v-model:open`. | `boolean` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
-| `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
-| `update:modelValue` | Event handler called when the value changes. The value is an array when multiple. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
+| `beforeUpdate:open` | Event handler called before the open state changes; call `details.cancel()` to keep it. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`. | `[value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the select changes. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
@@ -166,7 +166,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values; undefined while a single select is empty | `M extends true ? T[] : T \| undefined` |
+| `modelValue` | Current input values; `undefined` while a single select is empty | `M extends true ? T[] : T \| undefined` |
 | `open` | Current open state | `boolean` |
 
 </llm-only>

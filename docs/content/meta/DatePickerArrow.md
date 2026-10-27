@@ -42,10 +42,10 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `height` | The height of the arrow in pixels. | `number` | No | - |
-| `rounded` | When true, render the rounded version of arrow. Do not work with as/asChild | `boolean` | No | - |
+| `rounded` | When `true`, render the rounded version of arrow. Do not work with `as`/`asChild` | `boolean` | No | - |
 | `width` | The width of the arrow in pixels. | `number` | No | - |
 
 </llm-only>

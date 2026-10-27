@@ -38,9 +38,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `prevPage` | The function to be used for the prev page. Overwrites the prevPage function set on the CalendarRoot. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a CalendarView to scope it to one view. | `CalendarPageFunction` | No | - |
+| `prevPage` | The function to be used for the prev page. Overwrites the `prevPage` function set on the `CalendarRoot`. Receives the placeholder and the active view. Unlike the root function it applies in every view; render the button inside a `CalendarView` to scope it to one view. | `CalendarPageFunction` | No | - |
 
 **Slots**
 

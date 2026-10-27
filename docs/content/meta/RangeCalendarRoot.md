@@ -334,39 +334,39 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `allowNonContiguousRanges` | When combined with isDateUnavailable, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. | `boolean` | No | `false` |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `allowNonContiguousRanges` | When combined with `isDateUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable dates, may be selected. | `boolean` | No | `false` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `calendarLabel` | The accessible label for the calendar | `string` | No | - |
 | `columns` | The number of cells per row in the month and year views | `number` | No | `4` |
 | `defaultPlaceholder` | The default placeholder date | `DateValue` | No | - |
 | `defaultValue` | The default value for the calendar | `DateRange` | No | `{ start: undefined, end: undefined }` |
-| `defaultView` | The view shown initially. Defaults to granularity. | `"day" \| "month" \| "year"` | No | - |
-| `dir` | The reading direction of the calendar when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `defaultView` | The view shown initially. Defaults to `granularity`. | `"day" \| "month" \| "year"` | No | - |
+| `dir` | The reading direction of the calendar when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | Whether or not the calendar is disabled | `boolean` | No | `false` |
 | `disableDaysOutsideCurrentView` | Whether or not to disable days outside the current view. | `boolean` | No | `false` |
 | `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
 | `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
 | `granularity` | The unit both ends of the range commit: a day, a month or a year. Views finer than this are unreachable. | `"day" \| "month" \| "year"` | No | `"day"` |
 | `initialFocus` | If true, the calendar will focus the selected day, today, or the first day of the month depending on what is visible when the calendar is mounted | `boolean` | No | `false` |
-| `isDateDisabled` | A function that returns whether or not a date is disabled. Called only for cells at the granularity (with that unit as its second argument); the coarser navigation views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
+| `isDateDisabled` | A function that returns whether or not a date is disabled. Called only for cells at the `granularity` (with that unit as its second argument); the coarser navigation views apply only `minValue`, `maxValue` and `disabled`. | `Matcher` | No | - |
 | `isDateHighlightable` | A function that returns whether or not a date is highlightable | `Matcher` | No | - |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable. Called only for cells at the granularity (with that unit as its second argument); the coarser navigation views apply only minValue, maxValue and disabled. | `Matcher` | No | - |
+| `isDateUnavailable` | A function that returns whether or not a date is unavailable. Called only for cells at the `granularity` (with that unit as its second argument); the coarser navigation views apply only `minValue`, `maxValue` and `disabled`. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
-| `maximumDays` | The maximum number of days in the range (inclusive). Alias of maximumLength for day ranges. | `number` | No | - |
-| `maximumLength` | The maximum length of the range (inclusive), counted in units of granularity: days, months or years. | `number` | No | - |
+| `maximumDays` | The maximum number of days in the range (inclusive). Alias of `maximumLength` for day ranges. | `number` | No | - |
+| `maximumLength` | The maximum length of the range (inclusive), counted in units of `granularity`: days, months or years. | `number` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
-| `maxView` | The coarsest view RangeCalendarViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
+| `maxView` | The coarsest view `RangeCalendarViewTrigger` can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modelValue` | The controlled selected date range of the calendar. Can be bound as v-model. | `DateRange \| null` | No | - |
-| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder and the view being paged, and is used only in the granularity view; the coarser views page by their default step. | `CalendarPageFunction` | No | - |
+| `modelValue` | The controlled selected date range of the calendar. Can be bound as `v-model`. | `DateRange \| null` | No | - |
+| `nextPage` | A function that returns the next page of the calendar. It receives the current placeholder and the view being paged, and is used only in the `granularity` view; the coarser views page by their default step. | `CalendarPageFunction` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `pagedNavigation` | This property causes the previous and next buttons to navigate by the number of months displayed at once, rather than one month | `boolean` | No | `false` |
 | `placeholder` | The placeholder date, which is used to determine what page to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
 | `preventDeselect` | Whether or not to prevent the user from deselecting a date without selecting another date first | `boolean` | No | `false` |
-| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder and the view being paged, and is used only in the granularity view; the coarser views page by their default step. | `CalendarPageFunction` | No | - |
+| `prevPage` | A function that returns the previous page of the calendar. It receives the current placeholder and the view being paged, and is used only in the `granularity` view; the coarser views page by their default step. | `CalendarPageFunction` | No | - |
 | `readonly` | Whether or not the calendar is readonly | `boolean` | No | `false` |
-| `view` | The controlled view: the unit the calendar currently shows. Can be bound as v-model:view. | `"day" \| "month" \| "year"` | No | - |
+| `view` | The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. | `"day" \| "month" \| "year"` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
 | `yearsPerPage` | The number of years to display per page in the year view | `number` | No | `12` |
@@ -375,9 +375,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the model value changes; details.cancel() vetoes the change. | `[date: DateRange, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
-| `beforeUpdate:placeholder` | Event handler called before the placeholder changes; details.cancel() vetoes the change. | `[date: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
-| `beforeUpdate:view` | Event handler called before the view changes; details.cancel() vetoes the change. | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the model value changes; `details.cancel()` vetoes the change. | `[date: DateRange, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Event handler called before the placeholder changes; `details.cancel()` vetoes the change. | `[date: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
+| `beforeUpdate:view` | Event handler called before the view changes; `details.cancel()` vetoes the change. | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:startValue` | Event handler called whenever the start value changes. The details carry the reason and event; the change has already happened. | `[date: DateValue \| undefined, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |

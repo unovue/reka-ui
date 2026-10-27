@@ -60,10 +60,10 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `estimateSize` | Estimated size (in px) of each item. A function receives the row index (group header rows included). | `number \| ((index: number) => number)` | No | - |
-| `grouped` | When true, options holds groups (VirtualGroup) rather than options. | `boolean` | No | - |
-| `options` | List of items, or, with grouped, groups of items ({ label, options, disabled? }). Each option is the value of the SelectItem the default slot renders. | `T[] \| VirtualGroup<T>[]` | Yes | - |
+| `grouped` | When `true`, `options` holds groups (`VirtualGroup`) rather than options. | `boolean` | No | - |
+| `options` | List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`). Each option is the `value` of the `SelectItem` the default slot renders. | `T[] \| VirtualGroup<T>[]` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
-| `textContent` | Text content for each item, used by typeahead (open, and on the closed trigger). Required for object options; primitive options otherwise use their string form. SelectValue always shows the SelectItemText of the selected item, rendered or not. | `((option: T) => string)` | No | - |
+| `textContent` | Text content for each item, used by typeahead (open, and on the closed trigger). Required for object options; primitive options otherwise use their string form. `SelectValue` always shows the `SelectItemText` of the selected item, rendered or not. | `((option: T) => string)` | No | - |
 
 **Slots**
 

@@ -36,9 +36,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `handle` | A handle from createAlertDialogHandle() that connects this trigger to an AlertDialogRoot rendered elsewhere (outside this trigger's tree or portal). | `AlertDialogHandle<Payload>` | No | - |
-| `payload` | Passed to the Root's default slot while this trigger owns the dialog. Requires a handle. | `Payload` | No | - |
+| `handle` | A handle from `createAlertDialogHandle()` that connects this trigger to an `AlertDialogRoot` rendered elsewhere (outside this trigger's tree or portal). | `AlertDialogHandle<Payload>` | No | - |
+| `payload` | Passed to the Root's default slot while this trigger owns the dialog. Requires a `handle`. | `Payload` | No | - |
 
 </llm-only>

@@ -50,11 +50,11 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `id` | Id of the element. Auto-generated when not provided. | `string` | No | - |
-| `match` | Restricts when this error renders:  a ValidityState key (e.g. "valueMissing") — renders when that constraint fails. true — always renders, letting an external library control visibility. omitted — renders whenever the field is invalid. | `boolean \| keyof ValidityState` | No | - |
+| `match` | Restricts when this error renders:  a `ValidityState` key (e.g. `"valueMissing"`) — renders when that constraint fails. `true` — always renders, letting an external library control visibility. omitted — renders whenever the field is invalid. | `boolean \| keyof ValidityState` | No | - |
 
 **Slots**
 

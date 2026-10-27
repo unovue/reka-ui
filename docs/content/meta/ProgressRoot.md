@@ -70,19 +70,19 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `((value: number \| null \| undefined, max: number) => string \| undefined)` | No | - |
 | `getValueText` | A function to get the accessible value text representing the current value in a human-readable format. | `((value: number \| null \| undefined, max: number) => string \| undefined)` | No | - |
 | `max` | The maximum progress value. | `number` | No | `DEFAULT_MAX` |
-| `modelValue` | The progress value. Can be bind as v-model. | `number \| null` | No | - |
+| `modelValue` | The progress value. Can be bind as `v-model`. | `number \| null` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:max` | Event handler called when an invalid max is corrected to 100. | `[value: number]` |
-| `update:modelValue` | Event handler called when an invalid modelValue is corrected to null. | `[value: number \| null]` |
+| `update:max` | Event handler called when an invalid `max` is corrected to `100`. | `[value: number]` |
+| `update:modelValue` | Event handler called when an invalid `modelValue` is corrected to `null`. | `[value: number \| null]` |
 
 **Slots**
 

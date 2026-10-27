@@ -96,13 +96,13 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"nav"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"nav"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultPage` | The value of the page that should be active when initially rendered. Use when you do not need to control the value state. | `number` | No | `1` |
-| `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with item | `boolean` | No | - |
 | `itemsPerPage` | Number of items per page | `number` | Yes | - |
-| `page` | The controlled value of the current page. Can be binded as v-model:page. | `number` | No | - |
-| `showEdges` | When true, always show first page, last page, and ellipsis | `boolean` | No | `false` |
+| `page` | The controlled value of the current page. Can be binded as `v-model:page`. | `number` | No | - |
+| `showEdges` | When `true`, always show first page, last page, and ellipsis | `boolean` | No | `false` |
 | `siblingCount` | Number of sibling should be shown around the current page | `number` | No | `2` |
 | `total` | Number of items in your list | `number` | No | `0` |
 
@@ -110,7 +110,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:page` | Event handler called before the page changes; call details.cancel() to keep the current page. | `[value: number, details: ChangeEventDetails<PaginationChangeReason, Event>]` |
+| `beforeUpdate:page` | Event handler called before the page changes; call `details.cancel()` to keep the current page. | `[value: number, details: ChangeEventDetails<PaginationChangeReason, Event>]` |
 | `update:page` | Event handler called when the page value changes | `[value: number, details: ChangeEventDetails<PaginationChangeReason, Event>]` |
 
 **Slots**

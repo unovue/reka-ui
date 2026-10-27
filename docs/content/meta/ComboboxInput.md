@@ -69,18 +69,18 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"input"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"input"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `autoFocus` | Focus on element when mounted. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
-| `displayValue` | The display value of input for selected item. Does not work with multiple. | `((val: any) => string)` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with item | `boolean` | No | - |
+| `displayValue` | The display value of input for selected item. Does not work with `multiple`. | `((val: any) => string)` | No | - |
 | `modelValue` | The controlled value of the filter. Can be binded with v-model. | `string` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Called before the input text changes; details.cancel() keeps the current text. | `[value: string, details: ChangeEventDetails<ComboboxInputChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Called before the input text changes; `details.cancel()` keeps the current text. | `[value: string, details: ChangeEventDetails<ComboboxInputChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the input text changes. | `[value: string, details: ChangeEventDetails<ComboboxInputChangeReason, Event>]` |
 
 **Slots**

@@ -118,25 +118,25 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The default value of the pin inputs when it is initially rendered. Use when you do not need to control its checked state. | `PinInputValue<Type>` | No | - |
-| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with the pin input | `boolean` | No | - |
+| `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with the pin input | `boolean` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `mask` | When true, pin inputs will be treated as password. | `boolean` | No | - |
-| `modelValue` | The controlled checked state of the pin input. Can be binded as v-model. | `PinInputValue<Type> \| null` | No | - |
+| `mask` | When `true`, pin inputs will be treated as password. | `boolean` | No | - |
+| `modelValue` | The controlled checked state of the pin input. Can be binded as `v-model`. | `PinInputValue<Type> \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `otp` | When true, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. | `boolean` | No | - |
+| `otp` | When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. | `boolean` | No | - |
 | `placeholder` | The placeholder character to use for empty pin-inputs. | `string` | No | `""` |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `type` | Input type for the inputs. | `Type` | No | `"text" as any` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; details.cancel() vetoes the change. | `[value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; `details.cancel()` vetoes the change. | `[value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason, Event>]` |
 | `complete` | Event handler called when every input is filled. | `[value: PinInputValue<Type>]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason, Event>]` |
 

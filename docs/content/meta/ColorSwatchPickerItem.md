@@ -58,17 +58,17 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | Text used for the label registry; defaults to the rendered text content. | `string` | No | - |
-| `value` | The color of the swatch, as a color string or a Color object. Example: #16a372 or { space: 'hsl', h: 158, s: 76, l: 36, alpha: 1 }. Values are compared structurally, so #ff0000 and the equivalent Color select the same item. | `ColorSwatchPickerValue` | Yes | - |
+| `value` | The color of the swatch, as a color string or a `Color` object. Example: `#16a372` or `{ space: 'hsl', h: 158, s: 76, l: 36, alpha: 1 }`. Values are compared structurally, so `#ff0000` and the equivalent `Color` select the same item. | `ColorSwatchPickerValue` | Yes | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<AcceptableValue>]` |
+| `select` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: SelectEvent<AcceptableValue>]` |
 
 **Slots**
 

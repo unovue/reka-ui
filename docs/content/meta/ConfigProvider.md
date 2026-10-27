@@ -52,9 +52,9 @@
 | --- | --- | --- | --- | --- |
 | `dir` | The global reading direction of your application. This will be inherited by all primitives. | `"ltr" \| "rtl"` | No | `"ltr"` |
 | `locale` | The global locale of your application. This will be inherited by all primitives. | `string` | No | `"en"` |
-| `nonce` | The global nonce value of your application. This will be inherited by the related primitives. | `string` | No | - |
-| `scrollBody` | How modal primitives lock page scroll. true keeps the layout stable with scrollbar-gutter: stable (or by pinning <body>'s size where that is unsupported), false only hides the overflow, and { padding, margin } hides the overflow and offsets <body> by the given amounts (true = the scrollbar width). The lock never touches pointer-events. | `boolean \| ScrollBodyOption` | No | `true` |
-| `teleportTo` | The global default teleport target for all portalled primitives (e.g. Dialog, Popover, Tooltip). Individual *Portal components can still override this via their own to prop. Without it, portals render into body, or into the shadow root they are rendered in. Inside a shadow root, a selector is looked up in the shadow root first, then in the document. | `string \| HTMLElement` | No | - |
-| `useId` | The global useId injection as a workaround for preventing hydration issue. | `(() => string)` | No | - |
+| `nonce` | The global `nonce` value of your application. This will be inherited by the related primitives. | `string` | No | - |
+| `scrollBody` | How modal primitives lock page scroll. `true` keeps the layout stable with `scrollbar-gutter: stable` (or by pinning `<body>`'s size where that is unsupported), `false` only hides the overflow, and `{ padding, margin }` hides the overflow and offsets `<body>` by the given amounts (`true` = the scrollbar width). The lock never touches `pointer-events`. | `boolean \| ScrollBodyOption` | No | `true` |
+| `teleportTo` | The global default teleport target for all portalled primitives (e.g. `Dialog`, `Popover`, `Tooltip`). Individual `*Portal` components can still override this via their own `to` prop. Without it, portals render into `body`, or into the shadow root they are rendered in. Inside a shadow root, a selector is looked up in the shadow root first, then in the document. | `string \| HTMLElement` | No | - |
+| `useId` | The global `useId` injection as a workaround for preventing hydration issue. | `(() => string)` | No | - |
 
 </llm-only>

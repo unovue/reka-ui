@@ -136,15 +136,15 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `colorSpace` | The color space to operate in. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
 | `defaultValue` | The default color value (uncontrolled). A string is parsed once. | `string \| Color` | No | `"#ff0000"` |
-| `dir` | The reading direction of the area. In rtl the x axis runs right to left. If omitted, inherits from ConfigProvider or assumes ltr. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with the area. | `boolean` | No | `false` |
-| `modelValue` | The color value (controlled). A string is parsed once; emitted values are always Color objects. | `string \| Color` | No | - |
+| `dir` | The reading direction of the area. In `rtl` the x axis runs right to left. If omitted, inherits from `ConfigProvider` or assumes `ltr`. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with the area. | `boolean` | No | `false` |
+| `modelValue` | The color value (controlled). A string is parsed once; emitted values are always `Color` objects. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `xChannel` | Color channel for the horizontal (x) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"hue"` |
 | `xName` | The name of the x channel input element for form submission. | `string` | No | - |
 | `yChannel` | Color channel for the vertical (y) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"saturation"` |
@@ -154,11 +154,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; `details.cancel()` vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 | `change` | Event handler called on every pointer move or keyboard step that changes the color. | `[value: Color]` |
 | `changeEnd` | Event handler called when an interaction that changed the color ends: on pointer release and after each keyboard step. | `[value: Color]` |
-| `update:color` | Event handler called with the same Color as update:modelValue, after it. | `[value: Color]` |
-| `update:hex` | Event handler called with the hex serialization of the new color, after update:modelValue. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
+| `update:color` | Event handler called with the same `Color` as `update:modelValue`, after it. | `[value: Color]` |
+| `update:hex` | Event handler called with the hex serialization of the new color, after `update:modelValue`. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
 | `update:modelValue` | Event handler called when the color value changes. | `[value: Color, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 
 **Slots**
