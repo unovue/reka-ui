@@ -47,6 +47,25 @@ defineExpose(expose)
 const { viewport, selectedItem, selectedItemText, focusSelectedItem }
   = contentContext!
 
+/**
+ * The untransformed offset of `element`'s border box from the layout root
+ * (the sum of its `offsetLeft`s and of its offset parents' left borders).
+ * Layout offsets ignore transforms, so the content measures the same while a
+ * `scale()` starting style or enter animation is applied (#2827).
+ */
+function getLayoutLeft(element: HTMLElement) {
+  let left = 0
+  let node: HTMLElement | null = element
+  while (node) {
+    left += node.offsetLeft
+    const parent = node.offsetParent as HTMLElement | null
+    if (parent)
+      left += parent.clientLeft
+    node = parent
+  }
+  return left
+}
+
 function position() {
   if (
     rootContext.triggerElement.value
@@ -62,16 +81,19 @@ function position() {
     // -----------------------------------------------------------------------------------------
     //  Horizontal positioning
     // -----------------------------------------------------------------------------------------
-    const contentRect = contentElement.value.getBoundingClientRect()
+    // The content's own metrics come from layout, not from its (possibly
+    // transformed) bounding rect.
+    const contentLayoutWidth = contentElement.value.offsetWidth
     const valueNodeRect = rootContext.valueElement.value.getBoundingClientRect()
-    const itemTextRect = selectedItemText.value.getBoundingClientRect()
+    const itemTextLeft = getLayoutLeft(selectedItemText.value) - getLayoutLeft(contentElement.value)
+    const itemTextRight = itemTextLeft + selectedItemText.value.offsetWidth
 
     if (rootContext.dir.value !== 'rtl') {
-      const itemTextOffset = itemTextRect.left - contentRect.left
+      const itemTextOffset = itemTextLeft
       const left = valueNodeRect.left - itemTextOffset
       const leftDelta = triggerRect.left - left
       const minContentWidth = triggerRect.width + leftDelta
-      const contentWidth = Math.max(minContentWidth, contentRect.width)
+      const contentWidth = Math.max(minContentWidth, contentLayoutWidth)
       const rightEdge = window.innerWidth - CONTENT_MARGIN
       const clampedLeft = clamp(left, CONTENT_MARGIN, Math.max(CONTENT_MARGIN, rightEdge - contentWidth))
 
@@ -79,11 +101,11 @@ function position() {
       contentWrapperElement.value.style.left = `${clampedLeft}px`
     }
     else {
-      const itemTextOffset = contentRect.right - itemTextRect.right
+      const itemTextOffset = contentLayoutWidth - itemTextRight
       const right = window.innerWidth - valueNodeRect.right - itemTextOffset
       const rightDelta = window.innerWidth - triggerRect.right - right
       const minContentWidth = triggerRect.width + rightDelta
-      const contentWidth = Math.max(minContentWidth, contentRect.width)
+      const contentWidth = Math.max(minContentWidth, contentLayoutWidth)
       const leftEdge = window.innerWidth - CONTENT_MARGIN
       const clampedRight = clamp(
         right,
