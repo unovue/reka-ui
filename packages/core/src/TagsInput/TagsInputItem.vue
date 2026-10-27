@@ -3,8 +3,9 @@ import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
-import { createContext, selectionState, useForwardElement } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
+import { createTagsInputItemContext, getTagsInputItemSurface } from './useTagsInput'
 
 export interface TagsInputItemProps extends PrimitiveProps {
   /** Value associated with the tags */
@@ -18,6 +19,7 @@ export interface TagsInputItemContext {
   displayValue: ComputedRef<string>
   isSelected: Ref<boolean>
   disabled?: Ref<boolean>
+  /** Filled in by `TagsInputItemText`; backed by a ref, so assigning it updates `aria-labelledby`. */
   textId: string
 }
 
@@ -41,13 +43,8 @@ const isSelected = computed(() => context.selectedElement.value === currentEleme
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 
-const itemContext = provideTagsInputItemContext({
-  value,
-  isSelected,
-  disabled,
-  textId: '',
-  displayValue: computed(() => context.displayValue(value.value)),
-})
+const itemContext = provideTagsInputItemContext(createTagsInputItemContext(context, { value, isSelected, disabled }))
+const item = getTagsInputItemSurface(itemContext)
 </script>
 
 <template>
@@ -56,10 +53,7 @@ const itemContext = provideTagsInputItemContext({
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :aria-labelledby="itemContext.textId"
-      :aria-current="isSelected"
-      :data-disabled="disabled ? '' : undefined"
-      :data-state="selectionState(isSelected)"
+      v-bind="item.attrs.value"
     >
       <slot />
     </Primitive>

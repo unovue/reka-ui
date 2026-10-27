@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { useId } from '@/shared'
 import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
-import { sleep } from '@/test'
 import ConfigProviderTest from './_ConfigProvider.vue'
 import ConfigProvider from './ConfigProvider.vue'
 
@@ -40,7 +39,8 @@ describe('given a default ConfigProvider', async () => {
     document.body.innerHTML = ''
     resetPageStyles()
     wrapper = mount(ConfigProviderTest, { attachTo: document.body })
-    await sleep(10) // the scroll lock applies a macrotask later
+    // the scroll lock applies a macrotask after the mount flush, which can outlast a fixed sleep under load
+    await vi.waitFor(() => expect(document.body.style.overflowY).toBe('hidden'))
   })
 
   it('it should render config provider, and all it\'s slot correctly', () => {
@@ -80,7 +80,7 @@ describe('given a scrollBody ConfigProvider', async () => {
 
   it('should only hide the overflow when scrollBody is false', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: false }, attachTo: document.body })
-    await sleep(10)
+    await vi.waitFor(() => expect(document.body.style.overflowY).toBe('hidden'))
     expect(document.body.style.overflowY).toBe('hidden')
     expect(document.documentElement.style.scrollbarGutter).toBe('')
     expect(document.body.style.paddingRight).toBe('')
@@ -89,14 +89,14 @@ describe('given a scrollBody ConfigProvider', async () => {
 
   it('should set the given padding on body', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { padding: 20 } }, attachTo: document.body })
-    await sleep(10)
+    await vi.waitFor(() => expect(document.body.style.paddingRight).toBe('20px'))
     expect(document.body.style.paddingRight).toBe('20px')
     expect(document.body.style.marginRight).toBe('0px')
   })
 
   it('should set the given margin on body', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { margin: 20, padding: 0 } }, attachTo: document.body })
-    await sleep(10)
+    await vi.waitFor(() => expect(document.body.style.marginRight).toBe('20px'))
     expect(document.body.style.paddingRight).toBe('0px')
     expect(document.body.style.marginRight).toBe('20px')
   })

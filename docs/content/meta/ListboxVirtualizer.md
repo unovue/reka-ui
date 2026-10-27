@@ -11,7 +11,7 @@
   {
     'name': 'options',
     'description': '<p>List of items</p>\n',
-    'type': 'T',
+    'type': 'T[]',
     'required': true
   },
   {
@@ -54,7 +54,7 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `estimateSize` | Estimated size (in px) of each item | `number \| ((index: number) => number)` | No | - |
-| `options` | List of items | `T` | Yes | - |
+| `options` | List of items | `T[]` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
 | `textContent` | Text content for each item, used by typeahead and by a ListboxRoot filter (which otherwise matches the option's string form) | `((option: T) => string)` | No | - |
 

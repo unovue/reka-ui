@@ -1,11 +1,11 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useActiveElement } from '@vueuse/core'
-import { computed } from 'vue'
 import { RadioGroupIndicator, RadioGroupItem } from '@/RadioGroup'
-import { selectionState, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectRatingItemContext } from './RatingItem.vue'
 import { injectRatingRootContext } from './RatingRoot.vue'
+import { getRatingItemIndicatorSurface } from './useRating'
 
 export interface RatingItemIndicatorProps extends PrimitiveProps {
   /** The step value this indicator represents. */
@@ -22,19 +22,14 @@ defineExpose(expose)
 const activeElement = useActiveElement()
 const itemContext = injectRatingItemContext()
 
-const isActive = computed(() => {
-  return (rootContext.hoveredRating.value > 0 && props.step <= rootContext.hoveredRating.value) || (rootContext.hoveredRating.value === 0 && props.step <= rootContext.modelValue.value)
-})
-
-const isVisible = computed(() => {
+// Same derivation as `useRating().getItemIndicatorSurface` for `data-state`,
+// the step CSS variables and the hover preview; the radio semantics come from
+// `RadioGroupItem`.
+const indicator = getRatingItemIndicatorSurface(rootContext, () => props.step, {
   // `currentElement` is unset on the server and before mount, where `activeElement` can also be `undefined`
-  const isFocused = !!currentElement.value && activeElement.value === currentElement.value
-  return isFocused || rootContext.step.value === 1 || props.step % 1 === 0 || props.step === rootContext.hoveredRating.value || props.step === rootContext.modelValue.value
+  isFocused: () => !!currentElement.value && activeElement.value === currentElement.value,
+  steps: () => itemContext.steps.value,
 })
-
-function handleMouseEnter() {
-  rootContext.changeHoveredRating(props.step)
-}
 </script>
 
 <template>
@@ -42,17 +37,10 @@ function handleMouseEnter() {
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :style="{
-      ['--reka-rating-item-step-width']: `${((step % 1 || 1) * 100)}%`,
-      ['--reka-rating-item-step-opacity']: isVisible ? 1 : 0,
-      ['--reka-rating-item-step-z-index']: itemContext.steps.value.length - itemContext.steps.value.indexOf(step),
-
-    }"
+    v-bind="indicator.attrs.value"
     :value="step"
-    :data-state="selectionState(isActive)"
     :disabled="rootContext.disabled.value"
-    @select="rootContext.changeModelValue(step)"
-    @mouseenter="handleMouseEnter"
+    @select="rootContext.changeModelValue(step, 'item-press', $event.detail.originalEvent)"
   >
     <RadioGroupIndicator
       force-mount

@@ -31,3 +31,17 @@ export {
   type TagsInputRootEmits,
   type TagsInputRootProps,
 } from './TagsInputRoot.vue'
+
+export {
+  type TagsInputChangeReason,
+  type TagsInputClearState,
+  type TagsInputInputState,
+  type TagsInputItemState,
+  type TagsInputItemSurfaceOptions,
+  type TagsInputItemSurfaces,
+  type TagsInputItemTextState,
+  type TagsInputRootState,
+  useTagsInput,
+  type UseTagsInputProps,
+  type UseTagsInputReturn,
+} from './useTagsInput'
