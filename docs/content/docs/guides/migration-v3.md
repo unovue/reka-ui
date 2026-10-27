@@ -307,6 +307,7 @@ What changed:
 - **Content ids** derive from the root's id: `reka-combobox-v-0-content` instead of `reka-combobox-content-v-1`, and `reka-autocomplete-v-0-content` for Autocomplete. The input's and the trigger's `aria-controls` point at it from the first render; in v2 they stayed empty until the content first mounted. Selectors and snapshots that hard-code the old ids need updating.
 - **`ComboboxInput` and `AutocompleteInput` render the input themselves** instead of wrapping `ListboxFilter`. The rendered `<input>` and its attributes are unchanged. Tests that look up `ListboxRoot` or `ListboxFilter` with `findComponent` inside a combobox no longer find them.
 - **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T | null` when it is absent (`ComboboxCancel` with `reset-model-value-on-clear` emits `null`), either while it is a plain `boolean`. The runtime payload is unchanged.
+- **`modelValue` and `defaultValue` accept `null`** (`T | T[] | null`, v2: `T | T[]`), so the `null` a clear emits can be bound back: `v-model` on a `ref<string | null>` type-checks even when `T` is pinned to `string`. Type-only; the same holds for `useComboboxRoot()`'s `modelValue`, `defaultValue` and `setModelValue`.
 - **New:** `displayValue` on `ComboboxRoot` sets the input text for the selected value when `ComboboxInput` has no `displayValue` of its own. On `AutocompleteRoot` it sets the text a selected item writes into the value.
 
 ## Color values are `Color` objects

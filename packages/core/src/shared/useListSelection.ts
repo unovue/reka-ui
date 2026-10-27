@@ -89,8 +89,8 @@ export function useListSelection<T, R extends string = string>(options: UseListS
 
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<T | T[] | undefined, R>({
     prop: options.modelValue,
-    // Evaluated once, like the SFC's `props.defaultValue ?? (multiple.value ? [] : undefined)`.
-    defaultValue: () => options.defaultValue ?? (multiple() ? [] : undefined),
+    // Evaluated once. Only `undefined` falls back, so an explicit `null` default is kept.
+    defaultValue: () => options.defaultValue !== undefined ? options.defaultValue : (multiple() ? [] : undefined),
     name: options.name ?? 'modelValue',
     emit: options.emit,
     onBeforeUpdate: options.onBeforeUpdate,

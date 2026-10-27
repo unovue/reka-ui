@@ -9,7 +9,7 @@ const modelValue = ref(defaultValue)
 <template>
   <Story
     title="Editable/Chromatic"
-    :layout="{ type: 'grid', width: '50%', iframe: false }"
+    :layout="{ type: 'grid', width: '50%' }"
   >
     <Variant title="Uncontrolled (modelValue)">
       <Editable :default-value="defaultValue" />

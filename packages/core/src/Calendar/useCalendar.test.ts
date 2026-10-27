@@ -2,7 +2,7 @@ import type { DateValue } from '@internationalized/date'
 import type { CalendarUnit } from '@/date'
 import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it, vi } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { effectScope, shallowRef } from 'vue'
 import { useCalendar } from './useCalendar'
 
 /**
@@ -123,7 +123,7 @@ describe('useCalendar', () => {
 
   it('is controllable: a controlled model is emitted, not written', () => {
     withScope(() => {
-      const model = ref<DateValue | undefined>(sep5)
+      const model = shallowRef<DateValue | undefined>(sep5)
       const emit = vi.fn()
       const api = useCalendar({ locale: 'en-US', weekStartsOn: 0, modelValue: () => model.value, emit })
       expect(api.isControlled.value).toBe(true)

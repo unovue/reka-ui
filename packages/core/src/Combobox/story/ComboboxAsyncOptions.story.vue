@@ -11,7 +11,7 @@ const { data, execute, isFetching } = useFetch('https://jsonplaceholder.typicode
   immediate: false,
   initialData: [],
   afterFetch: (ctx) => {
-    ctx.data = (ctx.data?.filter(i => i.name.toLowerCase().includes(query.value.toLowerCase())) ?? []).map(i => i.name)
+    ctx.data = (ctx.data?.filter((i: { name: string }) => i.name.toLowerCase().includes(query.value.toLowerCase())) ?? []).map((i: { name: string }) => i.name)
     return ctx
   },
 

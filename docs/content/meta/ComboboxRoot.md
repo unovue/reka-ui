@@ -29,8 +29,8 @@
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox</p>\n',
-    'type': 'T | T[]',
+    'description': '<p>The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox.</p>\n',
+    'type': 'T | T[] | null',
     'required': false
   },
   {
@@ -84,8 +84,8 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
-    'type': 'T | T[]',
+    'description': '<p>The controlled value of the Combobox. Can be binded with <code>v-model</code>. An array when <code>multiple</code>; <code>null</code> is an empty\nsingle selection, the value <code>ComboboxCancel</code> emits when it clears one.</p>\n',
+    'type': 'T | T[] | null',
     'required': false
   },
   {
@@ -208,7 +208,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: T, b: T) => boolean)` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
-| `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
+| `defaultValue` | The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox. | `T \| T[] \| null` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
 | `displayValue` | The text the input shows for the selected value of a single combobox, when ComboboxInput has no displayValue of its own. Without either, a primitive value shows as its string form and an object value as an empty input. | `((value: T) => string)` | No | - |
@@ -217,7 +217,7 @@
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | Deprecated alias for :filter="null": when true, turns client filtering off. Wins over filter. | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
-| `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
+| `modelValue` | The controlled value of the Combobox. Can be binded with v-model. An array when multiple; null is an empty single selection, the value ComboboxCancel emits when it clears one. | `T \| T[] \| null` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `open` | The controlled open state of the Combobox. Can be binded with v-model:open. | `boolean` | No | - |

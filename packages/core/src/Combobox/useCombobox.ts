@@ -298,7 +298,15 @@ export function getComboboxInputText(
   return typeof value === 'object' ? '' : String(value)
 }
 
-export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'filterSearch' | 'highlightScroll'> {
+export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'filterSearch' | 'highlightScroll' | 'modelValue' | 'defaultValue'> {
+  /**
+   * Controlled value. A getter/ref resolving to `undefined` is uncontrolled;
+   * a writable `Ref` (with no `emit`/`onUpdate`) is written back ("ref-owned").
+   * `null` is an empty single selection (see `emptyValue`).
+   */
+  modelValue?: MaybeRefOrGetter<T | T[] | null | undefined>
+  /** Initial value when uncontrolled. Defaults to `[]` when `multiple`, else `undefined`. */
+  defaultValue?: T | T[] | null
   /**
    * Controlled open state. A getter/ref resolving to `undefined` is
    * uncontrolled; a writable `Ref` (with no `emit`/`onUpdateOpen`) is written back.
@@ -353,11 +361,13 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>) => void
 }
 
-export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseListboxRootReturn<T>, 'modelValue' | 'isSelected' | 'highlightedElement' | 'highlightItem' | 'highlightFirstItem' | 'highlightSelected' | 'labels' | 'filterState' | 'isControlled' | 'lastChangeDetails' | 'getItemSurface'> {
+export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseListboxRootReturn<T>, 'isSelected' | 'highlightedElement' | 'highlightItem' | 'highlightFirstItem' | 'highlightSelected' | 'labels' | 'filterState' | 'isControlled' | 'lastChangeDetails' | 'getItemSurface'> {
   /** Select an item's value: a single selection is replaced, a multiple one toggled. Returns `false` when unchanged or cancelled. */
   select: (value: T, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** The current value: an array when `multiple`; `null` once a single selection is cleared. */
+  modelValue: ComputedRef<T | T[] | null | undefined>
   /** Write the whole model; returns `false` when unchanged or cancelled. */
-  setModelValue: (value: T | T[] | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  setModelValue: (value: T | T[] | null | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
   open: ComputedRef<boolean>
   /** Returns `false` when the change was cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -416,6 +426,9 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
 
   const listbox = useListboxRoot<T>({
     ...props,
+    // The Listbox model treats `null` like any other single value.
+    modelValue: props.modelValue as MaybeRefOrGetter<T | T[] | undefined>,
+    defaultValue: props.defaultValue as T | T[] | undefined,
     filter,
     filterSearch,
     highlightScroll,
@@ -451,8 +464,9 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     return true
   }
 
-  function setModelValue(value: T | T[] | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) {
-    return listbox.setModelValue(value, reason as ListboxChangeReason, event)
+  function setModelValue(value: T | T[] | null | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) {
+    // The Listbox model treats `null` like any other single value.
+    return listbox.setModelValue(value as T | T[] | undefined, reason as ListboxChangeReason, event)
   }
 
   function select(value: T, reason: ComboboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
@@ -483,7 +497,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     setModelValue,
     selectItem: select,
     pressItem,
-    clearModelValue: event => setModelValue((listbox.context.multiple.value ? [] : props.emptyValue ?? null) as T, 'clear-press', event),
+    clearModelValue: event => setModelValue(listbox.context.multiple.value ? [] : props.emptyValue ?? null, 'clear-press', event),
     ...positioning,
     isUserInputted,
     inputElement,
@@ -509,7 +523,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   )
 
   return {
-    modelValue: listbox.modelValue,
+    modelValue: listbox.modelValue as ComputedRef<T | T[] | null | undefined>,
     select,
     setModelValue,
     isSelected: listbox.isSelected,
