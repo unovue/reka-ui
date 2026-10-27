@@ -10,6 +10,7 @@ import { ref, watch, watchEffect } from 'vue'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectItemAlignedPositionContext } from './SelectItemAlignedPosition.vue'
 import SelectScrollButtonImpl from './SelectScrollButtonImpl.vue'
+import { getScrollStep } from './utils'
 
 defineProps<SelectScrollUpButtonProps>()
 
@@ -50,8 +51,8 @@ watch(currentElement, () => {
     :ref="forwardRef"
     @auto-scroll="() => {
       const { viewport, selectedItem } = contentContext;
-      if (viewport?.value && selectedItem?.value) {
-        viewport.value.scrollTop = viewport.value.scrollTop - selectedItem.value.offsetHeight;
+      if (viewport?.value) {
+        viewport.value.scrollTop = viewport.value.scrollTop - getScrollStep(viewport.value, selectedItem?.value);
       }
     }"
   >

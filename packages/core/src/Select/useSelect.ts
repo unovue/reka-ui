@@ -660,6 +660,9 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   const isPositioned = ref(false)
   let firstValidItemFound = false
   let firstSelectedItemInArrayFound = false
+  // Assigned below; read lazily by the handlers, where `SelectVirtualizer` may
+  // have replaced `focusSelectedItem` / set `onVirtualKeydown` on it.
+  let contentContext: SelectContentContext
 
   function focusSelectedItem() {
     if (selectedItem.value && contentElement.value)
@@ -667,7 +670,9 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   }
 
   watch(isPositioned, () => {
-    focusSelectedItem()
+    // Through the context: `SelectVirtualizer` replaces it to reach a selected
+    // item whose row is not rendered.
+    contentContext.focusSelectedItem?.()
   })
 
   // prevent selecting items on `pointerup` in some cases after opening from `pointerdown`
@@ -740,10 +745,15 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
       event.preventDefault()
     }
 
+    const intent = context.getNavigationIntent(event)
+    if (contentContext.onVirtualKeydown?.(event, intent)) {
+      event.preventDefault()
+      return
+    }
+
     if (!isModifierKey && event.key.length === 1)
       handleTypeaheadSearch(event.key, getItems())
 
-    const intent = context.getNavigationIntent(event)
     if (intent === 'first' || intent === 'last' || intent === 'prev' || intent === 'next') {
       let candidateNodes = getItems().map(i => i.ref)
 
@@ -778,7 +788,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     base.state,
   )
 
-  const contentContext: SelectContentContext = {
+  contentContext = {
     content: contentElement,
     viewport,
     onViewportChange: (node) => {
@@ -820,6 +830,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     position: options.position ?? 'item-aligned',
     isPositioned,
     searchRef: search,
+    loop: () => !!toValue(options.loop),
   }
 
   return { content, contentContext, isPositioned, focusSelectedItem }

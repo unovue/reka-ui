@@ -73,6 +73,10 @@ export {
   type SelectViewportProps,
 } from './SelectViewport.vue'
 export {
+  default as SelectVirtualizer,
+  type SelectVirtualizerProps,
+} from './SelectVirtualizer.vue'
+export {
   type SelectChangeReason,
   type SelectContentState,
   type SelectItemIndicatorState,

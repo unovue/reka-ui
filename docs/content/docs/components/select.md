@@ -56,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
   SelectViewport,
+  SelectVirtualizer,
 } from 'reka-ui'
 </script>
 
@@ -82,6 +83,11 @@ import {
             </SelectItem>
           </SelectGroup>
           <SelectSeparator />
+
+          <!-- or with virtual -->
+          <SelectVirtualizer>
+            <SelectItem />
+          </SelectVirtualizer>
         </SelectViewport>
         <SelectScrollDownButton />
         <SelectArrow />
@@ -195,6 +201,12 @@ The component that pops out when the select is open.
 The scrolling viewport that contains all of the items.
 
 <!-- @include: @/meta/SelectViewport.md -->
+
+### Virtualizer
+
+Virtual container to achieve list virtualization. Only supported with `position="popper"` on the content.
+
+<!-- @include: @/meta/SelectVirtualizer.md -->
 
 ### Item
 
@@ -622,6 +634,46 @@ With `multiple`, an item press toggles its value and the content stays open. `v-
     }"
   >
     <!-- ... -->
+  </SelectRoot>
+</template>
+```
+
+### Virtualized
+
+For a long list (thousands of options), render the items through a `SelectVirtualizer` inside the `SelectViewport`: only the visible window of options is mounted. Each option is the `value` of the `SelectItem` it renders, and `text-content` gives its text for typeahead and for `SelectValue` (needed for object options; a string option is its own text). The virtualizer registers every option's text up front, so the trigger shows the selected value even when its item has never rendered, and the keyboard (arrows, Home/End, typeahead) reaches options outside the rendered window.
+
+`SelectVirtualizer` needs `position="popper"` and a height on the viewport. With the default `item-aligned` position it renders every option without virtualization and warns in development, because item-aligned positioning measures the selected item. Options can also be grouped: pass `{ label, options, disabled? }` groups and render each header through the `group` slot. See the [virtualization guide](../guides/virtualization.md).
+
+```vue
+<script setup lang="ts">
+import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport, SelectVirtualizer } from 'reka-ui'
+import { ref } from 'vue'
+
+const countries = ref<string[]>([/* thousands of names */])
+const country = ref<string>()
+</script>
+
+<template>
+  <SelectRoot v-model="country">
+    <SelectTrigger aria-label="Country">
+      <SelectValue placeholder="Pick a country" />
+    </SelectTrigger>
+    <SelectPortal>
+      <SelectContent position="popper">
+        <!-- The viewport needs a height -->
+        <SelectViewport class="max-h-72">
+          <SelectVirtualizer
+            v-slot="{ option }"
+            :options="countries"
+            :estimate-size="25"
+          >
+            <SelectItem :value="option">
+              <SelectItemText>{{ option }}</SelectItemText>
+            </SelectItem>
+          </SelectVirtualizer>
+        </SelectViewport>
+      </SelectContent>
+    </SelectPortal>
   </SelectRoot>
 </template>
 ```
