@@ -97,17 +97,17 @@
   {
     'name': 'goToStep',
     'description': '<p>Go to a specific step</p>\n',
-    'type': '(step: number): void'
+    'type': '(step: number): boolean'
   },
   {
     'name': 'nextStep',
     'description': '<p>Go to the next step</p>\n',
-    'type': '(): void'
+    'type': '(): boolean'
   },
   {
     'name': 'prevStep',
     'description': '<p>Go to the previous step</p>\n',
-    'type': '(): void'
+    'type': '(): boolean'
   },
   {
     'name': 'hasNext',
@@ -181,9 +181,9 @@
 | `isPrevDisabled` | Whether or not the previous step is disabled | `boolean` |
 | `isFirstStep` | Whether or not the first step is active | `boolean` |
 | `isLastStep` | Whether or not the last step is active | `boolean` |
-| `goToStep` | Go to a specific step | `(step: number): void` |
-| `nextStep` | Go to the next step | `(): void` |
-| `prevStep` | Go to the previous step | `(): void` |
+| `goToStep` | Go to a specific step | `(step: number): boolean` |
+| `nextStep` | Go to the next step | `(): boolean` |
+| `prevStep` | Go to the previous step | `(): boolean` |
 | `hasNext` | Whether or not there is a next step | `(): boolean` |
 | `hasPrev` | Whether or not there is a previous step | `(): boolean` |
 
