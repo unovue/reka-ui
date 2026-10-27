@@ -23,7 +23,20 @@ import { useLocale } from './useLocale'
 export function useFilter(options?: MaybeRef<Intl.CollatorOptions>) {
   const computedOptions = computed(() => unref(options))
   const locale = hasInjectionContext() ? useLocale() : computed(() => 'en')
-  const collator = computed(() => new Intl.Collator(locale.value, { usage: 'search', ...computedOptions.value }))
+  const collator = computed(() => {
+    const collatorOptions: Intl.CollatorOptions = { usage: 'search', ...computedOptions.value }
+    try {
+      return new Intl.Collator(locale.value, collatorOptions)
+    }
+    catch (error) {
+      // An invalid BCP 47 tag (`en_US`, a POSIX locale) throws a `RangeError`;
+      // filtering must keep working, so fall back to the v2 collator.
+      // eslint-disable-next-line node/prefer-global/process
+      if (process.env.NODE_ENV !== 'production')
+        console.warn(`[reka-ui] useFilter: invalid locale "${locale.value}", falling back to "en".`, error)
+      return new Intl.Collator('en', collatorOptions)
+    }
+  })
 
   const startsWith = (string: string, substring: string) => {
     if (substring.length === 0)

@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { useFilter } from './useFilter'
@@ -132,6 +132,15 @@ describe('useFilter locale', () => {
     // Swedish treats `ä` as a letter of its own.
     expect(containsUnder('sv')('ä', 'a')).toBe(false)
     expect(containsUnder('sv')('Ärlig', 'ä')).toBe(true)
+  })
+
+  it('falls back to `en` with a warning for an invalid locale tag instead of throwing', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const contains = containsUnder('en_US')
+    expect(() => contains('Ärlig', 'a')).not.toThrow()
+    expect(contains('Ärlig', 'a')).toBe(true)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('invalid locale "en_US"'), expect.any(RangeError))
+    warn.mockRestore()
   })
 
   it('falls back to `en` outside a component', () => {
