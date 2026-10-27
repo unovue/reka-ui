@@ -47,8 +47,10 @@ describe('syncSegmentValues', () => {
   })
 
   it('reads the day period in the value\'s own time zone', () => {
-    const zoned = toZoned(new CalendarDateTime(2024, 2, 29, 9, 0), 'Asia/Tokyo')
-    expect(syncSegmentValues({ value: zoned, formatter })).toMatchObject({ hour: 9, dayPeriod: 'AM' })
+    // 18:00 in Tokyo is 09:00 UTC: a formatter that ignored the value's zone
+    // would report AM on a UTC runner.
+    const zoned = toZoned(new CalendarDateTime(2024, 2, 29, 18, 0), 'Asia/Tokyo')
+    expect(syncSegmentValues({ value: zoned, formatter })).toMatchObject({ hour: 18, dayPeriod: 'PM' })
   })
 })
 
