@@ -15,6 +15,9 @@ import {
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   PopoverContent,
   PopoverPortal,
@@ -196,6 +199,32 @@ describe('css transition exits, per family', () => {
     expect(getContent()!.hasAttribute('data-ending-style')).toBe(true)
     await vi.waitFor(() => expect(getContent()).toBeNull())
     expect(onOpenComplete).toHaveBeenLastCalledWith(false)
+  })
+
+  // Base UI's `animateInitialOpen`: a submenu that is already open when its
+  // parent opens is created open, and still enters with the parent.
+  it('dropdown menu: an already-open submenu enters from data-starting-style with its parent', async () => {
+    const open = ref(false)
+    const onSubOpenComplete = vi.fn()
+    mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, { open: open.value }, () => [
+        h(DropdownMenuTrigger, () => 'Open'),
+        h(DropdownMenuPortal, () => h(DropdownMenuContent, { class: 'fade' }, () => [
+          h(DropdownMenuItem, () => 'Item'),
+          h(DropdownMenuSub, { 'open': true, 'onUpdate:openComplete': onSubOpenComplete }, () => [
+            h(DropdownMenuSubTrigger, () => 'More'),
+            h(DropdownMenuPortal, () => h(DropdownMenuSubContent, content, () => h(DropdownMenuItem, () => 'Sub item'))),
+          ]),
+        ])),
+      ]),
+    }), { attachTo: document.body })
+    await nextFrame()
+
+    const insertion = watchInsertion()
+    open.value = true
+    await vi.waitFor(() => expect(onSubOpenComplete).toHaveBeenCalledWith(true))
+    insertion.stop()
+    expect(insertion.result.hadStartingStyle).toBe(true)
   })
 
   it('dialog: a keyframe exit animation still holds the content (no regression)', async () => {
