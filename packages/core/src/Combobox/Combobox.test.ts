@@ -1049,7 +1049,7 @@ describe('comboboxContent with popper positioning', () => {
       const slotRenderCount = getSlotRenderCount()
       const options = Array.from({ length: 60 }, (_, index) => `Option ${index}`)
 
-      return () => h(ComboboxRoot<string | null>, {
+      return () => h(ComboboxRoot<string>, {
         'modelValue': modelValue.value,
         'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
       }, {
@@ -1158,7 +1158,7 @@ describe('combobox highlight scrolling with popper positioning', () => {
       const modelValue = ref<string | null>()
       const open = ref(false)
 
-      return () => h(ComboboxRoot<string | null>, {
+      return () => h(ComboboxRoot<string>, {
         'modelValue': modelValue.value,
         'open': open.value,
         'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
@@ -1195,7 +1195,7 @@ describe('combobox highlight scrolling with popper positioning', () => {
     setup() {
       const modelValue = ref<string | null>()
 
-      return () => h(ComboboxRoot<string | null>, {
+      return () => h(ComboboxRoot<string>, {
         'modelValue': modelValue.value,
         'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
       }, {

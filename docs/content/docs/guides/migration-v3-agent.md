@@ -387,6 +387,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - No nested `ListboxRoot` component and no `ListboxFilter` inside the input. One object is provided as both the Combobox and the Listbox root context. Removed from the Combobox root context: `allItems`, `allGroups`, `ignoreFilter`. Changed: `filterState` shape, `onOpenChange(value, reason?, event?)` returns a boolean, `highlightedElement` is `null` when empty. New: `setModelValue`, `selectItem`, `pressItem`, `clearModelValue`, `filter`, `baseId`. The Autocomplete root context's `modelValue` is read-only; `onModelValueChange(value, reason?, event?)` writes it.
 - Content ids are `<root id>-content` (`reka-combobox-v-0-content`, `reka-autocomplete-v-0-content`; v2 `reka-combobox-content-v-1`), and `aria-controls` is set from the first render.
 - `update:modelValue` is typed `T[]` when `multiple` is set and `T | null` otherwise (type-only; a clear emits `null`). `beforeUpdate:modelValue` and `beforeUpdate:open` are new (section 2).
+- `modelValue` and `defaultValue` on `ComboboxRoot` are typed `T | T[] | null` (v2 `T | T[]`), so the emitted `null` binds back through `v-model`. Type-only and widening: no rewrite needed.
 - New and additive: `displayValue` on both roots, `getNavigationIntent` on both roots (section 8), `useComboboxRoot()`.
 
 **How to find it.**
