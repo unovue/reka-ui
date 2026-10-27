@@ -20,6 +20,18 @@
     'description': '<p>When <code>true</code>, prevents the user from interacting with item</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'handle',
+    'description': '<p>A handle from <code>createDropdownMenuHandle()</code> that connects this trigger to a\n<code>DropdownMenuRoot</code> rendered elsewhere (outside this trigger\'s tree or portal).</p>\n',
+    'type': 'DropdownMenuHandle&lt;Payload&gt;',
+    'required': false
+  },
+  {
+    'name': 'payload',
+    'description': '<p>Passed to the Root\'s default slot while this trigger owns the menu. Requires a <code>handle</code>.</p>\n',
+    'type': 'Payload',
+    'required': false
   }
 ]" />
 </llm-exclude>
@@ -33,5 +45,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
+| `handle` | A handle from createDropdownMenuHandle() that connects this trigger to a DropdownMenuRoot rendered elsewhere (outside this trigger's tree or portal). | `DropdownMenuHandle<Payload>` | No | - |
+| `payload` | Passed to the Root's default slot while this trigger owns the menu. Requires a handle. | `Payload` | No | - |
 
 </llm-only>

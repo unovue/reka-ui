@@ -287,6 +287,70 @@ For example, if you have some global Toaster component that should not close the
 
 <ComponentPreview name="DialogToaster" />
 
+### Detached triggers
+
+A `DialogTrigger` does not have to be inside its `DialogRoot`. Create a handle with `createDialogHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here every row of a table opens the same edit dialog with its own data, and a button opens it without a trigger through `openWithPayload()`.
+
+The dialog returns focus to the trigger that opened it on close. Only that trigger gets `aria-expanded="true"` and `aria-controls`. Its `payload` reaches the root's default slot as `payload`, next to `activeTriggerId`. While a non-modal dialog is open, pressing another of its triggers moves it to that trigger without closing it. A modal dialog covers the other triggers, so the same press closes it instead.
+
+```vue
+<script setup lang="ts">
+import { createDialogHandle, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
+
+interface Project { id: number, name: string }
+
+const projects: Project[] = [
+  { id: 1, name: 'Website' },
+  { id: 2, name: 'Mobile app' },
+]
+
+const editDialog = createDialogHandle<Project>()
+</script>
+
+<template>
+  <table>
+    <tbody>
+      <tr
+        v-for="project in projects"
+        :key="project.id"
+      >
+        <td>{{ project.name }}</td>
+        <td>
+          <DialogTrigger
+            :handle="editDialog"
+            :payload="project"
+          >
+            Edit
+          </DialogTrigger>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button @click="editDialog.openWithPayload({ id: 0, name: 'Untitled' })">
+    New project
+  </button>
+
+  <DialogRoot
+    v-slot="{ payload }"
+    :handle="editDialog"
+  >
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogContent>
+        <DialogTitle>Edit {{ payload?.name }}</DialogTitle>
+        <DialogDescription>Rename the project or change its settings.</DialogDescription>
+        <DialogClose>Save</DialogClose>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
+</template>
+```
+
+`handle.open(triggerId?)` opens the dialog for the trigger with that `id`, or without a trigger. `handle.openWithPayload(payload)` opens it without a trigger and with that payload. `handle.close()` closes it. `handle.isOpen` is reactive. These calls report the reason `'imperative-action'` through `beforeUpdate:open` and `update:open`, so `details.cancel()` can veto them. They do nothing while no root with the handle is mounted. `details.trigger` is the trigger's element when a trigger press opens, switches or closes the popup, or `handle.open(triggerId)` opens it. It is `undefined` for other changes, such as `handle.close()`, Escape or an outside press.
+
+The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).

@@ -17,11 +17,13 @@ function closeDetails(details: ChangeEventDetails<any, any>) {
 export function createChangeEventDetails<R extends string = string, E extends Event = Event>(
   reason: R | BaseChangeReason,
   event?: E,
+  trigger?: Element,
 ): ChangeEventDetails<R, E> {
   let canceled = false
   const details: ChangeEventDetails<R, E> = {
     reason,
     event,
+    ...(trigger ? { trigger } : {}),
     cancel: () => {
       if (closedDetails.has(details)) {
         // eslint-disable-next-line node/prefer-global/process
@@ -61,6 +63,18 @@ export interface UseControllableStateOptions<T, R extends string = string> {
   isEqual?: (a: T, b: T) => boolean
 }
 
+/** Extra options for `setState` (internal callers such as detached-trigger handles, #2826). */
+export interface SetStateOptions {
+  /** Attributed to the change as `details.trigger`. */
+  trigger?: Element
+  /**
+   * Run the `beforeUpdate` / `update` cycle even when the value is unchanged.
+   * A popup that is already open and switches to another detached trigger
+   * reports `update:open(true)` again, cancellable like any other change.
+   */
+  force?: boolean
+}
+
 export interface UseControllableStateReturn<T, R extends string = string> {
   /**
    * The controlled prop while controlled, else the internal value. A controlled
@@ -70,8 +84,8 @@ export interface UseControllableStateReturn<T, R extends string = string> {
    * cleared-controlled case is the parent's deliberate choice.
    */
   state: ComputedRef<T>
-  /** Request a change. Returns `false` when unchanged or cancelled. */
-  setState: (value: T, reason?: R | BaseChangeReason, event?: Event) => boolean
+  /** Request a change. Returns `false` when unchanged (unless `options.force`) or cancelled. */
+  setState: (value: T, reason?: R | BaseChangeReason, event?: Event, options?: SetStateOptions) => boolean
   /** Initial `{ reason: 'none', isCanceled: false }`. */
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<R>>>
   /** `true` in ref-owned mode, and (latched) once the prop has ever been defined. */
@@ -140,16 +154,16 @@ export function useControllableState<T, R extends string = string>(
   const lastChangeDetails = shallowRef(createChangeEventDetails<R>('none')) as Ref<ChangeEventDetails<R>>
   closeDetails(lastChangeDetails.value)
 
-  function setState(value: T, reason?: R | BaseChangeReason, event?: Event): boolean {
+  function setState(value: T, reason?: R | BaseChangeReason, event?: Event, options?: SetStateOptions): boolean {
     // Ref-owned with an `undefined` ref: `state` reads `defaultValue` through the
     // fallback, but the ref itself holds nothing, so `setState(defaultValue)` is a
     // real write (it makes the ref defined) — never a no-op.
     const ownedUndefined = refOwned && (prop as Ref<T | undefined>).value === undefined
     // `toRaw`: the internal ref is deep (useVModel parity), so compare against the raw value.
-    if (!ownedUndefined && isEqual(value, toRaw(state.value)))
+    if (!ownedUndefined && !options?.force && isEqual(value, toRaw(state.value)))
       return false
 
-    const details = createChangeEventDetails<R>(reason ?? 'imperative-action', event)
+    const details = createChangeEventDetails<R>(reason ?? 'imperative-action', event, options?.trigger)
 
     onBeforeUpdate?.(value, details)
     if (emit && name)
