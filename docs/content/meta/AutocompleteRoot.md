@@ -148,6 +148,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the autocomplete changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;ComboboxOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -218,6 +223,7 @@
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; } \| undefined]` |
 | `update:modelValue` | Event handler called when the value (the input text) changes. The value is '' when AutocompleteCancel clears it. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

@@ -29,14 +29,15 @@ const rootContext = injectComboboxRootContext()
 <template>
   <Presence
     v-slot="{ present }"
-    :present="forceMount || rootContext.open.value"
+    :present="rootContext.open.value"
     :force-mount="forceMount || !rootContext.unmountOnHide.value"
+    @complete="rootContext.notifyOpenComplete"
   >
     <ComboboxContentImpl
-      v-show="rootContext.unmountOnHide.value || present"
+      v-show="forceMount || rootContext.unmountOnHide.value || present"
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
-      :present="rootContext.unmountOnHide.value || present"
+      :present="forceMount || rootContext.unmountOnHide.value || present"
     >
       <slot />
     </ComboboxContentImpl>

@@ -15,6 +15,12 @@ export interface UseCollapsibleProps {
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<CollapsibleChangeReason>) => void
   onUpdate?: (value: boolean, details: ChangeEventDetails<CollapsibleChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
   /** SSR consumers must supply a stable baseId. */
   baseId?: string
 }
@@ -117,6 +123,7 @@ export function useCollapsible(props: UseCollapsibleProps = {}): UseCollapsibleR
     unmountOnHide,
     onOpenToggle,
     onContentFound,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
   return {
     open,

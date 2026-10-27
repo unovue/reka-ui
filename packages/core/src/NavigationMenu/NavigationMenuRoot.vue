@@ -65,6 +65,8 @@ export type NavigationMenuRootEmits = {
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]
   /** Event handler called when the value changes. */
   'update:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]
+  /** Event handler called after the viewport's open (`true`) or close (`false`) transitions and animations have finished. Requires a `NavigationMenuViewport`. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface NavigationMenuContext {
@@ -91,6 +93,8 @@ export interface NavigationMenuContext {
   onItemSelect: (itemValue: string, reason?: NavigationMenuChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Closes the menu at once. Returns `false` when unchanged or cancelled via `beforeUpdate:modelValue`. */
   onItemDismiss: (reason?: NavigationMenuChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Called by the viewport once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectNavigationMenuContext, provideNavigationMenuContext]
@@ -147,6 +151,7 @@ const { modelValue, root, context } = useNavigationMenu({
   rootElement: rootNavigationMenu as Ref<HTMLElement | undefined>,
   getItems: () => getItems().map(i => i.ref),
   emit: emits,
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 
 useEventListener(rootNavigationMenu, EVENT_ROOT_CONTENT_DISMISS, (event: Event) => handleRootDismissEvent(context, event))

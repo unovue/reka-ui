@@ -80,6 +80,7 @@ const { open, context, menuContext, menuRootContext, payload, activeTriggerId, h
   modal,
   baseId: useId(undefined, 'reka-dropdown-menu'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
   handle: () => props.handle,
   triggerId: () => props.triggerId,
   defaultTriggerId: props.defaultTriggerId,

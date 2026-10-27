@@ -11,7 +11,7 @@ import {
 } from 'vue'
 import { renderSlotFragments } from '@/shared'
 import { mergeExpose, useForwardElement } from '@/shared/useForwardElement'
-import { usePresence } from './usePresence'
+import { ENDING_STYLE_ATTR, STARTING_STYLE_ATTR, usePresence } from './usePresence'
 
 export interface PresenceProps {
   /**
@@ -28,6 +28,24 @@ export interface PresenceProps {
    * @defaultValue false
    */
   forceMount?: boolean
+  /**
+   * Treat an initial `present` of `true` as an open: render the child with
+   * `data-starting-style` on its first frame, like Vue `<Transition appear>`.
+   * Without it only a later change to `present` does. Read once, when the
+   * component is set up; changing it later has no effect.
+   *
+   * @defaultValue false
+   */
+  appear?: boolean
+}
+
+export type PresenceEmits = {
+  /**
+   * Emitted once the enter (`true`) or exit (`false`) transitions and
+   * animations of the child element have finished; on exit, right before the
+   * element unmounts.
+   */
+  complete: [present: boolean]
 }
 
 export default defineComponent({
@@ -40,16 +58,25 @@ export default defineComponent({
     forceMount: {
       type: Boolean,
     },
+    appear: {
+      type: Boolean,
+    },
+  },
+  emits: {
+    complete: (_present: boolean) => true,
   },
   slots: {} as SlotsType<{
     default: (opts: { present: boolean }) => any
   }>,
-  setup(props, { slots, expose }) {
+  setup(props, { slots, expose, emit }) {
     const { present, forceMount } = toRefs(props)
 
     const node = ref<HTMLElement>()
     // Mount composables once to prevent duplicated eventListener
-    const { isPresent } = usePresence(present, node)
+    const { isPresent, transitionStatus } = usePresence(present, node, {
+      appear: props.appear,
+      onComplete: value => emit('complete', value),
+    })
     // Element-first contract (#2808): a parent ref on `<Presence>` resolves the
     // child's element reactively (follows the child's own root swaps and the
     // unmount once presence ends).
@@ -83,7 +110,14 @@ export default defineComponent({
 
     return () => {
       if (forceMount.value || present.value || isPresent.value) {
+        // Rendered as props (not set on the DOM node afterwards) so the starting
+        // style is already applied when the element is inserted, before anything
+        // (auto-focus, positioning) resolves its styles. Every part forwards its
+        // attrs to the element Presence observes.
+        const status = transitionStatus.value
         return h(slots.default({ present: isPresent.value })[0] as VNode, {
+          ...(status === 'starting' && { [STARTING_STYLE_ATTR]: '' }),
+          ...(status === 'ending' && { [ENDING_STYLE_ATTR]: '' }),
           ref: (v) => {
             forwardRef(v)
             const el = currentElement.value

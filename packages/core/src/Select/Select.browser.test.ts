@@ -56,6 +56,30 @@ describe('given a Select, in a real browser', () => {
     expect(document.activeElement?.textContent).toBe('Cherry')
   })
 
+  // #2827: the content is measured while `data-starting-style` applies; a
+  // transform there must not skew where the content settles.
+  it('aligns the selected item text over the value when the starting style scales the content', async () => {
+    const style = document.createElement('style')
+    style.textContent = `
+      [data-testid=content] { transition: transform 100ms linear, opacity 100ms linear; transform-origin: center; }
+      [data-testid=content][data-starting-style] { transform: scale(0.5); opacity: 0; }
+    `
+    document.head.appendChild(style)
+    const { wrapper, get } = mountSelect({ defaultValue: 'Cherry' }, { style: 'background: white; padding: 4px 40px;' })
+    unmount = () => {
+      wrapper.unmount()
+      style.remove()
+    }
+    await expect.poll(() => get('value')?.textContent).toBe('Cherry')
+    const valueRect = get('value')!.getBoundingClientRect()
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')?.hasAttribute('data-starting-style')).toBe(false)
+    await expect.poll(() => get('content')!.getAnimations().length).toBe(0)
+
+    expect(Math.abs(get('text-Cherry')!.getBoundingClientRect().left - valueRect.left)).toBeLessThan(1)
+  })
+
   it('submits the selected value with the form', async () => {
     const submitted: FormData[] = []
     const { wrapper, get } = mountSelect({}, { position: 'popper' }, data => submitted.push(data))

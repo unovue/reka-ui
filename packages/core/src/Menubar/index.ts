@@ -36,6 +36,7 @@ export {
 export {
   injectMenubarMenuContext,
   default as MenubarMenu,
+  type MenubarMenuEmits,
   type MenubarMenuProps,
 } from './MenubarMenu.vue'
 export {

@@ -35,6 +35,14 @@
   }
 ]" />
 
+<EmitsTable :data="[
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
+  }
+]" />
+
 <SlotsTable :data="[
   {
     'name': 'open',
@@ -55,6 +63,12 @@
 | `disabled` | Whether or not an accordion item is disabled from user interaction. When true, prevents the user from interacting with the item. | `boolean` | No | - |
 | `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | - |
 | `value` | A string value for the accordion item. All items within an accordion should use a unique value. | `string` | Yes | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

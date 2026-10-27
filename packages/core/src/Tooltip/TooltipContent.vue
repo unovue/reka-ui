@@ -29,7 +29,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Presence :present="forceMount || rootContext.open.value">
+  <Presence
+    :present="rootContext.open.value"
+    :force-mount="forceMount"
+    @complete="rootContext.notifyOpenComplete"
+  >
     <component
       :is="rootContext.disableHoverableContent.value ? TooltipContentImpl : TooltipContentHoverable"
       :ref="forwardRef"

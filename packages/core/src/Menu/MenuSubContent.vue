@@ -43,7 +43,17 @@ menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
 </script>
 
 <template>
-  <Presence :present="forceMount || menuContext.open.value">
+  <!--
+    `appear`: a submenu that is already open when its parent menu opens is
+    created open, and enters from `data-starting-style` with its parent
+    (Base UI's `animateInitialOpen`, #2827).
+  -->
+  <Presence
+    :present="menuContext.open.value"
+    :force-mount="forceMount"
+    appear
+    @complete="menuContext.notifyOpenComplete"
+  >
     <MenuContentImpl
       v-bind="forwarded"
       :id="menuSubContext.contentId"

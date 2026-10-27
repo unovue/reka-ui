@@ -297,6 +297,11 @@
     'type': '[value: boolean, details: ChangeEventDetails&lt;DateRangePickerOpenChangeReason, Event&gt;]'
   },
   {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
+  },
+  {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
     'type': '[date: DateValue, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
@@ -385,6 +390,7 @@
 | `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |

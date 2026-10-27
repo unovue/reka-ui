@@ -64,7 +64,7 @@
   },
   {
     'name': 'update:openComplete',
-    'description': '',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
     'type': '[value: boolean]'
   },
   {
@@ -108,7 +108,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: DrawerOpenChangeDetails]` |
-| `update:openComplete` |  | `[value: boolean]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 | `update:snapPoint` |  | `[value: DrawerSnapPoint \| null]` |
 
 **Slots**
