@@ -174,18 +174,19 @@ describe('given an environment without Web Animations (jsdom)', () => {
  * `finished` promise the way the browser does.
  */
 function createFakeAnimation() {
-  let resolve!: () => void
+  let resolve!: (value: unknown) => void
   let reject!: (error: Error) => void
   const animation = {
     playState: 'running' as AnimationPlayState,
     effect: { getComputedTiming: () => ({ endTime: 200 }) },
-    finished: new Promise<void>((res, rej) => {
+    // Like the browser's, `finished` resolves with the animation itself.
+    finished: new Promise<unknown>((res, rej) => {
       resolve = res
       reject = rej
     }),
     finish() {
       animation.playState = 'finished'
-      resolve()
+      resolve(animation)
     },
     cancel() {
       animation.playState = 'idle'
@@ -319,6 +320,29 @@ describe('given a Presence in an environment with Web Animations', () => {
     await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
     expect(onComplete).not.toHaveBeenCalledWith(false)
     expect(box().exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('does not retain finished animations in the promise it waits on', async () => {
+    const { open, onComplete, box, wrapper } = mountAnimated()
+    open.value = true
+    await vi.waitFor(() => expect(onComplete).toHaveBeenCalledWith(true))
+
+    const all = vi.spyOn(Promise, 'all')
+    const exit = createFakeAnimation()
+    open.value = false
+    await nextTick()
+    animations.set(box().element, [exit])
+    await nextTick()
+    await nextTick()
+    exit.finish()
+    await vi.waitFor(() => expect(box().exists()).toBe(false))
+
+    const joined = await Promise.allSettled(all.mock.results.map(result => result.value))
+    all.mockRestore()
+    expect(joined.length).toBeGreaterThan(0)
+    for (const settled of joined)
+      expect(settled.status === 'fulfilled' ? settled.value : []).not.toContain(exit)
     wrapper.unmount()
   })
 })

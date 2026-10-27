@@ -27,6 +27,8 @@ export interface UsePresenceOptions {
   onComplete?: (present: boolean) => void
 }
 
+function noop() {}
+
 export const STARTING_STYLE_ATTR = 'data-starting-style'
 export const ENDING_STYLE_ATTR = 'data-ending-style'
 
@@ -128,19 +130,28 @@ export function usePresence(
       if (currentRun === run)
         whenAnimationsFinish(currentRun, done)
     }
-    Promise.all(running.map(animation => animation.finished)).then(recheck, recheck)
+    // `.then(noop)` so the joined promise does not resolve to (and retain) the
+    // finished Animation objects (Base UI #5719).
+    Promise.all(running.map(animation => animation.finished.then(noop))).then(recheck, recheck)
+  }
+
+  // Nothing animates on the server: the immediate watcher still runs during
+  // SSR, but the completion must only be reported by the client.
+  const notifyComplete = (value: boolean) => {
+    if (isClient)
+      options.onComplete?.(value)
   }
 
   function finishEnter() {
     dispatchCustomEvent('after-enter')
-    options.onComplete?.(true)
+    notifyComplete(true)
   }
 
   function finishExit() {
     dispatch(state.value === 'unmountSuspended' ? 'ANIMATION_END' : 'UNMOUNT')
     transitionStatus.value = undefined
     dispatchCustomEvent('after-leave')
-    options.onComplete?.(false)
+    notifyComplete(false)
   }
 
   /**

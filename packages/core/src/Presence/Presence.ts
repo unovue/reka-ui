@@ -31,7 +31,8 @@ export interface PresenceProps {
   /**
    * Treat an initial `present` of `true` as an open: render the child with
    * `data-starting-style` on its first frame, like Vue `<Transition appear>`.
-   * Without it only a later change to `present` does.
+   * Without it only a later change to `present` does. Read once, when the
+   * component is set up; changing it later has no effect.
    *
    * @defaultValue false
    */
