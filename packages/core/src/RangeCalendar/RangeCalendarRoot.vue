@@ -168,8 +168,8 @@ export type RangeCalendarRootEmits = {
   'beforeUpdate:placeholder': [date: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason>]
-  /** Event handler called whenever the start value changes */
-  'update:startValue': [date: DateValue | undefined]
+  /** Event handler called whenever the start value changes. The details carry the reason and event; the change has already happened. */
+  'update:startValue': [date: DateValue | undefined, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Event handler called before the view changes; `details.cancel()` vetoes the change. */
   'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Event handler called whenever the view changes */

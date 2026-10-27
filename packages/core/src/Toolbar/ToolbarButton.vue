@@ -10,10 +10,12 @@ export interface ToolbarButtonProps extends PrimitiveProps {
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { getToolbarButtonSurface } from './useToolbar'
 
 const props = withDefaults(defineProps<ToolbarButtonProps>(), { as: 'button' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+const surface = getToolbarButtonSurface(() => props.disabled)
 </script>
 
 <template>
@@ -23,8 +25,10 @@ defineExpose(expose)
   >
     <Primitive
       :ref="forwardRef"
+      :as="as"
+      :as-child="asChild"
       :type="as === 'button' ? 'button' : undefined"
-      v-bind="props"
+      v-bind="surface.attrs.value"
     >
       <slot />
     </Primitive>

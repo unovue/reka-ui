@@ -368,14 +368,17 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
   const headingId = props.headingId ?? `reka-calendar-heading-${++calendarCount}`
   const parentElement = props.parentElement ?? ref<HTMLElement>()
 
-  const { state: modelValue, setState: setModelValue, lastChangeDetails, isControlled } = useControllableState<CalendarModelValue, CalendarChangeReason>({
-    prop: () => toValue(props.modelValue) ?? undefined,
+  // `null` is a controlled empty calendar (as with v2's `useVModel`): it reads
+  // as `undefined`, but a press is only emitted, never written.
+  const { state: rawModelValue, setState: setModelValue, lastChangeDetails, isControlled } = useControllableState<CalendarModelValue | null, CalendarChangeReason>({
+    prop: () => toValue(props.modelValue),
     defaultValue: () => props.defaultValue,
     name: 'modelValue',
     emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    onBeforeUpdate: props.onBeforeUpdate as ((value: CalendarModelValue | null, details: ChangeEventDetails<CalendarChangeReason>) => void) | undefined,
+    onUpdate: props.onUpdate as ((value: CalendarModelValue | null, details: ChangeEventDetails<CalendarChangeReason>) => void) | undefined,
   })
+  const modelValue = computed<CalendarModelValue>(() => rawModelValue.value ?? undefined)
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<DateValue, CalendarChangeReason>({
     prop: () => toValue(props.placeholder),

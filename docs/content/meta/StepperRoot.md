@@ -52,9 +52,14 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the step changes; call <code>details.cancel()</code> to keep the current step.</p>\n',
+    'type': '[payload: number | undefined, details: ChangeEventDetails&lt;StepperChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes</p>\n',
-    'type': '[payload: number | undefined]'
+    'type': '[payload: number | undefined, details: ChangeEventDetails&lt;StepperChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -92,17 +97,17 @@
   {
     'name': 'goToStep',
     'description': '<p>Go to a specific step</p>\n',
-    'type': '(step: number): void'
+    'type': '(step: number): boolean'
   },
   {
     'name': 'nextStep',
     'description': '<p>Go to the next step</p>\n',
-    'type': '(): void'
+    'type': '(): boolean'
   },
   {
     'name': 'prevStep',
     'description': '<p>Go to the previous step</p>\n',
-    'type': '(): void'
+    'type': '(): boolean'
   },
   {
     'name': 'hasNext',
@@ -120,17 +125,17 @@
   {
     'name': 'goToStep',
     'description': '',
-    'type': '(step: number) =&gt; void'
+    'type': '(step: number, reason?: BaseChangeReason | StepperChangeReason | undefined, event?: Event | undefined) =&gt; boolean'
   },
   {
     'name': 'nextStep',
     'description': '',
-    'type': '() =&gt; void'
+    'type': '() =&gt; boolean'
   },
   {
     'name': 'prevStep',
     'description': '',
-    'type': '() =&gt; void'
+    'type': '() =&gt; boolean'
   },
   {
     'name': 'hasNext',
@@ -163,7 +168,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes | `[payload: number \| undefined]` |
+| `beforeUpdate:modelValue` | Event handler called before the step changes; call details.cancel() to keep the current step. | `[payload: number \| undefined, details: ChangeEventDetails<StepperChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes | `[payload: number \| undefined, details: ChangeEventDetails<StepperChangeReason, Event>]` |
 
 **Slots**
 
@@ -175,9 +181,9 @@
 | `isPrevDisabled` | Whether or not the previous step is disabled | `boolean` |
 | `isFirstStep` | Whether or not the first step is active | `boolean` |
 | `isLastStep` | Whether or not the last step is active | `boolean` |
-| `goToStep` | Go to a specific step | `(step: number): void` |
-| `nextStep` | Go to the next step | `(): void` |
-| `prevStep` | Go to the previous step | `(): void` |
+| `goToStep` | Go to a specific step | `(step: number): boolean` |
+| `nextStep` | Go to the next step | `(): boolean` |
+| `prevStep` | Go to the previous step | `(): boolean` |
 | `hasNext` | Whether or not there is a next step | `(): boolean` |
 | `hasPrev` | Whether or not there is a previous step | `(): boolean` |
 
@@ -185,9 +191,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `goToStep` |  | `(step: number) => void` |
-| `nextStep` |  | `() => void` |
-| `prevStep` |  | `() => void` |
+| `goToStep` |  | `(step: number, reason?: BaseChangeReason \| StepperChangeReason \| undefined, event?: Event \| undefined) => boolean` |
+| `nextStep` |  | `() => boolean` |
+| `prevStep` |  | `() => boolean` |
 | `hasNext` |  | `() => boolean` |
 | `hasPrev` |  | `() => boolean` |
 

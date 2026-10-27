@@ -90,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled checked state of the field. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled checked state of the field. Can be bound as <code>v-model</code>. <code>null</code> is a controlled empty range.</p>\n',
     'type': 'TimeRange | null',
     'required': false
   },
@@ -124,32 +124,49 @@
     'description': '<p>The stepping interval for the time fields. Defaults to <code>1</code>.</p>\n',
     'type': 'DateStep',
     'required': false
+  },
+  {
+    'name': 'stepSnapping',
+    'description': '<p>Whether to enforce snapping the value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   }
 ]" />
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the range changes; <code>details.cancel()</code> keeps the current range.</p>\n',
+    'type': '[date: TimeRange, details: ChangeEventDetails&lt;TimeRangeFieldChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:placeholder',
+    'description': '<p>Called before the placeholder changes; <code>details.cancel()</code> keeps the current placeholder.</p>\n',
+    'type': '[date: TimeValue, details: ChangeEventDetails&lt;TimeRangeFieldChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: TimeRange]'
+    'type': '[date: TimeRange, details: ChangeEventDetails&lt;TimeRangeFieldChangeReason, Event&gt;]'
   },
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: TimeValue]'
+    'type': '[date: TimeValue, details: ChangeEventDetails&lt;TimeRangeFieldChangeReason, Event&gt;]'
   }
 ]" />
 
 <SlotsTable :data="[
   {
     'name': 'modelValue',
-    'description': '<p>The current time of the field</p>\n',
-    'type': 'TimeRange | undefined'
+    'description': '<p>The current time range of the field</p>\n',
+    'type': 'TimeRange'
   },
   {
     'name': 'segments',
     'description': '<p>The time field segment contents</p>\n',
-    'type': '{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }'
+    'type': 'Record&lt;DateRangeType, { part: SegmentPart; value: string; }[]&gt;'
   },
   {
     'name': 'isInvalid',
@@ -187,26 +204,29 @@
 | `locale` | The locale to use for formatting times | `string` | No | - |
 | `maxValue` | The maximum time that can be selected | `TimeValue` | No | - |
 | `minValue` | The minimum time that can be selected | `TimeValue` | No | - |
-| `modelValue` | The controlled checked state of the field. Can be bound as v-model. | `TimeRange \| null` | No | - |
+| `modelValue` | The controlled checked state of the field. Can be bound as v-model. null is a controlled empty range. | `TimeRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | The placeholder time, which is used to determine what time to display when no time is selected. This updates as the user navigates the field | `TimeValue` | No | - |
 | `readonly` | Whether or not the time field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the value to the nearest step increment after input. Defaults to false. | `boolean` | No | `false` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeRange]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue]` |
+| `beforeUpdate:modelValue` | Called before the range changes; details.cancel() keeps the current range. | `[date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | The current time of the field | `TimeRange \| undefined` |
-| `segments` | The time field segment contents | `{ start: { part: SegmentPart; value: string; }[]; end: { part: SegmentPart; value: string; }[]; }` |
+| `modelValue` | The current time range of the field | `TimeRange` |
+| `segments` | The time field segment contents | `Record<DateRangeType, { part: SegmentPart; value: string; }[]>` |
 | `isInvalid` | Value if the input is invalid | `boolean` |
 
 **Methods**

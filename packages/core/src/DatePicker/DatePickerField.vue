@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
+import type { ChangeEventDetails } from '@/shared'
 import { DateFieldRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 </script>
@@ -17,13 +18,18 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
   rootContext.dateFieldRef.value = (el ?? undefined) as typeof rootContext.dateFieldRef.value
   forwardRef(el)
 }
+
+// The field is controlled by the picker (`null` while empty). Its
+// `beforeUpdate:modelValue` runs the picker's change, so the picker emits once
+// with the field's reason. A cancel on the picker keeps the last committed
+// value; the typed segments stay as they are, so typing can continue.
 </script>
 
 <template>
   <DateFieldRoot
     v-slot="{ segments, modelValue }"
     :ref="setFieldRef"
-    :model-value="rootContext.modelValue.value"
+    :model-value="rootContext.modelValue.value ?? null"
     :placeholder="rootContext.placeholder.value"
     v-bind="{
       id: rootContext.id.value,
@@ -40,15 +46,10 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
       required: rootContext.required.value,
       dir: rootContext.dir.value,
       step: rootContext.step.value,
+      stepSnapping: rootContext.stepSnapping.value,
     }"
-    @update:model-value="(date: DateValue | undefined) => {
-      if (date && rootContext.modelValue.value && date.compare(rootContext.modelValue.value) === 0) return
-      rootContext.onDateChange(date)
-    }"
-    @update:placeholder="(date: DateValue) => {
-      if (date.compare(rootContext.placeholder.value) === 0) return
-      rootContext.onPlaceholderChange(date)
-    }"
+    @before-update:model-value="rootContext.onFieldBeforeUpdate"
+    @update:placeholder="(date: DateValue, details: ChangeEventDetails<any>) => rootContext.setPlaceholder(date, details.reason, details.event)"
   >
     <slot
       :segments="segments"
