@@ -1,0 +1,394 @@
+import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { ListboxFilterFunction } from './useListbox'
+import { mount } from '@vue/test-utils'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
+import { defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { useFilter, useKbd } from '@/shared'
+import { ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { useListboxRoot } from './useListbox'
+
+const kbd = useKbd()
+
+window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+window.HTMLElement.prototype.scrollIntoView = vi.fn()
+window.HTMLElement.prototype.scrollTo = vi.fn()
+
+const fruits = ['Apple', 'Banana', 'Blueberry', 'Cherry', 'Grape', 'Mango']
+const vegetables = ['Carrot', 'Spinach']
+
+function createListbox(rootProps: Record<string, unknown> = {}, itemProps: (value: string) => Record<string, unknown> = () => ({})) {
+  return defineComponent({
+    setup(_, { expose }) {
+      const root = ref()
+      expose({ root })
+      return () => h(ListboxRoot, { ref: root, ...rootProps }, () => [
+        h(ListboxFilter, { 'aria-label': 'Search' }),
+        h(ListboxContent, { 'aria-label': 'Food' }, () => [
+          h(ListboxGroup, { 'data-testid': 'fruits' }, () => [
+            h(ListboxGroupLabel, () => 'Fruits'),
+            ...fruits.map(value => h(ListboxItem, { value, ...itemProps(value) }, () => value)),
+          ]),
+          h(ListboxGroup, { 'data-testid': 'vegetables' }, () => [
+            h(ListboxGroupLabel, () => 'Vegetables'),
+            ...vegetables.map(value => h(ListboxItem, { value, ...itemProps(value) }, () => value)),
+          ]),
+        ]),
+      ])
+    },
+  })
+}
+
+async function settle() {
+  await nextTick()
+  await nextTick()
+  await nextTick()
+}
+
+function optionTexts(wrapper: VueWrapper) {
+  return wrapper.findAll('[role=option]').map(i => i.text())
+}
+
+function highlightedText(wrapper: VueWrapper) {
+  return wrapper.find('[role=option][data-highlighted]').text()
+}
+
+async function type(input: DOMWrapper<HTMLInputElement>, value: string) {
+  await input.setValue(value)
+  await settle()
+}
+
+describe('given a Listbox with a `filter`', () => {
+  let wrapper: VueWrapper<any>
+  let input: DOMWrapper<HTMLInputElement>
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    const { contains } = useFilter({ sensitivity: 'base' })
+    wrapper = mount(createListbox({ filter: contains }), { attachTo: document.body })
+    input = wrapper.find('input')
+    await settle()
+  })
+
+  it('renders every item while the search is empty', () => {
+    expect(optionTexts(wrapper)).toEqual([...fruits, ...vegetables])
+    expect(wrapper.vm.root.filtered).toEqual({ search: '', active: false, count: 8 })
+  })
+
+  it('renders only the matching items', async () => {
+    await type(input, 'an')
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Mango'])
+    expect(wrapper.vm.root.filtered).toEqual({ search: 'an', active: true, count: 2 })
+  })
+
+  it('matches case- and accent-insensitively with `useFilter` `sensitivity: base`', async () => {
+    await type(input, 'BLUÉ')
+    expect(optionTexts(wrapper)).toEqual(['Blueberry'])
+  })
+
+  it('hides a group whose items are all filtered out', async () => {
+    await type(input, 'rr')
+    expect(optionTexts(wrapper)).toEqual(['Blueberry', 'Cherry', 'Carrot'])
+    expect(wrapper.find('[data-testid=fruits]').attributes('hidden')).toBeUndefined()
+    expect(wrapper.find('[data-testid=vegetables]').attributes('hidden')).toBeUndefined()
+
+    await type(input, 'berry')
+    expect(wrapper.find('[data-testid=fruits]').attributes('hidden')).toBeUndefined()
+    expect(wrapper.find('[data-testid=vegetables]').attributes('hidden')).toBe('')
+  })
+
+  it('restores every item when the search is cleared', async () => {
+    await type(input, 'an')
+    await type(input, '')
+    expect(optionTexts(wrapper)).toEqual([...fruits, ...vegetables])
+    expect(wrapper.find('[data-testid=vegetables]').attributes('hidden')).toBeUndefined()
+  })
+
+  it('highlights the first match on input', async () => {
+    await type(input, 'an')
+    expect(highlightedText(wrapper)).toBe('Banana')
+    expect(input.attributes('aria-activedescendant')).toBe(wrapper.find('[role=option][data-highlighted]').attributes('id'))
+  })
+
+  it('skips filtered-out items in keyboard navigation', async () => {
+    await type(input, 'an')
+    await input.trigger('keydown', { key: kbd.ARROW_DOWN })
+    expect(highlightedText(wrapper)).toBe('Mango')
+    // Mango is the last match: nothing below it (Carrot, Spinach) is reachable.
+    await input.trigger('keydown', { key: kbd.ARROW_DOWN })
+    expect(highlightedText(wrapper)).toBe('Mango')
+    await input.trigger('keydown', { key: kbd.ARROW_UP })
+    expect(highlightedText(wrapper)).toBe('Banana')
+    await input.trigger('keydown', { key: kbd.END })
+    expect(highlightedText(wrapper)).toBe('Mango')
+    await input.trigger('keydown', { key: kbd.HOME })
+    expect(highlightedText(wrapper)).toBe('Banana')
+  })
+
+  it('selects the highlighted match on Enter', async () => {
+    await type(input, 'an')
+    await input.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await input.trigger('keydown', { key: kbd.ENTER })
+    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.[0]?.[0]).toBe('Mango')
+  })
+
+  it('drops the highlight when no item matches', async () => {
+    await type(input, 'an')
+    expect(input.attributes('aria-activedescendant')).toBeTruthy()
+    await type(input, 'zzz')
+    expect(optionTexts(wrapper)).toEqual([])
+    expect(wrapper.vm.root.filtered.count).toBe(0)
+    expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+  })
+
+  it('renders a filtered-out item again once it matches', async () => {
+    await type(input, 'an')
+    await type(input, '')
+    expect(optionTexts(wrapper)).toContain('Cherry')
+  })
+
+  it('should pass axe accessibility tests while filtering', async () => {
+    await type(input, 'berry')
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})
+
+describe('given a Listbox with a custom `filter`', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('calls the filter with the item text, the search term and the item value', async () => {
+    const filter = vi.fn<ListboxFilterFunction<any>>((text, search) => text.toLowerCase().startsWith(search.toLowerCase()))
+    const wrapper = mount(createListbox({ filter }), { attachTo: document.body })
+    await settle()
+    expect(filter).not.toHaveBeenCalled()
+
+    await type(wrapper.find('input'), 'b')
+    expect(filter).toHaveBeenCalledWith('Cherry', 'b', 'Cherry')
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Blueberry'])
+  })
+
+  it('matches against `textValue` when given', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(createListbox({ filter: contains }, value => ({ textValue: value === 'Cherry' ? 'Cerise' : value })), { attachTo: document.body })
+    await settle()
+
+    await type(wrapper.find('input'), 'cerise')
+    expect(optionTexts(wrapper)).toEqual(['Cherry'])
+  })
+
+  it('applies a `filter` set after mount to the current search term', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const filter = ref<ListboxFilterFunction | null>(null)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { filter: filter.value }, () => [
+          h(ListboxFilter, { 'aria-label': 'Search' }),
+          h(ListboxContent, { 'aria-label': 'Fruits' }, () => fruits.map(value => h(ListboxItem, { value }, () => value))),
+        ])
+      },
+    }), { attachTo: document.body })
+    await settle()
+
+    await type(wrapper.find('input'), 'an')
+    expect(optionTexts(wrapper)).toEqual(fruits)
+    filter.value = contains
+    await settle()
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Mango'])
+    filter.value = null
+    await settle()
+    expect(optionTexts(wrapper)).toEqual(fruits)
+  })
+})
+
+describe('given a Listbox without a `filter`', () => {
+  it.each([
+    ['omitted', {}],
+    ['`null`', { filter: null }],
+  ])('does not filter the items when `filter` is %s (opt-in)', async (_, rootProps) => {
+    document.body.innerHTML = ''
+    const wrapper = mount(createListbox(rootProps), { attachTo: document.body })
+    await settle()
+
+    await type(wrapper.find('input'), 'an')
+    expect(optionTexts(wrapper)).toEqual([...fruits, ...vegetables])
+    expect(wrapper.vm.root.filtered).toEqual({ search: 'an', active: false, count: 8 })
+    // The ListboxFilter still highlights the first item on input, as before.
+    expect(highlightedText(wrapper)).toBe('Apple')
+  })
+})
+
+describe('given a virtualized Listbox with a `filter`', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  // jsdom reports zero-sized rects; give the virtualizer a viewport so rows mount.
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  // 100 options; every tenth one is named "Match N", the rest "Item N".
+  const options = Array.from({ length: 100 }, (_, i) => ({ value: i, label: i % 10 === 0 ? `Match ${i}` : `Item ${i}` }))
+
+  function createVirtualListbox(rootProps: Record<string, unknown> = {}, textContent: ((o: any) => string) | undefined = o => o.label) {
+    return defineComponent({
+      setup(_, { expose }) {
+        const root = ref()
+        expose({ root })
+        return () => h(ListboxRoot, { ref: root, ...rootProps }, () => [
+          h(ListboxFilter, { 'aria-label': 'Search' }),
+          h(ListboxContent, { 'aria-label': 'Options', 'style': 'height: 200px; overflow: auto' }, () =>
+            h(ListboxVirtualizer, { options, textContent }, {
+              default: ({ option }: any) => h(ListboxItem, { value: option }, () => option.label),
+            })),
+        ])
+      },
+    })
+  }
+
+  async function flush() {
+    await settle()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('filters `options` before virtualizing them', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(createVirtualListbox({ filter: contains }), { attachTo: document.body })
+    await flush()
+    expect(wrapper.vm.root.filtered.count).toBe(100)
+
+    await wrapper.find('input').setValue('match')
+    await flush()
+
+    const rows = wrapper.findAll('[role=option]')
+    expect(rows.map(r => r.text())).toEqual(options.filter(o => o.label.startsWith('Match')).map(o => o.label))
+    // Filtered-out options take no virtual index and are not counted in the set size.
+    expect(rows.map(r => r.attributes('data-index'))).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    expect(rows.map(r => r.attributes('aria-posinset'))).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
+    expect(rows.every(r => r.attributes('aria-setsize') === '10')).toBe(true)
+    expect(wrapper.vm.root.filtered).toEqual({ search: 'match', active: true, count: 10 })
+  })
+
+  it('skips filtered-out options in keyboard navigation', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(createVirtualListbox({ filter: contains }), { attachTo: document.body })
+    await flush()
+    const input = wrapper.find('input')
+
+    await input.setValue('match')
+    await flush()
+    expect(highlightedText(wrapper)).toBe('Match 0')
+
+    await input.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await flush()
+    expect(highlightedText(wrapper)).toBe('Match 10')
+
+    await input.trigger('keydown', { key: kbd.END })
+    await flush()
+    expect(highlightedText(wrapper)).toBe('Match 90')
+  })
+
+  it('selects the highlighted match on Enter', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(createVirtualListbox({ filter: contains }), { attachTo: document.body })
+    await flush()
+    const input = wrapper.find('input')
+
+    await input.setValue('match')
+    await flush()
+    await input.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await flush()
+    await input.trigger('keydown', { key: kbd.ENTER })
+    expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')?.[0]?.[0]).toEqual({ value: 10, label: 'Match 10' })
+  })
+
+  it('matches the option\'s string form without `textContent`', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, { filter: contains }, () => [
+          h(ListboxFilter, { 'aria-label': 'Search' }),
+          h(ListboxContent, { 'aria-label': 'Fruits', 'style': 'height: 200px; overflow: auto' }, () =>
+            h(ListboxVirtualizer, { options: fruits }, {
+              default: ({ option }: any) => h(ListboxItem, { value: option }, () => option),
+            })),
+        ])
+      },
+    }), { attachTo: document.body })
+    await flush()
+
+    await wrapper.find('input').setValue('an')
+    await flush()
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Mango'])
+  })
+
+  it('does not filter without a `filter`', async () => {
+    const wrapper = mount(createVirtualListbox(), { attachTo: document.body })
+    await flush()
+    await wrapper.find('input').setValue('match')
+    await flush()
+    expect(wrapper.findAll('[role=option]')[1].text()).toBe('Item 1')
+    expect(wrapper.find('[role=option]').attributes('aria-setsize')).toBe('100')
+  })
+
+  it('should pass axe accessibility tests while filtering', async () => {
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(createVirtualListbox({ filter: contains }), { attachTo: document.body })
+    await flush()
+    await wrapper.find('input').setValue('match')
+    await flush()
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+})
+
+describe('useListboxRoot filtering', () => {
+  it('filters registered items against a ref-owned `filterSearch`', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      const search = ref('')
+      const filter = ref<ListboxFilterFunction<string> | null>((text, term) => text.includes(term))
+      const listbox = useListboxRoot<string>({ filter, filterSearch: search })
+      const label = ref<string | undefined>('Apple')
+      listbox.context.registerFilterItem('a', { value: () => 'apple', label: () => label.value })
+      listbox.context.registerFilterItem('b', { value: () => 'banana', label: () => 'Banana', group: 'g' })
+
+      expect(listbox.filterState.value).toEqual({ search: '', active: false, count: 2 })
+
+      listbox.setFilterSearch('an')
+      expect(search.value).toBe('an')
+      expect(listbox.filterState.value).toEqual({ search: 'an', active: true, count: 1 })
+      expect(listbox.context.isFilteredOut('a')).toBe(true)
+      expect(listbox.context.isFilteredOut('b')).toBe(false)
+      expect(listbox.context.isGroupFilteredOut('g')).toBe(false)
+
+      // An item that was not measured yet stays rendered.
+      label.value = undefined
+      expect(listbox.context.isFilteredOut('a')).toBe(false)
+
+      search.value = 'zz'
+      expect(listbox.context.isGroupFilteredOut('g')).toBe(true)
+
+      filter.value = null
+      expect(listbox.filterState.value.active).toBe(false)
+      expect(listbox.context.isFilteredOut('b')).toBe(false)
+    })
+    scope.stop()
+  })
+})

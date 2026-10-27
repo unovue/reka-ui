@@ -28,9 +28,10 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import { computed, mergeProps, onUpdated, watchPostEffect } from 'vue'
+import { computed, mergeProps, onUnmounted, onUpdated, ref, watchPostEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
+import { injectListboxGroupContext } from './ListboxGroup.vue'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxItemSurface } from './useListbox'
 
@@ -72,9 +73,30 @@ const disabled = computed(() => surface.state.value.disabled)
 // the registry ignores a rewrite that changes nothing. Text that changes
 // without re-rendering this item (a child component updating on its own) is
 // what `textValue` is for.
+//
+// A filtered-out item (#2824 item 7) renders nothing, so it has no text to
+// read: it keeps the label it last rendered with.
+const label = ref<string>()
 function syncLabel() {
-  rootContext.labels.register(props.value, props.textValue ?? currentElement.value?.textContent ?? '', disabled.value)
+  const text = props.textValue ?? (isFilteredOut.value ? label.value : currentElement.value?.textContent ?? '')
+  if (text === undefined)
+    return
+  label.value = text
+  rootContext.labels.register(props.value, text, disabled.value)
 }
+
+// Filtering: the item stays mounted (so it keeps its registrations) but
+// renders nothing while filtered out, which also takes it out of the
+// collection that navigation, typeahead and select-all walk.
+const groupContext = injectListboxGroupContext(null)
+const unregisterFilterItem = rootContext.registerFilterItem(id, {
+  value: () => props.value,
+  label: () => props.textValue ?? label.value,
+  group: groupContext?.id,
+})
+onUnmounted(unregisterFilterItem)
+const isFilteredOut = computed(() => rootContext.isFilteredOut(id))
+
 watchPostEffect(syncLabel)
 onUpdated(syncLabel)
 
@@ -92,7 +114,10 @@ provideListboxItemContext({
 </script>
 
 <template>
-  <CollectionItem :value="value">
+  <CollectionItem
+    v-if="!isFilteredOut"
+    :value="value"
+  >
     <Primitive
       :id="id"
       v-bind="mergeProps($attrs, surface.attrs.value)"

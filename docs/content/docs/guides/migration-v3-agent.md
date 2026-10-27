@@ -223,6 +223,12 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** In each affected listbox: PageUp/PageDown move to the first/last option; ArrowLeft/ArrowRight move the caret in a filter; typing letters in a filter still filters; Enter still selects unless `getNavigationIntent` returns `null` for it. Run the type-check for the handler retyping.
 
+### 9. Listbox filtering (no rewrite)
+
+**What changed.** Nothing for existing code. `ListboxRoot` gained an opt-in `filter` prop: with `:filter="contains"` (from `useFilter`), the items whose text does not match the `ListboxFilter` value are not rendered, and keyboard navigation, typeahead and select-all skip them. Without `filter` (or with `null`) the listbox filters nothing, exactly as in v2. `ComboboxRoot` and `AutocompleteRoot` keep their own filtering and `ignoreFilter`; they do not accept `filter` yet.
+
+**Rewrite rules.** Do not add `filter` to an existing listbox: one whose items are already filtered by hand keeps working unchanged. Mention listboxes that compute a filtered item list from the `ListboxFilter` value in the report as optional candidates; switching one over means passing `filter` and rendering the full list.
+
 ### Report
 
 When you are done, give the developer:

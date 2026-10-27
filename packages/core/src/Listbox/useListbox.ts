@@ -6,9 +6,9 @@ import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types
 import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
 import { hash } from 'ohash'
-import { computed, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
+import { computed, isRef, nextTick, ref, shallowReactive, shallowRef, toValue, triggerRef, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { compare, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
+import { compare, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
 
 /**
  * Why the selection changed; carried as `details.reason` on every change (#2828).
@@ -68,6 +68,36 @@ export interface ListboxLabelRegistry<T = AcceptableValue> {
   register: (value: T, label: string, disabled?: boolean) => void
   get: (value: T) => string | undefined
   entries: () => Array<{ value: T, label: string, disabled: boolean }>
+}
+
+/**
+ * The `filter` prop (#2824 item 7): whether an item matches the search term.
+ * `text` is the item's `textValue` (or its rendered text content; in a
+ * `ListboxVirtualizer`, the `textContent(option)` result), `search` the
+ * non-empty search term and `value` the item's value.
+ */
+export type ListboxFilterFunction<T = AcceptableValue> = (text: string, search: string, value: T) => boolean
+
+/** The filtering result, exposed as `filtered` on `ListboxRoot` and `filterState` on `useListboxRoot()`. */
+export interface ListboxFilterState {
+  /** The current search term. */
+  search: string
+  /** `true` while a `filter` is set and the search term is not empty. */
+  active: boolean
+  /**
+   * How many items match: the mounted items, or the matching `options` of a
+   * `ListboxVirtualizer`. While inactive, every item counts.
+   */
+  count: number
+}
+
+/** What a mounted item hands the filter (the `ListboxItem` shell registers it). */
+export interface ListboxFilterItem<T = AcceptableValue> {
+  value: () => T
+  /** The item's text; `undefined` until it was measured, which keeps it rendered. */
+  label: () => string | undefined
+  /** The id of the enclosing `ListboxGroup`, if any. */
+  group?: string
 }
 
 const LISTBOX_SELECT = 'listbox.select'
@@ -278,6 +308,21 @@ export interface UseListboxRootProps<T = AcceptableValue> {
    */
   getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
   /**
+   * Client-side filtering (#2824 item 7), opt-in: items whose text does not
+   * match the search term are not rendered, and so are skipped by keyboard
+   * navigation, typeahead, select-all and range selection. `null` or omitted
+   * means no client filtering (filter the items yourself, or on a server).
+   * A function, `null`, or a `Ref` holding one — NOT a getter, which would be
+   * mistaken for the filter itself.
+   */
+  filter?: ListboxFilterFunction<T> | null | Ref<ListboxFilterFunction<T> | null | undefined>
+  /**
+   * Controlled search term the `filter` runs against. A writable `Ref` is
+   * written back; left out, the term is internal and `ListboxFilter` (or
+   * `setFilterSearch`) sets it.
+   */
+  filterSearch?: MaybeRefOrGetter<string | undefined>
+  /**
    * The rendered items in DOM order (the SFC injects `useCollection({
    * isProvider: true }).getItems`) — the seam a composable cannot own itself.
    * Defaults to an empty collection. Disabled items are left out unless
@@ -335,6 +380,12 @@ export interface UseListboxRootReturn<T = AcceptableValue> {
   changeHighlight: (el: HTMLElement, scrollIntoView?: boolean, focus?: boolean) => void
   /** The sticky label registry. */
   labels: ListboxLabelRegistry<T>
+  /** The search term `filter` runs against. */
+  filterSearch: ComputedRef<string>
+  /** Set the search term (what `ListboxFilter` calls on input). */
+  setFilterSearch: (search: string) => void
+  /** The filtering result: search term, whether it is active, and the match count. */
+  filterState: ComputedRef<ListboxFilterState>
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<ListboxChangeReason>>>
   isControlled: ComputedRef<boolean>
   /** The root surface: `dir` + the pointer-leave / focus-out highlight release. */
@@ -801,6 +852,63 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     entries: () => [...labelEntries.value],
   }
 
+  // Filtering (#2824 item 7). Opt-in: without a `filter` function every
+  // check below short-circuits on `isFilterActive` and never reads the item
+  // registry, so a listbox that does not filter (Combobox/Autocomplete keep
+  // their own engine) pays nothing per item. A filtered-out item is not
+  // rendered at all, so the collection — and with it navigation, typeahead,
+  // select-all and range selection — only ever sees the matching items.
+  const filterFn = computed(() => {
+    const filter = isRef(props.filter) ? props.filter.value : props.filter
+    return typeof filter === 'function' ? filter : null
+  })
+  const { state: filterSearch, setState: setFilterSearchState } = useControllableState<string>({
+    prop: props.filterSearch,
+    defaultValue: '',
+  })
+  function setFilterSearch(search: string) {
+    setFilterSearchState(search)
+  }
+  const isFilterActive = computed(() => !!filterFn.value && !!filterSearch.value)
+  function filterOption(value: T, text: string) {
+    return !isFilterActive.value || filterFn.value!(text, filterSearch.value, value)
+  }
+  const filterItems = shallowReactive(new Map<string, ListboxFilterItem<T>>())
+  const filterResult = computed(() => {
+    const hidden = new Set<string>()
+    const groups = new Set<string>()
+    for (const [id, item] of filterItems) {
+      const label = item.label()
+      // An item that was never measured renders once so it can report its text.
+      if (label === undefined || filterOption(item.value(), label)) {
+        if (item.group)
+          groups.add(item.group)
+      }
+      else {
+        hidden.add(id)
+      }
+    }
+    return { hidden, groups }
+  })
+  // Set by `ListboxVirtualizer`: the number of `options` that match.
+  const virtualFilterCount = ref<number>()
+  const filterState = computed<ListboxFilterState>(() => {
+    const active = isFilterActive.value
+    return {
+      search: filterSearch.value,
+      active,
+      count: isVirtual.value && virtualFilterCount.value !== undefined
+        ? virtualFilterCount.value
+        : filterItems.size - (active ? filterResult.value.hidden.size : 0),
+    }
+  })
+  // A highlighted item that got filtered out is gone from the DOM: drop the
+  // highlight so `aria-activedescendant` never points at a missing id.
+  watch([filterSearch, filterFn], () => {
+    if (highlightedElement.value && !highlightedElement.value.isConnected)
+      highlightedElement.value = null
+  }, { flush: 'post' })
+
   const context: ListboxRootContext<T> = {
     modelValue: contextModelValue,
     onValueChange,
@@ -834,6 +942,18 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     highlightItem,
     highlightSelected,
     getNavigationIntent,
+
+    filterSearch,
+    setFilterSearch,
+    isFilterActive,
+    filterOption,
+    registerFilterItem: (id, item) => {
+      filterItems.set(id, item)
+      return () => filterItems.delete(id)
+    },
+    isFilteredOut: id => !isVirtual.value && isFilterActive.value && filterResult.value.hidden.has(id),
+    isGroupFilteredOut: id => !isVirtual.value && isFilterActive.value && !filterResult.value.groups.has(id),
+    virtualFilterCount,
   }
 
   const root = createPartSurface<ListboxState>(
@@ -864,6 +984,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     highlightSelected,
     changeHighlight,
     labels,
+    filterSearch,
+    setFilterSearch,
+    filterState,
     lastChangeDetails,
     isControlled,
     root,
