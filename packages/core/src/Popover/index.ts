@@ -1,3 +1,4 @@
+export { createPopoverHandle, PopoverHandle } from './handle'
 export {
   default as PopoverAnchor,
   type PopoverAnchorProps,

@@ -611,6 +611,12 @@ Two fixes in neighbouring families:
 - **Provider context.** The `ToastProviderContext` type is exported. Its `label`, `duration`, `disableSwipe`, `swipeDirection` and `swipeThreshold` are read-only refs, and the unused `isFocusedToastEscapeKeyDownRef` is gone.
 - **New and additive:** the composables.
 
+## Detached triggers
+
+New and additive, so nothing to migrate. `PopoverTrigger`, `DialogTrigger`, `AlertDialogTrigger` and `DropdownMenuTrigger` can render outside their root: create a handle with `createPopoverHandle()`, `createDialogHandle()`, `createAlertDialogHandle()` or `createDropdownMenuHandle()` and pass it to the `handle` prop of the root and of each trigger. A trigger's `payload` reaches the root's default slot, and the popup anchors to and returns focus to the trigger that opened it. The handle also opens and closes the popup from code, reporting `'imperative-action'`. Without a `handle` the components behave as before. See the Detached triggers section on the [Popover](../components/popover#detached-triggers), [Dialog](../components/dialog#detached-triggers), [AlertDialog](../components/alert-dialog#detached-triggers) and [DropdownMenu](../components/dropdown-menu#detached-triggers) pages.
+
+`ChangeEventDetails` gains an optional `trigger` element. It is set when a detached trigger's press opens, switches or closes the popup, or `handle.open(triggerId)` opens it. Code that builds details with `createChangeEventDetails()` or reads them is unaffected.
+
 ## Shadow DOM
 
 Components rendered inside an open shadow root (a custom element, a micro-frontend mounted with `attachShadow()`) work there without workarounds. See the [Shadow DOM](./shadow-dom) guide. What changed:

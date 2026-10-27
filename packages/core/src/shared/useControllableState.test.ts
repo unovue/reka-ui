@@ -249,3 +249,29 @@ describe('useControllableState', () => {
     spy.mockRestore()
   })
 })
+
+describe('setState options (#2826)', () => {
+  it('attributes the change to `options.trigger`', () => {
+    const onUpdate = vi.fn()
+    const { setState } = useControllableState<boolean>({ defaultValue: false, onUpdate })
+    const trigger = document.createElement('button')
+    setState(true, 'trigger-press', undefined, { trigger })
+    expect(onUpdate).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press', trigger }))
+    expect('trigger' in createChangeEventDetails('none')).toBe(false)
+  })
+
+  it('`force` runs a cancellable cycle for an unchanged value', () => {
+    const onBeforeUpdate = vi.fn()
+    const onUpdate = vi.fn()
+    const { setState } = useControllableState<boolean>({ defaultValue: true, onBeforeUpdate, onUpdate })
+    expect(setState(true)).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+
+    expect(setState(true, 'trigger-press', undefined, { force: true })).toBe(true)
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+
+    onBeforeUpdate.mockImplementationOnce((_value, details) => details.cancel())
+    expect(setState(true, 'trigger-press', undefined, { force: true })).toBe(false)
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+  })
+})
