@@ -107,7 +107,7 @@
   },
   {
     'name': 'changeEnd',
-    'description': '<p>Event handler called after each committed change, together with <code>change</code>: every field change is a complete interaction.</p>\n',
+    'description': '<p>Event handler called after each committed change once the model holds it: every field change is a complete interaction. With a controlled <code>modelValue</code> it fires after the parent applies the update, and not at all if the parent rejects it.</p>\n',
     'type': '[value: Color]'
   },
   {
@@ -155,7 +155,7 @@
 | --- | --- | --- |
 | `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
 | `change` | Event handler called when a committed edit, step or wheel change changes the color. Typing does not change the color until it is committed. | `[value: Color]` |
-| `changeEnd` | Event handler called after each committed change, together with change: every field change is a complete interaction. | `[value: Color]` |
+| `changeEnd` | Event handler called after each committed change once the model holds it: every field change is a complete interaction. With a controlled modelValue it fires after the parent applies the update, and not at all if the parent rejects it. | `[value: Color]` |
 | `update:color` | Event handler called with the same Color as update:modelValue, after it. | `[value: Color]` |
 | `update:hex` | Event handler called with the hex serialization of the new color, after update:modelValue. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
 | `update:modelValue` | Event handler called when the color value changes. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
