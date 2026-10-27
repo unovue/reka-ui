@@ -12,7 +12,7 @@ const TOUCH_MOVE_TOLERANCE = 10
 export function usePressedHold(options: { target?: MaybeComputedElementRef, disabled: Ref<boolean> }) {
   const { disabled } = options
   const timeout = ref<number>()
-  const triggerHook = createEventHook()
+  const triggerHook = createEventHook<PointerEvent | undefined>()
   const isPressed = ref(false)
   const target = computed(() => unrefElement(options.target))
   let activePointerId: number | undefined
@@ -37,13 +37,14 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
     isPressed.value = false
   }
 
-  const trigger = () => {
+  // Hold repeats fire from a timer and carry no event.
+  const trigger = (event?: PointerEvent) => {
     if (disabled.value) {
       resetPress()
       return false
     }
 
-    triggerHook.trigger()
+    triggerHook.trigger(event)
     return true
   }
 
@@ -72,7 +73,7 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
 
     if (event.pointerType === 'mouse') {
       holdTriggered = true
-      if (trigger())
+      if (trigger(event))
         scheduleRepeat(HOLD_DELAY)
       return
     }
@@ -100,7 +101,7 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
     resetPress()
 
     if (shouldTriggerTap)
-      trigger()
+      trigger(event)
   }
 
   const onPressCancel = (event: PointerEvent) => {

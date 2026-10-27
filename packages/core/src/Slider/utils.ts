@@ -4,16 +4,12 @@ import { clamp, createContext } from '@/shared'
 export interface SliderOrientationPrivateProps {
   min: number
   max: number
-  inverted: boolean
 }
 
 export type SliderOrientationPrivateEmits = {
-  slideEnd: []
-  slideStart: [value: number]
-  slideMove: [value: number]
-  homeKeyDown: [event: KeyboardEvent]
-  endKeyDown: [event: KeyboardEvent]
-  stepKeyDown: [event: KeyboardEvent, direction: number]
+  slideEnd: [event: PointerEvent]
+  slideStart: [value: number, event: PointerEvent]
+  slideMove: [value: number, event: PointerEvent]
 }
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
@@ -126,7 +122,7 @@ export type Direction = 'ltr' | 'rtl'
 export const PAGE_KEYS = ['PageUp', 'PageDown']
 export const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
 
-type SlideDirection = 'from-left' | 'from-right' | 'from-bottom' | 'from-top'
+export type SlideDirection = 'from-left' | 'from-right' | 'from-bottom' | 'from-top'
 export const BACK_KEYS: Record<SlideDirection, string[]> = {
   'from-left': ['Home', 'PageDown', 'ArrowDown', 'ArrowLeft'],
   'from-right': ['Home', 'PageDown', 'ArrowDown', 'ArrowRight'],
@@ -135,11 +131,58 @@ export const BACK_KEYS: Record<SlideDirection, string[]> = {
 }
 
 type Side = 'top' | 'right' | 'bottom' | 'left'
-interface SliderOrientation {
+export interface SliderOrientation {
   startEdge: ComputedRef<Side>
   endEdge: ComputedRef<Side>
   direction: ComputedRef<1 | -1>
   size: 'width' | 'height'
+}
+
+export interface SliderOrientationGeometry {
+  startEdge: Side
+  endEdge: Side
+  direction: 1 | -1
+  size: 'width' | 'height'
+  /** Which `BACK_KEYS` set applies. */
+  slideDirection: SlideDirection
+  /** Whether values grow from the start edge (left / bottom). */
+  isSlidingFromStart: boolean
+}
+
+/**
+ * The orientation geometry shared by `SliderHorizontal` / `SliderVertical` and
+ * `useSlider()` — one derivation for the edges, the step direction and the
+ * back keys. `dir` is read the way `SliderHorizontal` always read it: an unset
+ * `dir` counts as neither `ltr` nor `rtl`.
+ */
+export function getSliderOrientationGeometry(orientation: 'horizontal' | 'vertical', dir: Direction | undefined, inverted: boolean): SliderOrientationGeometry {
+  if (orientation === 'horizontal') {
+    const isSlidingFromLeft = (dir !== 'rtl' && !inverted) || (dir !== 'ltr' && inverted)
+    return {
+      startEdge: isSlidingFromLeft ? 'left' : 'right',
+      endEdge: isSlidingFromLeft ? 'right' : 'left',
+      direction: isSlidingFromLeft ? 1 : -1,
+      size: 'width',
+      slideDirection: isSlidingFromLeft ? 'from-left' : 'from-right',
+      isSlidingFromStart: isSlidingFromLeft,
+    }
+  }
+  const isSlidingFromBottom = !inverted
+  return {
+    startEdge: isSlidingFromBottom ? 'bottom' : 'top',
+    endEdge: isSlidingFromBottom ? 'top' : 'bottom',
+    direction: isSlidingFromBottom ? 1 : -1,
+    size: 'height',
+    slideDirection: isSlidingFromBottom ? 'from-bottom' : 'from-top',
+    isSlidingFromStart: isSlidingFromBottom,
+  }
+}
+
+/** The thumb transform each orientation sets on the slider element. */
+export function getSliderThumbTransform(orientation: 'horizontal' | 'vertical', isSlidingFromStart: boolean, thumbAlignment: 'contain' | 'overflow') {
+  if (orientation === 'horizontal')
+    return !isSlidingFromStart && thumbAlignment === 'overflow' ? 'translateX(50%)' : 'translateX(-50%)'
+  return !isSlidingFromStart && thumbAlignment === 'overflow' ? 'translateY(-50%)' : 'translateY(50%)'
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]

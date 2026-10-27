@@ -1,31 +1,29 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { Primitive } from '@/Primitive'
 
 export interface EditableInputProps extends PrimitiveProps {
 }
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, watch } from 'vue'
-import { useKbd } from '@/shared'
+import { nextTick, onMounted, watch } from 'vue'
+import { useForwardElement } from '@/shared'
 import { injectEditableRootContext } from './EditableRoot.vue'
+import { getEditableInputSurface } from './useEditable'
 
 const props = withDefaults(defineProps<EditableInputProps>(), {
   as: 'input',
 })
 
-const kbd = useKbd()
-
 const context = injectEditableRootContext()
+// Same derivation as `useEditable().input`.
+const input = getEditableInputSurface(context)
 
-const disabled = computed(() => context.disabled.value)
-
-const placeholder = computed(() => context.placeholder.value?.edit)
-
-const { primitiveElement, currentElement: inputRef, expose } = usePrimitiveElement()
+const { forwardRef, currentElement: inputRef, expose } = useForwardElement()
 defineExpose(expose)
 
+// Focus management is DOM- and lifecycle-bound, so it stays in the shell.
 onMounted(() => {
   context.inputRef.value = inputRef.value as HTMLInputElement
   if (context.startWithEditMode.value) {
@@ -44,30 +42,14 @@ watch(context.isEditing, (value) => {
     })
   }
 })
-
-function handleSubmitKeyDown(event: KeyboardEvent) {
-  if ((context.submitMode.value === 'enter' || context.submitMode.value === 'both') && event.key === kbd.ENTER && !event.shiftKey && !event.metaKey && !event.isComposing)
-    context.submit()
-}
 </script>
 
 <template>
   <Primitive
-    ref="primitiveElement"
-    v-bind="props"
-    :value="context.inputValue.value"
-    :placeholder="placeholder"
-    :disabled="disabled"
-    :maxlength="context.maxLength.value"
-    :data-disabled="disabled ? '' : undefined"
-    :data-readonly="context.readonly.value ? '' : undefined"
-    :readonly="context.readonly.value"
-    aria-label="editable input"
-    :hidden="context.autoResize.value ? undefined : !context.isEditing.value"
-    :style="context.autoResize.value ? { all: 'unset', gridArea: '1 / 1 / auto / auto', visibility: !context.isEditing.value ? 'hidden' : undefined } : undefined"
-    @input="context.inputValue.value = $event.target.value"
-    @keydown.enter.space="handleSubmitKeyDown"
-    @keydown.esc="context.cancel"
+    :ref="forwardRef"
+    v-bind="input.attrs.value"
+    :as="props.as"
+    :as-child="props.asChild"
   >
     <slot />
   </Primitive>

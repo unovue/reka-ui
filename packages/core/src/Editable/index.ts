@@ -29,3 +29,13 @@ export {
   default as EditableSubmitTrigger,
   type EditableSubmitTriggerProps,
 } from './EditableSubmitTrigger.vue'
+export {
+  type EditableAreaState,
+  type EditableChangeReason,
+  type EditableInputState,
+  type EditablePreviewState,
+  type EditableTriggerState,
+  useEditable,
+  type UseEditableProps,
+  type UseEditableReturn,
+} from './useEditable'
