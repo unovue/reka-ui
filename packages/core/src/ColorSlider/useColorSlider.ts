@@ -6,6 +6,7 @@ import type { SliderRootProps } from '@/Slider'
 import { computed, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
+import { createChangeEndTracker } from '@/shared/color/changeEnd'
 
 type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorSliderChangeReason = 'slider'
@@ -40,12 +41,13 @@ export interface UseColorSliderReturn {
   readonly sliderValue: ComputedRef<readonly number[]>
   readonly sliderProps: ComputedRef<Pick<SliderRootProps, 'orientation' | 'disabled' | 'inverted' | 'min' | 'max' | 'step' | 'modelValue'> & {
     'onUpdate:modelValue': (value: number[]) => void
-    'onValueCommit': () => void
+    'onValueCommit': (value: number[]) => void
   }>
   readonly track: PartSurface<ColorSliderTrackState>
   readonly thumb: PartSurface<ColorSliderThumbState>
   setValue: (values: number[], reason?: ColorSliderChangeReason | BaseChangeReason, event?: Event) => void
-  handleValueCommit: () => void
+  /** Ends the current interaction. Pass SliderRoot's `valueCommit` payload when forwarding it. */
+  handleValueCommit: (values?: number[]) => void
 }
 
 /**
@@ -81,9 +83,14 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
   const workingSpace = computed(() => getChannelColorSpace(channel.value, colorSpace.value))
   const color = computed(() => convertToSpace(parsed.value, workingSpace.value))
 
-  // The last accepted color not yet reported by `changeEnd`. A controlled prop only
-  // updates when the parent re-renders, so the commit reads the written color here.
-  let uncommitted: Color | undefined
+  const changeEnd = createChangeEndTracker({
+    current: () => parsed.value,
+    isControlled: () => isControlled.value,
+    onChangeEnd: (value) => {
+      props.onChangeEnd?.(value)
+      props.emit?.('changeEnd', value)
+    },
+  })
   // SliderRoot emits `valueCommit` for a keyboard step *before* the value update it
   // commits; such a commit is held until that update arrives.
   let commitRequested = false
@@ -114,25 +121,28 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
     const clamped = Math.max(min.value, Math.min(max.value, newValue[0]))
     if (clamped === channelValue.value)
       return
+    const previous = parsed.value
     const newColor = setChannelValue(color.value, channel.value, clamped)
     if (setColor(newColor, reason, event)) {
-      uncommitted = newColor
+      changeEnd.record(previous, newColor)
       props.onChange?.(newColor)
       props.emit?.('change', newColor)
       if (commitNow)
-        handleValueCommit()
+        changeEnd.commit()
     }
   }
 
-  function handleValueCommit() {
-    if (!uncommitted) {
+  function handleValueCommit(values?: number[]) {
+    // A pointer release commits the value the model already holds. A keyboard step
+    // commits a value it has not written yet: that step is a whole interaction of its
+    // own, so anything left over (a drag back to its start, which SliderRoot never
+    // commits, or updates a controlled parent rejected) is dropped.
+    if (values && values[0] !== channelValue.value) {
+      changeEnd.discard()
       commitRequested = true
       return
     }
-    const value = uncommitted
-    uncommitted = undefined
-    props.onChangeEnd?.(value)
-    props.emit?.('changeEnd', value)
+    changeEnd.commit()
   }
 
   const context: ColorSliderRootContext = {

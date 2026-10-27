@@ -41,7 +41,7 @@ export type ColorFieldRootEmits = {
   'update:hex': [value: string]
   /** Event handler called when a committed edit, step or wheel change changes the color. Typing does not change the color until it is committed. */
   'change': [value: Color]
-  /** Event handler called after each committed change, together with `change`: every field change is a complete interaction. */
+  /** Event handler called after each committed change once the model holds it: every field change is a complete interaction. With a controlled `modelValue` it fires after the parent applies the update, and not at all if the parent rejects it. */
   'changeEnd': [value: Color]
 }
 

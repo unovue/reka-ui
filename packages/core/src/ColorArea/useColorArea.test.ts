@@ -105,18 +105,60 @@ describe('useColorArea', () => {
     expect(emit.mock.calls.at(-1)?.[0]).toBe('changeEnd')
   })
 
-  it('commits each keyboard step with the written color, also when controlled', () => {
-    const emit = vi.fn()
+  it('commits each keyboard step with the written color once a controlled parent applies it', async () => {
+    const model = ref<string | Color>('#ff0000')
     const onChangeEnd = vi.fn()
-    const area = setup({ modelValue: () => '#ff0000', emit, onChangeEnd })
+    // The parent re-renders later, like a component parent: the prop is still the old color at commit time.
+    const emit = vi.fn((name: string, value: Color) => {
+      if (name === 'update:modelValue')
+        Promise.resolve().then(() => { model.value = value })
+    })
+    const area = setup({ modelValue: () => model.value, emit, onChangeEnd })
     const surface = area.createAreaSurface(ref())
     surface.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
-    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue', 'update:color', 'update:hex', 'change', 'changeEnd'])
-    // The controlled prop has not changed yet; changeEnd still reports the new color.
-    const written = { space: 'hsl', h: 1, s: 100, l: 50, alpha: 1 }
-    expect(onChangeEnd).toHaveBeenCalledWith(written)
-    expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', written])
+    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue', 'update:color', 'update:hex', 'change'])
     expect(emit.mock.calls.find(call => call[0] === 'update:hex')).toEqual(['update:hex', '#ff0400'])
+    await nextTick()
+    const written = { space: 'hsl', h: 1, s: 100, l: 50, alpha: 1 }
+    expect(onChangeEnd).toHaveBeenCalledExactlyOnceWith(written)
+    expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', written])
+  })
+
+  it('does not commit updates a controlled parent rejects', async () => {
+    const onChangeEnd = vi.fn()
+    const area = setup({ modelValue: () => '#ff0000', onUpdate: () => {}, onChangeEnd })
+    const element = document.createElement('div')
+    element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect
+    element.setPointerCapture = vi.fn()
+    element.hasPointerCapture = () => true
+    element.releasePointerCapture = vi.fn()
+    const surface = area.createAreaSurface(ref(element))
+    surface.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
+    const event = { target: element, pointerId: 1, clientX: 50, clientY: 50, preventDefault: vi.fn() }
+    surface.props.value.onPointerdown(event)
+    surface.props.value.onPointerup(event)
+    await nextTick()
+    expect(onChangeEnd).not.toHaveBeenCalled()
+  })
+
+  it('does not commit a drag that returns to its start', () => {
+    const onChangeEnd = vi.fn()
+    const onChange = vi.fn()
+    const area = setup({ defaultValue: { space: 'hsl', h: 180, s: 50, l: 50, alpha: 1 }, onChange, onChangeEnd })
+    const element = document.createElement('div')
+    element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect
+    element.setPointerCapture = vi.fn()
+    element.hasPointerCapture = () => true
+    element.releasePointerCapture = vi.fn()
+    const surface = area.createAreaSurface(ref(element))
+    const event = { target: element, pointerId: 1, clientX: 60, clientY: 50, preventDefault: vi.fn() }
+    surface.props.value.onPointerdown(event)
+    surface.props.value.onPointermove({ ...event, clientX: 50 })
+    surface.props.value.onPointerup(event)
+    expect(onChange).toHaveBeenCalledTimes(2)
+    expect(onChangeEnd).not.toHaveBeenCalled()
+    surface.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
+    expect(onChangeEnd).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ h: 181 }))
   })
 
   it('does not commit a keyboard step that is cancelled or clamped', () => {

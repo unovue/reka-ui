@@ -5,6 +5,7 @@ import type { Color, ColorChannel } from '@/shared/color'
 import { computed, ref, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
+import { createChangeEndTracker } from '@/shared/color/changeEnd'
 import { convertValueToPercentage, linearScale } from './utils'
 
 type Inputs = Pick<ColorAreaRootProps, 'colorSpace' | 'xChannel' | 'yChannel' | 'disabled' | 'modelValue' | 'defaultValue' | 'dir'>
@@ -76,10 +77,16 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
   const workingSpace = computed(() => getChannelColorSpace([xChannel.value, yChannel.value], colorSpace.value))
   const workingColor = computed(() => convertToSpace(color.value, workingSpace.value))
 
-  // The last accepted color not yet reported by `changeEnd`. A controlled prop only
-  // updates when the parent re-renders, so a commit right after a keyboard step
-  // reads the written color from here.
-  let uncommitted: Color | undefined
+  // `changeEnd` reports an interaction only once the model holds its last color, so a
+  // drag back to the start or an update a controlled parent rejected reports nothing.
+  const changeEnd = createChangeEndTracker({
+    current: () => color.value,
+    isControlled: () => isControlled.value,
+    onChangeEnd: (value) => {
+      props.onChangeEnd?.(value)
+      props.emit?.('changeEnd', value)
+    },
+  })
 
   function setColor(newColor: Color, reason: ColorAreaChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     const changed = setState(newColor, reason, event)
@@ -110,10 +117,11 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
       { channel: xChannel.value, value: clampedX },
       { channel: yChannel.value, value: clampedY },
     ]
+    const previous = color.value
     const newColor = setChannelValues(workingColor.value, channels)
     const changed = setColor(newColor, reason, event)
     if (changed) {
-      uncommitted = newColor
+      changeEnd.record(previous, newColor)
       props.onChange?.(newColor)
       props.emit?.('change', newColor)
     }
@@ -121,12 +129,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
   }
 
   function commitValues() {
-    if (!uncommitted)
-      return
-    const value = uncommitted
-    uncommitted = undefined
-    props.onChangeEnd?.(value)
-    props.emit?.('changeEnd', value)
+    changeEnd.commit()
   }
 
   const thumbRef = ref<HTMLElement>()

@@ -105,4 +105,23 @@ describe('useColorField', () => {
     await nextTick()
     expect(field.inputValue.value).toBe('255')
   })
+
+  it('shows an in-place mutation of the parent color', async () => {
+    const model = ref<string | Color>({ space: 'hsl', h: 0, s: 100, l: 50, alpha: 1 })
+    const field = setup({ modelValue: model, channel: 'hue' })
+    expect(field.inputValue.value).toBe('0')
+    ;(model.value as Extract<Color, { space: 'hsl' }>).h = 10
+    await nextTick()
+    expect(field.inputValue.value).toBe('10')
+  })
+
+  it('does not report changeEnd for a step a controlled parent rejects', async () => {
+    const onChange = vi.fn()
+    const onChangeEnd = vi.fn()
+    const field = setup({ modelValue: () => '#000000', onUpdate: () => {}, onChange, onChangeEnd })
+    field.increment()
+    await nextTick()
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChangeEnd).not.toHaveBeenCalled()
+  })
 })

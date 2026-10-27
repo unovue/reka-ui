@@ -5,6 +5,7 @@ import type { Color } from '@/shared/color'
 import { computed, ref, toValue, watch } from 'vue'
 import { createPartSurface, snapValueToStep, useComposing, useControllableState } from '@/shared'
 import { colorToHex, convertToRgb, convertToSpace, getChannelColorSpace, getChannelRange, getChannelValue, isEqualColor, isValidColor, normalizeColor, parseColor, setChannelValue } from '@/shared/color'
+import { createChangeEndTracker } from '@/shared/color/changeEnd'
 
 type Inputs = Pick<ColorFieldRootProps, 'colorSpace' | 'channel' | 'disabled' | 'readonly' | 'disableWheelChange' | 'placeholder' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorFieldChangeReason = 'keyboard' | 'wheel' | 'blur'
@@ -103,14 +104,24 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     return true
   }
 
-  /** An interactive change: the model update plus `change` and `changeEnd`. */
+  const changeEnd = createChangeEndTracker({
+    current: () => parsed.value,
+    isControlled: () => isControlled.value,
+    onChangeEnd: (value) => {
+      props.onChangeEnd?.(value)
+      props.emit?.('changeEnd', value)
+    },
+  })
+
+  /** An interactive change: the model update, `change`, and `changeEnd` once the model holds it. */
   function applyChange(newColor: Color, event?: Event) {
+    const previous = parsed.value
     if (!setColor(newColor, reasonFromEvent(event), event))
       return false
     props.onChange?.(newColor)
     props.emit?.('change', newColor)
-    props.onChangeEnd?.(newColor)
-    props.emit?.('changeEnd', newColor)
+    changeEnd.record(previous, newColor)
+    changeEnd.commit()
     return true
   }
 
@@ -124,10 +135,11 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     return colorToHex(c)
   }
 
-  // Update input value when color changes (unless user is editing)
-  watch(color, (newColor) => {
+  // Update input value when the formatted color changes (unless user is editing). The
+  // getter reads the channels, so an in-place mutation of a reactive Color is seen too.
+  watch(() => formatValue(color.value), (formatted) => {
     if (!isEditing.value)
-      inputValue.value = formatValue(newColor)
+      inputValue.value = formatted
   }, { immediate: true })
 
   function resetInput() {
