@@ -9,21 +9,42 @@ export interface AlertDialogProps extends Omit<DialogRootProps, 'modal'> {}
 </script>
 
 <script setup lang="ts">
-import { DialogRoot } from '@/Dialog'
-import { useForwardPropsEmits } from '@/shared'
+import { provideDialogRootContext } from '@/Dialog/DialogRoot.vue'
+import { useId } from '@/shared'
+import { useAlertDialog } from './useAlertDialog'
 
-const props = defineProps<AlertDialogProps>()
-const emits = defineEmits<AlertDialogEmits>()
+const props = withDefaults(defineProps<AlertDialogProps>(), {
+  open: undefined,
+  defaultOpen: false,
+  unmountOnHide: true,
+})
+const emit = defineEmits<AlertDialogEmits>()
 
-const forwarded = useForwardPropsEmits(props, emits)
+defineSlots<{
+  default?: (props: {
+    /** Current open state */
+    open: boolean
+    /** Close the dialog */
+    close: () => void
+  }) => any
+}>()
+
+// `useAlertDialog` composes `useDialog` (modal forced on), so the Dialog parts
+// the AlertDialog parts render inject the same `DialogRootContext`.
+const { open, onOpenChange, context } = useAlertDialog({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  unmountOnHide: () => props.unmountOnHide,
+  baseId: useId(undefined, 'reka-alert-dialog'),
+  emit,
+})
+
+provideDialogRootContext(context)
 </script>
 
 <template>
-  <DialogRoot
-    v-slot="slotProps"
-    v-bind="forwarded"
-    :modal="true"
-  >
-    <slot v-bind="slotProps" />
-  </DialogRoot>
+  <slot
+    :open="open"
+    :close="() => onOpenChange(false)"
+  />
 </template>
