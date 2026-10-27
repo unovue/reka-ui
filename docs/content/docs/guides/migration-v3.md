@@ -161,6 +161,15 @@ What to check in your code:
 - Vite, Nuxt and Vitest need no change.
 - Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
 
+## Auto-imports use per-component entry points
+
+Every component family now has its own entry point, named after it in kebab-case (`reka-ui/dialog`, `reka-ui/alert-dialog`, …). It exports the very same components as the package root, so `import { DialogRoot } from 'reka-ui'` keeps working, and parts from both can be mixed in one component tree. See [Importing components](../overview/installation#importing-components).
+
+The [Nuxt module](../overview/installation#nuxt-modules) and the [`unplugin-vue-components` resolver](../overview/installation#unplugin-vue-components) now import each component from its entry point instead of from `reka-ui`. Your code needs no change, but check:
+
+- A committed `components.d.ts` is regenerated with `typeof import('reka-ui/dialog')['DialogRoot']` instead of `typeof import('reka-ui')['DialogRoot']`. Commit the new file.
+- Configuration that matches the exact specifier `reka-ui`, such as an `alias` entry, a Jest `moduleNameMapper` key `^reka-ui$` or a regular expression that ends at `reka-ui`, does not match `reka-ui/dialog`. Extend it to the subpaths, or keep the v2 imports with `subpaths: false` (`reka: { subpaths: false }` in `nuxt.config.ts`, `RekaResolver({ subpaths: false })` in the resolver).
+
 ## Generated ids
 
 The ids Reka UI generates for overlay parts are now derived from the root. This covers the Dialog and AlertDialog content, title and description, the Drawer content, title and description, the Popover trigger and content, the DropdownMenu trigger and content, and the Tooltip label that the trigger's `aria-describedby` points at. Their shape differs from v2, for example `reka-tooltip-<n>-content` instead of `reka-tooltip-content-<n>`. A `MenubarMenu` now allocates its content id when the menu is set up instead of when its content first renders.

@@ -557,10 +557,27 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The type-check passes; selecting, expanding and Shift-range-selecting in each tree, paging, and stepping behave as before; a propagated or bubbled selection lists each key once; a disabled step cannot be reached through `goToStep`.
 
+### 24. Auto-imports use per-component entry points
+
+**What changed.** Every component family has its own entry point (`reka-ui/dialog`, `reka-ui/alert-dialog`, …: the family name in kebab-case) that exports the same objects as the package root. The Nuxt module (`reka-ui/nuxt`) and the `unplugin-vue-components` resolver (`reka-ui/resolver`) now import each auto-imported component from its entry point instead of from `reka-ui`. `import { X } from 'reka-ui'` is unchanged and keeps working, also mixed with entry-point imports.
+
+**How to find it.**
+- `reka-ui/nuxt` in `nuxt.config.*`, `reka-ui/resolver` in a Vite, Webpack or Rspack config.
+- A committed `components.d.ts` (or the file named by the resolver's `dts` option) that mentions `import('reka-ui')`.
+- Configuration that matches the exact specifier `reka-ui`: an `alias` / `resolve.alias` entry, a Jest `moduleNameMapper` key, `optimizeDeps` or `ssr.noExternal` entries written as regular expressions that end at `reka-ui` (`/^reka-ui$/`).
+
+**Rewrite rules.**
+- Do not rewrite the project's own `import … from 'reka-ui'` statements; root imports stay valid.
+- Regenerate a committed `components.d.ts` by running the dev server or the build once, and keep the regenerated file.
+- Exact-specifier configuration: extend the pattern to the subpaths (`/^reka-ui(\/.*)?$/`). If an alias redirects `reka-ui` to a local copy or a fork that has no per-component entry points, *ask* whether to set `subpaths: false` (`reka: { subpaths: false }` in `nuxt.config.ts`, `RekaResolver({ subpaths: false })`) instead.
+- Do not add `subpaths: false` on your own.
+
+**Verify.** The type-check passes, and the dev server and the build start without `Failed to resolve import "reka-ui/…"` or `Cannot find module 'reka-ui/…'` errors.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, and every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, and every alias to a copy without per-component entry points from section 24 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.
