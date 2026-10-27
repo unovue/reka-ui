@@ -1,9 +1,10 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { TagsInputChangeReason } from './useTagsInput'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { computed, ref, toRefs } from 'vue'
-import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
@@ -36,8 +37,10 @@ export interface TagsInputRootProps<T = AcceptableInputValue> extends PrimitiveP
 }
 
 export type TagsInputRootEmits<T = AcceptableInputValue> = {
+  /** Event handler called before the tags change; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [payload: Array<T>, details: ChangeEventDetails<TagsInputChangeReason>]
   /** Event handler called when the value changes */
-  'update:modelValue': [payload: Array<T>]
+  'update:modelValue': [payload: Array<T>, details: ChangeEventDetails<TagsInputChangeReason>]
   /** Event handler called when the value is invalid */
   'invalid': [payload: T]
   /** Event handler called when tag is added */
@@ -46,10 +49,19 @@ export type TagsInputRootEmits<T = AcceptableInputValue> = {
   'removeTag': [payload: T]
 }
 
+type Reason = TagsInputChangeReason | BaseChangeReason
+
 export interface TagsInputRootContext<T = AcceptableInputValue> {
-  modelValue: Ref<Array<T>>
-  onAddValue: (payload: string) => boolean
-  onRemoveValue: (index: number) => void
+  /** Read-only: change the tags through `onAddValue` / `onRemoveValue` / `onClear`. */
+  modelValue: Readonly<Ref<Array<T>>>
+  /** Adds a tag from input text; returns `true` when it was added. */
+  onAddValue: (payload: string, reason?: Reason, event?: Event) => boolean
+  /** Adds several tags as one change (a paste); returns `true` when at least one was added. */
+  onAddValues: (payloads: string[], reason?: Reason, event?: Event) => boolean
+  /** Removes the tag at `index`; returns `false` when out of range, unchanged or cancelled. */
+  onRemoveValue: (index: number, reason?: Reason, event?: Event) => boolean
+  /** Removes every tag; returns `false` when already empty or cancelled. */
+  onClear: (reason?: Reason, event?: Event) => boolean
   onInputKeydown: (event: KeyboardEvent) => void
   selectedElement: Ref<HTMLElement | undefined>
   isInvalidInput: Ref<boolean>
@@ -69,11 +81,12 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
-import { useFocusWithin, useVModel } from '@vueuse/core'
-import { isEqual } from 'ohash'
+import { useFocusWithin } from '@vueuse/core'
+import { toRefs } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { useTagsInput } from './useTagsInput'
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
   defaultValue: () => [],
@@ -90,14 +103,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { addOnPaste, disabled, delimiter, max, id, dir: propDir, addOnBlur, addOnTab } = toRefs(props)
+const { dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue,
-  passive: true,
-  deep: true,
-}) as Ref<Array<AcceptableInputValue>>
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -106,153 +113,38 @@ const isFormControl = useFormControl(currentElement)
 
 const { getItems, CollectionSlot } = useCollection({ isProvider: true })
 
-const selectedElement = ref<HTMLElement>()
-const isInvalidInput = ref(false)
-
-const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
-
-function handleRemoveTag(index: number) {
-  if (index !== -1) {
-    const removedValue = modelValue.value[index] as T
-    modelValue.value = modelValue.value.filter((_, i) => i !== index)
-    emits('removeTag', removedValue)
-  }
-}
-
-provideTagsInputRootContext({
-  modelValue,
-  onAddValue: (_payload) => {
-    const array = [...currentModelValue.value]
-    const modelValueIsObject = array.length > 0 && typeof array[0] === 'object'
-    const defaultValueIsObject = array.length > 0 && typeof props.defaultValue[0] === 'object'
-
-    // Check if the value is an object and if the convertValue function is provided. We don't check this a type level because the use
-    // of `TagsInputInput` is optional.
-    if ((modelValueIsObject || defaultValueIsObject) && typeof props.convertValue !== 'function')
-      throw new Error('You must provide a `convertValue` function when using objects as values.')
-    const payload = props.convertValue ? props.convertValue(_payload) : _payload as T
-
-    if ((array.length >= max.value) && !!max.value) {
-      emits('invalid', payload)
-      return false
-    }
-
-    if (props.duplicate) {
-      modelValue.value = [...array, payload]
-      emits('addTag', payload)
-      return true
-    }
-    else {
-      const exist = array.includes(payload)
-      if (!exist) {
-        modelValue.value = [...array, payload]
-        emits('addTag', payload)
-        return true
-      }
-      else {
-        isInvalidInput.value = true
-      }
-    }
-    emits('invalid', payload)
-    return false
-  },
-  onRemoveValue: handleRemoveTag,
-  onInputKeydown: (event) => {
-    // Don't navigate/select tags mid-composition, keys are used for IME candidate navigation
-    if (event.isComposing)
-      return
-    const target = event.target as HTMLInputElement
-    const collection = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
-    if (!collection.length)
-      return
-    const lastTag = collection.at(-1)
-    switch (event.key) {
-      case 'Delete':
-      case 'Backspace': {
-        if (target.selectionStart !== 0 || target.selectionEnd !== 0)
-          break
-
-        if (selectedElement.value) {
-          const index = collection.findIndex(i => i === selectedElement.value)
-          const selectedItem = getItems().find(i => i.ref === selectedElement.value)
-          const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
-          handleRemoveTag(modelIndex)
-          selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
-          event.preventDefault()
-        }
-        else if (event.key === 'Backspace') {
-          selectedElement.value = lastTag
-          event.preventDefault()
-        }
-        break
-      }
-      case 'Home':
-      case 'End':
-      case 'ArrowRight':
-      case 'ArrowLeft': {
-        const isArrowRight = (event.key === 'ArrowRight' && dir.value === 'ltr') || (event.key === 'ArrowLeft' && dir.value === 'rtl')
-        const isArrowLeft = !isArrowRight
-        // only focus on tags when cursor is at the first position
-        if (target.selectionStart !== 0 || target.selectionEnd !== 0)
-          break
-
-        // if you press ArrowLeft, then we last tag
-        if (isArrowLeft && !selectedElement.value) {
-          selectedElement.value = lastTag
-          event.preventDefault()
-        }
-        // if you press ArrowRight on last tag, you deselect
-        else if (isArrowRight && lastTag && selectedElement.value === lastTag) {
-          selectedElement.value = undefined
-          event.preventDefault()
-        }
-        else if (selectedElement.value) {
-          const el = useArrowNavigation(event, selectedElement.value, undefined, {
-            itemsArray: collection,
-            loop: false,
-            dir: dir.value,
-          })
-          if (el)
-            selectedElement.value = el
-          event.preventDefault()
-        }
-        break
-      }
-      case 'ArrowUp':
-      case 'ArrowDown': {
-        if (selectedElement.value)
-          event.preventDefault()
-        break
-      }
-      default: {
-        selectedElement.value = undefined
-      }
-    }
-  },
-  selectedElement,
-  isInvalidInput,
-  addOnPaste,
-  addOnBlur,
-  addOnTab,
+// Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
+// composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
+const { modelValue, root, context } = useTagsInput<T>({
+  // Getters, so a later `convertValue` / `displayValue` prop change is picked up.
+  get convertValue() { return props.convertValue },
+  displayValue: (value: T) => props.displayValue(value),
+  modelValue: () => props.modelValue,
+  defaultValue: () => props.defaultValue,
+  addOnPaste: () => props.addOnPaste,
+  addOnTab: () => props.addOnTab,
+  addOnBlur: () => props.addOnBlur,
+  duplicate: () => props.duplicate,
+  disabled: () => props.disabled,
+  delimiter: () => props.delimiter,
   dir,
-  disabled,
-  delimiter,
-  max,
-  id,
-  displayValue: props.displayValue as (value: AcceptableInputValue) => string,
+  max: () => props.max,
+  id: () => props.id,
+  focused,
+  getItems: () => getItems() as { ref: HTMLElement, value?: T }[],
+  emit: emits,
 })
+
+provideTagsInputRootContext(context as unknown as TagsInputRootContext)
 </script>
 
 <template>
   <CollectionSlot>
     <Primitive
       :ref="forwardRef"
-      :dir="dir"
       :as="as"
       :as-child="asChild"
-      :data-invalid="isInvalidInput ? '' : undefined"
-      :data-disabled="disabled ? '' : undefined"
-      :data-focused="focused ? '' : undefined"
+      v-bind="root.attrs.value"
     >
       <slot :model-value="modelValue" />
 
