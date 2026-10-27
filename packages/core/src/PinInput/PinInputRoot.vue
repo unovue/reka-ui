@@ -1,8 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
+import type { PinInputChangeReason } from './usePinInput'
 import type { PrimitiveProps } from '@/Primitive'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { computed, ref, toRefs, watch } from 'vue'
 import { createContext, useDirection, useForwardElement } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -22,7 +23,11 @@ export type PinInputContextValue<Type extends PinInputType = 'text'>
     : string[]
 
 export type PinInputRootEmits<Type extends PinInputType = 'text'> = {
-  'update:modelValue': [value: PinInputValue<Type>]
+  /** Event handler called before the value changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason>]
+  /** Event handler called when the value changes. */
+  'update:modelValue': [value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason>]
+  /** Event handler called when every input is filled. */
   'complete': [value: PinInputValue<Type>]
 }
 
@@ -48,18 +53,23 @@ export interface PinInputRootProps<Type extends PinInputType = 'text'> extends P
 }
 
 export interface PinInputRootContext<Type extends PinInputType = 'text'> {
-  modelValue: Ref<PinInputContextValue<Type>>
+  /** Read-only; write through `setModelValue` / `updateModelValueAt`. */
+  modelValue: Readonly<Ref<PinInputContextValue<Type>>>
   currentModelValue: ComputedRef<PinInputContextValue<Type>>
-  mask: Ref<boolean>
-  otp: Ref<boolean>
-  placeholder: Ref<string>
-  type: Ref<PinInputType>
-  dir: Ref<Direction>
-  disabled: Ref<boolean>
+  mask: Readonly<Ref<boolean>>
+  otp: Readonly<Ref<boolean>>
+  placeholder: Readonly<Ref<string>>
+  type: Readonly<Ref<PinInputType>>
+  dir: Readonly<Ref<Direction>>
+  disabled: Readonly<Ref<boolean>>
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
   onInputElementChange: (el: HTMLInputElement) => void
   isNumericMode: ComputedRef<boolean>
+  /** Replaces the whole value. Returns `false` when unchanged or cancelled. */
+  setModelValue: (value: PinInputContextValue<Type>, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Writes one input's value (`''` clears it). Returns `false` when unchanged or cancelled. */
+  updateModelValueAt: (index: number, value: string, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
@@ -67,8 +77,9 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
-import { useVModel } from '@vueuse/core'
+import { mergeProps, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { usePinInput } from './usePinInput'
 
 defineOptions({
   inheritAttrs: false,
@@ -87,58 +98,34 @@ defineSlots<{
   }) => any
 }>()
 
-const { mask, otp, placeholder, type, disabled, dir: propDir } = toRefs(props)
+const { dir: propDir } = toRefs(props)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const dir = useDirection(propDir)
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue ?? [] as any,
-  passive: true,
-  deep: true,
-}) as Ref<PinInputValue<Type>>
-
-const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
-
-const inputElements = ref<Set<HTMLInputElement>>(new Set())
-function onInputElementChange(el: HTMLInputElement) {
-  inputElements.value.add(el)
-}
-
-const isNumericMode = computed(() => props.type === 'number')
-const isCompleted = computed(() => {
-  const modelValues = currentModelValue.value.filter(i => !!i || (isNumericMode.value && i === 0))
-  return modelValues.length === inputElements.value.size
-})
-
-watch(modelValue, () => {
-  if (isCompleted.value)
-    emits('complete', modelValue.value)
-}, { deep: true })
-
-providePinInputRootContext({
-  modelValue,
-  currentModelValue: currentModelValue as ComputedRef<PinInputValue<Type>>,
-  mask,
-  otp,
-  placeholder,
-  type,
+// The composable owns the model (`useControllableState`), `beforeUpdate:` /
+// `update:` and the `complete` watcher; the shell keeps `dir` resolution and
+// the hidden form input.
+const { modelValue: model, currentModelValue, root, context } = usePinInput({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  type: () => props.type,
+  mask: () => props.mask,
+  otp: () => props.otp,
+  placeholder: () => props.placeholder,
   dir,
-  disabled,
-  isCompleted,
-  inputElements,
-  onInputElementChange,
-  isNumericMode,
+  disabled: () => props.disabled,
+  emit: emits,
 })
+const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
+
+providePinInputRootContext(context)
 </script>
 
 <template>
   <Primitive
-    v-bind="$attrs"
+    v-bind="mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
-    :dir="dir"
-    :data-complete="isCompleted ? '' : undefined"
-    :data-disabled="disabled ? '' : undefined"
   >
     <slot :model-value="modelValue" />
 
@@ -152,7 +139,7 @@ providePinInputRootContext({
       :name="name ?? ''"
       :disabled="disabled"
       :required="required"
-      @focus="Array.from(inputElements)?.[0]?.focus()"
+      @focus="Array.from(context.inputElements!.value)?.[0]?.focus()"
     />
   </Primitive>
 </template>
