@@ -1,5 +1,6 @@
 <script lang="ts">
-import { isEqualDay } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
+import type { ChangeEventDetails } from '@/shared'
 import { DateRangeFieldRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
@@ -20,6 +21,11 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
 </script>
 
 <template>
+  <!--
+    The field is controlled by the picker. Its `beforeUpdate:modelValue` runs
+    the picker's change, so the picker emits once with the field's reason, and
+    a cancel on the picker puts the segments back.
+  -->
   <DateRangeFieldRoot
     v-slot="{ segments, modelValue }"
     :ref="setFieldRef"
@@ -40,15 +46,10 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
       required: rootContext.required.value,
       dir: rootContext.dir.value,
       step: rootContext.step.value,
+      stepSnapping: rootContext.stepSnapping.value,
     }"
-    @update:model-value="(date) => {
-      if (date.start && rootContext.modelValue.value.start && date.end && rootContext.modelValue.value.end && date.start.compare(rootContext.modelValue.value.start) === 0 && date.end.compare(rootContext.modelValue.value.end) === 0) return
-      rootContext.onDateChange(date)
-    }"
-    @update:placeholder="(date) => {
-      if (isEqualDay(date, rootContext.placeholder.value) && date.compare(rootContext.placeholder.value) === 0) return
-      rootContext.onPlaceholderChange(date)
-    }"
+    @before-update:model-value="rootContext.onFieldBeforeUpdate"
+    @update:placeholder="(date: DateValue, details: ChangeEventDetails<any>) => rootContext.setPlaceholder(date, details.reason, details.event)"
   >
     <slot
       :segments="segments"

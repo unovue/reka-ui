@@ -1,19 +1,15 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
-
 import type { ComputedRef, Ref } from 'vue'
 import type { DateRangeFieldRoot, DateRangeFieldRootProps, PopoverOpenChangeReason, PopoverRootProps, RangeCalendarChangeReason, RangeCalendarRootProps } from '..'
+import type { DateRangePickerChangeReason } from './useDateRangePicker'
 import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
-import type { ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
-
 import type { Direction } from '@/shared/types'
-import { getWeekStartsOn } from '@/date'
-import { createContext, useControllableState, useDirection, useLocale } from '@/shared'
-import { getDefaultDate } from '@/shared/date'
-import { PopoverRoot } from '..'
+import { createContext, useDirection, useId, useLocale } from '@/shared'
 
-type DateRangePickerRootContext = {
+export type DateRangePickerRootContext = {
   id: Ref<string | undefined>
   name: Ref<string | undefined>
   minValue: Ref<DateValue | undefined>
@@ -24,7 +20,9 @@ type DateRangePickerRootContext = {
   required: Ref<boolean>
   locale: Ref<string>
   dateFieldRef: Ref<InstanceType<typeof DateRangeFieldRoot> | undefined>
-  modelValue: Ref<{ start: DateValue | undefined, end: DateValue | undefined }>
+  /** Assigning it requests a change with reason `imperative-action`; prefer `setModelValue`. */
+  modelValue: Ref<DateRange>
+  /** Assigning it requests a change with reason `imperative-action`; prefer `setPlaceholder`. */
   placeholder: Ref<DateValue>
   pagedNavigation: Ref<boolean>
   preventDeselect: Ref<boolean>
@@ -40,15 +38,16 @@ type DateRangePickerRootContext = {
   defaultOpen: Ref<boolean>
   open: ComputedRef<boolean>
   modal: Ref<boolean>
-  onDateChange: (date: DateRange) => void
-  onPlaceholderChange: (date: DateValue) => void
-  onStartValueChange: (date: DateValue | undefined) => void
+  onDateChange: (date: DateRange, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  onPlaceholderChange: (date: DateValue, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  onStartValueChange: (date: DateValue | undefined, details?: ChangeEventDetails<RangeCalendarChangeReason>) => boolean
   dir: Ref<Direction>
   allowNonContiguousRanges: Ref<boolean>
   fixedDate: Ref<'start' | 'end' | undefined>
   maximumDays?: Ref<number | undefined>
   maximumLength?: Ref<number | undefined>
   step: Ref<DateStep | undefined>
+  stepSnapping: Ref<boolean>
   closeOnSelect?: Ref<boolean>
   /** The calendar view (`day` | `month` | `year`). */
   view: ComputedRef<CalendarUnit>
@@ -56,6 +55,15 @@ type DateRangePickerRootContext = {
   yearsPerPage: Ref<number>
   columns: Ref<number>
   onViewChange: (view: CalendarUnit, details?: ChangeEventDetails<RangeCalendarChangeReason>) => void
+  /** Request a range change. Returns `false` when unchanged or cancelled. */
+  setModelValue: (value: DateRange, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  setPlaceholder: (value: DateValue, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Bound to the field's `beforeUpdate:modelValue`: runs the picker's change inside it, and cancels the field's when the picker's is cancelled. */
+  onFieldBeforeUpdate: (value: DateRange, details: ChangeEventDetails<any>) => void
+  /** Bound to the range calendar's `beforeUpdate:modelValue`. */
+  onCalendarBeforeUpdate: (value: DateRange, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
+  /** Bound to the range calendar's `update:placeholder`. */
+  onCalendarPlaceholderChange: (value: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
 }
 
 /**
@@ -94,12 +102,18 @@ export type DateRangePickerRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>]
   /** Event handler called when the open state of the popover changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>]
+  /** Called before the range changes, from the field or the calendar; `details.cancel()` keeps the current range. */
+  'beforeUpdate:modelValue': [date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>]
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: DateRange]
+  'update:modelValue': [date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>]
+  /** Called before the placeholder changes; `details.cancel()` keeps the current placeholder. */
+  'beforeUpdate:placeholder': [date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason>]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: DateValue]
+  'update:placeholder': [date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason>]
+  /** Called before `update:startValue`; `details.cancel()` suppresses that event (the calendar's anchor still moves). */
+  'beforeUpdate:startValue': [date: DateValue | undefined, details: ChangeEventDetails<DateRangePickerChangeReason>]
   /** Event handler called whenever the start value changes */
-  'update:startValue': [date: DateValue | undefined]
+  'update:startValue': [date: DateValue | undefined, details: ChangeEventDetails<DateRangePickerChangeReason>]
   /** Called before the calendar view changes; `details.cancel()` keeps the current view. */
   'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Event handler called whenever the calendar view changes */
@@ -111,8 +125,10 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs, watch } from 'vue'
+import { computed, toRefs } from 'vue'
+import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
+import { PopperRoot } from '@/Popper'
+import { useDateRangePicker } from './useDateRangePicker'
 
 defineOptions({
   inheritAttrs: false,
@@ -144,163 +160,76 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   columns: 4,
 })
 const emits = defineEmits<DateRangePickerRootEmits>()
-const {
-  locale: propLocale,
-  maximumLength,
-  maxView,
-  yearsPerPage,
-  columns,
-  disabled,
-  readonly,
-  pagedNavigation,
-  weekdayFormat,
-  fixedWeeks,
-  numberOfMonths,
-  preventDeselect,
-  isDateDisabled: propsIsDateDisabled,
-  isDateUnavailable: propsIsDateUnavailable,
-  isDateHighlightable: propsIsDateHighlightable,
-  defaultOpen,
-  modal,
-  id,
-  name,
-  required,
-  minValue,
-  maxValue,
-  granularity,
-  hideTimeZone,
-  hourCycle,
-  dir: propsDir,
-  allowNonContiguousRanges,
-  fixedDate,
-  maximumDays,
-  step,
-  closeOnSelect,
-} = toRefs(props)
+defineSlots<{
+  default?: (props: {
+    /** The current range */
+    modelValue: DateRange
+    /** Whether the popover is open */
+    open: boolean
+  }) => any
+}>()
+const { locale: propLocale, dir: propDir } = toRefs(props)
 
-const dir = useDirection(propsDir)
+const dir = useDirection(propDir)
 const locale = useLocale(propLocale)
-const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue ?? { start: undefined, end: undefined },
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<DateRange>
-
-const defaultDate = getDefaultDate({
-  defaultPlaceholder: props.placeholder,
-  granularity: props.granularity,
-  defaultValue: modelValue.value?.start,
-  locale: locale.value,
-})
-
-const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
-  passive: (props.placeholder === undefined) as false,
-}) as Ref<DateValue>
-
-// The inner `PopoverRoot` is controlled by this model, so a `beforeUpdate:open`
-// cancel here keeps both in sync; the popover's reason and event are forwarded.
-const { state: open, setState: setOpen } = useControllableState<boolean, DateRangePickerOpenChangeReason>({
-  prop: () => props.open,
-  defaultValue: defaultOpen.value,
-  name: 'open',
-  emit: emits,
-})
-
-// Same contract as `open`: the inner calendar is controlled by this model, so a
-// `beforeUpdate:view` cancel here keeps both in sync; the calendar's reason and
-// event are forwarded.
-const { state: view, setState: setView, isControlled: isViewControlled } = useControllableState<CalendarUnit, RangeCalendarChangeReason>({
-  prop: () => props.view,
-  defaultValue: props.defaultView ?? 'day',
-  name: 'view',
-  emit: emits,
-})
-
-// `defaultView` is the view each time the picker opens: an uncontrolled view
-// left on month / year when the popover closed goes back to it on reopen.
-watch(open, (isOpen) => {
-  if (isOpen && !isViewControlled.value)
-    setView(props.defaultView ?? 'day')
-})
-
-const dateFieldRef = ref<InstanceType<typeof DateRangeFieldRoot> | undefined>()
-
-watch(modelValue, (value) => {
-  if (value && value.start && value.start.compare(placeholder.value) !== 0) {
-    placeholder.value = value.start.copy()
-  }
-
-  if (value.start && value.end) {
-    if (closeOnSelect.value) {
-      setOpen(false, 'date-select')
-    }
-  }
-})
-
-provideDateRangePickerRootContext({
-  allowNonContiguousRanges,
-  isDateUnavailable: propsIsDateUnavailable.value,
-  isDateDisabled: propsIsDateDisabled.value,
-  isDateHighlightable: propsIsDateHighlightable.value,
+// The range, placeholder, start value, open (through the composed
+// `usePopover`) and view models with their `beforeUpdate:` / `update:` emits
+// live in the composable. The root provides the Popover context itself.
+const { context, popover, modelValue, open } = useDateRangePicker({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  placeholder: () => props.placeholder,
+  defaultPlaceholder: props.defaultPlaceholder,
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  modal: () => props.modal,
+  view: () => props.view,
+  defaultView: props.defaultView,
+  maxView: () => props.maxView,
+  closeOnSelect: () => props.closeOnSelect,
   locale,
-  disabled,
-  pagedNavigation,
-  weekStartsOn,
-  weekdayFormat,
-  fixedWeeks,
-  numberOfMonths,
-  readonly,
-  preventDeselect,
-  modelValue,
-  placeholder,
-  defaultOpen,
-  modal,
-  open,
-  id,
-  name,
-  required,
-  minValue,
-  maxValue,
-  granularity,
-  hideTimeZone,
-  hourCycle,
-  dateFieldRef,
   dir,
-  fixedDate,
-  maximumDays,
-  maximumLength,
-  step,
-  view,
-  maxView,
-  yearsPerPage,
-  columns,
-  onViewChange(next: CalendarUnit, details?: ChangeEventDetails<RangeCalendarChangeReason>) {
-    setView(next, details?.reason, details?.event)
-  },
-  onStartValueChange(date: DateValue | undefined) {
-    emits('update:startValue', date)
-  },
-  onDateChange(date: DateRange) {
-    modelValue.value = { start: date.start?.copy(), end: date.end?.copy() }
-  },
-  onPlaceholderChange(date: DateValue) {
-    placeholder.value = date.copy()
-  },
-  closeOnSelect,
+  id: () => props.id,
+  name: () => props.name,
+  required: () => props.required,
+  disabled: () => props.disabled,
+  readonly: () => props.readonly,
+  minValue: () => props.minValue,
+  maxValue: () => props.maxValue,
+  granularity: () => props.granularity,
+  hourCycle: () => props.hourCycle,
+  hideTimeZone: () => props.hideTimeZone,
+  step: () => props.step,
+  stepSnapping: () => props.stepSnapping,
+  isDateDisabled: computed(() => props.isDateDisabled),
+  isDateUnavailable: computed(() => props.isDateUnavailable),
+  isDateHighlightable: computed(() => props.isDateHighlightable),
+  weekStartsOn: () => props.weekStartsOn,
+  weekdayFormat: () => props.weekdayFormat,
+  fixedWeeks: () => props.fixedWeeks,
+  numberOfMonths: () => props.numberOfMonths,
+  pagedNavigation: () => props.pagedNavigation,
+  preventDeselect: () => props.preventDeselect,
+  allowNonContiguousRanges: () => props.allowNonContiguousRanges,
+  fixedDate: () => props.fixedDate,
+  maximumDays: () => props.maximumDays,
+  maximumLength: () => props.maximumLength,
+  yearsPerPage: () => props.yearsPerPage,
+  columns: () => props.columns,
+  baseId: useId(undefined, 'reka-popover'),
+  emit: emits,
 })
+
+providePopoverRootContext(popover.context)
+provideDateRangePickerRootContext(context)
 </script>
 
 <template>
-  <PopoverRoot
-    :open="open"
-    :modal="modal"
-    @update:open="(value, details) => setOpen(value, details.reason, details.event)"
-  >
+  <PopperRoot>
     <slot
       :model-value="modelValue"
       :open="open"
     />
-  </PopoverRoot>
+  </PopperRoot>
 </template>
