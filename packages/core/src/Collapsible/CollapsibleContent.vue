@@ -18,7 +18,7 @@ export type CollapsibleContentEmits = {
 import { useEventListener } from '@vueuse/core'
 import { computed, mergeProps, nextTick, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
-import { ENDING_STYLE_ATTR, STARTING_STYLE_ATTR } from '@/Presence/usePresence'
+import { ENDING_STYLE_ATTR, getRunningAnimations, STARTING_STYLE_ATTR, supportsAnimations } from '@/Presence/usePresence'
 import {
   Primitive,
 } from '@/Primitive'
@@ -59,13 +59,38 @@ const isOpen = computed(() => rootContext.open.value)
 const isMountAnimationPrevented = ref(isOpen.value)
 const currentStyle = ref<Record<string, string>>()
 
+/**
+ * A size transition is still running: the toggle interrupted an open or a
+ * close. Measuring would snap the panel to its full size, so keep it where it
+ * is and let the transition retarget from there (Base UI's
+ * `useCollapsiblePanel` likewise only refreshes the size variables from
+ * `scrollHeight` / `scrollWidth` here).
+ */
+function isTransitionRunning(node: HTMLElement) {
+  return supportsAnimations(node)
+    && getRunningAnimations(node).some(animation => 'transitionProperty' in animation)
+}
+
 watch(
   () => [isOpen.value, presentRef.value?.present],
   async () => {
+    // This `nextTick` is queued before Presence's exit check (this watcher is
+    // registered before Presence's, so it runs first): the measuring below
+    // restores the transitions and the ending style before Presence asks
+    // `getAnimations()` what to wait for. Accordion item switching relies on it
+    // (Base UI #3099).
     await nextTick()
     const node = currentElement.value
     if (!node)
       return
+
+    if (isTransitionRunning(node)) {
+      height.value = node.scrollHeight
+      width.value = node.scrollWidth
+      node.style.setProperty(HEIGHT_VAR, `${node.scrollHeight}px`)
+      node.style.setProperty(WIDTH_VAR, `${node.scrollWidth}px`)
+      return
+    }
     currentStyle.value = currentStyle.value || {
       transitionDuration: node.style.transitionDuration,
       animationName: node.style.animationName,
