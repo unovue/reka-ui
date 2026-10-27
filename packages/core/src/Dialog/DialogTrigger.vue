@@ -14,7 +14,7 @@ export interface DialogTriggerProps<Payload = unknown> extends PrimitiveProps {
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onBeforeUpdate, onMounted, shallowRef, useAttrs } from 'vue'
+import { computed, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement, useId } from '@/shared'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
@@ -65,10 +65,17 @@ const triggerAttrs = computed(() => detached.enabled.value
   ? { ...detachedTrigger.attrs.value, id: detached.id.value }
   : trigger.attrs.value)
 
-onMounted(() => {
-  if (rootContext && !detached.enabled.value)
-    rootContext.triggerElement.value = currentElement.value
-})
+// Write this trigger's element into the Root's existing `triggerElement` ref
+// (never replace the ref: with a `handle` it is a writable computed that
+// resolves to the active detached trigger, and the write only sets the Root's
+// own fallback). Watched, so an `asChild` element swap stays in sync.
+if (rootContext) {
+  watch(currentElement, (element, previous) => {
+    // On unmount, clear it only if it still holds this trigger's element.
+    if (element || rootContext.triggerElement.value === previous)
+      rootContext.triggerElement.value = element
+  }, { immediate: true })
+}
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { createDropdownMenuHandle, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '.'
 
 interface Row { id: number, name: string }
@@ -125,5 +125,40 @@ describe('dropdownMenu detached triggers (#2826)', () => {
     expect(t.byId('row-1').getAttribute('aria-expanded')).toBe('false')
     t.handle.close()
     await vi.waitFor(() => expect(t.menu()).toBeNull())
+  })
+  it('a Root that gets its handle after mount returns focus to the detached trigger that opened it', async () => {
+    const handle = createDropdownMenuHandle<Row>()
+    const rootHandle = shallowRef<typeof handle>()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(DropdownMenuTrigger, { id: 'detached', handle, payload: { id: 1, name: 'Ada' } }, () => 'Detached'),
+        h(DropdownMenuRoot, { handle: rootHandle.value, modal: false }, {
+          default: ({ payload }: { payload?: Row }) => [
+            h(DropdownMenuTrigger, { id: 'in-tree' }, () => 'In tree'),
+            h(DropdownMenuPortal, null, () => h(DropdownMenuContent, null, () => [
+              h(DropdownMenuItem, null, () => `Rename ${payload?.name ?? 'nobody'}`),
+            ])),
+          ],
+        }),
+      ]),
+    }), { attachTo: document.body })
+    cleanup = () => wrapper.unmount()
+    const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
+    const detached = () => document.getElementById('detached') as HTMLElement
+    await nextTick()
+    rootHandle.value = handle
+    await nextTick()
+
+    detached().focus()
+    press(detached())
+    await vi.waitFor(() => expect(menu()?.textContent).toContain('Rename Ada'))
+    // A press on the detached trigger is a trigger interaction, not an outside one.
+    detached().dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+    await nextTick()
+    expect(menu()).not.toBeNull()
+
+    menu()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.waitFor(() => expect(menu()).toBeNull())
+    await vi.waitFor(() => expect(document.activeElement).toBe(detached()))
   })
 })

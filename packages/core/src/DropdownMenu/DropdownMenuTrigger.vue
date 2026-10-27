@@ -17,7 +17,7 @@ export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitivePr
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onBeforeUpdate, onMounted, shallowRef, useAttrs } from 'vue'
+import { computed, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
@@ -74,10 +74,17 @@ const detachedTrigger = getDropdownMenuTriggerSurface({
   },
 }, () => props.disabled)
 
-onMounted(() => {
-  if (rootContext && !detached.enabled.value)
-    rootContext.triggerElement = triggerElement
-})
+// Write this trigger's element into the Root's existing `triggerElement` ref
+// (never replace the ref: with a `handle` it is a writable computed that
+// resolves to the active detached trigger, and the write only sets the Root's
+// own fallback). Watched, so an `asChild` element swap stays in sync.
+if (rootContext) {
+  watch(triggerElement, (element, previous) => {
+    // On unmount, clear it only if it still holds this trigger's element.
+    if (element || rootContext.triggerElement.value === previous)
+      rootContext.triggerElement.value = element
+  }, { immediate: true })
+}
 
 // Ids, aria, `data-state`/`data-disabled` and the click/keydown handlers come
 // from the same builder `useDropdownMenu().trigger` uses.
