@@ -25,6 +25,11 @@ rootContext.triggerId ||= (attrs.id as string | undefined) || useId(undefined, '
 rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 onMounted(() => {
   rootContext.triggerElement.value = triggerElement.value
+  // With `asChild`, an id set on the child element wins over the one passed
+  // to Primitive (Slot gives child props priority), so `aria-labelledby` must
+  // follow the id the trigger actually rendered.
+  if (triggerElement.value?.id)
+    rootContext.triggerId = triggerElement.value.id
 })
 </script>
 
