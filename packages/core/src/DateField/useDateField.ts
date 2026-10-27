@@ -1,12 +1,11 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DateFieldRootContext } from './DateFieldRoot.vue'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateStep, Granularity, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { hasTime, isBefore, isSameDateSelection } from '@/date'
+import { assertTemporal, hasTime, isBefore, isSameDateSelection } from '@/date'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
   createContent,
@@ -135,6 +134,7 @@ export function createDateFieldInputSurface(context: DateFieldRootContext, part:
  * @lifecycle setup — installs watchers and collects the segments on mount.
  */
 export function useDateField(props: UseDateFieldProps = {}): UseDateFieldReturn {
+  assertTemporal()
   const locale = computed(() => toValue(props.locale) ?? 'en')
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -169,7 +169,7 @@ export function useDateField(props: UseDateFieldProps = {}): UseDateFieldReturn 
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<DateValue, DateFieldChangeReason>({
     prop: () => toValue(props.placeholder),
-    defaultValue: () => props.defaultPlaceholder ?? defaultDate.copy(),
+    defaultValue: () => props.defaultPlaceholder ?? defaultDate,
     name: 'placeholder',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdatePlaceholder,
@@ -223,7 +223,7 @@ export function useDateField(props: UseDateFieldProps = {}): UseDateFieldReturn 
   watchSegmentFieldLocale(locale, formatter, navigation.refreshSegmentElements)
 
   function setPlaceholder(value: DateValue, reason: DateFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
 
   // A cancelled commit rolls back only the model: the segments keep what the

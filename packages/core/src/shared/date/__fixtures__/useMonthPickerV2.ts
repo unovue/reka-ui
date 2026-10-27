@@ -3,13 +3,11 @@
  * Do not import it from production code.
  */
 
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import type { Grid, Matcher } from '@/date'
+import type { DateValue, Grid, Matcher } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { endOfMonth } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
-import { createMonthGrid, isAfter, isBefore, isSameYearMonth, toDate } from '@/date'
+import { createMonthGrid, endOfMonth, isAfter, isBefore, isSameYearMonth, toDate } from '@/date'
 import { useDateFormatter } from '@/shared'
 
 export type UseMonthPickerProps = {
@@ -74,10 +72,10 @@ export function useMonthPicker(props: UseMonthPickerProps) {
 
   const headingFormatOptions = computed(() => {
     const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendar.identifier,
+      calendar: props.placeholder.value.calendarId,
     }
 
-    if (props.placeholder.value.calendar.identifier === 'gregory' && props.placeholder.value.era === 'BC')
+    if (props.placeholder.value.calendarId === 'gregory' && props.placeholder.value.era === 'BC')
       options.era = 'short'
 
     return options
@@ -88,7 +86,7 @@ export function useMonthPicker(props: UseMonthPickerProps) {
   function isMonthDisabled(dateObj: DateValue) {
     if (resolveMatcher(props.isMonthDisabled)?.(dateObj) || props.disabled.value)
       return true
-    if (props.maxValue.value && isAfter(dateObj.set({ day: 1 }), props.maxValue.value))
+    if (props.maxValue.value && isAfter(dateObj.with({ day: 1 }), props.maxValue.value))
       return true
     if (props.minValue.value && isBefore(endOfMonth(dateObj), props.minValue.value))
       return true
@@ -110,10 +108,10 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     const currentDate = grid.value.value
     if (nextPageFunc || props.nextPage.value) {
       const nextDate = (nextPageFunc || props.nextPage.value)!(currentDate)
-      return isAfter(nextDate.set({ month: 1, day: 1 }), props.maxValue.value)
+      return isAfter(nextDate.with({ month: 1, day: 1 }), props.maxValue.value)
     }
 
-    const nextYear = currentDate.add({ years: 1 }).set({ month: 1, day: 1 })
+    const nextYear = currentDate.add({ years: 1 }).with({ month: 1, day: 1 })
     return isAfter(nextYear, props.maxValue.value)
   }
 
@@ -126,10 +124,10 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     const currentDate = grid.value.value
     if (prevPageFunc || props.prevPage.value) {
       const prevDate = (prevPageFunc || props.prevPage.value)!(currentDate)
-      return isBefore(endOfMonth(prevDate.set({ month: 12 })), props.minValue.value)
+      return isBefore(endOfMonth(prevDate.with({ month: 12 })), props.minValue.value)
     }
 
-    const prevYear = currentDate.subtract({ years: 1 }).set({ month: 12, day: 31 })
+    const prevYear = currentDate.subtract({ years: 1 }).with({ month: 12, day: 31 })
     return isBefore(prevYear, props.minValue.value)
   }
 
@@ -139,13 +137,13 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     if (nextPageFunc || props.nextPage.value) {
       const newDate = (nextPageFunc || props.nextPage.value)!(currentDate)
       grid.value = createMonthGrid({ dateObj: newDate })
-      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+      props.placeholder.value = newDate.with({ month: props.placeholder.value.month, day: props.placeholder.value.day })
       return
     }
 
     const newDate = currentDate.add({ years: 1 })
     grid.value = createMonthGrid({ dateObj: newDate })
-    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+    props.placeholder.value = newDate.with({ month: props.placeholder.value.month, day: props.placeholder.value.day })
   }
 
   const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
@@ -154,13 +152,13 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     if (prevPageFunc || props.prevPage.value) {
       const newDate = (prevPageFunc || props.prevPage.value)!(currentDate)
       grid.value = createMonthGrid({ dateObj: newDate })
-      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+      props.placeholder.value = newDate.with({ month: props.placeholder.value.month, day: props.placeholder.value.day })
       return
     }
 
     const newDate = currentDate.subtract({ years: 1 })
     grid.value = createMonthGrid({ dateObj: newDate })
-    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
+    props.placeholder.value = newDate.with({ month: props.placeholder.value.month, day: props.placeholder.value.day })
   }
 
   watch(props.placeholder, (value) => {

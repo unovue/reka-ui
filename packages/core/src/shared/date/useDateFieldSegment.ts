@@ -1,12 +1,10 @@
-import type { CalendarDateTime, DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
+import type { DateValue } from '@/date/types'
 import type { Formatter } from '@/shared'
-import {
-  DateFormatter,
-} from '@internationalized/date'
 import { computed, toValue } from 'vue'
-import { getDaysInMonth, toDate } from '@/date'
+import { getDaysInMonth } from '@/date/comparators'
+import { cycleField, getFieldValue, setFields } from '@/date/temporal'
 import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
 
@@ -14,14 +12,14 @@ const DIGIT_REG = /^\d$/
 
 type MinuteSecondIncrementProps = {
   e: KeyboardEvent
-  part: keyof TimeFields
+  part: 'minute' | 'second'
   dateRef: DateValue
   prevValue: number | null
 }
 
 type DateTimeValueIncrementation = {
   e: KeyboardEvent
-  part: keyof Omit<DateFields, 'era'> | keyof TimeFields
+  part: 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second'
   dateRef: DateValue
   prevValue: number | null
 }
@@ -58,7 +56,7 @@ function daySegmentAttrs(props: SegmentAttrProps) {
   if (segmentValues.month)
     dateFields.month = segmentValues.month
 
-  const date = Object.keys(dateFields).length > 0 ? placeholder.set(dateFields) : placeholder
+  const date = setFields(placeholder, dateFields)
 
   const valueNow = date.day
   const valueMin = 1
@@ -79,12 +77,12 @@ function monthSegmentAttrs(props: SegmentAttrProps) {
   const { segmentValues, placeholder, formatter } = props
   const isEmpty = segmentValues.month === null
   const date = segmentValues.month
-    ? placeholder.set({ month: segmentValues.month })
+    ? setFields(placeholder, { month: segmentValues.month })
     : placeholder
   const valueNow = date.month
   const valueMin = 1
   const valueMax = 12
-  const valueText = isEmpty ? 'Empty' : `${valueNow} - ${formatter.fullMonth(toDate(date))}`
+  const valueText = isEmpty ? 'Empty' : `${valueNow} - ${formatter.fullMonth(date)}`
 
   return {
     ...commonSegmentAttrs(props),
@@ -100,10 +98,10 @@ function monthSegmentAttrs(props: SegmentAttrProps) {
 function yearSegmentAttrs(props: SegmentAttrProps) {
   const { segmentValues, placeholder } = props
   const isEmpty = segmentValues.year === null
-  const date = segmentValues.year ? placeholder.set({ year: segmentValues.year }) : placeholder
+  const date = segmentValues.year ? setFields(placeholder, { year: segmentValues.year }) : placeholder
   const valueMin = 1
   const valueMax = 9999
-  const valueNow = date.year
+  const valueNow = getFieldValue(date, 'year')
   const valueText = isEmpty ? 'Empty' : `${valueNow}`
 
   return {
@@ -122,7 +120,7 @@ function hourSegmentAttrs(props: SegmentAttrProps) {
   if (!('hour' in segmentValues) || !('hour' in placeholder))
     return {}
   const isEmpty = segmentValues.hour === null
-  const date = segmentValues.hour ? placeholder.set({ hour: segmentValues.hour }) : placeholder
+  const date = segmentValues.hour ? setFields(placeholder, { hour: segmentValues.hour }) : placeholder
   const valueMin = hourCycle === 12 ? 1 : 0
   const valueMax = hourCycle === 12 ? 12 : 23
   const valueNow = date.hour
@@ -144,7 +142,7 @@ function minuteSegmentAttrs(props: SegmentAttrProps) {
     return {}
   const isEmpty = segmentValues.minute === null
   const date = segmentValues.minute
-    ? placeholder.set({ minute: segmentValues.minute })
+    ? setFields(placeholder, { minute: segmentValues.minute })
     : placeholder
   const valueNow = date.minute
   const valueMin = 0
@@ -167,7 +165,7 @@ function secondSegmentAttrs(props: SegmentAttrProps) {
     return {}
   const isEmpty = segmentValues.second === null
   const date = segmentValues.second
-    ? placeholder.set({ second: segmentValues.second })
+    ? setFields(placeholder, { second: segmentValues.second })
     : placeholder
   const valueNow = date.second
   const valueMin = 0
@@ -335,8 +333,7 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
     if (prevValue === null)
       return sign > 0 ? min : max
 
-    const cycleArgs: [keyof TimeFields, number] = [part, sign]
-    return (dateRef as CalendarDateTime).set({ [part]: prevValue }).cycle(...cycleArgs)[part]
+    return getFieldValue(cycleField(setFields(dateRef, { [part]: prevValue }), part, sign), part)
   }
 
   function deleteValue(prevValue: number | null, e: KeyboardEvent) {
@@ -357,19 +354,17 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
     const sign = e.key === kbd.ARROW_UP ? step : -step
 
     if (prevValue === null)
-      return dateRef[part as keyof Omit<DateFields, 'era'>]
+      return getFieldValue(dateRef, part)
 
     if (part === 'hour' && 'hour' in dateRef) {
       // Don't pass hourCycle to cycle - internal representation is always 24-hour
       // The hourCycle prop only affects display, not internal cycling
-      const cycleArgs: [keyof DateFields | keyof TimeFields, number] = [part, sign]
-      return dateRef.set({ [part as keyof DateValue]: prevValue }).cycle(...cycleArgs)[part]
+      return getFieldValue(cycleField(setFields(dateRef, { [part]: prevValue }), part, sign), part)
     }
 
-    const cycleArgs: [keyof DateFields, number] = [part as keyof DateFields, sign]
     if (part === 'day') {
-      return dateRef.set({
-        [part as keyof DateValue]: prevValue,
+      return getFieldValue(cycleField(setFields(dateRef, {
+        [part]: prevValue,
         /**
          * Edge case for the day field:
          *
@@ -380,10 +375,10 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
          *   so that user can input any possible day.
          */
         month: props.segmentValues.value.month ?? 1,
-      }).cycle(...cycleArgs)[part as keyof Omit<DateFields, 'era'>]
+      }), part, sign), part)
     }
 
-    return dateRef.set({ [part as keyof DateValue]: prevValue }).cycle(...cycleArgs)[part as keyof Omit<DateFields, 'era'>]
+    return getFieldValue(cycleField(setFields(dateRef, { [part]: prevValue }), part, sign), part)
   }
   function updateDayOrMonth(max: number, num: number, prev: number | null) {
     let moveToNext = false
@@ -677,7 +672,7 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
       const segmentMonthValue = props.segmentValues.value.month
 
       const daysInMonth = segmentMonthValue
-        ? getDaysInMonth(props.placeholder.value.set({ month: segmentMonthValue }))
+        ? getDaysInMonth(setFields(props.placeholder.value, { month: segmentMonthValue }))
         // if the month is not set, we default to the maximum number of days in a month
         // so that user can input any possible day
         : 31
@@ -751,7 +746,7 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
   }
 
   function uses12HourFormat(locale: string): boolean {
-    const hourCycle = new DateFormatter(locale, { hour: 'numeric' }).resolvedOptions().hourCycle
+    const hourCycle = new Intl.DateTimeFormat(locale, { hour: 'numeric' }).resolvedOptions().hourCycle
     return hourCycle === 'h11' || hourCycle === 'h12'
   }
 
@@ -938,9 +933,9 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
 
         // Set all date fields at once to avoid order-dependent constraints
         // (e.g., setting day: 31 before month: 3 would incorrectly constrain the day)
-        const dateRef = props.placeholder.value.set(updateObject)
+        const dateRef = setFields(props.placeholder.value, updateObject)
 
-        props.setModelValue(dateRef.copy(), keydownReason(e.key, kbd), e)
+        props.setModelValue(dateRef, keydownReason(e.key, kbd), e)
       }
     }
   }
@@ -967,8 +962,8 @@ export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
     }
 
     if (Object.values(props.segmentValues.value).every(item => item !== null)) {
-      const dateRef = props.placeholder.value.set({ ...props.segmentValues.value as Record<AnyExceptLiteral, number> })
-      props.setModelValue(dateRef.copy(), 'step-snap', event)
+      const dateRef = setFields(props.placeholder.value, { ...props.segmentValues.value as Record<AnyExceptLiteral, number> })
+      props.setModelValue(dateRef, 'step-snap', event)
     }
   }
 

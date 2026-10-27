@@ -1,6 +1,5 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
-import type { CalendarUnit } from '@/date'
+import type { CalendarUnit, DateValue } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarCellTriggerProps extends PrimitiveProps {

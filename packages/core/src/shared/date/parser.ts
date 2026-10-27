@@ -1,8 +1,9 @@
-import type { DateFields, DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
+import type { DateTimeField } from '@/date/temporal'
+import type { DateValue } from '@/date/types'
 import type { Formatter } from '@/shared'
 import type { DateSegmentPart, Granularity, HourCycle, SegmentContentObj, SegmentPart, SegmentValueObj, TimeSegmentPart } from '@/shared/date'
-import { isZonedDateTime, toDate } from '@/date'
+import { getFieldValue, isZonedDateTime, setFields } from '@/date/temporal'
 import { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, getOptsByGranularity, getPlaceholder, isDateSegmentPart, isSegmentPart, normalizeHourCycle, TIME_SEGMENT_PARTS } from '@/shared/date'
 
 const calendarDateTimeGranularities = ['hour', 'minute', 'second']
@@ -19,11 +20,9 @@ type SyncTimeSegmentValuesProps = {
 
 export function syncTimeSegmentValues(props: SyncTimeSegmentValuesProps) {
   return Object.fromEntries(TIME_SEGMENT_PARTS.map((part) => {
-    if (part === 'dayPeriod') {
-      const timeZone = isZonedDateTime(props.value) ? props.value.timeZone : undefined
-      return [part, props.formatter.dayPeriod(toDate(props.value), timeZone)]
-    }
-    return [part, props.value[part as keyof DateValue]]
+    if (part === 'dayPeriod')
+      return [part, props.formatter.dayPeriod(props.value)]
+    return [part, getFieldValue(props.value, part)]
   })) as SegmentValueObj
 }
 
@@ -31,7 +30,7 @@ export function syncSegmentValues(props: SyncDateSegmentValuesProps) {
   const { formatter } = props
 
   const dateValues = DATE_SEGMENT_PARTS.map((part) => {
-    return [part, props.value[part]]
+    return [part, getFieldValue(props.value, part)]
   })
   if ('hour' in props.value) {
     const timeValues = syncTimeSegmentValues({ value: props.value, formatter })
@@ -106,8 +105,8 @@ function createContentObj(props: CreateContentObjProps) {
       const value = segmentValues[part]
       if (value !== null) {
         if (part === 'day') {
-          return formatter.part(props.dateRef.set({
-            [part as keyof DateFields]: value,
+          return formatter.part(setFields(props.dateRef, {
+            [part]: value,
             /**
              * Edge case for the day field:
              *
@@ -120,7 +119,7 @@ function createContentObj(props: CreateContentObjProps) {
             month: segmentValues.month ?? 1,
           }), part, { hourCycle: normalizeHourCycle(props.hourCycle) })
         }
-        return formatter.part(props.dateRef.set({ [part]: value }), part, {
+        return formatter.part(setFields(props.dateRef, { [part as DateTimeField]: value }), part, {
           hourCycle: normalizeHourCycle(props.hourCycle),
         })
       }
@@ -133,14 +132,14 @@ function createContentObj(props: CreateContentObjProps) {
         const value = segmentValues[part]
         if (value !== null) {
           if (part === 'day') {
-            return formatter.part(props.dateRef.set({
+            return formatter.part(setFields(props.dateRef, {
               [part]: value,
               // Same logic as above for the day field
               month: segmentValues.month ?? 1,
             }), part)
           }
 
-          return formatter.part(props.dateRef.set({ [part]: value }), part)
+          return formatter.part(setFields(props.dateRef, { [part]: value }), part)
         }
 
         else {

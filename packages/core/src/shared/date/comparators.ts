@@ -2,10 +2,14 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/utils.ts
 */
 
-import type { DateValue, ZonedDateTime } from '@internationalized/date'
-import { CalendarDate, CalendarDateTime, createCalendar, DateFormatter, Time, toCalendar } from '@internationalized/date'
+import type { DateValue } from '@/date/types'
+import { getTemporal, today } from '@/date/temporal'
 
-export type TimeValue = Time | CalendarDateTime | ZonedDateTime
+/**
+ * A time the time fields accept and emit: a Temporal `PlainTime`, or a
+ * `PlainDateTime` / `ZonedDateTime` whose date is kept as is.
+ */
+export type TimeValue = Temporal.PlainTime | Temporal.PlainDateTime | Temporal.ZonedDateTime
 
 export type Granularity = 'day' | 'hour' | 'minute' | 'second'
 export type TimeGranularity = 'hour' | 'minute' | 'second'
@@ -18,6 +22,24 @@ type GetDefaultDateProps = {
 }
 
 /**
+ * The calendar system to show a new date in for `locale`: the locale's
+ * default calendar when it is not Gregorian (`th-TH` → `buddhist`, `fa-IR` →
+ * `persian`, …), else `iso8601`. Gregorian locales get ISO dates rather than
+ * `gregory` ones: both display the same, and an ISO date has no `[u-ca=…]`
+ * annotation and equals the dates apps create with `Temporal.PlainDate.from()`.
+ *
+ * @internal
+ */
+export function getDefaultCalendar(locale: string): string {
+  let calendar: string | undefined
+  try {
+    calendar = new Intl.DateTimeFormat(locale).resolvedOptions().calendar
+  }
+  catch {}
+  return !calendar || calendar === 'gregory' ? 'iso8601' : calendar
+}
+
+/**
  * A helper function used throughout the various date builders
  * to generate a default `DateValue` using the `defaultValue`,
  * `defaultPlaceholder`, and `granularity` props.
@@ -26,32 +48,28 @@ type GetDefaultDateProps = {
  * elsewhere in the builder, so they behave according to the
  * behavior the user expects based on the props they've provided.
  *
+ * Without a value or a placeholder, it is today in the local time zone, in
+ * the locale's calendar (see `getDefaultCalendar`): a `PlainDate` for the
+ * `'day'` granularity, a `PlainDateTime` at midnight otherwise.
  */
 export function getDefaultDate(props: GetDefaultDateProps): DateValue {
   const { defaultValue, defaultPlaceholder, granularity = 'day', locale = 'en' } = props
 
   if (Array.isArray(defaultValue) && defaultValue.length)
-    return defaultValue.at(-1)!.copy()
+    return defaultValue.at(-1)!
 
   if (defaultValue && !Array.isArray(defaultValue))
-    return defaultValue.copy()
+    return defaultValue
 
   if (defaultPlaceholder)
-    return defaultPlaceholder.copy()
+    return defaultPlaceholder
 
-  const date = new Date()
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  const calendarDateTimeGranularities = ['hour', 'minute', 'second']
+  const date = today().withCalendar(getDefaultCalendar(locale))
 
-  const defaultFormatter = new DateFormatter(locale)
-  const calendar = createCalendar(defaultFormatter.resolvedOptions().calendar)
+  if (granularity !== 'day')
+    return date.toPlainDateTime()
 
-  if (calendarDateTimeGranularities.includes(granularity ?? 'day'))
-    return toCalendar(new CalendarDateTime(year, month, day, 0, 0, 0), calendar)
-
-  return toCalendar(new CalendarDate(year, month, day), calendar)
+  return date
 }
 
 type GetDefaultTimeProps = {
@@ -62,13 +80,11 @@ type GetDefaultTimeProps = {
 export function getDefaultTime(props: GetDefaultTimeProps): TimeValue {
   const { defaultValue, defaultPlaceholder } = props
 
-  if (defaultValue) {
-    return defaultValue.copy()
-  }
+  if (defaultValue)
+    return defaultValue
 
-  if (defaultPlaceholder) {
-    return defaultPlaceholder.copy()
-  }
+  if (defaultPlaceholder)
+    return defaultPlaceholder
 
-  return new Time(0, 0, 0)
+  return new (getTemporal().PlainTime)(0, 0, 0)
 }

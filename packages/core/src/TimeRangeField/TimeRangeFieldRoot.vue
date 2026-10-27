@@ -1,8 +1,7 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { TimeRangeFieldChangeReason } from './useTimeRangeField'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
@@ -32,7 +31,7 @@ export type TimeRangeFieldRootContext = {
   setFocusedElement: (el: HTMLElement) => void
   /** Request a range change. Returns `false` when unchanged or cancelled. */
   setModelValue: (value: TimeRange, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
-  /** Change one end from a date-time; it is written back as a `Time` when that end is one. */
+  /** Change one end from a date-time; it is written back as a `PlainTime` when that end is one. */
   setRangeValue: (type: DateRangeType, value: DateValue | undefined, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Request a placeholder change from a date-time. */
   setPlaceholder: (value: DateValue, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -92,6 +91,7 @@ export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, toRefs } from 'vue'
+import { toIsoString } from '@/date'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeRangeField } from './useTimeRangeField'
@@ -174,7 +174,7 @@ defineExpose(mergeExpose(expose, {
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue.start?.toString()} - ${modelValue.end?.toString()}`"
+      :value="`${modelValue.start && toIsoString(modelValue.start)} - ${modelValue.end && toIsoString(modelValue.end)}`"
       :name="name"
       :disabled="disabled"
       :required="required"

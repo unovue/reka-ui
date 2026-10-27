@@ -1,7 +1,5 @@
-import type { DateValue } from '@internationalized/date'
 import type { CalendarRootProps } from './CalendarRoot.vue'
-import type { CalendarUnit } from '@/date'
-import { CalendarDate, isWeekend } from '@internationalized/date'
+import type { CalendarUnit, DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -11,7 +9,7 @@ import CalendarUnitHarness from './story/_CalendarUnit.vue'
 import CalendarViews from './story/_CalendarViews.vue'
 
 const kbd = useTestKbd()
-const sep5 = new CalendarDate(2026, 9, 5)
+const sep5 = new Temporal.PlainDate(2026, 9, 5)
 
 type Listeners = Partial<Record<'onUpdate:modelValue' | 'onUpdate:placeholder' | 'onUpdate:view', (...args: any[]) => void>>
 
@@ -85,7 +83,7 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
   })
 
   it('pages by a year and disables Next past maxValue', async () => {
-    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5, maxValue: new CalendarDate(2027, 2, 1) })
+    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5, maxValue: new Temporal.PlainDate(2027, 2, 1) })
     await user.click(getByTestId('next-button'))
     expect(getByTestId('heading')).toHaveTextContent('2027')
     expect(getByTestId('next-button')).toHaveAttribute('data-disabled')
@@ -134,24 +132,24 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
   })
 
   it('keeps the visible year when modelValue is a new object for the same month (#2961)', async () => {
-    const value = new CalendarDate(1980, 1, 20)
+    const value = new Temporal.PlainDate(1980, 1, 20)
     const { user, getByTestId, rerender } = setupUnit({ granularity: 'month', modelValue: value })
     await user.click(getByTestId('next-button'))
     expect(getByTestId('heading')).toHaveTextContent('1981')
 
-    await rerender({ modelValue: value.copy() })
+    await rerender({ modelValue: value })
     expect(getByTestId('heading')).toHaveTextContent('1981')
     // Another day of the same month is still the same selection at this granularity.
-    await rerender({ modelValue: new CalendarDate(1980, 1, 3) })
+    await rerender({ modelValue: new Temporal.PlainDate(1980, 1, 3) })
     expect(getByTestId('heading')).toHaveTextContent('1981')
   })
 
   it('moves the visible year when the selected month changes', async () => {
-    const { user, getByTestId, rerender } = setupUnit({ granularity: 'month', modelValue: new CalendarDate(1980, 1, 20) })
+    const { user, getByTestId, rerender } = setupUnit({ granularity: 'month', modelValue: new Temporal.PlainDate(1980, 1, 20) })
     await user.click(getByTestId('next-button'))
     expect(getByTestId('heading')).toHaveTextContent('1981')
 
-    await rerender({ modelValue: new CalendarDate(1975, 6, 1) })
+    await rerender({ modelValue: new Temporal.PlainDate(1975, 6, 1) })
     expect(getByTestId('heading')).toHaveTextContent('1975')
   })
 
@@ -172,8 +170,8 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     const { user, getByTestId } = setupUnit({
       granularity: 'month',
       defaultPlaceholder: sep5,
-      minValue: new CalendarDate(2026, 2, 10),
-      maxValue: new CalendarDate(2026, 11, 20),
+      minValue: new Temporal.PlainDate(2026, 2, 10),
+      maxValue: new Temporal.PlainDate(2026, 11, 20),
       isDateDisabled: (date, unit) => unit === 'month' && date.month === 2,
     })
     getByTestId('cell-2026-09-01').focus()
@@ -223,22 +221,22 @@ describe('calendar — granularity="year" (replaces YearPicker)', () => {
   })
 
   it('keeps the visible page when modelValue is a new object for the same year (#2961)', async () => {
-    const value = new CalendarDate(1980, 1, 20)
+    const value = new Temporal.PlainDate(1980, 1, 20)
     const { user, getByTestId, rerender } = setupUnit({ granularity: 'year', modelValue: value })
     expect(getByTestId('heading')).toHaveTextContent('1980 - 1991')
     await user.click(getByTestId('next-button'))
     expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
 
-    await rerender({ modelValue: value.copy() })
+    await rerender({ modelValue: value })
     expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
   })
 
   it('moves the visible page when the selected year changes', async () => {
-    const { user, getByTestId, rerender } = setupUnit({ granularity: 'year', modelValue: new CalendarDate(1980, 1, 20) })
+    const { user, getByTestId, rerender } = setupUnit({ granularity: 'year', modelValue: new Temporal.PlainDate(1980, 1, 20) })
     await user.click(getByTestId('next-button'))
     expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
 
-    await rerender({ modelValue: new CalendarDate(1975, 6, 1) })
+    await rerender({ modelValue: new Temporal.PlainDate(1975, 6, 1) })
     expect(getByTestId('heading')).toHaveTextContent('1970 - 1981')
   })
 
@@ -256,8 +254,8 @@ describe('calendar — granularity="year" (replaces YearPicker)', () => {
     const { user, getByTestId } = setupUnit({
       granularity: 'year',
       defaultPlaceholder: sep5,
-      minValue: new CalendarDate(2021, 6, 1),
-      maxValue: new CalendarDate(2029, 6, 1),
+      minValue: new Temporal.PlainDate(2021, 6, 1),
+      maxValue: new Temporal.PlainDate(2029, 6, 1),
       isDateDisabled: (date, unit) => unit === 'year' && date.year === 2021,
     })
     getByTestId('cell-2026-01-01').focus()
@@ -392,7 +390,7 @@ describe('calendar — views and drill-down', () => {
 })
 
 describe('calendar — coarser views are navigation only', () => {
-  const weekend = (d: DateValue) => isWeekend(d, 'en-US')
+  const weekend = (d: DateValue) => d.dayOfWeek >= 6
 
   it('applies day matchers only in the day view: a weekend matcher leaves every month reachable', async () => {
     const units = new Set<CalendarUnit | undefined>()
@@ -415,13 +413,13 @@ describe('calendar — coarser views are navigation only', () => {
   })
 
   it('still applies minValue / maxValue in the coarser views', () => {
-    const { getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new CalendarDate(2026, 3, 15) })
+    const { getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new Temporal.PlainDate(2026, 3, 15) })
     expect(getByTestId('month-2026-02-01')).toHaveAttribute('data-disabled')
     expect(getByTestId('month-2026-03-01')).not.toHaveAttribute('data-disabled')
   })
 
   it('moves to the page edges on Home and End in the coarser views, within minValue / maxValue', async () => {
-    const { user, getByTestId, unmount } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new CalendarDate(2026, 3, 15) })
+    const { user, getByTestId, unmount } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new Temporal.PlainDate(2026, 3, 15) })
     getByTestId('month-2026-09-01').focus()
     await user.keyboard(kbd.HOME)
     expect(getByTestId('month-2026-03-01')).toHaveFocus()
@@ -429,7 +427,7 @@ describe('calendar — coarser views are navigation only', () => {
     expect(getByTestId('month-2026-12-01')).toHaveFocus()
     unmount()
 
-    const views = setupViews({ defaultPlaceholder: sep5, defaultView: 'year', maxValue: new CalendarDate(2030, 1, 1) })
+    const views = setupViews({ defaultPlaceholder: sep5, defaultView: 'year', maxValue: new Temporal.PlainDate(2030, 1, 1) })
     views.getByTestId('year-2026-01-01').focus()
     await views.user.keyboard(kbd.END)
     expect(views.getByTestId('year-2030-01-01')).toHaveFocus()
@@ -439,12 +437,12 @@ describe('calendar — coarser views are navigation only', () => {
 
   it('marks no selection in views coarser than the granularity', () => {
     for (const day of [1, 15]) {
-      const { calendar, getByTestId, unmount } = setupViews({ modelValue: new CalendarDate(2026, 9, day), defaultView: 'month' })
+      const { calendar, getByTestId, unmount } = setupViews({ modelValue: new Temporal.PlainDate(2026, 9, day), defaultView: 'month' })
       expect(getByTestId('month-2026-09-01')).not.toHaveAttribute('data-selected')
       expect(calendar.querySelectorAll('[aria-selected]')).toHaveLength(0)
       unmount()
     }
-    const { calendar, unmount } = setupViews({ modelValue: new CalendarDate(2026, 1, 1), defaultView: 'year' })
+    const { calendar, unmount } = setupViews({ modelValue: new Temporal.PlainDate(2026, 1, 1), defaultView: 'year' })
     expect(selected(calendar)).toHaveLength(0)
     unmount()
   })
@@ -475,7 +473,7 @@ describe('calendar — coarser views are navigation only', () => {
 
   it('keeps the placeholder day when the keyboard moves between months', async () => {
     const onPlaceholder = vi.fn()
-    const { user, getByTestId } = setupViews({ defaultPlaceholder: new CalendarDate(2026, 9, 15), defaultView: 'month' }, { 'onUpdate:placeholder': onPlaceholder })
+    const { user, getByTestId } = setupViews({ defaultPlaceholder: new Temporal.PlainDate(2026, 9, 15), defaultView: 'month' }, { 'onUpdate:placeholder': onPlaceholder })
     getByTestId('month-2026-09-01').focus()
     await user.keyboard(kbd.ARROW_RIGHT)
     expect(onPlaceholder.mock.calls.at(-1)![0].toString()).toBe('2026-10-15')

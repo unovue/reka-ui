@@ -1,42 +1,14 @@
 <script setup lang="ts">
-import { BuddhistCalendar, CalendarDate, HebrewCalendar, JapaneseCalendar, PersianCalendar, TaiwanCalendar } from '@internationalized/date'
 import Calendar from './_DummyCalendar.vue'
 
-const gregorian = new CalendarDate(2024, 8, 31)
+const gregorian = new Temporal.PlainDate(2024, 8, 31)
 
-const persian = new CalendarDate(
-  new PersianCalendar(),
-  1404,
-  5,
-  31,
-)
-const japanese = new CalendarDate(
-  new JapaneseCalendar(),
-  'heisei',
-  31,
-  4,
-  30,
+const persian = Temporal.PlainDate.from({ calendar: 'persian', year: 1404, month: 5, day: 31 })
+const japanese = Temporal.PlainDate.from({ calendar: 'japanese', era: 'heisei', eraYear: 31, month: 4, day: 30 })
+const buddhist = Temporal.PlainDate.from({ calendar: 'buddhist', year: 2563, month: 10, day: 31 })
+const taiwan = Temporal.PlainDate.from({ calendar: 'roc', year: 109, month: 10, day: 31 })
 
-)
-const buddhist = new CalendarDate(
-  new BuddhistCalendar(),
-  2563,
-  10,
-  31,
-)
-const taiwan = new CalendarDate(
-  new TaiwanCalendar(),
-  109,
-  10,
-  31,
-)
-
-const hebrew = new CalendarDate(
-  new HebrewCalendar(),
-  5781,
-  6,
-  29,
-)
+const hebrew = Temporal.PlainDate.from({ calendar: 'hebrew', year: 5781, month: 6, day: 29 })
 </script>
 
 <template>

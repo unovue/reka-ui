@@ -2,7 +2,7 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/types.ts
 */
 
-import type { DateValue } from '@internationalized/date'
+import type { DateValue } from '@/date/types'
 
 export type { DateValue }
 import type { TimeValue } from './comparators'

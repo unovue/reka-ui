@@ -1,13 +1,12 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TimeRangeFieldRootContext } from './TimeRangeFieldRoot.vue'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
+import { areAllDaysBetweenValid, assertTemporal, compareDateValues, isBefore, isBeforeOrSame } from '@/date'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -66,7 +65,7 @@ export interface UseTimeRangeFieldProps {
   maxValue?: MaybeRefOrGetter<TimeValue | undefined>
   disabled?: MaybeRefOrGetter<boolean | undefined>
   readonly?: MaybeRefOrGetter<boolean | undefined>
-  /** Receives each end as a date-time (a `Time` is placed on today's date). A plain function or a ref to one. */
+  /** Receives each end as a date-time (a `PlainTime` is placed on today's date). A plain function or a ref to one. */
   isTimeUnavailable?: MaybeRef<Matcher | undefined>
   parentElement?: Ref<HTMLElement | undefined>
   emit?: (event: any, ...args: any[]) => void
@@ -126,6 +125,7 @@ export function createTimeRangeFieldInputSurface(
  * @lifecycle setup — installs watchers and collects the segments on mount.
  */
 export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRangeFieldReturn {
+  assertTemporal()
   const locale = computed(() => toValue(props.locale) ?? 'en')
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -159,7 +159,7 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<TimeValue, TimeRangeFieldChangeReason>({
     prop: () => toValue(props.placeholder),
-    defaultValue: () => props.defaultPlaceholder ?? defaultTime.copy(),
+    defaultValue: () => props.defaultPlaceholder ?? defaultTime,
     name: 'placeholder',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdatePlaceholder,
@@ -233,7 +233,7 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
   watchSegmentFieldLocale(locale, formatter, navigation.refreshSegmentElements)
 
   function setPlaceholder(value: TimeValue, reason: TimeRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
 
   function syncSegments(type: DateRangeType, value: DateValue | undefined) {
@@ -247,7 +247,7 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
   // A cancelled commit rolls back only the model: the segments keep what the
   // user typed (both ends stay untouched), so typing can continue.
   function setModelValue(value: TimeRange, reason: TimeRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
+    return setState({ start: value.start, end: value.end }, reason, event)
   }
 
   /** The segments edit a date-time; each end is written back in its own shape. */
@@ -262,8 +262,8 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
   }
 
   watch(convertedStart, (start) => {
-    if (start && convertedPlaceholder.value.compare(start) !== 0)
-      setConvertedPlaceholder(start.copy())
+    if (start && compareDateValues(convertedPlaceholder.value, start) !== 0)
+      setConvertedPlaceholder(start)
   })
 
   // Each end resyncs only when its own value (or the locale) changes: a new

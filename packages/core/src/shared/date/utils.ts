@@ -3,6 +3,7 @@ import type { Granularity } from './comparators'
 import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
 import { defu } from 'defu'
 import { nextTick, watch } from 'vue'
+import { toCalendar } from '@/date/temporal'
 import { getActiveElement } from '@/shared/getActiveElement'
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
@@ -122,6 +123,8 @@ export function normalizeInputValue(date: DateValue | undefined, granularity: Gr
 
   const type = getInputType(granularity)
 
+  // Native date inputs take ISO fields, whatever calendar the value is in.
+  date = toCalendar(date, 'iso8601')
   const year = String(date.year).padStart(4, '0')
   const month = String(date.month).padStart(2, '0')
   const day = String(date.day).padStart(2, '0')

@@ -2,11 +2,11 @@
  * Implementation ported from from from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/builders/calendar/create.ts
 */
 
-import type { DateValue, DayOfWeek } from '@internationalized/date'
-import type { Grid } from './types'
+import type { DayOfWeekName } from './temporal'
+import type { DateValue, Grid } from './types'
 import type { DateRange } from '@/shared'
-import { CalendarDate, endOfMonth, endOfYear, getDayOfWeek, GregorianCalendar, startOfMonth, startOfWeek, startOfYear, toCalendar, toCalendarDate } from '@internationalized/date'
 import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from './comparators'
+import { compareDateValues, endOfMonth, endOfYear, getDayOfWeek, getLocaleWeekStart, getTemporal, startOfMonth, startOfWeek, startOfYear, toPlainDate } from './temporal'
 import { chunk } from './utils'
 
 export type WeekDayFormat = 'narrow' | 'short' | 'long'
@@ -51,7 +51,7 @@ export function getDaysBetween(start: DateValue, end: DateValue) {
   const days: DateValue[] = []
   let dCurrent = start.add({ days: 1 })
   const dEnd = end
-  while (dCurrent.compare(dEnd) < 0) {
+  while (compareDateValues(dCurrent, dEnd) < 0) {
     days.push(dCurrent)
     dCurrent = dCurrent.add({ days: 1 })
   }
@@ -62,7 +62,7 @@ export function createMonth(props: CreateMonthProps): Grid<DateValue> {
   const { dateObj, weekStartsOn, fixedWeeks, locale } = props
   const daysInMonth = getDaysInMonth(dateObj)
 
-  const datesArray = Array.from({ length: daysInMonth }, (_, i) => dateObj.set({ day: i + 1 }))
+  const datesArray: DateValue[] = Array.from({ length: daysInMonth }, (_, i) => dateObj.with({ day: i + 1 }))
 
   const firstDayOfMonth = startOfMonth(dateObj)
   const lastDayOfMonth = endOfMonth(dateObj)
@@ -117,30 +117,14 @@ type SetDecadeProps = CreateSelectProps & {
 }
 
 /**
- * A continuous year number for decade alignment. `year` restarts in each era
- * (Japanese eras, BC / AD, ROC before / after Minguo), so multi-era calendars
- * are mapped onto one running count: the Gregorian-based calendars use the
- * proleptic Gregorian year (1 BC = 0), Ethiopic Amete Alem is offset onto Amete
- * Mihret, and the first era of the other two-era calendars counts backwards.
+ * Temporal's `year` is already a continuous arithmetic year in every calendar:
+ * it does not restart in each era (Japanese eras, BCE / CE, ROC before / after
+ * Minguo, Ethiopic Amete Alem / Amete Mihret), so it aligns decades directly.
  */
-function getExtendedYear(dateObj: DateValue): number {
-  const eras = dateObj.calendar.getEras()
-  if (eras.length <= 1)
-    return dateObj.year
-  const identifier = dateObj.calendar.identifier
-  if (identifier === 'gregory' || identifier === 'japanese') {
-    const gregorian = toCalendar(toCalendarDate(dateObj), new GregorianCalendar())
-    return gregorian.era === 'BC' ? 1 - gregorian.year : gregorian.year
-  }
-  if (identifier === 'ethiopic' && dateObj.era === 'AA')
-    return dateObj.year - 5500
-  return dateObj.era === eras[0] ? 1 - dateObj.year : dateObj.year
-}
-
 export function startOfDecade(dateObj: DateValue) {
   // Round down to the nearest 10 on a continuous year count, then step back
   // with date arithmetic so era boundaries are crossed correctly.
-  const offset = ((getExtendedYear(dateObj) % 10) + 10) % 10
+  const offset = ((dateObj.year % 10) + 10) % 10
   return startOfYear(startOfYear(dateObj).subtract({ years: offset }))
 }
 
@@ -153,8 +137,8 @@ export function createDecade(props: SetDecadeProps): DateValue[] {
 
   const decadeArray = Array.from({ length: Math.abs(startIndex ?? 0) + endIndex }, (_, i) =>
     i <= Math.abs((startIndex ?? 0))
-      ? dateObj.subtract({ years: i }).set({ day: 1, month: 1 })
-      : dateObj.add({ years: i - endIndex }).set({ day: 1, month: 1 }))
+      ? dateObj.subtract({ years: i }).with({ day: 1, month: 1 })
+      : dateObj.add({ years: i - endIndex }).with({ day: 1, month: 1 }))
 
   decadeArray.sort((a: DateValue, b: DateValue) => a.year - b.year)
 
@@ -170,7 +154,7 @@ export function createDecade(props: SetDecadeProps): DateValue[] {
 export function createYear(props: SetYearProps): DateValue[] {
   const { dateObj, numberOfMonths = 1, pagedNavigation = false } = props
   const firstMonth = startOfYear(dateObj)
-  const monthsInYear = dateObj.calendar.getMonthsInYear(firstMonth)
+  const monthsInYear = firstMonth.monthsInYear
 
   if (numberOfMonths && pagedNavigation)
     return Array.from({ length: Math.floor(monthsInYear / numberOfMonths) }, (_, i) => startOfMonth(firstMonth.add({ months: i * numberOfMonths })))
@@ -263,7 +247,7 @@ export function createYearRange({ start, end }: DateRange): DateValue[] {
 
   let current = startOfYear(start)
 
-  while (current.compare(end) <= 0) {
+  while (compareDateValues(current, end) <= 0) {
     years.push(current)
     // Move to the first day of the next year
     current = startOfYear(current.add({ years: 1 }))
@@ -280,7 +264,7 @@ export function createDateRange({ start, end }: DateRange): DateValue[] {
 
   let current = start
 
-  while (current.compare(end) <= 0) {
+  while (compareDateValues(current, end) <= 0) {
     dates.push(current)
     current = current.add({ days: 1 })
   }
@@ -289,45 +273,35 @@ export function createDateRange({ start, end }: DateRange): DateValue[] {
 }
 
 /**
- * It's better to use `getWeekStart` from `@internationalized/date`,
- * but sadly it is not yet exported from the package.
- * And the `Intl.Locale` API is not supported well enough yet.
+ * The first day of the week for `locale` (0 = Sunday … 6 = Saturday), from
+ * `Intl.Locale#getWeekInfo()` with a CLDR fallback (see `getLocaleWeekStart`).
  */
 export function getWeekStartsOn(locale: string): WeekStartsOn {
-  // Jan 6, 2025 is a Monday (ISO day = 1)
-  const monday = new CalendarDate(2025, 1, 6)
-  const dayOfWeek = getDayOfWeek(monday, locale)
-  // dayOfWeek tells us Monday's position in the locale's week (0-indexed)
-  // If Monday is position 0 → week starts Monday (1)
-  // If Monday is position 1 → week starts Sunday (0)
-  return (1 - dayOfWeek + 7) % 7 as WeekStartsOn
+  return getLocaleWeekStart(locale) as WeekStartsOn
 }
 
 /**
  * Returns the locale-specific week number
  */
-export function getWeekNumber(date: DateValue, locale: string = 'en-US', firstDayOfWeek?: DayOfWeek): number {
-  const jan1 = new CalendarDate(date.year, 1, 1)
+export function getWeekNumber(date: DateValue, locale: string = 'en-US', firstDayOfWeek?: DayOfWeekName): number {
+  // Week numbers are counted on the ISO calendar, whatever calendar `date` is in.
+  const isoDate = toPlainDate(date).withCalendar('iso8601')
 
-  // Detect ISO locale by comparing JS day of week with locale day of week
-  const usesISOWeek = jan1.toDate('UTC').getUTCDay() !== getDayOfWeek(jan1, locale)
+  // Locales whose week starts on Sunday number weeks the US way (week 1 holds
+  // Jan 1), the others the ISO way (Monday start, week 1 holds Jan 4).
+  const usesISOWeek = getLocaleWeekStart(locale) !== 0
   const weekStartsOn = firstDayOfWeek ?? (usesISOWeek ? 'mon' : 'sun')
   const firstWeekContainsDate = usesISOWeek ? 4 : 1
 
   // Find the "deciding day" - its year determines which year's week numbering to use
-  const dayOfWeek = getDayOfWeek(date, locale, weekStartsOn)
-  const decidingDay = date.add({ days: 7 - firstWeekContainsDate - dayOfWeek })
+  const dayOfWeek = getDayOfWeek(isoDate, locale, weekStartsOn)
+  const decidingDay = isoDate.add({ days: 7 - firstWeekContainsDate - dayOfWeek })
   const weekYear = decidingDay.year
 
   // Calculate week number from week 1 start
-  const week1Ref = new CalendarDate(weekYear, 1, firstWeekContainsDate)
+  const week1Ref = getTemporal().PlainDate.from({ year: weekYear, month: 1, day: firstWeekContainsDate })
   const week1Start = startOfWeek(week1Ref, locale, weekStartsOn)
-  const currentWeekStart = startOfWeek(date, locale, weekStartsOn)
+  const currentWeekStart = startOfWeek(isoDate, locale, weekStartsOn)
 
-  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
-  const daysDiff = Math.round(
-    (currentWeekStart.toDate('UTC').getTime() - week1Start.toDate('UTC').getTime())
-    / MS_PER_WEEK,
-  )
-  return daysDiff + 1
+  return Math.round(week1Start.until(currentWeekStart, { largestUnit: 'days' }).days / 7) + 1
 }

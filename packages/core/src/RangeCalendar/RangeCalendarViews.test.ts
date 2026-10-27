@@ -1,7 +1,6 @@
-import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
+import type { DateValue } from '@/date'
 import type { DateRange } from '@/shared/date'
-import { CalendarDate, isWeekend } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -11,7 +10,7 @@ import RangeCalendarUnitHarness from './story/_RangeCalendarUnit.vue'
 import RangeCalendarViews from './story/_RangeCalendarViews.vue'
 
 const kbd = useTestKbd()
-const sep5 = new CalendarDate(2026, 9, 5)
+const sep5 = new Temporal.PlainDate(2026, 9, 5)
 
 type Listeners = Partial<Record<'onUpdate:modelValue' | 'onUpdate:validModelValue' | 'onUpdate:view', (...args: any[]) => void>>
 
@@ -77,7 +76,7 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
   })
 
   it('accepts a controlled month range and renders it', () => {
-    const { calendar } = setupUnit({ granularity: 'month', modelValue: { start: new CalendarDate(2026, 4, 1), end: new CalendarDate(2026, 5, 1) } })
+    const { calendar } = setupUnit({ granularity: 'month', modelValue: { start: new Temporal.PlainDate(2026, 4, 1), end: new Temporal.PlainDate(2026, 5, 1) } })
     expect(selected(calendar).map(el => el.getAttribute('data-value'))).toEqual(['2026-04-01', '2026-05-01'])
   })
 
@@ -103,8 +102,8 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
     const { user, getByTestId } = setupUnit({
       granularity: 'month',
       defaultPlaceholder: sep5,
-      minValue: new CalendarDate(2026, 2, 10),
-      maxValue: new CalendarDate(2026, 11, 20),
+      minValue: new Temporal.PlainDate(2026, 2, 10),
+      maxValue: new Temporal.PlainDate(2026, 11, 20),
       isDateDisabled: (date, unit) => unit === 'month' && date.month === 2,
     })
     getByTestId('cell-2026-09-01').focus()
@@ -141,8 +140,8 @@ describe('range calendar — granularity="year" (replaces YearRangePicker)', () 
     const { user, getByTestId } = setupUnit({
       granularity: 'year',
       defaultPlaceholder: sep5,
-      minValue: new CalendarDate(2021, 6, 1),
-      maxValue: new CalendarDate(2029, 6, 1),
+      minValue: new Temporal.PlainDate(2021, 6, 1),
+      maxValue: new Temporal.PlainDate(2029, 6, 1),
       isDateDisabled: (date, unit) => unit === 'year' && date.year === 2021,
     })
     getByTestId('cell-2026-01-01').focus()
@@ -193,7 +192,7 @@ describe('range calendar — views and drill-down', () => {
   })
 
   it('shows no range state in views coarser than the granularity', async () => {
-    const { user, getByTestId, calendar } = setupViews({ defaultPlaceholder: sep5, modelValue: { start: new CalendarDate(2026, 9, 3), end: new CalendarDate(2026, 9, 8) } })
+    const { user, getByTestId, calendar } = setupViews({ defaultPlaceholder: sep5, modelValue: { start: new Temporal.PlainDate(2026, 9, 3), end: new Temporal.PlainDate(2026, 9, 8) } })
     expect(selected(calendar)).toHaveLength(6)
     await user.click(getByTestId('view-trigger'))
     expect(selected(calendar)).toHaveLength(0)
@@ -215,7 +214,7 @@ describe('range calendar — views and drill-down', () => {
 })
 
 describe('range calendar — coarser views are navigation only', () => {
-  const weekend = (d: DateValue) => isWeekend(d, 'en-US')
+  const weekend = (d: DateValue) => d.dayOfWeek >= 6
 
   it('applies day matchers only in the day view: a weekend matcher leaves every month reachable', async () => {
     const { user, getByTestId, calendar } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', isDateDisabled: weekend, isDateUnavailable: weekend })
@@ -227,7 +226,7 @@ describe('range calendar — coarser views are navigation only', () => {
   })
 
   it('moves to the page edges on Home and End in the coarser views, within minValue / maxValue', async () => {
-    const { user, getByTestId, unmount } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', maxValue: new CalendarDate(2026, 10, 15) })
+    const { user, getByTestId, unmount } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', maxValue: new Temporal.PlainDate(2026, 10, 15) })
     getByTestId('month-2026-09-01').focus()
     await user.keyboard(kbd.END)
     expect(getByTestId('month-2026-10-01')).toHaveFocus()
@@ -235,7 +234,7 @@ describe('range calendar — coarser views are navigation only', () => {
     expect(getByTestId('month-2026-01-01')).toHaveFocus()
     unmount()
 
-    const views = setupViews({ defaultPlaceholder: sep5, defaultView: 'year', minValue: new CalendarDate(2023, 1, 1) })
+    const views = setupViews({ defaultPlaceholder: sep5, defaultView: 'year', minValue: new Temporal.PlainDate(2023, 1, 1) })
     views.getByTestId('year-2026-01-01').focus()
     await views.user.keyboard(kbd.HOME)
     expect(views.getByTestId('year-2023-01-01')).toHaveFocus()
@@ -244,13 +243,13 @@ describe('range calendar — coarser views are navigation only', () => {
   })
 
   it('sets aria-selected on no gridcell in views coarser than the granularity', () => {
-    const { calendar } = setupViews({ defaultView: 'month', modelValue: { start: new CalendarDate(2026, 1, 15), end: new CalendarDate(2026, 3, 10) } })
+    const { calendar } = setupViews({ defaultView: 'month', modelValue: { start: new Temporal.PlainDate(2026, 1, 15), end: new Temporal.PlainDate(2026, 3, 10) } })
     expect(calendar.querySelectorAll('[role="gridcell"][aria-selected]')).toHaveLength(0)
   })
 
   it('drops a hover from another view when the view changes', async () => {
     // A controlled view change moves no focus, so only the stale hover could highlight.
-    const { user, getByTestId, calendar, rerender } = setupViews({ defaultPlaceholder: sep5, view: 'month', modelValue: { start: new CalendarDate(2026, 9, 3), end: undefined } })
+    const { user, getByTestId, calendar, rerender } = setupViews({ defaultPlaceholder: sep5, view: 'month', modelValue: { start: new Temporal.PlainDate(2026, 9, 3), end: undefined } })
     await user.hover(getByTestId('month-2026-11-01'))
     await rerender({ view: 'day' })
     expect(getByTestId('view-day')).toBeInTheDocument()

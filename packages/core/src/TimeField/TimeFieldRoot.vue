@@ -1,8 +1,7 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { TimeFieldChangeReason } from './useTimeField'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
@@ -12,7 +11,7 @@ import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
 export type TimeFieldRootContext = {
   locale: Ref<string>
   /**
-   * The value as a date-time (a `Time` is placed on today's date). Assigning it
+   * The value as a date-time (a `PlainTime` is placed on today's date). Assigning it
    * requests a change with reason `imperative-action`; prefer `setModelValue`.
    */
   modelValue: Ref<DateValue | undefined>
@@ -30,7 +29,7 @@ export type TimeFieldRootContext = {
   elements: Ref<Set<HTMLElement>>
   focusNext: () => void
   setFocusedElement: (el: HTMLElement) => void
-  /** Request a value change from a date-time; it is written back as a `Time` when the value is one. */
+  /** Request a value change from a date-time; it is written back as a `PlainTime` when the value is one. */
   setModelValue: (value: DateValue | undefined, reason?: TimeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Request a placeholder change from a date-time. */
   setPlaceholder: (value: DateValue, reason?: TimeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -65,7 +64,7 @@ export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
   disabled?: boolean
   /** Whether or not the time field is readonly */
   readonly?: boolean
-  /** A function that returns whether or not a time is unavailable. It receives the time as a date-time (a `Time` is placed on today's date); an unavailable time marks the field invalid. */
+  /** A function that returns whether or not a time is unavailable. It receives the time as a date-time (a `PlainTime` is placed on today's date); an unavailable time marks the field invalid. */
   isTimeUnavailable?: Matcher
   /** Id of the element */
   id?: string
@@ -90,6 +89,7 @@ export const [injectTimeFieldRootContext, provideTimeFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, toRefs } from 'vue'
+import { toIsoString } from '@/date'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeField } from './useTimeField'
@@ -172,7 +172,7 @@ defineExpose(mergeExpose(expose, {
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="modelValue ? modelValue.toString() : ''"
+      :value="modelValue ? toIsoString(modelValue) : ''"
       :name="name"
       :disabled="disabled"
       :required="required"

@@ -2,9 +2,12 @@
   * Implementation ported from https://github.com/melt-ui/melt-ui/blob/develop/src/lib/internal/helpers/date/types.ts
 */
 
-import type { DateValue } from '@internationalized/date'
-
-export type { DateValue }
+/**
+ * A date the date components accept and emit: a Temporal `PlainDate`, a
+ * `PlainDateTime`, or a `ZonedDateTime`. The app provides `Temporal` (natively
+ * or with a polyfill); Reka uses the global one and TypeScript 6's lib types.
+ */
+export type DateValue = Temporal.PlainDate | Temporal.PlainDateTime | Temporal.ZonedDateTime
 
 /**
  * The unit a calendar cell represents. Also the unit a calendar `view`

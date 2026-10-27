@@ -1,16 +1,14 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DateRangePickerOpenChangeReason, DateRangePickerRootContext } from './DateRangePickerRoot.vue'
-import type { CalendarUnit, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateRangeFieldChangeReason, UseDateRangeFieldProps } from '@/DateRangeField/useDateRangeField'
 import type { PopoverOpenChangeReason, UsePopoverReturn } from '@/Popover'
 import type { RangeCalendarChangeReason, UseRangeCalendarProps } from '@/RangeCalendar/useRangeCalendar'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { isEqualDay } from '@internationalized/date'
 import { computed, ref, shallowRef, toValue, unref, watch } from 'vue'
-import { getWeekStartsOn } from '@/date'
+import { compareDateValues, getWeekStartsOn, isSameDay } from '@/date'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { usePopover } from '@/Popover/usePopover'
 import { useControllableState } from '@/shared'
@@ -141,7 +139,7 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
       granularity: toValue(props.granularity),
       defaultValue: modelValue.value.start,
       locale: locale.value,
-    }).copy(),
+    }),
     name: 'placeholder',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdatePlaceholder,
@@ -153,7 +151,7 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
   // cancelled (the cancel only suppresses the event), and follows the range's
   // start when the field changes it, so a later press is never compared
   // against a stale value.
-  const anchor = shallowRef<DateValue | undefined>(modelValue.value.start?.copy())
+  const anchor = shallowRef<DateValue | undefined>(modelValue.value.start)
   const startValue = computed(() => anchor.value)
   // Emits only: the calendar reports real changes, so nothing is deduped here.
   const { setState: emitStartValue } = useControllableState<DateValue | undefined, RangeCalendarChangeReason>({
@@ -183,15 +181,15 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
   })
 
   function setModelValue(value: DateRange, reason: DateRangePickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setModelState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
+    return setModelState({ start: value.start, end: value.end }, reason, event)
   }
   function setPlaceholder(value: DateValue, reason: DateRangePickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
   /** The calendar's anchor moved: always emitted (the calendar only reports changes). */
   function reportStartValue(value: DateValue | undefined, reason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    anchor.value = value?.copy()
-    return emitStartValue(value?.copy(), reason, event)
+    anchor.value = value
+    return emitStartValue(value, reason, event)
   }
   function setStartValue(value: DateValue | undefined, reason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     if (isSameTemporalValue(value, anchor.value))
@@ -212,8 +210,8 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
 
   watch(modelValue, (value) => {
     if (!isSameTemporalValue(value.start, anchor.value))
-      anchor.value = value.start?.copy()
-    if (value.start && value.start.compare(placeholder.value) !== 0)
+      anchor.value = value.start
+    if (value.start && compareDateValues(value.start, placeholder.value) !== 0)
       setPlaceholder(value.start)
     if (value.start && value.end && closeOnSelect.value)
       setOpen(false, 'date-select')
@@ -224,13 +222,13 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
   /** The range calendar's `beforeUpdate:modelValue`. The same days are not a change (the field may carry times). */
   function onCalendarBeforeUpdate(value: DateRange, details: ChangeEventDetails<RangeCalendarChangeReason>) {
     const current = modelValue.value
-    if (value.start && current.start && value.end && current.end && isEqualDay(value.start, current.start) && isEqualDay(value.end, current.end))
+    if (value.start && current.start && value.end && current.end && isSameDay(value.start, current.start) && isSameDay(value.end, current.end))
       return
     onFieldBeforeUpdate(value, details)
   }
 
   function onCalendarPlaceholderChange(value: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason>) {
-    if (isEqualDay(value, placeholder.value))
+    if (isSameDay(value, placeholder.value))
       return
     setPlaceholder(value, details.reason, details.event)
   }

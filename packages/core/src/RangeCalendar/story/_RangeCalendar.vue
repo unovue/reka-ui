@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import type { DateValue } from '@internationalized/date'
 import type { RangeCalendarRootProps } from '..'
+import type { DateValue } from '@/date'
 import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 
 const props = defineProps<{

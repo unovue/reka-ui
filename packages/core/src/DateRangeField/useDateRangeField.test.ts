@@ -2,7 +2,6 @@ import type { PropType } from 'vue'
 import type { DateRangeType } from './DateRangeFieldRoot.vue'
 import type { UseDateRangeFieldProps, UseDateRangeFieldReturn } from './useDateRangeField'
 import type { DateRange, SegmentPart } from '@/shared/date'
-import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -16,7 +15,7 @@ import { useDateRangeField } from './useDateRangeField'
  * covered by `DateRangeField.test.ts`.
  */
 
-const range: DateRange = { start: new CalendarDate(2024, 1, 20), end: new CalendarDate(2024, 1, 25) }
+const range: DateRange = { start: new Temporal.PlainDate(2024, 1, 20), end: new Temporal.PlainDate(2024, 1, 25) }
 
 function withScope<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -101,7 +100,7 @@ describe('useDateRangeField', () => {
   it('snaps to the step on the range fields too (stepSnapping)', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user } = setup({
-      defaultValue: { start: new CalendarDateTime(2024, 1, 20, 10, 0), end: new CalendarDateTime(2024, 1, 20, 12, 0) },
+      defaultValue: { start: new Temporal.PlainDateTime(2024, 1, 20, 10, 0), end: new Temporal.PlainDateTime(2024, 1, 20, 12, 0) },
       granularity: 'second',
       step: { minute: 15 },
       stepSnapping: true,
@@ -138,8 +137,8 @@ describe('useDateRangeField', () => {
       const emit = vi.fn()
       const api = useDateRangeField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)
-      expect(api.setRangeValue('end', new CalendarDate(2024, 2, 1))).toBe(true)
-      expect(emit).toHaveBeenCalledWith('update:modelValue', expect.objectContaining({ end: new CalendarDate(2024, 2, 1) }), expect.objectContaining({ reason: 'imperative-action' }))
+      expect(api.setRangeValue('end', new Temporal.PlainDate(2024, 2, 1))).toBe(true)
+      expect(emit).toHaveBeenCalledWith('update:modelValue', expect.objectContaining({ end: new Temporal.PlainDate(2024, 2, 1) }), expect.objectContaining({ reason: 'imperative-action' }))
       expect(api.endValue.value?.toString()).toBe('2024-01-25')
 
       model.value = null
@@ -149,8 +148,8 @@ describe('useDateRangeField', () => {
       const uncontrolled = useDateRangeField({ defaultValue: range, locale: 'en-US' })
       expect(uncontrolled.isControlled.value).toBe(false)
       // An equal range is not a change.
-      expect(uncontrolled.setModelValue({ start: new CalendarDate(2024, 1, 20), end: new CalendarDate(2024, 1, 25) })).toBe(false)
-      expect(uncontrolled.setRangeValue('start', new CalendarDate(2024, 1, 21))).toBe(true)
+      expect(uncontrolled.setModelValue({ start: new Temporal.PlainDate(2024, 1, 20), end: new Temporal.PlainDate(2024, 1, 25) })).toBe(false)
+      expect(uncontrolled.setRangeValue('start', new Temporal.PlainDate(2024, 1, 21))).toBe(true)
       expect(uncontrolled.startValue.value?.toString()).toBe('2024-01-21')
     })
   })
@@ -159,7 +158,7 @@ describe('useDateRangeField', () => {
     withScope(() => {
       expect(useDateRangeField({ defaultValue: range, locale: 'en-US' }).isInvalid.value).toBe(false)
       expect(useDateRangeField({ defaultValue: { start: range.end, end: range.start }, locale: 'en-US' }).isInvalid.value).toBe(true)
-      expect(useDateRangeField({ defaultValue: range, maxValue: new CalendarDate(2024, 1, 22), locale: 'en-US' }).isInvalid.value).toBe(true)
+      expect(useDateRangeField({ defaultValue: range, maxValue: new Temporal.PlainDate(2024, 1, 22), locale: 'en-US' }).isInvalid.value).toBe(true)
       const api = useDateRangeField({ defaultValue: range, isDateUnavailable: d => d.day === 22, locale: 'en-US' })
       expect(api.isInvalid.value).toBe(true)
       expect(api.root.attrs.value['data-invalid']).toBe('')
@@ -174,7 +173,7 @@ describe('useDateRangeField', () => {
     await nextTick()
     expect(api.editableSegments.value.end.map(s => s.part)).toEqual(['day', 'month', 'year'])
 
-    const timed = { start: new CalendarDateTime(2024, 1, 20, 14), end: new CalendarDateTime(2024, 1, 20, 16) }
+    const timed = { start: new Temporal.PlainDateTime(2024, 1, 20, 14), end: new Temporal.PlainDateTime(2024, 1, 20, 16) }
     const h24 = withScope(() => useDateRangeField({ defaultValue: timed, locale: 'en-US', hourCycle: 24 }))
     expect(h24.segments.value.start.find(s => s.part === 'hour')?.value).toBe('14')
     expect(h24.editableSegments.value.start.map(s => s.part)).not.toContain('dayPeriod')
@@ -192,7 +191,7 @@ describe('useDateRangeField cancel', () => {
   it('a cancelled change on one end never touches the other end\'s typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setup({
-      defaultValue: { start: undefined, end: new CalendarDate(2024, 1, 25) },
+      defaultValue: { start: undefined, end: new Temporal.PlainDate(2024, 1, 25) },
       locale: 'en-US',
       onBeforeUpdate: (_value, details) => details.cancel(),
       onUpdate,

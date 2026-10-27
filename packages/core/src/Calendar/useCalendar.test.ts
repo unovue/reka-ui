@@ -1,6 +1,4 @@
-import type { DateValue } from '@internationalized/date'
-import type { CalendarUnit } from '@/date'
-import { CalendarDate } from '@internationalized/date'
+import type { CalendarUnit, DateValue } from '@/date'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, shallowRef } from 'vue'
 import { useCalendar } from './useCalendar'
@@ -10,7 +8,7 @@ import { useCalendar } from './useCalendar'
  * The rendered behaviour is covered by `Calendar.test.ts` / `CalendarViews.test.ts`.
  */
 
-const sep5 = new CalendarDate(2026, 9, 5)
+const sep5 = new Temporal.PlainDate(2026, 9, 5)
 
 function withScope<T>(fn: () => T): T {
   const scope = effectScope()
@@ -39,7 +37,7 @@ describe('useCalendar', () => {
     withScope(() => {
       const onUpdate = vi.fn()
       const api = useCalendar({ locale: 'en-US', weekStartsOn: 0, defaultPlaceholder: sep5, granularity: 'month', onUpdate })
-      api.select(new CalendarDate(2026, 3, 1), 'cell-press')
+      api.select(new Temporal.PlainDate(2026, 3, 1), 'cell-press')
       expect(onUpdate).toHaveBeenCalledTimes(1)
       const [value, details] = onUpdate.mock.calls[0]
       expect((value as DateValue).toString()).toBe('2026-03-05')
@@ -48,7 +46,7 @@ describe('useCalendar', () => {
       expect(api.lastChangeDetails.value.reason).toBe('cell-press')
 
       // Selecting the same month again deselects and parks the placeholder there.
-      api.select(new CalendarDate(2026, 3, 1), 'cell-keydown')
+      api.select(new Temporal.PlainDate(2026, 3, 1), 'cell-keydown')
       expect(api.modelValue.value).toBeUndefined()
       expect(api.placeholder.value.toString()).toBe('2026-03-05')
     })
@@ -61,18 +59,18 @@ describe('useCalendar', () => {
       const api = useCalendar({ locale: 'en-US', weekStartsOn: 0, defaultPlaceholder: sep5, defaultView: 'year', onUpdate, onUpdateView })
       expect(api.headingValue.value).toBe('2020 - 2031')
 
-      api.select(new CalendarDate(2030, 1, 1), 'cell-press')
+      api.select(new Temporal.PlainDate(2030, 1, 1), 'cell-press')
       expect(onUpdate).not.toHaveBeenCalled()
       expect(api.view.value).toBe('month')
       expect(api.placeholder.value.toString()).toBe('2030-09-05')
       expect(onUpdateView).toHaveBeenLastCalledWith('month', expect.objectContaining({ reason: 'view-drill' }))
 
-      api.select(new CalendarDate(2030, 2, 1), 'cell-press')
+      api.select(new Temporal.PlainDate(2030, 2, 1), 'cell-press')
       expect(api.view.value).toBe('day')
       expect(api.placeholder.value.toString()).toBe('2030-02-05')
       expect(api.headingValue.value).toBe('February 2030')
 
-      api.select(new CalendarDate(2030, 2, 14), 'cell-press')
+      api.select(new Temporal.PlainDate(2030, 2, 14), 'cell-press')
       expect((api.modelValue.value as DateValue).toString()).toBe('2030-02-14')
     })
   })
@@ -87,7 +85,7 @@ describe('useCalendar', () => {
         onBeforeUpdate: (_value, details) => details.cancel(),
         onUpdate,
       })
-      api.select(new CalendarDate(2026, 9, 10), 'cell-press')
+      api.select(new Temporal.PlainDate(2026, 9, 10), 'cell-press')
       expect(onUpdate).not.toHaveBeenCalled()
       expect(api.modelValue.value).toBeUndefined()
     })
@@ -113,10 +111,10 @@ describe('useCalendar', () => {
   it('supports multiple selection at the granularity', () => {
     withScope(() => {
       const api = useCalendar({ locale: 'en-US', weekStartsOn: 0, defaultPlaceholder: sep5, multiple: true, granularity: 'year' })
-      api.select(new CalendarDate(2027, 1, 1))
-      api.select(new CalendarDate(2029, 1, 1))
+      api.select(new Temporal.PlainDate(2027, 1, 1))
+      api.select(new Temporal.PlainDate(2029, 1, 1))
       expect((api.modelValue.value as DateValue[]).map(d => d.toString())).toEqual(['2027-09-05', '2029-09-05'])
-      api.select(new CalendarDate(2027, 6, 1))
+      api.select(new Temporal.PlainDate(2027, 6, 1))
       expect((api.modelValue.value as DateValue[]).map(d => d.toString())).toEqual(['2029-09-05'])
     })
   })
@@ -127,7 +125,7 @@ describe('useCalendar', () => {
       const emit = vi.fn()
       const api = useCalendar({ locale: 'en-US', weekStartsOn: 0, modelValue: () => model.value, emit })
       expect(api.isControlled.value).toBe(true)
-      api.select(new CalendarDate(2026, 9, 20), 'cell-press')
+      api.select(new Temporal.PlainDate(2026, 9, 20), 'cell-press')
       expect(emit).toHaveBeenCalledWith('beforeUpdate:modelValue', expect.anything(), expect.objectContaining({ reason: 'cell-press' }))
       expect(emit).toHaveBeenCalledWith('update:modelValue', expect.anything(), expect.objectContaining({ reason: 'cell-press' }))
       expect((api.modelValue.value as DateValue).toString()).toBe('2026-09-05')
@@ -154,12 +152,12 @@ describe('useCalendar', () => {
       expect(selectedCell.attrs.value['data-selected']).toBe('')
       expect(selectedCell.attrs.value['data-focused']).toBe('')
       expect(selectedCell.attrs.value.tabindex).toBe(0)
-      const outside = enabled.getCellTriggerSurface(() => new CalendarDate(2026, 8, 31), () => sep5)
+      const outside = enabled.getCellTriggerSurface(() => new Temporal.PlainDate(2026, 8, 31), () => sep5)
       expect(outside.attrs.value['data-outside-view']).toBe('')
       expect(outside.attrs.value.tabindex).toBeUndefined()
 
       const unit: CalendarUnit = 'month'
-      const monthCell = enabled.getCellTriggerSurface(() => new CalendarDate(2026, 9, 1), undefined, unit)
+      const monthCell = enabled.getCellTriggerSurface(() => new Temporal.PlainDate(2026, 9, 1), undefined, unit)
       expect(monthCell.cellValue.value).toBe('Sep')
       expect(monthCell.attrs.value['data-view']).toBe('month')
     })

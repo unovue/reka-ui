@@ -105,9 +105,6 @@ importers:
 
   docs:
     dependencies:
-      '@internationalized/date':
-        specifier: ^3.7.0
-        version: 3.7.0
       '@stackblitz/sdk':
         specifier: ^1.11.0
         version: 1.11.0
@@ -120,6 +117,9 @@ importers:
       reka-ui:
         specifier: link:../packages/core
         version: link:../packages/core
+      temporal-polyfill-lite:
+        specifier: ^0.4.3
+        version: 0.4.3
       vue:
         specifier: 3.5.43
         version: 3.5.43(typescript@6.0.3)
@@ -202,9 +202,6 @@ importers:
       '@floating-ui/vue':
         specifier: ^2.0.1
         version: 2.0.1(vue@3.5.43(typescript@6.0.3))
-      '@internationalized/date':
-        specifier: ^3.5.0
-        version: 3.7.0
       '@internationalized/number':
         specifier: ^3.5.0
         version: 3.6.0
@@ -284,6 +281,9 @@ importers:
       size-limit:
         specifier: ^12.0.1
         version: 12.0.1(jiti@2.6.1)
+      temporal-polyfill-lite:
+        specifier: ^0.4.3
+        version: 0.4.3
       tsdown:
         specifier: ^0.12.9
         version: 0.12.9(typescript@6.0.3)(vue-tsc@3.3.11(typescript@6.0.3))
@@ -1583,9 +1583,6 @@ packages:
     resolution: {integrity: sha512-Xq0h6zMrHBbrW8jXJ9fISi+x8oDQllg5hTDkDuxnWiskJ63rpJu9CvJshj8VniHVTbsxCg9fVoPAaNp3RQI5OQ==}
     peerDependencies:
       vue: '>=3'
-
-  '@internationalized/date@3.7.0':
-    resolution: {integrity: sha512-VJ5WS3fcVx0bejE/YHfbDKR/yawZgKqn/if+oEeLqNwBtPzVB06olkfcnojTmEMX+gTpH+FlQ69SHNitJ8/erQ==}
 
   '@internationalized/number@3.6.0':
     resolution: {integrity: sha512-PtrRcJVy7nw++wn4W2OuePQQfTqDzfusSuY1QTtui4wa7r+rGVtR75pO8CyKvHvzyQYi3Q1uO5sY0AsB4e65Bw==}
@@ -6537,6 +6534,9 @@ packages:
     resolution: {integrity: sha512-rzS0heiNf8Xn7/mpdSVVSMAWAoy9bfb1WOTYC78Z0UQKeKa/CWS8FOq0lKGNa8DWKAn9gxjCvMLYc5PGXYlK2A==}
     engines: {node: '>= 0.8.0'}
 
+  temporal-polyfill-lite@0.4.3:
+    resolution: {integrity: sha512-Lw/de9tydKmrU0icQy6Z+abX5mzDk4iqyt6Xp2iDDxY6SGISiuhuP3TcfWlYveM1FN1I7FjT5nG+Kh9eCiSnVg==}
+
   term-size@1.2.0:
     resolution: {integrity: sha512-7dPUZQGy/+m3/wjVz3ZW5dobSoD/02NxJpoXUX0WIyjfVS3l0c+b/+9phIDFA7FHzkYtwtMFgeGZ/Y8jVTeqQQ==}
     engines: {node: '>=4'}
@@ -8388,10 +8388,6 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
       vue: 3.5.43(typescript@6.0.3)
-
-  '@internationalized/date@3.7.0':
-    dependencies:
-      '@swc/helpers': 0.5.11
 
   '@internationalized/number@3.6.0':
     dependencies:
@@ -14048,6 +14044,8 @@ snapshots:
       readable-stream: 2.3.8
       to-buffer: 1.1.1
       xtend: 4.0.2
+
+  temporal-polyfill-lite@0.4.3: {}
 
   term-size@1.2.0:
     dependencies:

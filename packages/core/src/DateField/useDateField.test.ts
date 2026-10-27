@@ -1,8 +1,7 @@
-import type { DateValue } from '@internationalized/date'
 import type { PropType } from 'vue'
 import type { UseDateFieldProps, UseDateFieldReturn } from './useDateField'
+import type { DateValue } from '@/date'
 import type { SegmentPart } from '@/shared/date'
-import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -17,7 +16,7 @@ import { useDateField } from './useDateField'
  * The rendered component behaviour is covered by `DateField.test.ts`.
  */
 
-const jan20 = new CalendarDate(2024, 1, 20)
+const jan20 = new Temporal.PlainDate(2024, 1, 20)
 
 function withScope<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -72,27 +71,27 @@ describe('useDateField', () => {
 
     await user.click(getByTestId('day'))
     await user.keyboard('{ArrowUp}')
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 21), expect.objectContaining({ reason: 'segment-increment' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 21), expect.objectContaining({ reason: 'segment-increment' }))
     await user.keyboard('{ArrowDown}')
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 20), expect.objectContaining({ reason: 'segment-decrement' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 20), expect.objectContaining({ reason: 'segment-decrement' }))
     expect(onUpdate.mock.lastCall![1].event).toBeInstanceOf(KeyboardEvent)
 
     // Backspace drops one digit (20 -> 2, still a date), then empties the segment.
     await user.keyboard('{Backspace}')
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 2), expect.objectContaining({ reason: 'segment-clear' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 2), expect.objectContaining({ reason: 'segment-clear' }))
     await user.keyboard('{Backspace}')
     expect(onUpdate).toHaveBeenLastCalledWith(undefined, expect.objectContaining({ reason: 'segment-clear' }))
     expect(api().modelValue.value).toBeUndefined()
 
     await user.keyboard('15')
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 15), expect.objectContaining({ reason: 'segment-input' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 15), expect.objectContaining({ reason: 'segment-input' }))
     expect(api().lastChangeDetails.value.reason).toBe('segment-input')
   })
 
   it('reports step-snap when a snapped time segment loses focus', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user } = setup({
-      defaultValue: new CalendarDateTime(2024, 1, 20, 10, 0),
+      defaultValue: new Temporal.PlainDateTime(2024, 1, 20, 10, 0),
       locale: 'en-US',
       granularity: 'second',
       step: { minute: 15 },
@@ -103,8 +102,8 @@ describe('useDateField', () => {
     await user.keyboard('{2}{3}')
     // The first digit commits as typed; the second auto-advances, so the
     // minute loses focus and snaps (23 -> 30) before its own commit.
-    expect(onUpdate).toHaveBeenNthCalledWith(1, new CalendarDateTime(2024, 1, 20, 10, 2), expect.objectContaining({ reason: 'segment-input' }))
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDateTime(2024, 1, 20, 10, 30), expect.objectContaining({ reason: 'step-snap' }))
+    expect(onUpdate).toHaveBeenNthCalledWith(1, new Temporal.PlainDateTime(2024, 1, 20, 10, 2), expect.objectContaining({ reason: 'segment-input' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDateTime(2024, 1, 20, 10, 30), expect.objectContaining({ reason: 'step-snap' }))
   })
 
   it('a cancelled typed change keeps the model and the typed segments', async () => {
@@ -129,9 +128,9 @@ describe('useDateField', () => {
       const emit = vi.fn()
       const api = useDateField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)
-      expect(api.setModelValue(new CalendarDate(2024, 2, 1))).toBe(true)
-      expect(emit).toHaveBeenCalledWith('beforeUpdate:modelValue', new CalendarDate(2024, 2, 1), expect.objectContaining({ reason: 'imperative-action' }))
-      expect(emit).toHaveBeenCalledWith('update:modelValue', new CalendarDate(2024, 2, 1), expect.objectContaining({ reason: 'imperative-action' }))
+      expect(api.setModelValue(new Temporal.PlainDate(2024, 2, 1))).toBe(true)
+      expect(emit).toHaveBeenCalledWith('beforeUpdate:modelValue', new Temporal.PlainDate(2024, 2, 1), expect.objectContaining({ reason: 'imperative-action' }))
+      expect(emit).toHaveBeenCalledWith('update:modelValue', new Temporal.PlainDate(2024, 2, 1), expect.objectContaining({ reason: 'imperative-action' }))
       expect(api.modelValue.value?.toString()).toBe('2024-01-20')
 
       model.value = null
@@ -145,9 +144,9 @@ describe('useDateField', () => {
       const onUpdate = vi.fn()
       const api = useDateField({ defaultValue: jan20, onUpdate, locale: 'en-US' })
       expect(api.isControlled.value).toBe(false)
-      expect(api.setModelValue(new CalendarDate(2024, 1, 20))).toBe(false)
+      expect(api.setModelValue(new Temporal.PlainDate(2024, 1, 20))).toBe(false)
       expect(onUpdate).not.toHaveBeenCalled()
-      expect(api.setModelValue(new CalendarDate(2024, 3, 3))).toBe(true)
+      expect(api.setModelValue(new Temporal.PlainDate(2024, 3, 3))).toBe(true)
       expect(api.modelValue.value?.toString()).toBe('2024-03-03')
       // The placeholder follows the value.
       expect(api.placeholder.value.toString()).toBe('2024-01-20')
@@ -157,10 +156,10 @@ describe('useDateField', () => {
   it('follows the placeholder after a value change with imperative-action', async () => {
     const onUpdatePlaceholder = vi.fn()
     const api = withScope(() => useDateField({ defaultValue: jan20, onUpdatePlaceholder, locale: 'en-US' }))
-    api.setModelValue(new CalendarDate(2025, 6, 1), 'segment-input')
+    api.setModelValue(new Temporal.PlainDate(2025, 6, 1), 'segment-input')
     await nextTick()
     expect(api.placeholder.value.toString()).toBe('2025-06-01')
-    expect(onUpdatePlaceholder).toHaveBeenLastCalledWith(new CalendarDate(2025, 6, 1), expect.objectContaining({ reason: 'imperative-action' }))
+    expect(onUpdatePlaceholder).toHaveBeenLastCalledWith(new Temporal.PlainDate(2025, 6, 1), expect.objectContaining({ reason: 'imperative-action' }))
   })
 
   it('orders segments by locale and reacts to a locale change', async () => {
@@ -174,7 +173,7 @@ describe('useDateField', () => {
 
   it('shows a day period only for a 12-hour cycle', () => {
     withScope(() => {
-      const value = new CalendarDateTime(2024, 1, 20, 14, 30)
+      const value = new Temporal.PlainDateTime(2024, 1, 20, 14, 30)
       const h12 = useDateField({ defaultValue: value, locale: 'en-US', hourCycle: 12 })
       expect(h12.editableSegments.value.map(s => s.part)).toContain('dayPeriod')
       expect(h12.segments.value.find(s => s.part === 'hour')?.value).toBe('2')
@@ -189,7 +188,7 @@ describe('useDateField', () => {
     withScope(() => {
       const api = useDateField({
         defaultValue: jan20,
-        minValue: new CalendarDate(2024, 2, 1),
+        minValue: new Temporal.PlainDate(2024, 2, 1),
         locale: 'en-US',
       })
       expect(api.isInvalid.value).toBe(true)
@@ -225,9 +224,9 @@ describe('useDateField', () => {
 })
 
 describe('useDateField cancel keeps the typed segments', () => {
-  const minDate = new CalendarDate(2000, 1, 1)
+  const minDate = new Temporal.PlainDate(2000, 1, 1)
   const noPastDates = (value: DateValue | undefined, details: { cancel: () => void }) => {
-    if (value && value.compare(minDate) < 0)
+    if (value && Temporal.PlainDate.compare(value, minDate) < 0)
       details.cancel()
   }
 
@@ -252,7 +251,7 @@ describe('useDateField cancel keeps the typed segments', () => {
   })
 
   it('typing 2025 over 2024 ends at 2025', async () => {
-    const value = shallowRef<DateValue>(new CalendarDate(2024, 1, 15))
+    const value = shallowRef<DateValue>(new Temporal.PlainDate(2024, 1, 15))
     const accepted: string[] = []
     const { getByTestId, user } = setup({
       modelValue: () => value.value,
@@ -272,11 +271,11 @@ describe('useDateField cancel keeps the typed segments', () => {
   })
 
   it('a parent that transforms the value still drives the segments', async () => {
-    const value = shallowRef<DateValue>(new CalendarDate(2024, 1, 15))
+    const value = shallowRef<DateValue>(new Temporal.PlainDate(2024, 1, 15))
     const { getByTestId, user } = setup({
       modelValue: () => value.value,
       locale: 'en-US',
-      onUpdate: v => (value.value = v!.day < 10 ? v!.set({ day: 10 }) : v!),
+      onUpdate: v => (value.value = v!.day < 10 ? v!.with({ day: 10 }) : v!),
     })
     await user.click(getByTestId('day'))
     await user.keyboard('3')
