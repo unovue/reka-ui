@@ -1,30 +1,26 @@
-import { isEqual } from 'ohash'
+// `compare` / `valueComparator` moved to `@/shared/compare` (#2824); re-exported so existing imports keep working.
+export { compare, valueComparator } from '@/shared'
 
 export function queryCheckedElement(parentEl: HTMLElement | null) {
   return parentEl?.querySelector('[data-state=checked]') as HTMLElement | null
 }
 
-export function valueComparator<T>(value: T | T[] | undefined, currentValue: T, comparator?: string | ((a: T, b: T) => boolean)) {
-  if (value === undefined)
-    return false
-  else if (Array.isArray(value))
-    return value.some(val => compare(val, currentValue, comparator))
-  else
-    return compare(value, currentValue, comparator)
-}
+const BEFORE_UPDATE_MODEL_VALUE_LISTENER = /^onBeforeUpdate:model-?value$/i
 
-export function compare<T>(value?: T, currentValue?: T, comparator?: string | ((a: T, b: T) => boolean)) {
-  if (value === undefined || currentValue === undefined)
-    return false
-
-  if (typeof value === 'string')
-    return value === currentValue
-
-  if (typeof comparator === 'function')
-    return comparator(value, currentValue)
-
-  if (typeof comparator === 'string')
-    return value?.[comparator as keyof T] === currentValue?.[comparator as keyof T]
-
-  return isEqual(value, currentValue)
+/**
+ * `$attrs` for a root that renders `ListboxRoot` internally (Combobox,
+ * Autocomplete) without the `beforeUpdate:modelValue` listener. Those roots do
+ * not declare the event yet, so a consumer listener would otherwise fall
+ * through `$attrs` onto the inner `ListboxRoot` and see only part of the
+ * changes (item presses, never a clear) with the listbox's value and reasons.
+ * Their own cancellable model lands when they route every write through the
+ * selection pipeline (#2824).
+ */
+export function omitBeforeUpdateModelValue(attrs: Record<string, unknown>) {
+  const result: Record<string, unknown> = {}
+  for (const key in attrs) {
+    if (!BEFORE_UPDATE_MODEL_VALUE_LISTENER.test(key))
+      result[key] = attrs[key]
+  }
+  return result
 }

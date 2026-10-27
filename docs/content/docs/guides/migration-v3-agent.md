@@ -81,7 +81,7 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 
 **What changed.** `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object with `reason`, `event`, `isCanceled` and `cancel()`, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick, and a component that mounts uncontrolled and later receives a defined model value becomes controlled from then on, even if the model is later cleared to `undefined`.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing. Known exception: `ColorAreaRoot` and `ColorSliderRoot` still emit `beforeUpdate:modelValue` and `update:modelValue` with an unchanged hex string when the change is finer than hex precision (the hue of a grey, a fractional step), so that `update:color` can carry the precise `Color`; this lasts until the color model becomes a `Color` object ([#2789](https://github.com/unovue/reka-ui/issues/2789)). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release. Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). Known exception: `ColorAreaRoot` and `ColorSliderRoot` still emit `beforeUpdate:modelValue` and `update:modelValue` with an unchanged hex string when the change is finer than hex precision (the hue of a grey, a fractional step), so that `update:color` can carry the precise `Color`; this lasts until the color model becomes a `Color` object ([#2789](https://github.com/unovue/reka-ui/issues/2789)). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release. Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert.
 
 **How to find it.** Search for listeners and emit declarations on those roots: `@update:open`, `@update:model-value`, `@update:modelValue`, `@update:placeholder`, `'update:open'`, `'update:modelValue'`, `'update:placeholder'`, `onUpdate:open`, `onUpdate:modelValue`, `onUpdate:placeholder`, `defineEmits` in components that wrap one of the roots, `useForwardPropsEmits`, `emitted('update:open')` and `toHaveBeenCalledWith` in tests, and `watch(` calls that react to these models.
 
@@ -97,7 +97,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
   }
   ```
 
-  The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason`, `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `DatePickerOpenChangeReason`, `DateRangePickerOpenChangeReason`, `CalendarChangeReason`, `RangeCalendarChangeReason`, `ColorAreaChangeReason`, `ColorFieldChangeReason`, `ColorSliderChangeReason` and `ColorSwatchPickerChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.
+  The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason`, `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `ListboxChangeReason`, `DatePickerOpenChangeReason`, `DateRangePickerOpenChangeReason`, `CalendarChangeReason`, `RangeCalendarChangeReason`, `ColorAreaChangeReason`, `ColorFieldChangeReason`, `ColorSliderChangeReason` and `ColorSwatchPickerChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.
 - Wrappers that forward with `useForwardPropsEmits` need no change.
 - Tests: an assertion such as `expect(emit).toHaveBeenCalledWith(true)` or `expect(wrapper.emitted('update:open')[0]).toEqual([true])` now fails because of the extra argument. Assert on the first element (`[0][0]`) or use `expect.objectContaining({ reason: '…' })` for the details. Tests that awaited a tick for an uncontrolled emit may now see it synchronously; remove waits only if the test's intent is unchanged.
 - A `watch` on the model that relied on the old next-tick emit ordering may observe the change one tick earlier. Only change such code if a test or the developer confirms the ordering mattered.
@@ -187,6 +187,40 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - A `granularity` prop on `DatePickerRoot` or `DateRangePickerRoot` is untouched: on those roots it is still the field's time granularity.
 
 **Verify.** A search for `MonthPicker`, `MonthRangePicker`, `YearPicker` and `YearRangePicker` returns nothing in the project's own source. No `CalendarCell`, `RangeCalendarCell`, `DatePickerCell` or `DateRangePickerCell` has a `:date` prop, no cell trigger has `:day` or `:month`, and every grid part in a day view has `:value`. The type-check passes. Render one migrated calendar and check that the days of the neighbouring months carry `data-outside-view`.
+
+### 7. `by` comparison functions receive strings
+
+**What changed.** A function passed as `by` to `ListboxRoot`, `ComboboxRoot` or `SelectRoot` now runs for every value, strings included. In v2 string values were compared with `===` and the function was only called for objects. `by` is still read once at setup.
+
+**How to find it.** Search for `:by="` and `by:` on those roots where the value is a function (not a string key).
+
+**Rewrite rules.** If the list can contain string values and the function dereferences a property (`a.id === b.id`), add a string guard (`typeof a === 'string' ? a === b : a.id === b.id`). A function that already handles both, or a list of objects only, needs no change. A string key (`by="id"`) is unaffected.
+
+**Verify.** Selection and highlighting of string options in those lists behave as before.
+
+### 8. Listbox keyboard handling
+
+**What changed.** `ListboxContent` and `ListboxFilter` (rendered by `ComboboxInput` and `AutocompleteInput`) resolve every keydown through one navigation intent.
+- PageUp and PageDown now move the highlight to the first or last item and prevent the default, both in the content and in the filter input. In v2 they scrolled the container natively.
+- While a filter has focus, ArrowLeft and ArrowRight always stay with the text input, even in a `horizontal` listbox. ArrowUp, ArrowDown, Home and End still navigate from the filter. `ListboxContent` no longer prevents the default of arrow keys while a filter owns the keyboard.
+- Typeahead no longer receives navigation keys.
+- New and additive: `getNavigationIntent` on `ListboxRoot` returns `'first' | 'last' | 'prev' | 'next' | 'select'`, `null` (opt the key out, Enter's selection included) or `undefined` (default mapping). The filter never passes it unmodified printable keys, and a `'select'` intent for Space on a focused item does not select twice. `ComboboxRoot` does not accept it yet. `textValue` on `ListboxItem` sets the label-registry text and defaults to the text content.
+- `ListboxRoot`'s `update:modelValue` and `beforeUpdate:modelValue` are typed `T | T[] | undefined` (type-only).
+
+**How to find it.**
+- Keydown listeners next to these parts that handle PageUp/PageDown themselves: search for `PageUp`, `PageDown`, `'Page` in components that render `ListboxContent`, `ListboxFilter`, `ComboboxInput` or `AutocompleteInput`.
+- Code that re-implemented custom navigation keys: `@keydown` on `ListboxRoot`, `ListboxContent` or `ListboxFilter` that calls `highlightItem`, `highlightFirstItem` or moves focus between options, and `key === 'n'` / `key === 'p'` checks with `ctrlKey`.
+- Tests that press arrow keys in a listbox filter and assert `defaultPrevented`, or that rely on PageUp/PageDown scrolling: search `*.test.*` and `*.spec.*` for `PageUp`, `PageDown` and `defaultPrevented` near `ListboxFilter` / `ComboboxInput`.
+- Handlers typed for one value on `@update:model-value` of `ListboxRoot` (`(value: string) =>`).
+
+**Rewrite rules.**
+- A custom PageUp/PageDown handler on these parts that only jumped to the first/last item: remove it. If the app needs the native scroll, pass `:get-navigation-intent="e => (e.key === 'PageUp' || e.key === 'PageDown') ? null : undefined"` on `ListboxRoot`.
+- A `@keydown` handler that maps extra keys to moves (Ctrl+N/P, vim keys): replace it with `getNavigationIntent` on `ListboxRoot` returning the intent; return `undefined` for every other key. Leave such handlers on `ComboboxRoot` unchanged, since it does not take the prop yet.
+- An item whose visible content is not plain text and that is shown elsewhere by label: add `text-value="…"`. Otherwise no change.
+- A `ListboxRoot` model handler typed for a single value: widen it to `T | T[] | undefined`, or narrow inside (`Array.isArray(v)`). Do not change runtime logic.
+- Tests: update an expectation that ArrowLeft/ArrowRight in a horizontal filter is prevented, or that PageUp/PageDown is not. Ask the developer before changing any other keyboard assertion.
+
+**Verify.** In each affected listbox: PageUp/PageDown move to the first/last option; ArrowLeft/ArrowRight move the caret in a filter; typing letters in a filter still filters; Enter still selects unless `getNavigationIntent` returns `null` for it. Run the type-check for the handler retyping.
 
 ### Report
 

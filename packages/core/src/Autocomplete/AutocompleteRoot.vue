@@ -70,6 +70,7 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
+import { omitBeforeUpdateModelValue } from '@/Listbox/utils'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<AutocompleteRootProps>(), {
@@ -255,7 +256,7 @@ provideAutocompleteRootContext({
   <PopperRoot>
     <ListboxRoot
       ref="primitiveElement"
-      v-bind="$attrs"
+      v-bind="omitBeforeUpdateModelValue($attrs)"
       v-model="(contextModelValue as any)"
       :style="{
         pointerEvents: open ? 'auto' : undefined,
