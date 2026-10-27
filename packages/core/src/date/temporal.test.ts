@@ -9,7 +9,6 @@ import {
   compareDateValues,
   cycleField,
   getFieldValue,
-  getLocaleWeekStart,
   isDateValue,
   isPlainDate,
   isPlainDateTime,
@@ -227,13 +226,10 @@ describe('week info', () => {
     expect(getWeekStartsOn('ar-EG')).toBe(6)
   })
 
-  it('falls back to the CLDR region table without week info on Intl.Locale', () => {
-    const proto = Intl.Locale.prototype
-    const saved = (['getWeekInfo', 'weekInfo'] as const).map(key => [key, Object.getOwnPropertyDescriptor(proto, key)] as const)
-    for (const [key] of saved)
-      Object.defineProperty(proto, key, { value: undefined, configurable: true, writable: true })
+  it('falls back to the CLDR region table without week info on Intl.Locale', async () => {
+    const { getLocaleWeekStart } = await importWithColdWeekCache()
+    const saved = removeWeekInfo()
     try {
-      // Locales the tests above did not read, so the per-locale cache is cold.
       expect(getLocaleWeekStart('fr-FR')).toBe(1)
       expect(getLocaleWeekStart('ar-AE')).toBe(1)
       expect(getLocaleWeekStart('ar-JO')).toBe(6)
@@ -264,9 +260,10 @@ describe('week info', () => {
     ['hi-IN', 0, [7]],
     ['en-UG', 1, [7]],
   ] as const
-  const weekendDays = (locale: string) => [1, 2, 3, 4, 5, 6, 7].filter(day => isWeekend(Temporal.PlainDate.from('2024-05-13').add({ days: day - 1 }), locale))
 
-  it('falls back to the CLDR week data', () => {
+  it('falls back to the CLDR week data', async () => {
+    const { getLocaleWeekStart, isWeekend } = await importWithColdWeekCache()
+    const weekendDays = (locale: string) => [1, 2, 3, 4, 5, 6, 7].filter(day => isWeekend(Temporal.PlainDate.from('2024-05-13').add({ days: day - 1 }), locale))
     const saved = removeWeekInfo()
     try {
       const fromTable = cldrWeeks.map(([locale]) => [locale, getLocaleWeekStart(locale), weekendDays(locale)])
@@ -301,6 +298,13 @@ describe('week info', () => {
     expect(isWeekend(friday.withCalendar('persian'), 'fa-IR')).toBe(true)
   })
 })
+
+// A fresh module instance, so no locale is answered from week data that an
+// earlier test cached while `Intl.Locale` still had it.
+function importWithColdWeekCache() {
+  vi.resetModules()
+  return import('./temporal')
+}
 
 function removeWeekInfo() {
   const proto = Intl.Locale.prototype
