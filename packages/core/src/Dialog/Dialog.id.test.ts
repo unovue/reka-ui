@@ -101,4 +101,46 @@ describe('dialog part ids', () => {
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('requires a `DialogTitle`'))
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('Missing `Description`'))
   })
+
+  it('keeps a title\'s id when an id-less title that set up before it unmounts', async () => {
+    // A placeholder title (no id) is replaced by the real one (custom id). The
+    // real title comes first in the template, so it mounts before the
+    // placeholder unmounts; the placeholder must not restore the generated id.
+    const ready = ref(false)
+    const utils = render(defineComponent({
+      components: { DialogRoot, DialogContent, DialogTitle, DialogDescription },
+      setup: () => ({ ready }),
+      template: `
+        <DialogRoot :open="true">
+          <DialogContent>
+            <DialogTitle v-if="ready" id="real-title">Real</DialogTitle>
+            <DialogTitle v-if="!ready">Loading</DialogTitle>
+            <DialogDescription>d</DialogDescription>
+          </DialogContent>
+        </DialogRoot>`,
+    }))
+    await nextTick()
+    ready.value = true
+    await nextTick()
+    await nextTick()
+    expect(utils.getByText('Real').id).toBe('real-title')
+    expect(utils.getByRole('dialog').getAttribute('aria-labelledby')).toBe('real-title')
+  })
+
+  it('renders each part\'s own id when two parts of a kind have one', async () => {
+    const utils = render(defineComponent({
+      components: { DialogRoot, DialogContent, DialogTitle, DialogDescription },
+      template: `
+        <DialogRoot :open="true">
+          <DialogContent>
+            <DialogTitle>T</DialogTitle>
+            <DialogDescription id="d1">One</DialogDescription>
+            <DialogDescription id="d2">Two</DialogDescription>
+          </DialogContent>
+        </DialogRoot>`,
+    }))
+    await nextTick()
+    expect(utils.getByText('One').id).toBe('d1')
+    expect(utils.getByText('Two').id).toBe('d2')
+  })
 })

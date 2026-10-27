@@ -4,7 +4,7 @@ import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, ref, toValue } from 'vue'
-import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createPartSurface, disclosureState, setGeneratedIds, useControllableState } from '@/shared'
 import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
@@ -276,6 +276,7 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
     set descriptionId(value) { descriptionId.value = value },
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
+  setGeneratedIds(context, { contentId: contentId.value, titleId: titleId.value, descriptionId: descriptionId.value })
   setPopupRootStore(context, handleStore)
 
   return {

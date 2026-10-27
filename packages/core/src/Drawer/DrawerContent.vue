@@ -26,7 +26,6 @@ export type DrawerContentProps = DrawerPopupProps
 </script>
 
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/shared'
 import { computed, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers, usePartId } from '@/shared'
@@ -41,10 +40,9 @@ const props = withDefaults(defineProps<DrawerPopupProps>(), {
 const emits = defineEmits<DrawerPopupEmits>()
 
 const rootContext = injectDrawerRootContext()
-usePartId(() => props.id, rootContext.contentId, (id) => { rootContext.contentId = id })
-// The content surface renders the context's id; an `id: undefined` forwarded
-// here would override it through `$attrs`.
-const forwardedProps = reactiveOmit(props, 'id')
+// Forwarded as the element's `id` (merged after the surface's context id);
+// mirrored into the context for the trigger's `aria-controls`.
+const contentId = usePartId(() => props.id, rootContext, 'contentId')
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -96,7 +94,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
     <DrawerContentImpl
       v-if="isFullModal"
       :ref="forwardRef"
-      v-bind="{ ...forwardedProps, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="rootContext.open.value"
       @close-auto-focus="onCloseAutoFocusModal"
@@ -109,7 +107,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
     <DrawerContentImpl
       v-else
       :ref="forwardRef"
-      v-bind="{ ...forwardedProps, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="false"
       @close-auto-focus="onCloseAutoFocusNonModal"

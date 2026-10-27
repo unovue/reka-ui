@@ -50,7 +50,7 @@ const surface = getTabsTriggerSurface(rootContext, () => props.value, () => prop
       :as="as"
       :as-child="asChild"
       :type="as === 'button' ? 'button' : undefined"
-      v-bind="surface.attrs.value"
+      v-bind="{ ...surface.attrs.value, id: props.id || surface.attrs.value.id }"
     >
       <slot />
     </Primitive>

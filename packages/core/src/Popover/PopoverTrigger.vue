@@ -26,7 +26,7 @@ import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
-import { getPopoverTriggerSurface } from './usePopover'
+import { getPopoverOwnTriggerSlot, getPopoverTriggerSurface } from './usePopover'
 
 const props = withDefaults(defineProps<PopoverTriggerProps<Payload>>(), {
   as: 'button',
@@ -74,16 +74,14 @@ const detachedTrigger = getPopoverTriggerSurface({
 // `onClick`.
 const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : detachedTrigger
 
-// Without a `handle`, the trigger renders the Root's trigger id; an `id` prop
-// replaces it there, so the content's `aria-labelledby` follows.
-if (rootContext) {
-  usePartId(
-    () => props.id,
-    getPopupRootStore(rootContext)?.fallbackTriggerId ?? rootContext.triggerId,
-    (id) => { rootContext.triggerId = id },
-  )
-}
-const attrs = computed(() => detached.enabled.value ? detachedTrigger.attrs.value : trigger.attrs.value)
+// Without a `handle`, the trigger renders its own id (its `id` prop, else the
+// Root's generated trigger id) and mirrors it into the Root, so the content's
+// `aria-labelledby` follows.
+const ownTriggerSlot = rootContext ? getPopoverOwnTriggerSlot(rootContext) : undefined
+const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId') : undefined
+const attrs = computed(() => detached.enabled.value
+  ? detachedTrigger.attrs.value
+  : ownTriggerId ? { ...trigger.attrs.value, id: ownTriggerId.value } : trigger.attrs.value)
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
 // (never replace the ref: with a `handle` it is a writable computed that

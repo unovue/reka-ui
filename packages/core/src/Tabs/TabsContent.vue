@@ -65,7 +65,7 @@ onBeforeUnmount(() => {
       :as="as"
       :as-child="asChild"
       :hidden="!present"
-      v-bind="surface.attrs.value"
+      v-bind="{ ...surface.attrs.value, id: props.id || surface.attrs.value.id }"
       :style="{
         animationDuration: isMountAnimationPreventedRef ? '0s' : undefined,
       }"

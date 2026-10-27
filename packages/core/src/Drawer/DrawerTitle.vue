@@ -18,7 +18,8 @@ import { getDrawerTitleSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerTitleProps>(), { as: 'h2' })
 const rootContext = injectDrawerRootContext()
-usePartId(() => props.id, rootContext.titleId, (id) => { rootContext.titleId = id })
+// Rendered on the element; mirrored into the context for the content's `aria-*`.
+const id = usePartId(() => props.id, rootContext, 'titleId')
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const title = getDrawerTitleSurface(rootContext)
@@ -29,7 +30,7 @@ const title = getDrawerTitleSurface(rootContext)
     :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
-    v-bind="title.attrs.value"
+    v-bind="{ ...title.attrs.value, id }"
   >
     <slot />
   </Primitive>

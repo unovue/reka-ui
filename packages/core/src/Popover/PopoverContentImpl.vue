@@ -20,7 +20,13 @@ export type PopoverContentImplEmits = DismissableLayerEmits & {
   closeAutoFocus: [event: Event]
 }
 
-export interface PopoverContentImplProps extends PopperContentProps, DismissableLayerProps {}
+export interface PopoverContentImplProps extends PopperContentProps, DismissableLayerProps {
+  /**
+   * Id of the element, which the trigger's `aria-controls` points at.
+   * Auto-generated when not provided.
+   */
+  id?: string
+}
 
 interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
   /**
@@ -79,7 +85,7 @@ const content = getPopoverContentSurface(rootContext)
     >
       <PopperContent
         :ref="forwardRef"
-        v-bind="mergeProps(forwarded, content.attrs.value)"
+        v-bind="mergeProps(forwarded, content.attrs.value, props.id ? { id: props.id } : {})"
         :style="{
           '--reka-popover-content-transform-origin':
             'var(--reka-popper-transform-origin)',

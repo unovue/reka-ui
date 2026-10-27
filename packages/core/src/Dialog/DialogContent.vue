@@ -21,7 +21,6 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 </script>
 
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/shared'
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useEmitAsProps, useForwardElement, usePartId } from '@/shared'
@@ -39,10 +38,9 @@ const props = withDefaults(defineProps<DialogContentProps>(), {
 const emits = defineEmits<DialogContentEmits>()
 
 const rootContext = injectDialogRootContext()
-usePartId(() => props.id, rootContext.contentId, (id) => { rootContext.contentId = id })
-// The content surface renders the context's id; an `id: undefined` forwarded
-// here would override it through `$attrs`.
-const forwardedProps = reactiveOmit(props, 'id')
+// Forwarded as the element's `id` (merged after the surface's context id);
+// mirrored into the context for the trigger's `aria-controls`.
+const contentId = usePartId(() => props.id, rootContext, 'contentId')
 
 const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, expose } = useForwardElement()
@@ -71,7 +69,7 @@ const staysMounted = computed(
       v-show="forceMount || rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="staysMounted ? present : true"
-      v-bind="{ ...forwardedProps, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
     >
       <slot />
     </DialogContentModal>
@@ -80,7 +78,7 @@ const staysMounted = computed(
       v-show="forceMount || rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="staysMounted ? present : true"
-      v-bind="{ ...forwardedProps, ...emitsAsProps, ...$attrs }"
+      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
     >
       <slot />
     </DialogContentNonModal>

@@ -39,11 +39,9 @@ const props = defineProps<CollapsibleContentProps>()
 const emits = defineEmits<CollapsibleContentEmits>()
 
 const rootContext = injectCollapsibleRootContext()
-usePartId(
-  () => props.id,
-  rootContext.contentId || useId(undefined, 'reka-collapsible-content'),
-  (id) => { rootContext.contentId = id },
-)
+rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
+// Rendered on the element; mirrored into the context for the trigger's `aria-controls`.
+const contentId = usePartId(() => props.id, rootContext, 'contentId')
 
 const HEIGHT_VAR = '--reka-collapsible-content-height'
 const WIDTH_VAR = '--reka-collapsible-content-width'
@@ -176,7 +174,7 @@ useEventListener(currentElement, 'beforematch', (ev) => {
     @complete="rootContext.notifyOpenComplete"
   >
     <Primitive
-      v-bind="mergeProps($attrs, surface.attrs.value)"
+      v-bind="mergeProps($attrs, surface.attrs.value, { id: contentId })"
       :ref="forwardRef"
       :as-child="props.asChild"
       :as="as"

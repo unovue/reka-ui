@@ -13,7 +13,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
-import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, useControllableState } from '@/shared'
+import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import {
@@ -409,6 +409,7 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     get descriptionId() { return descriptionId.value },
     set descriptionId(value) { descriptionId.value = value },
   }
+  setGeneratedIds(context, { contentId: contentId.value, titleId: titleId.value, descriptionId: descriptionId.value })
 
   return {
     open,

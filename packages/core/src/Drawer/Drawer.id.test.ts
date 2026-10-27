@@ -60,4 +60,42 @@ describe('drawer part ids', () => {
     expect(content().getAttribute('aria-labelledby')).toBe('next-title')
     expect(content().getAttribute('aria-describedby')).toBe('next-description')
   })
+
+  it('keeps a title\'s id when an id-less title that set up before it unmounts', async () => {
+    const ready = ref(false)
+    const utils = render(defineComponent({
+      components: { DrawerRoot, DrawerPopup, DrawerTitle },
+      setup: () => ({ ready }),
+      template: `
+        <DrawerRoot default-open :modal="false">
+          <DrawerPopup aria-describedby="">
+            <DrawerTitle v-if="ready" id="real-title">Real</DrawerTitle>
+            <DrawerTitle v-if="!ready">Loading</DrawerTitle>
+          </DrawerPopup>
+        </DrawerRoot>`,
+    }))
+    await nextTick()
+    ready.value = true
+    await nextTick()
+    await nextTick()
+    expect(utils.getByText('Real').id).toBe('real-title')
+    expect(utils.getByRole('dialog').getAttribute('aria-labelledby')).toBe('real-title')
+  })
+
+  it('renders each part\'s own id when two parts of a kind have one', async () => {
+    const utils = render(defineComponent({
+      components: { DrawerRoot, DrawerPopup, DrawerTitle, DrawerDescription },
+      template: `
+        <DrawerRoot default-open :modal="false">
+          <DrawerPopup>
+            <DrawerTitle>T</DrawerTitle>
+            <DrawerDescription id="d1">One</DrawerDescription>
+            <DrawerDescription id="d2">Two</DrawerDescription>
+          </DrawerPopup>
+        </DrawerRoot>`,
+    }))
+    await nextTick()
+    expect(utils.getByText('One').id).toBe('d1')
+    expect(utils.getByText('Two').id).toBe('d2')
+  })
 })

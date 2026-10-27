@@ -18,7 +18,8 @@ import { getDialogTitleSurface } from './useDialog'
 
 const props = withDefaults(defineProps<DialogTitleProps>(), { as: 'h2' })
 const rootContext = injectDialogRootContext()
-usePartId(() => props.id, rootContext.titleId, (id) => { rootContext.titleId = id })
+// Rendered on the element; mirrored into the context for the content's `aria-*`.
+const id = usePartId(() => props.id, rootContext, 'titleId')
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 // The `id` the content's `aria-labelledby` points at, from the shared surface builder.
@@ -30,7 +31,7 @@ const title = getDialogTitleSurface(rootContext)
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    v-bind="title.attrs.value"
+    v-bind="{ ...title.attrs.value, id }"
   >
     <slot />
   </Primitive>

@@ -4,7 +4,7 @@ import type { PopoverOpenChangeReason, PopoverRootContext } from './PopoverRoot.
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, ref, toValue } from 'vue'
-import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createPartSurface, disclosureState, setGeneratedIds, useControllableState } from '@/shared'
 import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
@@ -26,6 +26,20 @@ export type PopoverContentState = { state: DisclosureState }
 
 /** Standalone `usePopover()` calls without a `baseId` draw `reka-popover-<n>` from here. */
 let popoverCount = 0
+
+/** The handle-less trigger's id, per Root context; see `getPopoverOwnTriggerSlot`. */
+const ownTriggerSlots = new WeakMap<object, { triggerId: string }>()
+
+/**
+ * The writable id a `PopoverTrigger` without a handle renders, and that the
+ * content's `aria-labelledby` points at while the Root has no `handle`. A
+ * trigger's `id` prop writes it. Kept out of the `PopoverRootContext` shape.
+ *
+ * @internal
+ */
+export function getPopoverOwnTriggerSlot(context: PopoverRootContext): { triggerId: string } | undefined {
+  return ownTriggerSlots.get(context)
+}
 
 /**
  * The trigger surface, derived purely from the root context — the single
@@ -219,8 +233,6 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
         return ownTriggerId.value
       return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
     },
-    // Sets the handle-less trigger's id; with a `handle`, each trigger's own id is used.
-    set triggerId(value) { ownTriggerId.value = value },
     get contentId() { return contentId.value },
     set contentId(value) { contentId.value = value },
     open,
@@ -230,6 +242,13 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     hasCustomAnchor,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
+  setGeneratedIds(context, { contentId: contentId.value })
+  const ownTriggerSlot = {
+    get triggerId() { return ownTriggerId.value },
+    set triggerId(value) { ownTriggerId.value = value },
+  }
+  setGeneratedIds(ownTriggerSlot, { triggerId: ownTriggerId.value })
+  ownTriggerSlots.set(context, ownTriggerSlot)
   setPopupRootStore(context, handleStore)
 
   return {

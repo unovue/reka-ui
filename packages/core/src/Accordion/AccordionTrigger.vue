@@ -22,7 +22,8 @@ const props = defineProps<AccordionTriggerProps>()
 
 const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
-usePartId(() => props.id, itemContext.triggerId, (id) => { itemContext.triggerId = id })
+// Rendered on the element; mirrored into the item context for the content's `aria-labelledby`.
+const triggerId = usePartId(() => props.id, itemContext, 'triggerId')
 
 const surface = getAccordionTriggerSurface(rootContext, itemContext)
 
@@ -35,7 +36,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
-    v-bind="surface.attrs.value"
+    v-bind="{ ...surface.attrs.value, id: triggerId }"
   >
     <slot />
   </CollapsibleTrigger>

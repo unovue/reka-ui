@@ -20,7 +20,8 @@ const props = withDefaults(defineProps<DrawerDescriptionProps>(), { as: 'p' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectDrawerRootContext()
-usePartId(() => props.id, rootContext.descriptionId, (id) => { rootContext.descriptionId = id })
+// Rendered on the element; mirrored into the context for the content's `aria-*`.
+const id = usePartId(() => props.id, rootContext, 'descriptionId')
 const description = getDrawerDescriptionSurface(rootContext)
 </script>
 
@@ -29,7 +30,7 @@ const description = getDrawerDescriptionSurface(rootContext)
     :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
-    v-bind="description.attrs.value"
+    v-bind="{ ...description.attrs.value, id }"
   >
     <slot />
   </Primitive>

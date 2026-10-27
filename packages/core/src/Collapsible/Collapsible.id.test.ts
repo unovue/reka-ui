@@ -46,4 +46,39 @@ describe('collapsible part ids', () => {
     expect(content().id).toMatch(/^reka-collapsible-content-/)
     expect(trigger().getAttribute('aria-controls')).toBe(content().id)
   })
+
+  it('keeps the content id when an id-less content that set up before it unmounts', async () => {
+    const ready = ref(false)
+    const utils = render(defineComponent({
+      components: { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent },
+      setup: () => ({ ready }),
+      template: `
+        <CollapsibleRoot default-open>
+          <CollapsibleTrigger>Toggle</CollapsibleTrigger>
+          <CollapsibleContent v-if="ready" id="real-content">Real</CollapsibleContent>
+          <CollapsibleContent v-if="!ready">Loading</CollapsibleContent>
+        </CollapsibleRoot>`,
+    }))
+    await nextTick()
+    ready.value = true
+    await nextTick()
+    await nextTick()
+    expect(utils.getByText('Real').id).toBe('real-content')
+    expect(utils.getByRole('button').getAttribute('aria-controls')).toBe('real-content')
+  })
+
+  it('renders each content\'s own id when two contents have one', async () => {
+    const utils = render(defineComponent({
+      components: { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent },
+      template: `
+        <CollapsibleRoot default-open>
+          <CollapsibleTrigger>Toggle</CollapsibleTrigger>
+          <CollapsibleContent id="c1">One</CollapsibleContent>
+          <CollapsibleContent id="c2">Two</CollapsibleContent>
+        </CollapsibleRoot>`,
+    }))
+    await nextTick()
+    expect(utils.getByText('One').id).toBe('c1')
+    expect(utils.getByText('Two').id).toBe('c2')
+  })
 })
