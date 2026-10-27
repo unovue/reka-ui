@@ -1,16 +1,21 @@
 <script lang="ts">
+import type { ComputedRef, Ref } from 'vue'
+import type { RatingChangeReason } from './useRating'
 import type { RadioGroupRootProps } from '@/RadioGroup'
-import { reactiveOmit, useVModel } from '@vueuse/core'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import { reactiveOmit } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
 import { createContext, useForwardElement } from '@/shared'
 
 export interface RatingRootContext {
-  modelValue: Ref<number>
+  /** Read-only; write through `changeModelValue`. */
+  modelValue: Readonly<Ref<number>>
   items: ComputedRef<number[]>
   hoveredRating: Ref<number>
-  disabled: Ref<boolean>
-  step: Ref<number>
-  changeModelValue: (rating: number) => void
+  disabled: Readonly<Ref<boolean>>
+  step: Readonly<Ref<number>>
+  /** Returns `false` when disabled, unchanged or cancelled. */
+  changeModelValue: (rating: number, reason?: RatingChangeReason | BaseChangeReason, event?: Event) => boolean
   changeHoveredRating: (rating: number) => void
 }
 
@@ -31,8 +36,10 @@ export interface RatingRootProps extends Omit<RadioGroupRootProps, 'modelValue' 
   step?: 1 | 0.5 | 0.25 | 0.1
 }
 export type RatingRootEmits = {
+  /** Event handler called before the value changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [payload: number, details: ChangeEventDetails<RatingChangeReason>]
   /** Event handler called when the value changes */
-  'update:modelValue': [payload: number]
+  'update:modelValue': [payload: number, details: ChangeEventDetails<RatingChangeReason>]
 }
 
 export const [injectRatingRootContext, provideRatingRootContext]
@@ -40,8 +47,7 @@ export const [injectRatingRootContext, provideRatingRootContext]
 </script>
 
 <script setup lang="ts">
-import type { ComputedRef, Ref } from 'vue'
-import { computed, ref, toRefs } from 'vue'
+import { useRating } from './useRating'
 
 const props = withDefaults(defineProps<RatingRootProps>(), {
   orientation: 'horizontal',
@@ -57,65 +63,37 @@ defineSlots<{
   }) => any
 }>()
 
-const { length, disabled, clearable, hoverable, step } = toRefs(props)
-
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-const modelValue = useVModel<RatingRootProps, 'modelValue', 'update:modelValue'>(props, 'modelValue', emits, {
+const { modelValue, items, root, context } = useRating({
+  modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<number>
-
-const items = computed(() => {
-  return Array.from({ length: length.value }, (_, i) => i + 1)
+  length: () => props.length,
+  step: () => props.step,
+  disabled: () => props.disabled,
+  clearable: () => props.clearable,
+  hoverable: () => props.hoverable,
+  emit: emits,
 })
 
-const hoveredRating = ref<number>(0)
+provideRatingRootContext(context)
 
-function changeModelValue(rating: number) {
-  if (disabled.value)
-    return
-
-  if (clearable.value && modelValue.value === rating) {
-    hoveredRating.value = 0
-    modelValue.value = 0
-  }
-  else {
-    modelValue.value = rating
-  }
-}
-
-function changeHoveredRating(rating: number) {
-  if (disabled.value || !hoverable.value)
-    return
-
-  hoveredRating.value = rating
-}
-
-// Unconditional, so a preview left over from a `hoverable`/`disabled` toggle
-// mid-hover still clears once the pointer leaves.
-function resetHoveredRating() {
-  hoveredRating.value = 0
-}
-
-provideRatingRootContext({
-  modelValue,
-  items,
-  hoveredRating,
-  disabled,
-  step,
-  changeModelValue,
-  changeHoveredRating,
-})
+const radioGroupProps = reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step', 'modelValue', 'defaultValue')
 </script>
 
 <template>
+  <!--
+    The radio group mirrors the rating's model (`null` while unset, so it is
+    controlled from the start): a cancelled or cleared rating never leaves a
+    radio checked on its own.
+  -->
   <RadioGroupRoot
     :ref="forwardRef"
-    v-bind="reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step')"
+    v-bind="radioGroupProps"
+    :model-value="modelValue ?? null"
     :disabled="disabled"
-    @mouseleave="resetHoveredRating"
+    @mouseleave="root.props.value.onMouseleave"
   >
     <slot
       :items="items"
