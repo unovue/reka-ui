@@ -75,3 +75,4 @@ export {
   type UseMenuRootProps,
   type UseMenuRootReturn,
 } from './useMenu'
+export { type MenuCheckboxItemChangeReason, type MenuRadioGroupChangeReason } from './utils'
