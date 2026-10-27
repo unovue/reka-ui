@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
 
 export interface SelectItemTextProps extends PrimitiveProps {}
@@ -24,7 +24,8 @@ const rootContext = injectSelectRootContext()
 const contentContext = injectSelectContentContext()
 const itemContext = injectSelectItemContext()
 
-const { forwardRef, currentElement: itemTextElement } = useForwardExpose()
+const { forwardRef, currentElement: itemTextElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const optionProps = computed(() => {
   return {

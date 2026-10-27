@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface SelectScrollDownButtonProps extends PrimitiveProps {}
 </script>
@@ -19,7 +19,8 @@ const alignedPositionContext
     ? injectSelectItemAlignedPositionContext()
     : undefined
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const canScrollDown = ref(false)
 

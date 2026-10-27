@@ -6,7 +6,7 @@ export interface ComboboxArrowProps extends PopperArrowProps {}
 
 <script setup lang="ts">
 import { PopperArrow } from '@/Popper'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectComboboxContentContext } from './ComboboxContentImpl.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
@@ -18,12 +18,14 @@ const props = withDefaults(defineProps<ComboboxArrowProps>(), {
 const rootContext = injectComboboxRootContext()
 const contentContext = injectComboboxContentContext()
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <PopperArrow
     v-if="rootContext.open.value && contentContext.position.value === 'popper'"
+    :ref="forwardRef"
     v-bind="props"
   >
     <slot />

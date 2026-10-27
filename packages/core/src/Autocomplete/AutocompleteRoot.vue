@@ -5,7 +5,7 @@ import type { Direction, GenericComponentInstance } from '@/shared/types'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, mergeExpose, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
@@ -68,7 +68,7 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
 
 <script setup lang="ts">
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { omitBeforeUpdateModelValue } from '@/Listbox/utils'
 import { PopperRoot } from '@/Popper'
@@ -91,7 +91,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
+const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
 const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover, loop } = toRefs(props)
 
 const dir = useDirection(propDir)
@@ -199,22 +199,17 @@ const filterState = computed<{
   }
 })
 
-const inst = getCurrentInstance()
-onMounted(() => {
-  if (inst?.exposed) {
-    inst.exposed.highlightItem = primitiveElement.value?.highlightItem
-    inst.exposed.highlightFirstItem = primitiveElement.value?.highlightFirstItem
-    inst.exposed.highlightSelected = primitiveElement.value?.highlightSelected
-  }
-})
+type ListboxRootInstance = NonNullable<typeof primitiveElement.value>
 
-defineExpose({
+// Delegate to the inner ListboxRoot at call time (it is not mounted during setup),
+// instead of patching `instance.exposed` once mounted.
+defineExpose(mergeExpose(expose, {
   filtered: filterState,
   highlightedElement,
-  highlightItem: primitiveElement.value?.highlightItem,
-  highlightFirstItem: primitiveElement.value?.highlightFirstItem,
-  highlightSelected: primitiveElement.value?.highlightSelected,
-})
+  highlightItem: (...args: Parameters<ListboxRootInstance['highlightItem']>) => primitiveElement.value?.highlightItem(...args),
+  highlightFirstItem: () => primitiveElement.value?.highlightFirstItem(),
+  highlightSelected: (...args: Parameters<ListboxRootInstance['highlightSelected']>) => primitiveElement.value?.highlightSelected(...args),
+}))
 
 // Provide the Combobox context so all Combobox sub-components work inside Autocomplete
 provideComboboxRootContext({

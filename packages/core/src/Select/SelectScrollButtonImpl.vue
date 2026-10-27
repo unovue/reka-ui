@@ -2,7 +2,7 @@
 import { onBeforeUnmount, ref, watchEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { getActiveElement } from '@/shared'
+import { getActiveElement, useForwardElement } from '@/shared'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 
 export type SelectScrollButtonImplEmits = {
@@ -47,10 +47,14 @@ function handlePointerMove() {
 }
 
 onBeforeUnmount(() => clearAutoScrollTimer())
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     aria-hidden="true"
     :style="{
       flexShrink: 0,

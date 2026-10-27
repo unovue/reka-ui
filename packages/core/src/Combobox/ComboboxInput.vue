@@ -24,7 +24,8 @@ const emits = defineEmits<ComboboxInputEmits>()
 
 const rootContext = injectComboboxRootContext()
 const listboxContext = injectListboxRootContext()
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,

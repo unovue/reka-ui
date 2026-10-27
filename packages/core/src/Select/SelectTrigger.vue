@@ -12,7 +12,7 @@ import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose, useId, useTypeahead } from '@/shared'
+import { disclosureState, useForwardElement, useId, useTypeahead } from '@/shared'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
@@ -22,7 +22,8 @@ const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
 })
 const rootContext = injectSelectRootContext()
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const isDisabled = computed(() => rootContext.disabled?.value || props.disabled)
 

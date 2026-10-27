@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, mergeExpose, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
@@ -96,7 +96,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { omitBeforeUpdateModelValue } from '@/Listbox/utils'
 import { PopperRoot } from '@/Popper'
@@ -123,7 +123,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
+const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
 const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, loop, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
@@ -218,22 +218,17 @@ const filterState = computed<{
   }
 })
 
-const inst = getCurrentInstance()
-onMounted(() => {
-  if (inst?.exposed) {
-    inst.exposed.highlightItem = primitiveElement.value?.highlightItem
-    inst.exposed.highlightFirstItem = primitiveElement.value?.highlightFirstItem
-    inst.exposed.highlightSelected = primitiveElement.value?.highlightSelected
-  }
-})
+type ListboxRootInstance = NonNullable<typeof primitiveElement.value>
 
-defineExpose({
+// Delegate to the inner ListboxRoot at call time (it is not mounted during setup),
+// instead of patching `instance.exposed` once mounted.
+defineExpose(mergeExpose(expose, {
   filtered: filterState,
   highlightedElement,
-  highlightItem: primitiveElement.value?.highlightItem,
-  highlightFirstItem: primitiveElement.value?.highlightFirstItem,
-  highlightSelected: primitiveElement.value?.highlightSelected,
-})
+  highlightItem: (...args: Parameters<ListboxRootInstance['highlightItem']>) => primitiveElement.value?.highlightItem(...args),
+  highlightFirstItem: () => primitiveElement.value?.highlightFirstItem(),
+  highlightSelected: (...args: Parameters<ListboxRootInstance['highlightSelected']>) => primitiveElement.value?.highlightSelected(...args),
+}))
 
 provideComboboxRootContext({
   modelValue,

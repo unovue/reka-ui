@@ -10,6 +10,7 @@ export interface ListboxContentProps extends PrimitiveProps { }
 
 <script setup lang="ts">
 import { useCollection } from '@/Collection'
+import { useForwardElement } from '@/shared'
 
 defineProps<ListboxContentProps>()
 
@@ -22,10 +23,13 @@ const isClickFocus = refAutoReset(false, 10)
 // come from the shared surface builder (single source with `useListboxRoot()`);
 // the collection slot wrapper stays in the SFC.
 const surface = getListboxContentSurface(rootContext, { isClickFocus })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <CollectionSlot>
+  <CollectionSlot :ref="forwardRef">
     <Primitive
       :as="as"
       :as-child="asChild"

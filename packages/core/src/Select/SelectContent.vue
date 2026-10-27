@@ -17,8 +17,9 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import { Presence } from '@/Presence'
-import { useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import SelectContentImpl from './SelectContentImpl.vue'
 import SelectProvider from './SelectProvider.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -40,6 +41,12 @@ onMounted(() => {
 })
 
 const presenceRef = ref<InstanceType<typeof Presence>>()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
+function setPresenceRef(el: Element | ComponentPublicInstance | null) {
+  presenceRef.value = (el ?? undefined) as InstanceType<typeof Presence> | undefined
+  forwardRef(el)
+}
 
 const present = computed(() => props.forceMount || rootContext.open.value)
 const renderPresence = ref(present.value)
@@ -74,7 +81,7 @@ onUnmounted(clearRenderPresenceTimeout)
 <template>
   <Presence
     v-if="present || renderPresence || presenceRef?.present"
-    ref="presenceRef"
+    :ref="setPresenceRef"
     :present="present"
   >
     <SelectContentImpl v-bind="{ ...forwarded, ...$attrs }">

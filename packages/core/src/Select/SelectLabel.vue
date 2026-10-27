@@ -8,6 +8,7 @@ export interface SelectLabelProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectSelectGroupContext } from './SelectGroup.vue'
 
 const props = withDefaults(defineProps<SelectLabelProps>(), {
@@ -15,12 +16,16 @@ const props = withDefaults(defineProps<SelectLabelProps>(), {
 })
 
 const groupContext = injectSelectGroupContext({ id: '' })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
     v-bind="props"
     :id="groupContext.id"
+    :ref="forwardRef"
   >
     <slot />
   </Primitive>

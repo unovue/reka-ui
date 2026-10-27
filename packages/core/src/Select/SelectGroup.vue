@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useId } from '@/shared'
+import { createContext, useForwardElement, useId } from '@/shared'
 
 export interface SelectGroupProps extends PrimitiveProps {}
 
@@ -19,10 +19,14 @@ const props = defineProps<SelectGroupProps>()
 
 const id = useId(undefined, 'reka-select-group')
 provideSelectGroupContext({ id })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     role="group"
     v-bind="props"
     :aria-labelledby="id"

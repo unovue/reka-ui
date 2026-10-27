@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { selectionState, useForwardExpose } from '@/shared'
+import { selectionState, useForwardElement } from '@/shared'
 
 export interface ListboxItemIndicatorProps extends PrimitiveProps {
   /**
@@ -20,7 +20,8 @@ withDefaults(defineProps<ListboxItemIndicatorProps>(), {
   as: 'span',
 })
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const itemContext = injectListboxItemContext()
 </script>
 

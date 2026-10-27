@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { useNonce } from '@/shared/useNonce'
 
 export interface SelectViewportProps extends PrimitiveProps {
@@ -30,7 +30,8 @@ const alignedPositionContext
     ? injectSelectItemAlignedPositionContext()
     : undefined
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 onMounted(() => {
   contentContext?.onViewportChange(currentElement.value)
