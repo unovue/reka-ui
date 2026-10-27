@@ -17,7 +17,7 @@
   },
   {
     'name': 'autoSaveId',
-    'description': '<p>Unique id used to auto-save group arrangement via <code>localStorage</code>.</p>\n',
+    'description': '<p>Unique id used to auto-save group arrangement via <code>localStorage</code>. Ignored while <code>layout</code> is controlled.</p>\n',
     'type': 'string | null',
     'required': false,
     'default': 'null'
@@ -43,7 +43,7 @@
   },
   {
     'name': 'layout',
-    'description': '<p>The controlled layout: one size per panel, in each panel\'s <code>sizeUnit</code> (the\nvalues <code>@layout</code> reports). Can be bound as <code>v-model:layout</code>.</p>\n',
+    'description': '<p>The controlled layout: one size per panel, in each panel\'s <code>sizeUnit</code> (the\nvalues <code>@layout</code> reports). Can be bound as <code>v-model:layout</code>. A layout the\nconstraints reject is applied as corrected and the correction emitted; an\narray whose length differs from the panel count is ignored.</p>\n',
     'type': 'number[]',
     'required': false
   },
@@ -59,7 +59,7 @@
 <EmitsTable :data="[
   {
     'name': 'beforeUpdate:layout',
-    'description': '<p>Event handler called before the layout changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'description': '<p>Event handler called before a <code>drag</code>, <code>keyboard</code> or <code>imperative-action</code> layout change; <code>details.cancel()</code> vetoes it. Structural changes (<code>panel-change</code>, <code>group-resize</code>) skip it.</p>\n',
     'type': '[value: number[], details: ChangeEventDetails&lt;SplitterLayoutChangeReason, Event&gt;]'
   },
   {
@@ -91,18 +91,18 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `autoSaveId` | Unique id used to auto-save group arrangement via localStorage. | `string \| null` | No | `null` |
+| `autoSaveId` | Unique id used to auto-save group arrangement via localStorage. Ignored while layout is controlled. | `string \| null` | No | `null` |
 | `direction` | The group orientation of splitter. | `"vertical" \| "horizontal"` | Yes | - |
 | `id` | Group id; falls back to useId when not provided. | `string \| null` | No | - |
 | `keyboardResizeBy` | Step size when arrow key was pressed. | `number \| null` | No | `10` |
-| `layout` | The controlled layout: one size per panel, in each panel's sizeUnit (the values @layout reports). Can be bound as v-model:layout. | `number[]` | No | - |
+| `layout` | The controlled layout: one size per panel, in each panel's sizeUnit (the values @layout reports). Can be bound as v-model:layout. A layout the constraints reject is applied as corrected and the correction emitted; an array whose length differs from the panel count is ignored. | `number[]` | No | - |
 | `storage` | Custom storage API; defaults to localStorage | `PanelGroupStorage` | No | `defaultStorage` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:layout` | Event handler called before the layout changes; details.cancel() vetoes the change. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
+| `beforeUpdate:layout` | Event handler called before a drag, keyboard or imperative-action layout change; details.cancel() vetoes it. Structural changes (panel-change, group-resize) skip it. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
 | `layout` | Event handler called when group layout changes | `[val: number[]]` |
 | `update:layout` | Event handler called when the layout changes. | `[value: number[], details: ChangeEventDetails<SplitterLayoutChangeReason, Event>]` |
 
