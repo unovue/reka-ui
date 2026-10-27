@@ -53,8 +53,11 @@ export interface DrawerRootProps {
 }
 
 export type DrawerRootEmits = {
+  /** Called before the open state changes, with why it is changing. Calling `details.cancel()` keeps the current state (Base UI `onOpenChange`). */
   'update:open': [value: boolean, details: DrawerOpenChangeDetails]
+  /** Called once the popup's enter or exit animations and transitions have finished, or right away when it has none. */
   'update:openComplete': [value: boolean]
+  /** Called when the active snap point changes. */
   'update:snapPoint': [value: DrawerSnapPoint | null]
 }
 
@@ -171,9 +174,9 @@ watch(open, (isOpen) => {
   }
 }, { immediate: true })
 
-// `update:openComplete` is emitted by DrawerContentImpl after the popup's
-// enter/exit transition actually finishes (via transitionend/animationend on
-// the popup element). DrawerRoot just exposes the notify hook through context.
+// `update:openComplete` is emitted by `useDrawerContent` once the popup's
+// enter/exit animations finish (Base UI `useOpenChangeComplete`). DrawerRoot
+// just exposes the notify hook through context.
 
 onUnmounted(() => {
   providerContext?.removeDrawer(context.contentId)

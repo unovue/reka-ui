@@ -74,13 +74,21 @@ import {
 ## Animating the drawer
 
 The Drawer is unstyled, so the enter/exit transitions and the swipe gesture are
-driven entirely by your CSS. `DrawerContent` exposes the drag offset through CSS
-custom properties so you can wire up the live transform:
+driven entirely by your CSS. The parts expose the gesture and the layout through
+CSS custom properties, the same set as Base UI. They are part of the public API:
+the names and units below are stable.
 
-- `--drawer-swipe-movement-y` — vertical drag offset (for top/bottom drawers)
-- `--drawer-swipe-movement-x` — horizontal drag offset (for left/right drawers)
-- `--drawer-snap-point-offset` — offset of the active snap point, when snap points are used
-- `--drawer-swipe-progress` — `0` at rest, approaching `1` as the drawer is swiped away
+| Variable | Set on | Value |
+| --- | --- | --- |
+| `--drawer-swipe-movement-x` | `DrawerContent` | Horizontal drag offset while swiping a left/right drawer (length). `0px` at rest. |
+| `--drawer-swipe-movement-y` | `DrawerContent` | Vertical drag offset while swiping a top/bottom drawer (length). `0px` at rest. |
+| `--drawer-snap-point-offset` | `DrawerContent` | Offset of the active snap point (length, negative for `up`/`left` drawers). `0px` without snap points. |
+| `--drawer-swipe-strength` | `DrawerContent`, `DrawerOverlay` | A `0.1`–`1` scalar from the release velocity: multiply your transition duration by it so a fast flick closes faster. `1` until a swipe is released. |
+| `--drawer-height` | `DrawerContent`, `DrawerIndent` | The measured height of the popup (length). On `DrawerIndent`, the height of the frontmost open drawer. |
+| `--drawer-frontmost-height` | `DrawerContent` | The height of the frontmost open drawer in a nested stack (length). |
+| `--nested-drawers` | `DrawerContent` | The number of nested drawers open above this one. |
+| `--drawer-swipe-progress` | `DrawerContent`, `DrawerIndent` | `0` at rest, approaching `1` as a drawer is swiped away. On `DrawerContent` it tracks a nested child drawer being swiped (to animate the parent back), on `DrawerIndent` the frontmost drawer. |
+| `--drawer-keyboard-inset` | `DrawerViewport` | The height the on-screen keyboard covers (length), while `DrawerVirtualKeyboardProvider` is active. See [Soft keyboard](#soft-keyboard). |
 
 ```css
 .DrawerContent {

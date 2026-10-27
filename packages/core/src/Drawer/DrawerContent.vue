@@ -37,11 +37,20 @@ const {
   onFocusOutsideModal,
   onCloseAutoFocusNonModal,
   onInteractOutsideNonModal,
+  onCloseWhileMounted,
 } = useDrawerContentModality({
   rootContext,
   contentElement: currentElement,
   finalFocus: () => props.finalFocus,
 })
+
+// A `forceMount`ed content stays mounted on close, so `FocusScope` never
+// unmounts and `close-auto-focus` never fires: return focus here instead,
+// as `DialogContentModal` / `DialogContentNonModal` do.
+watch(() => rootContext.open.value, (isOpen, wasOpen) => {
+  if (props.forceMount && wasOpen && !isOpen)
+    onCloseWhileMounted()
+}, { flush: 'post' })
 // Only while open: a `forceMount`ed drawer that is closed hides nothing and
 // mounts no backdrop.
 const shouldHideOthers = computed(() => isFullModal.value && rootContext.open.value ? currentElement.value : undefined)

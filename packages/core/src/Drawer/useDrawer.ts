@@ -7,6 +7,7 @@ import type {
   DrawerRootContext,
 } from './DrawerRoot.vue'
 import type { DrawerSnapPoint, SwipeDirection } from './utils'
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { DisclosureState, PartSurface } from '@/shared'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
@@ -383,9 +384,9 @@ export interface UseDrawerContentOptions {
    */
   initialFocus?: MaybeRefOrGetter<boolean | HTMLElement | null | undefined>
   onEscapeKeyDown?: (event: KeyboardEvent) => void
-  onPointerDownOutside?: (event: any) => void
-  onFocusOutside?: (event: any) => void
-  onInteractOutside?: (event: any) => void
+  onPointerDownOutside?: (event: PointerDownOutsideEvent) => void
+  onFocusOutside?: (event: FocusOutsideEvent) => void
+  onInteractOutside?: (event: PointerDownOutsideEvent | FocusOutsideEvent) => void
   onOpenAutoFocus?: (event: Event) => void
 }
 
@@ -399,11 +400,11 @@ export interface UseDrawerContentReturn {
   /** `DismissableLayer` `@escape-key-down`. */
   onEscapeKeyDown: (event: KeyboardEvent) => void
   /** `DismissableLayer` `@pointer-down-outside`. */
-  onPointerDownOutside: (event: any) => void
+  onPointerDownOutside: (event: PointerDownOutsideEvent) => void
   /** `DismissableLayer` `@focus-outside`. */
-  onFocusOutside: (event: any) => void
+  onFocusOutside: (event: FocusOutsideEvent) => void
   /** `DismissableLayer` `@interact-outside`. */
-  onInteractOutside: (event: any) => void
+  onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => void
   /** `FocusScope` `@mount-auto-focus`; honours `initialFocus`. */
   onMountAutoFocus: (event: Event) => void
 }
@@ -610,7 +611,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     options.onEscapeKeyDown?.(event)
   }
 
-  function onPointerDownOutside(event: any) {
+  function onPointerDownOutside(event: PointerDownOutsideEvent) {
     if (isSwiping.value) {
       event.preventDefault()
       return
@@ -619,7 +620,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     options.onPointerDownOutside?.(event)
   }
 
-  function onFocusOutside(event: any) {
+  function onFocusOutside(event: FocusOutsideEvent) {
     if (isSwiping.value) {
       event.preventDefault()
       return
@@ -627,7 +628,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     options.onFocusOutside?.(event)
   }
 
-  function onInteractOutside(event: any) {
+  function onInteractOutside(event: PointerDownOutsideEvent | FocusOutsideEvent) {
     if (isSwiping.value) {
       event.preventDefault()
       return
@@ -650,40 +651,42 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   }
 
   // --- update:openComplete wiring ---
-  // Fire `update:openComplete` on the popup's own transitionend/animationend,
-  // not on a microtask — consumers rely on this marker to know the enter/exit
-  // transition has actually finished. We track the current listener so a rapid
-  // open→close doesn't leak or double-fire, and guard with `event.target === el`
-  // so child element transitions don't spuriously resolve the drawer lifecycle.
-  let openCompleteCleanup: (() => void) | undefined
+  // Base UI `useOpenChangeComplete` / `useAnimationsFinished`: one frame after
+  // the open state changes (and when the popup mounts open), wait for every
+  // animation and transition running on the popup itself, then report. With
+  // none running, or without `getAnimations` (jsdom), it reports right away, so
+  // a popup with no CSS animation still completes. A newer change supersedes a
+  // pending one; an aborted animation counts as finished.
+  let openCompleteRun = 0
+  let pendingCloseComplete = false
 
-  function clearOpenCompleteListener() {
-    openCompleteCleanup?.()
-    openCompleteCleanup = undefined
-  }
-
-  watch(() => rootContext.open.value, (isOpen) => {
-    clearOpenCompleteListener()
-    const el = currentElement.value
-    if (!el) {
-      // If there's no element (e.g. closed without ever mounting), fire
-      // synchronously so consumers still get the contract.
+  function scheduleOpenComplete(isOpen: boolean) {
+    const run = ++openCompleteRun
+    pendingCloseComplete = !isOpen
+    const complete = () => {
+      if (run !== openCompleteRun)
+        return
+      pendingCloseComplete = false
       rootContext.notifyOpenComplete(isOpen)
+    }
+    const el = currentElement.value
+    if (!el || typeof el.getAnimations !== 'function') {
+      complete()
       return
     }
-    const handler = (event: Event) => {
-      if (event.target !== el)
+    requestAnimationFrame(() => {
+      if (run !== openCompleteRun)
         return
-      clearOpenCompleteListener()
-      rootContext.notifyOpenComplete(isOpen)
-    }
-    el.addEventListener('transitionend', handler)
-    el.addEventListener('animationend', handler)
-    openCompleteCleanup = () => {
-      el.removeEventListener('transitionend', handler)
-      el.removeEventListener('animationend', handler)
-    }
-  })
+      const animations = el.getAnimations()
+      if (!animations.length) {
+        complete()
+        return
+      }
+      Promise.all(animations.map(animation => animation.finished)).then(complete, complete)
+    })
+  }
+
+  watch(() => rootContext.open.value, scheduleOpenComplete)
 
   // Sync nestedOpenDrawerCount onto the popup CSS var so nested scale effects
   // can read it. BaseUI uses a running count, not a boolean.
@@ -717,12 +720,23 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
       const progress = rootContext.nestedSwipeProgressStore.getSnapshot()
       currentElement.value?.style.setProperty(DRAWER_CSS_VARS.swipeProgress, `${progress}`)
     })
+
+    // The popup mounts when the drawer opens (or mounted open): its enter
+    // animation is the one `openComplete(true)` waits for.
+    if (rootContext.open.value)
+      scheduleOpenComplete(true)
   })
 
   onUnmounted(() => {
     rootContext.notifyParentHasNestedDrawer?.(false)
     unsubscribeNestedProgress?.()
-    clearOpenCompleteListener()
+    // `Presence` unmounts the popup once its exit animation ends; a close still
+    // waiting on the next frame completes now instead of being dropped.
+    const closePending = pendingCloseComplete
+    openCompleteRun++
+    pendingCloseComplete = false
+    if (closePending)
+      rootContext.notifyOpenComplete(false)
   })
 
   // Dev warning for missing DrawerTitle
@@ -777,13 +791,20 @@ export interface UseDrawerContentModalityReturn {
   /** Full-modal `@close-auto-focus`. */
   onCloseAutoFocusModal: (event: Event) => void
   /** Full-modal `@pointer-down-outside`: right clicks never dismiss. */
-  onPointerDownOutsideModal: (event: any) => void
+  onPointerDownOutsideModal: (event: PointerDownOutsideEvent) => void
   /** Full-modal `@focus-outside`: never dismisses. */
   onFocusOutsideModal: (event: Event) => void
   /** Non-modal `@close-auto-focus`. */
   onCloseAutoFocusNonModal: (event: Event) => void
   /** Non-modal `@interact-outside`. */
-  onInteractOutsideNonModal: (event: any) => void
+  onInteractOutsideNonModal: (event: PointerDownOutsideEvent | FocusOutsideEvent) => void
+  /**
+   * Returns focus when the drawer closes but its content stays mounted
+   * (`forceMount`), where `FocusScope` never unmounts and `close-auto-focus`
+   * never fires. Same rules as the close-auto-focus handlers; mirrors
+   * `DialogContentModal` / `DialogContentNonModal`.
+   */
+  onCloseWhileMounted: () => void
 }
 
 /**
@@ -856,6 +877,12 @@ export function useDrawerContentModality(options: UseDrawerContentModalityOption
         e.preventDefault()
       if (e.detail.originalEvent.type === 'focusin' && hasPointerDownOutside.value)
         e.preventDefault()
+    },
+    onCloseWhileMounted() {
+      if (isFullModal.value || !hasInteractedOutside.value)
+        finalFocusElement()?.focus()
+      hasInteractedOutside.value = false
+      hasPointerDownOutside.value = false
     },
   }
 }
