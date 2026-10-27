@@ -87,14 +87,19 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: PinInputValue&lt;Type&gt;, details: ChangeEventDetails&lt;PinInputChangeReason, Event&gt;]'
+  },
+  {
     'name': 'complete',
-    'description': '',
+    'description': '<p>Event handler called when every input is filled.</p>\n',
     'type': '[value: PinInputValue&lt;Type&gt;]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: PinInputValue&lt;Type&gt;]'
+    'type': '[value: PinInputValue&lt;Type&gt;, details: ChangeEventDetails&lt;PinInputChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -102,7 +107,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': ''
+    'type': 'PinInputValue&lt;Type&gt;'
   }
 ]" />
 </llm-exclude>
@@ -131,13 +136,14 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `complete` |  | `[value: PinInputValue<Type>]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: PinInputValue<Type>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; details.cancel() vetoes the change. | `[value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason, Event>]` |
+| `complete` | Event handler called when every input is filled. | `[value: PinInputValue<Type>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: PinInputValue<Type>, details: ChangeEventDetails<PinInputChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `` |
+| `modelValue` | Current input values | `PinInputValue<Type>` |
 
 </llm-only>

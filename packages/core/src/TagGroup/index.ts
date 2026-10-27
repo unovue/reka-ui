@@ -18,3 +18,14 @@ export {
   type TagGroupRootProps,
   type TagGroupSelectionMode,
 } from './TagGroupRoot.vue'
+export {
+  type CreateTagGroupItemOptions,
+  type TagGroupChangeReason,
+  type TagGroupItemDeleteState,
+  type TagGroupItemInstance,
+  type TagGroupItemState,
+  type TagGroupRootState,
+  useTagGroup,
+  type UseTagGroupProps,
+  type UseTagGroupReturn,
+} from './useTagGroup'

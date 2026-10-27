@@ -8,10 +8,13 @@ export interface SliderTrackProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { injectSliderRootContext } from './SliderRoot.vue'
+import { getSliderTrackSurface } from './useSlider'
 
 withDefaults(defineProps<SliderTrackProps>(), { as: 'span' })
 
 const rootContext = injectSliderRootContext()
+// Same derivation as `useSlider().track`.
+const track = getSliderTrackSurface(rootContext)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -22,8 +25,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :as-child="asChild"
     :as="as"
-    :data-disabled="rootContext.disabled.value ? '' : undefined"
-    :data-orientation="rootContext.orientation.value"
+    v-bind="track.attrs.value"
   >
     <slot />
   </Primitive>
