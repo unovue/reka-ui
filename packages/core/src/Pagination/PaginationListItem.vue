@@ -29,6 +29,7 @@ const surface = getPaginationListItemSurface(rootContext, () => props.value)
     :as="as"
     :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
+    :value="value"
     v-bind="surface.attrs.value"
   >
     <slot>{{ value }}</slot>

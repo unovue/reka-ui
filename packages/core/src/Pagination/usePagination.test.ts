@@ -191,4 +191,10 @@ describe('paginationRoot — details contract', () => {
     expect(onUpdate).toHaveBeenCalledWith(10, expect.objectContaining({ reason: 'last-press' }))
     expect(getByLabelText('Page 2')).toHaveAttribute('aria-current', 'page')
   })
+
+  // Regression (#3074 review): v2 bound every prop, so the page button carried `value`.
+  it('page items keep the v2 `value` attribute', () => {
+    const { getByLabelText } = mountRoot({})
+    expect(getByLabelText('Page 3')).toHaveAttribute('value', '3')
+  })
 })
