@@ -61,8 +61,14 @@ describe('given a Tooltip inside a shadow root, in a real browser', () => {
       await expect.poll(() => get('content')).toBeNull()
     }
     finally {
+      // Scroll events are dispatched asynchronously: wait for the restoring one
+      // so it cannot close a tooltip opened by the next test.
+      if (window.scrollY !== 0) {
+        const restored = new Promise(resolve => window.addEventListener('scroll', resolve, { once: true }))
+        window.scrollTo(0, 0)
+        await restored
+      }
       spacer.remove()
-      window.scrollTo(0, 0)
     }
   })
 
