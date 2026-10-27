@@ -70,7 +70,7 @@ const detachedTrigger = getDropdownMenuTriggerSurface({
     if (value)
       detached.store.value?.pressTrigger(detached.id.value, 'open', reason, event)
     else
-      detached.store.value?.closePopup(reason, event)
+      detached.store.value?.closePopup(reason, event, triggerElement.value)
   },
 }, () => props.disabled)
 

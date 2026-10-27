@@ -43,7 +43,13 @@ export interface PopupHandleVirtualAnchor {
 }
 
 /**
- * The Root-side state a Root attaches to its handle. Created per Root instance
+ * The Root-side state a Root attaches to its handle.
+ *
+ * `Payload` appears here (and in `PopupHandle`) only in read positions and in
+ * method parameters, never as the parameter of a function-typed property, so a
+ * handle is covariant in its payload: a `PopoverHandle<Item>` is assignable to
+ * `PopoverHandle<unknown>`. That is the type a generic Root / Trigger falls
+ * back to where its `Payload` cannot be inferred (e.g. `h(PopoverTrigger, …)`). Created per Root instance
  * by `createPopupRootStore()`.
  */
 export interface PopupRootStore<Payload = unknown> {
@@ -73,10 +79,14 @@ export interface PopupRootStore<Payload = unknown> {
    */
   pressTrigger: (triggerId: string, mode: 'toggle' | 'open', reason?: string, event?: Event) => boolean
   /** Opens (or re-targets) the popup for `triggerId`, or for no trigger when `null`. */
-  openPopup: (triggerId: string | null, reason?: string, event?: Event, payload?: { value: Payload }) => boolean
-  closePopup: (reason?: string, event?: Event) => boolean
+  openPopup: (triggerId: string | null, reason?: string, event?: Event, payload?: { value: unknown }) => boolean
+  /**
+   * Closes the popup. `trigger` is set only for a press on a trigger; other
+   * closes (`handle.close()`, Escape, outside press, Close parts) carry none, as in Base UI.
+   */
+  closePopup: (reason?: string, event?: Event, trigger?: Element) => boolean
   /** Called by the handle before a trigger unregisters (internal). */
-  onTriggerRemoved: (trigger: PopupHandleTrigger<Payload>) => void
+  onTriggerRemoved: (trigger: PopupHandleTrigger<unknown>) => void
   /** Called by a trigger whose `id` changed, so an open popup keeps its owner (internal). */
   onTriggerRenamed: (from: string, to: string) => void
   /**
@@ -298,11 +308,12 @@ export function createPopupRootStore<Payload>(options: CreatePopupRootStoreOptio
       triggers()?.get(triggerId)?.capture()
   }
 
-  function openPopup(triggerId: string | null, reason?: string, event?: Event, payloadBox?: { value: Payload }): boolean {
+  function openPopup(triggerId: string | null, reason?: string, event?: Event, payloadBox?: { value: unknown }): boolean {
     const previous = [internalTriggerId.value, openedWithoutTrigger, payloadSnapshot.value, lastAnchor.value] as const
     setOwner(triggerId)
     openedWithoutTrigger = triggerId === null
-    payloadSnapshot.value = triggerId === null ? payloadBox?.value : undefined
+    // The handle passes `openWithPayload()`'s argument, typed by the handle's `Payload`.
+    payloadSnapshot.value = triggerId === null ? payloadBox?.value as Payload | undefined : undefined
     lastAnchor.value = undefined
     // Already open: re-target without closing. Base UI reports this as another
     // `onOpenChange(true)`, so `beforeUpdate:open` can still cancel the switch.
@@ -313,8 +324,8 @@ export function createPopupRootStore<Payload>(options: CreatePopupRootStoreOptio
     return accepted
   }
 
-  function closePopup(reason?: string, event?: Event): boolean {
-    return setState(false, reason, event, { trigger: activeTriggerElement.value })
+  function closePopup(reason?: string, event?: Event, trigger?: Element): boolean {
+    return setState(false, reason, event, trigger ? { trigger } : undefined)
   }
 
   return {
@@ -338,7 +349,7 @@ export function createPopupRootStore<Payload>(options: CreatePopupRootStoreOptio
     },
     pressTrigger(triggerId, mode, reason, event) {
       if (open.value && activeTriggerId.value === triggerId)
-        return mode === 'toggle' ? closePopup(reason, event) : false
+        return mode === 'toggle' ? closePopup(reason, event, activeTriggerElement.value) : false
       return openPopup(triggerId, reason, event)
     },
     openPopup,
@@ -356,7 +367,8 @@ export function createPopupRootStore<Payload>(options: CreatePopupRootStoreOptio
         return
       }
       // Keep what the popup shows and where it sits once its trigger is gone.
-      payloadSnapshot.value = trigger.payload.value
+      // A trigger registered with this Root's handle carries this Root's `Payload`.
+      payloadSnapshot.value = trigger.payload.value as Payload | undefined
       const element = trigger.element()
       if (element) {
         const rect = element.getBoundingClientRect()

@@ -137,7 +137,7 @@ describe('popover detached triggers (#2826)', () => {
     await nextTick()
     t.byId('trigger-a').click()
     await vi.waitFor(() => expect(t.content()).toBeNull())
-    expect(t.onUpdate).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
+    expect(t.onUpdate).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'trigger-press', trigger: t.byId('trigger-a') }))
   })
 
   it('opens and closes imperatively with reason imperative-action, cancellable', async () => {
@@ -161,6 +161,8 @@ describe('popover detached triggers (#2826)', () => {
     await vi.waitFor(() => expect(t.content()).toBeNull())
     expect(t.handle.isOpen).toBe(false)
     expect(t.onUpdate).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'imperative-action' }))
+    // As in Base UI, `handle.close()` is not attributed to a trigger.
+    expect(t.onUpdate.mock.lastCall![1].trigger).toBeUndefined()
   })
 
   it('throws for an unknown trigger id and ignores calls while no Root is mounted', () => {
@@ -204,6 +206,9 @@ describe('popover detached triggers (#2826)', () => {
     document.querySelector<HTMLElement>('[role="dialog"] button')!.click()
     await vi.waitFor(() => expect(t.content()).toBeNull())
     expect(document.activeElement).toBe(t.byId('trigger-b'))
+    // A Close part is not attributed to the trigger (Base UI).
+    expect(t.onUpdate).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'close-press' }))
+    expect(t.onUpdate.mock.lastCall![1].trigger).toBeUndefined()
   })
 
   it('a trigger inside the Root joins the Root\'s handle', async () => {
@@ -277,7 +282,7 @@ describe('popover detached triggers (#2826)', () => {
         h(PopoverTrigger, { id: id.value, handle, payload: { name: 'Ada' } }, () => 'Ada'),
         h(PopoverRoot, { handle }, {
           default: ({ activeTriggerId }: { activeTriggerId: string | null }) =>
-            h(PopoverContent, { 'aria-label': 'Details' }, () => h('p', { 'data-testid': 'active' }, activeTriggerId)),
+            h(PopoverContent, { 'aria-label': 'Details' }, () => h('p', { 'data-testid': 'active' }, activeTriggerId ?? 'none')),
         }),
       ]),
     }), { attachTo: document.body })
