@@ -8,9 +8,9 @@ export interface DrawerContentProps extends Omit<DrawerContentImplProps, 'trapFo
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { Presence } from '@/Presence'
-import { useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
+import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerContentModality } from './useDrawer'
@@ -39,10 +39,18 @@ const {
   onInteractOutsideNonModal,
 } = useDrawerContentModality({
   rootContext,
+  contentElement: currentElement,
   finalFocus: () => props.finalFocus,
 })
 const shouldHideOthers = computed(() => isFullModal.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
+
+// BaseUI parity (`useDialogRoot`): only a fully modal drawer locks page scroll,
+// with or without a `DrawerOverlay`; `'trap-focus'` leaves the page scrollable.
+const scrollLocked = useBodyScrollLock(isFullModal.value && rootContext.open.value)
+watch(() => isFullModal.value && rootContext.open.value, (locked) => {
+  scrollLocked.value = locked
+})
 </script>
 
 <template>

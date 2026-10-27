@@ -365,7 +365,7 @@ export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseList
   lastOpenChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxOpenChangeReason>>>
   /** The search term the filter runs against (writable). */
   filterSearch: Ref<string>
-  /** The root surface: `dir`, the highlight release on pointer leave / focus out, and `pointer-events` while open. */
+  /** The root surface: `dir`, the highlight release on pointer leave / focus out. */
   root: PartSurface<ComboboxState>
   /** The `role="listbox"` surface. */
   listbox: UseListboxRootReturn<T>['content']
@@ -504,7 +504,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   }
 
   const root = createPartSurface<ComboboxState>(
-    () => ({ ...listbox.root.props.value, style: { pointerEvents: open.value ? 'auto' : undefined } }),
+    () => listbox.root.props.value,
     listbox.root.state,
   )
 

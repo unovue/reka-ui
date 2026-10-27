@@ -17,8 +17,11 @@ export interface DialogRootProps {
   /** The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. */
   defaultOpen?: boolean
   /**
-   * The modality of the dialog When set to `true`, <br>
-   * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
+   * The modality of the dialog. When `true`, page scroll is locked, the rest of
+   * the page is covered by an internal backdrop (a press on it, or on
+   * `DialogOverlay`, closes the dialog) and only the dialog content is visible
+   * to screen readers.
+   * @defaultValue true
    */
   modal?: boolean
   /**
@@ -55,9 +58,19 @@ export interface DialogRootContext {
 
 export const [injectDialogRootContext, provideDialogRootContext]
   = createContext<DialogRootContext>('DialogRoot')
+
+/**
+ * The mounted `DialogOverlay` element. A press on it (or on the content's
+ * internal backdrop) dismisses a modal dialog; a press on anything stacked
+ * above the backdrop does not (#2822). Internal, kept out of the frozen
+ * `DialogRootContext` shape.
+ */
+export const [injectDialogOverlayElementContext, provideDialogOverlayElementContext]
+  = createContext<Ref<HTMLElement | undefined>>('DialogRoot', 'DialogOverlayElementContext')
 </script>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useDialog } from './useDialog'
 
 defineOptions({
@@ -95,6 +108,7 @@ const { open, onOpenChange, context } = useDialog({
 })
 
 provideDialogRootContext(context)
+provideDialogOverlayElementContext(ref())
 </script>
 
 <template>

@@ -16,7 +16,7 @@
   },
   {
     'name': 'modal',
-    'description': '<p>The modality of the dropdown menu.</p>\n<p>When set to <code>true</code>, interaction with outside elements will be disabled and only menu content will be visible to screen readers.</p>\n',
+    'description': '<p>The modality of the dropdown menu.</p>\n<p>When <code>true</code>, page scroll is locked, the rest of the page (except the\ntrigger) is covered by an internal backdrop that closes the menu on press,\nand only the menu content is visible to screen readers.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
@@ -59,7 +59,7 @@
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
 | `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `modal` | The modality of the dropdown menu. When set to true, interaction with outside elements will be disabled and only menu content will be visible to screen readers. | `boolean` | No | `true` |
+| `modal` | The modality of the dropdown menu. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the menu on press, and only the menu content is visible to screen readers. | `boolean` | No | `true` |
 | `open` | The controlled open state of the menu. Can be used as v-model:open. | `boolean` | No | - |
 
 **Events**

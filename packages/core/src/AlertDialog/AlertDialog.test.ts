@@ -45,10 +45,12 @@ describe('given a default Dialog', async () => {
       expect(cancelButton.at(-1)).toBe(document.activeElement)
     })
 
-    it('should keep content interactive while body pointer events are locked', async () => {
+    it('should block the page with an internal backdrop below the content, not body pointer-events', async () => {
       const content = await findByRole(document.body, 'alertdialog')
+      await nextTick()
 
-      expect(document.body.style.pointerEvents).toBe('none')
+      expect(document.body.style.pointerEvents).toBe('')
+      expect(content.previousElementSibling?.hasAttribute('data-reka-internal-backdrop')).toBe(true)
       expect(content.style.pointerEvents).toBe('auto')
     })
   })

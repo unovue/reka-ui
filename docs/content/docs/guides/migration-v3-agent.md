@@ -81,7 +81,7 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 
 **What changed.** `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object with `reason`, `event`, `isCanceled` and `cancel()`, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick, and a component that mounts uncontrolled and later receives a defined model value becomes controlled from then on, even if the model is later cleared to `undefined`.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`), and `ComboboxRoot` and `AutocompleteRoot` (`modelValue`, `open`; section 15). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release; both carry a `Color` object (section 10). Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert. `DrawerRoot` is not on this contract: its `update:open(value, details)` is unchanged from v2 (it fires before the change and `details.cancel()` inside it vetoes the change), it has no `beforeUpdate:open`, and `update:snapPoint` stays single-argument. Leave Drawer listeners unchanged.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`), and `ComboboxRoot` and `AutocompleteRoot` (`modelValue`, `open`; section 16). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release; both carry a `Color` object (section 10). Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert. `DrawerRoot` is not on this contract: its `update:open(value, details)` is unchanged from v2 (it fires before the change and `details.cancel()` inside it vetoes the change), it has no `beforeUpdate:open`, and `update:snapPoint` stays single-argument. Leave Drawer listeners unchanged.
 
 **How to find it.** Search for listeners and emit declarations on those roots: `@update:open`, `@update:model-value`, `@update:modelValue`, `@update:placeholder`, `'update:open'`, `'update:modelValue'`, `'update:placeholder'`, `onUpdate:open`, `onUpdate:modelValue`, `onUpdate:placeholder`, `defineEmits` in components that wrap one of the roots, `useForwardPropsEmits`, `emitted('update:open')` and `toHaveBeenCalledWith` in tests, and `watch(` calls that react to these models.
 
@@ -225,7 +225,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 ### 9. Listbox filtering (no rewrite)
 
-**What changed.** Nothing for existing code. `ListboxRoot` gained an opt-in `filter` prop: with `:filter="contains"` (from `useFilter`), the items whose text does not match the `ListboxFilter` value are not rendered, and keyboard navigation, typeahead and select-all skip them. Without `filter` (or with `null`) the listbox filters nothing, exactly as in v2. `ComboboxRoot` and `AutocompleteRoot` now filter through the same mechanism by default (section 15).
+**What changed.** Nothing for existing code. `ListboxRoot` gained an opt-in `filter` prop: with `:filter="contains"` (from `useFilter`), the items whose text does not match the `ListboxFilter` value are not rendered, and keyboard navigation, typeahead and select-all skip them. Without `filter` (or with `null`) the listbox filters nothing, exactly as in v2. `ComboboxRoot` and `AutocompleteRoot` now filter through the same mechanism by default (section 16).
 
 **Rewrite rules.** Do not add `filter` to an existing listbox: one whose items are already filtered by hand keeps working unchanged. Mention listboxes that compute a filtered item list from the `ListboxFilter` value in the report as optional candidates; switching one over means passing `filter` and rendering the full list.
 
@@ -325,7 +325,37 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The type-check passes. No `reading the prop` warnings remain in development. Every `$el` / `element` read from a part ref still returns the expected element.
 
-### 14. Menu wrapper contexts
+### 14. Modal layers no longer touch `<body>`
+
+**What changed.**
+- Modal layers (modal `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `DropdownMenu`, `ContextMenu`, an open `Select`, any content with `disableOutsidePointerEvents`) no longer set `pointer-events: none` on `<body>`. Each renders a transparent `position: fixed` `<div data-reka-internal-backdrop role="presentation">` right below itself instead, with the `z-index` of the layer (or of its positioning wrapper / fixed container). A press on it closes the layer. Page content with a lower `z-index` (a sticky header) is covered; only elements in the root stacking context with a higher `z-index` than the layer stay clickable. A non-portaled layer inside a `transform` / `filter` / `contain: paint` / `will-change: transform` / `backdrop-filter` ancestor gets its backdrop in `<body>`, with a hole over the layer.
+- A modal `Dialog` / `Drawer` closes only on a press on its internal backdrop, its `DialogOverlay` / `DrawerOverlay`, or a container around its content, not on a press on an element stacked above the backdrop.
+- A modal `Popover` / `DropdownMenu` trigger, the `ContextMenu` trigger area and the `Combobox` input are cut out of the backdrop and stay interactive.
+- The scroll lock hides the overflow of the page's scroll container and keeps the gutter with `scrollbar-gutter: stable` (or pins `<body>`'s size and sets `data-reka-scroll-locked` on `<html>` where that is unsupported). It no longer sets `padding-right` / `margin-right` on `<body>` or `--scrollbar-width` on `<html>`, no longer intercepts `touchmove` on iOS, and applies a macrotask after the overlay opens.
+- A modal `Dialog` / `AlertDialog` / `Drawer` locks scroll whenever it is open, with or without its overlay part. In v2 only the overlay part locked it. A `Drawer` with `modal="trap-focus"` no longer locks scroll.
+- `modal` defaults are unchanged.
+
+**How to find it.**
+- `pointerEvents` / `pointer-events` together with `document.body` or `body.style` in tests, styles and scripts.
+- `--scrollbar-width` in CSS, SCSS, Tailwind arbitrary values (`[--scrollbar-width]`, `var(--scrollbar-width)`) and inline styles.
+- `body.style.overflow`, `body.style.paddingRight`, `body.style.marginRight` in tests.
+- `scrollBody` on `ConfigProvider`.
+- Modal `DialogRoot` / `AlertDialogRoot` / `DrawerRoot` usages that render no `DialogOverlay` / `AlertDialogOverlay` / `DrawerOverlay`.
+- Tests that dismiss a modal dialog by firing `pointerdown` / clicking on an element other than the overlay or `document.body`.
+
+**Rewrite rules.**
+- An assertion that `document.body.style.pointerEvents` is `'none'` while a layer is open: assert `document.querySelector('[data-reka-internal-backdrop]')` is not `null`. An assertion that it is restored after close: assert the backdrop is `null`. Remove code that resets `document.body.style.pointerEvents` between tests.
+- Code that sets `pointer-events: auto` on `<body>` or on a third-party element to keep it clickable next to a reka overlay: remove it.
+- `var(--scrollbar-width)` used to offset fixed elements while an overlay is open: remove the declaration. *Ask* if the variable is used for anything else.
+- Test assertions on `document.body.style.overflow === 'hidden'`: replace with `getComputedStyle(document.body).overflowY === 'hidden'`, waited for with `vi.waitFor` (or the test framework's equivalent). Assertions on `paddingRight` / `marginRight` of `<body>`: remove, unless `ConfigProvider` sets `scrollBody` to an object.
+- A test that dismisses a modal `Dialog` / `Drawer` by pressing an arbitrary outside element: press the overlay, `[data-reka-internal-backdrop]` or `document.body` instead. Playwright / Vitest browser clicks on an element under a modal layer need `force: true`.
+- A modal `Dialog` / `AlertDialog` / `Drawer` with no overlay part: leave it unchanged, and *ask* whether the page should stay scrollable while it is open. If yes, set `:modal="false"` (or `modal="trap-focus"` on a `Drawer`).
+- `scrollBody` on `ConfigProvider`: leave unchanged.
+- Page chrome (a sticky header, a sidebar) whose `z-index` is higher than the overlay content's and that should be blocked by modal layers: add `isolation: isolate` to the app root element (Base UI's recommendation) when the overlays are portaled to `<body>`. *Ask* before lowering any `z-index`.
+
+**Verify.** Open each modal layer: the page does not scroll, does not shift horizontally, and `<body>` has no `pointer-events` inline style. Close it: `<html>` and `<body>` inline styles are back to what they were. The search for `--scrollbar-width` returns nothing.
+
+### 15. Menu wrapper contexts
 
 **What changed.** These changes affect only custom parts and tests built on the menu wrappers' injected contexts. Code that uses the components and `v-model` is not affected.
 - The `MenubarRoot` context (`injectMenubarRootContext()`) exposes `modelValue` as a readonly ref, so assigning `modelValue.value` no longer opens or closes a menu. `onMenuOpen(value, reason?, event?)`, `onMenuClose(reason?, event?)` and `onMenuToggle(value, reason?, event?)` accept an optional reason and native event, and return a boolean (`false` when the change was cancelled or did not change the value).
@@ -347,7 +377,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The type-check passes, and the menubar and dropdown tests pass.
 
-### 15. Combobox and Autocomplete
+### 16. Combobox and Autocomplete
 
 **What changed.**
 - Filtering moved onto the shared Listbox filter. `filter` on `ComboboxRoot` / `AutocompleteRoot` takes `(text, search, value) => boolean` or `null`; omitted, items match with `useFilter`'s `contains` (v2 behavior). `ignoreFilter` is a deprecated alias for `:filter="null"`.
@@ -384,5 +414,5 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call and every prop read off a part ref that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use and every overlay-less modal dialog that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

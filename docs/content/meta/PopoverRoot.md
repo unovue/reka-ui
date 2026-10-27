@@ -11,7 +11,7 @@
   },
   {
     'name': 'modal',
-    'description': '<p>The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers.</p>\n',
+    'description': '<p>The modality of the popover. When <code>true</code>, page scroll is locked, the rest of\nthe page (except the trigger) is covered by an internal backdrop that\ncloses the popover on press, and only the popover content is visible to\nscreen readers.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -58,7 +58,7 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
-| `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
+| `modal` | The modality of the popover. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
 
 **Events**

@@ -10,6 +10,7 @@ import type { DrawerSnapPoint, SwipeDirection } from './utils'
 import type { DisclosureState, PartSurface } from '@/shared'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
+import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
 import { createPartSurface, disclosureState, getElementByIdFrom, isHTMLElement } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
@@ -261,6 +262,7 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
   const triggerElement = ref<HTMLElement>()
   const contentElement = ref<HTMLElement>()
   const viewportElement = ref<HTMLElement>()
+  const overlayElement = ref<HTMLElement>()
   const popupHeight = ref(0)
   const frontmostHeight = ref(0)
   const hasNestedDrawer = ref(false)
@@ -341,6 +343,7 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     triggerElement,
     contentElement,
     viewportElement,
+    overlayElement,
     contentId: `${baseId}-content`,
     titleId: `${baseId}-title`,
     descriptionId: `${baseId}-description`,
@@ -751,7 +754,12 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
 // -----------------------------------------------------------------------------
 
 export interface UseDrawerContentModalityOptions {
-  rootContext: Pick<DrawerRootContext, 'modal' | 'open' | 'triggerElement'>
+  rootContext: Pick<DrawerRootContext, 'modal' | 'open' | 'triggerElement'> & Partial<Pick<DrawerRootContext, 'overlayElement'>>
+  /**
+   * The content element. With it, a modal drawer only dismisses on a press on
+   * its own backdrop (internal backdrop or `DrawerOverlay`), as in Base UI.
+   */
+  contentElement?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /**
    * Final focus target when the drawer closes: `true` focuses the trigger,
    * `false` nothing, an element that element. @defaultValue `true`
@@ -820,7 +828,9 @@ export function useDrawerContentModality(options: UseDrawerContentModalityOption
     onPointerDownOutsideModal(e) {
       const orig = e.detail.originalEvent
       const isRightClick = orig.button === 2 || (orig.button === 0 && orig.ctrlKey)
-      if (isRightClick)
+      // Only a press on the drawer's own backdrop dismisses it (Base UI `useDialogRoot`, #2822).
+      const content = toValue(options.contentElement)
+      if (isRightClick || (content && !isOwnBackdropPress(e.target, content, rootContext.overlayElement?.value)))
         e.preventDefault()
     },
     onFocusOutsideModal(e) {

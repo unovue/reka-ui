@@ -73,7 +73,7 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
    */
   position?: 'item-aligned' | 'popper'
   /**
-   * The document.body will be lock, and scrolling will be disabled.
+   * When `true`, page scroll is locked while the content is open.
    *
    * @defaultValue true
    */
