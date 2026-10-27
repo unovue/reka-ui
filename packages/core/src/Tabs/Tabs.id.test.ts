@@ -63,4 +63,28 @@ describe('tabs part ids', () => {
     expect(tab('One').getAttribute('aria-controls')).toBe(panel().id)
     expect(panel().getAttribute('aria-labelledby')).toBe(tab('One').id)
   })
+
+  it('keeps both ids when two parts swap values in one update', async () => {
+    const values = ref(['one', 'two'])
+    const utils = render(defineComponent({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      setup: () => ({ values }),
+      template: `
+        <TabsRoot default-value="one">
+          <TabsList>
+            <TabsTrigger :value="values[0]" id="tab-a">A</TabsTrigger>
+            <TabsTrigger :value="values[1]" id="tab-b">B</TabsTrigger>
+          </TabsList>
+          <TabsContent value="one">Panel one</TabsContent>
+          <TabsContent value="two">Panel two</TabsContent>
+        </TabsRoot>`,
+    }))
+    await nextTick()
+    values.value = ['two', 'one']
+    await nextTick()
+    expect(utils.getByRole('tab', { name: 'A' }).id).toBe('tab-a')
+    expect(utils.getByRole('tab', { name: 'B' }).id).toBe('tab-b')
+    // "one" is selected and now belongs to trigger B.
+    expect(utils.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe('tab-b')
+  })
 })

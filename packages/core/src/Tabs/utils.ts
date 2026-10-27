@@ -23,21 +23,29 @@ export function useTabsPartId(
   value: MaybeRefOrGetter<StringOrNumber>,
   id: MaybeRefOrGetter<string | undefined>,
 ) {
-  function write(key: StringOrNumber, next: string | undefined) {
-    if (ids.value.get(key) === next)
+  // The entry this part wrote. It is only removed while the map still holds it:
+  // when two parts swap `value`s in one update, the other part may already have
+  // written its id under this part's previous value.
+  let registered: { key: StringOrNumber, id: string } | undefined
+
+  function release() {
+    if (!registered || ids.value.get(registered.key) !== registered.id)
       return
     const map = new Map(ids.value)
-    if (next)
-      map.set(key, next)
-    else
-      map.delete(key)
+    map.delete(registered.key)
     ids.value = map
   }
-  watch([() => toValue(value), () => toValue(id)], ([key, next], previous) => {
-    const previousKey = previous?.[0]
-    if (previousKey !== undefined && previousKey !== key)
-      write(previousKey, undefined)
-    write(key, next)
+
+  watch([() => toValue(value), () => toValue(id)], ([key, next]) => {
+    if (registered?.key === key && registered.id === next)
+      return
+    release()
+    registered = undefined
+    if (!next)
+      return
+    if (ids.value.get(key) !== next)
+      ids.value = new Map(ids.value).set(key, next)
+    registered = { key, id: next }
   }, { immediate: true })
-  onScopeDispose(() => write(toValue(value), undefined))
+  onScopeDispose(release)
 }
