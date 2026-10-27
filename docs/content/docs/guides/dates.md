@@ -42,14 +42,6 @@ and the behavior of the builder will adapt to that type.
 Additionally, you don't have to worry about wrangling timezones, daylight savings time, or any other
 date-related nuance.
 
-## Versioning
-
-`DateValue`, `CalendarDate`, `CalendarDateTime`, `ZonedDateTime` and `Time` from `@internationalized/date` are part of the public API of the date components: their props, events, slot props and exposed values use them directly, without a wrapper type. Reka UI v3 depends on `@internationalized/date` **3.x** (`^3.5.0`), and that major version is part of Reka UI's semver contract:
-
-- A Reka UI 3.x release never moves to another major of `@internationalized/date`. That would be a breaking change, released in a new Reka UI major.
-- Install `@internationalized/date` 3.x in your app, in a range that overlaps Reka UI's (`^3.5.0`), so your package manager resolves a single copy. Keep it to one copy: Reka UI tells `CalendarDateTime` and `ZonedDateTime` apart with `instanceof`, so a value created by a second copy is not recognized as one. `pnpm why @internationalized/date` (or `npm ls`) shows the copies you have.
-- A Temporal-based API is not planned for v3.
-
 ## Utility Functions
 
 This package also provides a number of utility functions which solves a lot of the problems that come with working with dates and times in JavaScript.

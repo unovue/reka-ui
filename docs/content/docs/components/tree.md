@@ -8,8 +8,6 @@ aria: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
 
 # Tree
 
-<Badge>Alpha</Badge>
-
 <Description>
 A tree view widget displays a hierarchical list of items that can be expanded or collapsed to show or hide their child items, such as in a file system navigator.
 </Description>
@@ -363,6 +361,8 @@ async function loadChildren(event: TreeItemToggleEvent<Node>) {
   </TreeRoot>
 </template>
 ```
+
+With `propagateSelect`, selection propagates to the children that exist when the parent is selected. Children loaded later under an already selected parent stay unselected, and the parent then shows as indeterminate. To keep them selected, add the loaded children to your `v-model` when their parent is in it.
 
 ### Keys
 
