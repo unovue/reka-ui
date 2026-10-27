@@ -38,7 +38,7 @@
     "lint-staged": "^16.4.0",
     "simple-git-hooks": "^2.13.1",
     "tsx": "^4.20.3",
-    "typescript": "5.8.3"
+    "typescript": "6.0.3"
   },
   "commitlint": {
     "extends": [

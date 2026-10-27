@@ -256,6 +256,8 @@ describe.skipIf(!hasDist)('built subpaths (dist)', () => {
           node16: ts.ModuleResolutionKind.Node16,
           node10: ts.ModuleResolutionKind.Node10,
         }[moduleResolution],
+        // TypeScript 6 deprecates node10 resolution; consumers still use it.
+        ...(moduleResolution === 'node10' ? { ignoreDeprecations: '6.0' } : {}),
       })
       const diagnostics = ts.getPreEmitDiagnostics(program).map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n'))
       expect(diagnostics).toEqual([])

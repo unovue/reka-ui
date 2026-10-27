@@ -295,10 +295,10 @@ describe('useTooltip — trigger surface', () => {
     const t = useTooltip({ baseId: 'x', ignoreNonKeyboardFocus: true })
     const el = document.createElement('button')
     el.addEventListener('focus', t.trigger.props.value.onFocus)
-    el.matches = () => false
+    el.matches = (() => false) as unknown as typeof el.matches
     el.dispatchEvent(new FocusEvent('focus'))
     expect(t.open.value).toBe(false)
-    el.matches = (selector: string) => selector === ':focus-visible'
+    el.matches = ((selector: string) => selector === ':focus-visible') as unknown as typeof el.matches
     el.dispatchEvent(new FocusEvent('focus'))
     expect(t.open.value).toBe(true)
   })
