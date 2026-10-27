@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -25,7 +25,8 @@ withDefaults(defineProps<MenubarTriggerProps>(), {
 const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
 
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionItem } = useCollection({ key: 'Menubar' })
 
 const isFocused = ref(false)

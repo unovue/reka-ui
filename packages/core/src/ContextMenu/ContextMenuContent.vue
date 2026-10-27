@@ -3,7 +3,7 @@ import type {
   MenuContentEmits,
   MenuContentProps,
 } from '@/Menu'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 
 export type ContextMenuContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
@@ -39,13 +39,15 @@ const props = withDefaults(defineProps<ContextMenuContentProps>(), {
 const emits = defineEmits<ContextMenuContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectContextMenuRootContext()
 const hasInteractedOutside = ref(false)
 </script>
 
 <template>
   <MenuContent
+    :ref="forwardRef"
     side="right"
     :side-offset="2"
     align="start"

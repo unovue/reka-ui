@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useForwardExpose, useId } from '@/shared'
+import { disclosureState, useForwardElement, useId } from '@/shared'
 
 export interface DropdownMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -22,7 +22,8 @@ const props = withDefaults(defineProps<DropdownMenuTriggerProps>(), {
 
 const rootContext = injectDropdownMenuRootContext()
 
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 
 onMounted(() => {
   rootContext.triggerElement = triggerElement

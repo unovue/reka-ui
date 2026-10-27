@@ -12,7 +12,7 @@ export interface MenubarSubContentProps extends MenuSubContentProps {}
 
 <script setup lang="ts">
 import { MenuSubContent } from '@/Menu'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
@@ -20,7 +20,8 @@ import { injectMenubarRootContext } from './MenubarRoot.vue'
 const props = defineProps<MenubarSubContentProps>()
 const emits = defineEmits<MenubarSubContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const { getItems } = useCollection({ key: 'Menubar' })
 
@@ -52,6 +53,7 @@ function handleArrowNavigation(event: KeyboardEvent) {
 
 <template>
   <MenuSubContent
+    :ref="forwardRef"
     v-bind="forwarded"
     data-reka-menubar-content=""
     :style="{

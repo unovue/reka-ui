@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { MenuItemImplProps } from './MenuItemImpl.vue'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export type MenuItemEmits = {
   /**
@@ -23,7 +23,8 @@ import { createMenuItemSelectSurface } from './useMenu'
 const props = defineProps<MenuItemProps>()
 const emits = defineEmits<MenuItemEmits>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectMenuRootContext()
 const contentContext = injectMenuContentContext()
 

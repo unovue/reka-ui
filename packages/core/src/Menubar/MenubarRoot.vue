@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useForwardElement } from '@/shared'
 
 export interface MenubarRootProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
@@ -54,7 +54,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionSlot } = useCollection({ key: 'Menubar', isProvider: true })
 
 const modelValue = useVModel(props, 'modelValue', emit, {

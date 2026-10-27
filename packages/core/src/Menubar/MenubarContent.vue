@@ -11,7 +11,7 @@ export interface MenubarContentProps extends MenuContentProps {}
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useForwardElement, useForwardPropsEmits, useId } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
@@ -25,7 +25,8 @@ const props = withDefaults(defineProps<MenubarContentProps>(), {
 })
 const emits = defineEmits<MenubarContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
@@ -69,6 +70,7 @@ function handleArrowNavigation(event: KeyboardEvent) {
 <template>
   <MenuContent
     :id="menuContext.contentId"
+    :ref="forwardRef"
     data-reka-menubar-content=""
     :aria-labelledby="menuContext.triggerId"
     :style="{

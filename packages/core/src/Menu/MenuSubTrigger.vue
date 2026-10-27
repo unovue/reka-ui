@@ -17,7 +17,7 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {
 import type { ComponentPublicInstance } from 'vue'
 import { reactiveOmit } from '@vueuse/shared'
 import { nextTick, onUnmounted, ref, watch } from 'vue'
-import { disclosureState, useId } from '@/shared'
+import { disclosureState, useForwardElement, useId } from '@/shared'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
@@ -143,10 +143,16 @@ async function handleKeyDown(event: KeyboardEvent) {
     menuContext.content.value?.focus()
   }
 }
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuAnchor as-child>
+  <MenuAnchor
+    :ref="forwardRef"
+    as-child
+  >
     <MenuItemImpl
       v-bind="itemProps"
       :id="subContext.triggerId"

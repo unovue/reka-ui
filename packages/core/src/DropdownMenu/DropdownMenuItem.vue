@@ -8,17 +8,21 @@ export interface DropdownMenuItemProps extends MenuItemProps {}
 
 <script setup lang="ts">
 import { MenuItem } from '@/Menu'
-import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { useEmitAsProps, useForwardElement } from '@/shared'
 
 const props = defineProps<DropdownMenuItemProps>()
 const emits = defineEmits<DropdownMenuItemEmits>()
 
 const emitsAsProps = useEmitAsProps(emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuItem v-bind="{ ...props, ...emitsAsProps }">
+  <MenuItem
+    :ref="forwardRef"
+    v-bind="{ ...props, ...emitsAsProps }"
+  >
     <slot />
   </MenuItem>
 </template>

@@ -16,7 +16,7 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { MenuAnchor } from '@/Menu'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { isTouchOrPen } from './utils'
 
@@ -30,7 +30,8 @@ const props = withDefaults(defineProps<ContextMenuTriggerProps>(), {
 })
 const { disabled } = toRefs(props)
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectContextMenuRootContext()
 const point = ref<Point>({ x: 0, y: 0 })
 const isPointerOpen = ref(false)

@@ -5,7 +5,7 @@ import type {
 } from './MenuItem.vue'
 import type { AcceptableValue } from '@/shared/types'
 import { reactiveOmit } from '@vueuse/shared'
-import { selectionState, useForwardProps } from '@/shared'
+import { selectionState, useForwardElement, useForwardProps } from '@/shared'
 
 export type MenuRadioItemEmits = MenuItemEmits
 
@@ -40,10 +40,14 @@ const modelValue = computed(
 )
 
 provideMenuItemIndicatorContext({ modelValue })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <MenuItem
+    :ref="forwardRef"
     role="menuitemradio"
     v-bind="forwarded"
     :aria-checked="modelValue"

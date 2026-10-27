@@ -47,7 +47,8 @@ const subContext = injectMenuSubContext(null)
 // Keep searchRef in sync with modelValue changes
 watch(modelValue, (v) => { contentContext.searchRef.value = v ?? '' }, { immediate: true })
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 const disabled = computed(() => props.disabled || false)
 
 const activedescendant = ref<string | undefined>()

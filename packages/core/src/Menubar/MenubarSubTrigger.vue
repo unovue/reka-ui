@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { MenuSubTriggerProps } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface MenubarSubTriggerProps extends MenuSubTriggerProps {}
 </script>
@@ -9,11 +9,13 @@ export interface MenubarSubTriggerProps extends MenuSubTriggerProps {}
 import { MenuSubTrigger } from '@/Menu'
 
 const props = defineProps<MenubarSubTriggerProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <MenuSubTrigger
+    :ref="forwardRef"
     v-bind="props"
     data-reka-menubar-subtrigger=""
   >

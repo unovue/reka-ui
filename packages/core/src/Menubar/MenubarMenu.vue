@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, useId } from '@/shared'
 
 export interface MenubarMenuProps {
   /**
@@ -32,7 +32,6 @@ const props = defineProps<MenubarMenuProps>()
 
 const value = useId(props.value)
 const rootContext = injectMenubarRootContext()
-useForwardExpose()
 
 const triggerElement = ref<HTMLElement>()
 const wasKeyboardTriggerOpenRef = ref(false)

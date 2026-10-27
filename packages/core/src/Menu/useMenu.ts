@@ -349,7 +349,7 @@ export interface MenuContentItem { ref: HTMLElement, value?: any }
 export interface UseMenuContentOptions {
   menuContext: MenuContext
   rootContext: MenuRootContext
-  /** The content element ref (the SFC's `useForwardExpose` currentElement). */
+  /** The content element ref (the SFC's `useForwardElement` currentElement). */
   contentElement: Ref<HTMLElement | undefined>
   /**
    * Roving-focus/collection items. `rovingFocusGroupRef.getItems()` is a

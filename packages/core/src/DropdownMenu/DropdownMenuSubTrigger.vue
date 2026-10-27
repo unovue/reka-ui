@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { MenuSubTriggerProps } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface DropdownMenuSubTriggerProps extends MenuSubTriggerProps {}
 </script>
@@ -9,11 +9,15 @@ export interface DropdownMenuSubTriggerProps extends MenuSubTriggerProps {}
 import { MenuSubTrigger } from '@/Menu'
 
 const props = defineProps<DropdownMenuSubTriggerProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuSubTrigger v-bind="props">
+  <MenuSubTrigger
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </MenuSubTrigger>
 </template>

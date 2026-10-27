@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason } from '@/shared'
-import { createContext, useControllableState, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useControllableState, useDirection } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
@@ -43,7 +43,6 @@ defineSlots<{
   }) => any
 }>()
 
-useForwardExpose()
 // Owns the model so `beforeUpdate:open` can cancel: the trigger opens it and
 // the controlled `MenuRoot` below reports closes with their reason; both paths
 // go through one `setState`.

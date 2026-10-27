@@ -10,17 +10,19 @@ export interface ContextMenuSubContentProps extends MenuSubContentProps {}
 
 <script setup lang="ts">
 import { MenuSubContent } from '@/Menu'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 
 const props = defineProps<ContextMenuSubContentProps>()
 
 const emits = defineEmits<ContextMenuSubContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <MenuSubContent
+    :ref="forwardRef"
     v-bind="forwarded"
     :style="{
       '--reka-context-menu-content-transform-origin':
