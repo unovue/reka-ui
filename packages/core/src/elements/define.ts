@@ -1,8 +1,10 @@
+import type { ElementEventOptions } from './events'
 import type { RekaElementFamily } from './meta'
 import type { ResolvedElementOptions, ResolvedPart } from './RekaElement'
+import { version } from 'vue'
 import { hyphenate } from './host'
 import { getPartMeta, toPartDefinition } from './meta'
-import { registeredPrefixes, RekaElement } from './RekaElement'
+import { REKA_ELEMENT, RekaElement } from './RekaElement'
 
 export interface DefineRekaElementsOptions {
   /**
@@ -13,25 +15,52 @@ export interface DefineRekaElementsOptions {
   /**
    * Give every element a shadow root holding a single default `<slot>`. Children
    * stay in the light DOM (slotted), so styling, focus, ARIA id references and form
-   * participation work the same as without it; the shadow root is a place for
-   * encapsulated styles (`styles`) and `:host(...)` rules.
+   * participation work the same as without it. The shadow root only adds a place
+   * for encapsulated `:host(...)` rules (`styles`); nothing is rendered into it, so
+   * there are no `::part()`s.
+   *
+   * Only `mode` is supported: `delegatesFocus` would move focus away from the host,
+   * which is the focusable part.
    * @defaultValue false
    */
-  shadowRoot?: boolean | ShadowRootInit
+  shadowRoot?: boolean | { mode: ShadowRootMode }
   /** Stylesheets adopted by every element's shadow root. Requires `shadowRoot`. */
   styles?: CSSStyleSheet[]
+  /** How the elements dispatch their events. Non-bubbling and non-composed by default. */
+  events?: ElementEventOptions
 }
 
 const VALID_PREFIX = /^[a-z][\w.-]*$/
+const VERSION = /^(\d+)\.(\d+)/
+
+function warn(message: string) {
+  // eslint-disable-next-line node/prefer-global/process
+  if (process.env.NODE_ENV !== 'production')
+    console.warn(`[reka-ui] ${message}`)
+}
+
+let checkedVersion = false
+
+function checkVueVersion() {
+  if (checkedVersion)
+    return
+  checkedVersion = true
+  const [, major, minor] = VERSION.exec(version) ?? []
+  if (Number(major) === 3 && Number(minor) < 5)
+    warn(`custom elements are tested on Vue 3.5. With Vue ${version}, generated ids are not unique between elements.`)
+}
 
 function resolveOptions(options: DefineRekaElementsOptions = {}): ResolvedElementOptions {
-  const { prefix = 'reka', shadowRoot = false, styles = [] } = options
+  const { prefix = 'reka', shadowRoot = false, styles = [], events = {} } = options
   if (!VALID_PREFIX.test(prefix))
     throw new Error(`[reka-ui] defineRekaElements: invalid tag prefix "${prefix}"`)
+  if (typeof shadowRoot === 'object' && Object.keys(shadowRoot).some(key => key !== 'mode'))
+    warn('defineRekaElements: `shadowRoot` only supports `mode`; other options are ignored.')
   return {
     prefix,
-    shadowRoot: shadowRoot === true ? { mode: 'open' } : shadowRoot,
+    shadowRoot: shadowRoot === false ? false : { mode: shadowRoot === true ? 'open' : shadowRoot.mode },
     styles,
+    events: { bubbles: !!events.bubbles, composed: !!events.composed },
   }
 }
 
@@ -48,7 +77,7 @@ function createElementClass(part: ResolvedPart): typeof RekaElement {
         return this._getProp(name)
       },
       set(this: RekaElement, value: unknown) {
-        this._setProp(name, value)
+        this._setProperty(name, value)
       },
     })
   }
@@ -75,7 +104,7 @@ export function defineRekaElements(
   if (typeof customElements === 'undefined')
     return []
   const resolved = resolveOptions(options)
-  registeredPrefixes.add(resolved.prefix)
+  checkVueVersion()
 
   const tags: string[] = []
   for (const family of families) {
@@ -84,9 +113,9 @@ export function defineRekaElements(
       tags.push(tag)
       const existing = customElements.get(tag)
       if (existing) {
-        // eslint-disable-next-line node/prefer-global/process
-        if (!(existing.prototype instanceof RekaElement) && process.env.NODE_ENV !== 'production')
-          console.warn(`[reka-ui] <${tag}> is already defined by something else, skipping it.`)
+        // Defined by this or another copy of the library: fine.
+        if (!(existing as unknown as Record<symbol, unknown>)[REKA_ELEMENT])
+          warn(`<${tag}> is already defined by something else, skipping it.`)
         continue
       }
       const definition = toPartDefinition(rawPart)

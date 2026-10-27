@@ -117,6 +117,15 @@ export const rekaElementFamilies: readonly RekaElementFamily[] = [
   toggleElements,
 ]
 
+/**
+ * Registers every supported family: a single call for a page that uses many of
+ * them (or a CDN build). Importing it bundles all of them; prefer the per-family
+ * helpers otherwise.
+ */
+export function defineAllRekaElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements(rekaElementFamilies, options)
+}
+
 export function defineAccordionElements(options?: DefineRekaElementsOptions) {
   return defineRekaElements([accordionElements], options)
 }

@@ -10,6 +10,13 @@ import { createRenderer, nodeOps, normalizeClass, normalizeStyle, patchProp } fr
 export const HOST_TAG = 'reka-element-host'
 /** Vnode prop carrying the {@link HostBinding} of the placeholder. */
 export const HOST_PROP = '__rekaHost'
+/**
+ * What the part's tree added to the host, so a `cloneNode()` copy of a mounted
+ * element can drop it: space-separated attribute names (`name` when the attribute
+ * was not there before, `name=<encoded original>` when it replaced the consumer's),
+ * `.token` for classes and `;property` for inline style properties.
+ */
+export const OWNED_ATTR = 'data-reka-owned'
 
 const HYPHENATE = /\B([A-Z])/g
 const WHITESPACE = /\s+/
@@ -17,6 +24,7 @@ const STYLE_DECLARATIONS = /;(?![^(]*\))/g
 const STYLE_PROPERTY = /:([\s\S]+)/
 const IMPORTANT = /\s*!important$/
 const EVENT_KEY = /^on[^a-z]/
+const FORM_FIELD = /^(?:INPUT|SELECT|TEXTAREA)$/
 
 export function hyphenate(value: string): string {
   return value.replace(HYPHENATE, '-$1').toLowerCase()
@@ -36,7 +44,7 @@ export interface HostSemantics {
   role?: string
   /** `aria-level` for headings. */
   level?: number
-  /** Button behaviour: focusable, activates with Enter / Space, inert while `disabled`. */
+  /** Button behaviour: focusable, activates with Enter / Space, inert while disabled. */
   button?: boolean
 }
 
@@ -63,12 +71,31 @@ export interface HostLifecycle {
   onPartMounted: () => void
   /** The part's placeholder is about to unmount (`Presence`, `v-if`, app teardown). */
   onPartUnmount: () => void
+  /** `state` argument of `ElementInternals.setFormValue()` (restored by the browser). */
+  formState?: () => string | undefined
 }
 
 const bindings = new WeakMap<Node, HostBinding>()
-const containers = new WeakMap<object, HostBinding>()
+const containers = new WeakMap<Node, HostBinding>()
 /** Bindings whose element currently sits away from its home position (teleported or wrapped). */
 const awayBindings = new Set<HostBinding>()
+
+let attributeObserver: MutationObserver | undefined
+
+/** Consumer writes to attributes the part owns but the element does not observe (`id`, `role`, …). */
+function observeAttributes(el: HTMLElement) {
+  attributeObserver ??= new MutationObserver((records) => {
+    for (const record of records)
+      bindings.get(record.target)?.onAttributeMutation(record.attributeName!)
+  })
+  attributeObserver.observe(el, { attributes: true })
+}
+
+function warn(message: string) {
+  // eslint-disable-next-line node/prefer-global/process
+  if (process.env.NODE_ENV !== 'production')
+    console.warn(`[reka-ui] ${message}`)
+}
 
 type StyleValue = Record<string, string | number | null | undefined>
 
@@ -99,56 +126,131 @@ function toAttributeValue(name: string, value: unknown): string | null {
   return String(value)
 }
 
+/** The entries a form field contributes to its form's data set. */
+export function fieldEntries(field: Element): [string, string | File][] {
+  const control = field as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  if (!FORM_FIELD.test(field.tagName) || !control.name || control.disabled)
+    return []
+  if (control instanceof HTMLSelectElement)
+    return Array.from(control.selectedOptions, option => [control.name, option.value])
+  if (control instanceof HTMLInputElement) {
+    if ((control.type === 'checkbox' || control.type === 'radio') && !control.checked)
+      return []
+    if (control.type === 'file')
+      return Array.from(control.files ?? [], file => [control.name, file])
+    if (control.type === 'button' || control.type === 'submit' || control.type === 'reset' || control.type === 'image')
+      return []
+  }
+  return [[control.name, control.value]]
+}
+
+/** What the part's tree owns of an attribute. */
+interface OwnedAttribute {
+  /** The consumer's value, given back when the part lets go (kept up to date while owned). */
+  original: string | null
+  /** The value the part (or the semantics shim) wants. */
+  value: string
+  /** Written by the semantics shim: a consumer write takes it over for good. */
+  shim: boolean
+}
+
 /**
  * Owns everything the part's Vue tree does to the host element and undoes it when
  * the part unmounts, so the element returns to the attributes, classes, styles and
  * listeners the consumer gave it.
  *
  * - Attributes are written as attributes (never as DOM properties: the element's
- *   own properties are its public prop API). The consumer's original value is
- *   restored when the part stops rendering it.
+ *   own properties are its public prop API). While the part renders an attribute it
+ *   owns it: a consumer write in the meantime updates the value given back when the
+ *   part lets go, and the part's value stays.
  * - `class` and `style` are merged into the consumer's, not replaced.
- * - Vue nodes rendered at the root of the part's tree next to the part (hidden form
- *   inputs, positioning wrappers, `v-if` anchors) go into a `display: contents`
- *   fragment placed just before the host.
+ * - The part's root-level siblings (`v-if` anchors, hidden form inputs) stay in a
+ *   detached container: a custom element has nowhere to put them. Form values reach
+ *   the form through `ElementInternals` instead.
  * - When the part's tree moves the placeholder (a `Teleport`, a positioning wrapper),
- *   the host itself moves; a comment keeps its home position for the way back.
+ *   the host itself moves; a comment keeps its home position for the way back, and
+ *   a wrapper takes the host's place.
  */
 export class HostBinding {
-  /** Root container handed to `app.mount()`; see the renderer below. */
-  readonly container: Record<string, unknown> = {}
+  /** Root container handed to `app.mount()`. Never attached; see the renderer below. */
+  readonly container: HTMLElement
   /** Provides visible at the placeholder: what a nested element inherits. */
   provides: Record<string | symbol, unknown> | null = null
-  /** `true` while the part's tree writes to the host (attribute changes are not consumer input). */
+  /** `true` while the binding writes to the host (attribute changes are not consumer input). */
   writing = false
+  /** `true` while the renderer moves the host (a `Teleport`, a wrapper, back home). */
+  moving = false
   /** `true` while the placeholder is mounted. */
   active = false
+  /** The part renders as disabled. */
+  partDisabled = false
 
   private homeMarker: Comment | null = null
-  private fragment: HTMLElement | null = null
-  private readonly originals = new Map<string, string | null>()
-  private readonly vueAttrs = new Set<string>()
-  private readonly shimAttrs = new Set<string>()
+  private readonly owned = new Map<string, OwnedAttribute>()
   private readonly vueClasses = new Set<string>()
   private readonly styleOriginals = new Map<string, [string, string]>()
   /** The consumer's `style` attribute before the part first styled the host. */
   private styleAttribute: string | null | undefined
   private readonly events = new Map<string, unknown>()
   private spaceArmed = false
+  private markerQueued = false
+  private formQueued = false
+  private warned = false
 
   constructor(
     readonly el: HTMLElement,
     private readonly semantics: HostSemantics | undefined,
     readonly lifecycle: HostLifecycle,
+    private readonly internals?: ElementInternals,
   ) {
     bindings.set(el, this)
+    this.container = el.ownerDocument.createElement('div')
     containers.set(this.container, this)
+    observeAttributes(el)
+    if (internals) {
+      const sync = () => this.scheduleFormSync()
+      this.container.addEventListener('input', sync)
+      this.container.addEventListener('change', sync)
+    }
     if (semantics?.button) {
       // Capture runs before the part's own listeners: a disabled button-like host
       // swallows the click, like a native disabled `<button>` that never fires one.
       el.addEventListener('click', this.onClickCapture, true)
       this.addKeyboardShims()
     }
+  }
+
+  /**
+   * Drops what a mounted element's tree had added to `el` before it was copied with
+   * `cloneNode()`: a copy starts from the consumer's attributes only.
+   */
+  static cleanCopiedState(el: HTMLElement) {
+    const owned = el.getAttribute(OWNED_ATTR)
+    if (owned === null)
+      return
+    const hadStyle = el.hasAttribute('style')
+    for (const token of owned.split(' ')) {
+      if (!token)
+        continue
+      if (token[0] === '.') {
+        el.classList.remove(token.slice(1))
+      }
+      else if (token[0] === ';') {
+        el.style.removeProperty(token.slice(1))
+      }
+      else {
+        const separator = token.indexOf('=')
+        if (separator === -1)
+          el.removeAttribute(token)
+        else
+          el.setAttribute(token.slice(0, separator), decodeURIComponent(token.slice(separator + 1)))
+      }
+    }
+    el.removeAttribute(OWNED_ATTR)
+    if (hadStyle && !el.style.length)
+      el.removeAttribute('style')
+    if (el.classList.length === 0)
+      el.removeAttribute('class')
   }
 
   get away() {
@@ -162,43 +264,52 @@ export class HostBinding {
       return
     this.homeMarker = null
     awayBindings.delete(this)
-    if (marker.parentNode)
-      marker.parentNode.replaceChild(this.el, marker)
-    else
-      this.el.remove()
+    this.moving = true
+    try {
+      if (marker.parentNode)
+        marker.parentNode.replaceChild(this.el, marker)
+      else
+        this.el.remove()
+    }
+    finally {
+      this.moving = false
+    }
   }
 
   moveTo(parent: Node, anchor: Node | null) {
-    if (!this.homeMarker) {
-      this.homeMarker = document.createComment('')
-      this.el.parentNode?.insertBefore(this.homeMarker, this.el)
-      awayBindings.add(this)
+    this.moving = true
+    try {
+      if (!this.homeMarker) {
+        this.homeMarker = this.el.ownerDocument.createComment('')
+        this.el.parentNode?.insertBefore(this.homeMarker, this.el)
+        awayBindings.add(this)
+      }
+      parent.insertBefore(this.el, anchor && anchor.parentNode === parent ? anchor : null)
     }
-    parent.insertBefore(this.el, anchor && anchor.parentNode === parent ? anchor : null)
+    finally {
+      this.moving = false
+    }
   }
 
-  isFragment(node: Node) {
-    return node === this.fragment
-  }
-
-  ensureFragment(): HTMLElement {
-    if (!this.fragment) {
-      const fragment = document.createElement('div')
-      fragment.setAttribute('data-reka-fragment', '')
-      fragment.style.display = 'contents'
-      const reference = this.homeMarker ?? this.el
-      reference.parentNode?.insertBefore(fragment, reference)
-      this.fragment = fragment
+  /** A root-level node of the part's tree: wrappers take the host's place, the rest stays detached. */
+  insertRootNode(child: Node, anchor: Node | null) {
+    if (child.nodeType === Node.ELEMENT_NODE && this.homeMarker && child.contains(this.el)) {
+      this.homeMarker.parentNode?.insertBefore(child, this.homeMarker)
+      return
     }
-    return this.fragment
+    if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned) {
+      this.warned = true
+      warn(`<${this.el.localName}> renders a <${(child as Element).localName}> next to its part. A custom element has nowhere to put it, so it is not in the document.`)
+    }
+    this.container.insertBefore(child, anchor && anchor.parentNode === this.container ? anchor : null)
+    this.scheduleFormSync()
   }
 
   /** Removes everything the binding added to the document. */
   dispose() {
     this.strip()
     this.goHome()
-    this.fragment?.remove()
-    this.fragment = null
+    this.internals?.setFormValue(null)
   }
 
   /** Called by the renderer for every prop the part's tree sets on the host. */
@@ -210,8 +321,7 @@ export class HostBinding {
       }
       return
     }
-    this.writing = true
-    try {
+    this.write(() => {
       if (key === 'class' || key === 'className') {
         this.patchClass(prev, next)
       }
@@ -229,14 +339,18 @@ export class HostBinding {
         if (this.semantics?.button)
           this.addKeyboardShims()
       }
+      else if (key === 'disabled') {
+        // Kept as state, not written: on a form-associated host the attribute would
+        // disable the element by itself, and hide a `<fieldset disabled>` going
+        // away. The host's `disabled` attribute stays the consumer's.
+        this.partDisabled = toAttributeValue(key, next) !== null
+      }
       else if (!(key === 'type' && this.semantics?.button)) {
         // (`type="button"` only means something on a native `<button>`.)
-        this.patchAttribute(ATTR_ALIASES[key] ?? key, next)
+        const name = ATTR_ALIASES[key] ?? key
+        this.setPartAttribute(name, toAttributeValue(name, next))
       }
-    }
-    finally {
-      this.writing = false
-    }
+    })
     this.syncSemantics()
   }
 
@@ -252,10 +366,54 @@ export class HostBinding {
     this.lifecycle.onPartUnmount()
   }
 
+  /**
+   * Sets an attribute the element itself manages (`inert` / `hidden` while the part
+   * is not rendered). Like the semantics shim, a value the consumer set wins.
+   */
+  setStateAttribute(name: string, on: boolean): boolean {
+    if (on) {
+      if (this.el.hasAttribute(name))
+        return false
+      this.write(() => this.el.setAttribute(name, ''))
+      return true
+    }
+    this.write(() => this.el.removeAttribute(name))
+    return false
+  }
+
+  /**
+   * A consumer changed an attribute (an observed one, from
+   * `attributeChangedCallback`). While the part owns it, the change becomes the
+   * value given back later and the part's value stays.
+   */
+  consumerWrote(name: string, value: string | null) {
+    const entry = this.owned.get(name)
+    if (!entry)
+      return
+    if (entry.shim) {
+      this.owned.delete(name)
+      this.markerDirty()
+      return
+    }
+    entry.original = value
+    this.markerDirty()
+    if (this.el.getAttribute(name) !== entry.value)
+      this.write(() => this.el.setAttribute(name, entry.value))
+  }
+
+  /** @internal */
+  onAttributeMutation(name: string) {
+    const entry = this.owned.get(name)
+    // Our own writes, and consumer writes already handled synchronously, leave the
+    // part's value in place.
+    if (!entry || this.el.getAttribute(name) === entry.value)
+      return
+    this.consumerWrote(name, this.el.getAttribute(name))
+  }
+
   /** Undoes every change the part's tree (and the semantics shim) made to the host. */
   strip() {
-    this.writing = true
-    try {
+    this.write(() => {
       for (const [key, handler] of this.events)
         patchProp(this.el, key, handler, null)
       this.events.clear()
@@ -268,44 +426,106 @@ export class HostBinding {
       if (this.styleAttribute === null && !this.el.style.length)
         this.el.removeAttribute('style')
       this.styleAttribute = undefined
-      const owned = new Set([...this.vueAttrs, ...this.shimAttrs])
-      this.vueAttrs.clear()
-      this.shimAttrs.clear()
-      for (const name of owned)
+      for (const name of [...this.owned.keys()])
         this.release(name)
+      this.partDisabled = false
+      this.el.removeAttribute(OWNED_ATTR)
+    })
+  }
+
+  /** Form value: the entries of the hidden form fields the part renders next to itself. */
+  scheduleFormSync() {
+    if (!this.internals || this.formQueued)
+      return
+    this.formQueued = true
+    queueMicrotask(() => {
+      this.formQueued = false
+      this.syncForm()
+    })
+  }
+
+  private syncForm() {
+    const internals = this.internals!
+    const data = new FormData()
+    let count = 0
+    for (const field of this.container.querySelectorAll('input, select, textarea')) {
+      for (const [name, value] of fieldEntries(field)) {
+        data.append(name, value)
+        count++
+      }
+    }
+    internals.setFormValue(count ? data : null, this.lifecycle.formState?.())
+  }
+
+  private write(fn: () => void) {
+    const writing = this.writing
+    this.writing = true
+    try {
+      fn()
     }
     finally {
-      this.writing = false
+      this.writing = writing
     }
   }
 
-  private snapshot(name: string) {
-    if (!this.originals.has(name))
-      this.originals.set(name, this.el.getAttribute(name))
+  private markerDirty() {
+    if (this.markerQueued)
+      return
+    this.markerQueued = true
+    queueMicrotask(() => {
+      this.markerQueued = false
+      this.writeMarker()
+    })
+  }
+
+  private writeMarker() {
+    if (!this.active)
+      return
+    const tokens: string[] = []
+    for (const [name, { original }] of this.owned)
+      tokens.push(original === null ? name : `${name}=${encodeURIComponent(original)}`)
+    for (const token of this.vueClasses)
+      tokens.push(`.${token}`)
+    for (const [property, [value]] of this.styleOriginals) {
+      if (!value)
+        tokens.push(`;${property}`)
+    }
+    const marker = tokens.join(' ')
+    if (this.el.getAttribute(OWNED_ATTR) !== (marker || null))
+      this.write(() => marker ? this.el.setAttribute(OWNED_ATTR, marker) : this.el.removeAttribute(OWNED_ATTR))
   }
 
   private release(name: string) {
-    if (this.vueAttrs.has(name) || this.shimAttrs.has(name) || !this.originals.has(name))
+    const entry = this.owned.get(name)
+    if (!entry)
       return
-    const original = this.originals.get(name)!
-    this.originals.delete(name)
-    if (original === null)
-      this.el.removeAttribute(name)
-    else
-      this.el.setAttribute(name, original)
+    this.owned.delete(name)
+    this.markerDirty()
+    this.write(() => {
+      if (entry.original === null)
+        this.el.removeAttribute(name)
+      else
+        this.el.setAttribute(name, entry.original)
+    })
   }
 
-  private patchAttribute(name: string, value: unknown) {
-    const next = toAttributeValue(name, value)
-    if (next === null) {
-      if (this.vueAttrs.delete(name))
+  private setPartAttribute(name: string, value: string | null) {
+    const entry = this.owned.get(name)
+    if (value === null) {
+      if (entry && !entry.shim)
         this.release(name)
       return
     }
-    this.snapshot(name)
-    this.vueAttrs.add(name)
-    this.shimAttrs.delete(name)
-    this.el.setAttribute(name, next)
+    if (!entry) {
+      this.owned.set(name, { original: this.el.getAttribute(name), value, shim: false })
+      this.markerDirty()
+    }
+    else {
+      entry.value = value
+      entry.shim = false
+    }
+    if (this.el.getAttribute(name) !== value)
+      this.el.setAttribute(name, value)
   }
 
   private patchClass(prev: unknown, next: unknown) {
@@ -320,6 +540,7 @@ export class HostBinding {
         this.vueClasses.add(token)
       }
     }
+    this.markerDirty()
   }
 
   private patchStyle(prev: unknown, next: unknown) {
@@ -350,6 +571,7 @@ export class HostBinding {
       const important = IMPORTANT.test(text)
       style.setProperty(property, important ? text.replace(IMPORTANT, '') : text, important ? 'important' : '')
     }
+    this.markerDirty()
   }
 
   private restoreStyle(property: string, value: string, priority: string) {
@@ -361,18 +583,24 @@ export class HostBinding {
 
   /** Sets (or, with `null`, gives back) an attribute the native element would have implied. */
   private shimAttribute(name: string, value: string | null) {
-    if (this.vueAttrs.has(name))
+    const entry = this.owned.get(name)
+    if (entry && !entry.shim)
       return
     if (value === null) {
-      if (this.shimAttrs.delete(name))
+      if (entry)
         this.release(name)
       return
     }
-    // The consumer set it: theirs wins.
-    if (!this.shimAttrs.has(name) && this.el.hasAttribute(name))
-      return
-    this.snapshot(name)
-    this.shimAttrs.add(name)
+    if (!entry) {
+      // The consumer set it: theirs wins.
+      if (this.el.hasAttribute(name))
+        return
+      this.owned.set(name, { original: null, value, shim: true })
+      this.markerDirty()
+    }
+    else {
+      entry.value = value
+    }
     if (this.el.getAttribute(name) !== value)
       this.el.setAttribute(name, value)
   }
@@ -381,8 +609,7 @@ export class HostBinding {
     const semantics = this.semantics
     if (!semantics || !this.active)
       return
-    this.writing = true
-    try {
+    this.write(() => {
       if (semantics.role)
         this.shimAttribute('role', semantics.role)
       if (semantics.level)
@@ -392,14 +619,13 @@ export class HostBinding {
         this.shimAttribute('tabindex', disabled ? null : '0')
         this.shimAttribute('aria-disabled', disabled ? 'true' : null)
       }
-    }
-    finally {
-      this.writing = false
-    }
+    })
   }
 
+  /** Disabled as the part renders it: the `disabled` prop, not a leftover attribute. */
   private isDisabled() {
-    return this.el.hasAttribute('disabled')
+    const disabled = this.owned.get('data-disabled')
+    return this.partDisabled || (!!disabled && !disabled.shim)
   }
 
   private onClickCapture = (event: MouseEvent) => {
@@ -451,7 +677,8 @@ let renderer: Renderer<Element> | undefined
  * - inserting it into the app's root container keeps it where the consumer put it,
  *   inserting it anywhere else (a `Teleport` target, a positioning wrapper) moves it;
  * - removing it never detaches it, it only goes back home;
- * - other root-level nodes land in a `display: contents` fragment before the host.
+ * - other root-level nodes stay in the detached root container, except a wrapper
+ *   around the host, which takes the host's place.
  *
  * Every element app shares this one renderer.
  */
@@ -460,10 +687,14 @@ export function getRenderer(): Renderer<Element> {
     ...nodeOps,
     patchProp(el, key, prev, next, namespace, parentComponent) {
       const binding = bindings.get(el)
-      if (binding)
+      if (binding) {
         binding.patch(key, prev, next, namespace, parentComponent)
-      else
-        patchProp(el, key, prev, next, namespace, parentComponent)
+        return
+      }
+      patchProp(el, key, prev, next, namespace, parentComponent)
+      // A hidden form field next to the part: its value is the element's form value.
+      if (el.parentNode)
+        containers.get(el.parentNode)?.scheduleFormSync()
     },
     createElement(type, namespace, isCustomizedBuiltIn, vnodeProps) {
       if (type === HOST_TAG)
@@ -473,16 +704,18 @@ export function getRenderer(): Renderer<Element> {
     insert(child, parent, anchor) {
       const binding = bindings.get(child)
       if (binding) {
-        // Its own root container or root fragment both sit at its home position.
-        if (containers.get(parent) === binding || binding.isFragment(parent))
+        // Its own root container is its home position.
+        if (containers.get(parent) === binding)
           binding.goHome()
         else
           binding.moveTo(parent, anchor ?? null)
         return
       }
       const owner = containers.get(parent)
-      const target = owner ? owner.ensureFragment() : parent
-      target.insertBefore(child, anchor && anchor.parentNode === target ? anchor : null)
+      if (owner)
+        owner.insertRootNode(child, anchor ?? null)
+      else
+        parent.insertBefore(child, anchor && anchor.parentNode === parent ? anchor : null)
     },
     remove(child) {
       const binding = bindings.get(child)
@@ -496,13 +729,15 @@ export function getRenderer(): Renderer<Element> {
           away.goHome()
       }
       const parent = child.parentNode
-      if (parent)
+      if (parent) {
         parent.removeChild(child)
+        containers.get(parent)?.scheduleFormSync()
+      }
     },
     parentNode(node) {
       const binding = bindings.get(node)
       if (binding && !binding.away)
-        return binding.container as unknown as Element
+        return binding.container
       return nodeOps.parentNode(node)
     },
     nextSibling(node) {

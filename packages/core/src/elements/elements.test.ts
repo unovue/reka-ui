@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { CheckboxGroupRoot } from '@/Checkbox'
+import { DialogRoot } from '@/Dialog'
 import { PopoverContent } from '@/Popover'
 import { SwitchRoot } from '@/Switch'
 import * as source from '.'
@@ -36,15 +37,31 @@ describe('attribute and event mapping', () => {
   })
 
   it('parses attribute values by kind', () => {
-    expect(parseAttribute('boolean', 'open', '')).toBe(true)
-    expect(parseAttribute('boolean', 'open', 'open')).toBe(true)
-    expect(parseAttribute('boolean', 'open', 'false')).toBe(false)
-    expect(parseAttribute('boolean', 'open', null)).toBeUndefined()
-    expect(parseAttribute('booleanish', 'model-value', '')).toBe(true)
-    expect(parseAttribute('booleanish', 'model-value', 'indeterminate')).toBe('indeterminate')
-    expect(parseAttribute('number', 'side-offset', '8')).toBe(8)
-    expect(parseAttribute('number', 'side-offset', 'x')).toBeUndefined()
-    expect(parseAttribute('string', 'value', 'a')).toBe('a')
+    const open = { kind: 'boolean', attribute: 'open' } as const
+    expect(parseAttribute(open, '')).toBe(true)
+    expect(parseAttribute(open, 'open')).toBe(true)
+    // HTML boolean attribute: present means `true`, whatever the value.
+    expect(parseAttribute(open, 'false')).toBe(true)
+    expect(parseAttribute(open, null)).toBeUndefined()
+    // Only a prop that defaults to `true` can be turned off with `"false"`.
+    const modal = { kind: 'boolean', attribute: 'modal', defaultTrue: true } as const
+    expect(parseAttribute(modal, 'false')).toBe(false)
+    expect(parseAttribute(modal, '')).toBe(true)
+    const modelValue = { kind: 'booleanish', attribute: 'model-value' } as const
+    expect(parseAttribute(modelValue, '')).toBe(true)
+    expect(parseAttribute(modelValue, 'false')).toBe(false)
+    expect(parseAttribute(modelValue, 'indeterminate')).toBe('indeterminate')
+    const sideOffset = { kind: 'number', attribute: 'side-offset' } as const
+    expect(parseAttribute(sideOffset, '8')).toBe(8)
+    expect(parseAttribute(sideOffset, 'x')).toBeUndefined()
+    expect(parseAttribute({ kind: 'string', attribute: 'value' }, 'a')).toBe('a')
+  })
+
+  it('lets only props that default to `true` take `"false"`, never native attribute names', () => {
+    const dialog = getPartMeta({ component: DialogRoot })
+    expect(dialog.byAttribute.get('modal')?.defaultTrue).toBe(true)
+    expect(dialog.byAttribute.get('open')?.defaultTrue).toBeUndefined()
+    expect(getPartMeta({ component: SwitchRoot }).byAttribute.get('disabled')?.defaultTrue).toBeUndefined()
   })
 
   it('names events in kebab-case, without colons', () => {
@@ -163,6 +180,12 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     expect(Object.keys(built).sort()).toEqual(Object.keys(source).sort())
 
     built.defineRekaElements([built.collapsibleElements], { prefix: 'built' })
+    // The source is another copy of the library: it recognises the built copy's
+    // elements as Reka elements, through the global symbol registry.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    defineRekaElements([source.collapsibleElements], { prefix: 'built' })
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
     render(`
       <built-collapsible-root>
         <built-collapsible-trigger>Details</built-collapsible-trigger>

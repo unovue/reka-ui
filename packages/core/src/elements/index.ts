@@ -10,12 +10,13 @@
 export { defineRekaElements } from './define'
 export type { DefineRekaElementsOptions } from './define'
 export { toEventType } from './events'
-export type { RekaElementEvent, RekaElementEventDetail } from './events'
+export type { ElementEventOptions, RekaElementEvent, RekaElementEventDetail } from './events'
 export {
   accordionElements,
   checkboxElements,
   collapsibleElements,
   defineAccordionElements,
+  defineAllRekaElements,
   defineCheckboxElements,
   defineCollapsibleElements,
   defineDialogElements,
@@ -33,3 +34,13 @@ export {
 export type { HostSemantics } from './host'
 export type { AttributeKind, RekaElementFamily, RekaElementPartDefinition } from './meta'
 export { RekaElement } from './RekaElement'
+export type {
+  RekaElementEventMap,
+  RekaElementJSXProps,
+  RekaElementProps,
+  RekaElementTagNameMap,
+  RekaEventType,
+  RekaIntrinsicElements,
+  RekaPartElement,
+  UseKebabCaseEventProp,
+} from './types'

@@ -125,19 +125,29 @@ describe('accordion elements', () => {
 })
 
 describe('collapsible elements', () => {
-  it('dispatches `update-open` and can be controlled with the `open` attribute', async () => {
+  it('dispatches `update-open` and can be controlled with the `open` property', async () => {
     render(`
-      <reka-collapsible-root open="false">
+      <reka-collapsible-root>
         <reka-collapsible-trigger>Details</reka-collapsible-trigger>
         <reka-collapsible-content>Body</reka-collapsible-content>
       </reka-collapsible-root>
     `)
-    const root = query('reka-collapsible-root')
+    const root = query<HTMLElement & { open?: boolean }>('reka-collapsible-root')
     const trigger = query('reka-collapsible-trigger')
     const content = query('reka-collapsible-content')
+    // `open` is an HTML boolean attribute (present means open): a controlled
+    // closed state is set as a property.
+    root.open = false
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    const onUpdate = vi.fn()
+    root.addEventListener('update-open', onUpdate)
+    await userEvent.click(trigger)
+    // Controlled: nothing changes until the consumer applies the value.
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(content.hasAttribute('data-reka-unmounted')).toBe(true)
+
     root.addEventListener('update-open', (event) => {
-      root.setAttribute('open', String((event as RekaElementEvent<boolean>).detail.value))
+      root.open = (event as RekaElementEvent<boolean>).detail.value
     })
 
     await userEvent.click(trigger)

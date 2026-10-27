@@ -33,26 +33,44 @@ function isCancellable(value: unknown): value is Cancellable {
   return typeof value === 'object' && value !== null && typeof (value as Cancellable).cancel === 'function'
 }
 
+export interface ElementEventOptions {
+  /**
+   * Let events bubble. Off by default, like Vue emits: every part fires its own
+   * events, so a bubbling `update-model-value` reaching an ancestor would be
+   * ambiguous (a checkbox inside an accordion item).
+   * @defaultValue false
+   */
+  bubbles?: boolean
+  /**
+   * Let events cross shadow roots (needs `bubbles` to reach a listener outside).
+   * @defaultValue false
+   */
+  composed?: boolean
+}
+
 /**
  * Re-dispatches a component emit as a `CustomEvent` on the element.
  *
- * Events are cancelable and do not bubble, like Vue emits (a nested family's
- * `update-open` never reaches an outer root's listener). Calling `preventDefault()`
- * cancels the change when the emit carries change details (`before-update-*`), and
- * otherwise prevents the default of the event the component passed along (for
- * example `escape-key-down` keeps the dialog open).
+ * Only an event whose default can be prevented is `cancelable`: a `before-update-*`
+ * event, where `preventDefault()` cancels the change (`details.cancel()`), and an
+ * emit that passes a DOM event along (`escape-key-down`, `pointer-down-outside`,
+ * …), where it prevents that event's default (the dialog stays open). `update-*`
+ * events report a change that already happened and are not cancelable.
  */
-export function dispatchElementEvent(el: HTMLElement, emit: string, args: unknown[]) {
+export function dispatchElementEvent(el: HTMLElement, emit: string, args: unknown[], options: ElementEventOptions = {}) {
   const [value, details] = args
+  // `update:*` carries the same change details, but the change already happened.
+  const cancellable = emit.startsWith('beforeUpdate:') && isCancellable(details)
   const event = new CustomEvent<RekaElementEventDetail>(toEventType(emit), {
     detail: { value, details },
-    bubbles: false,
-    cancelable: true,
+    bubbles: !!options.bubbles,
+    composed: !!options.composed,
+    cancelable: cancellable || value instanceof Event,
   })
   el.dispatchEvent(event)
   if (!event.defaultPrevented)
     return
-  if (isCancellable(details))
+  if (cancellable)
     details.cancel()
   else if (value instanceof Event)
     value.preventDefault()

@@ -41,25 +41,51 @@ describe('registration', () => {
     expect(() => defineRekaElements([toggleElements], { prefix: 'Bad Prefix' })).toThrow(/invalid tag prefix/)
   })
 
-  it('waits for undefined ancestors, so registration order does not matter', async () => {
+  it('rebinds to ancestors defined later, so registration order does not matter', async () => {
     render(`
-      <order-collapsible-root default-open>
+      <order-collapsible-root>
         <order-collapsible-trigger>Details</order-collapsible-trigger>
         <order-collapsible-content>
-          <order-switch-root aria-label="Wi-Fi" default-value></order-switch-root>
+          <order-switch-root aria-label="Wi-Fi" ${SWITCH_STYLE}></order-switch-root>
         </order-collapsible-content>
       </order-collapsible-root>
     `)
     defineRekaElements([switchElements], { prefix: 'order' })
-    await settle()
     const switchEl = query('order-switch-root')
-    // Mounting waits for the `order-collapsible-*` elements around it.
-    expect(switchEl.hasAttribute('role')).toBe(false)
-    expect(switchEl.hasAttribute('data-reka-unmounted')).toBe(true)
+    // Undefined ancestors are skipped, not waited for: the switch works on its own.
+    await vi.waitFor(() => expect(switchEl.getAttribute('role')).toBe('switch'))
+    await userEvent.click(switchEl)
+    expect(switchEl.getAttribute('aria-checked')).toBe('true')
 
+    // Defined later, the collapsible takes the switch in: closed content, so it unmounts…
     defineRekaElements([collapsibleElements], { prefix: 'order' })
+    await vi.waitFor(() => expect(switchEl.hasAttribute('data-reka-unmounted')).toBe(true))
+    // …and comes back, with its state, when the content opens.
+    await userEvent.click(query('order-collapsible-trigger'))
     await vi.waitFor(() => expect(switchEl.getAttribute('aria-checked')).toBe('true'))
-    expect(switchEl.hasAttribute('data-reka-unmounted')).toBe(false)
+  })
+
+  it('does not wait forever under an undefined element of a registered prefix', async () => {
+    defineRekaElements([switchElements], { prefix: 'stray' })
+    render(`<stray-unknown-part><stray-switch-root aria-label="Wi-Fi" ${SWITCH_STYLE}></stray-switch-root></stray-unknown-part>`)
+    await vi.waitFor(() => expect(query('stray-switch-root').getAttribute('role')).toBe('switch'))
+  })
+
+  it('waits, without throwing, when a part is placed outside its root', async () => {
+    defineRekaElements([collapsibleElements], { prefix: 'lone' })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    render(`<lone-collapsible-trigger>Details</lone-collapsible-trigger>`)
+    const trigger = query('lone-collapsible-trigger')
+    await settle()
+    expect(trigger.hasAttribute('data-reka-unmounted')).toBe(true)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot render outside its family\'s root'))
+    warn.mockRestore()
+
+    // Moved under a root, it renders there.
+    const root = document.createElement('lone-collapsible-root')
+    trigger.before(root)
+    root.append(trigger)
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
   })
 
   it('keeps properties set before the element was defined', async () => {
@@ -92,18 +118,24 @@ describe('props', () => {
     await vi.waitFor(() => expect(el.getAttribute('aria-checked')).toBe('false'))
   })
 
-  it('exposes props as properties, without reflecting them to attributes', async () => {
+  it('exposes props as properties, reflecting only `disabled` to its attribute', async () => {
     render(`<reka-switch-root aria-label="Wi-Fi" ${SWITCH_STYLE}></reka-switch-root>`)
     const el = query<SwitchElement>('reka-switch-root')
     await vi.waitFor(() => expect(el.getAttribute('role')).toBe('switch'))
 
+    el.modelValue = true
+    await vi.waitFor(() => expect(el.getAttribute('aria-checked')).toBe('true'))
+    expect(el.hasAttribute('model-value')).toBe(false)
+
+    // A form-associated host is `:disabled` by its attribute: the property keeps it in step.
     el.disabled = true
     await vi.waitFor(() => expect(el.hasAttribute('data-disabled')).toBe(true))
     expect(el.disabled).toBe(true)
-    expect(el.hasAttribute('disabled')).toBe(true) // rendered by the part, not reflected
+    expect(el.hasAttribute('disabled')).toBe(true)
 
     el.disabled = undefined
     await vi.waitFor(() => expect(el.hasAttribute('data-disabled')).toBe(false))
+    expect(el.hasAttribute('disabled')).toBe(false)
   })
 
   it('takes object and array values as properties only', async () => {
@@ -217,9 +249,38 @@ describe('the host is the rendered part', () => {
 
     await userEvent.click(trigger)
     await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
-    // Back to exactly what the consumer wrote, plus the unmounted marker.
-    expect(content.getAttributeNames().sort()).toEqual([...consumerAttributes, 'data-reka-unmounted'].sort())
+    // Back to exactly what the consumer wrote, plus the unmounted state.
+    expect(content.getAttributeNames().sort()).toEqual([...consumerAttributes, 'data-reka-unmounted', 'hidden', 'inert'].sort())
     expect(content.getAttribute('style')).toBe('color: rgb(255, 0, 0);')
+  })
+
+  it('keeps a part-owned attribute while mounted, and gives back what the consumer wrote meanwhile', async () => {
+    render(`
+      <reka-collapsible-root default-open>
+        <reka-collapsible-trigger>Details</reka-collapsible-trigger>
+        <reka-collapsible-content id="mine" hidden>Body</reka-collapsible-content>
+      </reka-collapsible-root>
+    `)
+    const trigger = query('reka-collapsible-trigger')
+    const content = query('reka-collapsible-content')
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    // `aria-controls` needs the part's id while it is rendered.
+    expect(trigger.getAttribute('aria-controls')).toBe(content.id)
+    content.setAttribute('data-state', 'tampered')
+    content.removeAttribute('id')
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    expect(trigger.getAttribute('aria-controls')).toBe(content.id)
+
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+    // What the consumer wrote while the part owned the attributes is what they get back.
+    expect(content.hasAttribute('id')).toBe(false)
+    expect(content.getAttribute('data-state')).toBe('tampered')
+    // They set `hidden` themselves: it is theirs, and stays.
+    expect(content.getAttribute('data-reka-unmounted')).toBe('inert')
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(false))
+    expect(content.hasAttribute('hidden')).toBe(true)
   })
 
   it('hides an unrendered part even when the consumer sets `display`', async () => {
