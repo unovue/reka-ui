@@ -88,7 +88,7 @@ function handleSelect(ev: CustomEvent) {
 <template>
   <ComboboxRoot
     v-model:open="open"
-    ignore-filter
+    :filter="null"
     :reset-search-term-on-blur="false"
     class="text-foreground flex flex-col"
   >

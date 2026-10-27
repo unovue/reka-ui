@@ -1,9 +1,8 @@
 <script lang="ts">
 import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
 import { useVModel } from '@vueuse/core'
-import { nextTick, onMounted, watch } from 'vue'
-import { usePrimitiveElement } from '@/Primitive'
-import { getActiveElement, getElementByIdFrom, useComposing } from '@/shared'
+import { nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { useForwardElement } from '@/shared'
 
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
@@ -13,120 +12,57 @@ export interface ComboboxInputProps extends ListboxFilterProps {
 </script>
 
 <script setup lang="ts">
-import { ListboxFilter } from '@/Listbox'
-import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
+import { Primitive } from '@/Primitive'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
+import { createComboboxInputSurface, getComboboxInputText } from './useCombobox'
 
 const props = withDefaults(defineProps<ComboboxInputProps>(), {
   as: 'input',
 })
 const emits = defineEmits<ComboboxInputEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Current input values */
+    modelValue: typeof modelValue.value
+  }) => any
+}>()
+
 const rootContext = injectComboboxRootContext()
-const listboxContext = injectListboxRootContext()
-const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
+  defaultValue: '',
   passive: (props.modelValue === undefined) as false,
 })
 
+// role/aria, the open-on-type/focus/click handling, IME composition and the
+// keyboard (routed through `getNavigationIntent`) come from the shared surface.
+const surface = createComboboxInputSurface(rootContext, {
+  modelValue,
+  disabled: () => props.disabled,
+  closeOnBlur: true,
+})
+
 onMounted(() => {
+  // The input owns the keyboard: the items are highlighted, never focused.
+  rootContext.focusable.value = false
   if (currentElement.value)
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
+  setTimeout(() => {
+    // make sure all DOM was flushed, then capture the focus
+    if (props.autoFocus)
+      currentElement.value?.focus()
+  }, 1)
 })
 
-const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
-  const el = event.target as HTMLInputElement
-  if (el)
-    processInputValue(el.value)
+onUnmounted(() => {
+  rootContext.focusable.value = true
 })
-
-function handleKeyDown(ev: KeyboardEvent) {
-  // Don't swallow arrow keys mid-composition, they're used for IME candidate navigation
-  if (isComposing.value)
-    return
-  ev.preventDefault()
-  if (!rootContext.open.value)
-    rootContext.onOpenChange(true)
-}
-
-function processInputValue(value: string) {
-  if (!rootContext.open.value) {
-    rootContext.onOpenChange(true)
-    nextTick(() => {
-      if (value) {
-        rootContext.filterSearch.value = value
-        listboxContext.highlightFirstItem()
-      }
-    })
-  }
-  else {
-    rootContext.filterSearch.value = value
-  }
-}
-
-function handleInput(event: InputEvent) {
-  if (shouldDeferInput.value)
-    return
-  processInputValue((event.target as HTMLInputElement).value)
-}
-
-function handleFocus() {
-  if (rootContext.openOnFocus.value && !rootContext.open.value)
-    rootContext.onOpenChange(true)
-}
-
-function handleBlur(ev: FocusEvent) {
-  if (!rootContext.open.value)
-    return
-
-  const nextFocus = ev.relatedTarget as Element | null
-
-  // If focus moves to nothing (e.g. click on non-focusable area), let DismissableLayer handle it
-  if (!nextFocus)
-    return
-
-  const isInsideRoot = rootContext.parentElement.value?.contains(nextFocus)
-  const isInsideContent = getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(nextFocus)
-
-  if (!isInsideRoot && !isInsideContent) {
-    // Delay to let FocusScope's focus-restoration (handleFocusOut) run first.
-    // Without this, closing fires before FocusScope can pull focus back inside,
-    // causing a second combobox to immediately close when switching between two.
-    requestAnimationFrame(() => {
-      if (!rootContext.open.value)
-        return
-      const active = getActiveElement(rootContext.parentElement.value)
-      const isStillOutside = !rootContext.parentElement.value?.contains(active)
-        && !getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(active)
-      if (isStillOutside) {
-        rootContext.onOpenChange(false)
-      }
-    })
-  }
-}
-
-function handleClick() {
-  if (rootContext.openOnClick.value && !rootContext.open.value)
-    rootContext.onOpenChange(true)
-}
 
 function resetSearchTerm() {
-  const rootModelValue = rootContext.modelValue.value
-
-  if (props.displayValue) {
-    modelValue.value = props.displayValue(rootModelValue)
-  }
-  else if (!rootContext.multiple.value && rootModelValue && !Array.isArray(rootModelValue)) {
-    if (typeof rootModelValue !== 'object')
-      modelValue.value = rootModelValue.toString()
-    else modelValue.value = ''
-  }
-  else {
-    modelValue.value = ''
-  }
-
+  modelValue.value = getComboboxInputText(rootContext, props.displayValue)
   nextTick(() => {
     // Temporary force reassign
     // eslint-disable-next-line no-self-assign
@@ -134,46 +70,28 @@ function resetSearchTerm() {
   })
 }
 
-rootContext.onResetSearchTerm(() => {
-  resetSearchTerm()
-})
+rootContext.onResetSearchTerm(resetSearchTerm)
 
-watch(rootContext.modelValue, async () => {
+watch(rootContext.modelValue, () => {
   if (!rootContext.isUserInputted.value && rootContext.resetSearchTermOnSelect.value)
     resetSearchTerm()
 }, { immediate: true, deep: true })
 
 watch(rootContext.filterState, (_newValue, oldValue) => {
-  // we exclude virtualized list as the state would be constantly updated,
-  // and only change highlight when previously there were no items displayed
-  if (!rootContext.isVirtual.value && (oldValue.count === 0)) {
-    listboxContext.highlightFirstItem()
-  }
+  // A virtualized list updates its state constantly; otherwise only re-highlight
+  // when there were no items to show before.
+  if (!rootContext.isVirtual.value && oldValue.count === 0)
+    rootContext.highlightFirstItem()
 })
 </script>
 
 <template>
-  <ListboxFilter
-    ref="primitiveElement"
-    v-model="modelValue"
+  <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :auto-focus="autoFocus"
-    :disabled="disabled"
-    :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
-    aria-autocomplete="list"
-    role="combobox"
-    autocomplete="off"
-    @click="handleClick"
-    @input="handleInput"
-    @keydown.down.up="handleKeyDown"
-    @focus="handleFocus"
-    @blur="handleBlur"
-    @compositionstart="handleCompositionStart"
-    @compositionupdate="handleCompositionUpdate"
-    @compositionend="handleCompositionEnd"
+    v-bind="surface.attrs.value"
   >
-    <slot />
-  </ListboxFilter>
+    <slot :model-value="modelValue" />
+  </Primitive>
 </template>

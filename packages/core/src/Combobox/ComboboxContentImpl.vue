@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, disclosureState, getActiveElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -38,6 +38,7 @@ import { ListboxContent } from '@/Listbox'
 import { PopperContent } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
+import { getComboboxContentSurface } from './useCombobox'
 
 const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
   position: 'inline',
@@ -51,10 +52,8 @@ const contentId = Symbol('ComboboxContent')
 
 watch(position, value => rootContext.onContentPositionChange(contentId, value), { immediate: true })
 
-const isEmpty = computed(() => rootContext.ignoreFilter.value
-  ? rootContext.allItems.value.size === 0
-  : rootContext.filterState.value.count === 0,
-)
+// `id` (`<baseId>-content`), `data-state` and `data-empty`.
+const surface = getComboboxContentSurface(rootContext)
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -152,7 +151,7 @@ const popperContentEvents = {
         as-child
         :present="props.present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
-        @dismiss="rootContext.onOpenChange(false)"
+        @dismiss="({ reason, event }) => rootContext.onOpenChange(false, reason, event)"
         @focus-outside="(ev) => {
           // if focusing inside the combobox (or a label tied to it), prevent dismiss
           if (isEventTargetWithinCombobox(ev.target)) ev.preventDefault()
@@ -168,18 +167,15 @@ const popperContentEvents = {
       >
         <component
           :is="position === 'popper' ? PopperContent : Primitive"
-          v-bind="{ ...$attrs, ...forwardedProps }"
-          :id="rootContext.contentId"
+          v-bind="{ ...$attrs, ...forwardedProps, ...surface.attrs.value }"
           :ref="forwardRef"
           :memo-dependencies="position === 'popper'
-            ? [rootContext.filterSearch.value, rootContext.filterState.value]
+            ? [rootContext.filterSearch.value, rootContext.filterState.value.count]
             : undefined"
-          :data-state="disclosureState(rootContext.open.value)"
-          :data-empty="isEmpty ? '' : undefined"
           :style="{
             // flex layout so we can place the scroll buttons properly
             // When hideWhenEmpty is true, hide the content when no items match
-            display: (props.hideWhenEmpty && isEmpty) ? 'none' : 'flex',
+            display: (props.hideWhenEmpty && surface.state.value.empty) ? 'none' : 'flex',
             flexDirection: 'column',
             // reset the outline by default as the content MAY get focused
             outline: 'none',

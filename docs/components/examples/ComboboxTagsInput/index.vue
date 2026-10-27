@@ -20,7 +20,7 @@ watch(values, () => {
   <ComboboxRoot
     v-model="values"
     multiple
-    ignore-filter
+    :filter="null"
     class="my-4 mx-auto relative"
   >
     <ComboboxAnchor class="w-[400px] inline-flex items-center justify-between rounded-lg p-2 text-[13px] leading-none  gap-[5px] bg-white text-grass11 shadow-[0_2px_10px] shadow-black/10 hover:bg-mauve3 focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-grass9 outline-none">

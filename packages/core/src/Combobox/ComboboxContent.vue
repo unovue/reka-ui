@@ -13,7 +13,7 @@ export interface ComboboxContentProps extends ComboboxContentImplProps {
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { useForwardElement, useForwardPropsEmits, useId } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import ComboboxContentImpl from './ComboboxContentImpl.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
@@ -24,8 +24,6 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectComboboxRootContext()
-
-rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
 </script>
 
 <template>
