@@ -1,12 +1,15 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { NavigationMenuChangeReason } from './useNavigationMenu'
 import type { Orientation } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
+import type { ChangeEventDetails } from '@/shared'
 import { useCollection } from '@/Collection'
 
 export type NavigationMenuSubEmits = {
+  /** Called before the value changes; `details.cancel()` keeps the current value. */
+  'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]
 }
 
 export interface NavigationMenuSubProps extends PrimitiveProps {
@@ -24,15 +27,14 @@ export interface NavigationMenuSubProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { ref, watchEffect } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import type { Ref } from 'vue'
+import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 import { injectNavigationMenuContext, provideNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { useNavigationMenuSub } from './useNavigationMenu'
 
 const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
+  modelValue: undefined,
   orientation: 'horizontal',
 })
 const emits = defineEmits<NavigationMenuSubEmits>()
@@ -44,78 +46,32 @@ defineSlots<{
   }) => any
 }>()
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue ?? '',
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<string>
-const previousValue = ref('')
-
 const menuContext = injectNavigationMenuContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const indicatorTrack = ref<HTMLElement>()
-const viewport = ref<HTMLElement>()
-const activeTrigger = ref<HTMLElement>()
-
 const { getItems, CollectionSlot } = useCollection({ key: 'NavigationMenu', isProvider: true })
 
-watchEffect(() => {
-  if (!modelValue.value)
-    return
-
-  const items = getItems().map(i => i.ref)
-  activeTrigger.value = items.find(item =>
-    item.id.includes(modelValue.value),
-  )
-})
-
-provideNavigationMenuContext({
-  ...menuContext,
-  isRootMenu: false,
-  modelValue,
-  previousValue,
-  activeTrigger,
+const { modelValue, root, context } = useNavigationMenuSub({
+  parentContext: menuContext,
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
   orientation: props.orientation,
-  rootNavigationMenu: currentElement,
-  indicatorTrack,
-  onIndicatorTrackChange: (val) => {
-    indicatorTrack.value = val
-  },
-  viewport,
-  onViewportChange: (val) => {
-    viewport.value = val
-  },
-
-  onTriggerEnter: (val) => {
-    modelValue.value = val
-  },
-  onTriggerLeave: () => {
-    // do nothing for submenu
-  },
-  onContentEnter: () => {
-    // do nothing for submenu
-  },
-  onContentLeave: () => {
-    // do nothing for submenu
-  },
-  onItemSelect: (val) => {
-    modelValue.value = val
-  },
-  onItemDismiss: () => {
-    modelValue.value = ''
-  },
+  rootElement: currentElement as Ref<HTMLElement | undefined>,
+  getItems: () => getItems().map(i => i.ref),
+  emit: emits,
 })
+
+provideNavigationMenuContext(context)
 </script>
 
 <template>
   <CollectionSlot>
     <Primitive
+      v-bind="root.attrs.value"
       :ref="forwardRef"
-      :data-orientation="orientation"
       :as-child="props.asChild"
       :as="as"
-      data-reka-navigation-menu
     >
       <slot :model-value="modelValue" />
     </Primitive>

@@ -19,7 +19,7 @@ export interface NavigationMenuLinkProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { EVENT_ROOT_CONTENT_DISMISS, LINK_SELECT } from './utils'
+import { useNavigationMenuLink } from './useNavigationMenu'
 
 const props = withDefaults(defineProps<NavigationMenuLinkProps>(), {
   as: 'a',
@@ -31,37 +31,18 @@ const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-async function handleClick(ev: MouseEvent) {
-  const linkSelectEvent = new CustomEvent(LINK_SELECT, {
-    bubbles: true,
-    cancelable: true,
-    detail: {
-      originalEvent: ev,
-    },
-  })
-  emits('select', linkSelectEvent)
-
-  if (!linkSelectEvent.defaultPrevented && !ev.metaKey) {
-    const rootContentDismissEvent = new CustomEvent(
-      EVENT_ROOT_CONTENT_DISMISS,
-      {
-        bubbles: true,
-        cancelable: true,
-      },
-    )
-    ev.target?.dispatchEvent(rootContentDismissEvent)
-  }
-}
+const { link } = useNavigationMenuLink({
+  active: () => props.active,
+  onSelect: event => emits('select', event),
+})
 </script>
 
 <template>
   <CollectionItem :ref="forwardRef">
     <Primitive
+      v-bind="link.attrs.value"
       :as="as"
-      :data-active="active ? '' : undefined"
-      :aria-current="active ? 'page' : undefined"
       :as-child="props.asChild"
-      @click="handleClick"
     >
       <slot />
     </Primitive>

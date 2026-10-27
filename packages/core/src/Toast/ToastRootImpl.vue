@@ -1,14 +1,14 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { ToastObject } from './createToastManager'
+import type { ToastOpenChangeReason } from './useToast'
 import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { isClient } from '@vueuse/shared'
+import type { BaseChangeReason } from '@/shared'
 import { useCollection } from '@/Collection'
-import { createContext, disclosureState, getActiveElement, useForwardElement } from '@/shared'
+import { createContext, getActiveElement, useForwardElement } from '@/shared'
 
 export type ToastRootImplEmits = {
-  close: []
   /** Event handler called when the escape key is down. It can be prevented by calling `event.preventDefault`. */
   escapeKeyDown: [event: KeyboardEvent]
   /** Event handler called when the dismiss timer is paused. This occurs when the pointer is moved over the viewport, the viewport is focused or when the window is blurred. */
@@ -48,24 +48,40 @@ export interface ToastRootImplProps extends PrimitiveProps {
   toast?: ToastObject
 }
 
+/** Internal: the close of `useToastRoot()`, handed down by `ToastRoot`. */
+interface ToastRootImplInternalProps {
+  requestClose?: (reason: ToastOpenChangeReason | BaseChangeReason, event?: Event) => boolean
+}
+
+export interface ToastRootContext {
+  /**
+   * Closes the toast. `reason` defaults to `'imperative-action'`; a click with an
+   * empty `pointerType` (a keyboard activation) moves focus to the viewport.
+   * Returns `false` when the toast was already closed or the close was cancelled.
+   */
+  onClose: (event?: Event, reason?: ToastOpenChangeReason | BaseChangeReason) => boolean
+  toast: Ref<ToastObject | undefined>
+}
+
 export const [injectToastRootContext, provideToastRootContext]
-  = createContext<{ onClose: (event?: PointerEvent) => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
+  = createContext<ToastRootContext>('ToastRoot')
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, useRafFn, useResizeObserver } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, reactive, ref, shallowRef, toRef, watch, watchEffect } from 'vue'
+import { onKeyStroke, useResizeObserver } from '@vueuse/core'
+import { computed, mergeProps, onMounted, onUnmounted, reactive, shallowRef, toRef, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import ToastAnnounce from './ToastAnnounce.vue'
 import { injectToastPositionerContext } from './ToastPositioner.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
-import { getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection, TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
+import { getToastSurface, useToastSwipe, useToastTimer } from './useToast'
+import { getAnnounceTextContent, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<ToastRootImplProps>(), {
+const props = withDefaults(defineProps<ToastRootImplProps & ToastRootImplInternalProps>(), {
   open: false,
   as: 'li',
 })
@@ -77,44 +93,23 @@ defineExpose(expose)
 const { CollectionItem } = useCollection()
 
 const providerContext = injectToastProviderContext()
-const pointerStartRef = ref<{ x: number, y: number } | null>(null)
-const swipeDeltaRef = ref<{ x: number, y: number } | null>(null)
 const duration = computed(
   () => typeof props.duration === 'number'
     ? props.duration
     : providerContext.duration.value,
 )
 
-const closeTimerStartTimeRef = ref(0)
-const closeTimerRemainingTimeRef = ref(duration.value)
-const closeTimerRef = ref(0)
-const remainingTime = ref(duration.value)
+function handleClose(event?: Event, reason: ToastOpenChangeReason | BaseChangeReason = 'imperative-action') {
+  const isNonPointerEvent = (event as PointerEvent | undefined)?.pointerType === ''
+  const isFocusInToast = currentElement.value?.contains(getActiveElement())
 
-const remainingRaf = useRafFn(() => {
-  const elapsedTime = Date.now() - closeTimerStartTimeRef.value
-  remainingTime.value = Math.max(closeTimerRemainingTimeRef.value - elapsedTime, 0)
-}, { fpsLimit: 60 })
-
-function startTimer(duration: number) {
-  if (duration <= 0 || duration === Number.POSITIVE_INFINITY)
-    return
-  // startTimer is used inside a watch with immediate set to true.
-  // This results in code execution during SSR.
-  // Ensure this code only runs in a browser environment
-  if (!isClient)
-    return
-  window.clearTimeout(closeTimerRef.value)
-  closeTimerStartTimeRef.value = Date.now()
-  closeTimerRef.value = window.setTimeout(handleClose, duration)
-}
-
-function handleClose(event?: PointerEvent) {
-  const isNonPointerEvent = event?.pointerType === ''
+  // A cancelled close (`beforeUpdate:open`) leaves focus and the pause state alone.
+  if (!props.requestClose?.(reason, event))
+    return false
 
   // reka: update to only perform focus when user focus via keyboard
   // focus viewport if focus is within toast to read the remaining toast
   // count to SR users and ensure focus isn't lost
-  const isFocusInToast = currentElement.value?.contains(getActiveElement())
   if (isFocusInToast && isNonPointerEvent)
     providerContext.viewport.value?.focus()
 
@@ -122,8 +117,7 @@ function handleClose(event?: PointerEvent) {
     // when manually close the toast, we reset isClosePausedRef
     providerContext.isClosePausedRef.value = false
   }
-
-  emits('close')
+  return true
 }
 
 const positionerContext = injectToastPositionerContext(null)
@@ -163,48 +157,52 @@ if (props.type && !['foreground', 'background'].includes(props.type)) {
   throw new Error(error)
 }
 
+// The auto-dismiss timer (re)starts when the toast opens, its duration changes
+// or a managed toast is added again with the same id. A timeout whose close is
+// cancelled re-arms a full `duration`, so the toast asks again later.
+const restartKey = computed(() => props.toast ? providerContext.toastStore.getRestartKey(props.toast.id) : 0)
+const { remaining: remainingTime, pause, resume } = useToastTimer({
+  open: () => props.open,
+  duration,
+  restartKey,
+  isPaused: () => providerContext.isClosePausedRef.value,
+  onTimeout: () => handleClose(undefined, 'timeout'),
+  onPause: () => emits('pause'),
+  onResume: () => emits('resume'),
+})
+
 watchEffect((cleanupFn) => {
   const viewport = providerContext.viewport.value
   if (viewport) {
-    const handleResume = () => {
-      startTimer(closeTimerRemainingTimeRef.value)
-      remainingRaf.resume()
-      emits('resume')
-    }
-    const handlePause = () => {
-      const elapsedTime = Date.now() - closeTimerStartTimeRef.value
-      closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
-      window.clearTimeout(closeTimerRef.value)
-      remainingRaf.pause()
-      emits('pause')
-    }
-    viewport.addEventListener(VIEWPORT_PAUSE, handlePause)
-    viewport.addEventListener(VIEWPORT_RESUME, handleResume)
+    viewport.addEventListener(VIEWPORT_PAUSE, pause)
+    viewport.addEventListener(VIEWPORT_RESUME, resume)
     cleanupFn(() => {
-      viewport.removeEventListener(VIEWPORT_PAUSE, handlePause)
-      viewport.removeEventListener(VIEWPORT_RESUME, handleResume)
+      viewport.removeEventListener(VIEWPORT_PAUSE, pause)
+      viewport.removeEventListener(VIEWPORT_RESUME, resume)
     })
   }
 })
 
-// start timer when toast opens or duration changes.
-// we include `open` in deps because closed !== unmounted when animating
-// so it could reopen before being completely unmounted
-const restartKey = computed(() => props.toast ? providerContext.toastStore.getRestartKey(props.toast.id) : 0)
-watch([() => props.open, duration, restartKey], () => {
-  // Reset the timer when the toast is rerendered with the new duration
-  closeTimerRemainingTimeRef.value = duration.value
+const { swipe } = useToastSwipe({
+  swipeDirection: providerContext.swipeDirection,
+  swipeThreshold: providerContext.swipeThreshold,
+  disabled: providerContext.disableSwipe,
+  emit: emits,
+  onSwipeEnd: event => handleClose(event, 'swipe'),
+})
 
-  if (props.open && !providerContext.isClosePausedRef.value)
-    startTimer(duration.value)
-}, { immediate: true })
+const toastSurface = getToastSurface({
+  providerContext,
+  open: () => props.open,
+  status: () => props.toast?.status,
+  stack: () => stack.value,
+  height: () => stackEntry.height,
+})
 
 onKeyStroke('Escape', (event) => {
   emits('escapeKeyDown', event)
-  if (!event.defaultPrevented) {
-    providerContext.isFocusedToastEscapeKeyDownRef.value = true
-    handleClose()
-  }
+  if (!event.defaultPrevented)
+    handleClose(event, 'escape-key')
 })
 
 let unregisterToast: (() => void) | undefined
@@ -251,86 +249,10 @@ provideToastRootContext({ onClose: handleClose, toast: toRef(props, 'toast') })
   >
     <CollectionItem>
       <Primitive
+        v-bind="mergeProps($attrs, toastSurface.attrs.value, swipe.attrs.value, { tabindex: $attrs.tabindex ?? '0' })"
         :ref="forwardRef"
-        tabindex="0"
-        v-bind="$attrs"
         :as="as"
         :as-child="asChild"
-        :data-state="disclosureState(open)"
-        :data-swipe-direction="providerContext.swipeDirection.value"
-        :data-status="toast?.status"
-        :data-expanded="providerContext.expanded.value ? '' : undefined"
-        :data-limited="stack.limited ? '' : undefined"
-        :inert="stack.limited || undefined"
-        :style="{
-          ...(providerContext.disableSwipe.value ? undefined : { userSelect: 'none', touchAction: 'none' }),
-          '--reka-toast-index': stack.index,
-          '--reka-toast-offset-y': `${stack.offsetY}px`,
-          '--reka-toast-height': stackEntry.height ? `${stackEntry.height}px` : undefined,
-        }"
-        @pointerdown.left="(event: PointerEvent) => {
-          if (providerContext.disableSwipe.value) return;
-
-          pointerStartRef = { x: event.clientX, y: event.clientY };
-        }"
-        @pointermove="(event: PointerEvent) => {
-          if (providerContext.disableSwipe.value || !pointerStartRef) return;
-
-          const x = event.clientX - pointerStartRef.x;
-          const y = event.clientY - pointerStartRef.y;
-          const hasSwipeMoveStarted = Boolean(swipeDeltaRef);
-          const isHorizontalSwipe = ['left', 'right'].includes(providerContext.swipeDirection.value);
-          const clamp = ['left', 'up'].includes(providerContext.swipeDirection.value)
-            ? Math.min
-            : Math.max;
-          const clampedX = isHorizontalSwipe ? clamp(0, x) : 0;
-          const clampedY = !isHorizontalSwipe ? clamp(0, y) : 0;
-          const moveStartBuffer = event.pointerType === 'touch' ? 10 : 2;
-          const delta = { x: clampedX, y: clampedY };
-          const eventDetail = { originalEvent: event, delta };
-          if (hasSwipeMoveStarted) {
-            swipeDeltaRef = delta;
-            handleAndDispatchCustomEvent(TOAST_SWIPE_MOVE, (ev: SwipeEvent) => emits('swipeMove', ev), eventDetail);
-          }
-          else if (isDeltaInDirection(delta, providerContext.swipeDirection.value, moveStartBuffer)) {
-            swipeDeltaRef = delta;
-            handleAndDispatchCustomEvent(TOAST_SWIPE_START, (ev: SwipeEvent) => emits('swipeStart', ev), eventDetail);
-            (event.target as HTMLElement).setPointerCapture(event.pointerId);
-          }
-          else if (Math.abs(x) > moveStartBuffer || Math.abs(y) > moveStartBuffer) {
-            // User is swiping in wrong direction so we disable swipe gesture
-            // for the current pointer down interaction
-            pointerStartRef = null;
-          }
-        }"
-        @pointerup="(event: PointerEvent) => {
-          if (providerContext.disableSwipe.value) return;
-
-          const delta = swipeDeltaRef;
-          const target = event.target as HTMLElement;
-          if (target.hasPointerCapture(event.pointerId)) {
-            target.releasePointerCapture(event.pointerId);
-          }
-          swipeDeltaRef = null;
-          pointerStartRef = null;
-          if (delta) {
-            const toast = event.currentTarget;
-            const eventDetail = { originalEvent: event, delta };
-            if (
-              isDeltaInDirection(delta, providerContext.swipeDirection.value, providerContext.swipeThreshold.value)
-            ) {
-              handleAndDispatchCustomEvent(TOAST_SWIPE_END, (ev: SwipeEvent) => emits('swipeEnd', ev), eventDetail);
-            }
-            else {
-              handleAndDispatchCustomEvent(TOAST_SWIPE_CANCEL, (ev: SwipeEvent) => emits('swipeCancel', ev), eventDetail);
-            }
-            // Prevent click event from triggering on items within the toast when
-            // pointer up is part of a swipe gesture
-            toast?.addEventListener('click', (event) => event.preventDefault(), {
-              once: true,
-            });
-          }
-        }"
       >
         <slot
           :remaining="remainingTime"
