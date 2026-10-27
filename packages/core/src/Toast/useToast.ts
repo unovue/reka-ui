@@ -362,7 +362,8 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
 
   const closeTimerStartTimeRef = ref(0)
   const closeTimerRemainingTimeRef = ref(duration.value)
-  let closeTimer = 0
+  // Global timers (not `window.*`): the watch below runs immediately, also during SSR.
+  let closeTimer: ReturnType<typeof setTimeout> | undefined
   const remainingTime = ref(duration.value)
 
   const remainingRaf = useRafFn(() => {
@@ -390,9 +391,9 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
     // Ensure this code only runs in a browser environment
     if (!isClient)
       return
-    window.clearTimeout(closeTimer)
+    clearTimeout(closeTimer)
     closeTimerStartTimeRef.value = Date.now()
-    closeTimer = window.setTimeout(handleTimeout, duration)
+    closeTimer = setTimeout(handleTimeout, duration)
   }
 
   function resume() {
@@ -404,7 +405,7 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   function pause() {
     const elapsedTime = Date.now() - closeTimerStartTimeRef.value
     closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
-    window.clearTimeout(closeTimer)
+    clearTimeout(closeTimer)
     remainingRaf.pause()
     options.onPause?.()
   }
@@ -415,7 +416,7 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   watch([() => toValue(options.open), duration, () => toValue(options.restartKey)], () => {
     // Reset the timer when the toast is rerendered with the new duration; a
     // closed toast keeps no pending timeout.
-    window.clearTimeout(closeTimer)
+    clearTimeout(closeTimer)
     closeTimerRemainingTimeRef.value = duration.value
 
     if (toValue(options.open) && !options.isPaused?.()) {
@@ -425,7 +426,7 @@ export function useToastTimer(options: UseToastTimerOptions): UseToastTimerRetur
   }, { immediate: true })
 
   if (getCurrentScope())
-    onScopeDispose(() => window.clearTimeout(closeTimer))
+    onScopeDispose(() => clearTimeout(closeTimer))
 
   return { remaining: remainingTime, pause, resume }
 }
