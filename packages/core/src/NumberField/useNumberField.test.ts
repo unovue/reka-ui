@@ -263,6 +263,34 @@ describe('numberFieldRoot — change details', () => {
   })
 })
 
+describe('numberFieldRoot — cancelled text commit', () => {
+  it.each([
+    ['blur', (input: HTMLInputElement) => fireEvent.blur(input)],
+    ['keyboard', (input: HTMLInputElement) => fireEvent.keyDown(input, { key: 'Enter' })],
+  ])('a cancelled %s commit shows the model text, also after a re-render', async (reason, commit) => {
+    const onBeforeUpdate = vi.fn((_v: number, d: ChangeEventDetails) => d.cancel())
+    const tick = ref(0)
+    const { getByTestId } = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, {
+          'defaultValue': 1,
+          'onBeforeUpdate:modelValue': onBeforeUpdate,
+        }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input', 'data-tick': tick.value }))
+      },
+    }))
+    const input = getByTestId('input') as HTMLInputElement
+    await fireEvent.update(input, '7')
+    await commit(input)
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdate.mock.calls[0][1].reason).toBe(reason)
+    expect(input.value).toBe('1')
+    tick.value++
+    await nextTick()
+    expect(input.getAttribute('data-tick')).toBe('1')
+    expect(input.value).toBe('1')
+  })
+})
+
 describe('useNumberField — public export', () => {
   it('is exported from the barrel; builders are internal', () => {
     expect(typeof Reka.useNumberField).toBe('function')

@@ -397,7 +397,7 @@ export function createNumberFieldInputSurface(rootContext: NumberFieldRootContex
         rootContext.handleMinMaxValue('max', 'keyboard', event)
         break
       case 'Enter':
-        rootContext.applyInputValue((event.target as HTMLInputElement)?.value, 'keyboard', event)
+        commitText(event, 'keyboard')
         break
     }
   }
@@ -458,8 +458,19 @@ export function createNumberFieldInputSurface(rootContext: NumberFieldRootContex
     })
   }
 
+  /**
+   * Commits the typed text, then mirrors what `applyInputValue` showed into `inputValue`: the
+   * bound `value` would otherwise keep the typed text after a cancelled or unchanged commit
+   * (the model, and so `textValue`, did not move) and put it back on the next re-render.
+   */
+  function commitText(event: Event, reason: 'keyboard' | 'blur') {
+    const text = ((event.target as HTMLInputElement | null)?.value ?? '') as string
+    rootContext.applyInputValue(text, reason, event)
+    inputValue.value = text.length ? rootContext.textValue.value : text
+  }
+
   function handleBlur(event: FocusEvent) {
-    rootContext.applyInputValue((event.target as HTMLInputElement | null)?.value as string, 'blur', event)
+    commitText(event, 'blur')
   }
 
   return createPartSurface<NumberFieldInputState>(
