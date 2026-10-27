@@ -6,7 +6,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { useCollection } from '@/Collection'
 
 export type NavigationMenuSubEmits = {
-  /** Called before the open sub item changes; `details.cancel()` keeps the current item. */
+  /** Called before the value changes; `details.cancel()` keeps the current value. */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]
   /** Event handler called when the value changes. */
   'update:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]

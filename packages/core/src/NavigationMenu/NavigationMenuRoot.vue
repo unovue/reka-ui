@@ -61,7 +61,7 @@ export interface NavigationMenuRootProps extends PrimitiveProps {
   unmountOnHide?: boolean
 }
 export type NavigationMenuRootEmits = {
-  /** Called before the open item changes; `details.cancel()` keeps the current item. */
+  /** Called before the value changes; `details.cancel()` keeps the current value. */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]
   /** Event handler called when the value changes. */
   'update:modelValue': [value: string, details: ChangeEventDetails<NavigationMenuChangeReason>]

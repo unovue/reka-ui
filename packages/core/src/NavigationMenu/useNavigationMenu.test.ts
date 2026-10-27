@@ -402,6 +402,29 @@ describe('navigationMenuSub — reasons and model', () => {
   })
 })
 
+describe('navigationMenuContent — outside events', () => {
+  it('emits pointerDownOutside and interactOutside once per press', async () => {
+    const onPointerDownOutside = vi.fn()
+    const onInteractOutside = vi.fn()
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+        h(NavigationMenuRoot, { defaultValue: 'one' }, () => h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'one' }, () => [
+          h(NavigationMenuTrigger, () => 'One'),
+          h(NavigationMenuContent, { onPointerDownOutside, onInteractOutside }, () => 'Content'),
+        ]))),
+      ]),
+    }), { attachTo: document.body })
+    await vi.waitFor(async () => {
+      await fireEvent.pointerDown(document.querySelector('[data-testid="outside"]')!)
+      expect(onPointerDownOutside).toHaveBeenCalled()
+    })
+    expect(onPointerDownOutside).toHaveBeenCalledTimes(1)
+    // `interactOutside` follows the focus move, not the press, as in v2.
+    expect(onInteractOutside).not.toHaveBeenCalled()
+  })
+})
+
 describe('navigationMenuViewport', () => {
   it('passes axe with the viewport and keeps the motion attribute unset on first open', async () => {
     const { wrapper, byTestId } = mountMenu({ viewport: true })
