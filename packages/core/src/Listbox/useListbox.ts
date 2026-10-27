@@ -1,14 +1,13 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { SelectEvent } from './ListboxItem.vue'
 import type { ListboxRootContext } from './ListboxRoot.vue'
-import type { BaseChangeReason, By, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
+import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types'
 import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
-import { serialize } from 'ohash'
-import { computed, isRef, nextTick, ref, shallowReactive, shallowRef, toValue, triggerRef, watch } from 'vue'
+import { computed, isRef, nextTick, ref, shallowReactive, toValue, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { compare, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
+import { compare, createLabelRegistry, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
 
 /**
  * Why the selection changed; carried as `details.reason` on every change (#2828).
@@ -64,11 +63,7 @@ export interface ListboxHighlightScroll {
  * (filtered out, virtualized away). Entries are matched with `by`, the last
  * write for a value wins, and nothing is ever removed automatically.
  */
-export interface ListboxLabelRegistry<T = AcceptableValue> {
-  register: (value: T, label: string, disabled?: boolean) => void
-  get: (value: T) => string | undefined
-  entries: () => Array<{ value: T, label: string, disabled: boolean }>
-}
+export interface ListboxLabelRegistry<T = AcceptableValue> extends LabelRegistry<T> {}
 
 /**
  * The `filter` prop (#2824 item 7): whether an item matches the search term.
@@ -797,67 +792,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }, { immediate: true, deep: true })
 
   // Sticky label registry: by-aware, last write wins, never auto-removed.
-  // Every identity that `compare` resolves without a custom function is
-  // indexed in a Map, so a registration is O(1) rather than a scan:
-  // - a primitive value (or a primitive `value[by]` under a key `by`) by its
-  //   tagged string form;
-  // - an object value with no `by` by its ohash `serialize` form, which is
-  //   exactly what the default `isEqual` comparison compares (no digest: the
-  //   crypto code would only grow every listbox bundle). The trade-off is
-  //   memory: the key is the whole serialized object, so a large object value
-  //   keeps a string about the size of its JSON in `labelIndex` for the life of
-  //   the listbox. Pass `by` (a key) for large or deeply nested objects; the key
-  //   is then the primitive `value[by]`.
-  // Only a function `by` (no stable key exists) and the rare leftovers (an
-  // `undefined` value, a non-primitive `value[by]`) fall back to a `compare`
-  // scan. The entries array is mutated in place and the ref triggered, so a
-  // registration never copies the whole registry.
-  const labelEntries = shallowRef<Array<{ value: T, label: string, disabled: boolean }>>([])
-  const labelIndex = new Map<string, number>()
-  function labelKey(value: T): string | undefined {
-    if (typeof props.by === 'function')
-      return undefined
-    const keyed = typeof props.by === 'string' && value !== null && typeof value === 'object'
-    const key: unknown = keyed ? (value as Record<string, unknown>)[props.by as string] : value
-    const type = typeof key
-    if (type === 'string' || type === 'number' || type === 'bigint' || type === 'boolean')
-      // Tagged so a plain `'1'`, a `1` and a `{ id: 1 }` under `by: 'id'` never collide.
-      return `${keyed ? 'k' : 'v'}:${type}:${String(key)}`
-    if (props.by === undefined && type === 'object')
-      return `h:${serialize(key)}`
-    return undefined
-  }
-  function labelIndexOf(value: T, key = labelKey(value)) {
-    if (key !== undefined)
-      return labelIndex.get(key) ?? -1
-    return labelEntries.value.findIndex(i => compare(i.value, value, props.by))
-  }
-  const labels: ListboxLabelRegistry<T> = {
-    register: (value, label, disabled = false) => {
-      const key = labelKey(value)
-      const index = labelIndexOf(value, key)
-      const entries = labelEntries.value
-      const current = entries[index]
-      // Items re-register on every render; only an actual change is written.
-      if (current && current.label === label && current.disabled === disabled)
-        return
-      const entry = { value, label, disabled }
-      if (index === -1) {
-        if (key !== undefined)
-          labelIndex.set(key, entries.length)
-        entries.push(entry)
-      }
-      else {
-        entries[index] = entry
-      }
-      triggerRef(labelEntries)
-    },
-    get: (value) => {
-      const index = labelIndexOf(value)
-      return index === -1 ? undefined : labelEntries.value[index].label
-    },
-    entries: () => [...labelEntries.value],
-  }
+  const labels: ListboxLabelRegistry<T> = createLabelRegistry<T>(props.by)
 
   // Filtering (#2824 item 7). Opt-in: without a `filter` function every
   // check below short-circuits on `isFilterActive` and never reads the item

@@ -1,9 +1,10 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import type { SelectChangeReason, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason } from './useSelect'
+import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, isNullish, useDirection, useFormControl } from '@/shared'
-import { compare, valueComparator } from './utils'
+import { compare, createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /** The controlled open state of the Select. Can be bind as `v-model:open`. */
@@ -26,72 +27,107 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   autocomplete?: string
   /** When `true`, prevents the user from interacting with Select */
   disabled?: boolean
+  /**
+   * The text shown for a selected value. Wins over the text of its `SelectItemText`, so the value can be shown before
+   * the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost:
+   * until the content has been opened once, the hidden native `select` only holds the selected values (so browser
+   * autofill cannot pick another one) and the closed trigger's typeahead has no items to match.
+   */
+  displayValue?: (value: T) => string
+  /**
+   * Resolves what a keydown in the content means for keyboard navigation. Return `undefined` to fall back to the
+   * default mapping (ArrowUp, ArrowDown, Home, End), `null` to opt the key out (for Enter and Space this also skips the
+   * selection), or `'select'` to select the focused item as Enter does.
+   */
+  getNavigationIntent?: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
 }
 
-export type SelectRootEmits<T = AcceptableValue> = {
-  /** Event handler called when the value changes. */
-  'update:modelValue': [value: T]
-  /** Event handler called when the open state of the context menu changes. */
-  'update:open': [value: boolean]
+export type SelectRootEmits<T = AcceptableValue, M extends boolean = boolean> = {
+  /**
+   * Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an
+   * array when `multiple`.
+   */
+  'beforeUpdate:modelValue': [value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason>]
+  /** Event handler called when the value changes. The value is an array when `multiple`. */
+  'update:modelValue': [value: SelectModelValue<T, M>, details: ChangeEventDetails<SelectChangeReason>]
+  /** Event handler called before the open state changes; call `details.cancel()` to keep it. */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<SelectOpenChangeReason>]
+  /** Event handler called when the open state of the select changes. */
+  'update:open': [value: boolean, details: ChangeEventDetails<SelectOpenChangeReason>]
 }
 
-export interface SelectRootContext<T> {
+/** The sticky label registry on the Select root context, matched with `by`. */
+export interface SelectLabelRegistry<T = AcceptableValue> extends LabelRegistry<T> {}
+
+export interface SelectRootContext<T = AcceptableValue> {
+  baseId: string
+  /** `<baseId>-content`, set when the root is created. */
+  contentId: string
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerChange: (node: HTMLElement | undefined) => void
   valueElement: Ref<HTMLElement | undefined>
-  onValueElementChange: (node: HTMLElement) => void
-  contentId: string
-  modelValue: Ref<T | Array<T> | undefined>
-  onValueChange: (value: T) => void
-  open: Ref<boolean>
+  onValueElementChange: (node: HTMLElement | undefined) => void
+  modelValue: ComputedRef<T | Array<T> | undefined>
+  /** Selects a value: replaces a single selection, toggles a multiple one. Returns `false` when unchanged or cancelled. */
+  onValueChange: (value: T, reason?: SelectChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Writes the whole model; returns `false` when unchanged or cancelled. */
+  setModelValue: (value: T | T[] | undefined, reason?: SelectChangeReason | BaseChangeReason, event?: Event) => boolean
+  /**
+   * An item press: selects, then closes a single select unless the selection was cancelled. Returns `false` when it
+   * was.
+   */
+  pressItem: (value: T, reason?: 'item-press' | 'item-keydown', event?: Event) => boolean
+  isSelected: (value: T) => boolean
+  open: ComputedRef<boolean>
+  /** Returns `false` when unchanged or cancelled via `beforeUpdate:open`. */
+  onOpenChange: (open: boolean, reason?: SelectOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   multiple: Ref<boolean>
-  required?: Ref<boolean>
-  by?: string | ((a: T, b: T) => boolean)
-  onOpenChange: (open: boolean) => void
+  required: Ref<boolean>
+  by?: By<T>
   dir: Ref<Direction>
   triggerPointerDownPosRef: Ref<{ x: number, y: number } | null>
   isEmptyModelValue: Ref<boolean>
-  disabled?: Ref<boolean>
-
-  optionsSet: Ref<Set<SelectOption>>
-  onOptionAdd: (option: SelectOption) => void
-  onOptionRemove: (option: SelectOption) => void
+  disabled: Ref<boolean>
+  /** The sticky label registry `SelectItemText` fills; entries are never removed on unmount. */
+  labels: SelectLabelRegistry<T>
+  /** Text of each selected value (`displayValue`, then `labels`). */
+  selectedLabels: ComputedRef<string[]>
+  /** The root's `displayValue` resolver, if any. */
+  displayValue: Ref<((value: T) => string) | undefined>
+  /** The root's `getNavigationIntent` over the default mapping. */
+  getNavigationIntent: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
-
-interface SelectOption { value: any, disabled?: boolean, textContent: string }
 </script>
 
-<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { useVModel } from '@vueuse/core'
-import { computed, ref, toRefs, watch } from 'vue'
+<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
+import { computed, toRef, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
+import { useSelectRoot } from './useSelect'
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<SelectRootProps<T>>(), {
+const props = withDefaults(defineProps<SelectRootProps<T> & { multiple?: M }>(), {
   modelValue: undefined,
   open: undefined,
   nullableValue: '',
 })
-const emits = defineEmits<SelectRootEmits<T>>()
+const emits = defineEmits<SelectRootEmits<T, M>>()
 
 defineSlots<{
   default?: (props: {
-    /** Current input values */
-    modelValue: typeof modelValue.value
+    /** Current input values; `undefined` while a single select is empty */
+    modelValue: M extends true ? T[] : T | undefined
     /** Current open state */
-    open: typeof open.value
+    open: boolean
   }) => any
 }>()
-
-const { multiple, dir: propDir } = toRefs(props)
 
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
@@ -109,127 +145,62 @@ const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 const required = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
 const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  // @ts-expect-error Missing infer for AcceptableValue
-  defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
-  passive: (props.modelValue === undefined) as false,
-  deep: true,
-}) as Ref<T | T[] | undefined>
+useCollection({ isProvider: true })
+const dir = useDirection(toRef(() => props.dir))
 
-const open = useVModel(props, 'open', emits, {
-  defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
-
-const triggerElement = ref<HTMLElement>()
-const valueElement = ref<HTMLElement>()
-const triggerPointerDownPosRef = ref({
-  x: 0,
-  y: 0,
+const select = useSelectRoot<AcceptableValue>({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  multiple: () => props.multiple,
+  by: props.by as By<AcceptableValue> | undefined,
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  disabled,
+  required,
+  dir,
+  baseId: useId(undefined, 'reka-select'),
+  displayValue: toRef(() => props.displayValue as ((value: AcceptableValue) => string) | undefined),
+  getNavigationIntent: event => props.getNavigationIntent?.(event),
+  emit: emits,
+  // User-driven selection (as opposed to a programmatic/parent-driven
+  // `modelValue` change, handled by the `watch` below) — this is what should
+  // mark the field dirty and run on-change validation. Report the resulting
+  // selection explicitly: a controlled `modelValue` only updates once the
+  // parent re-renders.
+  onUpdate: value => fieldContext?.handleControlInput({ value }),
 })
+const { context, open, isEmptyModelValue, isSelected } = select
+const modelValue = select.modelValue as unknown as Ref<M extends true ? T[] : T | undefined>
 
-const isEmptyModelValue = computed(() => {
-  if (multiple.value && Array.isArray(modelValue.value))
-    return modelValue.value?.length === 0
-  else
-    return isNullish(modelValue.value)
-})
-
-// `dirty` is reported from `handleValueChange` instead (the user-driven
-// path) — this watcher also fires for a programmatic/parent-driven
-// `modelValue` change, which should update `filled` but must not mark the
-// field dirty.
+// `dirty` is reported from `onUpdate` instead (the user-driven path) — this
+// watcher also fires for a programmatic/parent-driven `modelValue` change,
+// which should update `filled` but must not mark the field dirty.
 watch(modelValue, () => {
   fieldContext?.reportControlState({ filled: !isEmptyModelValue.value })
 })
 
-useCollection({ isProvider: true })
-const dir = useDirection(propDir)
+const isFormControl = useFormControl(context.triggerElement)
 
-const isFormControl = useFormControl(triggerElement)
-const optionsSet = ref<Set<SelectOption>>(new Set())
-
-// The native `select` only associates the correct default value if the corresponding
-// `option` is rendered as a child **at the same time** as itself.
-// Because it might take a few renders for our items to gather the information to build
-// the native `option`(s), we generate a key on the `select` to make sure Vue re-builds it
-// each time the options change.
-const nativeSelectKey = computed(() => {
-  return Array.from(optionsSet.value)
-    .map(option => option.value)
-    .join(';')
-})
-
-function handleValueChange(value: T) {
-  let nextValue: T | T[]
-  if (multiple.value) {
-    const array = Array.isArray(modelValue.value) ? [...modelValue.value] : []
-    const index = array.findIndex(i => compare(i, value, props.by))
-    index === -1 ? array.push(value) : array.splice(index, 1)
-    nextValue = [...array]
+// The native `select` mirrors the registered item texts plus every selected
+// value (a value whose item never rendered shows its `displayValue`), so it
+// does not depend on which items are mounted. Each option carries `selected`,
+// which also makes a `multiple` select submit every value.
+const nativeOptions = computed(() => {
+  const entries = context.labels.entries()
+  const options = entries.map(entry => ({ value: entry.value, label: entry.label, disabled: entry.disabled, selected: isSelected(entry.value) }))
+  const value = modelValue.value
+  const selectedValues = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as AcceptableValue[]
+  for (const selected of selectedValues) {
+    if (!entries.some(entry => compare(entry.value, selected, context.by)))
+      options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
-  else {
-    nextValue = value
-  }
-  modelValue.value = nextValue
-
-  // User-driven selection (as opposed to a programmatic/parent-driven
-  // `modelValue` change, handled by the `watch` above) — this is what
-  // should mark the field dirty and run on-change validation.
-  //
-  // Report the resulting selection explicitly: a controlled `modelValue` only
-  // updates once the parent re-renders, and in `multiple` mode `value` is the
-  // single item just added *or removed*.
-  fieldContext?.handleControlInput({ value: nextValue })
-}
-
-function getOption(value: SelectOption['value']) {
-  return Array.from(optionsSet.value)
-    .find(option => valueComparator(value, option.value, props.by))
-}
-
-provideSelectRootContext({
-  triggerElement,
-  onTriggerChange: (node) => {
-    triggerElement.value = node
-  },
-  valueElement,
-  onValueElementChange: (node) => {
-    valueElement.value = node
-  },
-  contentId: '',
-  modelValue,
-  // @ts-expect-error Missing infer for AcceptableValue
-  onValueChange: handleValueChange,
-  // @ts-expect-error Missing infer for AcceptableValue
-  by: props.by,
-  open,
-  multiple,
-  required,
-  onOpenChange: (value) => {
-    open.value = value
-  },
-  dir,
-  triggerPointerDownPosRef,
-  disabled,
-  isEmptyModelValue,
-
-  optionsSet,
-  onOptionAdd: (option) => {
-    const existingOption = getOption(option.value)
-    if (existingOption) {
-      optionsSet.value.delete(existingOption)
-    }
-
-    optionsSet.value.add(option)
-  },
-  onOptionRemove: (option) => {
-    const existingOption = getOption(option.value)
-    if (existingOption) {
-      optionsSet.value.delete(existingOption)
-    }
-  },
+  return options
 })
+// The native `select` is patched in place (each option's `selected` is bound),
+// never re-keyed: re-creating it on a model change would skip the `change`
+// event `BubbleSelect` dispatches for that change.
+
+provideSelectRootContext(context)
 </script>
 
 <template>
@@ -241,7 +212,6 @@ provideSelectRootContext({
 
     <BubbleSelect
       v-if="isFormControl && resolvedName"
-      :key="nativeSelectKey"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"
@@ -253,13 +223,19 @@ provideSelectRootContext({
     >
       <option
         v-if="isNullish(modelValue)"
+        data-nullable
         :value="nullableValue"
+        selected
       />
       <option
-        v-for="option in Array.from(optionsSet)"
-        :key="option.value ?? ''"
-        v-bind="option"
-      />
+        v-for="(option, index) in nativeOptions"
+        :key="index"
+        :value="option.value"
+        :disabled="option.disabled"
+        :selected="option.selected"
+      >
+        {{ option.label }}
+      </option>
     </BubbleSelect>
   </PopperRoot>
 </template>

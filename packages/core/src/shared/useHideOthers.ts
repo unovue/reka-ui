@@ -11,11 +11,22 @@ import { onUnmounted, watch } from 'vue'
  * to hide other elements when it is clicked or focused.
  */
 export function useHideOthers(target: MaybeElementRef) {
-  let undo: ReturnType<typeof hideOthers>
+  let undo: ReturnType<typeof hideOthers> | undefined
+
+  // `aria-hidden` reference-counts every hidden node and its undo has no
+  // guard: running one twice releases another modal's hold. Run each at most
+  // once.
+  function release() {
+    const current = undo
+    undo = undefined
+    current?.()
+  }
+
   watch(() => unrefElement(target), (el) => {
     // disable hideOthers on test mode
     if (import.meta.env.MODE === 'test')
       return
+    release()
     // Skip if inside a closed native popover
     // Use try/catch as `:popover-open` pseudo-class is not supported in all browsers (e.g. Safari 18)
     let isInsideClosedPopover = false
@@ -25,12 +36,7 @@ export function useHideOthers(target: MaybeElementRef) {
     catch {}
     if (el && !isInsideClosedPopover)
       undo = hideOthers(el)
-    else if (undo)
-      undo()
   })
 
-  onUnmounted(() => {
-    if (undo)
-      undo()
-  })
+  onUnmounted(release)
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
@@ -12,13 +12,16 @@ const rootContext = injectPopoverRootContext()
 const isRightClickOutsideRef = ref(false)
 
 // Base UI `PopoverPositioner`: a `modal` popover locks page scroll.
-useBodyScrollLock(true)
+// Only while open: a `forceMount`ed content that is closed keeps no lock,
+// backdrop or `aria-hidden` siblings.
+const scrollLocked = useBodyScrollLock(rootContext.open.value)
+watch(rootContext.open, open => scrollLocked.value = open)
 
 const forwarded = useForwardPropsEmits(props, emits)
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-useHideOthers(currentElement)
+useHideOthers(computed(() => rootContext.open.value ? currentElement.value : undefined))
 </script>
 
 <template>
@@ -26,7 +29,7 @@ useHideOthers(currentElement)
     v-bind="forwarded"
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
-    disable-outside-pointer-events
+    :disable-outside-pointer-events="rootContext.open.value"
     :backdrop-cutout="rootContext.triggerElement.value"
     @close-auto-focus.prevent="
       (event) => {

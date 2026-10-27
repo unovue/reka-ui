@@ -7,10 +7,11 @@ export interface SelectItemTextProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectItemContext } from './SelectItem.vue'
+import { useSelectItemText } from './useSelect'
 
 defineOptions({
   inheritAttrs: false,
@@ -27,36 +28,19 @@ const itemContext = injectSelectItemContext()
 const { forwardRef, currentElement: itemTextElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const optionProps = computed(() => {
-  return {
-    value: itemContext.value,
-    disabled: itemContext.disabled.value,
-    textContent: itemTextElement.value?.textContent ?? itemContext.value?.toString() ?? '',
-  }
-})
-
-onMounted(() => {
-  if (!itemTextElement.value)
-    return
-  itemContext.onItemTextChange(itemTextElement.value)
-  contentContext.itemTextRefCallback(
-    itemTextElement.value,
-    itemContext.value,
-    itemContext.disabled.value,
-  )
-  rootContext.onOptionAdd(optionProps.value)
-})
-
-onUnmounted(() => {
-  rootContext.onOptionRemove(optionProps.value)
+// Registers the text in the root's sticky label registry on mount and update.
+const { itemText } = useSelectItemText({
+  context: rootContext,
+  itemContext,
+  contentContext,
+  element: itemTextElement,
 })
 </script>
 
 <template>
   <Primitive
-    :id="itemContext.textId"
     :ref="forwardRef"
-    v-bind="{ ...props, ...$attrs }"
+    v-bind="mergeProps(itemText.attrs.value, props, $attrs)"
   >
     <slot />
   </Primitive>

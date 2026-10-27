@@ -177,8 +177,9 @@ rootContext.virtualKeydownHook.on((event) => {
   }
 
   nextTick(() => {
+    // The keydown travels with the write, so a Shift range reports `'range-select'` with it.
     if (event.shiftKey && intent)
-      rootContext.handleMultipleReplace(intent, getActiveElement(), getItems, rootContext.expandedItems.value.map(i => i.value))
+      rootContext.handleMultipleReplace(intent, getActiveElement(), getItems, rootContext.expandedItems.value.map(i => i.value), event)
   })
 })
 
