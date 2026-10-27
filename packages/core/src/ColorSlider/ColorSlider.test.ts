@@ -1,7 +1,11 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { h } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
+import { ColorSliderRoot, ColorSliderThumb, ColorSliderTrack } from '.'
 import ColorSlider from './story/_ColorSlider.vue'
 
 globalThis.ResizeObserver = class ResizeObserver {
@@ -209,5 +213,47 @@ describe('custom step prop', () => {
     // The SliderRoot should receive step=10
     expect(thumb.attributes('aria-valuemin')).toBe('0')
     expect(thumb.attributes('aria-valuemax')).toBe('360')
+  })
+})
+
+describe('track gradient follows the slider layout', () => {
+  function trackStyle(props: Record<string, unknown>, wrap?: (node: VNode) => VNode) {
+    const node = () => h(ColorSliderRoot, { defaultValue: '#ff0000', channel: 'hue', ...props }, () => [
+      h(ColorSliderTrack, { 'data-testid': 'track' }),
+      h(ColorSliderThumb),
+    ])
+    const wrapper = mount({ render: () => wrap ? wrap(node()) : node() })
+    return wrapper.find('[data-testid=track]').attributes('style')
+  }
+
+  it('runs left to right by default', () => {
+    expect(trackStyle({})).toContain('linear-gradient(to right, ')
+  })
+
+  it('runs bottom to top when vertical', () => {
+    expect(trackStyle({ orientation: 'vertical' })).toContain('linear-gradient(to top, ')
+  })
+
+  it('runs top to bottom when vertical and inverted', () => {
+    // `to bottom` is the CSS default, which the style serializer drops.
+    const style = trackStyle({ orientation: 'vertical', inverted: true })
+    expect(style).toContain('linear-gradient(rgb(255, 0, 0), ')
+    expect(style).not.toMatch(/linear-gradient\(to (top|left|right)/)
+  })
+
+  it('runs right to left when inverted', () => {
+    expect(trackStyle({ inverted: true })).toContain('linear-gradient(to left, ')
+  })
+
+  it('runs right to left with dir="rtl"', () => {
+    expect(trackStyle({ dir: 'rtl' })).toContain('linear-gradient(to left, ')
+  })
+
+  it('runs left to right with dir="rtl" and inverted', () => {
+    expect(trackStyle({ dir: 'rtl', inverted: true })).toContain('linear-gradient(to right, ')
+  })
+
+  it('inherits the direction from ConfigProvider', () => {
+    expect(trackStyle({}, node => h(ConfigProvider, { dir: 'rtl' }, () => node))).toContain('linear-gradient(to left, ')
   })
 })

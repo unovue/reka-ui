@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAreaBackgroundStyle, getSliderGradient } from './gradient'
+import { getAreaBackgroundStyle, getSliderBackgroundStyle, getSliderGradient, getSliderGradientDirection } from './gradient'
 import { parseColor } from './parse'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -327,5 +327,66 @@ describe('getAreaBackgroundStyle', () => {
       expect(style.backgroundImage).toContain('linear-gradient(to right, rgb(0, 0, 0), rgb(0, 255, 0))') // x=green
       expect(style.backgroundImage).toContain('linear-gradient(to top, rgb(0, 0, 0), rgb(255, 0, 0))') // y=red
     })
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Slider track layout: orientation, inverted and direction
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('getSliderGradientDirection', () => {
+  it.each([
+    [{}, 'to right'],
+    [{ orientation: 'horizontal', dir: 'ltr', inverted: false }, 'to right'],
+    [{ orientation: 'horizontal', dir: 'ltr', inverted: true }, 'to left'],
+    [{ orientation: 'horizontal', dir: 'rtl', inverted: false }, 'to left'],
+    // RTL and inverted cancel out, as in SliderRoot
+    [{ orientation: 'horizontal', dir: 'rtl', inverted: true }, 'to right'],
+    [{ orientation: 'vertical' }, 'to top'],
+    [{ orientation: 'vertical', inverted: true }, 'to bottom'],
+    // Direction does not affect a vertical track
+    [{ orientation: 'vertical', dir: 'rtl' }, 'to top'],
+    [{ orientation: 'vertical', dir: 'rtl', inverted: true }, 'to bottom'],
+  ] as const)('%o runs %s', (layout, expected) => {
+    expect(getSliderGradientDirection(layout)).toBe(expected)
+  })
+})
+
+describe('getSliderGradient layout', () => {
+  const color = parseColor('hsl(200, 60%, 40%)')
+  const channels = ['hue', 'saturation', 'lightness', 'brightness', 'red', 'green', 'blue', 'alpha'] as const
+
+  it.each(channels)('%s defaults to a left-to-right gradient', (channel) => {
+    expect(getSliderGradient(color, channel, 'hsl')).toMatch(/^linear-gradient\(to right, /)
+  })
+
+  it.each(channels)('%s follows a vertical track from the bottom', (channel) => {
+    expect(getSliderGradient(color, channel, 'hsl', { orientation: 'vertical' })).toMatch(/^linear-gradient\(to top, /)
+  })
+
+  it.each(channels)('%s follows an inverted vertical track from the top', (channel) => {
+    expect(getSliderGradient(color, channel, 'hsl', { orientation: 'vertical', inverted: true })).toMatch(/^linear-gradient\(to bottom, /)
+  })
+
+  it.each(channels)('%s runs right to left in RTL', (channel) => {
+    expect(getSliderGradient(color, channel, 'hsl', { dir: 'rtl' })).toMatch(/^linear-gradient\(to left, /)
+  })
+
+  it.each(channels)('%s runs right to left when inverted', (channel) => {
+    expect(getSliderGradient(color, channel, 'hsl', { inverted: true })).toMatch(/^linear-gradient\(to left, /)
+  })
+
+  it('keeps the color stops; only the direction changes', () => {
+    const ltr = getSliderGradient(color, 'lightness', 'hsl')
+    const rtl = getSliderGradient(color, 'lightness', 'hsl', { dir: 'rtl' })
+    expect(rtl).toBe(ltr.replace('to right', 'to left'))
+  })
+
+  it('getSliderBackgroundStyle passes the layout through, keeping the alpha checkerboard', () => {
+    const style = getSliderBackgroundStyle(color, 'alpha', 'hsl', { orientation: 'vertical' })
+    expect(style.background).toMatch(/^linear-gradient\(to top, transparent, /)
+    // The checkerboard tiles do not depend on the direction
+    expect(style.background).toContain('linear-gradient(45deg, #ccc 25%, transparent 25%)')
+    expect(style.backgroundSize).toBe('100% 100%, 8px 8px, 8px 8px, 8px 8px, 8px 8px')
   })
 })
