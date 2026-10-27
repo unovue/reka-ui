@@ -15,6 +15,14 @@ import { transformJSDocLinks } from './utils'
 const traverse = ((_traverse as any).default ?? _traverse) as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
+// Declared before the top-level `forEach` calls below, which use them through
+// `generateMarkdownTables`.
+const CODE_TAG_RE = /<code>([\s\S]*?)<\/code>/g
+const CODE_SPAN_SPLIT_RE = /(`[^`]*`)/
+const LT_RE = /</g
+const PIPE_RE = /\|/g
+const NEWLINE_RE = /\n/g
+
 const md = new MarkdownIt()
 md.use(transformJSDocLinks)
 
@@ -167,7 +175,16 @@ function stripHtml(html: string): string {
 }
 
 function generateMarkdownTables(meta: ReturnType<typeof parseMeta>): string {
-  const clean = (s: string) => stripHtml(s).replace(/\|/g, '\\|').replace(/\n/g, ' ')
+  // Keep `<code>` spans as Markdown code and escape any other `<`, so a decoded
+  // tag name such as `<body>` is not parsed as HTML by VitePress.
+  const clean = (s: string) => stripHtml(s.replace(CODE_TAG_RE, (_, code: string) => `\`${code}\``))
+    .split(CODE_SPAN_SPLIT_RE)
+    .map(part => part.startsWith('`') ? part : part.replace(LT_RE, '\\<'))
+    .join('')
+    .replace(PIPE_RE, '\\|')
+    .replace(NEWLINE_RE, ' ')
+  // For cells rendered inside a code span, where a backslash would show literally.
+  const cleanCode = (s: string) => stripHtml(s).replace(PIPE_RE, '\\|').replace(NEWLINE_RE, ' ')
 
   function toMdTable(title: string, headers: string[], rows: string[][]): string {
     if (!rows.length)
@@ -179,13 +196,13 @@ function generateMarkdownTables(meta: ReturnType<typeof parseMeta>): string {
     toMdTable('Props', ['Name', 'Description', 'Type', 'Required', 'Default'], meta.props.map(p => [
       `\`${p.name}\``,
       clean(p.description),
-      `\`${clean(p.type)}\``,
+      `\`${cleanCode(p.type)}\``,
       p.required ? 'Yes' : 'No',
-      p.default != null ? `\`${clean(String(p.default))}\`` : '-',
+      p.default != null ? `\`${cleanCode(String(p.default))}\`` : '-',
     ])),
-    toMdTable('Events', ['Name', 'Description', 'Type'], meta.events.map(e => [`\`${e.name}\``, clean(e.description), `\`${clean(e.type)}\``])),
-    toMdTable('Slots', ['Name', 'Description', 'Type'], meta.slots.map(s => [`\`${s.name}\``, clean(s.description), `\`${clean(s.type)}\``])),
-    toMdTable('Methods', ['Name', 'Description', 'Type'], meta.methods.map(m => [`\`${m.name}\``, clean(m.description), `\`${clean(m.type)}\``])),
+    toMdTable('Events', ['Name', 'Description', 'Type'], meta.events.map(e => [`\`${e.name}\``, clean(e.description), `\`${cleanCode(e.type)}\``])),
+    toMdTable('Slots', ['Name', 'Description', 'Type'], meta.slots.map(s => [`\`${s.name}\``, clean(s.description), `\`${cleanCode(s.type)}\``])),
+    toMdTable('Methods', ['Name', 'Description', 'Type'], meta.methods.map(m => [`\`${m.name}\``, clean(m.description), `\`${cleanCode(m.type)}\``])),
   ].join('')
 }
 

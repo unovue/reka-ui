@@ -49,9 +49,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"span"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `placeholder` | The content that will be rendered inside the SelectValue when no value or defaultValue is set. | `string` | No | `""` |
+| `placeholder` | The content that will be rendered inside the `SelectValue` when no `value` or `defaultValue` is set. | `string` | No | `""` |
 
 **Slots**
 

@@ -30,8 +30,8 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `nonce` | Will add nonce attribute to the style tag which can be used by Content Security Policy. <br> If omitted, inherits globally from ConfigProvider. | `string` | No | - |
+| `nonce` | Will add `nonce` attribute to the style tag which can be used by Content Security Policy. \<br> If omitted, inherits globally from `ConfigProvider`. | `string` | No | - |
 
 </llm-only>

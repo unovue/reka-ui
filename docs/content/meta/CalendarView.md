@@ -48,9 +48,9 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `view` | The view this part renders. Its content is shown only while the root's view matches. | `"day" \| "month" \| "year"` | Yes | - |
+| `view` | The view this part renders. Its content is shown only while the root's `view` matches. | `"day" \| "month" \| "year"` | Yes | - |
 
 **Slots**
 

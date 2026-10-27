@@ -60,10 +60,10 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `estimateSize` | Estimated size (in px) of each item. A function receives the row index (group header rows included). | `number \| ((index: number) => number)` | No | - |
-| `grouped` | When true, options holds groups (VirtualGroup) rather than options. | `boolean` | No | - |
-| `options` | List of items, or, with grouped, groups of items ({ label, options, disabled? }). Groups are flattened to rows: a header row rendered by the group slot, then the group's options. Each option is the value of the item the default slot renders. | `T[] \| VirtualGroup<T>[]` | Yes | - |
+| `grouped` | When `true`, `options` holds groups (`VirtualGroup`) rather than options. | `boolean` | No | - |
+| `options` | List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`). Groups are flattened to rows: a header row rendered by the `group` slot, then the group's options. Each option is the value of the item the default slot renders. | `T[] \| VirtualGroup<T>[]` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
-| `textContent` | Text content for each item, used by typeahead and by a ListboxRoot filter (both otherwise use the option's string form). Required for object options. | `((option: T) => string)` | No | - |
+| `textContent` | Text content for each item, used by typeahead and by a `ListboxRoot` `filter` (both otherwise use the option's string form). Required for object options. | `((option: T) => string)` | No | - |
 
 **Slots**
 

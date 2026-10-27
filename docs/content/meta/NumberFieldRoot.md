@@ -166,32 +166,32 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `allowInvalid` | When true, a typed value is kept as-is even if invalid (out of min/max range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no aria-invalid/data-invalid), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `allowInvalid` | When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no `aria-invalid`/`data-invalid`), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` |  | `number` | No | - |
-| `disabled` | When true, prevents the user from interacting with the Number Field. | `boolean` | No | - |
-| `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | - |
-| `focusOnChange` | When true, the input will be focused when the value changes. | `boolean` | No | `true` |
+| `disabled` | When `true`, prevents the user from interacting with the Number Field. | `boolean` | No | - |
+| `disableWheelChange` | When `true`, prevents the value from changing on wheel scroll. | `boolean` | No | - |
+| `focusOnChange` | When `true`, the input will be focused when the value changes. | `boolean` | No | `true` |
 | `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `Intl.NumberFormatOptions` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `invertWheelChange` | When true, inverts the direction of the wheel change. | `boolean` | No | - |
+| `invertWheelChange` | When `true`, inverts the direction of the wheel change. | `boolean` | No | - |
 | `locale` | The locale to use for formatting and currencies | `string` | No | - |
 | `max` | The largest value allowed for the input. | `number` | No | - |
 | `min` | The smallest value allowed for the input. | `number` | No | - |
 | `modelValue` |  | `number \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `readonly` | When true, the Number Field is read-only. | `boolean` | No | - |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `startingValue` | The value the first increment or decrement sets when the field is empty. It is clamped to min/max but not snapped to step. Defaults to min, or 0 when min is not set. | `number` | No | - |
+| `readonly` | When `true`, the Number Field is read-only. | `boolean` | No | - |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `startingValue` | The value the first increment or decrement sets when the field is empty. It is clamped to `min`/`max` but not snapped to `step`. Defaults to `min`, or `0` when `min` is not set. | `number` | No | - |
 | `step` | The amount that the input value changes with each increment or decrement "tick". | `number` | No | `1` |
-| `stepSnapping` | When false, prevents the value from snapping to the nearest increment of the step value | `boolean` | No | `true` |
+| `stepSnapping` | When `false`, prevents the value from snapping to the nearest increment of the step value | `boolean` | No | `true` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Called before the value changes; `details.cancel()` keeps the current value. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the value changes. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
 
 **Slots**

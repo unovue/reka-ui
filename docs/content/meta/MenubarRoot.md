@@ -58,15 +58,15 @@
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `defaultValue` | The value of the menu that should be open when initially rendered. Use when you do not need to control the value state. | `string` | No | - |
-| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
-| `modelValue` | The controlled value of the menu to open. Can be used as v-model. | `string` | No | - |
+| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
+| `modelValue` | The controlled value of the menu to open. Can be used as `v-model`. | `string` | No | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[value: string, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Called before the value changes; `details.cancel()` keeps the current value. | `[value: string, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: string, details: ChangeEventDetails<MenuOpenChangeReason, Event>]` |
 
 **Slots**

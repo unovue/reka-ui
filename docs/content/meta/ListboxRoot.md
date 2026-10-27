@@ -146,28 +146,28 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `AcceptableValue \| AcceptableValue[]` | No | - |
-| `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
-| `filter` | Filters the items by the ListboxFilter search term: called as filter(text, search, value) with the item's textValue (or text content; in a ListboxVirtualizer, textContent(option)), it returns whether the item matches. Items that do not match are not rendered, so keyboard navigation, typeahead and select-all skip them. Omitted or null, the listbox does not filter (filter the items yourself, or on a server). | `ListboxFilterFunction<AcceptableValue> \| null` | No | - |
-| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. ListboxFilter never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a 'select' intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
-| `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
-| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
-| `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
+| `dir` | The reading direction of the listbox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When `true`, prevents the user from interacting with listbox | `boolean` | No | - |
+| `filter` | Filters the items by the `ListboxFilter` search term: called as `filter(text, search, value)` with the item's `textValue` (or text content; in a `ListboxVirtualizer`, `textContent(option)`), it returns whether the item matches. Items that do not match are not rendered, so keyboard navigation, typeahead and select-all skip them. Omitted or `null`, the listbox does not filter (filter the items yourself, or on a server). | `ListboxFilterFunction<AcceptableValue> \| null` | No | - |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return `undefined` to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. `ListboxFilter` never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a `'select'` intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
+| `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | - |
+| `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `modelValue` | The controlled value of the listbox. Can be binded with `v-model`. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"vertical"` |
-| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `orientation` | The orientation of the listbox. \<br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"vertical"` |
+| `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: ListboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `undefined` when a single selection is cleared. | `[value: ListboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
