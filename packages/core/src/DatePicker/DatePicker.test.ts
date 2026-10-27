@@ -43,6 +43,13 @@ it('should pass axe accessibility tests', async () => {
   expect(await axe(container)).toHaveNoViolations()
 })
 
+it('should pass axe accessibility tests with the calendar open', async () => {
+  const { user, trigger, getByTestId, baseElement } = setup()
+  await user.click(trigger)
+  expect(getByTestId('calendar')).toBeInTheDocument()
+  expect(await axe(baseElement)).toHaveNoViolations()
+})
+
 describe('datePicker', async () => {
   it('populates segment with value - `CalendarDate`', async () => {
     const { month, day, year } = setup({

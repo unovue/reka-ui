@@ -1,10 +1,30 @@
 <script lang="ts">
+import type { CalendarGridData, CalendarUnit, DateValue, WeekStartsOn } from '@/date'
 import { CalendarRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 </script>
 
 <script setup lang="ts">
 import { useForwardElement } from '@/shared'
+
+defineSlots<{
+  default?: (props: {
+    /** The current date of the placeholder */
+    date: DateValue
+    /** The rendered page(s) of the active view */
+    grid: CalendarGridData[]
+    /** The days of the week (day view only) */
+    weekDays: string[]
+    /** The start of the week */
+    weekStartsOn: WeekStartsOn
+    /** The calendar locale */
+    locale: string
+    /** Whether or not to always display 6 weeks in the calendar */
+    fixedWeeks: boolean
+    /** The active view */
+    view: CalendarUnit
+  }) => any
+}>()
 
 const rootContext = injectDatePickerRootContext()
 

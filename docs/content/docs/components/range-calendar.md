@@ -7,8 +7,6 @@ name: range-calendar
 
 # Range Calendar
 
-<Badge>Alpha</Badge>
-
 <Description>
 Presents a calendar view tailored for selecting date ranges.
 </Description>

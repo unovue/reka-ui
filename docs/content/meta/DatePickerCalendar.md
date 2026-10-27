@@ -5,37 +5,37 @@
 <SlotsTable :data="[
   {
     'name': 'date',
-    'description': '',
+    'description': '<p>The current date of the placeholder</p>\n',
     'type': 'DateValue'
   },
   {
     'name': 'grid',
-    'description': '',
+    'description': '<p>The rendered page(s) of the active view</p>\n',
     'type': 'CalendarGridData[]'
   },
   {
     'name': 'weekDays',
-    'description': '',
+    'description': '<p>The days of the week (day view only)</p>\n',
     'type': 'string[]'
   },
   {
     'name': 'weekStartsOn',
-    'description': '',
+    'description': '<p>The start of the week</p>\n',
     'type': '0 | 1 | 2 | 3 | 4 | 5 | 6'
   },
   {
     'name': 'locale',
-    'description': '',
+    'description': '<p>The calendar locale</p>\n',
     'type': 'string'
   },
   {
     'name': 'fixedWeeks',
-    'description': '',
+    'description': '<p>Whether or not to always display 6 weeks in the calendar</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'view',
-    'description': '',
+    'description': '<p>The active view</p>\n',
     'type': '\'day\' | \'month\' | \'year\''
   }
 ]" />
@@ -47,12 +47,12 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `date` |  | `DateValue` |
-| `grid` |  | `CalendarGridData[]` |
-| `weekDays` |  | `string[]` |
-| `weekStartsOn` |  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
-| `locale` |  | `string` |
-| `fixedWeeks` |  | `boolean` |
-| `view` |  | `"day" \| "month" \| "year"` |
+| `date` | The current date of the placeholder | `DateValue` |
+| `grid` | The rendered page(s) of the active view | `CalendarGridData[]` |
+| `weekDays` | The days of the week (day view only) | `string[]` |
+| `weekStartsOn` | The start of the week | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
+| `locale` | The calendar locale | `string` |
+| `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` |
+| `view` | The active view | `"day" \| "month" \| "year"` |
 
 </llm-only>

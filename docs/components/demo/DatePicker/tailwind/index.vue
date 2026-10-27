@@ -60,7 +60,10 @@ import {
           </template>
         </div>
 
-        <DatePickerTrigger class="focus:shadow-[0_0_0_2px] rounded p-1 focus:shadow-black">
+        <DatePickerTrigger
+          class="focus:shadow-[0_0_0_2px] rounded p-1 focus:shadow-black"
+          aria-label="Open calendar"
+        >
           <Icon
             icon="radix-icons:calendar"
             class="text-base"

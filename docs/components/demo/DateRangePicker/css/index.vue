@@ -84,7 +84,10 @@ import './styles.css'
           </DateRangePickerInput>
         </template>
 
-        <DateRangePickerTrigger class="PopoverTrigger">
+        <DateRangePickerTrigger
+          class="PopoverTrigger"
+          aria-label="Open calendar"
+        >
           <Icon
             icon="radix-icons:calendar"
             class="Icon"

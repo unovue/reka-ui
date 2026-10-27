@@ -6,8 +6,6 @@ name: date-field
 
 # Date Field
 
-<Badge>Alpha</Badge>
-
 <Description>
 Enables users to input specific dates within a designated field.
 </Description>

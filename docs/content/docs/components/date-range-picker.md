@@ -6,8 +6,6 @@ name: date-range-picker
 
 # Date Range Picker
 
-<Badge>Alpha</Badge>
-
 <Description>
 Facilitates the selection of date ranges through an input and calendar-based interface.
 </Description>
@@ -175,7 +173,7 @@ Contains the date picker date field segments
 
 ### Trigger
 
-The button that toggles the popover. By default, the `DateRangePickerContent` will position itself against the trigger.
+The button that toggles the popover. By default, the `DateRangePickerContent` will position itself against the trigger. A trigger that holds only an icon has no accessible name, so give it an `aria-label` (for example `aria-label="Open calendar"`).
 
 <!-- @include: @/meta/DateRangePickerTrigger.md -->
 

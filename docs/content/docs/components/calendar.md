@@ -7,8 +7,6 @@ name: calendar
 
 # Calendar
 
-<Badge>Alpha</Badge>
-
 <Description>
 Displays dates and days of the week, facilitating date-related interactions.
 </Description>

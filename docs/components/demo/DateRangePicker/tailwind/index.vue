@@ -84,7 +84,10 @@ import {
           </DateRangePickerInput>
         </template>
 
-        <DateRangePickerTrigger class="ml-4 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none rounded p-1">
+        <DateRangePickerTrigger
+          class="ml-4 focus:shadow-[0_0_0_2px] focus:shadow-black focus:outline-none rounded p-1"
+          aria-label="Open calendar"
+        >
           <Icon
             icon="radix-icons:calendar"
             class="w-4 h-4"
