@@ -39,8 +39,13 @@ const rootContext = injectSelectRootContext()
 // registers its text for `SelectValue` and the native select. Skipped when the
 // root has a `displayValue`, which resolves the text without the items.
 const fragment = ref<DocumentFragment>()
+// `Presence` is only rendered while open, so it mounts on every open: past this
+// component's own mount, that first render is an open and gets
+// `data-starting-style` (#2827).
+const isMounted = ref(false)
 onMounted(() => {
   fragment.value = new DocumentFragment()
+  isMounted.value = true
 })
 
 const presenceRef = ref<InstanceType<typeof Presence>>()
@@ -85,7 +90,10 @@ onUnmounted(clearRenderPresenceTimeout)
   <Presence
     v-if="present || renderPresence || presenceRef?.present"
     :ref="setPresenceRef"
-    :present="present"
+    :present="rootContext.open.value"
+    :force-mount="forceMount"
+    :appear="isMounted"
+    @complete="rootContext.notifyOpenComplete"
   >
     <SelectContentImpl v-bind="{ ...forwarded, ...$attrs }">
       <slot />

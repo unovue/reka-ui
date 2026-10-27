@@ -181,6 +181,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the combobox changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;ComboboxOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -238,6 +243,7 @@
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; } \| undefined]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

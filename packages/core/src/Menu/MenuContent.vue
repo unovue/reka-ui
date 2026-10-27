@@ -36,7 +36,9 @@ defineExpose(expose)
 <template>
   <Presence
     :ref="forwardRef"
-    :present="forceMount || menuContext.open.value"
+    :present="menuContext.open.value"
+    :force-mount="forceMount"
+    @complete="menuContext.notifyOpenComplete"
   >
     <MenuRootContentModal
       v-if="rootContext.modal.value"

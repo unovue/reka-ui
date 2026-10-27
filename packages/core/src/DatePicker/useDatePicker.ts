@@ -71,6 +71,8 @@ export interface UseDatePickerProps {
   onBeforeUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DatePickerChangeReason>) => void
   onUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DatePickerChangeReason>) => void
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason>) => void
+  /** Called once the popover content's open/close animations have finished (`update:openComplete`). */
+  onOpenComplete?: (value: boolean) => void
   onUpdateView?: (value: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason>) => void
 }
 
@@ -158,6 +160,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
     baseId: props.baseId,
     emit: props.emit,
     onUpdate: props.onUpdateOpen as ((value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>) => void) | undefined,
+    onOpenComplete: props.onOpenComplete,
   })
 
   const { state: view, setState: setViewState, isControlled: isViewControlled } = useControllableState<CalendarUnit, CalendarChangeReason>({

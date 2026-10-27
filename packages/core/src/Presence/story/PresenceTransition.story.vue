@@ -28,10 +28,34 @@ const isOpen = ref(false)
         </Transition>
       </div>
     </Variant>
+
+    <Variant title="With CSS transition (data-starting-style / data-ending-style)">
+      <div>
+        <button @click="isOpen = !isOpen">
+          Toggle content
+        </button>
+
+        <Presence :present="isOpen">
+          <div class="presence-fade">
+            Content
+          </div>
+        </Presence>
+      </div>
+    </Variant>
   </Story>
 </template>
 
 <style>
+.presence-fade {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.presence-fade[data-starting-style],
+.presence-fade[data-ending-style] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 .v-enter-active,
 .v-leave-active {
   transition: opacity 0.5s ease;

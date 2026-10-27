@@ -185,6 +185,12 @@ export interface UseSelectRootProps<T = AcceptableValue> {
   onBeforeUpdateOpen?: (value: boolean, details: ChangeEventDetails<SelectOpenChangeReason>) => void
   /** Called after the open state changed. */
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<SelectOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseSelectRootReturn<T = AcceptableValue> {
@@ -336,6 +342,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     selectedLabels,
     displayValue,
     getNavigationIntent,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
   return {

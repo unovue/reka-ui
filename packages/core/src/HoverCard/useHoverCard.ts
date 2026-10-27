@@ -114,6 +114,12 @@ export interface UseHoverCardProps {
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason>) => void
   /** Called after a change commits. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseHoverCardReturn {
@@ -237,6 +243,7 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
     isPointerInTransitRef,
     triggerElement,
     enableTouch: enableTouch as Ref<boolean>,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
   return {

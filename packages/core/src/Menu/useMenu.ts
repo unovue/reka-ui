@@ -66,6 +66,12 @@ export interface UseMenuRootProps {
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<MenuOpenChangeReason>) => void
   /** Called after a change commits. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<MenuOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseMenuRootReturn {
@@ -121,6 +127,7 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
     onContentChange: (element) => {
       content.value = element
     },
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
   const menuRootContext: MenuRootContext = {
     onClose,

@@ -48,6 +48,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the hover card changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;HoverCardOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -78,6 +83,7 @@
 | --- | --- | --- |
 | `beforeUpdate:open` | Event handler called before the open state of the hover card changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the hover card changes. | `[value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

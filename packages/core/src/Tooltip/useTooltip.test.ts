@@ -385,6 +385,7 @@ describe('useTooltip — context', () => {
       'ignoreNonKeyboardFocus',
       'isDelayed',
       'isPointerInTransit',
+      'notifyOpenComplete',
       'onClose',
       'onOpen',
       'onTriggerChange',

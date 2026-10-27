@@ -49,7 +49,7 @@ defineExpose(expose)
 
 registerDrawerCssProperties()
 
-// Snap points, swipe dismiss, dismiss reasons, `openComplete` wiring and the
+// Snap points, swipe dismiss, dismiss reasons and the
 // nested-drawer CSS vars live in the composable; FocusScope + DismissableLayer
 // stay here. `$attrs` merges AFTER the surface (consumer attrs win, handlers chain).
 const {
