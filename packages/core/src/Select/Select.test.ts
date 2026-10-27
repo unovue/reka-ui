@@ -381,10 +381,11 @@ describe('given Select with options containing spaces', () => {
   })
 })
 
-describe('given a closed Select', () => {
-  async function mountSelect<T>(options: T[], { initialValue, label = String, rootProps = {}, triggerProps = {}, itemProps = () => ({}) }: {
+describe('given typing on a Select trigger', () => {
+  async function mountSelect<T>(options: T[], { initialValue, label = String, withItemText = true, rootProps = {}, triggerProps = {}, itemProps = () => ({}) }: {
     initialValue?: T
     label?: (option: T) => string
+    withItemText?: boolean
     rootProps?: Record<string, unknown>
     triggerProps?: Record<string, unknown>
     itemProps?: (option: T) => Record<string, unknown>
@@ -396,7 +397,7 @@ describe('given a closed Select', () => {
         return () => h(SelectRoot, { ...rootProps, 'modelValue': modelValue.value, 'onUpdate:modelValue': (value: T) => { modelValue.value = value } }, () => [
           h(SelectTrigger, triggerProps, () => h(SelectValue)),
           h(SelectContent, () => h(SelectViewport, () => options.map(option =>
-            h(SelectItem, { value: option, ...itemProps(option) }, () => h(SelectItemText, () => label(option))),
+            h(SelectItem, { value: option, ...itemProps(option) }, () => withItemText ? h(SelectItemText, () => label(option)) : label(option)),
           ))),
         ])
       },
@@ -452,14 +453,6 @@ describe('given a closed Select', () => {
     expect(modelValue.value).toBe('Blueberry')
   })
 
-  it('should let an item\'s `select` event prevent the selection', async () => {
-    const onSelect = vi.fn((event: Event) => event.preventDefault())
-    const { modelValue, trigger } = await mountSelect(['Apple', 'Create new'], { itemProps: option => option === 'Create new' ? { onSelect } : {} })
-    await type(trigger, 'c')
-    expect(onSelect).toHaveBeenCalledOnce()
-    expect(modelValue.value).toBeUndefined()
-  })
-
   it('should emit the item\'s own object value to a controlled Select', async () => {
     const options = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
     const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
@@ -467,9 +460,39 @@ describe('given a closed Select', () => {
     expect(modelValue.value).toBe(options[1])
   })
 
+  it('should cycle through items with the same text', async () => {
+    const options = [{ id: 1, name: 'Main St' }, { id: 2, name: 'Main St' }]
+    const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
+    await type(trigger, 'm')
+    expect(modelValue.value).toBe(options[1])
+  })
+
+  it('should match an item\'s text content when it has no `SelectItemText`', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { withItemText: false })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Banana')
+  })
+
+  it('should not emit `update:open` when selecting while closed', async () => {
+    const onUpdateOpen = vi.fn()
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { 'open': false, 'onUpdate:open': onUpdateOpen } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Banana')
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+  })
+
   it('should not select when the Select is disabled', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { disabled: true }, triggerProps: { as: 'div', tabindex: 0 } })
     await type(trigger, 'b')
+    expect(modelValue.value).toBeUndefined()
+  })
+
+  it('should focus the match without selecting it while open', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { open: true } })
+    await new Promise(resolve => setTimeout(resolve))
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    await type(trigger, 'b')
+    expect(document.activeElement?.textContent).toContain('Banana')
     expect(modelValue.value).toBeUndefined()
   })
 })
