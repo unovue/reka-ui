@@ -2,10 +2,10 @@
 import type { Ref } from 'vue'
 
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, useForwardElement, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
+import { getStepperItemContext, getStepperItemSurface } from './useStepper'
 
 export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
 
@@ -22,10 +22,10 @@ export type StepperState = 'completed' | 'current' | 'upcoming'
 export interface StepperItemContext {
   titleId: string
   descriptionId: string
-  step: Ref<number>
-  state: Ref<StepperState>
-  disabled: Ref<boolean>
-  isFocusable: Ref<boolean>
+  step: Readonly<Ref<number>>
+  state: Readonly<Ref<StepperState>>
+  disabled: Readonly<Ref<boolean>>
+  isFocusable: Readonly<Ref<boolean>>
 }
 
 export interface StepperItemProps extends PrimitiveProps {
@@ -51,43 +51,24 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, step, completed } = toRefs(props)
-
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectStepperRootContext()
 
-const titleId = useId(undefined, 'reka-stepper-item-title')
-const descriptionId = useId(undefined, 'reka-stepper-item-description')
-
-const itemState = computed(() => {
-  if (completed.value)
-    return 'completed'
-  if (rootContext.modelValue.value === step.value)
-    return 'current'
-  if (rootContext.modelValue.value! > step.value)
-    return 'completed'
-  return 'upcoming'
+// `useId` (SSR-stable ids) stays in the shell; state, focusability and the
+// rendered attrs come from the shared builders (single source with `useStepper().getItem`).
+const itemContext = getStepperItemContext(rootContext, {
+  step: () => props.step,
+  disabled: () => props.disabled,
+  completed: () => props.completed,
+  titleId: useId(undefined, 'reka-stepper-item-title'),
+  descriptionId: useId(undefined, 'reka-stepper-item-description'),
 })
+const surface = getStepperItemSurface(rootContext, itemContext)
+const itemState = itemContext.state
 
-const isFocusable = computed(() => {
-  if (disabled.value)
-    return false
-  if (rootContext.linear.value)
-    return step.value <= rootContext.modelValue.value! || step.value === rootContext.modelValue.value! + 1
-
-  return true
-})
-
-provideStepperItemContext({
-  titleId,
-  descriptionId,
-  state: itemState,
-  disabled,
-  step,
-  isFocusable,
-})
+provideStepperItemContext(itemContext)
 </script>
 
 <template>
@@ -95,11 +76,7 @@ provideStepperItemContext({
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :aria-current="itemState === 'current' ? 'true' : undefined"
-    :data-state="itemState"
-    :disabled="disabled || !isFocusable ? '' : undefined"
-    :data-disabled="disabled || !isFocusable ? '' : undefined"
-    :data-orientation="rootContext.orientation.value"
+    v-bind="surface.attrs.value"
   >
     <slot :state="itemState" />
   </Primitive>
