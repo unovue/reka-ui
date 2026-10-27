@@ -398,3 +398,70 @@ describe('treeVirtualizer — details contract', () => {
     expect(value.map((n: Node) => n.title)).toEqual(['item 0', 'item 1'])
   })
 })
+
+// #2789: `propagateSelect` / `bubbleSelect` walk the descendants through `getChildren`
+// at every level (v2's `flatten` read `item.children` below the first level).
+describe('useTree — custom getChildren schema', () => {
+  type Dir = { name: string, nodes?: Dir[] }
+  const guides: Dir = { name: 'guides', nodes: [{ name: 'b.md' }, { name: 'c.md' }] }
+  const docs: Dir = { name: 'docs', nodes: [{ name: 'a.md' }, guides] }
+  const dirTree = (props: Partial<UseTreeProps<Dir>> = {}) => useTree<Dir>({
+    items: [docs],
+    getKey: d => d.name,
+    getChildren: d => d.nodes,
+    multiple: true,
+    defaultExpanded: ['docs', 'guides'],
+    ...props,
+  })
+
+  it('propagateSelect selects and deselects every descendant', () => {
+    const t = dirTree({ propagateSelect: true })
+    t.select(docs)
+    expect(t.selectedKeys.value).toEqual(['docs', 'a.md', 'guides', 'b.md', 'c.md'])
+    t.select(docs)
+    expect(t.selectedKeys.value).toEqual([])
+  })
+
+  it('bubbleSelect marks every ancestor of a nested descendant indeterminate', () => {
+    const t = dirTree({ bubbleSelect: true })
+    t.select(guides.nodes![0])
+    expect(t.getItemStatus(docs).isIndeterminate.value).toBe(true)
+    expect(t.getItemStatus(guides).isIndeterminate.value).toBe(true)
+  })
+
+  it('propagateSelect: a selected parent with an unselected nested descendant is indeterminate', () => {
+    const t = dirTree({ propagateSelect: true })
+    t.select(docs)
+    t.select(guides.nodes![1])
+    expect(t.getItemStatus(docs).isIndeterminate.value).toBe(true)
+  })
+})
+
+describe('useTree — select flags without multiple', () => {
+  it('warns once that propagateSelect / bubbleSelect need multiple, and still selects', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const t = tree({ propagateSelect: true, bubbleSelect: true })
+      t.select(fruits)
+      t.select(items[0])
+      expect(t.modelValue.value).toEqual(items[0])
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0][0]).toContain('`propagateSelect` and `bubbleSelect` require `multiple`')
+    }
+    finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('does not warn with multiple, or without the flags', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      tree({ multiple: true, propagateSelect: true }).select(fruits)
+      tree().select(fruits)
+      expect(warn).not.toHaveBeenCalled()
+    }
+    finally {
+      warn.mockRestore()
+    }
+  })
+})

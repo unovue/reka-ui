@@ -74,15 +74,15 @@ export function getTreeItemStatus<T extends Record<string, any>>(
   const isIndeterminate = computed(() => {
     const model = context.modelValue.value
     if (context.bubbleSelect.value && hasChildren.value && Array.isArray(model)) {
-      const children = flatten<T, any>(context.getChildren(toValue(value)) || [])
+      const children = flatten(context.getChildren(toValue(value)) ?? [], context.getChildren)
+      const isInModel = (child: T) => model.some(v => context.getKey(v) === context.getKey(child))
 
-      return children.some(child => model.find((v: any) => context.getKey(v) === context.getKey(child)))
-        && !children.every(child => model.find((v: any) => context.getKey(v) === context.getKey(child)))
+      return children.some(isInModel) && !children.every(isInModel)
     }
     else if (context.propagateSelect.value && isSelected.value && hasChildren.value && Array.isArray(model)) {
-      const children = flatten<T, any>(context.getChildren(toValue(value)) || [])
+      const children = flatten(context.getChildren(toValue(value)) ?? [], context.getChildren)
 
-      return !children.every(child => model.find((v: any) => context.getKey(v) === context.getKey(child)))
+      return !children.every(child => model.some(v => context.getKey(v) === context.getKey(child)))
     }
     else {
       return undefined
@@ -308,7 +308,11 @@ export interface UseTreeProps<T extends Record<string, any> = Record<string, any
    * A plain function (wrap a prop as `v => props.getKey(v)` to keep it live).
    */
   getKey: (val: T) => string
-  /** Returns an item's children. @defaultValue `val => val.children` */
+  /**
+   * Returns an item's children. `undefined` marks a leaf; an array, even an
+   * empty one, marks an expandable branch (children loaded on expand).
+   * @defaultValue `val => val.children`
+   */
   getChildren?: (val: T) => T[] | undefined
   /**
    * Controlled selection. A getter/ref resolving to `undefined` is uncontrolled;
@@ -413,6 +417,20 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
   const bubbleSelect = computed(() => toValue(props.bubbleSelect) ?? false)
   const loop = computed(() => toValue(props.loop) ?? false)
 
+  // `propagateSelect` / `bubbleSelect` only act on a `multiple` selection;
+  // warn once, at the first press where the flag is ignored.
+  let hasWarnedSelectWithoutMultiple = false
+  function warnSelectWithoutMultiple() {
+    // eslint-disable-next-line node/prefer-global/process
+    if (process.env.NODE_ENV === 'production' || hasWarnedSelectWithoutMultiple || multiple.value)
+      return
+    const flags = [propagateSelect.value && '`propagateSelect`', bubbleSelect.value && '`bubbleSelect`'].filter(Boolean)
+    if (!flags.length)
+      return
+    hasWarnedSelectWithoutMultiple = true
+    console.warn(`[reka-ui] TreeRoot: ${flags.join(' and ')} require \`multiple\`; ignored for a single selection.`)
+  }
+
   const {
     state: modelValue,
     setState: setModelState,
@@ -450,10 +468,11 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
   const virtualKeydownHook = createEventHook<KeyboardEvent>()
 
   const selectedKeys = computed(() => {
-    if (multiple.value && Array.isArray(modelValue.value))
-      return modelValue.value.map(i => getKey(i))
-    else
-      return [getKey(modelValue.value as any ?? {})]
+    const value = modelValue.value
+    if (Array.isArray(value))
+      return multiple.value ? value.map(i => getKey(i)) : []
+    // v2 passed an empty object to `getKey` for an empty single selection.
+    return [getKey(value ?? ({} as T))]
   })
 
   function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedItem<T>[] {
@@ -499,7 +518,7 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
   }
 
   /** The `useSelectionBehavior` rules, computed into a new value instead of written. */
-  function nextSelection(current: T | T[] | undefined, val: T, condition: (existing: T) => boolean): { value: T | T[] | undefined, anchor: boolean } {
+  function nextSelection(current: T | T[] | undefined, val: T, condition: (existing: T | undefined) => boolean): { value: T | T[] | undefined, anchor: boolean } {
     // multiple select
     if (multiple.value && Array.isArray(current)) {
       if (selectionBehavior.value === 'replace')
@@ -512,7 +531,7 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     // single select
     if (selectionBehavior.value === 'replace')
       return { value: { ...val }, anchor: false }
-    if (!Array.isArray(current) && condition(current as T))
+    if (!Array.isArray(current) && condition(current))
       return { value: undefined, anchor: false }
     return { value: { ...val }, anchor: false }
   }
@@ -544,8 +563,9 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
    * Keys already in the selection are never added twice.
    */
   function select(val: T, reason: TreeChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    warnSelectWithoutMultiple()
     const current = toRaw(modelValue.value)
-    const condition = (baseValue: T) => getKey(baseValue as any ?? {}) === getKey(val)
+    const condition = (baseValue: T | undefined) => getKey(baseValue ?? ({} as T)) === getKey(val)
     const exist = multiple.value && Array.isArray(current) ? current.findIndex(condition) !== -1 : undefined
     const { value, anchor } = nextSelection(current, val, condition)
     let next = value
@@ -557,13 +577,13 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     }
 
     if (propagateSelect.value && multiple.value && Array.isArray(next)) {
-      const children = flatten<T, any>(getChildren(val) ?? [])
+      const children = flatten(getChildren(val) ?? [], getChildren)
       const selected = next
       next = exist
         // remove all child
-        ? selected.filter(i => !children.some(child => getKey(i as any ?? {}) === getKey(child as any)))
+        ? selected.filter(i => !children.some(child => getKey(i) === getKey(child)))
         // select all child, skipping the ones already selected
-        : [...selected, ...children.filter(child => !selected.some(i => getKey(i as any ?? {}) === getKey(child as any)))]
+        : [...selected, ...children.filter(child => !selected.some(i => getKey(i) === getKey(child)))]
     }
 
     // The anchor follows every press that is not cancelled: a committed
