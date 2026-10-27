@@ -50,3 +50,4 @@ export {
   type UseListboxRootProps,
   type UseListboxRootReturn,
 } from './useListbox'
+export { type VirtualGroup } from './useListVirtualizer'
