@@ -6,6 +6,8 @@ export interface DateRangePickerHeadingProps extends RangeCalendarHeadingProps {
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DateRangePickerHeadingProps>()
 defineSlots<{
   default?: (props: {
@@ -13,10 +15,14 @@ defineSlots<{
     headingValue: string
   }) => any
 }>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <RangeCalendarHeading
+    :ref="forwardRef"
     v-slot="{ headingValue }"
     v-bind="props"
   >

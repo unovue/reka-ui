@@ -11,12 +11,18 @@ export interface DateRangePickerPrevProps extends Omit<RangeCalendarPrevProps, '
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DateRangePickerPrevProps>()
 defineSlots<RangeCalendarPrevSlot>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <RangeCalendarPrev
+    :ref="forwardRef"
     v-slot="slotProps "
     v-bind="props"
   >

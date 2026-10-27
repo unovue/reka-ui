@@ -5,11 +5,17 @@ import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const rootContext = injectDateRangePickerRootContext()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <RangeCalendarRoot
+    :ref="forwardRef"
     v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"
     v-bind="{
       allowNonContiguousRanges: rootContext.allowNonContiguousRanges.value,

@@ -7,7 +7,7 @@ import type { DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { hasTime, isBefore, isSameDateSelection, isSameDateValue } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createContext, isNullish, mergeExpose, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultDate,
@@ -136,8 +136,7 @@ const resolvedRequired = computed(() => (fieldContext ? (props.required || field
 const formatter = useDateFormatter(locale.value, {
   hourCycle: normalizeHourCycle(props.hourCycle),
 })
-const { primitiveElement, currentElement: parentElement }
-  = usePrimitiveElement()
+const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())
 
 onMounted(() => {
@@ -352,10 +351,10 @@ provideDateFieldRootContext({
   focusNext,
 })
 
-defineExpose({
+defineExpose(mergeExpose(expose, {
   /** Helper to set the focused element inside the DateField */
   setFocusedElement,
-})
+}))
 </script>
 
 <template>

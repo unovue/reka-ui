@@ -206,7 +206,8 @@ defineSlots<{
 
 const { dir: propDir, locale: propLocale } = toRefs(props)
 
-const { primitiveElement, currentElement: parentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 const weekStartsOn = computed(() => props.weekStartsOn ?? getWeekStartsOn(locale.value))

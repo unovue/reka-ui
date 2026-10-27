@@ -8,6 +8,7 @@ export interface RangeCalendarHeadingProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { getCalendarHeadingSurface } from '@/Calendar/useCalendar'
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarHeadingProps>(), { as: 'div' })
@@ -22,10 +23,14 @@ defineSlots<{
 
 const rootContext = injectRangeCalendarRootContext()
 const surface = getCalendarHeadingSurface(rootContext)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
     v-bind="surface.attrs.value"

@@ -43,7 +43,7 @@ export interface RangeCalendarCellTriggerSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectRangeCalendarGridContext } from './RangeCalendarGrid.vue'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 import { injectRangeCalendarViewContext } from './RangeCalendarView.vue'
@@ -52,7 +52,8 @@ import { getRangeCalendarCellTriggerSurface } from './useRangeCalendar'
 const props = withDefaults(defineProps<RangeCalendarCellTriggerProps>(), { as: 'div' })
 defineSlots<RangeCalendarCellTriggerSlot>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectRangeCalendarRootContext()
 const viewContext = injectRangeCalendarViewContext(null)
 const gridContext = injectRangeCalendarGridContext(null)

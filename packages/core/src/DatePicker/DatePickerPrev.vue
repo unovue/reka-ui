@@ -11,12 +11,18 @@ export interface DatePickerPrevProps extends Omit<CalendarPrevProps, 'prevPage'>
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DatePickerPrevProps>()
 defineSlots<CalendarPrevSlot>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <CalendarPrev
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="props"
   >

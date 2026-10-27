@@ -7,12 +7,18 @@ export interface DatePickerCellTriggerProps extends CalendarCellTriggerProps {}
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DatePickerCellTriggerProps>()
 defineSlots<CalendarCellTriggerSlot>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <CalendarCellTrigger
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="props"
   >

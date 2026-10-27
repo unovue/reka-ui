@@ -14,6 +14,8 @@ export type DatePickerContentEmits = PopoverContentEmits
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DatePickerContentProps>()
 const emits = defineEmits<DatePickerContentEmits>()
 
@@ -22,11 +24,15 @@ const propsToForward = computed(() => ({
   portal: undefined,
 }))
 const forwarded = useForwardPropsEmits(propsToForward, emits)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <PopoverPortal v-bind="portal">
     <PopoverContent
+      :ref="forwardRef"
       v-bind="{ ...forwarded, ...$attrs }"
       @open-auto-focus="event => {
         emits('openAutoFocus', event)

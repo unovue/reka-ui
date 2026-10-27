@@ -6,12 +6,18 @@ export interface DateRangePickerViewTriggerProps extends RangeCalendarViewTrigge
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DateRangePickerViewTriggerProps>()
 defineSlots<RangeCalendarViewTriggerSlot>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <RangeCalendarViewTrigger
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="props"
   >

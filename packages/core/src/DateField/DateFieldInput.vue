@@ -13,6 +13,8 @@ export interface DateFieldInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DateFieldInputProps>()
 
 const rootContext = injectDateFieldRootContext()
@@ -47,10 +49,14 @@ const {
 const disabled = computed(() => rootContext.disabled.value)
 const readonly = computed(() => rootContext.readonly.value)
 const isInvalid = computed(() => rootContext.isInvalid.value)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="attributes"

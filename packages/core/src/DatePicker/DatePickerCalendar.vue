@@ -7,11 +7,17 @@ import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const rootContext = injectDatePickerRootContext()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <CalendarRoot
+    :ref="forwardRef"
     v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"
     v-bind="{
       isDateDisabled: rootContext.isDateDisabled,

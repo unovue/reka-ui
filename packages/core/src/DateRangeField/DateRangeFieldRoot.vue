@@ -13,7 +13,7 @@ import {
   isBefore,
   isBeforeOrSame,
 } from '@/date'
-import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createContext, mergeExpose, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultDate,
@@ -129,8 +129,7 @@ const dir = useDirection(propDir)
 const formatter = useDateFormatter(locale.value, {
   hourCycle: normalizeHourCycle(props.hourCycle),
 })
-const { primitiveElement, currentElement: parentElement }
-  = usePrimitiveElement()
+const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
 const segmentElements = ref<Set<HTMLElement>>(new Set())
 
 onMounted(() => {
@@ -356,9 +355,9 @@ provideDateRangeFieldRootContext({
   focusNext,
 })
 
-defineExpose({
+defineExpose(mergeExpose(expose, {
   setFocusedElement,
-})
+}))
 </script>
 
 <template>
