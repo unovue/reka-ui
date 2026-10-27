@@ -71,7 +71,7 @@ onUnmounted(() => {
 <template>
   <Primitive
     :ref="forwardRef"
-    :data-state="scrollbarContextVisible.hasThumb ? 'visible' : 'hidden'"
+    :data-state="scrollbarContextVisible.hasThumb.value ? 'visible' : 'hidden'"
     :style="{
       width: 'var(--reka-scroll-area-thumb-width)',
       height: 'var(--reka-scroll-area-thumb-height)',
